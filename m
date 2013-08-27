@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3H0OR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:17:29 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56157 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3H0ORY (ORCPT
+	id S1753561Ab3H0OUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:20:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36473 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752059Ab3H0OUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:17:24 -0400
-Date: Tue, 27 Aug 2013 16:17:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Manfred Hollstein <mhollstein@t-online.de>, joeyli <jlee@suse.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
- signature of snapshot
-Message-ID: <20130827141722.GA23163@amd.pavel.ucw.cz>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
- <1377169317-5959-12-git-send-email-jlee@suse.com>
- <20130825162554.GH5171@amd.pavel.ucw.cz>
- <1377594283.20140.3.camel@linux-s257.site>
- <20130827112943.GA20527@amd.pavel.ucw.cz>
- <20130827120142.GA4314@saturn.hollstein.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827120142.GA4314@saturn.hollstein.homelinux.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Aug 2013 10:20:05 -0400
+Date: Tue, 27 Aug 2013 16:19:58 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
+Message-ID: <20130827161958.5e71890d@skate>
+In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-08-27 14:01:42, Manfred Hollstein wrote:
-> On Tue, 27 Aug 2013, 13:29:43 +0200, Pavel Machek wrote:
-> > > > > @@ -1205,6 +1290,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
-> > > > >  
-> > > > >  	setup_efi_pci(boot_params);
-> > > > >  
-> > > > > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
-> > > > > +	setup_s4_keys(boot_params);
-> > > > > +#endif
-> > > > > +
-> > > > 
-> > > > Move ifdef inside the function?
-> > > 
-> > > OK, I will define a dummy function for non-verification situation.
-> > 
-> > IIRC you can just put the #ifdef inside the function body. 
-> 
-> This is certainly not to be invoked on a frequent basis (and therefore
-> not on a hot path), but from a more general angle, wouldn't this leave
-> a(nother) plain "jsr... rts" sequence without any effect other than
-> burning a few cycles? If the whole function call can be disabled
-> (ignored) in a certain configuration, it shouldn't call at all, should
-> it?
+Dear Sebastian Hesselbarth,
 
-gcc should be able to deal with optimizing that out.
-									Pavel
+On Fri, 16 Aug 2013 21:41:33 +0200, Sebastian Hesselbarth wrote:
+> This is a RFC adding initial support for the Marvell Armada 1500
+> (88DE3100) found on various consumer devices (Chromecast, GoogleTV).
+> 
+> Actually, it is a two-fold RFC also raising discussions on mach-mvebu
+> cleanup roadmap to allow other SoCs to hop into it. While mach-mvebu
+> originally was created to add support for Armada 370/XP and merge
+> existing Marvell Orion familiy into it, I am not so sure about
+> Armada 1500 fits that well (the mbus has gone!).
+
+After talking a bit with engineers within Marvell that work on this
+SoC, I'm inclined to think that using mach-mvebu for this family of SoC
+is not a good idea.
+
+The reasons are:
+
+ * This family of SoC is architecturally completely different from the
+   family of Orion SoC: they use completely different hardware blocks
+   (i.e none of the plat-orion stuff would apply, and none of the
+   Orion device drivers would be useful), they don't use the MBus
+   mechanism, etc. They are really a different family of SoC, almost as
+   if they were coming from a different SoC company.
+
+ * The SMP and power management code, as well as all the "glue"
+   platform code that typically sits in mach-<foo> is going to be
+   substantially, if not completely different from the one in
+   mach-mvebu. I already believe doing all the "glue" platform code in
+   mach-mvebu for all of Kirkwood, Dove, 370/XP, Orion5x and MV78xx0 is
+   going to be a challenge, so I'd suggest to not add to this challenge
+   a completely separate family of SOCs.
+
+The codename used for those Armada 1500 SOCs is "Berlin", so a name
+like mach-berlin, or mach-mvberlin (if we want to keep 'mv' to identify
+the founder) seems like a good name.
+
+Also, to help us understand the organization of the family of SOCs, I
+asked a few informations to Marvell, and here is what I could collect:
+
+"""
+BGxname		CPU core	codename	L2 cache controller	internal name
+BG2		PJ4B		Armada1500	Tauros3			MV88DE3100
+BG2-CT		Cortex-A9	N/A		PL310			N/A
+BG3		Cortex-A15	N/A		CA15 integrated		N/A
+"""
+
+As was told that the Armada X or MV88DEx names are not used during
+development, and what Marvell is really using are the BGxx names.
+
+Best regards,
+
+Thomas
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
