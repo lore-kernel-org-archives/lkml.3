@@ -1,41 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3H0QVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:21:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55904 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab3H0QVF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:21:05 -0400
-Date: Tue, 27 Aug 2013 12:20:56 -0400 (EDT)
-Message-Id: <20130827.122056.419758783951274884.davem@davemloft.net>
-To: b.brezillon@overkiz.com
-Cc: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <521C586A.7080604@overkiz.com>
-References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
-	<20130826.160450.2176892065062148718.davem@davemloft.net>
-	<521C586A.7080604@overkiz.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 27 Aug 2013 09:21:04 -0700 (PDT)
+	id S1753723Ab3H0QWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:22:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753183Ab3H0QWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 12:22:04 -0400
+Date: Tue, 27 Aug 2013 18:15:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+	task->pid and task->tgid
+Message-ID: <20130827161536.GA29147@redhat.com>
+References: <cover.1377032086.git.rgb@redhat.com> <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com> <20130822190848.GA25053@redhat.com> <20130826220711.GA21098@madcap2.tricolour.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826220711.GA21098@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: boris brezillon <b.brezillon@overkiz.com>
-Date: Tue, 27 Aug 2013 09:42:34 +0200
+On 08/26, Richard Guy Briggs wrote:
+>
+> On Thu, Aug 22, 2013 at 09:08:48PM +0200, Oleg Nesterov wrote:
+> > On 08/20, Richard Guy Briggs wrote:
+> > >
+> > >  static inline int is_global_init(struct task_struct *tsk)
+> > >  {
+> > > -	return tsk->pid == 1;
+> > > +	return task_pid_nr(tsk) == 1;
+> > >  }
+> >
+> > Probably it would be better to simply kill it. Almost every usage is
+> > wrong.
+>
+> Can you be more clear?  I don't follow.  It should instead return a
+> boolean.  Usage of is_global_init() or task_pid_nr()?
 
-> Could you apply, the 3rd version of this series instead ?
+Just look at the callers. For example, how is_global_init() can save
+/sbin/init from oom-killer if it is multithreaded ?
 
-There can never be an "instead" or reverting patches I've said I've
-applied already.
+> If is_global_init(), is that because they could be unaware of pid
+> namespaces?
 
-If you want changes, you have to submit follow-on fixes.
+Because I think nobody actually needs is_a_group_leader_of_global_init(),
+and this is what this helper actually is.
+
+> > >  static inline bool is_idle_task(const struct task_struct *p)
+> > >  {
+> > > -	return p->pid == 0;
+> > > +	return task_pid(p) == &init_struct_pid;
+> > >  }
+> >
+> > hmm. there should be a simpler check for this...
+>
+> Other than the original, this one is pretty simple.
+
+I meant that the original check is cheaper,
+
+> What did you have
+> in mind?
+
+Well. I agree that it would be nice to avoid the dependence on task->pid
+if possible. And perhaps even kill it eventually. But I am not sure how
+much we should try.
+
+If it was the last user of ->pid, then I would agree with this change.
+Although we can make it cheaper, say, we can change idle_init() to
+nullify tasks->next and use ->next == NULL.
+
+But we have a lot more ->pid users, perhaps we should change them first.
+
+And more importantly, let me repeat. I do not think that this change
+should be mixed with other changes in this series.
+
+> > >  static inline int has_group_leader_pid(struct task_struct *p)
+> > >  {
+> > > -	return p->pid == p->tgid;
+> > > +	return task_pid(p) == task_tgid(p);
+> > >  }
+> > >
+> > >  static inline
+> > >  int same_thread_group(struct task_struct *p1, struct task_struct *p2)
+> > >  {
+> > > -	return p1->tgid == p2->tgid;
+> > > +	return task_tgid(p1) == task_tgid(p2);
+> >
+> > This is suboptinal. See the attached
+> > include-linux-schedh-dont-use-task-pid-tgid-in-same_thread_group-has_group_leader_pid.patch
+> > from -mm below.
+>
+> I'm fine with that if it is deemed better.  The point was to remove the
+> dependence on task_struct::tgid.
+
+But I agree! My only point was, this conflicts with the patch we already
+have and that patch is more optimal. p1->leader == p2->leader is cheaper.
+
+Oleg.
+
