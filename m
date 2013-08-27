@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab3H0LyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 07:54:08 -0400
-Received: from nm2-vm6.bullet.mail.gq1.yahoo.com ([98.136.218.133]:32109 "EHLO
-	nm2-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752847Ab3H0LyH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 07:54:07 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 609469.6589.bm@omp1095.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=ZULS5SeiGpom03Y775tqmpXMGk+LQMkZJAJAcH1qzZZDnuMYarPeGwVCj1cdy1R+uvj+NnBp805eslli02ryHwmLGyzsUJTLy+S25a1iCaL2DXHcz5S9Elgd/Z8xgWaZlfriw4WQNC7yhV6saZS2riOHybqtuC4CXYO+2uvGIU8=;
-X-YMail-OSG: aAhqY30VM1nD0zViAmLwuvee7KOyxxnOJdS5g3QmEF_vNcC
- RuPZH3D2Xm8uxtSReWxEus19FiWbUmgoGeanPCCNliKsUvKFk2YhAILkW.DH
- vEqWS5y8FOALuIfi0XomFDXZ7x9LHywdKx2spcLz3QCtmrgrATf6plGCrleH
- RK36ba4N9C0r2uVRY5jCoyOFOYAQlVSutDCC2fqUfp2Cs5nqJsgYYvA9ztA_
- 16.wvPTUbKXKfTXbF4LAmE3dauFK_aiwLQuYk8tLGl_LtzqWiK.1u0u_Eup0
- 5zB0BDMb.Zhwxk2tNWYWCjfQ9xa25Vp3PsdjYeE1N4JzGeRPfHUW4O9dqtHk
- uRTBFV_Cp.HG0hfH6PWU4EJWwi9sMqaZ20RcM6WZ7R.AxA9fB5qcd61NKRTH
- WWBQdykC.STVWu4U5Wh_rNhiZGTLJhHQOoDoTtMdupkFE10CGucvzfjYZlGZ
- THjPkNs2YibX1mKlbsw.iSHlc42WwofjZ.Jy10NDE.s18j6BGcSDQD1q_bMf
- oq016VTKRPhYg6DNSFN150RYwbtqXTJbSLcDbOO5on_OJl9s5sGUeE9G4Xi.
- ErVsdNE63k2TbwkIiGNJHCw--
-X-Rocket-MIMEInfo: 002.001,T2gsIFRoYW5rcyBhbG90LCBpdCB3b3JrZWQgYXMgZGVzaXJlZC4uLi4uCgpUaGFua3MuCgoKCgotLS0tLSBPcmlnaW5hbCBNZXNzYWdlIC0tLS0tCkZyb206IE1hdHMgTGlsamVncmVuIDxsaWxqZWdyZW4ubWF0czJAZ21haWwuY29tPgpUbzogU3VraSBCdXJ5YW5pIDxzdWtpYnVyeWFuaUB5YWhvby5jb20.CkNjOiAibGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZyIgPGxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmc.ClNlbnQ6IE1vbmRheSwgQXVndXN0IDI2LCAyMDEzIDY6NTUgUE0KU3ViamVjdDogUmUBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.155.576
-References: <1377519801.80692.YahooMailNeo@web163906.mail.gq1.yahoo.com> <CA+xJJ18+z1hiNByNQPZ8Xm+wcSLrnnYn4x4OFu+_NkSKq7oR5Q@mail.gmail.com>
-Message-ID: <1377604445.95116.YahooMailNeo@web163906.mail.gq1.yahoo.com>
-Date: Tue, 27 Aug 2013 04:54:05 -0700 (PDT)
-From: Suki Buryani <sukiburyani@yahoo.com>
-Reply-To: Suki Buryani <sukiburyani@yahoo.com>
-Subject: Re: how to make a option in menuconfig as new feature
-To: Mats Liljegren <liljegren.mats2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+xJJ18+z1hiNByNQPZ8Xm+wcSLrnnYn4x4OFu+_NkSKq7oR5Q@mail.gmail.com>
+	id S1753285Ab3H0Lyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 07:54:31 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:49960 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab3H0Ly3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 07:54:29 -0400
+Date: Tue, 27 Aug 2013 13:54:22 +0200
+From: Robert Richter <rric@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
+ control persistency
+Message-ID: <20130827115422.GD15884@rric.localhost>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+ <1377180807-12758-13-git-send-email-rric@kernel.org>
+ <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+ <20130823091128.GA19548@nazgul.tnic>
+ <20130823094556.GB10223@rric.localhost>
+ <20130823104441.GD10223@rric.localhost>
+ <20130823113400.GA20310@nazgul.tnic>
+ <alpine.DEB.2.02.1308231255330.7482@pianoman.cluster.toy>
+ <20130823193934.GB15521@pd.tnic>
+ <alpine.DEB.2.10.1308231704450.24113@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1308231704450.24113@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, Thanks alot, it worked as desired.....
+On 23.08.13 17:08:11, Vince Weaver wrote:
+> On Fri, 23 Aug 2013, Borislav Petkov wrote:
+> 
+> > Maybe this makes it more understandable for you but this is beside the
+> > point.
+> 
+> Understandability doesn't matter?
 
-Thanks.
+I agree with Vince on this, the naming should be intuitive. Esp. since
+'attach' is used in tracing in different context, we should avoid
+using the term here for less confusion.
 
+I got another idea for this, what about UNCLAIM and CLAIM? It is
+exactly, what it is. A process unclaims an event telling it doesn't
+care anymore.  Another process comes and claims the event, meaning the
+process wants the event no longer to be shared with others and being
+released after closing.
 
+> > But I have to say the reversed thing above does sound confusing, now
+> > that I'm looking at the code. Actually, at the time we discussed this,
+> > my idea was to do it like this:
+> > 
+> > 1. we open a perf event and get its file descriptor
+> > 2. ioctl ATTACH to it so that it is attached to the process.
+> > 
+> > ... do some tracing and collecting and fiddling...
 
+You don't need to attach to a persistent event, you can just use the
+event with perf_event_open, mmap, close.
 
------ Original Message -----
-From: Mats Liljegren <liljegren.mats2@gmail.com>
-To: Suki Buryani <sukiburyani@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Sent: Monday, August 26, 2013 6:55 PM
-Subject: Re: how to make a option in menuconfig as new feature
+> > 3. ioctl DETACH from it so that it is "forked in the background" so to
+> > speak, very similar to a background job in the shell.
 
-On Mon, Aug 26, 2013 at 2:23 PM, Suki Buryani <sukiburyani@yahoo.com> wrote:
-> Hi,
->
-> I want to add up a kernel module to my linux
-> kernel,currently i am mannuly changing .config file to include my new
-> module but i want to add it as option in menuconfig from where i choose
-> it where it should be included or not...
+With 'detach' we move the event into the 'background' so that it is
+still available after opening.
 
-I think the answer to your question lies in those Kconfig files. Find
-a name of some simple driver and check how that driver is defined in
-Kconfig. Check Documentation/kbuild/kconfig-language.txt for more
-information about these Kconfig files.
+> Would it make sense to actually fork a kernel thread that "owns" the 
+> event?  
 
-Regards
-Mats Liljegren
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+There is no need for a kernel thread, there is nothing to do. We just
+increase the refcount so that the event is not destroyed.
 
+> The way it is now events can "get loose" if either the user
+> forgets about them or the tool that opened them crashes, and it's
+> impossible to kill these events with normal tools.  You possibly
+> wouldn't even know one was running (except you'd have one fewer
+> counter to work with) unless you poked around under /sys.
+
+As boris said, there could be some sort of 'kill' tool for events.
+That's what we need sysfs for, it tells which events are running.
+
+> > 4. The rest of the code continues and deallocates the event *BUT* (and
+> > this is the key thing!) the counter/tracepoint remains operational in
+> > the kernel, running all the time.
+
+The event remains operational esp. after closing it or killing/
+terminating the process owning it.
+
+> > 5. Now, after a certain point, you come back and ioctl ATTACH to this
+> > already opened event and read/collect its buffers again.
+
+-Robert
