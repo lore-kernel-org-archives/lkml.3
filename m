@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3H0ReT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:34:19 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:47231 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752618Ab3H0ReS (ORCPT
+	id S1753467Ab3H0RfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:35:17 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43335 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752150Ab3H0RfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:34:18 -0400
-Message-ID: <521CE317.20908@semaphore.gr>
-Date: Tue, 27 Aug 2013 20:34:15 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 13:35:15 -0400
+X-Sasl-enc: C+VDiVXNqTgXmkt3wPbQZZAtR8eDpdzj+jSf2jkm1Qch 1377624914
+Date: Tue, 27 Aug 2013 10:37:32 -0700
+From: Greg KH <greg@kroah.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Benoit Cousson <bcousson@baylibre.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        linux-next@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+Message-ID: <20130827173732.GC21564@kroah.com>
+References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
+ <521C6961.9020103@linutronix.de>
+ <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
+ <521CA888.1080909@baylibre.com>
+ <521CAF59.1090203@linutronix.de>
+ <521CB046.9070408@baylibre.com>
+ <521CB18B.4080000@linutronix.de>
+ <521CB239.6050409@baylibre.com>
+ <521CB403.8010307@linutronix.de>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: governors: Remove duplicate check of target
- freq in supported range
-References: <521BA068.8030003@semaphore.gr> <CAKohpo=xBmpEv=oN1qEnq9RKhfjtc4wZayVYyVzjWOU8BnwVJQ@mail.gmail.com> <521CC9B8.2020801@semaphore.gr> <CAKohpo=XhHtRfsVrUZr0DQCK5L5zU_6DB4PBOA4QrJBvvcbe0Q@mail.gmail.com>
-In-Reply-To: <CAKohpo=XhHtRfsVrUZr0DQCK5L5zU_6DB4PBOA4QrJBvvcbe0Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521CB403.8010307@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 07:07 PM, Viresh Kumar wrote:
-> On 27 August 2013 21:16, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> I think we should keep these checks because:
->>
->> 1) They shorten the execution code (there is no unnecessary call of
->> __cpufreq_driver_target)
->
-> I don't really count this one.. This is how code is present everywhere in
-> kernel.. These checks are present in routines and callers don't need to
-> take care of them..
+On Tue, Aug 27, 2013 at 04:13:23PM +0200, Sebastian Andrzej Siewior wrote:
+> On 08/27/2013 04:05 PM, Benoit Cousson wrote:
+> > On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
+> >> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
+> >>> + Kevin,
+> >>>
+> >>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
+> >>>> What do we do now?
+> >>>
+> >>> Cannot you just merge the stable arm-soc/dt branch into your branch
+> >>> before applying your patches?
+> >>
+> >> That is up to Greg. This changes sat in his usb-next tree for a while
+> >> now. And before they hit Greg they were in Felipe's tree for a while.
+> >>
+> >> To be exact, last .dts change via USB was:
+> >>
+> >> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> >> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
+> >> Commit:     Felipe Balbi <balbi@ti.com>
+> >> CommitDate: Fri Aug 9 17:40:16 2013 +0300
+> >>
+> >>     usb: musb dma: add cppi41 dma driver
+> > 
+> > Mmm, if that branch is supposed to be stable, I'm not sure it will be
+> > doable...
+> > 
+> > Maybe we should do the other way around? And merge usb-next into
+> > arm-soc/dt.
+> > 
+> > Kevin, Olof?
+> 
+> Please be aware that I have no response so far regarding [0] from Greg.
+> 
+> [0] http://www.spinics.net/lists/linux-usb/msg92595.html
 
-I mean that if we will get rid of the code you mentioned, we will have
-an extra call to function __cpufreq_driver_target in some cases.
+Nor will you, given that I am not the one to take these patches, Felipe
+is.  I noticed now that you said "please route around Felipe", but
+sorry, no, I'm not going to do that unless there's a really good reason.
+Felipe seems to be around at the moment, please work with him on this.
 
->> 2) In case my patch will be accepted, we need them to avoid continuously
->> increase of dbs_info->requested_freq.With my patch the requested_freq
->> can temporarily overcome policy->min and policy->max. __cpufreq_driver_target
->> will select the correct frequency (within policy->min and policy->max).
->> Then, dbs_cpufreq_notifier will adjust requested_freq.
->
-> Sorry, I couldn't understand what you meant here :(
->
+sorry,
 
-I'm sorry. Let me try to explain this better.
-
-With my patch, dbs_info->requested_freq will not be capped within
-policy->min and policy->max in cs_check_cpu.
-So, temporarily it may have a value greater than policy->max
-or lower that policy->min.
-When we call __cpufreq_driver_target, the correct frequency will be 
-selected because __cpufreq_driver_target takes care to adjust the
-target frequency within policy range.
-But, eventually, dbs_cpufreq_notifier will adjust dbs_info->requested
-within policy range, if needed.
-
-If we remove
-	if (dbs_info->requested_freq == policy->max)
-		return;
-and
-	if (policy->cur == policy->min)
-		return;
-
-request_freq will keep increasing or decreasing in each iteration and
-finally will overflow or underflow.
-
-Consider, for example, that in a CPU with policy->max = 1000MHz
-the current frequency is 950MHz. With a constant load above
-up_threshold, the requested_freq in first iteration will be 1000MHz
-and __cpufreq_driver_target will select 1000MHz freq.
-
-In second iteration, requested_freq will be 1050MHz, and 
-__cpufreq_driver_target will select 1000MHz. dbs_cpufreq_notifier
-will adjust requested_freq back to 1000MHz.
-
-In next iterations, dbs_cpufreq_notifier will not be called, so we
-need the above check (dbs_info->requested_freq == policy->max) to
-prevent requested_freq to grow arbitrary.
-
-I hope my explanation was better now. :)
-
-
-Thanks,
-Stratos
+greg k-h
