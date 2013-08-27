@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3H0Mly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:41:54 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61962 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3H0Mlw (ORCPT
+	id S1753437Ab3H0Mmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:42:39 -0400
+Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:50276 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753186Ab3H0Mmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:41:52 -0400
-Date: Tue, 27 Aug 2013 14:41:46 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
- control persistency
-Message-ID: <20130827124146.GG15884@rric.localhost>
-References: <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
- <20130823091128.GA19548@nazgul.tnic>
- <20130823094556.GB10223@rric.localhost>
- <20130823104441.GD10223@rric.localhost>
- <20130823113400.GA20310@nazgul.tnic>
- <alpine.DEB.2.02.1308231255330.7482@pianoman.cluster.toy>
- <20130823193934.GB15521@pd.tnic>
- <alpine.DEB.2.10.1308231704450.24113@vincent-weaver-1.um.maine.edu>
- <20130827115422.GD15884@rric.localhost>
- <20130827122242.GA5855@x1.alien8.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827122242.GA5855@x1.alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Aug 2013 08:42:38 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v2] ARM: at91/dt: fix phy address in sama5xmb to match the reg property
+Date: Tue, 27 Aug 2013 14:41:53 +0200
+Message-Id: <1377607313-21331-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377605096-20903-1-git-send-email-b.brezillon@overkiz.com>
+References: <1377605096-20903-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 11426195205661685984
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, starting with your question at the end first since it might
-explain the following better.
+Fix phy0 address to match the reg property defined in phy0 node.
 
-If the event is no longer persistent and if there are multiple users,
-the event remains open and running until the all mmap's are munmap'ed
-and the last fd is closed. After that it is released. This is done
-with refcounts and already implemented.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Changes since v1:
+ - better commit message
 
-On 27.08.13 14:22:42, Borislav Petkov wrote:
-> On Tue, Aug 27, 2013 at 01:54:22PM +0200, Robert Richter wrote:
-> > I got another idea for this, what about UNCLAIM and CLAIM? It is
-> > exactly, what it is. A process unclaims an event telling it doesn't
-> > care anymore.  Another process comes and claims the event, meaning the
-> > process wants the event no longer to be shared with others and being
-> > released after closing.
-> 
-> This still doesn't pan out because with claiming the event, you state
-> that the event is *owned* by this process but with persistent events
-> we want to be able to state that they can have multiple users and thus
-> multiple buffer consumers, concurrently.
+ arch/arm/boot/dts/sama5d3xmb.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-We still have multiple users after 'claiming' the event. The only
-thing is that the event will be destroyed after all users went away.
-A process (that claimed the event) was responsible for this.
+diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
+index e9521d5..dba739b 100644
+--- a/arch/arm/boot/dts/sama5d3xmb.dtsi
++++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
+@@ -84,7 +84,7 @@
+ 
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+-				phy0: ethernet-phy@0 {
++				phy0: ethernet-phy@1 {
+ 					interrupt-parent = <&pioE>;
+ 					interrupts = <30 IRQ_TYPE_EDGE_FALLING>;
+ 					reg = <1>;
+-- 
+1.7.9.5
 
-> > > > 3. ioctl DETACH from it so that it is "forked in the background" so to
-> > > > speak, very similar to a background job in the shell.
-> > 
-> > With 'detach' we move the event into the 'background' so that it is
-> > still available after opening.
-> 
-> Ok, maybe ATTACH/DETACH is not the perfect naming for this after all.
-> Maybe when we want to state the fact that the event is going to continue
-> existing after closing the buffer consumer, we want to do ioctl(event,
-> DONT_DESTROY) and when we want to actually get rid of it, one of the
-> process does ioctl(event, DESTROY).
-
-I still prefer claim/unclaim. ;)
-
-> Which reminds me, what do we do when one process destroys the event but
-> there are other consumers accessing it concurrently? Refcounting?
-
-See above.
-
--Robert
