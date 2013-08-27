@@ -1,59 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3H0B0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:26:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59389 "EHLO
+	id S1753171Ab3H0BGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:06:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab3H0BG6 (ORCPT
+	with ESMTP id S1753118Ab3H0BGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:58 -0400
+	Mon, 26 Aug 2013 21:06:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 13/74] iwlwifi: mvm: take the seqno from packet if transmit failed
-Date: Mon, 26 Aug 2013 18:08:11 -0700
-Message-Id: <20130827010427.365794941@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 12/13] SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
+Date: Mon, 26 Aug 2013 18:08:44 -0700
+Message-Id: <20130827010310.775051971@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
-References: <20130827010424.535365435@linuxfoundation.org>
+In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
+References: <20130827010309.850395966@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-commit ebea2f32e814445f94f9e087b646f1cf4d55fa5a upstream.
+commit 924dd584b198a58aa7cb3efefd8a03326550ce8f upstream.
 
-The fw is unreliable in all the cases in which the packet
-wasn't sent.
+BUG: sleeping function called from invalid context at kernel/workqueue.c:2752
+in_atomic(): 1, irqs_disabled(): 1, pid: 360, name: zfcperp0.0.1700
+CPU: 1 Not tainted 3.9.3+ #69
+Process zfcperp0.0.1700 (pid: 360, task: 0000000075b7e080, ksp: 000000007476bc30)
+<snip>
+Call Trace:
+([<00000000001165de>] show_trace+0x106/0x154)
+ [<00000000001166a0>] show_stack+0x74/0xf4
+ [<00000000006ff646>] dump_stack+0xc6/0xd4
+ [<000000000017f3a0>] __might_sleep+0x128/0x148
+ [<000000000015ece8>] flush_work+0x54/0x1f8
+ [<00000000001630de>] __cancel_work_timer+0xc6/0x128
+ [<00000000005067ac>] scsi_device_dev_release_usercontext+0x164/0x23c
+ [<0000000000161816>] execute_in_process_context+0x96/0xa8
+ [<00000000004d33d8>] device_release+0x60/0xc0
+ [<000000000048af48>] kobject_release+0xa8/0x1c4
+ [<00000000004f4bf2>] __scsi_iterate_devices+0xfa/0x130
+ [<000003ff801b307a>] zfcp_erp_strategy+0x4da/0x1014 [zfcp]
+ [<000003ff801b3caa>] zfcp_erp_thread+0xf6/0x2b0 [zfcp]
+ [<000000000016b75a>] kthread+0xf2/0xfc
+ [<000000000070c9de>] kernel_thread_starter+0x6/0xc
+ [<000000000070c9d8>] kernel_thread_starter+0x0/0xc
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Apparently, the ref_count for some scsi_device drops down to zero,
+triggering device removal through execute_in_process_context(), while
+the lldd error recovery thread iterates through a scsi device list.
+Unfortunately, execute_in_process_context() decides to immediately
+execute that device removal function, instead of scheduling asynchronous
+execution, since it detects process context and thinks it is safe to do
+so. But almost all calls to shost_for_each_device() in our lldd are
+inside spin_lock_irq, even in thread context. Obviously, schedule()
+inside spin_lock_irq sections is a bad idea.
+
+Change the lldd to use the proper iterator function,
+__shost_for_each_device(), in combination with required locking.
+
+Occurences that need to be changed include all calls in zfcp_erp.c,
+since those might be executed in zfcp error recovery thread context
+with a lock held.
+
+Other occurences of shost_for_each_device() in zfcp_fsf.c do not
+need to be changed (no process context, no surrounding locking).
+
+The problem was introduced in Linux 2.6.37 by commit
+b62a8d9b45b971a67a0f8413338c230e3117dff5
+"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit".
+
+Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/tx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/s390/scsi/zfcp_erp.c |   29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -610,8 +610,8 @@ static void iwl_mvm_rx_tx_cmd_single(str
- 		    !(info->flags & IEEE80211_TX_STAT_ACK))
- 			info->flags |= IEEE80211_TX_STAT_AMPDU_NO_BACK;
+--- a/drivers/s390/scsi/zfcp_erp.c
++++ b/drivers/s390/scsi/zfcp_erp.c
+@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port
  
--		/* W/A FW bug: seq_ctl is wrong when the queue is flushed */
--		if (status == TX_STATUS_FAIL_FIFO_FLUSHED) {
-+		/* W/A FW bug: seq_ctl is wrong when the status isn't success */
-+		if (status != TX_STATUS_SUCCESS) {
- 			struct ieee80211_hdr *hdr = (void *)skb->data;
- 			seq_ctl = le16_to_cpu(hdr->seq_ctrl);
+ 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
+ 		zfcp_erp_action_dismiss(&port->erp_action);
+-	else
+-		shost_for_each_device(sdev, port->adapter->scsi_host)
++	else {
++		spin_lock(port->adapter->scsi_host->host_lock);
++		__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 			if (sdev_to_zfcp(sdev)->port == port)
+ 				zfcp_erp_action_dismiss_lun(sdev);
++		spin_unlock(port->adapter->scsi_host->host_lock);
++	}
+ }
+ 
+ static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
+@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(str
+ {
+ 	struct scsi_device *sdev;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock(port->adapter->scsi_host->host_lock);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
++	spin_unlock(port->adapter->scsi_host->host_lock);
+ }
+ 
+ static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
+@@ -1435,8 +1440,10 @@ void zfcp_erp_set_adapter_status(struct
+ 		atomic_set_mask(common_mask, &port->status);
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host)
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host)
+ 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1470,11 +1477,13 @@ void zfcp_erp_clear_adapter_status(struc
+ 	}
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host) {
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host) {
+ 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
+ 		if (clear_counter)
+ 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
+ 	}
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1488,16 +1497,19 @@ void zfcp_erp_set_port_status(struct zfc
+ {
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
++	unsigned long flags;
+ 
+ 	atomic_set_mask(mask, &port->status);
+ 
+ 	if (!common_mask)
+ 		return;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			atomic_set_mask(common_mask,
+ 					&sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1512,6 +1524,7 @@ void zfcp_erp_clear_port_status(struct z
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
+ 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
++	unsigned long flags;
+ 
+ 	atomic_clear_mask(mask, &port->status);
+ 
+@@ -1521,13 +1534,15 @@ void zfcp_erp_clear_port_status(struct z
+ 	if (clear_counter)
+ 		atomic_set(&port->erp_counter, 0);
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port) {
+ 			atomic_clear_mask(common_mask,
+ 					  &sdev_to_zfcp(sdev)->status);
+ 			if (clear_counter)
+ 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
  		}
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
 
 
