@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3H0U3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 16:29:09 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45071 "EHLO
+	id S1754094Ab3H0U15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 16:27:57 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45044 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab3H0U16 (ORCPT
+	with ESMTP id S1753599Ab3H0U1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 16:27:58 -0400
+	Tue, 27 Aug 2013 16:27:52 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
@@ -14,11 +14,12 @@ Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v4 4/6] vhost/scsi: Add pre-allocation for tv_cmd SGL + upages memory
-Date: Tue, 27 Aug 2013 20:11:44 +0000
-Message-Id: <1377634306-13981-5-git-send-email-nab@linux-iscsi.org>
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: [PATCH-v4 1/6] idr: Percpu ida
+Date: Tue, 27 Aug 2013 20:11:41 +0000
+Message-Id: <1377634306-13981-2-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
 References: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
@@ -26,249 +27,447 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Kent Overstreet <kmo@daterainc.com>
 
-This patch adds support for pre-allocation of per tv_cmd descriptor
-scatterlist + user-space page pointer memory using se_sess->sess_cmd_map
-within tcm_vhost_make_nexus() code.
+Percpu frontend for allocating ids. With percpu allocation (that works),
+it's impossible to guarantee it will always be possible to allocate all
+nr_tags - typically, some will be stuck on a remote percpu freelist
+where the current job can't get to them.
 
-This includes sanity checks within vhost_scsi_map_to_sgl()
-to reject I/O that exceeds these initial hardcoded values, and
-the necessary cleanup in tcm_vhost_make_nexus() failure path +
-tcm_vhost_drop_nexus().
+We do guarantee that it will always be possible to allocate at least
+(nr_tags / 2) tags - this is done by keeping track of which and how many
+cpus have tags on their percpu freelists. On allocation failure if
+enough cpus have tags that there could potentially be (nr_tags / 2) tags
+stuck on remote percpu freelists, we then pick a remote cpu at random to
+steal from.
 
-v3 changes:
-  - Rebase to v3.11-rc5 code
+Note that there's no cpu hotplug notifier - we don't care, because
+steal_tags() will eventually get the down cpu's tags. We _could_ satisfy
+more allocations if we had a notifier - but we'll still meet our
+guarantees and it's absolutely not a correctness issue, so I don't think
+it's worth the extra code.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
+v4 changes:
+
+  - Fix tags.c reference in percpu_ida_init (akpm)
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/vhost/scsi.c |   99 ++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 80 insertions(+), 19 deletions(-)
+ include/linux/idr.h |   53 +++++++++
+ lib/idr.c           |  316 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 361 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index af178b7..8e8788e 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -56,6 +56,8 @@
- #define TCM_VHOST_NAMELEN 256
- #define TCM_VHOST_MAX_CDB_SIZE 32
- #define TCM_VHOST_DEFAULT_TAGS 256
-+#define TCM_VHOST_PREALLOC_SGLS 2048
-+#define TCM_VHOST_PREALLOC_PAGES 2048
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 871a213..f0db12b 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -16,6 +16,8 @@
+ #include <linux/bitops.h>
+ #include <linux/init.h>
+ #include <linux/rcupdate.h>
++#include <linux/spinlock_types.h>
++#include <linux/wait.h>
  
- struct vhost_scsi_inflight {
- 	/* Wait for the flush operation to finish */
-@@ -81,6 +83,7 @@ struct tcm_vhost_cmd {
- 	u32 tvc_lun;
- 	/* Pointer to the SGL formatted memory from virtio-scsi */
- 	struct scatterlist *tvc_sgl;
-+	struct page **tvc_upages;
- 	/* Pointer to response */
- 	struct virtio_scsi_cmd_resp __user *tvc_resp;
- 	/* Pointer to vhost_scsi for our device */
-@@ -458,8 +461,6 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
- 		u32 i;
- 		for (i = 0; i < tv_cmd->tvc_sgl_count; i++)
- 			put_page(sg_page(&tv_cmd->tvc_sgl[i]));
--
--		kfree(tv_cmd->tvc_sgl);
-         }
+ /*
+  * We want shallower trees and thus more bits covered at each layer.  8
+@@ -243,4 +245,55 @@ static inline int ida_get_new(struct ida *ida, int *p_id)
  
- 	tcm_vhost_put_inflight(tv_cmd->inflight);
-@@ -716,6 +717,8 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
- 	struct tcm_vhost_cmd *cmd;
- 	struct tcm_vhost_nexus *tv_nexus;
- 	struct se_session *se_sess;
-+	struct scatterlist *sg;
-+	struct page **pages;
- 	int tag;
+ void __init idr_init_cache(void);
  
- 	tv_nexus = tpg->tpg_nexus;
-@@ -727,8 +730,12 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
- 
- 	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_KERNEL);
- 	cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[tag];
-+	sg = cmd->tvc_sgl;
-+	pages = cmd->tvc_upages;
- 	memset(cmd, 0, sizeof(struct tcm_vhost_cmd));
- 
-+	cmd->tvc_sgl = sg;
-+	cmd->tvc_upages = pages;
- 	cmd->tvc_se_cmd.map_tag = tag;
- 	cmd->tvc_tag = v_req->tag;
- 	cmd->tvc_task_attr = v_req->task_attr;
-@@ -746,7 +753,8 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
-  * Returns the number of scatterlist entries used or -errno on error.
++/* Percpu IDA/tag allocator */
++
++struct percpu_ida_cpu;
++
++struct percpu_ida {
++	/*
++	 * number of tags available to be allocated, as passed to
++	 * percpu_ida_init()
++	 */
++	unsigned			nr_tags;
++
++	struct percpu_ida_cpu __percpu	*tag_cpu;
++
++	/*
++	 * Bitmap of cpus that (may) have tags on their percpu freelists:
++	 * steal_tags() uses this to decide when to steal tags, and which cpus
++	 * to try stealing from.
++	 *
++	 * It's ok for a freelist to be empty when its bit is set - steal_tags()
++	 * will just keep looking - but the bitmap _must_ be set whenever a
++	 * percpu freelist does have tags.
++	 */
++	unsigned long			*cpus_have_tags;
++
++	struct {
++		spinlock_t		lock;
++		/*
++		 * When we go to steal tags from another cpu (see steal_tags()),
++		 * we want to pick a cpu at random. Cycling through them every
++		 * time we steal is a bit easier and more or less equivalent:
++		 */
++		unsigned		cpu_last_stolen;
++
++		/* For sleeping on allocation failure */
++		wait_queue_head_t	wait;
++
++		/*
++		 * Global freelist - it's a stack where nr_free points to the
++		 * top
++		 */
++		unsigned		nr_free;
++		unsigned		*freelist;
++	} ____cacheline_aligned_in_smp;
++};
++
++int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
++void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
++
++void percpu_ida_destroy(struct percpu_ida *pool);
++int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags);
++
+ #endif /* __IDR_H__ */
+diff --git a/lib/idr.c b/lib/idr.c
+index bfe4db4..5fb347d 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -26,17 +26,20 @@
+  * with the slab allocator.
   */
- static int
--vhost_scsi_map_to_sgl(struct scatterlist *sgl,
-+vhost_scsi_map_to_sgl(struct tcm_vhost_cmd *tv_cmd,
-+		      struct scatterlist *sgl,
- 		      unsigned int sgl_count,
- 		      struct iovec *iov,
- 		      int write)
-@@ -758,13 +766,25 @@ vhost_scsi_map_to_sgl(struct scatterlist *sgl,
- 	struct page **pages;
- 	int ret, i;
  
-+	if (sgl_count > TCM_VHOST_PREALLOC_SGLS) {
-+		pr_err("vhost_scsi_map_to_sgl() psgl_count: %u greater than"
-+		       " preallocated TCM_VHOST_PREALLOC_SGLS: %u\n",
-+			sgl_count, TCM_VHOST_PREALLOC_SGLS);
-+		return -ENOBUFS;
-+	}
-+
- 	pages_nr = iov_num_pages(iov);
- 	if (pages_nr > sgl_count)
- 		return -ENOBUFS;
+-#ifndef TEST                        // to test in user space...
+-#include <linux/slab.h>
+-#include <linux/init.h>
+-#include <linux/export.h>
+-#endif
++#include <linux/bitmap.h>
++#include <linux/bitops.h>
++#include <linux/bug.h>
+ #include <linux/err.h>
+-#include <linux/string.h>
++#include <linux/export.h>
++#include <linux/hardirq.h>
+ #include <linux/idr.h>
+-#include <linux/spinlock.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
+ #include <linux/percpu.h>
+-#include <linux/hardirq.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/spinlock.h>
  
--	pages = kmalloc(pages_nr * sizeof(struct page *), GFP_KERNEL);
--	if (!pages)
--		return -ENOMEM;
-+	if (pages_nr > TCM_VHOST_PREALLOC_PAGES) {
-+		pr_err("vhost_scsi_map_to_sgl() pages_nr: %u greater than"
-+		       " preallocated TCM_VHOST_PREALLOC_PAGES: %u\n",
-+			pages_nr, TCM_VHOST_PREALLOC_PAGES);
-+		return -ENOBUFS;
-+	}
-+
-+	pages = tv_cmd->tvc_upages;
+ #define MAX_IDR_SHIFT		(sizeof(int) * 8 - 1)
+ #define MAX_IDR_BIT		(1U << MAX_IDR_SHIFT)
+@@ -1159,3 +1162,300 @@ void ida_init(struct ida *ida)
  
- 	ret = get_user_pages_fast((unsigned long)ptr, pages_nr, write, pages);
- 	/* No pages were pinned */
-@@ -789,7 +809,6 @@ vhost_scsi_map_to_sgl(struct scatterlist *sgl,
- 	}
- 
- out:
--	kfree(pages);
- 	return ret;
  }
- 
-@@ -813,24 +832,20 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
- 
- 	/* TODO overflow checking */
- 
--	sg = kmalloc(sizeof(cmd->tvc_sgl[0]) * sgl_count, GFP_ATOMIC);
--	if (!sg)
--		return -ENOMEM;
--	pr_debug("%s sg %p sgl_count %u is_err %d\n", __func__,
--	       sg, sgl_count, !sg);
-+	sg = cmd->tvc_sgl;
-+	pr_debug("%s sg %p sgl_count %u\n", __func__, sg, sgl_count);
- 	sg_init_table(sg, sgl_count);
- 
--	cmd->tvc_sgl = sg;
- 	cmd->tvc_sgl_count = sgl_count;
- 
- 	pr_debug("Mapping %u iovecs for %u pages\n", niov, sgl_count);
- 	for (i = 0; i < niov; i++) {
--		ret = vhost_scsi_map_to_sgl(sg, sgl_count, &iov[i], write);
-+		ret = vhost_scsi_map_to_sgl(cmd, sg, sgl_count, &iov[i],
-+					    write);
- 		if (ret < 0) {
- 			for (i = 0; i < cmd->tvc_sgl_count; i++)
- 				put_page(sg_page(&cmd->tvc_sgl[i]));
--			kfree(cmd->tvc_sgl);
--			cmd->tvc_sgl = NULL;
+ EXPORT_SYMBOL(ida_init);
 +
- 			cmd->tvc_sgl_count = 0;
- 			return ret;
- 		}
-@@ -1660,11 +1675,31 @@ static void tcm_vhost_drop_nodeacl(struct se_node_acl *se_acl)
- 	kfree(nacl);
- }
- 
-+static void tcm_vhost_free_cmd_map_res(struct tcm_vhost_nexus *nexus,
-+				       struct se_session *se_sess)
++/* Percpu IDA */
++
++/*
++ * Number of tags we move between the percpu freelist and the global freelist at
++ * a time
++ */
++#define IDA_PCPU_BATCH_MOVE	32U
++
++/* Max size of percpu freelist, */
++#define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
++
++struct percpu_ida_cpu {
++	spinlock_t			lock;
++	unsigned			nr_free;
++	unsigned			freelist[];
++};
++
++static inline void move_tags(unsigned *dst, unsigned *dst_nr,
++			     unsigned *src, unsigned *src_nr,
++			     unsigned nr)
 +{
-+	struct tcm_vhost_cmd *tv_cmd;
-+	unsigned int i;
++	*src_nr -= nr;
++	memcpy(dst + *dst_nr, src + *src_nr, sizeof(unsigned) * nr);
++	*dst_nr += nr;
++}
 +
-+	if (!se_sess->sess_cmd_map)
-+		return;
++/*
++ * Try to steal tags from a remote cpu's percpu freelist.
++ *
++ * We first check how many percpu freelists have tags - we don't steal tags
++ * unless enough percpu freelists have tags on them that it's possible more than
++ * half the total tags could be stuck on remote percpu freelists.
++ *
++ * Then we iterate through the cpus until we find some tags - we don't attempt
++ * to find the "best" cpu to steal from, to keep cacheline bouncing to a
++ * minimum.
++ */
++static inline void steal_tags(struct percpu_ida *pool,
++			      struct percpu_ida_cpu *tags)
++{
++	unsigned cpus_have_tags, cpu = pool->cpu_last_stolen;
++	struct percpu_ida_cpu *remote;
 +
-+	for (i = 0; i < TCM_VHOST_DEFAULT_TAGS; i++) {
-+		tv_cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[i];
++	for (cpus_have_tags = bitmap_weight(pool->cpus_have_tags, nr_cpu_ids);
++	     cpus_have_tags * IDA_PCPU_SIZE > pool->nr_tags / 2;
++	     cpus_have_tags--) {
++		cpu = find_next_bit(pool->cpus_have_tags, nr_cpu_ids, cpu);
 +
-+		kfree(tv_cmd->tvc_sgl);
-+		kfree(tv_cmd->tvc_upages);
++		if (cpu == nr_cpu_ids)
++			cpu = find_first_bit(pool->cpus_have_tags, nr_cpu_ids);
++
++		if (cpu == nr_cpu_ids)
++			BUG();
++
++		pool->cpu_last_stolen = cpu;
++		remote = per_cpu_ptr(pool->tag_cpu, cpu);
++
++		clear_bit(cpu, pool->cpus_have_tags);
++
++		if (remote == tags)
++			continue;
++
++		spin_lock(&remote->lock);
++
++		if (remote->nr_free) {
++			memcpy(tags->freelist,
++			       remote->freelist,
++			       sizeof(unsigned) * remote->nr_free);
++
++			tags->nr_free = remote->nr_free;
++			remote->nr_free = 0;
++		}
++
++		spin_unlock(&remote->lock);
++
++		if (tags->nr_free)
++			break;
 +	}
 +}
 +
- static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 				const char *name)
- {
- 	struct se_portal_group *se_tpg;
-+	struct se_session *se_sess;
- 	struct tcm_vhost_nexus *tv_nexus;
-+	struct tcm_vhost_cmd *tv_cmd;
-+	unsigned int i;
- 
- 	mutex_lock(&tpg->tv_tpg_mutex);
- 	if (tpg->tpg_nexus) {
-@@ -1692,6 +1727,26 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 		kfree(tv_nexus);
- 		return -ENOMEM;
- 	}
-+	se_sess = tv_nexus->tvn_se_sess;
-+	for (i = 0; i < TCM_VHOST_DEFAULT_TAGS; i++) {
-+		tv_cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[i];
++static inline void alloc_global_tags(struct percpu_ida *pool,
++				     struct percpu_ida_cpu *tags)
++{
++	move_tags(tags->freelist, &tags->nr_free,
++		  pool->freelist, &pool->nr_free,
++		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
++}
 +
-+		tv_cmd->tvc_sgl = kzalloc(sizeof(struct scatterlist) *
-+					TCM_VHOST_PREALLOC_SGLS, GFP_KERNEL);
-+		if (!tv_cmd->tvc_sgl) {
-+			mutex_unlock(&tpg->tv_tpg_mutex);
-+			pr_err("Unable to allocate tv_cmd->tvc_sgl\n");
-+			goto out;
-+		}
++static inline unsigned alloc_local_tag(struct percpu_ida *pool,
++				       struct percpu_ida_cpu *tags)
++{
++	int tag = -ENOSPC;
 +
-+		tv_cmd->tvc_upages = kzalloc(sizeof(struct page *) *
-+					TCM_VHOST_PREALLOC_PAGES, GFP_KERNEL);
-+		if (!tv_cmd->tvc_upages) {
-+			mutex_unlock(&tpg->tv_tpg_mutex);
-+			pr_err("Unable to allocate tv_cmd->tvc_upages\n");
-+			goto out;
-+		}
++	spin_lock(&tags->lock);
++	if (tags->nr_free)
++		tag = tags->freelist[--tags->nr_free];
++	spin_unlock(&tags->lock);
++
++	return tag;
++}
++
++/**
++ * percpu_ida_alloc - allocate a tag
++ * @pool: pool to allocate from
++ * @gfp: gfp flags
++ *
++ * Returns a tag - an integer in the range [0..nr_tags) (passed to
++ * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
++ *
++ * Safe to be called from interrupt context (assuming it isn't passed
++ * __GFP_WAIT, of course).
++ *
++ * Will not fail if passed __GFP_WAIT.
++ */
++int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
++{
++	DEFINE_WAIT(wait);
++	struct percpu_ida_cpu *tags;
++	unsigned long flags;
++	int tag;
++
++	local_irq_save(flags);
++	tags = this_cpu_ptr(pool->tag_cpu);
++
++	/* Fastpath */
++	tag = alloc_local_tag(pool, tags);
++	if (likely(tag >= 0)) {
++		local_irq_restore(flags);
++		return tag;
 +	}
- 	/*
- 	 * Since we are running in 'demo mode' this call with generate a
- 	 * struct se_node_acl for the tcm_vhost struct se_portal_group with
-@@ -1703,9 +1758,7 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 		mutex_unlock(&tpg->tv_tpg_mutex);
- 		pr_debug("core_tpg_check_initiator_node_acl() failed"
- 				" for %s\n", name);
--		transport_free_session(tv_nexus->tvn_se_sess);
--		kfree(tv_nexus);
--		return -ENOMEM;
-+		goto out;
- 	}
- 	/*
- 	 * Now register the TCM vhost virtual I_T Nexus as active with the
-@@ -1717,6 +1770,12 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 
- 	mutex_unlock(&tpg->tv_tpg_mutex);
- 	return 0;
 +
-+out:
-+	tcm_vhost_free_cmd_map_res(tv_nexus, se_sess);
-+	transport_free_session(se_sess);
-+	kfree(tv_nexus);
++	while (1) {
++		spin_lock(&pool->lock);
++
++		/*
++		 * prepare_to_wait() must come before steal_tags(), in case
++		 * percpu_ida_free() on another cpu flips a bit in
++		 * cpus_have_tags
++		 *
++		 * global lock held and irqs disabled, don't need percpu lock
++		 */
++		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
++
++		if (!tags->nr_free)
++			alloc_global_tags(pool, tags);
++		if (!tags->nr_free)
++			steal_tags(pool, tags);
++
++		if (tags->nr_free) {
++			tag = tags->freelist[--tags->nr_free];
++			if (tags->nr_free)
++				set_bit(smp_processor_id(),
++					pool->cpus_have_tags);
++		}
++
++		spin_unlock(&pool->lock);
++		local_irq_restore(flags);
++
++		if (tag >= 0 || !(gfp & __GFP_WAIT))
++			break;
++
++		schedule();
++
++		local_irq_save(flags);
++		tags = this_cpu_ptr(pool->tag_cpu);
++	}
++
++	finish_wait(&pool->wait, &wait);
++	return tag;
++}
++EXPORT_SYMBOL_GPL(percpu_ida_alloc);
++
++/**
++ * percpu_ida_free - free a tag
++ * @pool: pool @tag was allocated from
++ * @tag: a tag previously allocated with percpu_ida_alloc()
++ *
++ * Safe to be called from interrupt context.
++ */
++void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
++{
++	struct percpu_ida_cpu *tags;
++	unsigned long flags;
++	unsigned nr_free;
++
++	BUG_ON(tag >= pool->nr_tags);
++
++	local_irq_save(flags);
++	tags = this_cpu_ptr(pool->tag_cpu);
++
++	spin_lock(&tags->lock);
++	tags->freelist[tags->nr_free++] = tag;
++
++	nr_free = tags->nr_free;
++	spin_unlock(&tags->lock);
++
++	if (nr_free == 1) {
++		set_bit(smp_processor_id(),
++			pool->cpus_have_tags);
++		wake_up(&pool->wait);
++	}
++
++	if (nr_free == IDA_PCPU_SIZE) {
++		spin_lock(&pool->lock);
++
++		/*
++		 * Global lock held and irqs disabled, don't need percpu
++		 * lock
++		 */
++		if (tags->nr_free == IDA_PCPU_SIZE) {
++			move_tags(pool->freelist, &pool->nr_free,
++				  tags->freelist, &tags->nr_free,
++				  IDA_PCPU_BATCH_MOVE);
++
++			wake_up(&pool->wait);
++		}
++		spin_unlock(&pool->lock);
++	}
++
++	local_irq_restore(flags);
++}
++EXPORT_SYMBOL_GPL(percpu_ida_free);
++
++/**
++ * percpu_ida_destroy - release a tag pool's resources
++ * @pool: pool to free
++ *
++ * Frees the resources allocated by percpu_ida_init().
++ */
++void percpu_ida_destroy(struct percpu_ida *pool)
++{
++	free_percpu(pool->tag_cpu);
++	kfree(pool->cpus_have_tags);
++	free_pages((unsigned long) pool->freelist,
++		   get_order(pool->nr_tags * sizeof(unsigned)));
++}
++EXPORT_SYMBOL_GPL(percpu_ida_destroy);
++
++/**
++ * percpu_ida_init - initialize a percpu tag pool
++ * @pool: pool to initialize
++ * @nr_tags: number of tags that will be available for allocation
++ *
++ * Initializes @pool so that it can be used to allocate tags - integers in the
++ * range [0, nr_tags). Typically, they'll be used by driver code to refer to a
++ * preallocated array of tag structures.
++ *
++ * Allocation is percpu, but sharding is limited by nr_tags - for best
++ * performance, the workload should not span more cpus than nr_tags / 128.
++ */
++int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
++{
++	unsigned i, cpu, order;
++
++	memset(pool, 0, sizeof(*pool));
++
++	init_waitqueue_head(&pool->wait);
++	spin_lock_init(&pool->lock);
++	pool->nr_tags = nr_tags;
++
++	/* Guard against overflow */
++	if (nr_tags > (unsigned) INT_MAX + 1) {
++		pr_err("percpu_ida_init: nr_tags too large\n");
++		return -EINVAL;
++	}
++
++	order = get_order(nr_tags * sizeof(unsigned));
++	pool->freelist = (void *) __get_free_pages(GFP_KERNEL, order);
++	if (!pool->freelist)
++		return -ENOMEM;
++
++	for (i = 0; i < nr_tags; i++)
++		pool->freelist[i] = i;
++
++	pool->nr_free = nr_tags;
++
++	pool->cpus_have_tags = kzalloc(BITS_TO_LONGS(nr_cpu_ids) *
++				       sizeof(unsigned long), GFP_KERNEL);
++	if (!pool->cpus_have_tags)
++		goto err;
++
++	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
++				       IDA_PCPU_SIZE * sizeof(unsigned),
++				       sizeof(unsigned));
++	if (!pool->tag_cpu)
++		goto err;
++
++	for_each_possible_cpu(cpu)
++		spin_lock_init(&per_cpu_ptr(pool->tag_cpu, cpu)->lock);
++
++	return 0;
++err:
++	percpu_ida_destroy(pool);
 +	return -ENOMEM;
- }
- 
- static int tcm_vhost_drop_nexus(struct tcm_vhost_tpg *tpg)
-@@ -1756,6 +1815,8 @@ static int tcm_vhost_drop_nexus(struct tcm_vhost_tpg *tpg)
- 	pr_debug("TCM_vhost_ConfigFS: Removing I_T Nexus to emulated"
- 		" %s Initiator Port: %s\n", tcm_vhost_dump_proto_id(tpg->tport),
- 		tv_nexus->tvn_se_sess->se_node_acl->initiatorname);
-+
-+	tcm_vhost_free_cmd_map_res(tv_nexus, se_sess);
- 	/*
- 	 * Release the SCSI I_T Nexus to the emulated vhost Target Port
- 	 */
++}
++EXPORT_SYMBOL_GPL(percpu_ida_init);
 -- 
 1.7.2.5
 
