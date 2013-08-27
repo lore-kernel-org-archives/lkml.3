@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3H0Vck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:32:40 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:52143 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3H0V2X (ORCPT
+	id S1754643Ab3H0VdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:33:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49486 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3H0VdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:28:23 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v2 04/16] ARM: highbank: remove custom .init_time hook
-Date: Tue, 27 Aug 2013 23:27:58 +0200
-Message-Id: <1377638890-371-5-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 27 Aug 2013 17:33:19 -0400
+Message-ID: <521D1B19.6080204@wwwdotorg.org>
+Date: Tue, 27 Aug 2013 15:33:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: boris brezillon <b.brezillon@overkiz.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
+ filter
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org> <521B89D1.6010902@overkiz.com> <521C2347.4080702@wwwdotorg.org> <521C4451.1060908@overkiz.com> <521C587E.6050706@atmel.com>
+In-Reply-To: <521C587E.6050706@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-remove custom .init_time hooks. Highbank clock provider need a reference
-to system registers, as a workaround current clk driver maps those
-independent of arch code now.
+On 08/27/2013 01:42 AM, Nicolas Ferre wrote:
+> On 27/08/2013 08:16, boris brezillon :
+>> On 27/08/2013 05:55, Stephen Warren wrote:
+>>> On 08/26/2013 11:01 AM, boris brezillon wrote:
+>>>> Hello Stephen,
+>>>>
+>>>> On 26/08/2013 18:50, Stephen Warren wrote:
+>>>>> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
+>>>>>> Add a new parameter to support deglitch filter configuration.
+>>>>>> A deglitch filter works like a debounce filter but with a smaller
+>>>>>> delay (nanoseconds).
+>>>>> Why not use the existing debounce property, just with a small delay
+>>>>> specified. It seems like that's exactly what the property is for?
+>>>> That's one of the question I asked in my cover letter :-)
+>>>>
+>>>> Indeed the at91 deglitch filter delay is not configurable and is
+>>>> statically
+>>>> assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
+>>>> The debounce property argument is currently expressed in usecs.
+>>>>
+>>>> This will result in always selecting the debounce filter (which is also
+>>>> available on at91 SoCs) over the deglitch filter.
+>>>>
+>>>> Could we add a flag in the deglitch argument to specify the delay unit
+>>>> (nsecs or usecs) ?
+>>> If the value is hard-coded in HW, why not use non-zero (or 1) to enable
+>>> and zero to disable?
+>>
+>> Indeed at91 pins support both deglitch and debounce filter and I have to
+>> choose
+>> between the two given the argument value (in usec).
+>>
+>> Here's what I can do:
+>>
+>> if (arg >= 1/2 * slowclock)    /* debounce case */
+>>       /* choose debounce filter and configure the delay
+>>           according to the given argument value */
+>> else                                          /* deglitch case */
+>>       /* choose deglitch filter */
+>>
+>>
+>> Slow clock is running at 32KHz which gives a 30 usec clock cycle.
+> 
+> I am not in favor for this kind of complicated heuristic. Deglitch and
+> Debounce filters are different features in at91 (even if they pursuit
+> the same goal). So I do prefer to let the user choose which feature is
+> preferred for his application and add a different flag.
+> 
+> 
+>>> (this kind of thing is why I'm not convinced that generic pinconf works
+>>> so well... What if we need psecs in the future?)
+>>
+>> Should I keep the at91 native pinconf binding and add the missing flags
+>> to this binding
+>> (OUTPUT configuration flags) ?
+>>
+>> This was another question I asked in my cover letter: wether or not the
+>> generic pinconf
+>> binding should be used.
+> 
+> The question is: how much this "generic" pinconf is... well... generic!
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
----
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-highbank/highbank.c |   23 +++++++----------------
- drivers/clk/clk-highbank.c        |   10 +++++++---
- 2 files changed, 14 insertions(+), 19 deletions(-)
+This is why I don't really like the concept of generic pinconf; it ends
+up being more: whoever defines something first imposes their SoCs'
+viewpoint on that feature/property, and then everything else is declared
+non-generic.
 
-diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
-index 8881579..fa36d14 100644
---- a/arch/arm/mach-highbank/highbank.c
-+++ b/arch/arm/mach-highbank/highbank.c
-@@ -27,7 +27,6 @@
- #include <linux/of_address.h>
- #include <linux/smp.h>
- #include <linux/amba/bus.h>
--#include <linux/clk-provider.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
-@@ -88,20 +87,6 @@ static void __init highbank_init_irq(void)
- #endif
- }
- 
--static void __init highbank_timer_init(void)
--{
--	struct device_node *np;
--
--	/* Map system registers */
--	np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
--	sregs_base = of_iomap(np, 0);
--	WARN_ON(!sregs_base);
--
--	of_clk_init(NULL);
--
--	clocksource_of_init();
--}
--
- static void highbank_power_off(void)
- {
- 	highbank_set_pwr_shutdown();
-@@ -160,6 +145,13 @@ static struct notifier_block highbank_platform_nb = {
- 
- static void __init highbank_init(void)
- {
-+	struct device_node *np;
-+
-+	/* Map system registers */
-+	np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
-+	sregs_base = of_iomap(np, 0);
-+	WARN_ON(!sregs_base);
-+
- 	pm_power_off = highbank_power_off;
- 	highbank_pm_init();
- 
-@@ -178,7 +170,6 @@ static const char *highbank_match[] __initconst = {
- DT_MACHINE_START(HIGHBANK, "Highbank")
- 	.smp		= smp_ops(highbank_smp_ops),
- 	.init_irq	= highbank_init_irq,
--	.init_time	= highbank_timer_init,
- 	.init_machine	= highbank_init,
- 	.dt_compat	= highbank_match,
- 	.restart	= highbank_restart,
-diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
-index 2e08cb0..2e7e9d9 100644
---- a/drivers/clk/clk-highbank.c
-+++ b/drivers/clk/clk-highbank.c
-@@ -20,8 +20,7 @@
- #include <linux/clk-provider.h>
- #include <linux/io.h>
- #include <linux/of.h>
--
--extern void __iomem *sregs_base;
-+#include <linux/of_address.h>
- 
- #define HB_PLL_LOCK_500		0x20000000
- #define HB_PLL_LOCK		0x10000000
-@@ -280,6 +279,7 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
- 	const char *clk_name = node->name;
- 	const char *parent_name;
- 	struct clk_init_data init;
-+	struct device_node *srnp;
- 	int rc;
- 
- 	rc = of_property_read_u32(node, "reg", &reg);
-@@ -290,7 +290,11 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
- 	if (WARN_ON(!hb_clk))
- 		return NULL;
- 
--	hb_clk->reg = sregs_base + reg;
-+	/* Map system registers */
-+	srnp = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
-+	hb_clk->reg = of_iomap(srnp, 0);
-+	BUG_ON(!hb_clk->reg);
-+	hb_clk->reg += reg;
- 
- 	of_property_read_string(node, "clock-output-names", &clk_name);
- 
--- 
-1.7.2.5
+In many cases, I think bindings will need to add SoC-specific properties
+beyond generic pinconf (or perhaps only use SoC-specific properties and
+ignore generic pinconf).
 
+In the case of deglitch here, perhaps that's the best answer.
