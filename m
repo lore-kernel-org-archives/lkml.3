@@ -1,69 +1,793 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3H0KR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 06:17:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52800 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab3H0KR2 (ORCPT
+	id S1753255Ab3H0KWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 06:22:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38300 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752318Ab3H0KWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 06:17:28 -0400
-Date: Tue, 27 Aug 2013 20:17:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the cgroup tree
-Message-Id: <20130827201716.528af63c96b66bb2446fc4b7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Aug_2013_20_17_16_+1000_UekfnnaPGZXSR4Aw"
+	Tue, 27 Aug 2013 06:22:10 -0400
+Date: Tue, 27 Aug 2013 11:22:05 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "wni@nvidia.com" <wni@nvidia.com>,
+        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 02/14] drivers: thermal: introduce device tree
+ parser
+Message-ID: <20130827102205.GC19893@e106331-lin.cambridge.arm.com>
+References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com>
+ <1377299755-5134-3-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377299755-5134-3-git-send-email-eduardo.valentin@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Aug_2013_20_17_16_+1000_UekfnnaPGZXSR4Aw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Tejun,
+On Sat, Aug 24, 2013 at 12:15:43AM +0100, Eduardo Valentin wrote:
+> In order to be able to build thermal policies
+> based on generic sensors, like I2C device, that
+> can be places in different points on different boards,
+> there is a need to have a way to feed board dependent
+> data into the thermal framework.
+> 
+> This patch introduces a thermal data parser for device
+> tree. The parsed data is used to build thermal zones
+> and thermal binding parameters. The output data
+> can then be used to deploy thermal policies.
+> 
+> This patch adds also documentation regarding this
+> API and how to define tree nodes to use
+> this infrastructure.
+> 
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  .../devicetree/bindings/thermal/thermal.txt        | 160 +++++++
+>  drivers/thermal/Kconfig                            |  13 +
+>  drivers/thermal/Makefile                           |   1 +
+>  drivers/thermal/thermal_dt.c                       | 473 +++++++++++++++++++++
+>  include/dt-bindings/thermal/thermal.h              |  27 ++
+>  include/linux/thermal.h                            |   3 +
+>  6 files changed, 677 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
+>  create mode 100644 drivers/thermal/thermal_dt.c
+>  create mode 100644 include/dt-bindings/thermal/thermal.h
+> 
+> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+> new file mode 100644
+> index 0000000..af20ab0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+> @@ -0,0 +1,160 @@
+> +----------------------------------------
+> +Thermal Framework Device Tree descriptor
+> +----------------------------------------
+> +
+> +This file describes how to define a thermal structure using device tree.
+> +A thermal structure includes thermal zones and their components, such
+> +as name, trip points, polling intervals and cooling devices binding
+> +descriptors. A binding descriptor may contain information on how to
+> +react, with a cooling stepped action or a weight on a fair share.
+> +The target of device tree thermal descriptors is to describe only
+> +the hardware thermal aspects, not how the system must control or which
+> +algorithm or policy must take place. It follows a description of each
+> +type of device tree node.
+> +
+> +****
+> +trip
+> +****
+> +
+> +The trip node is a node to describe a point in the temperature domain
+> +in which the system takes an action. This node describes just the point,
+> +not the action.
+> +
+> +A node describing a trip must contain:
+> +- temperature: the trip temperature level, in milliCelsius.
+> +- hysteresis: a (low) hysteresis value on 'temperature'. This is a relative
+> +value, in milliCelsius.
 
-After merging the cgroup tree, today's linux-next build (i386 defconfig)
-produced this warning:
+Presumably this is a single (u32) cell?
 
-kernel/cgroup.c: In function 'css_from_id':
-kernel/cgroup.c:5723:3: warning: passing argument 2 of 'cgroup_css' makes p=
-ointer from integer without a cast [enabled by default]
-kernel/cgroup.c:237:36: note: expected 'struct cgroup_subsys *' but argumen=
-t is of type 'int'
+> +- type: the trip type. Here is the type mapping:
+> +       THERMAL_TRIP_ACTIVE
+> +       THERMAL_TRIP_PASSIVE
+> +       THERMAL_TRIP_HOT
+> +       THERMAL_TRIP_CRITICAL
 
-Introduced by commit ca8bdcaff0d7 ("cgroup: make cgroup_css() take
-cgroup_subsys * instead and allow NULL subsys").
+What type is this property?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+What are these values? Do you need to refer to a header somewhere?
+Symbolic constants should have an associated value for an ABI.
 
---Signature=_Tue__27_Aug_2013_20_17_16_+1000_UekfnnaPGZXSR4Aw
-Content-Type: application/pgp-signature
+> +
+> +**********
+> +bind_param
+> +**********
+> +
+> +The bind_param node is a node to describe how cooling devices get assigned
+> +to trip points of the zone. The cooling devices are expected to be loaded
+> +in the target system.
+> +
+> +A node describing a bind_param must contain:
+> +- cooling_device: A string with the cooling device name.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Please use '-' rather than '_' in bindings. That's the normal devicetree
+convention, and there's no point gonig against it and causing more
+confusion.
 
-iQIcBAEBCAAGBQJSHHywAAoJEECxmPOUX5FE3FkQAKXwiIkYSNqui8B+5Enj7rAD
-Y3p9reaCL+Ug8ppDdThjdPcthVoSAw3FPgqH1bgDqqI34SfY3IEjF8bwEUnPqCr4
-jkqMvtFKCgvWTOfO7TASGmVr4/8X1oz8BbzVZY5tzCccxLgthbjdhU+2Sleb7KW0
-6x1LRVMGJPbiqU8wvvUZsEfuYuQlK9IKlJieKW8FjDenzWnRhWNePSGD/Yw/9uYC
-PxpQJgm5DVrgV3FK8wVWLSxCXpEOSDokeCtmEuhbbUe6jBAfiWDzLdcmZE3nVxiE
-X2MssBX9eQ1f4kBGGm12H8IuZrrevsX1c817rzYvGCM1vB2cQLq5wLgOdHcv2A3S
-CImdlEheoa3J3ukpndra4exaxygqgXeJQpxptVYYZVlqg3SrQLr4+5160dFTaStd
-eZU6TtM/QJmHDghjL19W6Hkx4/4OyK1fRlqr5OBdo+YCfU4ctZg+i14/8akAJuW6
-z9RzjXWK/se80QDVsj9JVn+kjexC8ZVsEFs98HbobuH7AbBcKEramZikZUB+U9Bb
-YPo/ROP8JHhCiYa4V0KN3ZYekauth5U+2sf3Ld6uOa5Rv5bZILMSiK0FdIS/AhuH
-H9O7WFx0NEaRLN+e5RKeCAc8v/y3ORlQXhAsKk+uW4EfWAQNtsveXlwp03e5r2VT
-/stjoZEN9tJVVlMe1wVc
-=LDOS
------END PGP SIGNATURE-----
+What are valid values of this string, and what do they mean?
 
---Signature=_Tue__27_Aug_2013_20_17_16_+1000_UekfnnaPGZXSR4Aw--
+Why not a phandle + cells binding to cooling devices?
+
+> +- weight: The 'influence' of a particular cooling device on this zone.
+> +             This is on a percentage scale. The sum of all these weights
+> +             (for a particular zone) cannot exceed 100.
+
+This is a bit fuzzy, and certainly needs more guidance.
+
+> +- trip_mask: This is a bit mask that gives the binding relation between
+> +               this thermal zone and cdev, for a particular trip point.
+> +               If nth bit is set, then the cdev and thermal zone are bound
+> +               for trip point n.
+
+What type is this?
+
+The nth bit from which end?
+
+Could you explain what "bound for trip point n" means?
+
+Just because this is a bitmask in Linux does not mean it needs to be so
+in the dt.
+
+> +- limits: An array integers consisting of 2-tuples items, and each item means
+> +  lower and upper state limits, like <min-state max-state>.
+> +
+> +**************************
+> +temperature sensor devices
+> +**************************
+> +
+> +Temperature sensor devices have to be linked to a specific thermal zone.
+> +This is done by means of the 'monitored-zones' list.
+> +- monitored-zones: A list of thermal zones phandles, identifying which
+> +thermal zones the temperature sensor device is used to monitor.
+
+Why does this need to be described that way around?
+
+Can the zone not have a link to the sensor(s) it needs?
+
+> +
+> +************
+> +thermal_zone
+> +************
+> +
+> +The thermal_zone node is the node containing all the required info
+> +for describing a thermal zone, including its cdev bindings. The thermal_zone
+> +node must contain, apart from its own properties, one node containing
+> +trip nodes and one node containing all the zone bind parameters.
+> +
+> +Required properties:
+> +- mask: Bit string: If 'n'th bit is set, then trip point 'n' is writeable.
+
+What type is a bit string in devicetree? I'm aware of cells and (byte)
+strings, but not bit strings.
+
+What does 'writeable' mean in this context?
+
+There's presumably a better name than 'mask'.
+
+> +
+> +- passive_delay: number of milliseconds to wait between polls when
+> +  performing passive cooling.
+> +
+> +- polling_delay: number of milliseconds to wait between polls when checking.
+
+These sound very much like configuration of the driver rather than
+hardware description. What if my temperature sensor can generate an
+interrupt at some trigger temperature? Why would I need polling times?
+
+Why does this need to be in the dt at all? Surely the OS can choose some
+sensible polling period, possibly dynamically?
+
+> +
+> +- #thermal-cells: An integer that is used to specify how many cells compose
+> +  sensor ids.
+
+I don't see why this is necessary. If the zone itself described its
+related sensors rather than the other way around, we wouldn't need it at
+all. Most bindings so far have consumers link to their providers rather
+than the other way around.
+
+> +
+> +Below is an example:
+> +cpu_thermal: thermal_zone {
+> +            #thermal-cells = <1>;
+> +            mask = <0x03>; /* trips writability */
+> +            passive_delay = <250>; /* milliseconds */
+> +            polling_delay = <1000>; /* milliseconds */
+> +            trips {
+> +                    alert@100000{
+> +                            temperature = <100000>; /* milliCelsius */
+> +                            hysteresis = <0>; /* milliCelsius */
+> +                            type = <THERMAL_TRIP_PASSIVE>;
+> +                    };
+> +                    crit@125000{
+> +                            temperature = <125000>; /* milliCelsius */
+> +                            hysteresis = <0>; /* milliCelsius */
+> +                            type = <THERMAL_TRIP_CRITICAL>;
+> +                    };
+> +            };
+> +            bind_params {
+> +                    action@0{
+> +                            cooling_device = "thermal-cpufreq";
+
+NAK. That value was not defined anywhere, and represents Linux
+infrastructure rather than hardware.
+
+For this case, we could just as easily describe the thermal points, and
+if no physical cooling device (e.g. a fan) is present, assume
+cpufreq-base cooling.  Other OSs could choose to do otherwise, and we
+could change later...
+
+> +                            weight = <100>; /* percentage */
+> +                            mask = <0x01>;
+
+This should presumably be trip-mask (assuming my suggested corrections).
+
+What is it supposed to mean here?
+
+> +                           limits = <
+> +                             /* lower-state            upper-state */
+> +                               1                       THERMAL_NO_LIMITS
+> +                               THERMAL_NO_LIMITS       THERMAL_NO_LIMITS
+> +                           >;
+> +                    };
+> +            };
+> +};
+> +
+> +sensor: adc@0xFFFF {
+> +       ...
+> +       monitored-zones = <&cpu_thermal 0>;
+> +};
+> +
+> +cpu@0 {
+> +       ...
+> +       cooling-zones = <&cpu_thermal>;
+> +};
+> +
+> +In the example above, the ADC sensor at address 0xFFFF is used to monitor
+> +the zone 'cpu_thermal' using its the sensor 0. The cpu@0 device is also linked
+> +to the same thermal zone 'cpu_thermal' as a cooling device.
+
+Huh? That seems to imply the the '0' in '<&cpu_thermal 0>' on the sensor
+node describes a property of the sensor rather than the thermal node,
+unless I've misunderstood?
+
+> +
+> +***************
+> +cpufreq-cooling
+> +***************
+> +
+> +The generic cpu cooling (freq clipping) can be loaded by the
+> +generic cpufreq-cpu0 driver in case the device tree node informs
+> +this need.
+> +
+> +In order to load the cpufreq cooling device, it is possible to
+> +inform that the cpu needs cooling by adding the list of thermal zones
+> +in the 'cooling-zones' property at the cpu0 phandle.
+
+This should be reworded so as to describe the binding rather than the
+Linux behaviour based on the binding.
+
+> +
+> +Example:
+> +       cpus {
+> +               cpu@0 {
+> +                       operating-points = <
+> +                               /* kHz    uV */
+> +                               800000  1313000
+> +                               1008000 1375000
+> +                       >;
+> +                       cooling-zones = <&cpu_thermal>;
+> +               };
+> +       ...
+> +       };
+> +
+> +The above will cause the cpufreq-cpu0 driver to understand that
+> +the cpu will need passive cooling and while probing that node it will
+> +also load the cpufreq cpu cooling device in that system.
+
+The above describe that the CPU is part of a cooling (thermal?) zone and
+requires cooling.
+
+> +
+> +However, be advised that this flag will not describe what needs to
+> +be done or how the cpufreq cooling device will be used. In order to
+> +accomplish this, one needs to write a phandle for a thermal zone, as
+> +described in the section 'thermal_zone'.
+
+The above already has a phandle to a thermal (cooling?) zone.
+
+Please choose either cooling zone or thermal zone, having the two names
+makes this more confusing than necessary.
+
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 7fb16bc..753f0dc 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -29,6 +29,19 @@ config THERMAL_HWMON
+>           Say 'Y' here if you want all thermal sensors to
+>           have hwmon sysfs interface too.
+> 
+> +config THERMAL_OF
+> +       bool
+> +       prompt "APIs to parse thermal data out of device tree"
+> +       depends on OF
+> +       default y
+> +       help
+> +         This options provides helpers to add the support to
+> +         read and parse thermal data definitions out of the
+> +         device tree blob.
+> +
+> +         Say 'Y' here if you need to build thermal infrastructure
+> +         based on device tree.
+> +
+>  choice
+>         prompt "Default Thermal governor"
+>         default THERMAL_DEFAULT_GOV_STEP_WISE
+> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> index 24cb894..eedb273 100644
+> --- a/drivers/thermal/Makefile
+> +++ b/drivers/thermal/Makefile
+> @@ -7,6 +7,7 @@ thermal_sys-y                   += thermal_core.o
+> 
+>  # interface to/from other layers providing sensors
+>  thermal_sys-$(CONFIG_THERMAL_HWMON)            += thermal_hwmon.o
+> +thermal_sys-$(CONFIG_THERMAL_OF)               += thermal_dt.o
+> 
+>  # governors
+>  thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)   += fair_share.o
+> diff --git a/drivers/thermal/thermal_dt.c b/drivers/thermal/thermal_dt.c
+> new file mode 100644
+> index 0000000..cc35485
+> --- /dev/null
+> +++ b/drivers/thermal/thermal_dt.c
+> @@ -0,0 +1,473 @@
+> +/*
+> + *  thermal_dt.c - Generic Thermal Management device tree support.
+> + *
+> + *  Copyright (C) 2013 Texas Instruments
+> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + */
+> +#include <linux/thermal.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/err.h>
+> +#include <linux/export.h>
+> +#include <linux/string.h>
+> +
+> +struct __thermal_bind_params {
+> +       char cooling_device[THERMAL_NAME_LENGTH];
+> +};
+> +
+> +static
+> +int thermal_of_match(struct thermal_zone_device *tz,
+> +                    struct thermal_cooling_device *cdev);
+> +
+> +static int thermal_of_populate_bind_params(struct device *dev,
+> +                                          struct device_node *node,
+> +                                          struct __thermal_bind_params *__tbp,
+> +                                          struct thermal_bind_params *tbp,
+> +                                          int ntrips)
+> +{
+> +       const char *cdev_name;
+> +       u32 *limits;
+> +       int ret;
+> +       u32 prop;
+> +
+> +       ret = of_property_read_u32(node, "weight", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing weight property\n");
+> +               return ret;
+> +       }
+> +       tbp->weight = prop;
+> +
+> +       ret = of_property_read_u32(node, "mask", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing mask property\n");
+> +               return ret;
+> +       }
+> +       tbp->trip_mask = prop;
+> +
+> +       /* this will allow us to bind with cooling devices */
+> +       tbp->match = thermal_of_match;
+> +
+> +       ret = of_property_read_string(node, "cooling_device", &cdev_name);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing cooling_device property\n");
+> +               return ret;
+> +       }
+> +       strncpy(__tbp->cooling_device, cdev_name,
+> +               sizeof(__tbp->cooling_device));
+> +
+> +       limits = kzalloc(ntrips * sizeof(*limits) * 2, GFP_KERNEL);
+
+Why do you use kzalloc here, but devm_kzalloc elsewhere? That'll lead to
+problems as the driver gets refactored over time.
+
+> +       if (!limits) {
+> +               dev_err(dev, "not enough mem for reading limits\n");
+> +               return -ENOMEM;
+> +       }
+> +       ret = of_property_read_u32_array(node, "limits", limits, 2 * ntrips);
+> +       if (!ret) {
+> +               int i = ntrips;
+> +
+> +               tbp->binding_limits = devm_kzalloc(dev,
+> +                                                  ntrips * 2 *
+> +                                                  sizeof(*tbp->binding_limits),
+> +                                                  GFP_KERNEL);
+> +               if (!tbp->binding_limits) {
+> +                       dev_err(dev, "not enough mem for storing limits\n");
+> +                       return -ENOMEM;
+> +               }
+> +               while (i--)
+> +                       tbp->binding_limits[i] = limits[i];
+> +       }
+> +       kfree(limits);
+> +
+> +       return 0;
+
+What if you failed to read the array? Surely you should return an error?
+
+> +}
+> +
+> +struct __thermal_trip {
+> +       unsigned long int temperature;
+> +       unsigned long int hysteresis;
+> +       enum thermal_trip_type type;
+> +};
+> +
+> +static
+> +int thermal_of_populate_trip(struct device *dev,
+> +                            struct device_node *node,
+> +                            struct __thermal_trip *trip)
+> +{
+> +       int ret;
+> +       int prop;
+> +
+> +       ret = of_property_read_u32(node, "temperature", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing temperature property\n");
+> +               return ret;
+> +       }
+> +       trip->temperature = prop;
+> +
+> +       ret = of_property_read_u32(node, "hysteresis", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing hysteresis property\n");
+> +               return ret;
+> +       }
+> +       trip->hysteresis = prop;
+> +
+> +       ret = of_property_read_u32(node, "type", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing type property\n");
+> +               return ret;
+> +       }
+> +       trip->type = prop;
+
+This will require sanity checking.
+
+> +
+> +       return 0;
+> +}
+> +
+> +struct __thermal_zone_device {
+> +       enum thermal_device_mode mode;
+> +       int passive_delay;
+> +       int polling_delay;
+> +       int mask;
+> +       int ntrips;
+> +       char type[THERMAL_NAME_LENGTH];
+> +       struct __thermal_trip *trips;
+> +       struct __thermal_bind_params *bind_params;
+> +       struct thermal_bind_params *tbps;
+> +       struct thermal_zone_params zone_params;
+> +       int (*get_temp)(void *, unsigned long *);
+> +       void *devdata;
+> +};
+> +
+> +static struct __thermal_zone_device *
+> +thermal_of_build_thermal_zone(struct device *dev, struct device_node *node)
+> +{
+> +       struct device_node *child, *gchild;
+> +       struct __thermal_zone_device *tz;
+> +       int ret, i;
+> +       u32 prop;
+> +
+> +       if (!node) {
+> +               dev_err(dev, "no thermal zone node\n");
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       tz = devm_kzalloc(dev, sizeof(*tz), GFP_KERNEL);
+> +       if (!tz) {
+> +               dev_err(dev, "not enough memory for thermal of zone\n");
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       ret = of_property_read_u32(node, "passive_delay", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing passive_delay property\n");
+> +               return ERR_PTR(ret);
+> +       }
+> +       tz->passive_delay = prop;
+> +
+> +       ret = of_property_read_u32(node, "polling_delay", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing polling_delay property\n");
+> +               return ERR_PTR(ret);
+> +       }
+> +       tz->polling_delay = prop;
+> +
+> +       ret = of_property_read_u32(node, "mask", &prop);
+> +       if (ret < 0) {
+> +               dev_err(dev, "missing mask property\n");
+> +               return ERR_PTR(ret);
+> +       }
+> +       tz->mask = prop;
+> +
+> +       /* assume node name as our zone type */
+> +       strncpy(tz->type, node->name, sizeof(tz->type));
+> +
+> +       /* default policy */
+> +       strncpy(tz->zone_params.governor_name, "step_wise",
+> +               sizeof(tz->zone_params.governor_name));
+> +
+> +       /* trips */
+> +       child = of_find_node_by_name(node, "trips");
+
+That might not be a child node, as of_find_node_by_name walks over the
+list of all nodes. Use of_get_child_by_name.
+
+> +
+> +       /* No trips provided */
+> +       if (!child)
+> +               goto finish;
+> +
+> +       tz->ntrips = of_get_child_count(child);
+> +       tz->trips = devm_kzalloc(dev, tz->ntrips * sizeof(*tz->trips),
+> +                                GFP_KERNEL);
+> +       if (!tz->trips)
+> +               return ERR_PTR(-ENOMEM);
+> +       i = 0;
+> +       for_each_child_of_node(child, gchild)
+> +               thermal_of_populate_trip(dev, gchild, &tz->trips[i++]);
+
+What if a child node was not a valid trip node? It seems
+thermal_of_populate_trip returns errors you're ignoring.
+
+> +
+> +       /* bind_params */
+> +       child = of_find_node_by_name(node, "bind_params");
+
+Another of_get_child_by_name candidate.
+
+> +
+> +       /* No binding info */
+> +       if (!child)
+> +               goto finish;
+> +
+> +       tz->zone_params.num_tbps = of_get_child_count(child);
+> +       tz->bind_params = devm_kzalloc(dev,
+> +                                      tz->zone_params.num_tbps *
+> +                                               sizeof(*tz->bind_params),
+> +                                      GFP_KERNEL);
+> +       if (!tz->bind_params)
+> +               return ERR_PTR(-ENOMEM);
+> +       tz->zone_params.tbp = devm_kzalloc(dev,
+> +                                          tz->zone_params.num_tbps *
+> +                                               sizeof(*tz->zone_params.tbp),
+> +                                          GFP_KERNEL);
+> +       if (!tz->zone_params.tbp)
+> +               return ERR_PTR(-ENOMEM);
+> +       i = 0;
+> +       for_each_child_of_node(child, gchild) {
+> +               thermal_of_populate_bind_params(dev, gchild,
+> +                                               &tz->bind_params[i],
+> +                                               &tz->zone_params.tbp[i],
+> +                                               tz->ntrips);
+
+Similarly, you're ignoring error conditions here. What if a bind_params
+node was malformed?
+
+> +               i++;
+> +       }
+> +
+> +finish:
+> +       tz->mode = THERMAL_DEVICE_ENABLED;
+> +
+> +       return tz;
+> +}
+> +
+> +static
+> +int thermal_of_match(struct thermal_zone_device *tz,
+> +                    struct thermal_cooling_device *cdev)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +       int i;
+> +
+> +       for (i = 0; i < data->zone_params.num_tbps; i++) {
+> +               if (!strncmp(data->bind_params[i].cooling_device,
+> +                            cdev->type,
+> +                            strlen(data->bind_params[i].cooling_device)) &&
+> +                   (data->zone_params.tbp[i].trip_mask & (1 << i)))
+> +                       return 0;
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+
+I'm not keen on binding to cooling devices using a string, as suddenly a
+name to allow humans to inspect the system is turned into an ABI.
+
+> +
+> +static
+> +int of_thermal_get_temp(struct thermal_zone_device *tz,
+> +                       unsigned long *temp)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       return data->get_temp(data->devdata, temp);
+> +}
+> +
+> +static
+> +int of_thermal_get_mode(struct thermal_zone_device *tz,
+> +                       enum thermal_device_mode *mode)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       *mode = data->mode;
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_set_mode(struct thermal_zone_device *tz,
+> +                       enum thermal_device_mode mode)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       mutex_lock(&tz->lock);
+> +
+> +       if (mode == THERMAL_DEVICE_ENABLED)
+> +               tz->polling_delay = data->polling_delay;
+> +       else
+> +               tz->polling_delay = 0;
+> +
+> +       mutex_unlock(&tz->lock);
+> +
+> +       data->mode = mode;
+> +       thermal_zone_device_update(tz);
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_get_trip_type(struct thermal_zone_device *tz, int trip,
+> +                            enum thermal_trip_type *type)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       if (trip >= data->ntrips || trip < 0)
+> +               return -EDOM;
+
+It's far more common to use -EINVAL.
+
+> +
+> +       *type = data->trips[trip].type;
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_get_trip_temp(struct thermal_zone_device *tz, int trip,
+> +                            unsigned long *temp)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       if (trip >= data->ntrips || trip < 0)
+> +               return -EDOM;
+> +
+> +       *temp = data->trips[trip].temperature;
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_set_trip_temp(struct thermal_zone_device *tz, int trip,
+> +                            unsigned long temp)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       if (trip >= data->ntrips || trip < 0)
+> +               return -EDOM;
+> +
+> +       /* thermal fw should take care of data->mask & (1 << trip) */
+> +       data->trips[trip].temperature = temp;
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_get_trip_hyst(struct thermal_zone_device *tz, int trip,
+> +                            unsigned long *hyst)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       if (trip >= data->ntrips || trip < 0)
+> +               return -EDOM;
+> +
+> +       *hyst = data->trips[trip].hysteresis;
+> +
+> +       return 0;
+> +}
+> +
+> +static
+> +int of_thermal_set_trip_hyst(struct thermal_zone_device *tz, int trip,
+> +                            unsigned long hyst)
+> +{
+> +       struct __thermal_zone_device *data = tz->devdata;
+> +
+> +       if (trip >= data->ntrips || trip < 0)
+> +               return -EDOM;
+> +
+> +       /* thermal fw should take care of data->mask & (1 << trip) */
+
+Could you elaborate on that comment?
+
+> +       data->trips[trip].hysteresis = hyst;
+> +
+> +       return 0;
+> +}
+
+[...]
+
+Thanks,
+Mark.
