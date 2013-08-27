@@ -1,60 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3H0Stv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:49:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41957 "EHLO mail.zytor.com"
+	id S1753546Ab3H0SyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:54:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37577 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab3H0Stu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:49:50 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130827093454.GJ26909@phenom.ffwll.local>
-References: <1374870772-4592-1-git-send-email-jbarnes@virtuousgeek.org> <20130827093454.GJ26909@phenom.ffwll.local>
+	id S1752355Ab3H0SyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 14:54:06 -0400
+Date: Tue, 27 Aug 2013 13:53:29 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Felipe Balbi <balbi@ti.com>, Kumar Gala <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Message-ID: <20130827185329.GT3005@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+ <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
+ <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
+ <20130812180553.GD27954@radagast>
+ <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Intel-gfx] Updated stolen mem patches
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 27 Aug 2013 13:49:08 -0500
-To: Daniel Vetter <daniel@ffwll.ch>, Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, torvalds@linux-foundation.org, tglx@linutronix.de
-Message-ID: <52896c00-6711-4558-9754-e1bba1f81078@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HBIh8aIvd1vDZWkD"
+Content-Disposition: inline
+In-Reply-To: <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If noone hers to them first poke me tomorrow. On an aircraft right now.
+--HBIh8aIvd1vDZWkD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Daniel Vetter <daniel@ffwll.ch> wrote:
->On Fri, Jul 26, 2013 at 01:32:50PM -0700, Jesse Barnes wrote:
->> These address the comments I've received so far, but omit the new
->E820
->> type for this mem.
->> 
->> Chris's patches could go on top if desired; they add a new type and
->> resource reservation function for looking up regions by name.  That
->> allows us to remove some duplicate code in the driver for finding
->stolen
->> space.
->> 
->> But I think these two are ready as-is.  How should we merge them? 
->Just
->> through the i915 tree since the first one touches our headers?  that
->and
->> there probably won't be conflicts on the early-quirks file; that's
->not
->> touch too often...
->
->Just noticed that these patches aren't in -next yet - somehow I've
->thought
->they'd go in in through the x86 tree.
->
->Ingo et al: Should I merge these through drm-intel-next or will you
->pick
->them up?
->
->Thanks, Daniel
+Hi,
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+On Tue, Aug 13, 2013 at 02:34:10PM +0100, Mark Rutland wrote:
+> On Mon, Aug 12, 2013 at 07:05:53PM +0100, Felipe Balbi wrote:
+> > On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
+> > >=20
+> > > On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
+> > >=20
+> > > > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
+> > > >> The binding spec wasn't clear that the order of the phandles in the
+> > > >> usb-phy array has meaning.  Clarify this point in the binding that
+> > > >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
+> > > >>=20
+> > > >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> > > >> ---
+> > > >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
+> > > >> 1 file changed, 3 insertions(+), 1 deletion(-)
+> > > >>=20
+> > > >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Docu=
+mentation/devicetree/bindings/usb/dwc3.txt
+> > > >> index 7a95c65..8a9770b 100644
+> > > >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> > > >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> > > >> @@ -6,7 +6,9 @@ Required properties:
+> > > >>  - compatible: must be "synopsys,dwc3"
+> > > >>  - reg : Address and length of the register set for the device
+> > > >>  - interrupts: Interrupts used by the dwc3 controller.
+> > > >> - - usb-phy : array of phandle for the PHY device
+> > > >> + - usb-phy : array of phandle for the PHY device.  The first elem=
+ent
+> > > >> +   in the array is expected to be a handle to the USB2/HS PHY and
+> > > >> +   the second element is expected to be a handle to the USB3/SS P=
+HY
+> > > >=20
+> > > > Just to check - it's not valid to have a USB3 phy without a USB2 ph=
+y?
+> > >=20
+> > > Don't know, hopefully Felipe will chime in on that.
+> >=20
+> > that'd be a really non-standard implementation. Per-spec, USB3 is
+> > *always* backwards compatible with USB2.
+>=20
+> I'm slightly confused here. From a quick look at the driver, it expects
+> two separate phys to be present -- one handling only USB2, and one
+> handling USB3 (with USB2 backwards compatibility).
+>=20
+> So it's not physically possible for someone to just wire up a single phy
+> to the device, either USB2-only or USB3?
+
+of course it is :-) In fact, TI has done it. But it causes a whole bunch
+of other problems to support that sort of model. For one, in some
+systems, a clock generated by the USB3 PHY is backfed into the IP and if
+USB3 PHY isn't running, the dwc3 IP won't start.
+
+I even wrote a patch making USB3 PHY optional, but didn't push it
+exactly because it broke some other systems and I can't guarantee users
+won't mess up their DTS/pdata.
+
+> You can describe the USB2-only case in the dt by only listing the first
+> phy (though the driver won't support it as it expects both to be
+> present), but it's impossible to describe that you've wired up a single
+> phy that's USB3 capable.
+
+you might be right there...
+
+--=20
+balbi
+
+--HBIh8aIvd1vDZWkD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHPWpAAoJEIaOsuA1yqREyn8QALOcf71vhEBNM4k7VoHYQWWw
+15VgvCrbaYPu/iFinRGWI+FPOUoJQ+w/1DdAH+N80hEYKHcqg7w6PjbAzhW0hDQL
+LNyWaq0jl4N84aRghCngdObZc3WwZqwFb/wDHjxMWSA0fNdqs9/bn9baahyH5+He
+OrMfMAu+J4xEQO5C6i63/PCO7X7GwFA4nPu3qXhG8ncyBs+jWwdz2n933l8w6+sj
+pxo5GG5T6o8+HUuNlyfha8Ye4rUmMBYZy/1j24POOTIYppX394U0mfiJleQWTI6e
+WklNpz7lJUA7b32F8YDQB6El4sL7xlFe7yTh0m2NFEqfvTDsb6yc+3kQ5n0lE+/4
+JJkDi4NICRGZdDxRQmUVLcIRUzLbqIXvV6Lj6T8+YeOeeek35f99/SR9+UHXLdpM
+1s4rq6UZlfH1rsUeY2st+t0LPgZCrTGbhuUGhWkk1ZQfqa6Ig2Km1mmQQOo5Z9IP
+0pKLgCt2oVnjm3uKobIzGsqCqmbV1Eu98xHPvlRpae/ikoBjsIz04rfy5K+DngjJ
+28AVenyt8SfjONJwAuPXfDGypQDQp3eZTuc2NaDXd7KBEDnMbNqgSTqzwmSZ3AeB
+aE29RsF2f8hSGkI3fv8V1XTQuvKTVZ4rdf+TTOagIMpVCIqYJqjCos348QmsuVOv
+ncjyYo1N3P8Rcipw6I4z
+=zVOg
+-----END PGP SIGNATURE-----
+
+--HBIh8aIvd1vDZWkD--
