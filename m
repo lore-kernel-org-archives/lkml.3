@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3H0D5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 23:57:01 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41159 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752874Ab3H0D4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 23:56:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,965,1367996400"; 
-   d="scan'208";a="392472856"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v7 10/10] tracing: make register/unregister_ftrace_command __init
-Date: Mon, 26 Aug 2013 22:56:07 -0500
-Message-Id: <4fa9e511af01147aac0b647c9ea688630a439928.1377573424.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1377573424.git.tom.zanussi@linux.intel.com>
-References: <cover.1377573424.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1377573424.git.tom.zanussi@linux.intel.com>
-References: <cover.1377573424.git.tom.zanussi@linux.intel.com>
+	id S1753392Ab3H0D5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 23:57:39 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38703 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3H0D5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 23:57:37 -0400
+Message-ID: <521C23AF.2060309@wwwdotorg.org>
+Date: Mon, 26 Aug 2013 21:57:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: boris brezillon <b.brezillon@overkiz.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/3] pinctrl: at91: add support for generic pinconf
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380259-11290-1-git-send-email-b.brezillon@overkiz.com> <521B8822.50304@wwwdotorg.org> <521B8D9B.5020809@overkiz.com>
+In-Reply-To: <521B8D9B.5020809@overkiz.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-register/unregister_ftrace_command() are only ever called from __init
-functions, so can themselves be made __init.
+On 08/26/2013 11:17 AM, boris brezillon wrote:
+> On 26/08/2013 18:53, Stephen Warren wrote:
+>> On 08/24/2013 03:37 PM, Boris BREZILLON wrote:
+>>> Add support for generic pin configuration to pinctrl-at91 driver.
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>> b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>>   Required properties for iomux controller:
+>>> -- compatible: "atmel,at91rm9200-pinctrl"
+>>> +- compatible: "atmel,at91rm9200-pinctrl" or "atmel,at91sam9x5-pinctrl".
+>> You seem to also be adding a second chip name to the list here, which is
+>> more than the patch subject/description imply you're doing...
+> 
+> This is an update of the documentation:
+> "atmel,at91sam9x5-pinctrl" compatible is already used in the pinctrl
+> driver but the documention
+> was not updated.
+> 
+> But I agree, this should not be part of this series.
+> 
+>>> +  Add "generic-pinconf" to the compatible string list to use the
+>>> generic pin
+>>> +  configuration syntax.
+>> "generic-pinconf" is too generic of a compatible value for this binding
+>> to define.
+>>
+>> Instead, I think you want to either:
+>>
+>> a)
+>>
+>> Use compatible="atmel,at91rm9200-pinctrl" for the old binding,
+>> use compatible="atmel,at91rm9200-pinctrl-generic" for the new binding
+>>
+>> or:
+>>
+>> b)
+>>
+>> Define Boolean property atmel,generic-pinconf (perhaps a better name
+>> could be chosen?). If it's not present, parse the node assuming the old
+>> binding. If it is present, parse the node assuming the new binding.
+>>
+> Okay.
+> 
+> I thought this property string could be generic as it may concern other
+> drivers too
+> (in order to keep compatibility with old dt ABI and add support the
+> generic pinconf binding).
+> 
+> Anyway, I prefer the first proposition.
+> 
+> pinctrl single driver is already using these names:
+> 
+> |compatible = "pinctrl-single" for non generic pinconf binding
+> ||compatible = "pinconf-single" ||for generic pinconf binding|
+> 
+> So I think we should use something similar:
+> 
+> |compatible = "atmel,at91xx-pinctrl" for non generic pinconf binding
+> ||compatible = "|||atmel,at91xx-|pinconf" ||for generic pinconf binding|
+> 
+> What do you think ?
 
-Also make register_snapshot_cmd() __init for the same reason.
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- include/linux/ftrace.h |  4 ++--
- kernel/trace/ftrace.c  | 12 ++++++++++--
- kernel/trace/trace.c   |  4 ++--
- 3 files changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9f15c00..6062491 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -533,11 +533,11 @@ static inline int ftrace_force_update(void) { return 0; }
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
--static inline int register_ftrace_command(struct ftrace_func_command *cmd)
-+static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	return -EINVAL;
- }
--static inline int unregister_ftrace_command(char *cmd_name)
-+static inline __init int unregister_ftrace_command(char *cmd_name)
- {
- 	return -EINVAL;
- }
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a6d098c..64f7f39 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3292,7 +3292,11 @@ void unregister_ftrace_function_probe_all(char *glob)
- static LIST_HEAD(ftrace_commands);
- static DEFINE_MUTEX(ftrace_cmd_mutex);
- 
--int register_ftrace_command(struct ftrace_func_command *cmd)
-+/*
-+ * Currently we only register ftrace commands from __init, so mark this
-+ * __init too.
-+ */
-+__init int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	struct ftrace_func_command *p;
- 	int ret = 0;
-@@ -3311,7 +3315,11 @@ int register_ftrace_command(struct ftrace_func_command *cmd)
- 	return ret;
- }
- 
--int unregister_ftrace_command(struct ftrace_func_command *cmd)
-+/*
-+ * Currently we only unregister ftrace commands from __init, so mark
-+ * this __init too.
-+ */
-+__init int unregister_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	struct ftrace_func_command *p, *n;
- 	int ret = -ENODEV;
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 2aabd34..4222c6a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5458,12 +5458,12 @@ static struct ftrace_func_command ftrace_snapshot_cmd = {
- 	.func			= ftrace_trace_snapshot_callback,
- };
- 
--static int register_snapshot_cmd(void)
-+static __init int register_snapshot_cmd(void)
- {
- 	return register_ftrace_command(&ftrace_snapshot_cmd);
- }
- #else
--static inline int register_snapshot_cmd(void) { return 0; }
-+static inline __init int register_snapshot_cmd(void) { return 0; }
- #endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE) */
- 
- struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
--- 
-1.7.11.4
+Hmmm. It is a little odd to switch out the compatible value and invent a
+new binding for the same HW. Isn't it possible to define both sets of
+properties in the binding, and have drivers look for either?
 
