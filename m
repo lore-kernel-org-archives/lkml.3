@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3H0BOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:14:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59532 "EHLO
+	id S1754370Ab3H0BQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:16:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab3H0BH1 (ORCPT
+	with ESMTP id S1753487Ab3H0BHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:27 -0400
+	Mon, 26 Aug 2013 21:07:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatolij Gustschin <agust@denx.de>
-Subject: [ 57/74] usb: phy: fix build breakage
-Date: Mon, 26 Aug 2013 18:08:55 -0700
-Message-Id: <20130827010436.385566133@linuxfoundation.org>
+        Holger Freyther <holger@freyther.de>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [ 43/74] ARM: davinci: nand: specify ecc strength
+Date: Mon, 26 Aug 2013 18:08:41 -0700
+Message-Id: <20130827010433.413365317@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,59 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatolij Gustschin <agust@denx.de>
+From: Sekhar Nori <nsekhar@ti.com>
 
-commit 52d5b9aba1f5790ca3231c262979c2c3e26dd99b upstream.
+commit acd36357edc08649e85ff15dc4ed62353c912eff upstream.
 
-Commit 94ae9843 (usb: phy: rename all phy drivers to phy-$name-usb.c)
-renamed drivers/usb/phy/otg_fsm.h to drivers/usb/phy/phy-fsm-usb.h
-but changed drivers/usb/phy/phy-fsm-usb.c to include not existing
-"phy-otg-fsm.h" instead of new "phy-fsm-usb.h". This breaks building:
-  ...
-  drivers/usb/phy/phy-fsm-usb.c:32:25: fatal error: phy-otg-fsm.h: No such file or directory
-  compilation terminated.
-  make[3]: *** [drivers/usb/phy/phy-fsm-usb.o] Error 1
+Starting with kernel v3.5, it is mandatory
+to specify ECC strength when using hardware
+ECC. Without this, kernel panics with a warning
+of the sort:
 
-This commit also missed to modify drivers/usb/phy/phy-fsl-usb.h
-to include new "phy-fsm-usb.h" instead of "otg_fsm.h" resulting
-in another build breakage:
-  ...
-  In file included from drivers/usb/phy/phy-fsl-usb.c:46:0:
-  drivers/usb/phy/phy-fsl-usb.h:18:21: fatal error: otg_fsm.h: No such file or directory
-  compilation terminated.
-  make[3]: *** [drivers/usb/phy/phy-fsl-usb.o] Error 1
+Driver must set ecc.strength when using hardware ECC
+------------[ cut here ]------------
+kernel BUG at drivers/mtd/nand/nand_base.c:3519!
 
-Fix both issues.
+Fix this by specifying ECC strength for the boards
+which were missing this.
 
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Reported-by: Holger Freyther <holger@freyther.de>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/phy/phy-fsl-usb.h |    2 +-
- drivers/usb/phy/phy-fsm-usb.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-davinci/board-dm355-leopard.c |    1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c    |    1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c    |    1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c   |    1 +
+ 4 files changed, 4 insertions(+)
 
---- a/drivers/usb/phy/phy-fsl-usb.h
-+++ b/drivers/usb/phy/phy-fsl-usb.h
-@@ -15,7 +15,7 @@
-  * 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
+--- a/arch/arm/mach-davinci/board-dm355-leopard.c
++++ b/arch/arm/mach-davinci/board-dm355-leopard.c
+@@ -75,6 +75,7 @@ static struct davinci_nand_pdata davinci
+ 	.parts			= davinci_nand_partitions,
+ 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
+ 	.ecc_mode		= NAND_ECC_HW_SYNDROME,
++	.ecc_bits		= 4,
+ 	.bbt_options		= NAND_BBT_USE_FLASH,
+ };
  
--#include "otg_fsm.h"
-+#include "phy-fsm-usb.h"
- #include <linux/usb/otg.h>
- #include <linux/ioctl.h>
+--- a/arch/arm/mach-davinci/board-dm644x-evm.c
++++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+@@ -153,6 +153,7 @@ static struct davinci_nand_pdata davinci
+ 	.parts		= davinci_evm_nandflash_partition,
+ 	.nr_parts	= ARRAY_SIZE(davinci_evm_nandflash_partition),
+ 	.ecc_mode	= NAND_ECC_HW,
++	.ecc_bits	= 1,
+ 	.bbt_options	= NAND_BBT_USE_FLASH,
+ 	.timing		= &davinci_evm_nandflash_timing,
+ };
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -90,6 +90,7 @@ static struct davinci_nand_pdata davinci
+ 	.parts			= davinci_nand_partitions,
+ 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
+ 	.ecc_mode		= NAND_ECC_HW,
++	.ecc_bits		= 1,
+ 	.options		= 0,
+ };
  
---- a/drivers/usb/phy/phy-fsm-usb.c
-+++ b/drivers/usb/phy/phy-fsm-usb.c
-@@ -29,7 +29,7 @@
- #include <linux/usb/gadget.h>
- #include <linux/usb/otg.h>
+--- a/arch/arm/mach-davinci/board-neuros-osd2.c
++++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+@@ -88,6 +88,7 @@ static struct davinci_nand_pdata davinci
+ 	.parts		= davinci_ntosd2_nandflash_partition,
+ 	.nr_parts	= ARRAY_SIZE(davinci_ntosd2_nandflash_partition),
+ 	.ecc_mode	= NAND_ECC_HW,
++	.ecc_bits	= 1,
+ 	.bbt_options	= NAND_BBT_USE_FLASH,
+ };
  
--#include "phy-otg-fsm.h"
-+#include "phy-fsm-usb.h"
- 
- /* Change USB protocol when there is a protocol change */
- static int otg_set_protocol(struct otg_fsm *fsm, int protocol)
 
 
