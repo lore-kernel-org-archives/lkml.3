@@ -1,121 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab3H0Eq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 00:46:29 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:40221 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab3H0Eq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 00:46:26 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>,
-        <ezequiel.garcia@free-electrons.com>, <mturquette@linaro.org>,
-        <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 1/3] arm: mvebu: add missing of_node_put() to fix reference leak
-Date: Tue, 27 Aug 2013 12:41:14 +0800
-Message-ID: <1377578476-3268-2-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1377578476-3268-1-git-send-email-jszhang@marvell.com>
-References: <1377578476-3268-1-git-send-email-jszhang@marvell.com>
+	id S1752831Ab3H0Eyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 00:54:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41801 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538Ab3H0Eys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 00:54:48 -0400
+X-IronPort-AV: E=Sophos;i="4.89,965,1367942400"; 
+   d="scan'208";a="8313453"
+Message-ID: <521C3013.1070003@cn.fujitsu.com>
+Date: Tue, 27 Aug 2013 12:50:27 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+CC: unlisted-recipients:;;linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	unlisted-recipients:;linux-fsdevel@vger.kernel.org
+					     ^-missing end of address
+Subject: Re: [PATCH] f2fs: fix omitting to update inode page
+References: <1377520082-20526-1-git-send-email-jaegeuk.kim@samsung.com>
+In-Reply-To: <1377520082-20526-1-git-send-email-jaegeuk.kim@samsung.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/27 12:52:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/27 12:52:50,
+	Serialize complete at 2013/08/27 12:52:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_node_put to properly decrement the refcount when we are
-done using a given node.
+On 08/26/2013 08:28 PM, Jaegeuk Kim wrote:
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
----
- arch/arm/mach-mvebu/armada-370-xp.c     | 1 +
- arch/arm/mach-mvebu/coherency.c         | 8 +++++++-
- arch/arm/mach-mvebu/platsmp.c           | 1 +
- arch/arm/mach-mvebu/pmsu.c              | 1 +
- arch/arm/mach-mvebu/system-controller.c | 1 +
- 5 files changed, 11 insertions(+), 1 deletion(-)
+> The f2fs_set_link updates its parent inode number, so we should sync this to
+> the inode block.
+> Otherwise, the data can be lost after sudden-power-off.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  fs/f2fs/namei.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+> index 4e47518..9e90d31 100644
+> --- a/fs/f2fs/namei.c
+> +++ b/fs/f2fs/namei.c
+> @@ -447,6 +447,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  		else
+>  			release_orphan_inode(sbi);
+>  
+> +		update_inode_page(old_inode):
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 97cbb80..8a1ae83 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
- 			ARMADA_370_XP_MBUS_WINS_SIZE,
- 			of_translate_address(dn, &sdram_wins_offs),
- 			ARMADA_370_XP_SDRAM_WINS_SIZE);
-+	of_node_put(dn);
- }
- 
- static void __init armada_370_xp_timer_and_clk_init(void)
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 4c24303..58adf2f 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -140,6 +140,7 @@ int __init coherency_init(void)
- 		coherency_base = of_iomap(np, 0);
- 		coherency_cpu_base = of_iomap(np, 1);
- 		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
-+		of_node_put(np);
- 	}
- 
- 	return 0;
-@@ -147,9 +148,14 @@ int __init coherency_init(void)
- 
- static int __init coherency_late_init(void)
- {
--	if (of_find_matching_node(NULL, of_coherency_table))
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, of_coherency_table);
-+	if (np) {
- 		bus_register_notifier(&platform_bus_type,
- 				      &mvebu_hwcc_platform_nb);
-+		of_node_put(np);
-+	}
- 	return 0;
- }
- 
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index ce81d30..e7edb82 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -95,6 +95,7 @@ static void __init armada_xp_smp_init_cpus(void)
- 		panic("No 'cpus' node found\n");
- 
- 	ncores = of_get_child_count(np);
-+	of_node_put(np);
- 	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
- 		panic("Invalid number of CPUs in DT\n");
- 
-diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index 3cc4bef..27fc4f0 100644
---- a/arch/arm/mach-mvebu/pmsu.c
-+++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -67,6 +67,7 @@ int __init armada_370_xp_pmsu_init(void)
- 		pr_info("Initializing Power Management Service Unit\n");
- 		pmsu_mp_base = of_iomap(np, 0);
- 		pmsu_reset_base = of_iomap(np, 1);
-+		of_node_put(np);
- 	}
- 
- 	return 0;
-diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-index f875124..5175083c 100644
---- a/arch/arm/mach-mvebu/system-controller.c
-+++ b/arch/arm/mach-mvebu/system-controller.c
-@@ -98,6 +98,7 @@ static int __init mvebu_system_controller_init(void)
- 		BUG_ON(!match);
- 		system_controller_base = of_iomap(np, 0);
- 		mvebu_sc = (struct mvebu_system_controller *)match->data;
-+		of_node_put(np);
- 	}
- 
- 	return 0;
--- 
-1.8.4.rc3
+':' --> ';'
+
+>  		update_inode_page(new_inode);
+>  	} else {
+>  		err = f2fs_add_link(new_dentry, old_inode);
+
 
