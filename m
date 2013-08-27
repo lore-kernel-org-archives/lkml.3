@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3H0HgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:36:05 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:64596 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3H0HgD (ORCPT
+	id S1752941Ab3H0HhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:37:25 -0400
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:56993 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752055Ab3H0HhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:36:03 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 03:36:02 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AggFAOFTHFKQ/khR/2dsb2JhbABagwe+N4J5gSQWdIIkAQEBBHgBEAsYCRYPCQMCAQIBRQYNAQcCh324FJB3B4QZA5duhiqLN4MgOg
-X-IronPort-AV: E=Sophos;i="4.89,966,1367971200"; 
-   d="scan'208";a="158932058"
-Message-ID: <521C5493.1050407@cisco.com>
-Date: Tue, 27 Aug 2013 09:26:11 +0200
-From: Hans Verkuil <hansverk@cisco.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
-MIME-Version: 1.0
-To: Knut Petersen <Knut_Petersen@t-online.de>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [REGRESSION 3.11-rc] wm8775 9-001b: I2C: cannot write ??? to
- register R??
-References: <521A269D.3020909@t-online.de>
-In-Reply-To: <521A269D.3020909@t-online.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: hansverk
+	Tue, 27 Aug 2013 03:37:23 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: [PATCH v3 0/2] net/cadence/macb: add support for dt phy definition
+Date: Tue, 27 Aug 2013 09:36:47 +0200
+Message-Id: <1377589007-3684-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 6287588030041258208
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2013 05:45 PM, Knut Petersen wrote:
-> Booting current git kernel dmesg shows a set of new  warnings:
-> 
->     "wm8775 9-001b: I2C: cannot write ??? to register R??"
-> 
-> Nevertheless, the hardware seems to work fine.
-> 
-> This is a new problem, introduced after kernel 3.10.
-> If necessary I can bisect.
+Hello,
 
-Can you try this patch? I'm pretty sure this will fix it.
+This patch series adds support for ethernet phy definition using device
+tree.
 
-Regards,
+This may help in moving some at91 boards to dt (some of them define an
+interrupt pin).
 
-	Hans
+Tested on samad31ek.
 
-diff --git a/drivers/media/pci/cx88/cx88.h b/drivers/media/pci/cx88/cx88.h
-index afe0eae..28893a6 100644
---- a/drivers/media/pci/cx88/cx88.h
-+++ b/drivers/media/pci/cx88/cx88.h
-@@ -259,7 +259,7 @@ struct cx88_input {
- };
- 
- enum cx88_audio_chip {
--	CX88_AUDIO_WM8775,
-+	CX88_AUDIO_WM8775 = 1,
- 	CX88_AUDIO_TVAUDIO,
- };
- 
+Best Regards,
+Boris
+
+Changes since v2:
+ - fix wrong address of phy0 dt node
+
+Changes since v1:
+ - fix wrong macb_mii_init return code when no PHY device is discovered
+
+Boris BREZILLON (2):
+  net/cadence/macb: add support for dt phy definition
+  ARM: at91/dt: define phy available on sama5d3 mother board
+
+ arch/arm/boot/dts/sama5d3xmb.dtsi   |    8 ++++++
+ drivers/net/ethernet/cadence/macb.c |   48 +++++++++++++++++++++++++++--------
+ 2 files changed, 46 insertions(+), 10 deletions(-)
+
+-- 
+1.7.9.5
 
