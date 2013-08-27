@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3H0FgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 01:36:21 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:36711 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab3H0FgU (ORCPT
+	id S1752630Ab3H0FiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 01:38:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43031 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3H0FiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 01:36:20 -0400
-X-Spam-Score: -101.0
-Message-ID: <521C3A95.7020006@asianux.com>
-Date: Tue, 27 Aug 2013 13:35:17 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] h8300: Makefile: add "-no-warn-mismatch" to linker to
- avoid linking error.
-References: <521B312B.2020806@asianux.com> <521B31F4.9090701@asianux.com> <521C0B86.3030402@asianux.com> <521C3820.9010102@asianux.com>
-In-Reply-To: <521C3820.9010102@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 01:38:06 -0400
+Date: Tue, 27 Aug 2013 15:37:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: linux-next: manual merge of the regulator tree with the pm tree
+Message-Id: <20130827153754.a28ce27a424e4cbeab503079@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Aug_2013_15_37_54_+1000_E5qAAE6vV7i5Swd2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need add "-no-warn-mismatch" to avoid the linking error, or assembly
-files which are outside of the "arch/h8300" can not pass compiling.
+--Signature=_Tue__27_Aug_2013_15_37_54_+1000_E5qAAE6vV7i5Swd2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The related error (allmodconfig for h8300):
+Hi all,
 
-  /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
-  /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
+Today's linux-next merge of the regulator tree got a conflict in
+drivers/cpufreq/cpufreq-cpu0.c between commit f837a9b5ab05 ("cpufreq:
+cpufreq-cpu0: remove device tree parsing for cpu nodes") from the  tree
+and commit 7d748971c0c0 ("cpufreq: cpufreq-cpu0: Use
+devm_regulator_get_optional()") from the regulator tree.
 
-The cross-compiler's information:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
-  GNU ld (GNU Binutils) 2.22
-  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
-  GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
-  Using built-in specs.
-  COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
-  COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
-  Target: h8300-gchen-elf
-  Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
-  Thread model: single
-  gcc version 4.8.0 (GCC)
+diff --cc drivers/cpufreq/cpufreq-cpu0.c
+index bad620e,e9dedb2..0000000
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@@ -174,18 -174,30 +174,18 @@@ static struct cpufreq_driver cpu0_cpufr
+ =20
+  static int cpu0_cpufreq_probe(struct platform_device *pdev)
+  {
+ -	struct device_node *np, *parent;
+ +	struct device_node *np;
+  	int ret;
+ =20
+ -	parent =3D of_find_node_by_path("/cpus");
+ -	if (!parent) {
+ -		pr_err("failed to find OF /cpus\n");
+ -		return -ENOENT;
+ -	}
+ -
+ -	for_each_child_of_node(parent, np) {
+ -		if (of_get_property(np, "operating-points", NULL))
+ -			break;
+ -	}
+ +	cpu_dev =3D &pdev->dev;
+ =20
+ +	np =3D of_node_get(cpu_dev->of_node);
+  	if (!np) {
+  		pr_err("failed to find cpu0 node\n");
+ -		ret =3D -ENOENT;
+ -		goto out_put_parent;
+ +		return -ENOENT;
+  	}
+ =20
+- 	cpu_reg =3D devm_regulator_get(cpu_dev, "cpu0");
+ -	cpu_dev =3D &pdev->dev;
+ -	cpu_dev->of_node =3D np;
+ -
++ 	cpu_reg =3D devm_regulator_get_optional(cpu_dev, "cpu0");
+  	if (IS_ERR(cpu_reg)) {
+  		/*
+  		 * If cpu0 regulator supply node is present, but regulator is
 
+--Signature=_Tue__27_Aug_2013_15_37_54_+1000_E5qAAE6vV7i5Swd2
+Content-Type: application/pgp-signature
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
-index a556447..3ad1369 100644
---- a/arch/h8300/Makefile
-+++ b/arch/h8300/Makefile
-@@ -26,7 +26,7 @@ model-$(CONFIG_ROMKERNEL)	:= rom
- MODEL := $(model-y)
- 
- cflags-$(CONFIG_CPU_H8300H)	:= -mh
--ldflags-$(CONFIG_CPU_H8300H)	:= -mh8300helf
-+ldflags-$(CONFIG_CPU_H8300H)	:= -mh8300helf -no-warn-mismatch
- cflags-$(CONFIG_CPU_H8S)	:= -ms
- ldflags-$(CONFIG_CPU_H8S)	:= -mh8300self
- 
--- 
-1.7.7.6
+iQIcBAEBCAAGBQJSHDs3AAoJEECxmPOUX5FETU4P/i6CxKU7/WAm8s4Csi/igLu3
+Adcp8dY7KVzthEEQMNOacV3tBptJWa+gqC5e9nuDfp+b6FCA5cT1scDQLkEQ5TUo
+uhrG8v78/Gf3cG84SLyxqAbPxbz0WFT8GWEkChzNDai8g9wMYD1i+jgyn4PCUC0J
+900bl4ZSkKJQnQBfvUVrYTWFNsKultWJnu5LNe2s7VINEhCegWC/CTAhhkdGGlU+
+UjF3BWpgLoG7ecxMjpg/xb8ihBOTkT+A4jOina9aEMhM96n1VL4OASk2sA03achv
+xqAUFTJs6MEZozFzlYR+lc/9bEb5Ipj1Cbp0uNFpHV3I8Nuz6EPwCmzm8p5LJKv/
+/fdy9BNViRsJF79d+WE5bRgsuHDAdUEeXiym0XLmM6n9XJqM7RSY/m8/RebuNH9t
+ECRDpZwxa3Gh3Kj/lcDjlS+FUoRpIdl4Sc5XliKwusAkvsnzjpPM3UivNf9NQEZ1
+RJVu5lUl9RgVBB2zp+DzVtEtsAKE5u9QvVqXH+5+oRV0YChB4YXYjG90Wv0Y2RdQ
+a8jl21EhB/LlFktD2XKBoUj/WySSUdJDq+KO7P4PGcxsQkP1vBDW6a42Lr9bONHx
+/8ZjwOpHiZNc+f3IHMeLEugNmxjaISkIKXRYGA+H/BN7LYE6Bxjb7/TBIKb7eSLV
+i56LkZs93wmwf/Jrw/4p
+=jSbf
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_15_37_54_+1000_E5qAAE6vV7i5Swd2--
