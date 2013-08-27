@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab3H0OLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:11:42 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:59490 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300Ab3H0OLl (ORCPT
+	id S1753401Ab3H0ONd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:13:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37332 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3H0ONb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:11:41 -0400
-Message-ID: <521CB384.8070406@mellanox.com>
-Date: Tue, 27 Aug 2013 17:11:16 +0300
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 10:13:31 -0400
+Message-ID: <521CB403.8010307@linutronix.de>
+Date: Tue, 27 Aug 2013 16:13:23 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: Eliezer Tamir <eliezer@tamir.org.il>,
-        Willem de Bruijn <willemb@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Eric Wong <normalperson@yhbt.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH RFC net-next] net: epoll support for busy poll
-References: <20130821103954.30607.6819.stgit@ladj378.jer.intel.com> <20130822201135.GA4088@dcvr.yhbt.net> <52170E78.1010704@linux.intel.com> <CAPcc5PhQGB195pMsMGOEE8BhZTvfXOf+Fh+3PdPbuOS0t1SULQ@mail.gmail.com> <521AEFC2.9010201@linux.intel.com>
-In-Reply-To: <521AEFC2.9010201@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: Javier Martinez Canillas <javier@dowhile0.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au> <521C6961.9020103@linutronix.de> <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com> <521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de> <521CB046.9070408@baylibre.com> <521CB18B.4080000@linutronix.de> <521CB239.6050409@baylibre.com>
+In-Reply-To: <521CB239.6050409@baylibre.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/08/2013 09:03, Eliezer Tamir wrote:
-> On 26/08/2013 00:30, Amir Vadai wrote:
->> I'm on vacation, will test and have some inputs later this week when I be
->> back.
+On 08/27/2013 04:05 PM, Benoit Cousson wrote:
+> On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
+>> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
+>>> + Kevin,
+>>>
+>>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
+>>>> What do we do now?
+>>>
+>>> Cannot you just merge the stable arm-soc/dt branch into your branch
+>>> before applying your patches?
 >>
-> Hello Amir,
+>> That is up to Greg. This changes sat in his usb-next tree for a while
+>> now. And before they hit Greg they were in Felipe's tree for a while.
+>>
+>> To be exact, last .dts change via USB was:
+>>
+>> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
+>> Commit:     Felipe Balbi <balbi@ti.com>
+>> CommitDate: Fri Aug 9 17:40:16 2013 +0300
+>>
+>>     usb: musb dma: add cppi41 dma driver
 > 
-> Ping me when you get back and I will send you my latest so you can
-> play with it.
+> Mmm, if that branch is supposed to be stable, I'm not sure it will be
+> doable...
 > 
+> Maybe we should do the other way around? And merge usb-next into
+> arm-soc/dt.
+> 
+> Kevin, Olof?
 
-Hi Eliezer,
+Please be aware that I have no response so far regarding [0] from Greg.
 
-You can send the latest version, so I can play with it and get some numbers.
+[0] http://www.spinics.net/lists/linux-usb/msg92595.html
 
-Thanks,
-Amir
+> Regards,
+> Benoit
+
+Sebastian
