@@ -1,63 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab3H0MFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:05:43 -0400
-Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:55729 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752106Ab3H0MFl (ORCPT
+	id S1753342Ab3H0MGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:06:34 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:42862 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3H0MGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:05:41 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH] ARM: at91/dt: fix phy address to match the reg register
-Date: Tue, 27 Aug 2013 14:04:56 +0200
-Message-Id: <1377605096-20903-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 10802446656247724256
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 27 Aug 2013 08:06:33 -0400
+X-Spam-Score: -101.0
+Message-ID: <521C95FD.5060600@asianux.com>
+Date: Tue, 27 Aug 2013 20:05:17 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        James Hogan <james.hogan@imgtec.com>, Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
+References: <521B312B.2020806@asianux.com> <521B31F4.9090701@asianux.com> <87txibbtt3.fsf@rustcorp.com.au> <521C45AB.2020204@asianux.com>
+In-Reply-To: <521C45AB.2020204@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix phy0 address to match the reg porperty defined in phy0 node.
+On 08/27/2013 02:22 PM, Chen Gang wrote:
+> On 08/27/2013 01:12 PM, Rusty Russell wrote:
+>> Chen Gang <gang.chen@asianux.com> writes:
+>>> If this implementation is correct, the implementation still can be
+>>> improved (at least, it is not quite well to hard code the architecture
+>>> related code in "kernel/" and "usr/" sub-directory).
+>>>
+>>> But it seems, I have no right to add or move files, so welcome any
+>>> members help do it.
+>>>
+>>> And welcome any additional suggestions or completions.
+>>
+>> Hmm, how about something like:
+>>
+>> #ifdef CONFIG_ARCH_ASM_INCBIN_NEEDS_PREFIX
+>> #include <asm/incbin_prefix.h>
+>>         ASM_INCBIN_PREFIX
+>> #endif /* ARCH_ASM_INCBIN_NEEDS_PREFIX */
+>>
+>> Then h8300 can define ARCH_ASM_INCBIN_NEEDS_PREFIX in Kconfig and define
+>> ASM_INCBIN_PREFIX in arch/h8300/include/asm/incbin_prefix.h?
+>>
+> 
+> Thank you for your reply firstly, I think your way is OK (valuable to
+> continue think of the details implementation).
+> 
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/sama5d3xmb.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The final result is: we have to use this way (mark 'h8300h' explicitly)
+to fix this issue. (build-in.o requires "h8300h", but the default value
+of the ".S" files are "h8300").
 
-diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
-index e9521d5..dba739b 100644
---- a/arch/arm/boot/dts/sama5d3xmb.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
-@@ -84,7 +84,7 @@
- 
- 				#address-cells = <1>;
- 				#size-cells = <0>;
--				phy0: ethernet-phy@0 {
-+				phy0: ethernet-phy@1 {
- 					interrupt-parent = <&pioE>;
- 					interrupts = <30 IRQ_TYPE_EDGE_FALLING>;
- 					reg = <1>;
+"-no-warn-mismatch" and "-accept-unknown-input-arch" have no effect with
+the same issue under firmware sub-directory (after reading 'ld' code, we
+know there are additional stricter checking for it).
+
+After let 'h8300' pass allmodconfig, I will send patch v3 (may need some
+days for waiting gcc issues).
+
+
+Welcome any additional suggestions or completions (especially for
+modifying the firmware files, I have no experience for it).
+
+
+Thanks.
+
+
+> And excuse me, I continued replying multiple times for this thread (I
+> am just continue improving it).
+> 
+> Current status:
+> 
+>   after check the binutils-2.22 source code, we know if use "-no-warn-mismatch" for 'ld', it can avoid this issue.
+> 
+>   and also for another 'ld' issue (which I occurs but not send mail), need use "-accept-unknown-input-arch" for 'ld':
+>     "Relocatable linking with relocations from format elf32-h8300 (firmware/keyspan/mpr.fw.gen.o) to format elf32-h8300 (firmware/built-in.o) is not supported"
+> 
+>   ... maybe find more issues during compiling with 'allmodconfig'.
+> 
+> 
+> My opinion:
+> 
+>   if h8300 is still one of important architecture, we need try to "let our binary match 'ld'"
+>   else just use skipping parameters is OK.
+> 
+>   In my current feeling, h8300 is not one of important architecture, so I choose 2nd.
+> 
+> 
+> Welcome additional suggestion or completions.
+> 
+> 
+> Thanks.
+> 
+> 
+>> Cheers,
+>> Rusty.
+>>
+>>> On 08/26/2013 06:42 PM, Chen Gang wrote:
+>>>> Need add related prefix for h8300, or can not pass compiling by the
+>>>> latest linker.
+>>>>
+>>>> The related error (allmodconfig for h8300):
+>>>>
+>>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
+>>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
+>>>>
+>>>> The cross-compiler's information:
+>>>>
+>>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
+>>>>   GNU ld (GNU Binutils) 2.22
+>>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
+>>>>   GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
+>>>>   
+>>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
+>>>>   Using built-in specs.
+>>>>   COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
+>>>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
+>>>>   Target: h8300-gchen-elf
+>>>>   Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
+>>>>   Thread model: single
+>>>>   gcc version 4.8.0 (GCC) 
+>>>>
+>>>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>> ---
+>>>>  kernel/modsign_certificate.S |    7 +++++++
+>>>>  usr/initramfs_data.S         |    7 +++++++
+>>>>  2 files changed, 14 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+>>>> index 4a9a86d..d24acac 100644
+>>>> --- a/kernel/modsign_certificate.S
+>>>> +++ b/kernel/modsign_certificate.S
+>>>> @@ -1,5 +1,12 @@
+>>>>  #include <linux/export.h>
+>>>>  
+>>>> +#if defined(CONFIG_CPU_H8300H)
+>>>> +	.h8300h
+>>>> +#endif
+>>>> +#if defined(CONFIG_CPU_H8S)
+>>>> +	.h8300s
+>>>> +#endif
+>>>> +
+>>>>  #define GLOBAL(name)	\
+>>>>  	.globl VMLINUX_SYMBOL(name);	\
+>>>>  	VMLINUX_SYMBOL(name):
+>>>> diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
+>>>> index c14322d..6a6c106 100644
+>>>> --- a/usr/initramfs_data.S
+>>>> +++ b/usr/initramfs_data.S
+>>>> @@ -24,6 +24,13 @@
+>>>>  #include <linux/stringify.h>
+>>>>  #include <asm-generic/vmlinux.lds.h>
+>>>>  
+>>>> +#if defined(CONFIG_CPU_H8300H)
+>>>> +	.h8300h
+>>>> +#endif
+>>>> +#if defined(CONFIG_CPU_H8S)
+>>>> +	.h8300s
+>>>> +#endif
+>>>> +
+>>>>  .section .init.ramfs,"a"
+>>>>  __irf_start:
+>>>>  .incbin __stringify(INITRAMFS_IMAGE)
+>>>>
+>>>
+>>>
+>>> -- 
+>>> Chen Gang
+>>
+>>
+> 
+> 
+
+
 -- 
-1.7.9.5
-
+Chen Gang
