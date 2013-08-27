@@ -1,56 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3H0H5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:57:35 -0400
-Received: from vsp-authed02.binero.net ([195.74.38.226]:47723 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753134Ab3H0H5d (ORCPT
+	id S1753190Ab3H0H54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:57:56 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:52932 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab3H0H5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:57:33 -0400
-From: Andreas Larsson <andreas@gaisler.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>, software@gaisler.com
-Subject: [PATCH] of: Define of_irq_find_parent dummy for !defined(CONFIG_OF_IRQ)
-Date: Tue, 27 Aug 2013 09:57:17 +0200
-Message-Id: <1377590237-11046-1-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 27 Aug 2013 03:57:55 -0400
+Message-ID: <521C5C19.5070905@atmel.com>
+Date: Tue, 27 Aug 2013 09:58:17 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] net/cadence/macb: add support for dt phy definition
+References: <1377589007-3684-1-git-send-email-b.brezillon@overkiz.com> <1377589070-3722-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1377589070-3722-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the dummy version of of_irq_find_parent to be defined when
-!defined(CONFIG_OF_IRQ) instead of when !defined(CONFIG_OF). Without
-this of_irq_find_parent is undefined on SPARC that defines CONFIG_OF but
-not CONFIG_OF_IRQ.
+On 27/08/2013 09:37, Boris BREZILLON :
+> The macb driver only handle PHY description through platform_data
+> (macb_platform_data).
+> Thus, when using dt you cannot define phy properties like phy address or
+> phy irq pin.
+>
+> This patch makes use of the of_mdiobus_register to add support for
+> phy device definition using dt.
+> A fallback to the autoscan procedure is added in case there is no phy
+> devices defined in dt.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
- include/linux/of_irq.h |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 535cecf..d0059a9 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -83,11 +83,13 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
- {
- 	return 0;
- }
-+#endif /* !CONFIG_OF */
-+
-+#endif /* __OF_IRQ_H */
- 
-+#if !defined(CONFIG_OF_IRQ)
- static inline void *of_irq_find_parent(struct device_node *child)
- {
- 	return NULL;
- }
--#endif /* !CONFIG_OF */
--
--#endif /* __OF_IRQ_H */
-+#endif /* !CONFIG_OF_IRQ */
+> ---
+>   drivers/net/ethernet/cadence/macb.c |   48 +++++++++++++++++++++++++++--------
+>   1 file changed, 38 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index e866608..393afeb 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -27,6 +27,7 @@
+>   #include <linux/phy.h>
+>   #include <linux/of.h>
+>   #include <linux/of_device.h>
+> +#include <linux/of_mdio.h>
+>   #include <linux/of_net.h>
+>   #include <linux/pinctrl/consumer.h>
+>
+> @@ -275,7 +276,7 @@ static int macb_mii_probe(struct net_device *dev)
+>   	phydev = phy_find_first(bp->mii_bus);
+>   	if (!phydev) {
+>   		netdev_err(dev, "no PHY found\n");
+> -		return -1;
+> +		return -ENXIO;
+>   	}
+>
+>   	pdata = dev_get_platdata(&bp->pdev->dev);
+> @@ -314,6 +315,7 @@ static int macb_mii_probe(struct net_device *dev)
+>   int macb_mii_init(struct macb *bp)
+>   {
+>   	struct macb_platform_data *pdata;
+> +	struct device_node *np;
+>   	int err = -ENXIO, i;
+>
+>   	/* Enable management port */
+> @@ -335,26 +337,52 @@ int macb_mii_init(struct macb *bp)
+>   	bp->mii_bus->parent = &bp->dev->dev;
+>   	pdata = bp->pdev->dev.platform_data;
+>
+> -	if (pdata)
+> -		bp->mii_bus->phy_mask = pdata->phy_mask;
+> -
+>   	bp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+>   	if (!bp->mii_bus->irq) {
+>   		err = -ENOMEM;
+>   		goto err_out_free_mdiobus;
+>   	}
+>
+> -	for (i = 0; i < PHY_MAX_ADDR; i++)
+> -		bp->mii_bus->irq[i] = PHY_POLL;
+> -
+>   	dev_set_drvdata(&bp->dev->dev, bp->mii_bus);
+>
+> -	if (mdiobus_register(bp->mii_bus))
+> +	np = bp->pdev->dev.of_node;
+> +	if (np) {
+> +		/* try dt phy registration */
+> +		err = of_mdiobus_register(bp->mii_bus, np);
+> +
+> +		/* fallback to standard phy registration if no phy were
+> +		 * found during dt phy registration
+> +		 */
+> +		if (!err && !phy_find_first(bp->mii_bus)) {
+> +			for (i = 0; i < PHY_MAX_ADDR; i++) {
+> +				struct phy_device *phydev;
+> +
+> +				phydev = mdiobus_scan(bp->mii_bus, i);
+> +				if (IS_ERR(phydev)) {
+> +					err = PTR_ERR(phydev);
+> +					break;
+> +				}
+> +			}
+> +
+> +			if (err)
+> +				goto err_out_unregister_bus;
+> +		}
+> +	} else {
+> +		for (i = 0; i < PHY_MAX_ADDR; i++)
+> +			bp->mii_bus->irq[i] = PHY_POLL;
+> +
+> +		if (pdata)
+> +			bp->mii_bus->phy_mask = pdata->phy_mask;
+> +
+> +		err = mdiobus_register(bp->mii_bus);
+> +	}
+> +
+> +	if (err)
+>   		goto err_out_free_mdio_irq;
+>
+> -	if (macb_mii_probe(bp->dev) != 0) {
+> +	err = macb_mii_probe(bp->dev);
+> +	if (err)
+>   		goto err_out_unregister_bus;
+> -	}
+>
+>   	return 0;
+>
+>
+
+
 -- 
-1.7.10.4
-
+Nicolas Ferre
