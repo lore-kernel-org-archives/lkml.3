@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab3H0BHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59638 "EHLO
+	id S1753714Ab3H0BHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3H0BHi (ORCPT
+	with ESMTP id S1753547Ab3H0BHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:38 -0400
+	Mon, 26 Aug 2013 21:07:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>
-Subject: [ 74/74] bcache: FUA fixes
-Date: Mon, 26 Aug 2013 18:09:12 -0700
-Message-Id: <20130827010439.572991759@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 69/74] x86/xen: do not identity map UNUSABLE regions in the machine E820
+Date: Mon, 26 Aug 2013 18:09:07 -0700
+Message-Id: <20130827010438.703081365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,106 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <koverstreet@google.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit e49c7c374e7aacd1f04ecbc21d9dbbeeea4a77d6 upstream.
+commit 3bc38cbceb85881a8eb789ee1aa56678038b1909 upstream.
 
-Journal writes need to be marked FUA, not just REQ_FLUSH. And btree node
-writes have... weird ordering requirements.
+If there are UNUSABLE regions in the machine memory map, dom0 will
+attempt to map them 1:1 which is not permitted by Xen and the kernel
+will crash.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
+There isn't anything interesting in the UNUSABLE region that the dom0
+kernel needs access to so we can avoid making the 1:1 mapping and
+treat it as RAM.
+
+We only do this for dom0, as that is where tboot case shows up.
+A PV domU could have an UNUSABLE region in its pseudo-physical map
+and would need to be handled in another patch.
+
+This fixes a boot failure on hosts with tboot.
+
+tboot marks a region in the e820 map as unusable and the dom0 kernel
+would attempt to map this region and Xen does not permit unusable
+regions to be mapped by guests.
+
+  (XEN)  0000000000000000 - 0000000000060000 (usable)
+  (XEN)  0000000000060000 - 0000000000068000 (reserved)
+  (XEN)  0000000000068000 - 000000000009e000 (usable)
+  (XEN)  0000000000100000 - 0000000000800000 (usable)
+  (XEN)  0000000000800000 - 0000000000972000 (unusable)
+
+tboot marked this region as unusable.
+
+  (XEN)  0000000000972000 - 00000000cf200000 (usable)
+  (XEN)  00000000cf200000 - 00000000cf38f000 (reserved)
+  (XEN)  00000000cf38f000 - 00000000cf3ce000 (ACPI data)
+  (XEN)  00000000cf3ce000 - 00000000d0000000 (reserved)
+  (XEN)  00000000e0000000 - 00000000f0000000 (reserved)
+  (XEN)  00000000fe000000 - 0000000100000000 (reserved)
+  (XEN)  0000000100000000 - 0000000630000000 (usable)
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+[v1: Altered the patch and description with domU's with UNUSABLE regions]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/btree.c   |   23 +++++++++++++++++++++--
- drivers/md/bcache/journal.c |    2 +-
- drivers/md/bcache/request.c |   13 ++++++++++++-
- 3 files changed, 34 insertions(+), 4 deletions(-)
+ arch/x86/xen/setup.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -326,10 +326,25 @@ static void do_btree_write(struct btree
- 	i->csum		= btree_csum_set(b, i);
- 
- 	btree_bio_init(b);
--	b->bio->bi_rw	= REQ_META|WRITE_SYNC;
-+	b->bio->bi_rw	= REQ_META|WRITE_SYNC|REQ_FUA;
- 	b->bio->bi_size	= set_blocks(i, b->c) * block_bytes(b->c);
- 	bch_bio_map(b->bio, i);
- 
-+	/*
-+	 * If we're appending to a leaf node, we don't technically need FUA -
-+	 * this write just needs to be persisted before the next journal write,
-+	 * which will be marked FLUSH|FUA.
-+	 *
-+	 * Similarly if we're writing a new btree root - the pointer is going to
-+	 * be in the next journal entry.
-+	 *
-+	 * But if we're writing a new btree node (that isn't a root) or
-+	 * appending to a non leaf btree node, we need either FUA or a flush
-+	 * when we write the parent with the new pointer. FUA is cheaper than a
-+	 * flush, and writes appending to leaf nodes aren't blocking anything so
-+	 * just make all btree node writes FUA to keep things sane.
-+	 */
-+
- 	bkey_copy(&k.key, &b->key);
- 	SET_PTR_OFFSET(&k.key, 0, PTR_OFFSET(&k.key, 0) + bset_offset(b, i));
- 
-@@ -2142,6 +2157,9 @@ int bch_btree_insert(struct btree_op *op
- void bch_btree_set_root(struct btree *b)
- {
- 	unsigned i;
-+	struct closure cl;
-+
-+	closure_init_stack(&cl);
- 
- 	BUG_ON(!b->written);
- 
-@@ -2155,8 +2173,9 @@ void bch_btree_set_root(struct btree *b)
- 	b->c->root = b;
- 	__bkey_put(b->c, &b->key);
- 
--	bch_journal_meta(b->c, NULL);
-+	bch_journal_meta(b->c, &cl);
- 	pr_debug("%s for %pf", pbtree(b), __builtin_return_address(0));
-+	closure_sync(&cl);
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -313,6 +313,17 @@ static void xen_align_and_add_e820_regio
+ 	e820_add_region(start, end - start, type);
  }
  
- /* Cache lookup */
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -622,7 +622,7 @@ static void journal_write_unlocked(struc
- 		bio_reset(bio);
- 		bio->bi_sector	= PTR_OFFSET(k, i);
- 		bio->bi_bdev	= ca->bdev;
--		bio->bi_rw	= REQ_WRITE|REQ_SYNC|REQ_META|REQ_FLUSH;
-+		bio->bi_rw	= REQ_WRITE|REQ_SYNC|REQ_META|REQ_FLUSH|REQ_FUA;
- 		bio->bi_size	= sectors << 9;
- 
- 		bio->bi_end_io	= journal_write_endio;
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1053,9 +1053,20 @@ static void request_write(struct cached_
- 		trace_bcache_writethrough(s->orig_bio);
- 		closure_bio_submit(bio, cl, s->d);
- 	} else {
--		s->op.cache_bio = bio;
- 		trace_bcache_writeback(s->orig_bio);
- 		bch_writeback_add(dc, bio_sectors(bio));
++void xen_ignore_unusable(struct e820entry *list, size_t map_size)
++{
++	struct e820entry *entry;
++	unsigned int i;
 +
-+		if (s->op.flush_journal) {
-+			/* Also need to send a flush to the backing device */
-+			s->op.cache_bio = bio_clone_bioset(bio, GFP_NOIO,
-+							   dc->disk.bio_split);
++	for (i = 0, entry = list; i < map_size; i++, entry++) {
++		if (entry->type == E820_UNUSABLE)
++			entry->type = E820_RAM;
++	}
++}
 +
-+			bio->bi_size = 0;
-+			bio->bi_vcnt = 0;
-+			closure_bio_submit(bio, cl, s->d);
-+		} else {
-+			s->op.cache_bio = bio;
-+		}
+ /**
+  * machine_specific_memory_setup - Hook for machine specific memory setup.
+  **/
+@@ -353,6 +364,17 @@ char * __init xen_memory_setup(void)
  	}
- out:
- 	closure_call(&s->op.cl, bch_insert_data, NULL, cl);
+ 	BUG_ON(rc);
+ 
++	/*
++	 * Xen won't allow a 1:1 mapping to be created to UNUSABLE
++	 * regions, so if we're using the machine memory map leave the
++	 * region as RAM as it is in the pseudo-physical map.
++	 *
++	 * UNUSABLE regions in domUs are not handled and will need
++	 * a patch in the future.
++	 */
++	if (xen_initial_domain())
++		xen_ignore_unusable(map, memmap.nr_entries);
++
+ 	/* Make sure the Xen-supplied memory map is well-ordered. */
+ 	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
+ 
 
 
