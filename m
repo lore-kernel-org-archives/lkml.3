@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab3H0IRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:17:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48905 "EHLO mga03.intel.com"
+	id S1753376Ab3H0IRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:17:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48948 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab3H0IRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:17:20 -0400
+	id S1752305Ab3H0IRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 04:17:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,966,1367996400"; 
-   d="scan'208";a="352104906"
+   d="scan'208";a="352105005"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V13 03/12] perf tools: remove unnecessary callchain validation
-Date: Tue, 27 Aug 2013 11:23:05 +0300
-Message-Id: <1377591794-30553-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V13 06/12] perf tools: move perf_evlist__config() to a new source file
+Date: Tue, 27 Aug 2013 11:23:08 +0300
+Message-Id: <1377591794-30553-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1377591794-30553-1-git-send-email-adrian.hunter@intel.com>
 References: <1377591794-30553-1-git-send-email-adrian.hunter@intel.com>
@@ -28,90 +28,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the sample parsing correctly checks data sizes
-there is no reason for it to be done again for callchains.
+perf_evlist__config() must be moved to a separate source
+file to avoid Python link errors when adding support for
+PERF_SAMPLE_IDENTIFIER.
+
+It is appropriate to do this because perf_evlist__config()
+is a helper function for event recording.  It is used by
+tools to apply recording options to perf_evlist.  It is
+not used by the Python API.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/callchain.c |  8 --------
- tools/perf/util/callchain.h |  5 -----
- tools/perf/util/session.c   | 20 --------------------
- 3 files changed, 33 deletions(-)
+ tools/perf/Makefile      |  1 +
+ tools/perf/util/evlist.c | 22 ----------------------
+ tools/perf/util/record.c | 25 +++++++++++++++++++++++++
+ 3 files changed, 26 insertions(+), 22 deletions(-)
+ create mode 100644 tools/perf/util/record.c
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 4fee33b..482f680 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -21,14 +21,6 @@
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7d30a7d..845cc76 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -360,6 +360,7 @@ LIB_OBJS += $(OUTPUT)util/rblist.o
+ LIB_OBJS += $(OUTPUT)util/intlist.o
+ LIB_OBJS += $(OUTPUT)util/vdso.o
+ LIB_OBJS += $(OUTPUT)util/stat.o
++LIB_OBJS += $(OUTPUT)util/record.o
  
- __thread struct callchain_cursor callchain_cursor;
- 
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event)
--{
--	unsigned int chain_size = event->header.size;
--	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
--	return chain->nr * sizeof(u64) <= chain_size;
--}
--
- #define chain_for_each_child(child, parent)	\
- 	list_for_each_entry(child, &parent->children, siblings)
- 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 812d5a0..2b585bc 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -109,11 +109,6 @@ int callchain_append(struct callchain_root *root,
- int callchain_merge(struct callchain_cursor *cursor,
- 		    struct callchain_root *dst, struct callchain_root *src);
- 
--struct ip_callchain;
--union perf_event;
--
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event);
- /*
-  * Initialize a cursor before adding entries inside, but keep
-  * the previously allocated entries as a cache.
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 57b6f38..07590c3 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -997,22 +997,6 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	}
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 1f5105a..9d682e5 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -49,28 +49,6 @@ struct perf_evlist *perf_evlist__new(void)
+ 	return evlist;
  }
  
--static int perf_session__preprocess_sample(struct perf_session *session,
--					   union perf_event *event, struct perf_sample *sample)
+-void perf_evlist__config(struct perf_evlist *evlist,
+-			struct perf_record_opts *opts)
 -{
--	if (event->header.type != PERF_RECORD_SAMPLE ||
--	    !(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_CALLCHAIN))
--		return 0;
+-	struct perf_evsel *evsel;
+-	/*
+-	 * Set the evsel leader links before we configure attributes,
+-	 * since some might depend on this info.
+-	 */
+-	if (opts->group)
+-		perf_evlist__set_leader(evlist);
 -
--	if (!ip_callchain__valid(sample->callchain, event)) {
--		pr_debug("call-chain problem with event, skipping it.\n");
--		++session->stats.nr_invalid_chains;
--		session->stats.total_invalid_chains += sample->period;
--		return -EINVAL;
+-	if (evlist->cpus->map[0] < 0)
+-		opts->no_inherit = true;
+-
+-	list_for_each_entry(evsel, &evlist->entries, node) {
+-		perf_evsel__config(evsel, opts);
+-
+-		if (evlist->nr_entries > 1)
+-			perf_evsel__set_sample_id(evsel);
 -	}
--	return 0;
 -}
 -
- static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
- 					    struct perf_tool *tool, u64 file_offset)
+ static void perf_evlist__purge(struct perf_evlist *evlist)
  {
-@@ -1075,10 +1059,6 @@ static int perf_session__process_event(struct perf_session *session,
- 	if (ret)
- 		return ret;
- 
--	/* Preprocess sample records - precheck callchains */
--	if (perf_session__preprocess_sample(session, event, &sample))
--		return 0;
--
- 	if (tool->ordered_samples) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
+ 	struct perf_evsel *pos, *n;
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+new file mode 100644
+index 0000000..9b5ef79
+--- /dev/null
++++ b/tools/perf/util/record.c
+@@ -0,0 +1,25 @@
++#include "evlist.h"
++#include "evsel.h"
++#include "cpumap.h"
++
++void perf_evlist__config(struct perf_evlist *evlist,
++			struct perf_record_opts *opts)
++{
++	struct perf_evsel *evsel;
++	/*
++	 * Set the evsel leader links before we configure attributes,
++	 * since some might depend on this info.
++	 */
++	if (opts->group)
++		perf_evlist__set_leader(evlist);
++
++	if (evlist->cpus->map[0] < 0)
++		opts->no_inherit = true;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		perf_evsel__config(evsel, opts);
++
++		if (evlist->nr_entries > 1)
++			perf_evsel__set_sample_id(evsel);
++	}
++}
 -- 
 1.7.11.7
 
