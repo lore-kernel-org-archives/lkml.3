@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3H0NKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 09:10:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8443 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab3H0NKM (ORCPT
+	id S1753417Ab3H0NMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 09:12:36 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:51970 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab3H0NMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 09:10:12 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=4YNYSHFQjk8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jyE81Idm5WYA:10 a=20KFwNOVAAAA:8 a=9Oqxv2pTvx3wCAj1LysA:9 a=CjuIK1q_8ugA:10 a=Iqf1Oun2rhYA:10 a=jEp0ucaQiEUA:10 a=zLp-WXH7mxYA:10 a=TYCdBJHPDWYA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 27 Aug 2013 09:10:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, paulmck@linux.vnet.ibm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage (perf)
-Message-ID: <20130827091011.18ed8b59@gandalf.local.home>
-In-Reply-To: <20130826194923.GA1549@redhat.com>
-References: <20130826145838.GA8377@redhat.com>
-	<20130826162928.GQ3871@linux.vnet.ibm.com>
-	<20130826133041.3d750b1b@gandalf.local.home>
-	<20130826175012.GA25202@redhat.com>
-	<20130826141814.54dcaa89@gandalf.local.home>
-	<20130826182907.GB25202@redhat.com>
-	<521BAFD3.2060404@gmail.com>
-	<20130826194923.GA1549@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 09:12:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1377590237-11046-1-git-send-email-andreas@gaisler.com>
+References: <1377590237-11046-1-git-send-email-andreas@gaisler.com>
+Date: Tue, 27 Aug 2013 08:12:34 -0500
+Message-ID: <CAL_JsqJ4M3L8BXTTRYzt1=hgZ=BUqhNA5RoE8Z=CtvE4qpPb8w@mail.gmail.com>
+Subject: Re: [PATCH] of: Define of_irq_find_parent dummy for !defined(CONFIG_OF_IRQ)
+From: Rob Herring <robherring2@gmail.com>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, software@gaisler.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013 15:49:24 -0400
-Dave Jones <davej@redhat.com> wrote:
+On Tue, Aug 27, 2013 at 2:57 AM, Andreas Larsson <andreas@gaisler.com> wrote:
+> This changes the dummy version of of_irq_find_parent to be defined when
+> !defined(CONFIG_OF_IRQ) instead of when !defined(CONFIG_OF). Without
+> this of_irq_find_parent is undefined on SPARC that defines CONFIG_OF but
+> not CONFIG_OF_IRQ.
 
+Can you give me some clue about where the failure is. This function
+has been here a while, so what changed?
 
->  > Do you have /sys/kernel/debug with access permissions?
-> 
-> Ah, yeah, that'll be it. Good catch.
-> 
-> Sorry for the false alarm Steve ;)
+Rob
 
-Yeah, but it still does not explain how perf got started. Perf requires
-a sys_perf_event_open() call to run.
-
--- Steve
+>
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> ---
+>  include/linux/of_irq.h |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+>
+> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+> index 535cecf..d0059a9 100644
+> --- a/include/linux/of_irq.h
+> +++ b/include/linux/of_irq.h
+> @@ -83,11 +83,13 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
+>  {
+>         return 0;
+>  }
+> +#endif /* !CONFIG_OF */
+> +
+> +#endif /* __OF_IRQ_H */
+>
+> +#if !defined(CONFIG_OF_IRQ)
+>  static inline void *of_irq_find_parent(struct device_node *child)
+>  {
+>         return NULL;
+>  }
+> -#endif /* !CONFIG_OF */
+> -
+> -#endif /* __OF_IRQ_H */
+> +#endif /* !CONFIG_OF_IRQ */
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
