@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3H0T2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:28:11 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33739 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751521Ab3H0T2I (ORCPT
+	id S1754040Ab3H0T3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:29:43 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:53333 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab3H0T3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 15:28:08 -0400
-X-Sasl-enc: k4yZzrksi4JjUh6BTXl7OguUcfPHWYe9pRTAKETm7NS8 1377631683
-Date: Tue, 27 Aug 2013 12:30:21 -0700
-From: Greg KH <greg@kroah.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-Message-ID: <20130827193021.GA30113@kroah.com>
-References: <521C6961.9020103@linutronix.de>
- <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
- <521CA888.1080909@baylibre.com>
- <521CAF59.1090203@linutronix.de>
- <521CB046.9070408@baylibre.com>
- <521CB18B.4080000@linutronix.de>
- <521CB239.6050409@baylibre.com>
- <521CB403.8010307@linutronix.de>
- <20130827173732.GC21564@kroah.com>
- <20130827183732.GP3005@radagast>
+	Tue, 27 Aug 2013 15:29:41 -0400
+Date: Tue, 27 Aug 2013 12:29:40 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Randy Dunlap <rdunlap@infradead.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 27 (ceph)
+In-Reply-To: <521CF7D6.5090807@infradead.org>
+Message-ID: <alpine.DEB.2.00.1308271229230.24783@cobra.newdream.net>
+References: <20130827203008.1c54283d628ef706f51a866a@canb.auug.org.au> <521CF7D6.5090807@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827183732.GP3005@radagast>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 01:37:32PM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Aug 27, 2013 at 10:37:32AM -0700, Greg KH wrote:
-> > On Tue, Aug 27, 2013 at 04:13:23PM +0200, Sebastian Andrzej Siewior wrote:
-> > > On 08/27/2013 04:05 PM, Benoit Cousson wrote:
-> > > > On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
-> > > >> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
-> > > >>> + Kevin,
-> > > >>>
-> > > >>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
-> > > >>>> What do we do now?
-> > > >>>
-> > > >>> Cannot you just merge the stable arm-soc/dt branch into your branch
-> > > >>> before applying your patches?
-> > > >>
-> > > >> That is up to Greg. This changes sat in his usb-next tree for a while
-> > > >> now. And before they hit Greg they were in Felipe's tree for a while.
-> > > >>
-> > > >> To be exact, last .dts change via USB was:
-> > > >>
-> > > >> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> > > >> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
-> > > >> Commit:     Felipe Balbi <balbi@ti.com>
-> > > >> CommitDate: Fri Aug 9 17:40:16 2013 +0300
-> > > >>
-> > > >>     usb: musb dma: add cppi41 dma driver
-> > > > 
-> > > > Mmm, if that branch is supposed to be stable, I'm not sure it will be
-> > > > doable...
-> > > > 
-> > > > Maybe we should do the other way around? And merge usb-next into
-> > > > arm-soc/dt.
-> > > > 
-> > > > Kevin, Olof?
-> > > 
-> > > Please be aware that I have no response so far regarding [0] from Greg.
-> > > 
-> > > [0] http://www.spinics.net/lists/linux-usb/msg92595.html
+On Tue, 27 Aug 2013, Randy Dunlap wrote:
+> On 08/27/13 03:30, Stephen Rothwell wrote:
+> > Hi all,
 > > 
-> > Nor will you, given that I am not the one to take these patches, Felipe
-> > is.  I noticed now that you said "please route around Felipe", but
-> > sorry, no, I'm not going to do that unless there's a really good reason.
-> > Felipe seems to be around at the moment, please work with him on this.
+> > I should know better than to take time off around -rc7 :-)
+> > 
+> > Changes since 20130822:
+> > 
 > 
-> If you will still take a 'part2' pull request from me, I can send you
-> urgent bugfixes by friday. If I have some time left, I can even try to
-> get that sorted out by tomorrow.
+> on i386:
+> 
+> fs/built-in.o: In function `ceph_fallocate':
+> file.c:(.text+0x20b171): undefined reference to `__divdi3'
 
-For 3.12 stuff, like "fixes", sure, I can take them this week, that
-should give us a week or so for linux-next testing, right?
+I've fixed this up in the ceph tree.
 
-thanks,
-
-greg k-h
+Thanks!
+sage
+ 
