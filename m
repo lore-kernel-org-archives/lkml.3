@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab3H0BGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:06:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59313 "EHLO
+	id S1753191Ab3H0BGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:06:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59317 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab3H0BG3 (ORCPT
+	with ESMTP id S1753114Ab3H0BGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:29 -0400
+	Mon, 26 Aug 2013 21:06:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/13] 3.4.60-stable review
-Date: Mon, 26 Aug 2013 18:08:32 -0700
-Message-Id: <20130827010309.850395966@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Terry Suereth <terry.suereth@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 10/13] libata: apply behavioral quirks to sil3826 PMP
+Date: Mon, 26 Aug 2013 18:08:42 -0700
+Message-Id: <20130827010310.629726356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
+References: <20130827010309.850395966@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.60 release.
-There are 13 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Aug 29 01:03:03 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.60-rc1.gz
-and the diffstat can be found below.
+From: Terry Suereth <terry.suereth@gmail.com>
 
-thanks,
+commit 8ffff94d20b7eb446e848e0046107d51b17a20a8 upstream.
 
-greg k-h
+Fixing support for the Silicon Image 3826 port multiplier, by applying
+to it the same quirks applied to the Silicon Image 3726.  Specifically
+fixes the repeated timeout/reset process which previously afflicted
+the 3726, as described from line 290.  Slightly based on notes from:
 
--------------
-Pseudo-Shortlog of commits:
+https://bugzilla.redhat.com/show_bug.cgi?id=890237
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.60-rc1
+Signed-off-by: Terry Suereth <terry.suereth@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-David Vrabel <david.vrabel@citrix.com>
-    x86/xen: do not identity map UNUSABLE regions in the machine E820
+---
+ drivers/ata/libata-pmp.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Martin Peschke <mpeschke@linux.vnet.ibm.com>
-    SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
-
-Martin Peschke <mpeschke@linux.vnet.ibm.com>
-    SCSI: zfcp: fix lock imbalance by reworking request queue locking
-
-Terry Suereth <terry.suereth@gmail.com>
-    libata: apply behavioral quirks to sil3826 PMP
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    Hostap: copying wrong data prism2_ioctl_giwaplist()
-
-Vyacheslav Dubeyko <slava@dubeyko.com>
-    nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
-
-Vyacheslav Dubeyko <slava@dubeyko.com>
-    nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-
-Wladislav Wiebe <wladislav.kw@gmail.com>
-    of: fdt: fix memory initialization for expanded DT
-
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Invalidate TLBs for the rings after a reset
-
-David Vrabel <david.vrabel@citrix.com>
-    xen/events: initialize local per-cpu mask for all possible events
-
-Jussi Kivilinna <jussi.kivilinna@iki.fi>
-    zd1201: do not use stack as URB transfer_buffer
-
-Tejun Heo <tj@kernel.org>
-    workqueue: consider work function when searching for busy work items
-
-Lai Jiangshan <laijs@cn.fujitsu.com>
-    workqueue: fix possible stall on try_to_grab_pending() of a delayed work item
-
-
--------------
-
-Diffstat:
-
- Makefile                                   |  4 +-
- arch/x86/xen/setup.c                       | 22 ++++++++++
- drivers/ata/libata-pmp.c                   | 12 +++---
- drivers/gpu/drm/i915/i915_reg.h            |  2 +
- drivers/gpu/drm/i915/intel_ringbuffer.c    | 12 ++++++
- drivers/net/wireless/hostap/hostap_ioctl.c |  4 +-
- drivers/net/wireless/zd1201.c              |  4 +-
- drivers/of/fdt.c                           |  2 +
- drivers/s390/scsi/zfcp_erp.c               | 29 +++++++++----
- drivers/s390/scsi/zfcp_qdio.c              |  8 +---
- drivers/xen/events.c                       |  2 +-
- fs/nilfs2/segbuf.c                         |  5 +--
- include/linux/wait.h                       | 57 +++++++++++++++++++++++++
- kernel/workqueue.c                         | 67 +++++++++++++++++++++++-------
- 14 files changed, 188 insertions(+), 42 deletions(-)
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -289,24 +289,24 @@ static int sata_pmp_configure(struct ata
+ 
+ 	/* Disable sending Early R_OK.
+ 	 * With "cached read" HDD testing and multiple ports busy on a SATA
+-	 * host controller, 3726 PMP will very rarely drop a deferred
++	 * host controller, 3x26 PMP will very rarely drop a deferred
+ 	 * R_OK that was intended for the host. Symptom will be all
+ 	 * 5 drives under test will timeout, get reset, and recover.
+ 	 */
+-	if (vendor == 0x1095 && devid == 0x3726) {
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
+ 		u32 reg;
+ 
+ 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to read Sil3726 Private Register";
++			reason = "failed to read Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 		reg &= ~0x1;
+ 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to write Sil3726 Private Register";
++			reason = "failed to write Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 	}
+@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_p
+ 	u16 devid = sata_pmp_gscr_devid(gscr);
+ 	struct ata_link *link;
+ 
+-	if (vendor == 0x1095 && devid == 0x3726) {
+-		/* sil3726 quirks */
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
++		/* sil3x26 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
 
 
