@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3H0BUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:20:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59479 "EHLO
+	id S1754647Ab3H0BVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:21:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab3H0BHM (ORCPT
+	with ESMTP id S1753346Ab3H0BHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:12 -0400
+	Mon, 26 Aug 2013 21:07:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, <stable@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Noam Camus <noamc@ezchip.com>, Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 05/74] ARC: gdbserver breakage in Big-Endian configuration #1
-Date: Mon, 26 Aug 2013 18:08:03 -0700
-Message-Id: <20130827010425.743028026@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Peter Wu <lekensteyn@gmail.com>, Vladimir Lalov <mail@vlalov.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 04/74] ACPI: Try harder to resolve _ADR collisions for bridges
+Date: Mon, 26 Aug 2013 18:08:02 -0700
+Message-Id: <20130827010425.556291477@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,74 +28,243 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-[Based on mainline commit 502a0c775c7f0a: "ARC: pt_regs update #5"]
+commit 60f75b8e97daf4a39790a20d962cb861b9220af5 upstream.
 
-gdbserver needs @stop_pc, served by ptrace, but fetched from pt_regs
-differently, based on in_brkpt_traps(), which in turn relies on
-additional machine state in pt_regs->event bitfield.
+In theory, under a given ACPI namespace node there should be only
+one child device object with _ADR whose value matches a given bus
+address exactly.  In practice, however, there are systems in which
+multiple child device objects under a given parent have _ADR matching
+exactly the same address.  In those cases we use _STA to determine
+which of the multiple matching devices is enabled, since some systems
+are known to indicate which ACPI device object to associate with the
+given physical (usually PCI) device this way.
 
-        unsigned long orig_r8:16, event:16;
+Unfortunately, as it turns out, there are systems in which many
+device objects under the same parent have _ADR matching exactly the
+same bus address and none of them has _STA, in which case they all
+should be regarded as enabled according to the spec.  Still, if
+those device objects are supposed to represent bridges (e.g. this
+is the case for device objects corresponding to PCIe ports), we can
+try harder and skip the ones that have no child device objects in the
+ACPI namespace.  With luck, we can avoid using device objects that we
+are not expected to use this way.
 
-For big endian config, this macro was returning false, despite being in
-breakpoint Trap exception, causing wrong @stop_pc to be returned to gdb.
+Although this only works for bridges whose children also have ACPI
+namespace representation, it is sufficient to address graphics
+adapter detection issues on some systems, so rework the code finding
+a matching device ACPI handle for a given bus address to implement
+this idea.
 
-Issue #1: In BE, @event above is at offset 2 in word, while a STW insn
-          at offset 0 was used to update it. Resort to using ST insn
-	  which updates the half-word at right location.
+Introduce a new function, acpi_find_child(), taking three arguments:
+the ACPI handle of the device's parent, a bus address suitable for
+the device's bus type and a bool indicating if the device is a
+bridge and make it work as outlined above.  Reimplement the function
+currently used for this purpose, acpi_get_child(), as a call to
+acpi_find_child() with the last argument set to 'false' and make
+the PCI subsystem use acpi_find_child() with the bridge information
+passed as the last argument to it.  [Lan Tianyu notices that it is
+not sufficient to use pci_is_bridge() for that, because the device's
+subordinate pointer hasn't been set yet at this point, so use
+hdr_type instead.]
 
-Issue #2: The union involving bitfields causes all the members to be
-	  laid out at offset 0. So with fix #1 above, ASM was now
-	  updating at offset 2, "C" code was still referencing at
-	  offset 0. Fixed by wrapping bitfield in a struct.
+This change fixes a regression introduced inadvertently by commit
+33f767d (ACPI: Rework acpi_get_child() to be more efficient) which
+overlooked the fact that for acpi_walk_namespace() "post-order" means
+"after all children have been visited" rather than "on the way back",
+so for device objects without children and for namespace walks of
+depth 1, as in the acpi_get_child() case, the "post-order" callbacks
+ordering is actually the same as the ordering of "pre-order" ones.
+Since that commit changed the namespace walk in acpi_get_child() to
+terminate after finding the first matching object instead of going
+through all of them and returning the last one, it effectively
+changed the result returned by that function in some rare cases and
+that led to problems (the switch from a "pre-order" to a "post-order"
+callback was supposed to prevent that from happening, but it was
+ineffective).
 
-Reported-by: Noam Camus <noamc@ezchip.com>
-Tested-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+As it turns out, the systems where the change made by commit
+33f767d actually matters are those where there are multiple ACPI
+device objects representing the same PCIe port (which effectively
+is a bridge).  Moreover, only one of them, and the one we are
+expected to use, has child device objects in the ACPI namespace,
+so the regression can be addressed as described above.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60561
+Reported-by: Peter Wu <lekensteyn@gmail.com>
+Tested-by: Vladimir Lalov <mail@vlalov.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Peter Wu <lekensteyn@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/include/asm/ptrace.h |    2 ++
- arch/arc/kernel/entry.S       |    4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/acpi/glue.c     |   99 +++++++++++++++++++++++++++++++++++++++---------
+ drivers/pci/pci-acpi.c  |   15 +++++--
+ include/acpi/acpi_bus.h |    6 ++
+ 3 files changed, 98 insertions(+), 22 deletions(-)
 
---- a/arch/arc/include/asm/ptrace.h
-+++ b/arch/arc/include/asm/ptrace.h
-@@ -52,12 +52,14 @@ struct pt_regs {
+--- a/drivers/acpi/glue.c
++++ b/drivers/acpi/glue.c
+@@ -78,34 +78,99 @@ static struct acpi_bus_type *acpi_get_bu
+ 	return ret;
+ }
  
- 	/*to distinguish bet excp, syscall, irq */
- 	union {
-+		struct {
- #ifdef CONFIG_CPU_BIG_ENDIAN
- 		/* so that assembly code is same for LE/BE */
- 		unsigned long orig_r8:16, event:16;
- #else
- 		unsigned long event:16, orig_r8:16;
- #endif
+-static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
+-				      void *addr_p, void **ret_p)
++static acpi_status acpi_dev_present(acpi_handle handle, u32 lvl_not_used,
++				  void *not_used, void **ret_p)
+ {
+-	unsigned long long addr, sta;
+-	acpi_status status;
++	struct acpi_device *adev = NULL;
+ 
+-	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
+-	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
++	acpi_bus_get_device(handle, &adev);
++	if (adev) {
+ 		*ret_p = handle;
+-		status = acpi_bus_get_status_handle(handle, &sta);
+-		if (ACPI_SUCCESS(status) && (sta & ACPI_STA_DEVICE_ENABLED))
+-			return AE_CTRL_TERMINATE;
++		return AE_CTRL_TERMINATE;
+ 	}
+ 	return AE_OK;
+ }
+ 
+-acpi_handle acpi_get_child(acpi_handle parent, u64 address)
++static bool acpi_extra_checks_passed(acpi_handle handle, bool is_bridge)
+ {
+-	void *ret = NULL;
++	unsigned long long sta;
++	acpi_status status;
+ 
+-	if (!parent)
+-		return NULL;
++	status = acpi_bus_get_status_handle(handle, &sta);
++	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
++		return false;
++
++	if (is_bridge) {
++		void *test = NULL;
++
++		/* Check if this object has at least one child device. */
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
++				    acpi_dev_present, NULL, NULL, &test);
++		return !!test;
++	}
++	return true;
++}
+ 
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, NULL,
+-			    do_acpi_find_child, &address, &ret);
+-	return (acpi_handle)ret;
++struct find_child_context {
++	u64 addr;
++	bool is_bridge;
++	acpi_handle ret;
++	bool ret_checked;
++};
++
++static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
++				 void *data, void **not_used)
++{
++	struct find_child_context *context = data;
++	unsigned long long addr;
++	acpi_status status;
++
++	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
++	if (ACPI_FAILURE(status) || addr != context->addr)
++		return AE_OK;
++
++	if (!context->ret) {
++		/* This is the first matching object.  Save its handle. */
++		context->ret = handle;
++		return AE_OK;
++	}
++	/*
++	 * There is more than one matching object with the same _ADR value.
++	 * That really is unexpected, so we are kind of beyond the scope of the
++	 * spec here.  We have to choose which one to return, though.
++	 *
++	 * First, check if the previously found object is good enough and return
++	 * its handle if so.  Second, check the same for the object that we've
++	 * just found.
++	 */
++	if (!context->ret_checked) {
++		if (acpi_extra_checks_passed(context->ret, context->is_bridge))
++			return AE_CTRL_TERMINATE;
++		else
++			context->ret_checked = true;
++	}
++	if (acpi_extra_checks_passed(handle, context->is_bridge)) {
++		context->ret = handle;
++		return AE_CTRL_TERMINATE;
++	}
++	return AE_OK;
++}
++
++acpi_handle acpi_find_child(acpi_handle parent, u64 addr, bool is_bridge)
++{
++	if (parent) {
++		struct find_child_context context = {
++			.addr = addr,
++			.is_bridge = is_bridge,
 +		};
- 		long orig_r8_word;
- 	};
++
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, do_find_child,
++				    NULL, &context, NULL);
++		return context.ret;
++	}
++	return NULL;
+ }
+-EXPORT_SYMBOL(acpi_get_child);
++EXPORT_SYMBOL_GPL(acpi_find_child);
+ 
+ static int acpi_bind_one(struct device *dev, acpi_handle handle)
+ {
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -317,13 +317,20 @@ void acpi_pci_remove_bus(struct pci_bus
+ /* ACPI bus type */
+ static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+ {
+-	struct pci_dev * pci_dev;
+-	u64	addr;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	bool is_bridge;
++	u64 addr;
+ 
+-	pci_dev = to_pci_dev(dev);
++	/*
++	 * pci_is_bridge() is not suitable here, because pci_dev->subordinate
++	 * is set only after acpi_pci_find_device() has been called for the
++	 * given device.
++	 */
++	is_bridge = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
++			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
+ 	/* Please ref to ACPI spec for the syntax of _ADR */
+ 	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
+-	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), addr);
++	*handle = acpi_find_child(ACPI_HANDLE(dev->parent), addr, is_bridge);
+ 	if (!*handle)
+ 		return -ENODEV;
+ 	return 0;
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -455,7 +455,11 @@ struct acpi_pci_root {
  };
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -498,7 +498,7 @@ tracesys_exit:
- trap_with_param:
  
- 	; stop_pc info by gdb needs this info
--	stw orig_r8_IS_BRKPT, [sp, PT_orig_r8]
-+	st  orig_r8_IS_BRKPT, [sp, PT_orig_r8]
- 
- 	mov r0, r12
- 	lr  r1, [efa]
-@@ -723,7 +723,7 @@ not_exception:
- 	; things to what they were, before returning from L2 context
- 	;----------------------------------------------------------------
- 
--	ldw  r9, [sp, PT_orig_r8]      ; get orig_r8 to make sure it is
-+	ld   r9, [sp, PT_orig_r8]      ; get orig_r8 to make sure it is
- 	brne r9, orig_r8_IS_IRQ2, 149f ; infact a L2 ISR ret path
- 
- 	ld r9, [sp, PT_status32]       ; get statu32_l2 (saved in pt_regs)
+ /* helper */
+-acpi_handle acpi_get_child(acpi_handle, u64);
++acpi_handle acpi_find_child(acpi_handle, u64, bool);
++static inline acpi_handle acpi_get_child(acpi_handle handle, u64 addr)
++{
++	return acpi_find_child(handle, addr, false);
++}
+ int acpi_is_root_bridge(acpi_handle);
+ struct acpi_pci_root *acpi_pci_find_root(acpi_handle handle);
+ #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
 
 
