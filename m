@@ -1,148 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3H0H54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:57:56 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:52932 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab3H0H5z (ORCPT
+	id S1753227Ab3H0H6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:58:15 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54045 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab3H0H6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:57:55 -0400
-Message-ID: <521C5C19.5070905@atmel.com>
-Date: Tue, 27 Aug 2013 09:58:17 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 03:58:12 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-22-521c5c13058e
+Date: Tue, 27 Aug 2013 16:58:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 14/20] mm, hugetlb: call vma_needs_reservation before
+ entering alloc_huge_page()
+Message-ID: <20130827075838.GC6795@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
+ <87vc2sd15e.fsf@linux.vnet.ibm.com>
+ <87mwo4d0p2.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] net/cadence/macb: add support for dt phy definition
-References: <1377589007-3684-1-git-send-email-b.brezillon@overkiz.com> <1377589070-3722-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1377589070-3722-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwo4d0p2.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/2013 09:37, Boris BREZILLON :
-> The macb driver only handle PHY description through platform_data
-> (macb_platform_data).
-> Thus, when using dt you cannot define phy properties like phy address or
-> phy irq pin.
->
-> This patch makes use of the of_mdiobus_register to add support for
-> phy device definition using dt.
-> A fallback to the autoscan procedure is added in case there is no phy
-> devices defined in dt.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> >> @@ -2504,6 +2498,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+> >>  	struct hstate *h = hstate_vma(vma);
+> >>  	struct page *old_page, *new_page;
+> >>  	int outside_reserve = 0;
+> >> +	long chg;
+> >> +	bool use_reserve;
+> >>  	unsigned long mmun_start;	/* For mmu_notifiers */
+> >>  	unsigned long mmun_end;		/* For mmu_notifiers */
+> >>
+> >> @@ -2535,7 +2531,17 @@ retry_avoidcopy:
+> >>
+> >>  	/* Drop page_table_lock as buddy allocator may be called */
+> >>  	spin_unlock(&mm->page_table_lock);
+> >> -	new_page = alloc_huge_page(vma, address, outside_reserve);
+> >> +	chg = vma_needs_reservation(h, vma, address);
+> >> +	if (chg == -ENOMEM) {
+> >
+> > why not 
+> >
+> >     if (chg < 0) ?
+> >
+> > Should we try to unmap the page from child and avoid cow here ?. May be
+> > with outside_reserve = 1 we will never have vma_needs_reservation fail.
+> > Any how it would be nice to document why this error case is different
+> > from alloc_huge_page error case.
+> >
+> 
+> I guess patch  16 address this . So if we do if (chg < 0) we are good
+> here.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Okay! I will change it.
 
-> ---
->   drivers/net/ethernet/cadence/macb.c |   48 +++++++++++++++++++++++++++--------
->   1 file changed, 38 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index e866608..393afeb 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -27,6 +27,7 @@
->   #include <linux/phy.h>
->   #include <linux/of.h>
->   #include <linux/of_device.h>
-> +#include <linux/of_mdio.h>
->   #include <linux/of_net.h>
->   #include <linux/pinctrl/consumer.h>
->
-> @@ -275,7 +276,7 @@ static int macb_mii_probe(struct net_device *dev)
->   	phydev = phy_find_first(bp->mii_bus);
->   	if (!phydev) {
->   		netdev_err(dev, "no PHY found\n");
-> -		return -1;
-> +		return -ENXIO;
->   	}
->
->   	pdata = dev_get_platdata(&bp->pdev->dev);
-> @@ -314,6 +315,7 @@ static int macb_mii_probe(struct net_device *dev)
->   int macb_mii_init(struct macb *bp)
->   {
->   	struct macb_platform_data *pdata;
-> +	struct device_node *np;
->   	int err = -ENXIO, i;
->
->   	/* Enable management port */
-> @@ -335,26 +337,52 @@ int macb_mii_init(struct macb *bp)
->   	bp->mii_bus->parent = &bp->dev->dev;
->   	pdata = bp->pdev->dev.platform_data;
->
-> -	if (pdata)
-> -		bp->mii_bus->phy_mask = pdata->phy_mask;
-> -
->   	bp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
->   	if (!bp->mii_bus->irq) {
->   		err = -ENOMEM;
->   		goto err_out_free_mdiobus;
->   	}
->
-> -	for (i = 0; i < PHY_MAX_ADDR; i++)
-> -		bp->mii_bus->irq[i] = PHY_POLL;
-> -
->   	dev_set_drvdata(&bp->dev->dev, bp->mii_bus);
->
-> -	if (mdiobus_register(bp->mii_bus))
-> +	np = bp->pdev->dev.of_node;
-> +	if (np) {
-> +		/* try dt phy registration */
-> +		err = of_mdiobus_register(bp->mii_bus, np);
-> +
-> +		/* fallback to standard phy registration if no phy were
-> +		 * found during dt phy registration
-> +		 */
-> +		if (!err && !phy_find_first(bp->mii_bus)) {
-> +			for (i = 0; i < PHY_MAX_ADDR; i++) {
-> +				struct phy_device *phydev;
-> +
-> +				phydev = mdiobus_scan(bp->mii_bus, i);
-> +				if (IS_ERR(phydev)) {
-> +					err = PTR_ERR(phydev);
-> +					break;
-> +				}
-> +			}
-> +
-> +			if (err)
-> +				goto err_out_unregister_bus;
-> +		}
-> +	} else {
-> +		for (i = 0; i < PHY_MAX_ADDR; i++)
-> +			bp->mii_bus->irq[i] = PHY_POLL;
-> +
-> +		if (pdata)
-> +			bp->mii_bus->phy_mask = pdata->phy_mask;
-> +
-> +		err = mdiobus_register(bp->mii_bus);
-> +	}
-> +
-> +	if (err)
->   		goto err_out_free_mdio_irq;
->
-> -	if (macb_mii_probe(bp->dev) != 0) {
-> +	err = macb_mii_probe(bp->dev);
-> +	if (err)
->   		goto err_out_unregister_bus;
-> -	}
->
->   	return 0;
->
->
+> 
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
+Thanks.
 
--- 
-Nicolas Ferre
