@@ -1,133 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3H0SyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:54:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37577 "EHLO arroyo.ext.ti.com"
+	id S1753684Ab3H0Szl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:55:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46618 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab3H0SyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:54:06 -0400
-Date: Tue, 27 Aug 2013 13:53:29 -0500
+	id S1752882Ab3H0Szj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 14:55:39 -0400
+Date: Tue, 27 Aug 2013 13:55:06 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Felipe Balbi <balbi@ti.com>, Kumar Gala <galak@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
-Message-ID: <20130827185329.GT3005@radagast>
+To: Philippe De Swert <philippe.deswert@jollamobile.com>
+CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget/composite : Avoid crash with bad gadget
+ drivers
+Message-ID: <20130827185506.GU3005@radagast>
 Reply-To: <balbi@ti.com>
-References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
- <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
- <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
- <20130812180553.GD27954@radagast>
- <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
+References: <1376072588-2881-1-git-send-email-philippe.deswert@jollamobile.com>
+ <20130812180804.GE27954@radagast>
+ <520C0741.3010905@jollamobile.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HBIh8aIvd1vDZWkD"
+	protocol="application/pgp-signature"; boundary="kdhy+KQ/ef+27j+Z"
 Content-Disposition: inline
-In-Reply-To: <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
+In-Reply-To: <520C0741.3010905@jollamobile.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HBIh8aIvd1vDZWkD
+--kdhy+KQ/ef+27j+Z
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Tue, Aug 13, 2013 at 02:34:10PM +0100, Mark Rutland wrote:
-> On Mon, Aug 12, 2013 at 07:05:53PM +0100, Felipe Balbi wrote:
-> > On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
-> > >=20
-> > > On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
-> > >=20
-> > > > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
-> > > >> The binding spec wasn't clear that the order of the phandles in the
-> > > >> usb-phy array has meaning.  Clarify this point in the binding that
-> > > >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
-> > > >>=20
-> > > >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> > > >> ---
-> > > >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
-> > > >> 1 file changed, 3 insertions(+), 1 deletion(-)
-> > > >>=20
-> > > >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Docu=
-mentation/devicetree/bindings/usb/dwc3.txt
-> > > >> index 7a95c65..8a9770b 100644
-> > > >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
-> > > >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-> > > >> @@ -6,7 +6,9 @@ Required properties:
-> > > >>  - compatible: must be "synopsys,dwc3"
-> > > >>  - reg : Address and length of the register set for the device
-> > > >>  - interrupts: Interrupts used by the dwc3 controller.
-> > > >> - - usb-phy : array of phandle for the PHY device
-> > > >> + - usb-phy : array of phandle for the PHY device.  The first elem=
-ent
-> > > >> +   in the array is expected to be a handle to the USB2/HS PHY and
-> > > >> +   the second element is expected to be a handle to the USB3/SS P=
-HY
-> > > >=20
-> > > > Just to check - it's not valid to have a USB3 phy without a USB2 ph=
-y?
-> > >=20
-> > > Don't know, hopefully Felipe will chime in on that.
-> >=20
-> > that'd be a really non-standard implementation. Per-spec, USB3 is
-> > *always* backwards compatible with USB2.
+On Thu, Aug 15, 2013 at 01:40:01AM +0300, Philippe De Swert wrote:
+> Hi,
 >=20
-> I'm slightly confused here. From a quick look at the driver, it expects
-> two separate phys to be present -- one handling only USB2, and one
-> handling USB3 (with USB2 backwards compatibility).
+> On 12/08/13 21:08, Felipe Balbi wrote:
+> >On Fri, Aug 09, 2013 at 09:23:08PM +0300, Philippe De Swert wrote:
+> >>Some bad gadget drivers do not check the return status of usb_add_confi=
+g.
+> >
+> >fix the gadget driver
 >=20
-> So it's not physically possible for someone to just wire up a single phy
-> to the device, either USB2-only or USB3?
+> As stated in my comment (see below) that is indeed what should
+> happen. But we cannot fix it in future new gadget drivers, is it thus
+> not better
+> to avoid a crash? The gadget driver will not work as expected anyway
+> when this occurs and the print will at least give an indication why.
 
-of course it is :-) In fact, TI has done it. But it causes a whole bunch
-of other problems to support that sort of model. For one, in some
-systems, a clock generated by the USB3 PHY is backfed into the IP and if
-USB3 PHY isn't running, the dwc3 IP won't start.
+if we avoid a crash, we will be decreasing the urgency of fixing the
+gadget driver bug.
 
-I even wrote a patch making USB3 PHY optional, but didn't push it
-exactly because it broke some other systems and I can't guarantee users
-won't mess up their DTS/pdata.
-
-> You can describe the USB2-only case in the dt by only listing the first
-> phy (though the driver won't support it as it expects both to be
-> present), but it's impossible to describe that you've wired up a single
-> phy that's USB3 capable.
-
-you might be right there...
+Let's leave it as is. I can't live thinking that maybe in the future
+there will be gadget drivers doing different things...
 
 --=20
 balbi
 
---HBIh8aIvd1vDZWkD
+--kdhy+KQ/ef+27j+Z
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSHPWpAAoJEIaOsuA1yqREyn8QALOcf71vhEBNM4k7VoHYQWWw
-15VgvCrbaYPu/iFinRGWI+FPOUoJQ+w/1DdAH+N80hEYKHcqg7w6PjbAzhW0hDQL
-LNyWaq0jl4N84aRghCngdObZc3WwZqwFb/wDHjxMWSA0fNdqs9/bn9baahyH5+He
-OrMfMAu+J4xEQO5C6i63/PCO7X7GwFA4nPu3qXhG8ncyBs+jWwdz2n933l8w6+sj
-pxo5GG5T6o8+HUuNlyfha8Ye4rUmMBYZy/1j24POOTIYppX394U0mfiJleQWTI6e
-WklNpz7lJUA7b32F8YDQB6El4sL7xlFe7yTh0m2NFEqfvTDsb6yc+3kQ5n0lE+/4
-JJkDi4NICRGZdDxRQmUVLcIRUzLbqIXvV6Lj6T8+YeOeeek35f99/SR9+UHXLdpM
-1s4rq6UZlfH1rsUeY2st+t0LPgZCrTGbhuUGhWkk1ZQfqa6Ig2Km1mmQQOo5Z9IP
-0pKLgCt2oVnjm3uKobIzGsqCqmbV1Eu98xHPvlRpae/ikoBjsIz04rfy5K+DngjJ
-28AVenyt8SfjONJwAuPXfDGypQDQp3eZTuc2NaDXd7KBEDnMbNqgSTqzwmSZ3AeB
-aE29RsF2f8hSGkI3fv8V1XTQuvKTVZ4rdf+TTOagIMpVCIqYJqjCos348QmsuVOv
-ncjyYo1N3P8Rcipw6I4z
-=zVOg
+iQIcBAEBAgAGBQJSHPYKAAoJEIaOsuA1yqREeXcQALN/OtHRlqkZ2oZY1Wsj6lxK
+ebwMkGsnvsz2EtDZm6JDrG8Y1WB/9HUjl6aMfMlMhI/feBoMYIz5NZFwHKcMUVxE
+48AHJBKFIkhBzvVnAhVLX80tL24HW1wAiz8GFcY+FQDST0Cusckcr2glZK6Xa6bs
+Y/iez9MAKivzYCYOZYhZFvwrIhLEl81l4RRQ34ZQvbKy57QJ4yJ/i8hESjy65w/t
+xzncJiC9niIRa+kjDvSHF/5u9WrfDMwynqxApUoIFyMrJxg8LAptSuU0Kuu1LrOs
+2w+7EjURztugKl5oGL274ImYwkRPZJ641uwiw3CRnbNM2pU7s/st1vduDmWoDbU5
+eiiSunRdTiZCsF/7wud7GZTtRvBSFcJsM+X/SK6DJhLM6Ejr6Kg3tBs7qr0uXojt
+oHbkv8lC00UNGdqunj1XUvlGsF4iLrKOteoNDCzA7UCK4fII6ZbB1b/ZxAgZaw2+
+3Z4IyOaKKkBS+NqRy+Hxl8LXQ/n3aL3X8H5aVNClZmtYrpsGTgkQhJDHYjgXJKZt
+o65oSk2PhjRObC/+t/8fm5mISv5QE6McMOHOz6m7SJSeYH5QqTAnFvkCKN2cRKYF
+0/Y/RtZu2jfvy3Qj5MBYjB8lG0KvjpfVd8ApO59QykdkwvPCa881IbG0H1XJRSzP
+gn4gEnuTVtCME4aRBuiO
+=nPgF
 -----END PGP SIGNATURE-----
 
---HBIh8aIvd1vDZWkD--
+--kdhy+KQ/ef+27j+Z--
