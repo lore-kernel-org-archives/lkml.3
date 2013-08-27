@@ -1,119 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab3H0OQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:16:46 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:31224 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621Ab3H0OQn (ORCPT
+	id S1753740Ab3H0OQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:16:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42367 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753665Ab3H0OQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:16:43 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-67-521cb4c8c28b
-Message-id: <521CB4C5.2050804@samsung.com>
-Date: Tue, 27 Aug 2013 17:16:37 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is not
- enabled
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
- <20130816001716.GA7367@kroah.com> <20130816172635.GA7975@xanatos>
- <20130816173000.GA8210@xanatos>
- <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
- <20130816174516.GA20389@kroah.com>
-In-reply-to: <20130816174516.GA20389@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xy7ontsgEGcw4bG3xZWmdRfPi9WwW
-	l3fNYbO4tus+q0XziVPMDqweO2fdZfdYvOclk8e8k4Ee++euYff4vEkugDWKyyYlNSezLLVI
-	3y6BK+PpyW0sBaslK6Yv3cbWwHhSsIuRk0NCwERiye+fTBC2mMSFe+vZQGwhgaWMErPXRHUx
-	cgHZjUwSn2a/Y4dw5jJKdC9YzA5SxSugJdG7px2sg0VAVWLRz1Vgk9gE9CQ2NP8AqxEViJBY
-	ueQBK0S9oMSPyfdYQGwRAQ2Jl0dvsYAMZQbZduNhFzNIQhio4dbPVlaIM5qZJWbfNgexOQX0
-	JT68bwZbxiygI7G/dRqULS+xec1bZoh6VYnutWvZIN5RlDg9+RzzBEbhWUh2z0LSPgtJ+wJG
-	5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIZHxZQfj4mNWhxgFOBiVeHgtNssECbEmlhVX
-	5h5ilOBgVhLh3b0CKMSbklhZlVqUH19UmpNafIiRiYNTqoGRufDYD62Z/wNnNFkW3b+S777I
-	76JPtOAd/vt5NvnKyf+7zrtvF4s31DuWN8lq9z7blvqwkrMPNrdzxR2qUanunTjz4et58xfm
-	KCic3XH71sGjTLMvhD/bYKgisVl1a7jF36Bft7k2h064ks357fP0hrlpOSK5B6ZNNTM3eGfM
-	tjP5wgavs8qrlFiKMxINtZiLihMBvpNdiGoCAAA=
+	Tue, 27 Aug 2013 10:16:47 -0400
+Date: Tue, 27 Aug 2013 15:16:42 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: "poeschel@lemonage.de" <poeschel@lemonage.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] gpio: mcp23s08: rename the device tree property
+Message-ID: <20130827141642.GL19893@e106331-lin.cambridge.arm.com>
+References: <1377510385-8149-1-git-send-email-larsi@wh2.tu-dresden.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377510385-8149-1-git-send-email-larsi@wh2.tu-dresden.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/08/13 20:45, Greg KH wrote:
-> On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
->> On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
->>> On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
->>>> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
->>>>> On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
->>>>>> When debug is not enabled and dev_dbg() will expand to nothing,
->>>>>> log might be flooded with "callbacks suppressed". If it was not
->>>>>> done on purpose, better to use dev_dbg_ratelimited() instead.
->>>>>>
->>>>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>>>>> ---
->>>>>>  drivers/usb/host/xhci-ring.c | 6 ++----
->>>>>>  1 file changed, 2 insertions(+), 4 deletions(-)
->>>>>
->>>>> Sarah, does this patch conflict with the trace debug patches being
->>>>> worked on?  I'll hold off on applying it for now, let me know if it's ok
->>>>> or not.
->>>> It doesn't conflict with the trace debug patches, because those only
->>>> effect debugging with xhci_dbg with the host device, not dev_dbg with
->>>> the USB device.  This should apply fine to usb-next.
->>> At another glance, the patch removes two if blocks, but doesn't
->>> re-indent the rest of the lines:
->>>
->>>> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
->>>>        * to set the polling interval (once the API is added).
->>>>        */
->>>>       if (xhci_interval != ep_interval) {
->>>> -             if (printk_ratelimit())
->>>> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
->>>> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->>>>                                       " (%d microframe%s) than xHCI "
->>>>                                       "(%d microframe%s)\n",
->>>>                                       ep_interval,
->>> That should probably be fixed.
->> It actually looks correct when patch is applied.
->>
->> But it depends what you mean of course.
->> It looks like it was before:
->> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->>                                        " (%d microframe%s) than xHCI "
->>                                        "(%d microframe%s)\n",
->>                                        ep_interval,
->>                                         ep_interval == 1 ? "" : "s",
->>
->> Or may be you mean:
->> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->>                                " (%d microframe%s) than xHCI "
->>                                "(%d microframe%s)\n",
->>                                ep_interval,
->>                                ep_interval == 1 ? "" : "s",
-> No, it should look like:
->
-> 		dev_dbg_ratelimited(&urb->dev->dev,
-> 				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
-> 				     ep_interval, ep_interval == 1 ? "" : "s",
+On Mon, Aug 26, 2013 at 10:46:24AM +0100, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> The device tree property should be more descriptive.
+> microchip seems more reasonable than mcp. The old mcp
+> prefix is still supported but marked as deprecated.
+> Users of mcp have to switch to the microchip prefix.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> ---
+>  .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |   20 ++++++----
+>  drivers/gpio/gpio-mcp23s08.c                       |   41 ++++++++++++++++----
+>  2 files changed, 46 insertions(+), 15 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> index 629d0ef..31d3ad3 100644
+> --- a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> @@ -3,10 +3,12 @@ Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
+>  
+>  Required properties:
+>  - compatible : Should be
+> -    - "mcp,mcp23s08" for  8 GPIO SPI version
+> -    - "mcp,mcp23s17" for 16 GPIO SPI version
+> -    - "mcp,mcp23008" for  8 GPIO I2C version or
+> -    - "mcp,mcp23017" for 16 GPIO I2C version of the chip
 
-Hello. Sorry I was distracted so much from the kernel.
+I would keep these lines, but suffixed "(DEPRECATED)", with the new
+strings above so people notice them first.
 
-But putting string to one line make it much over 80 chars.
-Is that considered OK?
+> +    - "microchip,mcp23s08" for  8 GPIO SPI version
+> +    - "microchip,mcp23s17" for 16 GPIO SPI version
+> +    - "microchip,mcp23008" for  8 GPIO I2C version or
+> +    - "microchip,mcp23017" for 16 GPIO I2C version of the chip
+> +    NOTE: Do not use the old mcp prefix any more. It is deprecated and will be
+> +    removed.
+>  - #gpio-cells : Should be two.
+>    - first cell is the pin number
+>    - second cell is used to specify flags. Flags are currently unused.
+> @@ -15,10 +17,10 @@ Required properties:
+>          SPI uses this to specify the chipselect line which the chip is
+>          connected to. The driver and the SPI variant of the chip support
+>          multiple chips on the same chipselect. Have a look at
+> -        mcp,spi-present-mask below.
+> +        microchip,spi-present-mask below.
+>  
+>  Required device specific properties (only for SPI chips):
+> -- mcp,spi-present-mask : This is a present flag, that makes only sense for SPI
 
-- Dmitry
+Similarly I would keep this line, suffixed, referring to the new name.
 
-> and the rest of that call indented the same way.
->
-> thanks,
->
-> greg k-h
->
+With that:
 
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+> +- microchip,spi-present-mask : This is a present flag, that makes only sense for SPI
+>          chips - as the name suggests. Multiple SPI chips can share the same
+>          SPI chipselect. Set a bit in bit0-7 in this mask to 1 if there is a
+>          chip connected with the corresponding spi address set. For example if
+> @@ -26,11 +28,13 @@ Required device specific properties (only for SPI chips):
+>          which is 0x08. mcp23s08 chip variant only supports bits 0-3. It is not
+>          possible to mix mcp23s08 and mcp23s17 on the same chipselect. Set at
+>          least one bit to 1 for SPI chips.
+> +    NOTE: Do not use the old mcp prefix any more. It is deprecated and will be
+> +    removed.
+>  - spi-max-frequency = The maximum frequency this chip is able to handle
+>  
+>  Example I2C:
+>  gpiom1: gpio@20 {
+> -        compatible = "mcp,mcp23017";
+> +        compatible = "microchip,mcp23017";
+>          gpio-controller;
+>          #gpio-cells = <2>;
+>          reg = <0x20>;
+> @@ -38,7 +42,7 @@ gpiom1: gpio@20 {
+>  
+>  Example SPI:
+>  gpiom1: gpio@0 {
+> -        compatible = "mcp,mcp23s17";
+> +        compatible = "microchip,mcp23s17";
+>          gpio-controller;
+>          #gpio-cells = <2>;
+>          spi-present-mask = <0x01>;
+> diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+> index 6a4470b..2f94f0f 100644
+> --- a/drivers/gpio/gpio-mcp23s08.c
+> +++ b/drivers/gpio/gpio-mcp23s08.c
+> @@ -483,10 +483,21 @@ fail:
+>  #ifdef CONFIG_SPI_MASTER
+>  static struct of_device_id mcp23s08_spi_of_match[] = {
+>  	{
+> -		.compatible = "mcp,mcp23s08", .data = (void *) MCP_TYPE_S08,
+> +		.compatible = "microchip,mcp23s08",
+> +		.data = (void *) MCP_TYPE_S08,
+>  	},
+>  	{
+> -		.compatible = "mcp,mcp23s17", .data = (void *) MCP_TYPE_S17,
+> +		.compatible = "microchip,mcp23s17",
+> +		.data = (void *) MCP_TYPE_S17,
+> +	},
+> +/* NOTE: The use of the mcp prefix is deprecated and will be removed. */
+> +	{
+> +		.compatible = "mcp,mcp23s08",
+> +		.data = (void *) MCP_TYPE_S08,
+> +	},
+> +	{
+> +		.compatible = "mcp,mcp23s17",
+> +		.data = (void *) MCP_TYPE_S17,
+>  	},
+>  	{ },
+>  };
+> @@ -496,10 +507,21 @@ MODULE_DEVICE_TABLE(of, mcp23s08_spi_of_match);
+>  #if IS_ENABLED(CONFIG_I2C)
+>  static struct of_device_id mcp23s08_i2c_of_match[] = {
+>  	{
+> -		.compatible = "mcp,mcp23008", .data = (void *) MCP_TYPE_008,
+> +		.compatible = "microchip,mcp23008",
+> +		.data = (void *) MCP_TYPE_008,
+> +	},
+> +	{
+> +		.compatible = "microchip,mcp23017",
+> +		.data = (void *) MCP_TYPE_017,
+>  	},
+> +/* NOTE: The use of the mcp prefix is deprecated and will be removed. */
+>  	{
+> -		.compatible = "mcp,mcp23017", .data = (void *) MCP_TYPE_017,
+> +		.compatible = "mcp,mcp23008",
+> +		.data = (void *) MCP_TYPE_008,
+> +	},
+> +	{
+> +		.compatible = "mcp,mcp23017",
+> +		.data = (void *) MCP_TYPE_017,
+>  	},
+>  	{ },
+>  };
+> @@ -621,10 +643,15 @@ static int mcp23s08_probe(struct spi_device *spi)
+>  	if (match) {
+>  		type = (int)match->data;
+>  		status = of_property_read_u32(spi->dev.of_node,
+> -				"mcp,spi-present-mask", &spi_present_mask);
+> +			    "microchip,spi-present-mask", &spi_present_mask);
+>  		if (status) {
+> -			dev_err(&spi->dev, "DT has no spi-present-mask\n");
+> -			return -ENODEV;
+> +			status = of_property_read_u32(spi->dev.of_node,
+> +				    "mcp,spi-present-mask", &spi_present_mask);
+> +			if (status) {
+> +				dev_err(&spi->dev,
+> +					"DT has no spi-present-mask\n");
+> +				return -ENODEV;
+> +			}
+>  		}
+>  		if ((spi_present_mask <= 0) || (spi_present_mask >= 256)) {
+>  			dev_err(&spi->dev, "invalid spi-present-mask\n");
+> -- 
+> 1.7.10.4
+> 
+> 
