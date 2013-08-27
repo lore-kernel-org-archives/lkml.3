@@ -1,117 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab3H0VeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:34:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41487 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3H0VeR (ORCPT
+	id S1754357Ab3H0Vef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:34:35 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42973 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab3H0Ved (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:34:17 -0400
-Date: Tue, 27 Aug 2013 14:34:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] mm/hwpoison: fix return value of
- madvise_hwpoison
-Message-Id: <20130827143415.fa284d67f0ae838079b5a5aa@linux-foundation.org>
-In-Reply-To: <521c5ddd.c9fc440a.2724.ffff8c70SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1377571171-9958-3-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1377574096-y8hxgzdw-mutt-n-horiguchi@ah.jp.nec.com>
-	<521c1f3f.813d320a.6ba7.5a17SMTPIN_ADDED_BROKEN@mx.google.com>
-	<1377574896-5k1diwl4-mutt-n-horiguchi@ah.jp.nec.com>
-	<20130827073701.GA23035@gchen.bj.intel.com>
-	<521c5ddd.c9fc440a.2724.ffff8c70SMTPIN_ADDED_BROKEN@mx.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 17:34:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com> <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 27 Aug 2013 15:34:11 -0600
+Message-ID: <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
+Subject: Re: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie
+ hotplug use when available
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Stefan Seyfried <stefan.seyfried@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013 16:02:29 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+[+cc Stefan]
 
-> Hi Chen,
-> On Tue, Aug 27, 2013 at 03:37:01AM -0400, Chen Gong wrote:
-> >> On Tue, Aug 27, 2013 at 11:38:27AM +0800, Wanpeng Li wrote:
-> >> > Hi Naoya,
-> >> > On Mon, Aug 26, 2013 at 11:28:16PM -0400, Naoya Horiguchi wrote:
-> >> > >On Tue, Aug 27, 2013 at 10:39:31AM +0800, Wanpeng Li wrote:
-> >> > >> The return value outside for loop is always zero which means madvise_hwpoison 
-> >> > >> return success, however, this is not truth for soft_offline_page w/ failure
-> >> > >> return value.
-> >> > >
-> >> > >I don't understand what you want to do for what reason. Could you clarify
-> >> > >those?
-> >> > 
-> >> > int ret is defined in two place in madvise_hwpoison. One is out of for
-> >> > loop and its value is always zero(zero means success for madvise), the 
-> >> > other one is in for loop. The soft_offline_page function maybe return 
-> >> > -EBUSY and break, however, the ret out of for loop is return which means 
-> >> > madvise_hwpoison success. 
-> >> 
-> >> Oh, I see. Thanks.
-> >> 
-> >I don't think such change is a good idea. The original code is obviously
-> >easy to confuse people. Why not removing redundant local variable?
-> >
-> 
-> I think the trick here is get_user_pages_fast will return the number of
-> pages pinned. It is always 1 in madvise_hwpoison, the return value of 
-> memory_failure is ignored. Therefore we still need to reset ret to 0 
-> before return madvise_hwpoison. 
+On Mon, Aug 26, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
+> slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
+> uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
+> pci_acpi_scan_root before setting the osc flags for the device handle.
+> pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
+> to determine if a given slot has pcie hotplug capabilties, whcih checks the
+> devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
+> until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
+> slots are hotplug capable and configures them all to use acpi instead.
 
-erk, madvise_hwpoison() has two locals with the same name.   Bad.
+I'd like to make it more explicit what we're fixing.  Apparently this
+is a regression between v3.9 and v3.10.
 
+Is this a fix for problems like
+https://bugzilla.kernel.org/show_bug.cgi?id=60736 ?  That bug is that
+an ExpressCard slot doesn't work unless we boot with
+"acpiphp.disable=1".  I think what happens there is that acpiphp
+claims the slot before we run _OSC, so pciehp doesn't claim it, even
+though _OSC did grant us control over native PCIe hotplug.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/madvise.c:madvise_hwpoison(): remove local `ret'
-
-madvise_hwpoison() has two locals called "ret".  Fix it all up.
-
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/madvise.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff -puN mm/madvise.c~a mm/madvise.c
---- a/mm/madvise.c~a
-+++ a/mm/madvise.c
-@@ -343,15 +343,16 @@ static long madvise_remove(struct vm_are
-  */
- static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
- {
--	int ret = 0;
--
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 	for (; start < end; start += PAGE_SIZE) {
- 		struct page *p;
--		int ret = get_user_pages_fast(start, 1, 0, &p);
-+		int ret;
-+		
-+		ret = get_user_pages_fast(start, 1, 0, &p);
- 		if (ret != 1)
- 			return ret;
-+
- 		if (PageHWPoison(p)) {
- 			put_page(p);
- 			continue;
-@@ -369,7 +370,7 @@ static int madvise_hwpoison(int bhv, uns
- 		/* Ignore return value for now */
- 		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
- 	}
--	return ret;
-+	return 0;
- }
- #endif
- 
-_
-
+> Fix is pretty simple, just defer the scan until after the osc flags have been
+> set on the device.  Tested by myself and it seems to work well.
+>
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Len Brown <lenb@kernel.org>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: linux-acpi@vger.kernel.org
+> CC: linux-pci@vger.kernel.org
+>
+> ---
+> Change notes:
+> v2) eferred the disabling of aspm until after the acpi scan of the pci bus is
+> complete.  This was done to allow proper handling of pcie 1.1 devices, as per:
+>
+> commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Mon Apr 1 15:47:39 2013 -0600
+>
+>     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
+>
+> As discussed previously in the thread the disable logic for aspm needs to be
+> untangled and refactored, which is not something I'm sufficently versed in teh
+> hotplug code to do right now, but this fixes the problem above, and prevents the
+> problem that necessitated the revert without adding any visible complexity to
+> the user, so I think its ok.
+>
+> v3) Fixup stupid authorship error
+> ---
+>  drivers/acpi/pci_root.c | 54 +++++++++++++++++++++++++++++--------------------
+>  1 file changed, 32 insertions(+), 22 deletions(-)
+>
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 5917839..1e80a90 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>         struct acpi_pci_root *root;
+>         u32 flags, base_flags;
+>         acpi_handle handle = device->handle;
+> +       bool no_aspm = false;
+>
+>         root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+>         if (!root)
+> @@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>         flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+>         acpi_pci_osc_support(root, flags);
+>
+> -       /*
+> -        * TBD: Need PCI interface for enumeration/configuration of roots.
+> -        */
+> -
+> -       /*
+> -        * Scan the Root Bridge
+> -        * --------------------
+> -        * Must do this prior to any attempt to bind the root device, as the
+> -        * PCI namespace does not get created until this call is made (and
+> -        * thus the root bridge's pci_dev does not exist).
+> -        */
+> -       root->bus = pci_acpi_scan_root(root);
+> -       if (!root->bus) {
+> -               dev_err(&device->dev,
+> -                       "Bus %04x:%02x not present in PCI namespace\n",
+> -                       root->segment, (unsigned int)root->secondary.start);
+> -               result = -ENODEV;
+> -               goto end;
+> -       }
+> -
+> -       /* Indicate support for various _OSC capabilities. */
+>         if (pci_ext_cfg_avail())
+>                 flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+>         if (pcie_aspm_support_enabled()) {
+> @@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>                                 acpi_format_exception(status), flags);
+>                         dev_info(&device->dev,
+>                                  "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
+> -                       pcie_no_aspm();
+> +                       /*
+> +                        * We want to disable aspm here, but aspm_disabled
+> +                        * needs to remain in its state from boot so that we
+> +                        * properly handle pcie 1.1 devices.  So we set this
+> +                        * flag here, to defer the action until after the acpi
+> +                        * root scan
+> +                        */
+> +                       no_aspm = true;
+>                 }
+>         } else {
+>                 dev_info(&device->dev,
+> @@ -520,6 +507,29 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>                          "(_OSC support mask: 0x%02x)\n", flags);
+>         }
+>
+> +       /*
+> +        * TBD: Need PCI interface for enumeration/configuration of roots.
+> +        */
+> +
+> +       /*
+> +        * Scan the Root Bridge
+> +        * --------------------
+> +        * Must do this prior to any attempt to bind the root device, as the
+> +        * PCI namespace does not get created until this call is made (and
+> +        * thus the root bridge's pci_dev does not exist).
+> +        */
+> +       root->bus = pci_acpi_scan_root(root);
+> +       if (!root->bus) {
+> +               dev_err(&device->dev,
+> +                       "Bus %04x:%02x not present in PCI namespace\n",
+> +                       root->segment, (unsigned int)root->secondary.start);
+> +               result = -ENODEV;
+> +               goto end;
+> +       }
+> +
+> +       if (no_aspm)
+> +               pcie_no_aspm();
+> +
+>         pci_acpi_add_bus_pm_notifier(device, root->bus);
+>         if (device->wakeup.flags.run_wake)
+>                 device_set_run_wake(root->bus->bridge, true);
+> --
+> 1.8.1.4
+>
