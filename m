@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3H0U2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 16:28:00 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45054 "EHLO
+	id S1754242Ab3H0U2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 16:28:32 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45081 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab3H0U1z (ORCPT
+	with ESMTP id S1753868Ab3H0U17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 16:27:55 -0400
+	Tue, 27 Aug 2013 16:27:59 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
@@ -15,10 +15,11 @@ Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
         Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Christoph Lameter <cl@gentwo.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v4 2/6] target: Add transport_init_session_tags using per-cpu ida
-Date: Tue, 27 Aug 2013 20:11:42 +0000
-Message-Id: <1377634306-13981-3-git-send-email-nab@linux-iscsi.org>
+        Nicholas Bellinger <nab@daterainc.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: [PATCH-v4 5/6] iscsi/iser-target: Convert to command priv_size usage
+Date: Tue, 27 Aug 2013 20:11:45 +0000
+Message-Id: <1377634306-13981-6-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
 References: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
@@ -26,137 +27,569 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Nicholas Bellinger <nab@daterainc.com>
 
-This patch adds lib/idr.c based transport_init_session_tags() logic
-that allows fabric drivers to setup a per-cpu se_sess->sess_tag_pool
-and associated se_sess->sess_cmd_map for basic tagged pre-allocation
-of fabric descriptor sized memory.
+This command converts iscsi/isert-target to use allocations based on
+iscsit_transport->priv_size within iscsit_allocate_cmd(), instead of
+using an embedded isert_cmd->iscsi_cmd.
 
-v4: Add transport_alloc_session_tags() for fabrics that need early
-    transport_init_session()
-v3: Update to percpu-ida usage
+This includes removing iscsit_transport->alloc_cmd() usage, along
+with updating isert-target code to use iscsit_priv_cmd().
 
+Also, remove left-over iscsit_transport->release_cmd() usage for
+direct calls to iscsit_release_cmd(), and drop the now unused
+lio_cmd_cache and isert_cmd_cache.
+
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_transport.c |   48 ++++++++++++++++++++++++++++++++
- include/target/target_core_base.h      |    5 +++
- include/target/target_core_fabric.h    |    3 ++
- 3 files changed, 56 insertions(+), 0 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c      |  114 +++++++++-----------------
+ drivers/infiniband/ulp/isert/ib_isert.h      |    2 +-
+ drivers/target/iscsi/iscsi_target.c          |   16 +----
+ drivers/target/iscsi/iscsi_target.h          |    1 -
+ drivers/target/iscsi/iscsi_target_configfs.c |    2 +-
+ drivers/target/iscsi/iscsi_target_core.h     |    1 -
+ drivers/target/iscsi/iscsi_target_util.c     |   20 +----
+ include/target/iscsi/iscsi_transport.h       |    8 ++-
+ 8 files changed, 55 insertions(+), 109 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 7172d00..98ec711 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -232,6 +232,50 @@ struct se_session *transport_init_session(void)
- }
- EXPORT_SYMBOL(transport_init_session);
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index d17ff13..a535b22 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -39,7 +39,6 @@ static DEFINE_MUTEX(device_list_mutex);
+ static LIST_HEAD(device_list);
+ static struct workqueue_struct *isert_rx_wq;
+ static struct workqueue_struct *isert_comp_wq;
+-static struct kmem_cache *isert_cmd_cache;
  
-+int transport_alloc_session_tags(struct se_session *se_sess,
-+			         unsigned int tag_num, unsigned int tag_size)
+ static void
+ isert_qp_event_callback(struct ib_event *e, void *context)
+@@ -879,43 +878,30 @@ isert_rx_login_req(struct iser_rx_desc *rx_desc, int rx_buflen,
+ 	schedule_delayed_work(&conn->login_work, 0);
+ }
+ 
+-static void
+-isert_release_cmd(struct iscsi_cmd *cmd)
+-{
+-	struct isert_cmd *isert_cmd = container_of(cmd, struct isert_cmd,
+-						   iscsi_cmd);
+-
+-	pr_debug("Entering isert_release_cmd %p >>>>>>>>>>>>>>>.\n", isert_cmd);
+-
+-	kfree(cmd->buf_ptr);
+-	kfree(cmd->tmr_req);
+-
+-	kmem_cache_free(isert_cmd_cache, isert_cmd);
+-}
+-
+ static struct iscsi_cmd
+-*isert_alloc_cmd(struct iscsi_conn *conn, gfp_t gfp)
++*isert_allocate_cmd(struct iscsi_conn *conn, gfp_t gfp)
+ {
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct isert_cmd *isert_cmd;
++	struct iscsi_cmd *cmd;
+ 
+-	isert_cmd = kmem_cache_zalloc(isert_cmd_cache, gfp);
+-	if (!isert_cmd) {
+-		pr_err("Unable to allocate isert_cmd\n");
++	cmd = iscsit_allocate_cmd(conn, gfp);
++	if (!cmd) {
++		pr_err("Unable to allocate iscsi_cmd + isert_cmd\n");
+ 		return NULL;
+ 	}
++	isert_cmd = iscsit_priv_cmd(cmd);
+ 	isert_cmd->conn = isert_conn;
+-	isert_cmd->iscsi_cmd.release_cmd = &isert_release_cmd;
++	isert_cmd->iscsi_cmd = cmd;
+ 
+-	return &isert_cmd->iscsi_cmd;
++	return cmd;
+ }
+ 
+ static int
+ isert_handle_scsi_cmd(struct isert_conn *isert_conn,
+-		      struct isert_cmd *isert_cmd, struct iser_rx_desc *rx_desc,
+-		      unsigned char *buf)
++		      struct isert_cmd *isert_cmd, struct iscsi_cmd *cmd,
++		      struct iser_rx_desc *rx_desc, unsigned char *buf)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
+ 	struct iscsi_conn *conn = isert_conn->conn;
+ 	struct iscsi_scsi_req *hdr = (struct iscsi_scsi_req *)buf;
+ 	struct scatterlist *sg;
+@@ -1022,9 +1008,9 @@ isert_handle_iscsi_dataout(struct isert_conn *isert_conn,
+ 
+ static int
+ isert_handle_nop_out(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd,
+-		     struct iser_rx_desc *rx_desc, unsigned char *buf)
++		     struct iscsi_cmd *cmd, struct iser_rx_desc *rx_desc,
++		     unsigned char *buf)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
+ 	struct iscsi_conn *conn = isert_conn->conn;
+ 	struct iscsi_nopout *hdr = (struct iscsi_nopout *)buf;
+ 	int rc;
+@@ -1041,9 +1027,9 @@ isert_handle_nop_out(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd,
+ 
+ static int
+ isert_handle_text_cmd(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd,
+-		      struct iser_rx_desc *rx_desc, struct iscsi_text *hdr)
++		      struct iscsi_cmd *cmd, struct iser_rx_desc *rx_desc,
++		      struct iscsi_text *hdr)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
+ 	struct iscsi_conn *conn = isert_conn->conn;
+ 	u32 payload_length = ntoh24(hdr->dlength);
+ 	int rc;
+@@ -1088,26 +1074,26 @@ isert_rx_opcode(struct isert_conn *isert_conn, struct iser_rx_desc *rx_desc,
+ 
+ 	switch (opcode) {
+ 	case ISCSI_OP_SCSI_CMD:
+-		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++		cmd = isert_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+ 			break;
+ 
+-		isert_cmd = container_of(cmd, struct isert_cmd, iscsi_cmd);
++		isert_cmd = iscsit_priv_cmd(cmd);
+ 		isert_cmd->read_stag = read_stag;
+ 		isert_cmd->read_va = read_va;
+ 		isert_cmd->write_stag = write_stag;
+ 		isert_cmd->write_va = write_va;
+ 
+-		ret = isert_handle_scsi_cmd(isert_conn, isert_cmd,
++		ret = isert_handle_scsi_cmd(isert_conn, isert_cmd, cmd,
+ 					rx_desc, (unsigned char *)hdr);
+ 		break;
+ 	case ISCSI_OP_NOOP_OUT:
+-		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++		cmd = isert_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+ 			break;
+ 
+-		isert_cmd = container_of(cmd, struct isert_cmd, iscsi_cmd);
+-		ret = isert_handle_nop_out(isert_conn, isert_cmd,
++		isert_cmd = iscsit_priv_cmd(cmd);
++		ret = isert_handle_nop_out(isert_conn, isert_cmd, cmd,
+ 					   rx_desc, (unsigned char *)hdr);
+ 		break;
+ 	case ISCSI_OP_SCSI_DATA_OUT:
+@@ -1115,7 +1101,7 @@ isert_rx_opcode(struct isert_conn *isert_conn, struct iser_rx_desc *rx_desc,
+ 						(unsigned char *)hdr);
+ 		break;
+ 	case ISCSI_OP_SCSI_TMFUNC:
+-		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++		cmd = isert_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+ 			break;
+ 
+@@ -1123,7 +1109,7 @@ isert_rx_opcode(struct isert_conn *isert_conn, struct iser_rx_desc *rx_desc,
+ 						(unsigned char *)hdr);
+ 		break;
+ 	case ISCSI_OP_LOGOUT:
+-		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++		cmd = isert_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+ 			break;
+ 
+@@ -1134,12 +1120,12 @@ isert_rx_opcode(struct isert_conn *isert_conn, struct iser_rx_desc *rx_desc,
+ 						    HZ);
+ 		break;
+ 	case ISCSI_OP_TEXT:
+-		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
++		cmd = isert_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+ 			break;
+ 
+-		isert_cmd = container_of(cmd, struct isert_cmd, iscsi_cmd);
+-		ret = isert_handle_text_cmd(isert_conn, isert_cmd,
++		isert_cmd = iscsit_priv_cmd(cmd);
++		ret = isert_handle_text_cmd(isert_conn, isert_cmd, cmd,
+ 					    rx_desc, (struct iscsi_text *)hdr);
+ 		break;
+ 	default:
+@@ -1267,7 +1253,7 @@ isert_unmap_cmd(struct isert_cmd *isert_cmd, struct isert_conn *isert_conn)
+ static void
+ isert_put_cmd(struct isert_cmd *isert_cmd)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 	struct isert_conn *isert_conn = isert_cmd->conn;
+ 	struct iscsi_conn *conn = isert_conn->conn;
+ 
+@@ -1318,7 +1304,7 @@ isert_put_cmd(struct isert_cmd *isert_cmd)
+ 		 * Fall-through
+ 		 */
+ 	default:
+-		isert_release_cmd(cmd);
++		iscsit_release_cmd(cmd);
+ 		break;
+ 	}
+ }
+@@ -1354,7 +1340,7 @@ isert_completion_rdma_read(struct iser_tx_desc *tx_desc,
+ 			   struct isert_cmd *isert_cmd)
+ {
+ 	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 	struct se_cmd *se_cmd = &cmd->se_cmd;
+ 	struct ib_device *ib_dev = isert_cmd->conn->conn_cm_id->device;
+ 
+@@ -1390,7 +1376,7 @@ isert_do_control_comp(struct work_struct *work)
+ 			struct isert_cmd, comp_work);
+ 	struct isert_conn *isert_conn = isert_cmd->conn;
+ 	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 
+ 	switch (cmd->i_state) {
+ 	case ISTATE_SEND_TASKMGTRSP:
+@@ -1436,7 +1422,7 @@ isert_response_completion(struct iser_tx_desc *tx_desc,
+ 			  struct isert_conn *isert_conn,
+ 			  struct ib_device *ib_dev)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 
+ 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
+ 	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
+@@ -1628,8 +1614,7 @@ isert_post_response(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd)
+ static int
+ isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-					struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 	struct iscsi_scsi_rsp *hdr = (struct iscsi_scsi_rsp *)
+@@ -1678,8 +1663,7 @@ static int
+ isert_put_nopin(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
+ 		bool nopout_response)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-				struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 
+@@ -1698,8 +1682,7 @@ isert_put_nopin(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
+ static int
+ isert_put_logout_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-				struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 
+@@ -1717,8 +1700,7 @@ isert_put_logout_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ static int
+ isert_put_tm_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-				struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 
+@@ -1736,8 +1718,7 @@ isert_put_tm_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ static int
+ isert_put_reject(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-				struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+@@ -1769,8 +1750,7 @@ isert_put_reject(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ static int
+ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ {
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-				struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+ 	struct iscsi_text_rsp *hdr =
+@@ -1812,7 +1792,7 @@ isert_build_rdma_wr(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd,
+ 		    struct ib_sge *ib_sge, struct ib_send_wr *send_wr,
+ 		    u32 data_left, u32 offset)
+ {
+-	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 	struct scatterlist *sg_start, *tmp_sg;
+ 	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+ 	u32 sg_off, page_off;
+@@ -1857,8 +1837,7 @@ static int
+ isert_put_datain(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+ {
+ 	struct se_cmd *se_cmd = &cmd->se_cmd;
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-					struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *wr_failed, *send_wr;
+@@ -1961,8 +1940,7 @@ static int
+ isert_get_dataout(struct iscsi_conn *conn, struct iscsi_cmd *cmd, bool recovery)
+ {
+ 	struct se_cmd *se_cmd = &cmd->se_cmd;
+-	struct isert_cmd *isert_cmd = container_of(cmd,
+-					struct isert_cmd, iscsi_cmd);
++	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
+ 	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *wr_failed, *send_wr;
+@@ -2408,12 +2386,12 @@ static void isert_free_conn(struct iscsi_conn *conn)
+ static struct iscsit_transport iser_target_transport = {
+ 	.name			= "IB/iSER",
+ 	.transport_type		= ISCSI_INFINIBAND,
++	.priv_size		= sizeof(struct isert_cmd),
+ 	.owner			= THIS_MODULE,
+ 	.iscsit_setup_np	= isert_setup_np,
+ 	.iscsit_accept_np	= isert_accept_np,
+ 	.iscsit_free_np		= isert_free_np,
+ 	.iscsit_free_conn	= isert_free_conn,
+-	.iscsit_alloc_cmd	= isert_alloc_cmd,
+ 	.iscsit_get_login_rx	= isert_get_login_rx,
+ 	.iscsit_put_login_tx	= isert_put_login_tx,
+ 	.iscsit_immediate_queue	= isert_immediate_queue,
+@@ -2440,21 +2418,10 @@ static int __init isert_init(void)
+ 		goto destroy_rx_wq;
+ 	}
+ 
+-	isert_cmd_cache = kmem_cache_create("isert_cmd_cache",
+-			sizeof(struct isert_cmd), __alignof__(struct isert_cmd),
+-			0, NULL);
+-	if (!isert_cmd_cache) {
+-		pr_err("Unable to create isert_cmd_cache\n");
+-		ret = -ENOMEM;
+-		goto destroy_tx_cq;
+-	}
+-
+ 	iscsit_register_transport(&iser_target_transport);
+ 	pr_debug("iSER_TARGET[0] - Loaded iser_target_transport\n");
+ 	return 0;
+ 
+-destroy_tx_cq:
+-	destroy_workqueue(isert_comp_wq);
+ destroy_rx_wq:
+ 	destroy_workqueue(isert_rx_wq);
+ 	return ret;
+@@ -2462,7 +2429,6 @@ destroy_rx_wq:
+ 
+ static void __exit isert_exit(void)
+ {
+-	kmem_cache_destroy(isert_cmd_cache);
+ 	destroy_workqueue(isert_comp_wq);
+ 	destroy_workqueue(isert_rx_wq);
+ 	iscsit_unregister_transport(&iser_target_transport);
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index 191117b..0d45945 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -67,7 +67,7 @@ struct isert_cmd {
+ 	u32			write_va_off;
+ 	u32			rdma_wr_num;
+ 	struct isert_conn	*conn;
+-	struct iscsi_cmd	iscsi_cmd;
++	struct iscsi_cmd	*iscsi_cmd;
+ 	struct ib_sge		*ib_sge;
+ 	struct iser_tx_desc	tx_desc;
+ 	struct isert_rdma_wr	rdma_wr;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 7228cc7..92f2776 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -63,7 +63,6 @@ spinlock_t sess_idr_lock;
+ 
+ struct iscsit_global *iscsit_global;
+ 
+-struct kmem_cache *lio_cmd_cache;
+ struct kmem_cache *lio_qr_cache;
+ struct kmem_cache *lio_dr_cache;
+ struct kmem_cache *lio_ooo_cache;
+@@ -500,7 +499,6 @@ static struct iscsit_transport iscsi_target_transport = {
+ 	.iscsit_setup_np	= iscsit_setup_np,
+ 	.iscsit_accept_np	= iscsit_accept_np,
+ 	.iscsit_free_np		= iscsit_free_np,
+-	.iscsit_alloc_cmd	= iscsit_alloc_cmd,
+ 	.iscsit_get_login_rx	= iscsit_get_login_rx,
+ 	.iscsit_put_login_tx	= iscsit_put_login_tx,
+ 	.iscsit_get_dataout	= iscsit_build_r2ts_for_cmd,
+@@ -541,22 +539,13 @@ static int __init iscsi_target_init_module(void)
+ 		goto ts_out1;
+ 	}
+ 
+-	lio_cmd_cache = kmem_cache_create("lio_cmd_cache",
+-			sizeof(struct iscsi_cmd), __alignof__(struct iscsi_cmd),
+-			0, NULL);
+-	if (!lio_cmd_cache) {
+-		pr_err("Unable to kmem_cache_create() for"
+-				" lio_cmd_cache\n");
+-		goto ts_out2;
+-	}
+-
+ 	lio_qr_cache = kmem_cache_create("lio_qr_cache",
+ 			sizeof(struct iscsi_queue_req),
+ 			__alignof__(struct iscsi_queue_req), 0, NULL);
+ 	if (!lio_qr_cache) {
+ 		pr_err("nable to kmem_cache_create() for"
+ 				" lio_qr_cache\n");
+-		goto cmd_out;
++		goto ts_out2;
+ 	}
+ 
+ 	lio_dr_cache = kmem_cache_create("lio_dr_cache",
+@@ -600,8 +589,6 @@ dr_out:
+ 	kmem_cache_destroy(lio_dr_cache);
+ qr_out:
+ 	kmem_cache_destroy(lio_qr_cache);
+-cmd_out:
+-	kmem_cache_destroy(lio_cmd_cache);
+ ts_out2:
+ 	iscsi_deallocate_thread_sets();
+ ts_out1:
+@@ -619,7 +606,6 @@ static void __exit iscsi_target_cleanup_module(void)
+ 	iscsi_thread_set_free();
+ 	iscsit_release_discovery_tpg();
+ 	iscsit_unregister_transport(&iscsi_target_transport);
+-	kmem_cache_destroy(lio_cmd_cache);
+ 	kmem_cache_destroy(lio_qr_cache);
+ 	kmem_cache_destroy(lio_dr_cache);
+ 	kmem_cache_destroy(lio_ooo_cache);
+diff --git a/drivers/target/iscsi/iscsi_target.h b/drivers/target/iscsi/iscsi_target.h
+index f82f627..e936d56 100644
+--- a/drivers/target/iscsi/iscsi_target.h
++++ b/drivers/target/iscsi/iscsi_target.h
+@@ -39,7 +39,6 @@ extern struct target_fabric_configfs *lio_target_fabric_configfs;
+ 
+ extern struct kmem_cache *lio_dr_cache;
+ extern struct kmem_cache *lio_ooo_cache;
+-extern struct kmem_cache *lio_cmd_cache;
+ extern struct kmem_cache *lio_qr_cache;
+ extern struct kmem_cache *lio_r2t_cache;
+ 
+diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/iscsi/iscsi_target_configfs.c
+index ddfa32c..116114f 100644
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -1925,7 +1925,7 @@ static void lio_release_cmd(struct se_cmd *se_cmd)
+ 	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 
+ 	pr_debug("Entering lio_release_cmd for se_cmd: %p\n", se_cmd);
+-	cmd->release_cmd(cmd);
++	iscsit_release_cmd(cmd);
+ }
+ 
+ /* End functions for target_core_fabric_ops */
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 8a4c32d..5e1a068 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -489,7 +489,6 @@ struct iscsi_cmd {
+ 	u32			first_data_sg_off;
+ 	u32			kmapped_nents;
+ 	sense_reason_t		sense_reason;
+-	void (*release_cmd)(struct iscsi_cmd *);
+ }  ____cacheline_aligned;
+ 
+ struct iscsi_tmr_req {
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index 1df06d5..5784cad 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -149,18 +149,6 @@ void iscsit_free_r2ts_from_list(struct iscsi_cmd *cmd)
+ 	spin_unlock_bh(&cmd->r2t_lock);
+ }
+ 
+-struct iscsi_cmd *iscsit_alloc_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
+-{
+-	struct iscsi_cmd *cmd;
+-
+-	cmd = kmem_cache_zalloc(lio_cmd_cache, gfp_mask);
+-	if (!cmd)
+-		return NULL;
+-
+-	cmd->release_cmd = &iscsit_release_cmd;
+-	return cmd;
+-}
+-
+ /*
+  * May be called from software interrupt (timer) context for allocating
+  * iSCSI NopINs.
+@@ -168,8 +156,9 @@ struct iscsi_cmd *iscsit_alloc_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
+ struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
+ {
+ 	struct iscsi_cmd *cmd;
++	int priv_size = conn->conn_transport->priv_size;
+ 
+-	cmd = conn->conn_transport->iscsit_alloc_cmd(conn, gfp_mask);
++	cmd = kzalloc(sizeof(struct iscsi_cmd) + priv_size, gfp_mask);
+ 	if (!cmd) {
+ 		pr_err("Unable to allocate memory for struct iscsi_cmd.\n");
+ 		return NULL;
+@@ -696,8 +685,9 @@ void iscsit_release_cmd(struct iscsi_cmd *cmd)
+ 	kfree(cmd->iov_data);
+ 	kfree(cmd->text_in_ptr);
+ 
+-	kmem_cache_free(lio_cmd_cache, cmd);
++	kfree(cmd);
+ }
++EXPORT_SYMBOL(iscsit_release_cmd);
+ 
+ static void __iscsit_free_cmd(struct iscsi_cmd *cmd, bool scsi_cmd,
+ 			      bool check_queues)
+@@ -761,7 +751,7 @@ void iscsit_free_cmd(struct iscsi_cmd *cmd, bool shutdown)
+ 		/* Fall-through */
+ 	default:
+ 		__iscsit_free_cmd(cmd, false, shutdown);
+-		cmd->release_cmd(cmd);
++		iscsit_release_cmd(cmd);
+ 		break;
+ 	}
+ }
+diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
+index e5d09d2..a12589c 100644
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -6,13 +6,13 @@ struct iscsit_transport {
+ #define ISCSIT_TRANSPORT_NAME	16
+ 	char name[ISCSIT_TRANSPORT_NAME];
+ 	int transport_type;
++	int priv_size;
+ 	struct module *owner;
+ 	struct list_head t_node;
+ 	int (*iscsit_setup_np)(struct iscsi_np *, struct __kernel_sockaddr_storage *);
+ 	int (*iscsit_accept_np)(struct iscsi_np *, struct iscsi_conn *);
+ 	void (*iscsit_free_np)(struct iscsi_np *);
+ 	void (*iscsit_free_conn)(struct iscsi_conn *);
+-	struct iscsi_cmd *(*iscsit_alloc_cmd)(struct iscsi_conn *, gfp_t);
+ 	int (*iscsit_get_login_rx)(struct iscsi_conn *, struct iscsi_login *);
+ 	int (*iscsit_put_login_tx)(struct iscsi_conn *, struct iscsi_login *, u32);
+ 	int (*iscsit_immediate_queue)(struct iscsi_conn *, struct iscsi_cmd *, int);
+@@ -22,6 +22,11 @@ struct iscsit_transport {
+ 	int (*iscsit_queue_status)(struct iscsi_conn *, struct iscsi_cmd *);
+ };
+ 
++static inline void *iscsit_priv_cmd(struct iscsi_cmd *cmd)
 +{
-+	int rc;
-+
-+	se_sess->sess_cmd_map = kzalloc(tag_num * tag_size, GFP_KERNEL);
-+	if (!se_sess->sess_cmd_map) {
-+		pr_err("Unable to allocate se_sess->sess_cmd_map\n");
-+		return -ENOMEM;
-+	}
-+
-+	rc = percpu_ida_init(&se_sess->sess_tag_pool, tag_num);
-+	if (rc < 0) {
-+		pr_err("Unable to init se_sess->sess_tag_pool,"
-+			" tag_num: %u\n", tag_num);
-+		kfree(se_sess->sess_cmd_map);
-+		se_sess->sess_cmd_map = NULL;
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
++	return (void *)(cmd + 1);
 +}
-+EXPORT_SYMBOL(transport_alloc_session_tags);
-+
-+struct se_session *transport_init_session_tags(unsigned int tag_num,
-+					       unsigned int tag_size)
-+{
-+	struct se_session *se_sess;
-+	int rc;
-+
-+	se_sess = transport_init_session();
-+	if (IS_ERR(se_sess))
-+		return se_sess;
-+
-+	rc = transport_alloc_session_tags(se_sess, tag_num, tag_size);
-+	if (rc < 0) {
-+		transport_free_session(se_sess);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	return se_sess;
-+}
-+EXPORT_SYMBOL(transport_init_session_tags);
 +
  /*
-  * Called with spin_lock_irqsave(&struct se_portal_group->session_lock called.
+  * From iscsi_target_transport.c
   */
-@@ -367,6 +411,10 @@ EXPORT_SYMBOL(transport_deregister_session_configfs);
- 
- void transport_free_session(struct se_session *se_sess)
- {
-+	if (se_sess->sess_cmd_map) {
-+		percpu_ida_destroy(&se_sess->sess_tag_pool);
-+		kfree(se_sess->sess_cmd_map);
-+	}
- 	kmem_cache_free(se_sess_cache, se_sess);
- }
- EXPORT_SYMBOL(transport_free_session);
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index e34fc90..360e4a3 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -5,6 +5,7 @@
- #include <linux/configfs.h>
- #include <linux/dma-mapping.h>
- #include <linux/blkdev.h>
-+#include <linux/idr.h>
- #include <scsi/scsi_cmnd.h>
- #include <net/sock.h>
- #include <net/tcp.h>
-@@ -415,6 +416,8 @@ struct se_cmd {
- 	enum dma_data_direction	data_direction;
- 	/* For SAM Task Attribute */
- 	int			sam_task_attr;
-+	/* Used for se_sess->sess_tag_pool */
-+	unsigned int		map_tag;
- 	/* Transport protocol dependent state, see transport_state_table */
- 	enum transport_state_table t_state;
- 	unsigned		cmd_wait_set:1;
-@@ -536,6 +539,8 @@ struct se_session {
- 	struct list_head	sess_wait_list;
- 	spinlock_t		sess_cmd_lock;
- 	struct kref		sess_kref;
-+	void			*sess_cmd_map;
-+	struct percpu_ida	sess_tag_pool;
- };
- 
- struct se_device;
-diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
-index 7a16178..d559c36 100644
---- a/include/target/target_core_fabric.h
-+++ b/include/target/target_core_fabric.h
-@@ -84,6 +84,9 @@ struct target_core_fabric_ops {
- };
- 
- struct se_session *transport_init_session(void);
-+int transport_alloc_session_tags(struct se_session *, unsigned int,
-+		unsigned int);
-+struct se_session *transport_init_session_tags(unsigned int, unsigned int);
- void	__transport_register_session(struct se_portal_group *,
- 		struct se_node_acl *, struct se_session *, void *);
- void	transport_register_session(struct se_portal_group *,
+@@ -92,3 +97,4 @@ extern int iscsit_tmr_post_handler(struct iscsi_cmd *, struct iscsi_conn *);
+ extern struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *, gfp_t);
+ extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *,
+ 			       unsigned char *, __be32);
++extern void iscsit_release_cmd(struct iscsi_cmd *);
 -- 
 1.7.2.5
 
