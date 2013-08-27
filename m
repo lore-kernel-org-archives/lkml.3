@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3H0JGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:06:17 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:59200 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab3H0JGL (ORCPT
+	id S1752920Ab3H0JIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:08:07 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:47028 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3H0JIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:06:11 -0400
-Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
- signature of snapshot
-From: joeyli <jlee@suse.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Takashi Iwai <tiwai@suse.de>
-In-Reply-To: <20130825162554.GH5171@amd.pavel.ucw.cz>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
-	 <1377169317-5959-12-git-send-email-jlee@suse.com>
-	 <20130825162554.GH5171@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Aug 2013 17:04:43 +0800
-Message-ID: <1377594283.20140.3.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 27 Aug 2013 05:08:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <521C586A.7080604@overkiz.com>
+References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
+ <20130826.160450.2176892065062148718.davem@davemloft.net> <521C586A.7080604@overkiz.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 27 Aug 2013 10:07:20 +0100
+Message-ID: <CAGVrzcYBT5aCmdaiGTm34kVu1UQssxB_EHvvj+t0phT58hcsZQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: David Miller <davem@davemloft.net>, nicolas.ferre@atmel.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel, 
+Hello Boris,
 
-於 日，2013-08-25 於 18:25 +0200，Pavel Machek 提到：
-> On Thu 2013-08-22 19:01:50, Lee, Chun-Yi wrote:
-> > Introduced a hibernate_key.c file to query the key pair from EFI variables
-> > and maintain key pair for check signature of S4 snapshot image. We
-> > loaded the private key when snapshot image stored success.
-> > 
-> > This patch introduced 2 EFI variables for store the key to sign S4 image and
-> > verify signature when S4 wake up. The names and GUID are:
-> >   S4SignKey-fe141863-c070-478e-b8a3-878a5dc9ef21
-> >   S4WakeKey-fe141863-c070-478e-b8a3-878a5dc9ef21
-> > 
-> > S4SignKey is used by EFI bootloader to pass the RSA private key that packaged
-> > by PKCS#8 format, kernel will read and parser it when system boot and reload
-> > it when S4 resume. EFI bootloader need gnerate a new private key when every
-> > time system boot.
-> > 
-> > S4WakeKey is used to pass the RSA public key that packaged by X.509
-> > certificate, kernel will read and parser it for check the signature of
-> > S4 snapshot image when S4 resume.
-> > 
-> > The follow-up patch will remove S4SignKey and S4WakeKey after load them
-> > to kernel for avoid anyone can access it through efivarfs.
-> > 
-> > v3:
-> > - Load S4 sign key before ExitBootServices.
-> >   Load private key before ExitBootServices() then bootloader doesn't need
-> >   generate key-pair for each booting:
-> >    + Add setup_s4_keys() to eboot.c to load S4 sign key before ExitBootServices.
-> >    + Reserve the memory block of sign key data blob in efi.c
-> > - In Makefile, moved hibernate_keys.o before hibernate.o for load S4 sign
-> >   key before check hibernate image. It makes sure the new sign key will be
-> >   transfer to resume target kernel.
-> > - Set "depends on EFI_STUB" in Kconfig
-> > 
-> > v2:
-> > Add CONFIG_SNAPSHOT_VERIFICATION for build of hibernate_keys.c depend on
-> > Kconfig.
-> > 
-> > Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> > Cc: Takashi Iwai <tiwai@suse.de>
-> > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> 
-> 
-> > --- a/arch/x86/boot/compressed/eboot.c
-> > +++ b/arch/x86/boot/compressed/eboot.c
-> > @@ -368,6 +368,91 @@ free_handle:
-> >  	return status;
-> >  }
-> >  
-> > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
-> > +static efi_status_t setup_s4_keys(struct boot_params *params)
-> > +{
-> > +	struct setup_data *data;
-> > +	unsigned long datasize;
-> > +	u32 attr;
-> > +	struct efi_s4_key *s4key;
-> > +	efi_status_t status;
-> > +
-> > +	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-> 
-> A bit too many casts.
+2013/8/27 boris brezillon <b.brezillon@overkiz.com>:
+> Hello Dave,
+>
+>
+> On 26/08/2013 22:04, David Miller wrote:
+>>
+>> From: Boris BREZILLON <b.brezillon@overkiz.com>
+>> Date: Thu, 22 Aug 2013 17:56:20 +0200
+>>
+>>> This patch series adds support for ethernet phy definition using device
+>>> tree.
+>>>
+>>> This may help in moving some at91 boards to dt (some of them define an
+>>> interrupt pin).
+>>>
+>>> Tested on samad31ek.
+>>
+>> Series applied to net-next, thanks.
+>
+> Could you apply, the 3rd version of this series instead ?
+>
+> It fixes one bug when no phy is discovered and use the appropriate address
+> for the phy dt node.
+>
+> Sorry for the inconvenience.
 
-Thanks.
-Yes, here is my mistake, I will remove "unsigned long" cast.
+You will probably have to resubmit an incremental patch, I have never
+seen David pick up another version of a patch once it has been pushed
+out:
 
-> 
-> > @@ -1205,6 +1290,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
-> >  
-> >  	setup_efi_pci(boot_params);
-> >  
-> > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
-> > +	setup_s4_keys(boot_params);
-> > +#endif
-> > +
-> 
-> Move ifdef inside the function?
-
-OK, I will define a dummy function for non-verification situation.
-
-> 
-> > @@ -729,6 +792,11 @@ void __init efi_init(void)
-> >  
-> >  	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
-> >  
-> > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
-> > +	/* keep s4 key from setup_data */
-> > +	efi_reserve_s4_skey_data();
-> > +#endif
-> > +
-> 
-> Here too.
-> 
-
-I will also use dummy function here. 
-
-
-Thanks
-Joey Lee
-
+http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=8c038e7e14b1c5f156745e3c4df0a3aa46173dd9
+http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=148cbb53ace32f584d208764c7f7e6aa8edb970c
+-- 
+Florian
