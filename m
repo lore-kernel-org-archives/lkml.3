@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3H1SB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:01:58 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:41854 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3H1SB4 convert rfc822-to-8bit (ORCPT
+	id S1754440Ab3H1SCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:02:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43919 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab3H1SCM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:01:56 -0400
-Date: Wed, 28 Aug 2013 13:01:42 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH V13 4/4] Documentation/kvm : Add documentation on
- Hypercalls and features used for PV spinlock
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, gleb@redhat.com,
-        pbonzini@redhat.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        peterz@infradead.org, tglx@linutronix.de, agraf@suse.de,
-        digitaleric@google.com, riel@redhat.com, avi.kivity@gmail.com,
-        habanero@linux.vnet.ibm.com, chegu_vinod@hp.com, ouyang@cs.pitt.edu,
-        drjones@redhat.com, linux-doc@vger.kernel.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, andi@firstfloor.org,
-        virtualization@lists.linux-foundation.org, mtosatti@redhat.com,
-        srivatsa.vaddagiri@gmail.com,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <y>
-	<1377506916-26946-5-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-In-Reply-To: <1377506916-26946-5-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	(from raghavendra.kt@linux.vnet.ibm.com on Mon Aug 26 03:48:36 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1377712902.2737.137@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
+	Wed, 28 Aug 2013 14:02:12 -0400
+From: Kumar Gala <galak@codeaurora.org>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+Subject: merging device tree binding dirs for serial bindings
+Date: Wed, 28 Aug 2013 13:02:14 -0500
+Message-Id: <F93329E6-1426-4197-871D-211F34455DDE@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "shawn.guo@linaro.org Guo" <shawn.guo@linaro.org>,
+        "s.hauer@pengutronix.de Hauer" <s.hauer@pengutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1283)
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2013 03:48:36 AM, Raghavendra K T wrote:
-> KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual  
-> spinlock
-> enabled guest.
-> 
-> KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can  
-> be enabled
-> in guest.
-> 
-> Thanks Vatsa for rewriting KVM_HC_KICK_CPU
-> Cc: Rob Landley <rob@landley.net>
+We appear to have:
 
-Looks like documentation to me:
+Documentation/devicetree/bindings/serial/
 
-Acked-by: Rob Landley <rob@landley.net>
+and
 
-Rob
+Documentation/devicetree/bindings/tty/serial/
+
+Which one do we want to keep, I'd pick the first, but I don't care too much.
+
+Also, there appears to be a duplicated (but different) binding for the fsl-imx-uart.txt in these two dirs.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
