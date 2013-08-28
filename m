@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3H1KB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:01:28 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41257 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752565Ab3H1KB1 (ORCPT
+	id S1754388Ab3H1KGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:06:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42027 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab3H1KGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:01:27 -0400
-Date: Wed, 28 Aug 2013 12:01:22 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 2/4] ARM: Add atomic_io_modify optimized routines
-Message-ID: <20130828120122.487e6ed6@skate>
-In-Reply-To: <20130828094907.GB2343@localhost>
-References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<1377358532-23802-3-git-send-email-ezequiel.garcia@free-electrons.com>
-	<20130828085340.GB58219@MacBook-Pro.local>
-	<20130828094907.GB2343@localhost>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Aug 2013 06:06:21 -0400
+From: Vaughan Cao <vaughan.cao@oracle.com>
+To: James.Bottomley@HansenPartnership.com
+Cc: joern@logfs.org, vaughan.cao@oracle.com, dgilbert@interlog.com,
+        JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/4][SCSI] sg: fix race condition in sg_open
+Date: Wed, 28 Aug 2013 18:07:48 +0800
+Message-Id: <1377684472-7815-1-git-send-email-vaughan.cao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1377662419.2005.12.camel@dabdike>
+References: <1377662419.2005.12.camel@dabdike>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Ezequiel Garcia,
+There is a race when open sg with O_EXCL flag. Also a race may happen between
+sg_open and sg_remove.
 
-On Wed, 28 Aug 2013 06:49:08 -0300, Ezequiel Garcia wrote:
+Changes from v5:
+ Patches based on v3.11-rc7 and passed sg_tst_excl test.
+ * [1/4] * remove unused variables - res,sdp.
+	 * fix insane code dealing with sg_add_sfp.
+ * [2/4] resolve conflict with v3.11-rc7. 
+ * [3/4] remove sem_out label.
+ * [4/4] add sdp definition.
 
-> > Is this any different from the generic one introduced in patch 1/4? I
-> > would rather just use the generic definition.
-> 
-> Well, according to Will Deacon (and as documented in the commit log)
-> we can optimize in ARM by using readl_relaxed instead of readl.
-> 
-> Now, I'm sure you now better than me if that results (or not) in any
-> significant optimization.
-> 
-> > Similarly, a generic
-> > atomic_io_modify_relaxed() but guarded with something like
-> > __HAVE_ARCH_RELAXED_IO.
-> > 
-> 
-> No, that's not possible. As far as I understand, there's no guarantee
-> of _relaxed variants to be available architecture-wide.
+Changes from v4:
+ * [3/4] use ERR_PTR series instead of adding another parameter in sg_add_sfp
+ * [4/4] fix conflict for cherry-pick from v3.
 
-I think what Catalin was suggesting is that atomic_io_modify() should
-use readl() and writel() (i.e *not* the relaxed variants), and that a
-separate atomic_io_modify_relaxed() could be added on architectures
-that define __HAVE_ARCH_RELAXED_IO.
+Changes from v3:
+ * release o_sem in sg_release(), not in sg_remove_sfp().
+ * not set exclude with sfd_lock held.
 
-I think you misread Catalin's comment when you say there's no guarantee
-of _relaxed variants to be available architecture-wide, since Catalin
-precisely suggested to guard that with __HAVE_ARCH_RELAXED_IO, which
-indicates that _relaxed variants are available.
+Vaughan Cao (4):
+  sg: use rwsem to solve race during exclusive open
+  sg: no need sg_open_exclusive_lock
+  sg: checking sdp->detached isn't protected when open
+  sg: push file descriptor list locking down to per-device locking
 
-Thanks,
+ drivers/scsi/sg.c | 173 +++++++++++++++++++++++++-----------------------------
+ 1 file changed, 80 insertions(+), 93 deletions(-)
 
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.8.3.1
+
