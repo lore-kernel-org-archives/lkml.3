@@ -1,91 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3H1M2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:28:05 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:55450 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab3H1M2D (ORCPT
+	id S1755450Ab3H1M2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:28:16 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:44298 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3H1M2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:28:03 -0400
+	Wed, 28 Aug 2013 08:28:13 -0400
+Date: Wed, 28 Aug 2013 08:28:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: status of the memblock tree
+Message-ID: <20130828122809.GC18348@mtj.dyndns.org>
+References: <20130828163459.3eb7fc0d7ae531494f605831@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1377380400-11331-1-git-send-email-b.brezillon@overkiz.com>
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
-	<1377380400-11331-1-git-send-email-b.brezillon@overkiz.com>
-Date: Wed, 28 Aug 2013 14:28:02 +0200
-Message-ID: <CACRpkdbGWAg19Redc-KB4=dUnNOqCVvFN4H=wAAoki6Y=Zp-wA@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] ARM: at91/dt: move sama5 to generic pinconf
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130828163459.3eb7fc0d7ae531494f605831@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 11:40 PM, Boris BREZILLON
-<b.brezillon@overkiz.com> wrote:
+Hey, Stephen.
 
-> Add generic pinconf definitions and reference appropriate configs in
-> atmel,pins properties.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-(...)
->                         pinctrl@fffff200 {
->                                 #address-cells = <1>;
->                                 #size-cells = <1>;
-> -                               compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "simple-bus";
-> +                               compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "generic-pinconf", "simple-bus";
+On Wed, Aug 28, 2013 at 04:34:59PM +1000, Stephen Rothwell wrote:
+> I was wondering if the memblock tree needs to exist any more.  The last
+> commit to it was in December 2011 and was merged into Linus' tree during
+> the v3.3 merge window.
 
-What kind of compatible string is that "generic-pinconf"?
+After the rewrite was complete, the tree was never used.  I think it
+can be put to rest now.  Ingo is routing all memblock changes now.
 
-There is no driver that can instantiate against this string but I'm not
-100% sure about such things. Is there some other driver doing this?
+Thanks.
 
-Else I think it'd just be removed.
-
-> +                               pcfg_none: pcfg_none {
-> +                                       bias-disable;
-> +                               };
-> +
-> +                               pcfg_pull_up: pcfg_pull_up {
-> +                                       bias-pull-up;
-> +                               };
-
-Nice.
-
-> +                               pcfg_deglitch: pcfg_deglitch {
-> +                                       input-deglitch = <1>;
-> +                               };
-> +
-> +                               pcfg_pull_up_deglitch: pcfg_pull_up_deglitch {
-> +                                       bias-pull-up;
-> +                                       input-deglitch = <1>;
-> +                               };
-
-input-deglitch seems like a proposed generic binding but I haven't seen
-these yet?
-
-(It might be in my violently exploding INBOX though sorry in that case.)
-
-This would need adding to
-Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-Plus changes to pinctrl core for handling.
-
-BTW: this is really moving in the right direction!
-
-Yours,
-Linus Walleij
+-- 
+tejun
