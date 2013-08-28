@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3H1Mts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:49:48 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5496 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3H1Mtq (ORCPT
+	id S1755444Ab3H1Mvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:51:47 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:64002 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab3H1Mvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:49:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 28 Aug 2013 05:49:46 -0700
-Message-ID: <521DF1E9.7050504@nvidia.com>
-Date: Wed, 28 Aug 2013 15:49:45 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 28 Aug 2013 08:51:45 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Terje Bergstrom <tbergstrom@nvidia.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] ARM: tegra: Add hdmi to Tegra114 Dalmore device tree
-References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com> <1377686459-16634-6-git-send-email-mperttunen@nvidia.com> <20130828123008.GC32254@ulmo>
-In-Reply-To: <20130828123008.GC32254@ulmo>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1377608890-8528-1-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1377608890-8528-1-git-send-email-m.krawczuk@partner.samsung.com>
+Date: Wed, 28 Aug 2013 14:51:44 +0200
+Message-ID: <CACRpkdYiB5OG-YPRozwEurPHECDzZjQUs2s_E8gCdeqDPyr+WA@mail.gmail.com>
+Subject: Re: [Patch v2] pinctrl: Add s5pv210 support to pinctrl-exynos
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Leelakrishna A <l.krishna@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 03:30 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Wed, Aug 28, 2013 at 01:40:59PM +0300, Mikko Perttunen wrote:
->> Add hdmi node to Dalmore device tree to supply Dalmore-specific
->
-> s/hdmi/HDMI/
+On Tue, Aug 27, 2013 at 3:08 PM, Mateusz Krawczuk
+<m.krawczuk@partner.samsung.com> wrote:
 
-Will fix.
+> This patch implements pinctrl support and adds device tree bindings
+> for s5pv210.
+>
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 
->
->> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-> [...]
->> +	host1x {
->> +		hdmi {
->> +			status = "okay";
->> +
->> +			vdd-supply = <&vdd_hdmi_reg>;
->> +			pll-supply = <&palmas_smps3_reg>;
->> +			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
->
-> I prefer to use a blank line to separate "standard" from
-> "vendor-specific" properties.
+Oh this one does add bindings, sorry for previous comment.
 
-Will fix.
+I want an ACK from Kukjin or Sylwester for this since it's
+something new for S5P.
 
->
->> +			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
->
-> Other .dts files split this so it doesn't exceed 80 characters. I'm not
-> sure how useful that is as a general rule for DT source files, though.
-
-Will fix. I guess check_patch.pl doesn't check for line length in *.dts.
-
->
->>   	i2c@7000d000 {
->>   		status = "okay";
->>   		clock-frequency = <400000>;
->> @@ -1169,6 +1184,8 @@
->>   			regulator-min-microvolt = <5000000>;
->>   			regulator-max-microvolt = <5000000>;
->>   			enable-active-high;
->> +			regulator-always-on;
->> +			regulator-boot-on;
->
-> This warrants at least a mention in the commit message.
-
-Hmm, yeah. Looks like the HDMI driver only enables the Vdd in 
-tegra_output_hdmi_enable, which is too late at least for DDC. I guess a 
-better patch would be to enable it earlier. In _probe?
-
->
-> Thierry
->
-> * Unknown Key
-> * 0x7F3EB3A1
->
+Yours,
+Linus Walleij
