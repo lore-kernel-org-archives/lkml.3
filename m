@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3H1W6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:58:16 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:40718 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab3H1W6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:58:15 -0400
-Date: Wed, 28 Aug 2013 18:58:12 -0400 (EDT)
-From: Lenny Szubowicz <lszubowi@redhat.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
-Message-ID: <761791749.8594444.1377730692707.JavaMail.root@redhat.com>
-In-Reply-To: <1377729714.27493.2.camel@x230>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com> <1241952070.8587861.1377729463830.JavaMail.root@redhat.com> <1377729714.27493.2.camel@x230>
-Subject: Re: [PATCH 0/10] Add additional security checks when module loading
- is restricted
+	id S1753001Ab3H1XDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 19:03:50 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:35053 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119Ab3H1XDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 19:03:49 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl: rockchip: Implement .request() and .free() callbacks on the GPIO chips
+Date: Thu, 29 Aug 2013 01:03:44 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1377613817.14731.1.camel@phoenix> <CACRpkdbJMG-MbBrt19kj_NTrarhcHfDCppciuL93fT95Mby7MA@mail.gmail.com>
+In-Reply-To: <CACRpkdbJMG-MbBrt19kj_NTrarhcHfDCppciuL93fT95Mby7MA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
-Thread-Topic: [PATCH 0/10] Add additional security checks when module
- loading is restricted
-Thread-Index: Nz5hbGPlr11vDxoZBtCj48/bXxVZzqCFps4AWFn4cQE=
+Message-Id: <201308290103.45003.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mittwoch, 28. August 2013, 13:25:57 schrieb Linus Walleij:
+> On Tue, Aug 27, 2013 at 4:30 PM, Axel Lin <axel.lin@ingics.com> wrote:
+> > Implement .request() and .free() callbacks on the GPIO chips to inform
+> > pinctrl when a GPIO is requested or freed.
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > ---
+> 
+> Ohhh that will have semantic effects so really need to wait
+> for Heiko's opinion on this one.
+
+I don't see any showstoppers here. Tested it on my machine with gpio-keys 
+without any issues popping up. So
+
+Tested-by: Heiko Stuebner <heiko@sntech.de>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
 
 
------ Original Message -----
-> From: "Matthew Garrett" <matthew.garrett@nebula.com>
-> To: "Lenny Szubowicz" <lszubowi@redhat.com>
-> Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
-> Sent: Wednesday, August 28, 2013 6:41:55 PM
-> Subject: Re: [PATCH 0/10] Add additional security checks when module loading is restricted
-> 
-> On Wed, 2013-08-28 at 18:37 -0400, Lenny Szubowicz wrote:
-> 
-> > Did you purposely exclude similar checks for hibernate that were covered
-> > by earlier versions of your patch set?
-> 
-> Yes, I think it's worth tying it in with the encrypted hibernation
-> support. The local attack is significantly harder in the hibernation
-> case - in the face of unknown hardware it basically involves a
-> pre-generated memory image corresponding to your system or the ability
-> to force a reboot into an untrusted environment. I think it's probably
-> more workable to just add a configuration option for forcing encrypted
-> hibernation when secure boot is in use.
-> 
-> --
-> Matthew Garrett <matthew.garrett@nebula.com>
-
-I'm root. So I can write anything I want to the swap file that looks
-like a valid hibernate image but is code of my choosing. I can read
-anything I need from /dev/mem or /dev/kmem to help me do that.
-I can then immediately initiate a reboot.
-
-                               -Lenny.
+Heiko
