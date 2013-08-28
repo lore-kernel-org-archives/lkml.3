@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3H1Fhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:37:41 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:63799 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3H1Fhj (ORCPT
+	id S1754596Ab3H1Fht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:37:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43855 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab3H1Fhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:37:39 -0400
+	Wed, 28 Aug 2013 01:37:48 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-80-521d8caafc23
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 12/13] tracing/uprobes: Add more fetch functions
+References: <1377593336-16828-1-git-send-email-namhyung@kernel.org>
+	<1377593336-16828-13-git-send-email-namhyung@kernel.org>
+	<521C9594.30901@hitachi.com>
+Date: Wed, 28 Aug 2013 14:37:45 +0900
+In-Reply-To: <521C9594.30901@hitachi.com> (Masami Hiramatsu's message of "Tue,
+	27 Aug 2013 21:03:32 +0900")
+Message-ID: <87ioyqv0ie.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1377629249-1177-1-git-send-email-sboyd@codeaurora.org>
-References: <CAKohpoktPNtSMRn0dEVjcEW5_62E+_UEgySOBJ-hG+r=NU3V2w@mail.gmail.com>
-	<1377629249-1177-1-git-send-email-sboyd@codeaurora.org>
-Date: Wed, 28 Aug 2013 11:07:39 +0530
-Message-ID: <CAKohpomMqTjLXaJ9RA8DEXk=8xzJ2g0zVBujat6ComLX4kMobg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Fix timer/workqueue corruption due to double queueing
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 August 2013 00:17, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Sure that works just as well. Here's a patch.
->
->  drivers/cpufreq/cpufreq_governor.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 7b839a8..b9b20fd 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -133,6 +133,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
->  {
->         int i;
->
-> +       if (!policy->governor_enabled)
-> +               return;
-> +
->         if (!all_cpus) {
->                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
->         } else {
+Hi Masami,
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+On Tue, 27 Aug 2013 21:03:32 +0900, Masami Hiramatsu wrote:
+> (2013/08/27 17:48), Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Implement uprobe-specific stack and memory fetch functions and add
+>> them to the uprobes_fetch_type_table.  Other fetch fucntions will be
+>> shared with kprobes.
+
+[SNIP]
+>> +
+>> +static unsigned long get_user_stack_nth(struct pt_regs *regs, unsigned int n)
+>> +{
+>> +	struct vm_area_struct *vma;
+>> +	unsigned long addr = GET_USP(regs);
+>
+> I recommend you to use user_stack_pointer() rather than GET_USP here.
+> Since some arch seem not to have correct GET_USP implementation (e.g. arm),
+> kernel build will be failed.
+
+Okay, I'll change to the user_stack_pointer().
+
+>
+> And at least trace_probe.c part is good for me.
+>
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks for your review!
+Namhyung
