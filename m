@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab3H1Tyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:54:49 -0400
-Received: from a10-13.smtp-out.amazonses.com ([54.240.10.13]:41737 "EHLO
-	a10-13.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754315Ab3H1Typ (ORCPT
+	id S1755533Ab3H1TzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:55:14 -0400
+Received: from a9-97.smtp-out.amazonses.com ([54.240.9.97]:45593 "EHLO
+	a9-97.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754315Ab3H1TzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:54:45 -0400
-X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:54:45 EDT
-Message-ID: <00000140c6781c1f-b60cbd61-ad4c-4ddd-a6ef-0b69dd9e0d9d-000000@email.amazonses.com>
+	Wed, 28 Aug 2013 15:55:08 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:55:07 EDT
+Message-ID: <00000140c6781a99-aaa6da05-0371-4ea5-8cad-053662dafebd-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:16 +0000
+Date: Wed, 28 Aug 2013 19:48:14 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: akpm@linuxfoundation.org, Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 07/35] mm: Replace __get_cpu_var uses
+Subject: [gcv v3 22/35] mips: Replace __get_cpu_var uses
 References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.10.13
+X-SES-Outgoing: 2013.08.28-54.240.9.97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -120,123 +120,246 @@ Transformations done to __get_cpu_var()
 
 	this_cpu_inc(y)
 
+
+
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/lib/radix-tree.c
+Index: linux/arch/mips/include/asm/fpu_emulator.h
 ===================================================================
---- linux.orig/lib/radix-tree.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/lib/radix-tree.c	2013-08-26 14:25:30.709616290 -0500
-@@ -215,7 +215,7 @@ radix_tree_node_alloc(struct radix_tree_
- 		 * succeed in getting a node here (and never reach
- 		 * kmem_cache_alloc)
- 		 */
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr) {
- 			ret = rtp->nodes[rtp->nr - 1];
- 			rtp->nodes[rtp->nr - 1] = NULL;
-@@ -271,14 +271,14 @@ int radix_tree_preload(gfp_t gfp_mask)
- 	int ret = -ENOMEM;
+--- linux.orig/arch/mips/include/asm/fpu_emulator.h	2013-08-22 14:18:23.138568266 -0500
++++ linux/arch/mips/include/asm/fpu_emulator.h	2013-08-22 14:18:23.130568348 -0500
+@@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator
+ #define MIPS_FPU_EMU_INC_STATS(M)					\
+ do {									\
+ 	preempt_disable();						\
+-	__local_inc(&__get_cpu_var(fpuemustats).M);			\
++	__this_cpu_inc(fpuemustats.M);					\
+ 	preempt_enable();						\
+ } while (0)
  
- 	preempt_disable();
--	rtp = &__get_cpu_var(radix_tree_preloads);
-+	rtp = this_cpu_ptr(&radix_tree_preloads);
- 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
- 			rtp->nodes[rtp->nr++] = node;
- 		else
-Index: linux/mm/memcontrol.c
+Index: linux/arch/mips/cavium-octeon/octeon-irq.c
 ===================================================================
---- linux.orig/mm/memcontrol.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memcontrol.c	2013-08-26 14:25:30.713616248 -0500
-@@ -2398,7 +2398,7 @@ static void drain_stock(struct memcg_sto
-  */
- static void drain_local_stock(struct work_struct *dummy)
- {
--	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
-+	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
- 	drain_stock(stock);
- 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
+--- linux.orig/arch/mips/cavium-octeon/octeon-irq.c	2013-08-22 14:17:32.000000000 -0500
++++ linux/arch/mips/cavium-octeon/octeon-irq.c	2013-08-22 14:18:54.210250887 -0500
+@@ -264,13 +264,13 @@ static void octeon_irq_ciu_enable_local(
+ 	unsigned long *pen;
+ 	unsigned long flags;
+ 	union octeon_ciu_chip_data cd;
+-	raw_spinlock_t *lock = &__get_cpu_var(octeon_irq_ciu_spinlock);
++	raw_spinlock_t *lock = this_cpu_ptr(&octeon_irq_ciu_spinlock);
+ 
+ 	cd.p = irq_data_get_irq_chip_data(data);
+ 
+ 	raw_spin_lock_irqsave(lock, flags);
+ 	if (cd.s.line == 0) {
+-		pen = &__get_cpu_var(octeon_irq_ciu0_en_mirror);
++		pen = this_cpu_ptr(&octeon_irq_ciu0_en_mirror);
+ 		__set_bit(cd.s.bit, pen);
+ 		/*
+ 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
+@@ -279,7 +279,7 @@ static void octeon_irq_ciu_enable_local(
+ 		wmb();
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN0(cvmx_get_core_num() * 2), *pen);
+ 	} else {
+-		pen = &__get_cpu_var(octeon_irq_ciu1_en_mirror);
++		pen = this_cpu_ptr(&octeon_irq_ciu1_en_mirror);
+ 		__set_bit(cd.s.bit, pen);
+ 		/*
+ 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
+@@ -296,13 +296,13 @@ static void octeon_irq_ciu_disable_local
+ 	unsigned long *pen;
+ 	unsigned long flags;
+ 	union octeon_ciu_chip_data cd;
+-	raw_spinlock_t *lock = &__get_cpu_var(octeon_irq_ciu_spinlock);
++	raw_spinlock_t *lock = this_cpu_ptr(&octeon_irq_ciu_spinlock);
+ 
+ 	cd.p = irq_data_get_irq_chip_data(data);
+ 
+ 	raw_spin_lock_irqsave(lock, flags);
+ 	if (cd.s.line == 0) {
+-		pen = &__get_cpu_var(octeon_irq_ciu0_en_mirror);
++		pen = this_cpu_ptr(&octeon_irq_ciu0_en_mirror);
+ 		__clear_bit(cd.s.bit, pen);
+ 		/*
+ 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
+@@ -311,7 +311,7 @@ static void octeon_irq_ciu_disable_local
+ 		wmb();
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN0(cvmx_get_core_num() * 2), *pen);
+ 	} else {
+-		pen = &__get_cpu_var(octeon_irq_ciu1_en_mirror);
++		pen = this_cpu_ptr(&octeon_irq_ciu1_en_mirror);
+ 		__clear_bit(cd.s.bit, pen);
+ 		/*
+ 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
+@@ -431,11 +431,11 @@ static void octeon_irq_ciu_enable_local_
+ 
+ 	if (cd.s.line == 0) {
+ 		int index = cvmx_get_core_num() * 2;
+-		set_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu0_en_mirror));
++		set_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu0_en_mirror));
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN0_W1S(index), mask);
+ 	} else {
+ 		int index = cvmx_get_core_num() * 2 + 1;
+-		set_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu1_en_mirror));
++		set_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu1_en_mirror));
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN1_W1S(index), mask);
+ 	}
  }
-Index: linux/mm/memory-failure.c
-===================================================================
---- linux.orig/mm/memory-failure.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memory-failure.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1279,7 +1279,7 @@ static void memory_failure_work_func(str
- 	unsigned long proc_flags;
- 	int gotten;
+@@ -450,11 +450,11 @@ static void octeon_irq_ciu_disable_local
  
--	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
- 	for (;;) {
- 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
- 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-Index: linux/mm/page-writeback.c
-===================================================================
---- linux.orig/mm/page-writeback.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/page-writeback.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1487,7 +1487,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
- 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
- 	 */
--	p =  &__get_cpu_var(bdp_ratelimits);
-+	p =  this_cpu_ptr(&bdp_ratelimits);
- 	if (unlikely(current->nr_dirtied >= ratelimit))
- 		*p = 0;
- 	else if (unlikely(*p >= ratelimit_pages)) {
-@@ -1499,7 +1499,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
- 	 * the dirty throttling and livelock other long-run dirtiers.
- 	 */
--	p = &__get_cpu_var(dirty_throttle_leaks);
-+	p = this_cpu_ptr(&dirty_throttle_leaks);
- 	if (*p > 0 && current->nr_dirtied < ratelimit) {
- 		unsigned long nr_pages_dirtied;
- 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-Index: linux/mm/swap.c
-===================================================================
---- linux.orig/mm/swap.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/swap.c	2013-08-26 14:25:30.717616206 -0500
-@@ -359,7 +359,7 @@ void rotate_reclaimable_page(struct page
- 
- 		page_cache_get(page);
- 		local_irq_save(flags);
--		pvec = &__get_cpu_var(lru_rotate_pvecs);
-+		pvec = this_cpu_ptr(&lru_rotate_pvecs);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_move_tail(pvec);
- 		local_irq_restore(flags);
-Index: linux/mm/vmalloc.c
-===================================================================
---- linux.orig/mm/vmalloc.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmalloc.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1487,7 +1487,7 @@ void vfree(const void *addr)
- 	if (!addr)
- 		return;
- 	if (unlikely(in_interrupt())) {
--		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
-+		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
- 		if (llist_add((struct llist_node *)addr, &p->list))
- 			schedule_work(&p->wq);
- 	} else
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmstat.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1178,7 +1178,7 @@ int sysctl_stat_interval __read_mostly =
- static void vmstat_update(struct work_struct *w)
- {
- 	refresh_cpu_vm_stats(smp_processor_id());
--	schedule_delayed_work(&__get_cpu_var(vmstat_work),
-+	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
- 		round_jiffies_relative(sysctl_stat_interval));
+ 	if (cd.s.line == 0) {
+ 		int index = cvmx_get_core_num() * 2;
+-		clear_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu0_en_mirror));
++		clear_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu0_en_mirror));
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN0_W1C(index), mask);
+ 	} else {
+ 		int index = cvmx_get_core_num() * 2 + 1;
+-		clear_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu1_en_mirror));
++		clear_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu1_en_mirror));
+ 		cvmx_write_csr(CVMX_CIU_INTX_EN1_W1C(index), mask);
+ 	}
  }
+@@ -1063,7 +1063,7 @@ static void octeon_irq_ip2_ciu(void)
+ 	const unsigned long core_id = cvmx_get_core_num();
+ 	u64 ciu_sum = cvmx_read_csr(CVMX_CIU_INTX_SUM0(core_id * 2));
  
+-	ciu_sum &= __get_cpu_var(octeon_irq_ciu0_en_mirror);
++	ciu_sum &= __this_cpu_read(octeon_irq_ciu0_en_mirror);
+ 	if (likely(ciu_sum)) {
+ 		int bit = fls64(ciu_sum) - 1;
+ 		int irq = octeon_irq_ciu_to_irq[0][bit];
+@@ -1080,7 +1080,7 @@ static void octeon_irq_ip3_ciu(void)
+ {
+ 	u64 ciu_sum = cvmx_read_csr(CVMX_CIU_INT_SUM1);
+ 
+-	ciu_sum &= __get_cpu_var(octeon_irq_ciu1_en_mirror);
++	ciu_sum &= __this_cpu_read(octeon_irq_ciu1_en_mirror);
+ 	if (likely(ciu_sum)) {
+ 		int bit = fls64(ciu_sum) - 1;
+ 		int irq = octeon_irq_ciu_to_irq[1][bit];
+@@ -1129,10 +1129,10 @@ static void octeon_irq_init_ciu_percpu(v
+ 	int coreid = cvmx_get_core_num();
+ 
+ 
+-	__get_cpu_var(octeon_irq_ciu0_en_mirror) = 0;
+-	__get_cpu_var(octeon_irq_ciu1_en_mirror) = 0;
++	__this_cpu_write(octeon_irq_ciu0_en_mirror, 0);
++	__this_cpu_write(octeon_irq_ciu1_en_mirror, 0);
+ 	wmb();
+-	raw_spin_lock_init(&__get_cpu_var(octeon_irq_ciu_spinlock));
++	raw_spin_lock_init(this_cpu_ptr(&octeon_irq_ciu_spinlock));
+ 	/*
+ 	 * Disable All CIU Interrupts. The ones we need will be
+ 	 * enabled later.  Read the SUM register so we know the write
+Index: linux/arch/mips/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/mips/kernel/kprobes.c	2013-08-22 14:17:32.000000000 -0500
++++ linux/arch/mips/kernel/kprobes.c	2013-08-22 14:18:54.210250887 -0500
+@@ -224,7 +224,7 @@ static void save_previous_kprobe(struct
+ 
+ static void restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+ {
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe.status;
+ 	kcb->kprobe_old_SR = kcb->prev_kprobe.old_SR;
+ 	kcb->kprobe_saved_SR = kcb->prev_kprobe.saved_SR;
+@@ -234,7 +234,7 @@ static void restore_previous_kprobe(stru
+ static void set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+ 			       struct kprobe_ctlblk *kcb)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ 	kcb->kprobe_saved_SR = kcb->kprobe_old_SR = (regs->cp0_status & ST0_IE);
+ 	kcb->kprobe_saved_epc = regs->cp0_epc;
+ }
+@@ -385,7 +385,7 @@ static int __kprobes kprobe_handler(stru
+ 				ret = 1;
+ 				goto no_kprobe;
+ 			}
+-			p = __get_cpu_var(current_kprobe);
++			p = __this_cpu_read(current_kprobe);
+ 			if (p->break_handler && p->break_handler(p, regs))
+ 				goto ss_probe;
+ 		}
+Index: linux/arch/mips/kernel/perf_event_mipsxx.c
+===================================================================
+--- linux.orig/arch/mips/kernel/perf_event_mipsxx.c	2013-08-22 14:17:32.000000000 -0500
++++ linux/arch/mips/kernel/perf_event_mipsxx.c	2013-08-22 14:18:54.210250887 -0500
+@@ -340,7 +340,7 @@ static int mipsxx_pmu_alloc_counter(stru
+ 
+ static void mipsxx_pmu_enable_event(struct hw_perf_event *evt, int idx)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	WARN_ON(idx < 0 || idx >= mipspmu.num_counters);
+ 
+@@ -360,7 +360,7 @@ static void mipsxx_pmu_enable_event(stru
+ 
+ static void mipsxx_pmu_disable_event(int idx)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned long flags;
+ 
+ 	WARN_ON(idx < 0 || idx >= mipspmu.num_counters);
+@@ -460,7 +460,7 @@ static void mipspmu_stop(struct perf_eve
+ 
+ static int mipspmu_add(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx;
+ 	int err = 0;
+@@ -496,7 +496,7 @@ out:
+ 
+ static void mipspmu_del(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -1270,7 +1270,7 @@ static int __hw_perf_event_init(struct p
+ 
+ static void pause_local_counters(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int ctr = mipspmu.num_counters;
+ 	unsigned long flags;
+ 
+@@ -1286,7 +1286,7 @@ static void pause_local_counters(void)
+ 
+ static void resume_local_counters(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int ctr = mipspmu.num_counters;
+ 
+ 	do {
+@@ -1297,7 +1297,7 @@ static void resume_local_counters(void)
+ 
+ static int mipsxx_pmu_handle_shared_irq(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_sample_data data;
+ 	unsigned int counters = mipspmu.num_counters;
+ 	u64 counter;
+Index: linux/arch/mips/kernel/smp-bmips.c
+===================================================================
+--- linux.orig/arch/mips/kernel/smp-bmips.c	2013-08-22 14:17:32.000000000 -0500
++++ linux/arch/mips/kernel/smp-bmips.c	2013-08-22 14:18:54.214250846 -0500
+@@ -304,7 +304,7 @@ static irqreturn_t bmips_ipi_interrupt(i
+ 	int action, cpu = irq - IPI0_IRQ;
+ 
+ 	spin_lock_irqsave(&ipi_lock, flags);
+-	action = __get_cpu_var(ipi_action_mask);
++	action = __this_cpu_read(ipi_action_mask);
+ 	per_cpu(ipi_action_mask, cpu) = 0;
+ 	clear_c0_cause(cpu ? C_SW1 : C_SW0);
+ 	spin_unlock_irqrestore(&ipi_lock, flags);
 
