@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab3H1Kqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:46:36 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:54295 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab3H1Kqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:46:33 -0400
+	id S1754233Ab3H1Kto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:49:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916Ab3H1Ktm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 06:49:42 -0400
+Date: Wed, 28 Aug 2013 13:49:38 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130828104938.GT22899@redhat.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130828092001.GQ22899@redhat.com>
+ <521DC3FD.1020507@linux.vnet.ibm.com>
+ <20130828094630.GR22899@redhat.com>
+ <521DCD57.7000401@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <521DD43D.7070605@samsung.com>
-References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
-	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
-	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
-	<CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
-	<521DD43D.7070605@samsung.com>
-Date: Wed, 28 Aug 2013 12:46:31 +0200
-Message-ID: <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521DCD57.7000401@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 12:43 PM, Dmitry Kasatkin
-<d.kasatkin@samsung.com> wrote:
-> On 28/08/13 13:38, Sedat Dilek wrote:
->> On Wed, Aug 28, 2013 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Wed, Aug 28, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>> Hi all,
->>>>>
->>>>> Changes since 20130827:
->>>>>
->>>>> The f2fs tree lost its build failure.
->>>>>
->>>>> The md tree gained a conflict against the arm tree.
->>>>>
->>>>> The libata tree lost its build failure.
->>>>>
->>>>> The spi tree lost its build failure.
->>>>>
->>>>> The arm-soc tree gained conflicts against the usb tree.
->>>>>
->>>>> The dma-mapping tree gained a conflict against the driver-core tree.
->>>>>
->>>>> The akpm-current tree gained a conflict against the net tree.
->>>>>
->>>>> ----------------------------------------------------------------------------
->>>>>
->>>>> My build here breaks like this:
->>>>>
->>>>>   CC      drivers/usb/host/xhci-ring.o
->>>>>   CC      drivers/video/console/softcursor.o
->>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
->>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
->>>>> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
->>>>> [-Werror=implicit-function-declaration]
->>>>> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
->>>>> (first use in this function)
->>>>> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
->>>>> is reported only once for each function it appears in
->>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
->>>>> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
->>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
->>>>> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
->>>>> (first use in this function)
->>>>> cc1: some warnings being treated as errors
->>>>> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
->>>>> make[4]: *** [drivers/usb/host] Error 2
->>>>>
->>>>> My kernel-config is attached.
->>>>>
->>>> Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
->>>>
->>>> $ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
->>>> linux/include/linux/device.h:1118:
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
->>>> linux/include/linux/device.h:1121:
->>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
->>>> linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
->>>> _ddebug *descriptor, const char *fmt, ...);
->>>> linux/include/linux/dynamic_debug.h:63:#define
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
->>>> linux/include/linux/dynamic_debug.h:76:
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>>> linux/include/linux/dynamic_debug.h:78:
->>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
->>>> linux/include/linux/dynamic_debug.h:84:
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>>> linux/include/linux/dynamic_debug.h:92:
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>>> linux/include/linux/dynamic_debug.h:101:
->>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
->>>>
->>>> Can't say which one is preferred here.
->>>>
->>> looks like device.h is preferred or used in the sources, but this does
->>> not fix the issue here.
->>> sth. wrong with dev_dbg_ratelimited()?
->>>
->> That change seems to cause the problems:
->>
->> commit 0730d52a86919300a39a2be37f6c140997dfb82f
->> "xhci:prevent "callbacks suppressed" when debug is not enabled"
->>
->> - Sedat -
->>
->> [1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
->>
-> Hello,
->
-> [PATCHv2 1/2] was not applied before.
-> I pointed this out few hours ago...
->
-> - Dmitry
->
+On Wed, Aug 28, 2013 at 06:13:43PM +0800, Xiao Guangrong wrote:
+> On 08/28/2013 05:46 PM, Gleb Natapov wrote:
+> > On Wed, Aug 28, 2013 at 05:33:49PM +0800, Xiao Guangrong wrote:
+> >>> Or what if desc is moved to another rmap, but then it
+> >>> is moved back to initial rmap (but another place in the desc list) so
+> >>> the check here will not catch that we need to restart walking?
+> >>
+> >> It is okay. We always add the new desc to the head, then we will walk
+> >> all the entires under this case.
+> >>
+> > Which races another question: What if desc is added in front of the list
+> > behind the point where lockless walker currently is?
+> 
+> That case is new spte is being added into the rmap. We need not to care the
+> new sptes since it will set the dirty-bitmap then they can be write-protected
+> next time.
+> 
+OK.
 
-Yupp, just read it a few seconds ago.
+> > 
+> >> Right?
+> > Not sure. While lockless walker works on a desc rmap can be completely
+> > destroyed and recreated again. It can be any order.
+> 
+> I think the thing is very similar as include/linux/rculist_nulls.h
+include/linux/rculist_nulls.h is for implementing hash tables, so they
+may not care about add/del/lookup race for instance, but may be we are
+(you are saying above that we are not), so similarity does not prove
+correctness for our case. BTW I do not see
+rcu_assign_pointer()/rcu_dereference() in your patches which hints on
+incorrect usage of RCU. I think any access to slab pointers will need to
+use those.
 
-Where is that whatever 2nd fix?
-
-- Sedat -
-
-[1] http://marc.info/?l=linux-usb&m=137767590629869&w=2
+--
+			Gleb.
