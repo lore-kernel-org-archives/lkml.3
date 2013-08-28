@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab3H1VAC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:00:02 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39493 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3H1U77 (ORCPT
+	id S1754529Ab3H1VD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:03:59 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:47852 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab3H1VD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:59:59 -0400
-Date: Wed, 28 Aug 2013 14:00:10 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH] percpu ida: Switch to cpumask_t, add some comments
-Message-ID: <20130828210010.GD1357@kmo-pixel>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
- <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
- <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
- <20130828195517.GF8032@kmo-pixel>
- <20130828132550.d0ce4d3a4d40ee07e7e8a1c1@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130828132550.d0ce4d3a4d40ee07e7e8a1c1@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Aug 2013 17:03:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.12] cgroup: factor out css creation into create_css()
+Date: Wed, 28 Aug 2013 17:03:40 -0400
+Message-Id: <1377723829-22814-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 01:25:50PM -0700, Andrew Morton wrote:
-> On Wed, 28 Aug 2013 12:55:17 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
-> 
-> > Fixup patch, addressing Andrew's review feedback:
-> 
-> Looks reasonable.
-> 
-> >  lib/idr.c           | 38 +++++++++++++++++++++-----------------
-> 
-> I still don't think it should be in this file.
-> 
-> You say that some as-yet-unmerged patches will tie the new code into
-> the old ida code.  But will it do it in a manner which requires that
-> the two reside in the same file?
+Hello,
 
-Not require, no - but it's just intimate enough with my ida rewrite that
-I think it makes sense; it makes some use of stuff that should be
-internal to the ida code.
+For unified hierarchy, a css's (cgroup_subsys_state) lifetime will be
+different from that of the associated cgroup.  css's may be created
+and destroyed dynamically over the lifetime of a single cgroup.  The
+previous changes decoupled css destruction from cgroup's.  This
+patchset decouples css creation from cgroup's.
 
-Mostly just sharing the lock though, since I got rid of the ida
-interfaces that don't do locking, but percpu ida needs a lock that also
-covers what ida needs.
+This patchset contains the following nine patches.
 
-It also makes use of a ganged allocation interface, but there's no real
-reason ida can't expose that, it's just unlikely to be useful to
-anything but percpu ida.
+ 0001-cgroup-fix-css-leaks-on-online_css-failure.patch
+ 0002-cgroup-css-iterations-and-css_from_dir-are-safe-unde.patch
+ 0003-cgroup-make-for_each_subsys-useable-under-cgroup_roo.patch
+ 0004-cgroup-move-css_id-commit-from-cgroup_populate_dir-t.patch
+ 0005-cgroup-reorder-operations-in-cgroup_create.patch
+ 0006-cgroup-combine-css-handling-loops-in-cgroup_create.patch
+ 0007-cgroup-factor-out-cgroup_subsys_state-creation-into-.patch
+ 0008-cgroup-implement-for_each_css.patch
+ 0009-cgroup-remove-for_each_root_subsys.patch
 
-The other reason I think it makes sense to live in idr.c is more for
-users of the code; as you pointed out as far as the user's perspective
-percpu ida isn't doing anything fundamentally different from ida, so I
-think it makes sense for the code to live in the same place as a
-kindness to future kernel developers who are trying to find their way
-around the various library code.
+0001 is a fix for an existing leak issue in the creation error
+handling path.
+
+0002-0004 are prep patches.  Note that 0004 will conflict with css_id
+removal patch.
+
+0005-0007 collect css creation operations into single loop and factor
+it out into create_css().
+
+0008-0009 are somewhat tangential.  As everything is css based now and
+the enabled set of css's might be differ depending on the specific
+cgroup in the future, they introduce for_each_css() and replace most
+uses of for_each_root_subsys() with it.  The two left overs are
+opencoded and for_each_root_subsys() and the related logic are
+removed.
+
+This patchset shouldn't bring any userland noticeable behavior
+changes.  It's on top of cgroup/for-3.12 d1625964da ("cgroup: fix
+cgroup_css() invocation in css_from_id()") and available in the
+following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-create_css
+
+diffstat follows.
+
+ include/linux/cgroup.h |   10 -
+ kernel/cgroup.c        |  348 ++++++++++++++++++++++++++-----------------------
+ 2 files changed, 187 insertions(+), 171 deletions(-)
+
+Thanks.
+
+--
+tejun
