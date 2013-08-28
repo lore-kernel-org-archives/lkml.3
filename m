@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab3H1FCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:02:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44927 "EHLO
+	id S1754191Ab3H1FEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:04:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab3H1FCm (ORCPT
+	with ESMTP id S1753649Ab3H1FEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:02:42 -0400
-Date: Tue, 27 Aug 2013 22:05:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrea Merello <andrea.merello@gmail.com>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Update e-mail address for Andrea Merello
-Message-ID: <20130828050501.GA10154@kroah.com>
-References: <1377518010-14767-1-git-send-email-andrea.merello@gmail.com>
+	Wed, 28 Aug 2013 01:04:49 -0400
+Date: Tue, 27 Aug 2013 22:07:08 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alex Elder <alex.elder@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Yehuda Sadeh <yehuda@inktank.com>,
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>,
+        ceph-devel@vger.kernel.org
+Subject: Re: [PATCH 02/15] rbd: convert bus code to use bus_groups
+Message-ID: <20130828050708.GA15491@kroah.com>
+References: <1377293081-10957-1-git-send-email-gregkh@linuxfoundation.org>
+ <1377293081-10957-2-git-send-email-gregkh@linuxfoundation.org>
+ <521C9D14.7090502@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377518010-14767-1-git-send-email-andrea.merello@gmail.com>
+In-Reply-To: <521C9D14.7090502@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 01:53:30PM +0200, Andrea Merello wrote:
-> A lot of files contain reference to my old e-mail address.
-> Now I'm going not to read mail from it anymore, so update it
-> with my current address everywhere.
+On Tue, Aug 27, 2013 at 07:35:32AM -0500, Alex Elder wrote:
+> On 08/23/2013 04:24 PM, Greg Kroah-Hartman wrote:
+> > The bus_attrs field of struct bus_type is going away soon, dev_groups
+> > should be used instead.  This converts the RBD bus code to use the
+> > correct field.
+> > 
+> > Cc: Yehuda Sadeh <yehuda@inktank.com>
+> > Cc: Sage Weil <sage@inktank.com>
+> > Cc: Alex Elder <elder@inktank.com>
 > 
-> Signed-off-by: Andrea Merello <andrea.merello@gmail.com>
+> Looks reasonable to me.
+> 
+> Acked-by: Alex Elder <elder@linaro.org>
 
-I stripped out and took only the drivers/staging/* changes in this
-patch.  I'd recommend resending all the drivers/net/wireless/ changes to
-the linux-wireless@ group again, so they can apply just those changes.
-
-thanks,
+Thanks for the review.
 
 greg k-h
