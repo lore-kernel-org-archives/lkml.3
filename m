@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3H1TPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:15:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20823 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3H1TPN (ORCPT
+	id S1754732Ab3H1TQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:16:57 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51657 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753666Ab3H1TQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:15:13 -0400
-Date: Wed, 28 Aug 2013 22:15:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kumar Gaurav <kumargauravgupta3@gmail.com>
-Cc: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] xHCI: Fixing xhci_readl definition and function call
-Message-ID: <20130828191500.GH19256@mwanda>
-References: <1377482937-7486-1-git-send-email-kumargauravgupta3@gmail.com>
- <20130828071304.GO6329@mwanda>
- <521E1292.5060709@gmail.com>
+	Wed, 28 Aug 2013 15:16:56 -0400
+Date: Wed, 28 Aug 2013 15:16:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+cc: David Howells <dhowells@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Memory synchronization vs. interrupt handlers
+In-Reply-To: <20130828011923.GS3871@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1308281501000.1541-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521E1292.5060709@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 08:39:06PM +0530, Kumar Gaurav wrote:
-> On Wednesday 28 August 2013 12:43 PM, Dan Carpenter wrote:
-> >On Mon, Aug 26, 2013 at 07:38:57AM +0530, Kumar Gaurav wrote:
-> >>This patch redefine function xhci_readl.xhci_readl function doesn't use xhci_hcd argument.
-> >>Hence there is no need of keeping it in the function arguments.
-> >>
-> >>Redefining this function breaks other functions which calls this function.
-> >>This phatch also correct those calls in xhci driver.
-> >>
-> >>Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
-> >>---
-> >Could you put a list of changes since v2 here?:
-> >
-> >v3:  blah blah changelog mostly.
-> >
-> >Also this doesn't apply for me against linux-next.
-> >
-> >regards,
-> >dan carpenter
-> >
-> There's no change from v2. I was sending the same patch again
-> because the last one was lacking good description and i was told (or
-> as i understood) that if I'm sending the same patch or patch for the
-> same purpose as previous then i should increment version so i did.
+Russell, Peter, and Ingo:
 
-Put:
-v2: no change.  just the changelog.
+Can you folks enlighten us regarding this issue for some common 
+architectures?
 
-Otherwise we have to look for the change.
+On Tue, 27 Aug 2013, Paul E. McKenney wrote:
 
+> On Mon, Aug 26, 2013 at 11:49:15AM -0400, Alan Stern wrote:
+> > David and Paul:
+> > 
+> > Here's a question that doesn't seem to be answered in 
+> > Documentation/memory-barriers.txt.  Are memory accesses within an 
+> > interrupt handler synchronized with respect to interrupts?
+> > 
+> > In more detail, suppose we have an interrupt handler that uses a memory
+> > variable A.  The device attached to the IRQ line sends two interrupt
+> > requests, and we get:
+> > 
+> > 	CPU 0				CPU 1
+> > 	-----				-----
+> > 	Receive IRQ
+> > 	Call the interrupt handler
+> > 		Write A
+> > 	Finish IRQ processing
+> > 
+> > 					Receive IRQ
+> > 					Call the interrupt handler
+> > 						Read A
+> > 					Finish IRQ processing
+> > 
+> > Is CPU 0's write to A guaranteed to be visible on CPU 1?  Given that 
+> > interrupts on an IRQ line are serialized, and that IRQ processing must 
+> > involve some amount of memory barriers, I would expect the answer to be 
+> > Yes.
 > 
-> I had developed this patch against linux-git, haven't tested that on
-> linux-next as i haven't cloned  linux-next yet.
-> 
-> I've started cloning linux-next and as it's not applying on
-> linux-next, I'll try it on linux-next (once i cloned it)  and will
-> send again.
+> I have no idea.  I would hope that it did, but a lot depends on how or
+> whether the end-of-interrupt processing is handled by the I/O hardware.
 
-Yep.  Cleanups should be done against linux-next.
+Isn't this the sort of thing the kernel should guarantee?  The
+low-level code that fields interrupts ought to do the equivalent of an
+"acquire" barrier at the start and a "release" barrier at the end, so
+that operations by the higher-level handlers don't "leak out".
 
-regards,
-dan carpenter
+For example, if the low-level code would lock and unlock a spinlock at 
+the start and end of the interrupt, that would be more than sufficient 
+(provided it always used the same spinlock for the same IRQ line).
+
+Of course, drivers needing this behavior can always use their own 
+spinlocks.  Still, it seems like this ought to fall under the purview 
+of the core kernel.
+
+> I believe that we need to ask the architecture maintainers.  And maybe
+> also someone who knows about the devices in question.
+
+The devices aren't relevant here because the variable A resides in
+main memory, not on the device.  What matter is, as you say, the
+architectural code.
+
+Alan Stern
 
