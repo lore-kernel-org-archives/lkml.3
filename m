@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3H1Tzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:55:37 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:51056 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754315Ab3H1Tza (ORCPT
+	id S1755608Ab3H1Tzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:55:46 -0400
+Received: from a10-13.smtp-out.amazonses.com ([54.240.10.13]:41737 "EHLO
+	a10-13.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754223Ab3H1Tzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:55:30 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:55:29 EDT
-Message-ID: <00000140c678248b-c13f2d24-e3fa-4624-a82d-cb59fb31e3d2-000000@email.amazonses.com>
+	Wed, 28 Aug 2013 15:55:42 -0400
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:55:42 EDT
+Message-ID: <00000140c6781ceb-6c3e93f5-45d6-4b04-8034-e7cd4b5a77b5-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:17 +0000
+Date: Wed, 28 Aug 2013 19:48:16 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
+Cc: akpm@linuxfoundation.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 13/35] kernel misc: Replace __get_cpu_var uses
+Subject: [gcv v3 08/35] tracing: Replace __get_cpu_var uses
 References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.62
+X-SES-Outgoing: 2013.08.28-54.240.10.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -123,74 +125,52 @@ Transformations done to __get_cpu_var()
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/kernel/printk/printk.c
+Index: linux/include/linux/kprobes.h
 ===================================================================
---- linux.orig/kernel/printk/printk.c	2013-08-26 14:30:25.846490787 -0500
-+++ linux/kernel/printk/printk.c	2013-08-26 14:30:25.846490787 -0500
-@@ -2441,7 +2441,7 @@ static void wake_up_klogd_work_func(stru
- 	int pending = __this_cpu_xchg(printk_pending, 0);
+--- linux.orig/include/linux/kprobes.h	2013-08-26 14:25:53.000000000 -0500
++++ linux/include/linux/kprobes.h	2013-08-26 14:26:29.460993659 -0500
+@@ -329,7 +329,7 @@ static inline void reset_current_kprobe(
  
- 	if (pending & PRINTK_PENDING_SCHED) {
--		char *buf = __get_cpu_var(printk_sched_buf);
-+		char *buf = this_cpu_ptr(printk_sched_buf);
- 		printk(KERN_WARNING "[sched_delayed] %s", buf);
- 	}
- 
-@@ -2459,7 +2459,7 @@ void wake_up_klogd(void)
- 	preempt_disable();
- 	if (waitqueue_active(&log_wait)) {
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
--		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+		irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	}
- 	preempt_enable();
+ static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
+ {
+-	return (&__get_cpu_var(kprobe_ctlblk));
++	return this_cpu_ptr(&kprobe_ctlblk);
  }
-@@ -2472,14 +2472,14 @@ int printk_sched(const char *fmt, ...)
- 	int r;
+ 
+ int register_kprobe(struct kprobe *p);
+Index: linux/kernel/trace/ftrace.c
+===================================================================
+--- linux.orig/kernel/trace/ftrace.c	2013-08-26 14:25:53.000000000 -0500
++++ linux/kernel/trace/ftrace.c	2013-08-26 14:26:29.460993659 -0500
+@@ -870,7 +870,7 @@ function_profile_call(unsigned long ip,
  
  	local_irq_save(flags);
--	buf = __get_cpu_var(printk_sched_buf);
-+	buf = this_cpu_ptr(printk_sched_buf);
  
- 	va_start(args, fmt);
- 	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
- 	va_end(args);
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
  
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
--	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+	irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	local_irq_restore(flags);
+@@ -901,7 +901,7 @@ static void profile_graph_return(struct
+ 	unsigned long flags;
  
- 	return r;
-Index: linux/kernel/smp.c
+ 	local_irq_save(flags);
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
+ 
+Index: linux/kernel/trace/trace.c
 ===================================================================
---- linux.orig/kernel/smp.c	2013-08-26 14:30:25.846490787 -0500
-+++ linux/kernel/smp.c	2013-08-26 14:30:25.846490787 -0500
-@@ -172,7 +172,7 @@ void generic_exec_single(int cpu, struct
-  */
- void generic_smp_call_function_single_interrupt(void)
- {
--	struct call_single_queue *q = &__get_cpu_var(call_single_queue);
-+	struct call_single_queue *q = this_cpu_ptr(&call_single_queue);
- 	LIST_HEAD(list);
+--- linux.orig/kernel/trace/trace.c	2013-08-26 14:25:53.000000000 -0500
++++ linux/kernel/trace/trace.c	2013-08-26 14:26:29.464993617 -0500
+@@ -1676,7 +1676,7 @@ static void __ftrace_trace_stack(struct
+ 	 */
+ 	barrier();
+ 	if (use_stack == 1) {
+-		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
++		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
+ 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
  
- 	/*
-@@ -252,7 +252,7 @@ int smp_call_function_single(int cpu, sm
- 			struct call_single_data *csd = &d;
- 
- 			if (!wait)
--				csd = &__get_cpu_var(csd_data);
-+				csd = this_cpu_ptr(&csd_data);
- 
- 			csd_lock(csd);
- 
-@@ -401,7 +401,7 @@ void smp_call_function_many(const struct
- 		return;
- 	}
- 
--	cfd = &__get_cpu_var(cfd_data);
-+	cfd = this_cpu_ptr(&cfd_data);
- 
- 	cpumask_and(cfd->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, cfd->cpumask);
+ 		if (regs)
 
