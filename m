@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab3H1Fdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:33:53 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:32944 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab3H1Fdv (ORCPT
+	id S1754422Ab3H1FfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:35:03 -0400
+Received: from mailout02.t-online.de ([194.25.134.17]:54023 "EHLO
+	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab3H1FfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:33:51 -0400
+	Wed, 28 Aug 2013 01:35:01 -0400
+Message-ID: <521D8BF9.7070704@t-online.de>
+Date: Wed, 28 Aug 2013 07:34:49 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAHfPSqD0zpR3dRDaH4c3uxHS81vYn6mPyNjCmJ6c-TC1wpZeig@mail.gmail.com>
-References: <1369031689-23189-1-git-send-email-ch.naveen@samsung.com>
- <CAD=FV=Xppyb+Y0atygnwA8oBHmGHDx7Bit2fN12GX5Tt-Y9H1A@mail.gmail.com>
- <519D3594.4070305@kernel.org> <CAHfPSqD0zpR3dRDaH4c3uxHS81vYn6mPyNjCmJ6c-TC1wpZeig@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 28 Aug 2013 11:03:30 +0530
-Message-ID: <CAHfPSqDYLYDEDqEhd20e4RQP+-ciu+d6MTyOWRi8OHD29dOhSA@mail.gmail.com>
-Subject: Re: [PATCH] iio: exynos_adc: fix wrong structure extration in suspend
- and resume
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hans Verkuil <hansverk@cisco.com>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [REGRESSION 3.11-rc] wm8775 9-001b: I2C: cannot write ??? to
+ register R??
+References: <521A269D.3020909@t-online.de> <521C5493.1050407@cisco.com> <521C72FF.5070902@t-online.de> <521C7697.6070809@cisco.com>
+In-Reply-To: <521C7697.6070809@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: EAQTyrZTYh-o8YSfI-Zxkh5esL0lktbb8HDz0pv5b8oWjGW2+gRnuPuCqKLN9ZsQFM
+X-TOI-MSGID: cfa86899-148b-4ad3-a3c3-776cc78e756a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2013 10:55, Naveen Krishna Ch <naveenkrishna.ch@gmail.com> wrote:
-> On 23 May 2013 02:46, Jonathan Cameron <jic23@kernel.org> wrote:
->> On 05/20/2013 06:09 PM, Doug Anderson wrote:
->>> Naveen,
->>>
->>> On Sun, May 19, 2013 at 11:34 PM, Naveen Krishna Chatradhi
->>> <ch.naveen@samsung.com> wrote:
->>>> The exynos_adc device structure was wrongly extracted from the dev*
->>>> correcting the same.
+On 27.08.2013 11:51, Hans Verkuil wrote:
+> On 08/27/2013 11:35 AM, Knut Petersen wrote:
+>> On 27.08.2013 09:26, Hans Verkuil wrote:
+>>> On 08/25/2013 05:45 PM, Knut Petersen wrote:
+>>>> Booting current git kernel dmesg shows a set of new  warnings:
 >>>>
->>>> Using the regular conversion of
->>>> struct device* -> struct platform_device* -> struct exynos_adc* seems wrong.
->>>> Instead we should be doing
->>>> struct device* -> struct iio_dev* -> struct exynos_adc*
+>>>>       "wm8775 9-001b: I2C: cannot write ??? to register R??"
 >>>>
->>>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>>> ---
->>>>  drivers/iio/adc/exynos_adc.c | 8 ++++----
->>>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->> Applied to the fixes-togreg branch of iio.git
->> I'll hopefully send these on to Greg before the weekend.
-> Jonathan,
->
-> I would like to know any comments on
->
-> https://patchwork.kernel.org/patch/2513361/
->
-> Its been pending for a while now.
->
-> Thanks,
-> Naveen
-Ping
-Any comments please
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->
->
->
-> --
-> Shine bright,
-> (: Nav :)
+>>>> Nevertheless, the hardware seems to work fine.
+>>>>
+>>>> This is a new problem, introduced after kernel 3.10.
+>>>> If necessary I can bisect.
+>>> Can you try this patch? I'm pretty sure this will fix it.
+>> Indeed, it does cure the problem. Thanks.
+>>
+>> Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+> Thanks for testing this! I've posted the pull request for this.
+> Hopefully it will make 3.11 before it is released.
 
+As I wrote in the initial bug report, the problem has been introduced _after_ kernel 3.10,
+facd23664f1d63c33fbc6da52261c8548ed3fbd4 is _not_ part of kernel 3.10.x
 
+Therefore the CC to stable@vger.kernel.org for v3.10 in
+b9a1dfd3ba3ae00b0c1d1a396ed43fac85a32990 is wrong.
 
--- 
-Shine bright,
-(: Nav :)
+cu,
+  Knut
+> Regards,
+>
+> 	Hans
+>
+>
+
