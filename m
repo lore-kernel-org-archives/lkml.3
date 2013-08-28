@@ -1,130 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab3H1VL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:11:27 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:54879 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3H1VL0 (ORCPT
+	id S1755899Ab3H1VML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:12:11 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53830 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab3H1VMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 17:11:26 -0400
-Date: Wed, 28 Aug 2013 22:11:17 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
- /proc/*/{syscall,stack,personality}
-Message-ID: <20130828211116.GA22184@dztty>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
- <871u5gqtw3.fsf@xmission.com>
- <20130826172054.GE27005@ZenIV.linux.org.uk>
- <20130827172406.GA2664@dztty>
- <20130828201141.GA21455@dztty>
- <CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	Wed, 28 Aug 2013 17:12:08 -0400
+Date: Wed, 28 Aug 2013 14:12:17 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH-v3 1/4] idr: Percpu ida
+Message-ID: <20130828211217.GE1357@kmo-pixel>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+ <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
+ <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
+ <20130828195317.GE8032@kmo-pixel>
+ <20130828132332.6d5263ee9622235ae0fcc615@linux-foundation.org>
+ <20130828204454.GC1357@kmo-pixel>
+ <20130828135042.9e460b27699b52bb4eb53d9e@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+In-Reply-To: <20130828135042.9e460b27699b52bb4eb53d9e@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 01:49:06PM -0700, Kees Cook wrote:
-> On Wed, Aug 28, 2013 at 1:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-[...]
-> >> 2)
-> >> The commit log says also:
-> >> "if you open a file before the target does suid-root exec, you'll be still
-> >> able to access it." so you do the task is tracable check at read()
-> >>
-> >> But what if you open a file of a privileged target or a target that does
-> >> suid-root exec later, and pass the fd to a suid-root exec to read() from
-> >> it later, you will still pass that tracable check.
-> >>
-> >> And currently a non-privileged process can get an fd on all these
-> >> /proc/*/stack files even root owned ones.
-> >>
-> >> So why not restore the old behaviour and block a process from getting an
-> >> fd on /proc/*/stack files that belong to other processes?
-> >>
-> >>
-> >> The original thread that added the /proc/*/stack feature:
-> >> https://lkml.org/lkml/2008/11/7/109
-> >>
-> >> They noted that it should be under 0400 permissions
+On Wed, Aug 28, 2013 at 01:50:42PM -0700, Andrew Morton wrote:
+> On Wed, 28 Aug 2013 13:44:54 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
 > 
-> Yes, this was discussed years ago -- these files must be 0400 _and_
-> perform at-read checks.
+> > > > > What guarantees that this wait will terminate?
+> > > > 
+> > > > It seems fairly clear to me from the break statement a couple lines up;
+> > > > if we were passed __GFP_WAIT we terminate iff we succesfully allocated a
+> > > > tag. If we weren't passed __GFP_WAIT we never actually sleep.
+> > > 
+> > > OK ;)  Let me rephrase.  What guarantees that a tag will become available?
+> > > 
+> > > If what we have here is an open-coded __GFP_NOFAIL then that is
+> > > potentially problematic.
+> > 
+> > It's the same semantics as a mempool, really - it'll succeed when a tag
+> > gets freed.
 > 
-> https://lkml.org/lkml/2011/2/10/21
+> OK, that's reasonable if the code is being used to generate IO tags -
+> we expect the in-flight tags to eventually be returned.
 > 
-> This is all related to
-> http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-1020
-> 
-> Which had the following fixes, but broken file access perms in several places:
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=a9712bc12c40c172e393f85a9b2ba8db4bf59509
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2fadaef41283aad7100fa73f01998cddaca25833
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d6f64b89d7ff22ce05896ab4a93a653e8d0b123d
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ec6fd8a4355cda81cd9f06bebc048e83eb514ac7
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ca6b0bf0e086513b9ee5efc0aa5770ecb57778af
-Yes thanks Kees, they are all related.
+> But if a client of this code is using the allocator for something
+> totally different, there is no guarantee that the act of waiting will
+> result in any tags being returned.
 
+Yeah, and I did wonder a bit whether the waiting mechanism belonged in
+the percpu ida code; arguably (certainly just looking at this code, not
+any of the users) if it belongs in this code it should be common to
+regular ida, not specific to percpu ida.
 
-> > tixxdz@dztty-qemu:~$ id
-> > uid=1000(tixxdz) gid=1000(tixxdz)
-> > groups=1000(tixxdz),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev)
-> >
-> > tixxdz@dztty-qemu:~$ ls -lha ./a.out
-> > -rwxr-xr-x 1 tixxdz tixxdz 8.0K Aug 28 20:26 ./a.out
-> >
-> > tixxdz@dztty-qemu:~$ ls -lha /usr/bin/procmail
-> > -rwsr-sr-x 1 root mail 88K Apr 25  2010 /usr/bin/procmail
-> >
-> > (procmail with -d needs setuid())
-> >
-> > tixxdz@dztty-qemu:~$ for i in $(seq 1 10); do ./a.out /usr/bin/procmail
-> > /proc/$i/stack ; done
-> 
-> Can you include your C file for your a.out? I assume you're opening
-> /proc/$i/stack and duping to stdin for a "procmail -d tixxdz" call,
-> and I can reproduce this with the following python, but I want to be
-> sure I'm seeing the same bug.
-Yes it's exaclty the same PoC and bug
+For now I've just decided to punt on changing that for now, since all
+the percpu ida users I've come across do want the waiting mechanism, but
+none of the regular ida users that I've looked at want it. There's
+probably a reason for that I haven't thought of yet.
 
+> (These are core design principles/constraints which should be
+> explicitly documented in a place where future readers will see them!)
 
-> #!/usr/bin/python
-> import sys
-> from subprocess import call
-> call(["/usr/bin/procmail", "-d", sys.argv[2]], stdin=open(sys.argv[1]))
-> 
-> 
-> $ ps -ef | grep apache2 | grep root
-> root      3781     1  0 Jul28 ?        00:00:37 /usr/sbin/apache2 -k start
-> $ cat /proc/3781/stack
-> cat: /proc/3781/stack: Operation not permitted
-> $ /tmp/dup-stdin.py /proc/3781/syscall kees
-> $ cat /var/mail/kees
-> 23 0x0 0x0 0x0 0x0 0x7fffa29c9cf0 0x1 0x7fffa29c9d18 0x7f1b76bbd233
-> 
-> So, local ASLR bypass using a setuid helper.
-> 
-> One shouldn't be able to open these files in the first place.
-Yes that's what I've been trying to say:
-https://lkml.org/lkml/2013/8/26/354
+*nod* I suppose it should be said explicitly that the gfp_t parameter
+indicates whether or not to wait until a _tag_ is available, and not
+some internal memory allocation or something.
 
-Hope that Al will peek the patches.
+How's this look?
 
-Thanks
-
--- 
-Djalal Harouni
-http://opendz.org
+diff --git a/lib/idr.c b/lib/idr.c
+index 15c021c..a3f8e9a 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -1288,6 +1288,11 @@ static inline unsigned alloc_local_tag(struct percpu_ida *pool,
+  * Safe to be called from interrupt context (assuming it isn't passed
+  * __GFP_WAIT, of course).
+  *
++ * @gfp indicates whether or not to wait until a free id is available (it's not
++ * used for internal memory allocations); thus if passed __GFP_WAIT we may sleep
++ * however long it takes until another thread frees an id (same semantics as a
++ * mempool).
++ *
+  * Will not fail if passed __GFP_WAIT.
+  */
+ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
