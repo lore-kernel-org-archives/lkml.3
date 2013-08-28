@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab3H1TQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:16:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51657 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753666Ab3H1TQ4 (ORCPT
+	id S1754765Ab3H1TRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:17:30 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61902 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab3H1TR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:16:56 -0400
-Date: Wed, 28 Aug 2013 15:16:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-cc: David Howells <dhowells@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Memory synchronization vs. interrupt handlers
-In-Reply-To: <20130828011923.GS3871@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1308281501000.1541-100000@iolanthe.rowland.org>
+	Wed, 28 Aug 2013 15:17:28 -0400
+Date: Wed, 28 Aug 2013 12:17:39 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH-v4 1/6] idr: Percpu ida
+Message-ID: <20130828191739.GD8032@kmo-pixel>
+References: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
+ <1377634306-13981-2-git-send-email-nab@linux-iscsi.org>
+ <20130827134314.7e9f8b792023eba41b4ea93d@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130827134314.7e9f8b792023eba41b4ea93d@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell, Peter, and Ingo:
-
-Can you folks enlighten us regarding this issue for some common 
-architectures?
-
-On Tue, 27 Aug 2013, Paul E. McKenney wrote:
-
-> On Mon, Aug 26, 2013 at 11:49:15AM -0400, Alan Stern wrote:
-> > David and Paul:
-> > 
-> > Here's a question that doesn't seem to be answered in 
-> > Documentation/memory-barriers.txt.  Are memory accesses within an 
-> > interrupt handler synchronized with respect to interrupts?
-> > 
-> > In more detail, suppose we have an interrupt handler that uses a memory
-> > variable A.  The device attached to the IRQ line sends two interrupt
-> > requests, and we get:
-> > 
-> > 	CPU 0				CPU 1
-> > 	-----				-----
-> > 	Receive IRQ
-> > 	Call the interrupt handler
-> > 		Write A
-> > 	Finish IRQ processing
-> > 
-> > 					Receive IRQ
-> > 					Call the interrupt handler
-> > 						Read A
-> > 					Finish IRQ processing
-> > 
-> > Is CPU 0's write to A guaranteed to be visible on CPU 1?  Given that 
-> > interrupts on an IRQ line are serialized, and that IRQ processing must 
-> > involve some amount of memory barriers, I would expect the answer to be 
-> > Yes.
+On Tue, Aug 27, 2013 at 01:43:14PM -0700, Andrew Morton wrote:
+> On Tue, 27 Aug 2013 20:11:41 +0000 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
-> I have no idea.  I would hope that it did, but a lot depends on how or
-> whether the end-of-interrupt processing is handled by the I/O hardware.
+> > Percpu frontend for allocating ids. With percpu allocation (that works),
+> > it's impossible to guarantee it will always be possible to allocate all
+> > nr_tags - typically, some will be stuck on a remote percpu freelist
+> > where the current job can't get to them.
+> > 
+> > We do guarantee that it will always be possible to allocate at least
+> > (nr_tags / 2) tags - this is done by keeping track of which and how many
+> > cpus have tags on their percpu freelists. On allocation failure if
+> > enough cpus have tags that there could potentially be (nr_tags / 2) tags
+> > stuck on remote percpu freelists, we then pick a remote cpu at random to
+> > steal from.
+> > 
+> > Note that there's no cpu hotplug notifier - we don't care, because
+> > steal_tags() will eventually get the down cpu's tags. We _could_ satisfy
+> > more allocations if we had a notifier - but we'll still meet our
+> > guarantees and it's absolutely not a correctness issue, so I don't think
+> > it's worth the extra code.
+> 
+> Except for one silly trivial thing, all of my August 20 review comments
+> were ignored.  You didn't even bother replying to the email.
 
-Isn't this the sort of thing the kernel should guarantee?  The
-low-level code that fields interrupts ought to do the equivalent of an
-"acquire" barrier at the start and a "release" barrier at the end, so
-that operations by the higher-level handlers don't "leak out".
-
-For example, if the low-level code would lock and unlock a spinlock at 
-the start and end of the interrupt, that would be more than sufficient 
-(provided it always used the same spinlock for the same IRQ line).
-
-Of course, drivers needing this behavior can always use their own 
-spinlocks.  Still, it seems like this ought to fall under the purview 
-of the core kernel.
-
-> I believe that we need to ask the architecture maintainers.  And maybe
-> also someone who knows about the devices in question.
-
-The devices aren't relevant here because the variable A resides in
-main memory, not on the device.  What matter is, as you say, the
-architectural code.
-
-Alan Stern
-
+Sorry! I remember seeing that email now, but somehow I completely missed
+all the review comments after the first one. Mea culpa!
