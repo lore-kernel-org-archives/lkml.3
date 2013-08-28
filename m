@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3H1Kot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:44:49 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48402 "EHLO
+	id S1755136Ab3H1Kok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:44:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48246 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3H1Kol (ORCPT
+	with ESMTP id S1752458Ab3H1Koj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:44:41 -0400
+	Wed, 28 Aug 2013 06:44:39 -0400
 From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Sudeep.KarkadaNagesha@arm.com,
@@ -16,103 +16,82 @@ Cc: Sudeep.KarkadaNagesha@arm.com,
         Thomas Gleixner <tglx@linutronix.de>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v5 5/5] drivers: clocksource: add CPU PM notifier for ARM architected timer
-Date: Wed, 28 Aug 2013 11:44:49 +0100
-Message-Id: <1377686689-30828-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Subject: [PATCH v5 0/5] ARM/ARM64 architected timer updates
+Date: Wed, 28 Aug 2013 11:44:44 +0100
+Message-Id: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 28 Aug 2013 10:44:39.0204 (UTC) FILETIME=[98806640:01CEA3DB]
-X-MC-Unique: 113082811444005701
+X-OriginalArrivalTime: 28 Aug 2013 10:44:36.0345 (UTC) FILETIME=[96CC2690:01CEA3DB]
+X-MC-Unique: 113082811443701101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7SAjips005379
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7SAjx8U005391
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Few control settings done in architected timer as part of initialisation
-can be lost when CPU enters deeper power states. They need to be
-re-initialised when the CPU is (warm)reset again.
+This patch series adds support to configure the rate and enable the
+event stream for architected timer. The event streams can be used to
+impose a timeout on a wfe, to safeguard against any programming error
+in case an expected event is not generated or even to implement
+wfe-based timeouts for userspace locking implementations. This feature
+can be disabled(enabled by default).
 
-This patch adds CPU PM notifiers to do the timer initialisation on warm
-resets. It also save the event stream divider value calculated during
-cold reset and uses the same in warm reset path.
+Since the timer control register is reset to zero on warm boot, CPU
+PM notifier is added to save and restore the value.
 
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- drivers/clocksource/arm_arch_timer.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+Changes v4->v5:
+1. Removed compat_dyn_elf_hwcap and used just compat_elf_hwcap as per
+   Catalin's suggestion
+2. Instead of resetting event stream in CPU PM callbacks, saving and
+   restoring counter control register now.
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index f42bef4..ffb0bfb 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -13,6 +13,7 @@
- #include <linux/device.h>
- #include <linux/smp.h>
- #include <linux/cpu.h>
-+#include <linux/cpu_pm.h>
- #include <linux/clockchips.h>
- #include <linux/interrupt.h>
- #include <linux/of_irq.h>
-@@ -281,6 +282,33 @@ static struct notifier_block arch_timer_cpu_nb = {
- 	.notifier_call = arch_timer_cpu_notify,
- };
- 
-+#ifdef CONFIG_CPU_PM
-+static unsigned int saved_cntkctl;
-+static int arch_timer_cpu_pm_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	if (action == CPU_PM_ENTER)
-+		saved_cntkctl = arch_timer_get_cntkctl();
-+	else if (action == CPU_PM_ENTER_FAILED || action == CPU_PM_EXIT)
-+		arch_timer_set_cntkctl(saved_cntkctl);
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block arch_timer_cpu_pm_notifier = {
-+	.notifier_call = arch_timer_cpu_pm_notify,
-+};
-+
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return cpu_pm_register_notifier(&arch_timer_cpu_pm_notifier);
-+}
-+#else
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int __init arch_timer_register(void)
- {
- 	int err;
-@@ -330,11 +358,17 @@ static int __init arch_timer_register(void)
- 	if (err)
- 		goto out_free_irq;
- 
-+	err = arch_timer_cpu_pm_init();
-+	if (err)
-+		goto out_unreg_notify;
-+
- 	/* Immediately configure the timer on the boot CPU */
- 	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
- 
- 	return 0;
- 
-+out_unreg_notify:
-+	unregister_cpu_notifier(&arch_timer_cpu_nb);
- out_free_irq:
- 	if (arch_timer_use_virtual)
- 		free_percpu_irq(arch_timer_ppi[VIRT_PPI], arch_timer_evt);
+Changes v3->v4:
+1. Added a config option to en/disable the timer event stream feature.
+   Due to this the ordering of the patches as well as some cosmetic
+   code changes are done.( So dropped previous reviewed-by tags)
+2. Removed exporting compat_dyn_elf_hwcap as there are no modules
+   requiring it for now.
+
+Changes v2->v3:
+1. Moved ARM and ARM64 changes into separate patches
+2. Added native hwcaps definations(ARM/ARM64) and compat-specific
+   definitions(ARM64) to the users for the event stream feature. 
+
+Changes v1->v2:
+1. Saved event stream divider value on cold reset path and re-used it
+   in CPU PM notifier instead of calculating every time.
+2. Rebased on v3.11-rc2(to avoid conflicts with __cpuinit* deletion)
+3. Dropped "ARM/ARM64: arch_timer: remove __cpuinit attribute for
+   arch_counter_set_user_access"(already done as part of __cpuinit*
+   deletion)
+
+Regards,
+Sudeep
+
+Sudeep KarkadaNagesha (4):
+  ARM/ARM64: arch_timer: add macros for bits in control register
+  ARM: arch_timer: add support to configure and enable event stream
+  ARM64: arch_timer: add support to configure and enable event stream
+  drivers: clocksource: add CPU PM notifier for ARM architected timer
+
+Will Deacon (1):
+  drivers: clocksource: add support for ARM architected timer event
+    stream
+
+ arch/arm/include/asm/arch_timer.h    | 38 +++++++++++++++++++++----
+ arch/arm/include/uapi/asm/hwcap.h    |  1 +
+ arch/arm/kernel/setup.c              |  1 +
+ arch/arm64/include/asm/arch_timer.h  | 44 +++++++++++++++++++++++++----
+ arch/arm64/include/asm/hwcap.h       |  8 +++++-
+ arch/arm64/include/uapi/asm/hwcap.h  |  1 +
+ arch/arm64/kernel/setup.c            |  5 ++++
+ drivers/clocksource/Kconfig          | 14 +++++++++
+ drivers/clocksource/arm_arch_timer.c | 55 ++++++++++++++++++++++++++++++++++++
+ include/clocksource/arm_arch_timer.h | 10 +++++++
+ 10 files changed, 165 insertions(+), 12 deletions(-)
+
 -- 
 1.8.1.2
 
