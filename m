@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab3H1XL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 19:11:58 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:64748 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab3H1XL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 19:11:56 -0400
+	id S1755557Ab3H1XND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 19:13:03 -0400
+Received: from mail-bn1lp0150.outbound.protection.outlook.com ([207.46.163.150]:41874
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998Ab3H1XNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 19:13:02 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Kees Cook <keescook@chromium.org>
+CC: Lenny Szubowicz <lszubowi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH 0/10] Add additional security checks when module loading
+ is restricted
+Thread-Topic: [PATCH 0/10] Add additional security checks when module
+ loading is restricted
+Thread-Index: Nz5hbGPlr11vDxoZBtCj48/bXxVZzqCFps4AWFn4cQH9PTdHAIAAAaOA
+Date: Wed, 28 Aug 2013 23:12:57 +0000
+Message-ID: <1377731577.27493.11.camel@x230>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+	 <1241952070.8587861.1377729463830.JavaMail.root@redhat.com>
+	 <1377729714.27493.2.camel@x230>
+	 <761791749.8594444.1377730692707.JavaMail.root@redhat.com>
+	 <CAGXu5jKQtx1OEn8qT8+LgHL+xFgK_pHGrxtdwFfKT1q3FHhaNg@mail.gmail.com>
+In-Reply-To: <CAGXu5jKQtx1OEn8qT8+LgHL+xFgK_pHGrxtdwFfKT1q3FHhaNg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:51f:6613:ec7a:9b2f]
+x-forefront-prvs: 09525C61DB
+x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(189002)(51444003)(377424004)(24454002)(4396001)(81542001)(47736001)(83072001)(49866001)(19580405001)(80022001)(46102001)(19580395003)(69226001)(50986001)(47976001)(51856001)(83322001)(33716001)(65816001)(81342001)(76796001)(76786001)(81686001)(74662001)(79102001)(31966008)(74502001)(47446002)(77982001)(59766001)(33646001)(63696002)(81816001)(74876001)(74366001)(74706001)(80976001)(77096001)(53806001)(54316002)(56776001)(76482001)(54356001)(56816003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:51f:6613:ec7a:9b2f;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <516A42F5872C9848A2BAE370C4DB096C@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20130828213337.GC18971@mtj.dyndns.org>
-References: <1377724032-12199-1-git-send-email-jamieliu@google.com>
-	<20130828211312.GB18971@mtj.dyndns.org>
-	<20130828213337.GC18971@mtj.dyndns.org>
-Date: Wed, 28 Aug 2013 16:11:56 -0700
-Message-ID: <CAKU+Ga_awbok9wTjbnrNbwqGcF0sagHpf729ZDxYdNVPMhc81A@mail.gmail.com>
-Subject: Re: [PATCH] workqueue: cond_resched() after processing each work item
-From: Jamie Liu <jamieliu@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7SND8x0010536
 
-Hi Tejun,
+On Wed, 2013-08-28 at 16:07 -0700, Kees Cook wrote:
 
-On Wed, Aug 28, 2013 at 2:33 PM, Tejun Heo <tj@kernel.org> wrote:
-> Would something like the following work?  Can you please verify it?
+> Strictly speaking, RAM contents are not available via /dev/*mem, even
+> to root. However, you can request a suspend image be written, but to
+> not enter hibernation. Then modify the image, and request a resume
+> from it.
 
-I confirm that this works.
+Is that true? Oh, hm - I guess you could do it with uswsusp. Ugh. Now I
+wonder what else you can do with uswsusp. Yeah, ok, I think that case
+certainly needs handling.
 
-> Thanks.
-> ---- 8< ----
-> If !PREEMPT, a kworker running work items back to back can hog CPU.
-> This becomes dangerous when a self-requeueing work item which is
-> waiting for something to happen races against stop_machine.  Such
-> self-requeueing work item would requeue itself indefinitely hogging
-> the kworker and CPU it's running on while stop_machine would wait for
-> that CPU to enter stop_machine while preventing anything else from
-> happening on all other CPUs.  The two would deadlock.
->
-> Jmamie Liu reports that this deadlock scenario exists around
-
-s/Jmamie/Jamie/
-
-> scsi_requeue_run_queue() and libata port multiplier support, where one
-> port may exclude command processing from other ports.  With the right
-> timing, scsi_requeue_run_queue() can end up requeueing itself trying
-> to execute an IO which is asked to be retried while another device has
-> an exclusive access, which in turn can't make forward progress due to
-> stop_machine.
->
-> Fix it by invoking cond_resched() after executing each work item.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Jamie Liu <jamieliu@google.com>
-> References: http://thread.gmane.org/gmane.linux.kernel/1552567
-> Cc: stable@vger.kernel.org
-> --
->  kernel/workqueue.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index f02c4a4..73b662b 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2201,6 +2201,15 @@ __acquires(&pool->lock)
->                 dump_stack();
->         }
->
-> +       /*
-> +        * The following prevents a kworker from hogging CPU on !PREEMPT
-> +        * kernels, where a requeueing work item waiting for something to
-> +        * happen could deadlock with stop_machine as such work item could
-> +        * indefinitely requeue itself while all other CPUs are trapped in
-> +        * stop_machine.
-> +        */
-> +       cond_resched();
-> +
->         spin_lock_irq(&pool->lock);
->
->         /* clear cpu intensive status */
-
-Thanks,
-Jamie
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
