@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3H1VYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:24:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56950 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab3H1VYt (ORCPT
+	id S1755986Ab3H1V01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:26:27 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:39695 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967Ab3H1V0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 17:24:49 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J . Wysocki" <rjw@sisk.pl>
-Subject: [PATCH v2] cpufreq: Don't use smp_processor_id() in preemptible context
-Date: Wed, 28 Aug 2013 14:24:45 -0700
-Message-Id: <1377725085-16798-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <521E24CE.9090407@codeaurora.org>
+	Wed, 28 Aug 2013 17:26:23 -0400
+Date: Wed, 28 Aug 2013 14:26:34 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] percpu ida: Switch to cpumask_t, add some comments
+Message-ID: <20130828212358.GF1357@kmo-pixel>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+ <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
+ <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
+ <20130828195517.GF8032@kmo-pixel>
+ <20130828132550.d0ce4d3a4d40ee07e7e8a1c1@linux-foundation.org>
+ <20130828210010.GD1357@kmo-pixel>
+ <20130828141019.25aff643c87e43ffafdbcb7e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130828141019.25aff643c87e43ffafdbcb7e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workqueues are preemptible even if works are queued on them with
-queue_work_on(). Let's use raw_smp_processor_id() here to silence
-the warning.
+On Wed, Aug 28, 2013 at 02:10:19PM -0700, Andrew Morton wrote:
+> On Wed, 28 Aug 2013 14:00:10 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
+> 
+> > On Wed, Aug 28, 2013 at 01:25:50PM -0700, Andrew Morton wrote:
+> > > On Wed, 28 Aug 2013 12:55:17 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
+> > > 
+> > > > Fixup patch, addressing Andrew's review feedback:
+> > > 
+> > > Looks reasonable.
+> > > 
+> > > >  lib/idr.c           | 38 +++++++++++++++++++++-----------------
+> > > 
+> > > I still don't think it should be in this file.
+> > > 
+> > > You say that some as-yet-unmerged patches will tie the new code into
+> > > the old ida code.  But will it do it in a manner which requires that
+> > > the two reside in the same file?
+> > 
+> > Not require, no - but it's just intimate enough with my ida rewrite that
+> > I think it makes sense; it makes some use of stuff that should be
+> > internal to the ida code.
+> > 
+> > Mostly just sharing the lock though, since I got rid of the ida
+> > interfaces that don't do locking, but percpu ida needs a lock that also
+> > covers what ida needs.
+> > 
+> > It also makes use of a ganged allocation interface, but there's no real
+> > reason ida can't expose that, it's just unlikely to be useful to
+> > anything but percpu ida.
+> > 
+> > The other reason I think it makes sense to live in idr.c is more for
+> > users of the code; as you pointed out as far as the user's perspective
+> > percpu ida isn't doing anything fundamentally different from ida, so I
+> > think it makes sense for the code to live in the same place as a
+> > kindness to future kernel developers who are trying to find their way
+> > around the various library code.
+> 
+> I found things to be quite the opposite - it took 5 minutes of staring,
+> head-scratching, double-checking and penny-dropping before I was
+> confident that the newly-added code actually has nothing at all to do
+> with the current code.  Putting it in the same file was misleading, and
+> I got misled.
 
-BUG: using smp_processor_id() in preemptible [00000000] code: kworker/3:2/674
-caller is gov_queue_work+0x28/0xb0
-CPU: 0 PID: 674 Comm: kworker/3:2 Tainted: G        W    3.10.0 #30
-Workqueue: events od_dbs_timer
-[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
-[<c0109dec>] (show_stack+0x10/0x14) from [<c03885a4>] (debug_smp_processor_id+0xbc/0xf0)
-[<c03885a4>] (debug_smp_processor_id+0xbc/0xf0) from [<c0635864>] (gov_queue_work+0x28/0xb0)
-[<c0635864>] (gov_queue_work+0x28/0xb0) from [<c0635618>] (od_dbs_timer+0x108/0x134)
-[<c0635618>] (od_dbs_timer+0x108/0x134) from [<c01aa8f8>] (process_one_work+0x25c/0x444)
-[<c01aa8f8>] (process_one_work+0x25c/0x444) from [<c01aaf88>] (worker_thread+0x200/0x344)
-[<c01aaf88>] (worker_thread+0x200/0x344) from [<c01b03bc>] (kthread+0xa0/0xb0)
-[<c01b03bc>] (kthread+0xa0/0xb0) from [<c01061b8>] (ret_from_fork+0x14/0x3c)
+Ok... and I could see how the fact that it currently _doesn't_ have
+anything to do with the existing code would be confusing...
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/cpufreq/cpufreq_governor.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index b9b20fd..bfbcf9a 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -137,7 +137,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- 		return;
- 
- 	if (!all_cpus) {
--		__gov_queue_work(smp_processor_id(), dbs_data, delay);
-+		/*
-+		 * Use raw_smp_processor_id() to avoid preemptible warnings.
-+		 * We know that this is only called with all_cpus == false from
-+		 * works that have been queued with *_work_on() functions and
-+		 * those works are canceled during CPU_DOWN_PREPARE so they
-+		 * can't possibly run on any other CPU.
-+		 */
-+		__gov_queue_work(raw_smp_processor_id(), dbs_data, delay);
- 	} else {
- 		for_each_cpu(i, policy->cpus)
- 			__gov_queue_work(i, dbs_data, delay);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Do you think that if/when it's making use of the ida rewrite it'll be
+ok? Or would you still prefer to have it in a new file (and if so, any
+preference on the naming?)
