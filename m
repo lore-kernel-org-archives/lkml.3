@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3H1Okn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:40:43 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:52950 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab3H1Okk (ORCPT
+	id S1753843Ab3H1Omw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:42:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13841 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab3H1Omv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:40:40 -0400
-Message-ID: <521E0BE6.3080607@cogentembedded.com>
-Date: Wed, 28 Aug 2013 18:40:38 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        ian.campbell@citrix.com, swarren@wwwdotorg.org, mark.rutland@arm.com,
-        pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        bcousson@baylibre.com, davidb@codeaurora.org, arnd@arndb.de,
-        swarren@nvidia.com, popcornmix@gmail.com
-Subject: Re: [PATCH v2 3/3] ARM: dts: dra7-evm: Add extcon nodes for USB ID
- pin detection
-References: <1377698352-27689-1-git-send-email-george.cherian@ti.com> <1377698352-27689-4-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1377698352-27689-4-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 28 Aug 2013 10:42:51 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=nRXi7Rq_KXAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=cxZRFzV95EEA:10 a=3nbZYyFuAAAA:8 a=iq4LtzPRMXmoR65u-rAA:9 a=CjuIK1q_8ugA:10 a=EvKJbDF4Ut8A:10 a=-NAFuxVyQHbmMh7N:21 a=6MSNnR1ruyrO26lo:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 28 Aug 2013 10:42:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 08/11] trace-cmd: Apply the trace-msg protocol for
+ communication between a server and clients
+Message-ID: <20130828104249.3533bece@gandalf.local.home>
+In-Reply-To: <521DDF49.1090301@hitachi.com>
+References: <20130819094620.26597.79499.stgit@yunodevel>
+	<20130819094639.26597.44449.stgit@yunodevel>
+	<20130820135658.5a5d6e28@gandalf.local.home>
+	<521AB469.40201@hitachi.com>
+	<20130826111105.5d6504e0@gandalf.local.home>
+	<521C7E1C.5060502@hitachi.com>
+	<20130827090509.598591e8@gandalf.local.home>
+	<521DDF49.1090301@hitachi.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 28 Aug 2013 20:30:17 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-On 08/28/2013 05:59 PM, George Cherian wrote:
+> (2013/08/27 22:05), Steven Rostedt wrote:
+> > On Tue, 27 Aug 2013 19:23:24 +0900
+> > Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+> >
+> >> OK, let me check that. Even if the old server will receive "V2", the
+> >> server will send port numbers instead of "V2" due to the old protocol.
+> >> In that time, the new client will disconnect from the old server and
+> >> the restarts with the old protocol. Is it OK?
+> >
+> > Yep, that's exactly what I meant ;-)
+> 
+> I tried to implement the feature, but I found that sending just "V2"
+> from the new client is inappropriate. This is because the old server
+> doesn't respond to the client before receiving cpu numbers, page size,
+> and options. So, when the new client sends the first message, it should
+> send "V2\0<MAGIC_NUMBER>\00\0", I think. If so, the old server will
+> understand the message as cpus=0, pagesize=<MAGIC_NUMBER>, options=0,
+> and then it will send port numbers(actually \0). Note if <MAGIC_NUMBER>
+> is zero, the old server will die.
+> 
+> Can I implement the first message of the new client as
+> "V2\0<MAGIC_NUMBER>\00\0"?
+> 
 
-> Add
-> 	-extcon nodes for USB ID pin detection.
-> 	-i2c nodes.
-> 	-pcf nodes to which USB ID pin is connected.
+If it works for both old and new server with old and new client (and
+all combinations) I'm fine with it.
 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   arch/arm/boot/dts/dra7-evm.dts | 52 +++++++++++++++++++++++++++++++++++++++++-
->   1 file changed, 51 insertions(+), 1 deletion(-)
+Thanks,
 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index acd3c09..9ee97c0 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -17,6 +17,17 @@
->   		device_type = "memory";
->   		reg = <0x80000000 0x60000000>; /* 1536 MB */
->   	};
-> +
-> +	extcon1: gpio_usbvid_extcon1 {
-> +		compatible = "ti,gpio-usb-id";
-> +		gpios = <&pcf_21 1 0>;
-> +	};
-> +
-> +	extcon2: gpio_usbvid_extcon2 {
-> +		compatible = "ti,gpio-usb-id";
-> +		gpios = <&pcf_21 2 0>;
-> +	};
-> +
->   };
->
->   &dra7_pmx_core {
-> @@ -33,10 +44,49 @@
->           };
->   };
->
-> +&i2c1 {
-> +	clock-frequency = <400000>;
-> +
-> +	pcf_20: pcf8575@20 {
-
-    Acorrding to the ePAPR spec [1], "the name of a node should be somewhat 
-generic, reflecting the function of the device and not its precise 
-programming model. If appropriate, the name should be one of the following 
-choices:
-
-[...]
-- gpio
-[...]"
-
-> +		compatible = "ti,pcf8575";
-> +		reg = <0x20>;
-> +		n_latch = <0x4000>;
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +		interrupt-parent = <&gpio6>;
-> +		interrupts = <11 2>;
-> +		interrupt-controller;
-> +		#interrupt-cells = <2>;
-> +	};
-> +
-> +	pcf_21: pcf8575@21 {
-
-    Same comment here.
-
-> +		compatible = "ti,pcf8575";
-> +		reg = <0x21>;
-> +		n_latch = <0x1408>;
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +		interrupt-parent = <&pcf_20>;
-> +		interrupts = <14 2>;
-> +		interrupt-controller;
-> +		#interrupt-cells = <2>;
-> +	};
-> +
-> +};
-> +
-
-[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
-
-WBR, Sergei
-
+-- Steve
