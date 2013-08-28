@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3H1VEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:04:12 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:44539 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508Ab3H1VEH (ORCPT
+	id S1755605Ab3H1VEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:04:50 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:43016 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab3H1VEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 17:04:07 -0400
+	Wed, 28 Aug 2013 17:04:02 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 9/9] cgroup: remove for_each_root_subsys()
-Date: Wed, 28 Aug 2013 17:03:49 -0400
-Message-Id: <1377723829-22814-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/9] cgroup: reorder operations in cgroup_create()
+Date: Wed, 28 Aug 2013 17:03:45 -0400
+Message-Id: <1377723829-22814-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
 References: <1377723829-22814-1-git-send-email-tj@kernel.org>
@@ -21,170 +21,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous patch which introduced for_each_css(),
-for_each_root_subsys() only has two users left.  This patch replaces
-it with for_each_subsys() + explicit subsys_mask testing and remove
-for_each_root_subsys() along with cgroupfs_root->subsys_list handling.
+cgroup_create() currently does the followings.
 
-This patch doesn't introduce any behavior changes.
+1. alloc cgroup
+2. alloc css's
+3. create the directory and commit to cgroup creation
+4. online css's
+5. create cgroup and css files
+
+The sequence performs allocations before other operations but it
+doesn't buy anything because each of the above steps may fail and
+should be unrollable.  Reorganize the sequence such that cgroup
+operations are done before css operations.
+
+1. alloc cgroup
+2. create the directory and files and commit to cgroup creation
+3. alloc css's
+4. create files for and online css's
+
+This simplifies the code a bit and enables further simplification and
+separating out css creation from cgroup creation which is necessary
+for the planned unified hierarchy where css's will be created and
+destroyed dynamically across the lifetime of a cgroup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h | 10 ++--------
- kernel/cgroup.c        | 37 +++++++++++++++----------------------
- 2 files changed, 17 insertions(+), 30 deletions(-)
+ kernel/cgroup.c | 78 +++++++++++++++++++++++++++------------------------------
+ 1 file changed, 37 insertions(+), 41 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 3561d30..965548f 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -320,9 +320,6 @@ struct cgroupfs_root {
- 	/* Unique id for this hierarchy. */
- 	int hierarchy_id;
- 
--	/* A list running through the attached subsystems */
--	struct list_head subsys_list;
--
- 	/* The root cgroup for this hierarchy */
- 	struct cgroup top_cgroup;
- 
-@@ -636,12 +633,9 @@ struct cgroup_subsys {
- #define MAX_CGROUP_TYPE_NAMELEN 32
- 	const char *name;
- 
--	/*
--	 * Link to parent, and list entry in parent's children.
--	 * Protected by cgroup_lock()
--	 */
-+	/* link to parent, protected by cgroup_lock() */
- 	struct cgroupfs_root *root;
--	struct list_head sibling;
-+
- 	/* used when use_id == true */
- 	struct idr idr;
- 	spinlock_t id_lock;
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 88684ce..66da7f8 100644
+index 6a3ad20..d41ddab 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -331,10 +331,6 @@ static int notify_on_release(const struct cgroup *cgrp)
- 	for ((i) = 0; (i) < CGROUP_BUILTIN_SUBSYS_COUNT &&		\
- 	     (((ss) = cgroup_subsys[i]) || true); (i)++)
+@@ -4456,52 +4456,66 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags))
+ 		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
  
--/* iterate each subsystem attached to a hierarchy */
--#define for_each_root_subsys(root, ss)					\
--	list_for_each_entry((ss), &(root)->subsys_list, sibling)
--
- /* iterate across the active hierarchies */
- #define for_each_active_root(root)					\
- 	list_for_each_entry((root), &cgroup_roots, root_list)
-@@ -1096,7 +1092,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 					   cgroup_css(cgroup_dummy_top, ss));
- 			cgroup_css(cgrp, ss)->cgroup = cgrp;
++	/*
++	 * Create directory.  cgroup_create_file() returns with the new
++	 * directory locked on success so that it can be populated without
++	 * dropping cgroup_mutex.
++	 */
++	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
++	if (err < 0)
++		goto err_unlock;
++	lockdep_assert_held(&dentry->d_inode->i_mutex);
++
++	cgrp->serial_nr = cgroup_serial_nr_next++;
++
++	/* allocation complete, commit to creation */
++	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
++	root->number_of_cgroups++;
++
++	/* hold a ref to the parent's dentry */
++	dget(parent->dentry);
++
++	/*
++	 * @cgrp is now fully operational.  If something fails after this
++	 * point, it'll be released via the normal destruction path.
++	 */
++	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
++
++	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
++	if (err)
++		goto err_destroy;
++
+ 	for_each_root_subsys(root, ss) {
+ 		struct cgroup_subsys_state *css;
  
--			list_move(&ss->sibling, &root->subsys_list);
- 			ss->root = root;
- 			if (ss->bind)
- 				ss->bind(cgroup_css(cgrp, ss));
-@@ -1115,7 +1110,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 			RCU_INIT_POINTER(cgrp->subsys[i], NULL);
+ 		css = ss->css_alloc(cgroup_css(parent, ss));
+ 		if (IS_ERR(css)) {
+ 			err = PTR_ERR(css);
+-			goto err_free_all;
++			goto err_destroy;
+ 		}
+ 		css_ar[ss->subsys_id] = css;
  
- 			cgroup_subsys[i]->root = &cgroup_dummy_root;
--			list_move(&ss->sibling, &cgroup_dummy_root.subsys_list);
+ 		err = percpu_ref_init(&css->refcnt, css_release);
+ 		if (err)
+-			goto err_free_all;
++			goto err_destroy;
  
- 			/* subsystem is now free - drop reference on module */
- 			module_put(ss->module);
-@@ -1142,10 +1136,12 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
- {
- 	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
- 	struct cgroup_subsys *ss;
-+	int ssid;
+ 		init_css(css, ss, cgrp);
  
- 	mutex_lock(&cgroup_root_mutex);
--	for_each_root_subsys(root, ss)
--		seq_printf(seq, ",%s", ss->name);
-+	for_each_subsys(ss, ssid)
-+		if (root->subsys_mask & (1 << ssid))
-+			seq_printf(seq, ",%s", ss->name);
- 	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR)
- 		seq_puts(seq, ",sane_behavior");
- 	if (root->flags & CGRP_ROOT_NOPREFIX)
-@@ -1417,7 +1413,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
- {
- 	struct cgroup *cgrp = &root->top_cgroup;
- 
--	INIT_LIST_HEAD(&root->subsys_list);
- 	INIT_LIST_HEAD(&root->root_list);
- 	root->number_of_cgroups = 1;
- 	cgrp->root = root;
-@@ -4469,7 +4464,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	struct cgroup *cgrp;
- 	struct cgroup_name *name;
- 	struct cgroupfs_root *root = parent->root;
--	int err = 0;
-+	int ssid, err = 0;
- 	struct cgroup_subsys *ss;
- 	struct super_block *sb = root->sb;
- 
-@@ -4555,10 +4550,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		goto err_destroy;
- 
- 	/* let's create and online css's */
--	for_each_root_subsys(root, ss) {
--		err = create_css(cgrp, ss);
--		if (err)
--			goto err_destroy;
-+	for_each_subsys(ss, ssid) {
-+		if (root->subsys_mask & (1 << ssid)) {
-+			err = create_css(cgrp, ss);
-+			if (err)
+ 		if (ss->use_id) {
+ 			err = alloc_css_id(css);
+ 			if (err)
+-				goto err_free_all;
 +				goto err_destroy;
-+		}
+ 		}
  	}
  
- 	mutex_unlock(&cgroup_mutex);
-@@ -4850,7 +4847,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	cgroup_init_cftsets(ss);
- 
- 	/* Create the top cgroup state for this subsystem */
--	list_add(&ss->sibling, &cgroup_dummy_root.subsys_list);
- 	ss->root = &cgroup_dummy_root;
- 	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss));
- 	/* We don't handle early failures gracefully */
-@@ -4940,7 +4936,6 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 		return PTR_ERR(css);
- 	}
- 
--	list_add(&ss->sibling, &cgroup_dummy_root.subsys_list);
- 	ss->root = &cgroup_dummy_root;
- 
- 	/* our new subsystem will be attached to the dummy hierarchy. */
-@@ -5025,9 +5020,6 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 	/* deassign the subsys_id */
- 	cgroup_subsys[ss->subsys_id] = NULL;
- 
--	/* remove subsystem from the dummy root's list of subsystems */
--	list_del_init(&ss->sibling);
+-	/*
+-	 * Create directory.  cgroup_create_file() returns with the new
+-	 * directory locked on success so that it can be populated without
+-	 * dropping cgroup_mutex.
+-	 */
+-	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
+-	if (err < 0)
+-		goto err_free_all;
+-	lockdep_assert_held(&dentry->d_inode->i_mutex);
 -
- 	/*
- 	 * disentangle the css from all css_sets attached to the dummy
- 	 * top. as in loading, we need to pay our respects to the hashtable
-@@ -5202,11 +5194,12 @@ int proc_cgroup_show(struct seq_file *m, void *v)
- 	for_each_active_root(root) {
- 		struct cgroup_subsys *ss;
- 		struct cgroup *cgrp;
--		int count = 0;
-+		int ssid, count = 0;
+-	cgrp->serial_nr = cgroup_serial_nr_next++;
+-
+-	/* allocation complete, commit to creation */
+-	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+-	root->number_of_cgroups++;
+-
+-	/* hold a ref to the parent's dentry */
+-	dget(parent->dentry);
+-
+ 	/* creation succeeded, notify subsystems */
+ 	for_each_root_subsys(root, ss) {
+ 		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
  
- 		seq_printf(m, "%d:", root->hierarchy_id);
--		for_each_root_subsys(root, ss)
--			seq_printf(m, "%s%s", count++ ? "," : "", ss->name);
-+		for_each_subsys(ss, ssid)
-+			if (root->subsys_mask & (1 << ssid))
-+				seq_printf(m, "%s%s", count++ ? "," : "", ss->name);
- 		if (strlen(root->name))
- 			seq_printf(m, "%sname=%s", count ? "," : "",
- 				   root->name);
++		err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
++		if (err)
++			goto err_destroy;
++
+ 		err = online_css(css);
+ 		if (err)
+ 			goto err_destroy;
+@@ -4523,30 +4537,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		}
+ 	}
+ 
+-	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
+-
+-	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
+-	if (err)
+-		goto err_destroy;
+-
+-	err = cgroup_populate_dir(cgrp, root->subsys_mask);
+-	if (err)
+-		goto err_destroy;
+-
+ 	mutex_unlock(&cgroup_mutex);
+ 	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
+ 
+ 	return 0;
+ 
+-err_free_all:
+-	for_each_root_subsys(root, ss) {
+-		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+-
+-		if (css) {
+-			percpu_ref_cancel_init(&css->refcnt);
+-			ss->css_free(css);
+-		}
+-	}
++err_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+ 	/* Release the reference count that we took on the superblock */
+ 	deactivate_super(sb);
 -- 
 1.8.3.1
 
