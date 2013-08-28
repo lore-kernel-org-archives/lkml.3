@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3H1OAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:00:06 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:58263 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3H1OAE (ORCPT
+	id S1753464Ab3H1OCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:02:42 -0400
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:50463 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752504Ab3H1OCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:00:04 -0400
-Date: Wed, 28 Aug 2013 10:00:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kaluza <jkaluza@redhat.com>
-Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com
-Subject: Re: [PATCH 3/3] Send cgroup_path in SCM_CGROUP
-Message-ID: <20130828140000.GB9295@htj.dyndns.org>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1377614400-27122-4-git-send-email-jkaluza@redhat.com>
+	Wed, 28 Aug 2013 10:02:40 -0400
+Message-ID: <521E02C0.9010003@overkiz.com>
+Date: Wed, 28 Aug 2013 16:01:36 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377614400-27122-4-git-send-email-jkaluza@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH] pinctrl: at91: add support for OUTPUT config
+References: <1377615082-16808-1-git-send-email-b.brezillon@overkiz.com> <CACRpkdbkp-aqYWO=jkBvCT0U3wbKJMBfk2N17cUZeM5rfZiU5Q@mail.gmail.com> <CACRpkdZ+TRb9OFTMHFCW6FYP10hNJFbuods04XK8=zq4bC8cHg@mail.gmail.com>
+In-Reply-To: <CACRpkdZ+TRb9OFTMHFCW6FYP10hNJFbuods04XK8=zq4bC8cHg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 198439859903101149
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jan.
+On 28/08/2013 15:48, Linus Walleij wrote:
+> On Wed, Aug 28, 2013 at 3:46 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Tue, Aug 27, 2013 at 4:51 PM, Boris BREZILLON
+>> <b.brezillon@overkiz.com> wrote:
+>>
+>>> Add support for pin output control through the pinctrl config:
+>>>   - support enabling/disabling output on a given pin
+>>>   - support output level setting (high or low)
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> NAK.
+>>
+>> We already have this:
+>>
+>>   * @PIN_CONFIG_OUTPUT: this will configure the pin in output, use argument
+>>   *      1 to indicate high level, argument 0 to indicate low level.
+>>
+>> It also has device tree bindings:
+>>
+>> output-low              - set the pin to output mode with low level
+>> output-high             - set the pin to output mode with high level
+> Bah maybe I'm misunderstanding :-(
+>
+> So this is not part of the generic pin config series, but something
+> stand-alone to augment the existing driver to do this?
 
-Can you please cc cgroup maintainers and mailing lists from
-MAINTAINERS for cgroup related changes?
+This is a proposal to add support for OUTPUT config using native at91 
+pinconf binding (not generic pinconf binding).
 
-On Tue, Aug 27, 2013 at 04:40:00PM +0200, Jan Kaluza wrote:
+I did this to get support for OUTPUT config quickly.
 
-Also, please describe what change is being made why on each patch.
-Repeating the same description is fine but each patch descrption
-should be more or less self-sufficient.
+The generic pinconf binding is still in discussion, and will be added as 
+soon as at91 maintainers and pinctrl
+maintainers agree on how this should be done.
 
-> +int scm_get_current_cgroup_path(char **cgroup_path)
-> +{
-> +	int ret = 0;
-> +
-> +	*cgroup_path = kmalloc(PAGE_SIZE, GFP_KERNEL);
+>
+> So I just apply this patch right off then?
 
-PATH_MAX?
+I don't know, I think we should wait for Jean-Christophe approval.
 
-> +	if (!(*cgroup_path))
-> +		return -ENOMEM;
-> +
-> +	ret = task_cgroup_path(current, *cgroup_path, PAGE_SIZE);
-> +	if (ret < 0) {
-> +		kfree(*cgroup_path);
-> +		*cgroup_path = NULL;
-> +	}
-> +
-> +	return ret;
-> +}
+>
+> Yours,
+> Linus Walleij
 
-Other than that, cgroup side looks fine to me.  For cgroup bits,
-
-  Reviewed-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
