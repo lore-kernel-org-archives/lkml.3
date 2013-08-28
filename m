@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3H1ObF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:31:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6111 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab3H1ObD (ORCPT
+	id S1753040Ab3H1Oi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:38:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51182 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3H1Oi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:31:03 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=jxQzypR4wcoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qWrlR9Lw5PkA:10 a=nstwEb_VeCF9HUpF9ysA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 28 Aug 2013 10:31:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-Message-ID: <20130828103101.3f5679bc@gandalf.local.home>
-In-Reply-To: <20130828034627.GA30596@redhat.com>
-References: <20130828034627.GA30596@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Aug 2013 10:38:57 -0400
+Message-ID: <521E0B80.6040302@wwwdotorg.org>
+Date: Wed, 28 Aug 2013 08:38:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+CC: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: Re: [RFC][PATCH v2] documentation/devicetree: Move DT bindigns from
+ gpio to watchdog
+References: <521672A1.6010202@wwwdotorg.org> <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de> <521D1D16.9080106@wwwdotorg.org> <20130828062232.GA10368@jtlinux>
+In-Reply-To: <20130828062232.GA10368@jtlinux>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On 08/28/2013 12:22 AM, Johannes Thumshirn wrote:
+> On Tue, Aug 27, 2013 at 03:41:42PM -0600, Stephen Warren wrote:
+>> On 08/27/2013 05:10 AM, Johannes Thumshirn wrote:
+>>> I accidently put the devicetree bindings for the MEN A21 watchdog driver in
+>>> Documentation/devicetree/bindings/gpio instead of
+>>> Documentation/devicetree/bindings/watchdog, this patch addresses this error.
+>>
+>>>  Changes to v1:
+>>>  - Use named gpios, as suggested by Stephen Warren
+>>
+>> The move and the change to the binding should probably be separate
+>> patches since they're logically separate things. I didn't intend you to
+>> update the rename patch to fix the binding issue I pointed out.
+>>
+> 
+> Oops. Looks like I've misunderstood you there. I'll re-send the rename patch
+> then.
+> 
+>> Is the driver updated for this binding change? Are there DTs in released
+>> kernels that won't work now, or is the driver very new; there may be a
+>> need for the driver to support the old binding and the binding doc to
+>> document the old gpios property, but mark it deprecated.
+> 
+> The driver is not yet updated, this is why I've sent it as an RFC. Are the
+> bindings acceptable this way? If yes I'll update the driver and re-send the
+> bindings with the driver as a new patch series.
 
-BTW, is there a way to run trinity on a subset of syscalls. Basically,
-I would like to run it on just the perf code, and nothing else. I have
-a feeling that the bug you see is not caused by other operations
-happening (although it could be), but from just out of order perf
-calls. If I can reproduce it, I'll have a much better way of debugging
-this.
+Well, XXX says:
 
-Perhaps another thing you may think of adding to trinity (if it doesn't
-already exist), is a log of what it is doing. That is, to log somewhere
-the commands it writes, and that way, if something goes wrong, you have
-a clue to how it got there. Because this is one of those bugs that
-triggered before the code crashes, and the crash is just the symptom of
-what went wrong and does not give you much clue to how it happened.
+> GPIO properties should be named "[<name>-]gpios"
 
--- Steve
+whereas in this patch, some of the renamed properties were "-gpio"
+rather than "-gpios". Aside from that, the new binding looks reasonable.
+
+However, I see that the existing binding will be released as part of
+v3.11. That implies that we should continue to support the old binding
+for compatibility. As such, I'm not convinced whether it's worth
+changing this binding now.
