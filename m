@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab3H1SvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:51:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50260 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754535Ab3H1SvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:51:14 -0400
-Message-ID: <1377715873.1928.47.camel@joe-AO722>
-Subject: Re: [PATCH net-next 1/1] net: neighbour: Simplify ifdefs around
- neigh_app_ns()
-From: Joe Perches <joe@perches.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Date: Wed, 28 Aug 2013 11:51:13 -0700
-In-Reply-To: <1377714286-51816-1-git-send-email-tim.gardner@canonical.com>
-References: <1377714286-51816-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755160Ab3H1SvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:51:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50495 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104Ab3H1SvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 14:51:17 -0400
+Date: Wed, 28 Aug 2013 11:53:37 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 1/2] driver core / ACPI: Avoid device hot remove locking
+ issues
+Message-ID: <20130828185337.GA3471@kroah.com>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan>
+ <1592448.YZbpON5n7n@vostro.rjw.lan>
+ <26495758.n1zOCiG3iV@vostro.rjw.lan>
+ <1454842.9oJVGeLlzB@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1454842.9oJVGeLlzB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-28 at 12:24 -0600, Tim Gardner wrote:
-> Drop a couple of ifdef/endif pairs by moving the ifdef
-> surrounding neigh_app_ns() to the interior of neigh_app_ns().
-[]
-> This is an admittedly trivial change. I stumbled on it while trying to figure
-> out why Ubuntu doesn't have CONFIG_ARPD enabled.
+On Wed, Aug 28, 2013 at 03:48:11PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> device_hotplug_lock is held around the acpi_bus_trim() call in
+> acpi_scan_hot_remove() which generally removes devices (it removes
+> ACPI device objects at least, but it may also remove "physical"
+> device objects through .detach() callbacks of ACPI scan handlers).
+> Thus, potentially, device sysfs attributes are removed under that
+> lock and to remove those attributes it is necessary to hold the
+> s_active references of their directory entries for writing.
+> 
+> On the other hand, the execution of a .show() or .store() callback
+> from a sysfs attribute is carried out with that attribute's s_active
+> reference held for reading.  Consequently, if any device sysfs
+> attribute that may be removed from within acpi_scan_hot_remove()
+> through acpi_bus_trim() has a .store() or .show() callback which
+> acquires device_hotplug_lock, the execution of that callback may
+> deadlock with the removal of the attribute.  [Unfortunately, the
+> "online" device attribute of CPUs and memory blocks is one of them.]
+> 
+> To avoid such deadlocks, make all of the sysfs attribute callbacks
+> that need to lock device hotplug, for example store_online(), use
+> a special function, lock_device_hotplug_sysfs(), to lock device
+> hotplug and return the result of that function immediately if it is
+> not zero.  This will cause the s_active reference of the directory
+> entry in question to be released and the syscall to be restarted
+> if device_hotplug_lock cannot be acquired.
+> 
+> [show_online() actually doesn't need to lock device hotplug, but
+> it is useful to serialize it with respect to device_offline() and
+> device_online() for the same device (in case user space attempts to
+> run them concurrently) which can be done with the help of
+> device_lock().]
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-I'd be more inclined to make neigh_app_ns static inline
-in the .h file and remove the EXPORT_SYMBOL
-
-> diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-> index 60533db..049dd9e 100644
-> --- a/net/core/neighbour.c
-> +++ b/net/core/neighbour.c
-> @@ -2759,13 +2759,13 @@ errout:
->  		rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
->  }
->  
-> -#ifdef CONFIG_ARPD
->  void neigh_app_ns(struct neighbour *n)
->  {
-> +#ifdef CONFIG_ARPD
->  	__neigh_notify(n, RTM_GETNEIGH, NLM_F_REQUEST);
-> +#endif /* CONFIG_ARPD */
->  }
->  EXPORT_SYMBOL(neigh_app_ns);
-> -#endif /* CONFIG_ARPD */
->  
->  #ifdef CONFIG_SYSCTL
->  static int zero;
-> diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-> index 4429b01..7808093 100644
-> --- a/net/ipv4/arp.c
-> +++ b/net/ipv4/arp.c
-> @@ -368,9 +368,7 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
->  	} else {
->  		probes -= neigh->parms->app_probes;
->  		if (probes < 0) {
-> -#ifdef CONFIG_ARPD
->  			neigh_app_ns(neigh);
-> -#endif
->  			return;
->  		}
->  	}
-> diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-> index 04d31c2..d5693ad 100644
-> --- a/net/ipv6/ndisc.c
-> +++ b/net/ipv6/ndisc.c
-> @@ -663,9 +663,7 @@ static void ndisc_solicit(struct neighbour *neigh, struct sk_buff *skb)
->  		}
->  		ndisc_send_ns(dev, neigh, target, target, saddr);
->  	} else if ((probes -= neigh->parms->app_probes) < 0) {
-> -#ifdef CONFIG_ARPD
->  		neigh_app_ns(neigh);
-> -#endif
->  	} else {
->  		addrconf_addr_solict_mult(target, &mcaddr);
->  		ndisc_send_ns(dev, NULL, target, &mcaddr, saddr);
-
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
