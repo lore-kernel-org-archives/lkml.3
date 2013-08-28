@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3H1Qxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 12:53:48 -0400
-Received: from smtp-out-189.synserver.de ([212.40.185.189]:1093 "EHLO
-	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab3H1Qxq (ORCPT
+	id S1754665Ab3H1Q5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 12:57:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18989 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3H1Q5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 12:53:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11941
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        David Jander <david.jander@protonic.nl>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/3] regmap: rbtree: Simplify adjacent node lookup
-Date: Wed, 28 Aug 2013 18:55:09 +0200
-Message-Id: <1377708911-694-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Wed, 28 Aug 2013 12:57:02 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=jxQzypR4wcoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qWrlR9Lw5PkA:10 a=TiaNW0bfAAAA:8 a=NEAV23lmAAAA:8 a=dtPOJR9oX_xSaj3Fd34A:9 a=CjuIK1q_8ugA:10 a=B0KwX_7kBuMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 28 Aug 2013 12:57:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vince Weaver <vince@deater.net>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
+Message-ID: <20130828125701.1ca6ccd0@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1308281245370.6937@pianoman.cluster.toy>
+References: <20130828034627.GA30596@redhat.com>
+	<20130828103101.3f5679bc@gandalf.local.home>
+	<20130828162321.GA14689@redhat.com>
+	<alpine.DEB.2.02.1308281245370.6937@pianoman.cluster.toy>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A register which is adjacent to a node will either be left to the first
-register or right to the last register. It will not be within the node's range,
-so there is no point in checking for each register in the register node whether
-the new register is next to it. It is sufficient to check whether the register
-comes before the first register or after the last register of the node.
+On Wed, 28 Aug 2013 12:50:36 -0400 (EDT)
+Vince Weaver <vince@deater.net> wrote:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/regcache-rbtree.c | 39 +++++++++++++++++------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+> On Wed, 28 Aug 2013, Dave Jones wrote:
+> > Quite often just rerunning that last syscall that caused the oops/warn
+> > isn't sufficient to trigger an issue. (Though it may be for this specific
+> > bug that may not be the case..)
+> > 
+> > Vince has a variant of trinity focussed just on perf which also has some
+> > neat replay/bisecting capabilities to narrow down test cases.
+> > I think I might need to add something like that at some point.
+> 
+> Yes, you can get the perf_fuzzer code here:
+>    git clone https://github.com/deater/perf_event_tests.git
+> in the fuzzer directory
+> 
+> Bisecting down which perf_event_open() call causes problems is still very 
+> labor intensive even with the other tools I've added to help.  Even if the 
+> bug is triggered right away (within the first 100,000 calls or so) it can 
+> take hours to narrow things down to the two or three syscalls needed to 
+> reproduce the problem.  Especially if you need to reboot after triggering 
+> the issue.
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 87aa318..6982128 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -352,9 +352,9 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 	struct regcache_rbtree_ctx *rbtree_ctx;
- 	struct regcache_rbtree_node *rbnode, *rbnode_tmp;
- 	struct rb_node *node;
-+	unsigned int base_reg, top_reg;
- 	unsigned int reg_tmp;
- 	unsigned int pos;
--	int i;
- 	int ret;
- 
- 	rbtree_ctx = map->cache;
-@@ -376,25 +376,24 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 		     node = rb_next(node)) {
- 			rbnode_tmp = rb_entry(node, struct regcache_rbtree_node,
- 					      node);
--			for (i = 0; i < rbnode_tmp->blklen; i++) {
--				reg_tmp = rbnode_tmp->base_reg +
--						(i * map->reg_stride);
--				if (abs(reg_tmp - reg) != map->reg_stride)
--					continue;
--				/* decide where in the block to place our register */
--				if (reg_tmp + map->reg_stride == reg)
--					pos = i + 1;
--				else
--					pos = i;
--				ret = regcache_rbtree_insert_to_block(map,
--								      rbnode_tmp,
--								      pos, reg,
--								      value);
--				if (ret)
--					return ret;
--				rbtree_ctx->cached_rbnode = rbnode_tmp;
--				return 0;
--			}
-+
-+			regcache_rbtree_get_base_top_reg(map, rbnode_tmp,
-+				&base_reg, &top_reg);
-+
-+			/* decide where in the block to place our register */
-+			if (base_reg > 0 && reg == base_reg - map->reg_stride)
-+				pos = 0;
-+			else if (reg > 0 && reg - map->reg_stride == top_reg)
-+				pos = rbnode_tmp->blklen;
-+			else
-+				continue;
-+
-+			ret = regcache_rbtree_insert_to_block(map, rbnode_tmp,
-+							      pos, reg, value);
-+			if (ret)
-+				return ret;
-+			rbtree_ctx->cached_rbnode = rbnode_tmp;
-+			return 0;
- 		}
- 
- 		/* We did not manage to find a place to insert it in
--- 
-1.8.0
+Note, I have an idea that it's not even that many perf calls. I have a
+good idea what perf syscalls with what options are the issue. I think
+the issue is the calling order that is the problem.
 
+Dave, I'm assuming that trinidy does things as threads, such that it
+may be two threads calling perf with the same descriptor, and if we
+don't have the proper locks, things can get bad, right?
+
+-- Steve
