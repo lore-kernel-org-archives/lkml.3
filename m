@@ -1,328 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3H1Uvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:51:49 -0400
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:44652 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752197Ab3H1Uvr (ORCPT
+	id S1755516Ab3H1Uvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:51:55 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:57105 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755040Ab3H1Uvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:51:47 -0400
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 16:51:46 EDT
-Message-ID: <00000140c6ad89fe-ca4ea016-46ea-4998-be32-88fba030c52b-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 20:46:36 +0000
+	Wed, 28 Aug 2013 16:51:54 -0400
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 16:51:53 EDT
+Date: Wed, 28 Aug 2013 20:42:19 +0000
 From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 31/35] sh: Replace __get_cpu_var uses
-References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.46
+X-X-Sender: cl@gentwo.org
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
+In-Reply-To: <20130828195415.GP6617@n2100.arm.linux.org.uk>
+Message-ID: <00000140c6a99df3-87c7c3c3-944c-4559-a8de-b7b220f1bc37-000000@email.amazonses.com>
+References: <20130828193457.140443630@linux.com> <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com> <20130828195415.GP6617@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+On Wed, 28 Aug 2013, Russell King - ARM Linux wrote:
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+> On Wed, Aug 28, 2013 at 07:48:23PM +0000, Christoph Lameter wrote:
+> > 3. Retrieve the content of the current processors instance of a per cpu variable.
+> >
+> > 	DEFINE_PER_CPU(int, u);
+>
+> Shouldn't this be 'y' ?
 
-__get_cpu_var() is defined as :
+Right.
 
+> > 	memcpy(this_cpu_ptr(&x), y, sizeof(x));
+>
+> Are you sure this one's correct?  Isn't 'y' the per-cpu variable?
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+Also true. Already fixed this once. Sigh.
 
-
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
+Description patch:
 
 
+--- this_x86	2013-08-28 15:35:48.933416126 -0500
++++ patches/this_x86	2013-08-28 15:41:14.386260894 -0500
+@@ -26,12 +26,12 @@
 
 
-Transformations done to __get_cpu_var()
+ This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
+-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
++or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
+ and less registers are used when code is generated.
 
+-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
++At the end of the patch set all uses of __get_cpu_var have been removed so the macro is removed too.
 
-1. Determine the address of the percpu instance of the current processor.
+-The patchset includes passes over all arches as well. Once these operations are used throughout then
++The patch set includes passes over all arches as well. Once these operations are used throughout then
+ specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+ f.e. using a global register that may be set to the per cpu base.
 
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
+@@ -63,7 +63,7 @@
+
+ 3. Retrieve the content of the current processors instance of a per cpu variable.
+
+-	DEFINE_PER_CPU(int, u);
++	DEFINE_PER_CPU(int, y);
+ 	int x = __get_cpu_var(y)
+
+    Converts to
+@@ -78,7 +78,7 @@
 
     Converts to
 
-	int *x = this_cpu_ptr(&y);
+-	memcpy(this_cpu_ptr(&x), y, sizeof(x));
++	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
 
 
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&x), y, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-
-
-
-Index: linux/arch/sh/kernel/hw_breakpoint.c
-===================================================================
---- linux.orig/arch/sh/kernel/hw_breakpoint.c	2013-08-26 13:25:18.000000000 -0500
-+++ linux/arch/sh/kernel/hw_breakpoint.c	2013-08-26 13:28:32.265604741 -0500
-@@ -52,7 +52,7 @@ int arch_install_hw_breakpoint(struct pe
- 	int i;
- 
- 	for (i = 0; i < sh_ubc->num_events; i++) {
--		struct perf_event **slot = &__get_cpu_var(bp_per_reg[i]);
-+		struct perf_event **slot = this_cpu_ptr(&bp_per_reg[i]);
- 
- 		if (!*slot) {
- 			*slot = bp;
-@@ -84,7 +84,7 @@ void arch_uninstall_hw_breakpoint(struct
- 	int i;
- 
- 	for (i = 0; i < sh_ubc->num_events; i++) {
--		struct perf_event **slot = &__get_cpu_var(bp_per_reg[i]);
-+		struct perf_event **slot = this_cpu_ptr(&bp_per_reg[i]);
- 
- 		if (*slot == bp) {
- 			*slot = NULL;
-Index: linux/arch/sh/kernel/kprobes.c
-===================================================================
---- linux.orig/arch/sh/kernel/kprobes.c	2013-08-26 13:25:18.000000000 -0500
-+++ linux/arch/sh/kernel/kprobes.c	2013-08-26 13:28:32.265604741 -0500
-@@ -102,7 +102,7 @@ int __kprobes kprobe_handle_illslot(unsi
- 
- void __kprobes arch_remove_kprobe(struct kprobe *p)
- {
--	struct kprobe *saved = &__get_cpu_var(saved_next_opcode);
-+	struct kprobe *saved = this_cpu_ptr(&saved_next_opcode);
- 
- 	if (saved->addr) {
- 		arch_disarm_kprobe(p);
-@@ -111,7 +111,7 @@ void __kprobes arch_remove_kprobe(struct
- 		saved->addr = NULL;
- 		saved->opcode = 0;
- 
--		saved = &__get_cpu_var(saved_next_opcode2);
-+		saved = this_cpu_ptr(&saved_next_opcode2);
- 		if (saved->addr) {
- 			arch_disarm_kprobe(saved);
- 
-@@ -129,14 +129,14 @@ static void __kprobes save_previous_kpro
- 
- static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
- }
- 
- static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 					 struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
- }
- 
- /*
-@@ -146,15 +146,15 @@ static void __kprobes set_current_kprobe
-  */
- static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
- {
--	__get_cpu_var(saved_current_opcode).addr = (kprobe_opcode_t *)regs->pc;
-+	__this_cpu_write(saved_current_opcode.addr, (kprobe_opcode_t *)regs->pc);
- 
- 	if (p != NULL) {
- 		struct kprobe *op1, *op2;
- 
- 		arch_disarm_kprobe(p);
- 
--		op1 = &__get_cpu_var(saved_next_opcode);
--		op2 = &__get_cpu_var(saved_next_opcode2);
-+		op1 = this_cpu_ptr(&saved_next_opcode);
-+		op2 = this_cpu_ptr(&saved_next_opcode2);
- 
- 		if (OPCODE_JSR(p->opcode) || OPCODE_JMP(p->opcode)) {
- 			unsigned int reg_nr = ((p->opcode >> 8) & 0x000F);
-@@ -249,7 +249,7 @@ static int __kprobes kprobe_handler(stru
- 			kcb->kprobe_status = KPROBE_REENTER;
- 			return 1;
- 		} else {
--			p = __get_cpu_var(current_kprobe);
-+			p = __this_cpu_read(current_kprobe);
- 			if (p->break_handler && p->break_handler(p, regs)) {
- 				goto ss_probe;
- 			}
-@@ -336,9 +336,9 @@ int __kprobes trampoline_probe_handler(s
- 			continue;
- 
- 		if (ri->rp && ri->rp->handler) {
--			__get_cpu_var(current_kprobe) = &ri->rp->kp;
-+			__this_cpu_write(current_kprobe, &ri->rp->kp);
- 			ri->rp->handler(ri, regs);
--			__get_cpu_var(current_kprobe) = NULL;
-+			__this_cpu_write(current_kprobe, NULL);
- 		}
- 
- 		orig_ret_address = (unsigned long)ri->ret_addr;
-@@ -383,19 +383,19 @@ static int __kprobes post_kprobe_handler
- 		cur->post_handler(cur, regs, 0);
- 	}
- 
--	p = &__get_cpu_var(saved_next_opcode);
-+	p = this_cpu_ptr(&saved_next_opcode);
- 	if (p->addr) {
- 		arch_disarm_kprobe(p);
- 		p->addr = NULL;
- 		p->opcode = 0;
- 
--		addr = __get_cpu_var(saved_current_opcode).addr;
--		__get_cpu_var(saved_current_opcode).addr = NULL;
-+		addr = __this_cpu_read(saved_current_opcode).addr;
-+		__this_cpu_write(saved_current_opcode.addr, NULL);
- 
- 		p = get_kprobe(addr);
- 		arch_arm_kprobe(p);
- 
--		p = &__get_cpu_var(saved_next_opcode2);
-+		p = this_cpu_ptr(&saved_next_opcode2);
- 		if (p->addr) {
- 			arch_disarm_kprobe(p);
- 			p->addr = NULL;
-@@ -511,7 +511,7 @@ int __kprobes kprobe_exceptions_notify(s
- 				if (kprobe_handler(args->regs)) {
- 					ret = NOTIFY_STOP;
- 				} else {
--					p = __get_cpu_var(current_kprobe);
-+					p = __this_cpu_read(current_kprobe);
- 					if (p->break_handler &&
- 					    p->break_handler(p, args->regs))
- 						ret = NOTIFY_STOP;
-Index: linux/arch/sh/kernel/localtimer.c
-===================================================================
---- linux.orig/arch/sh/kernel/localtimer.c	2013-08-26 13:25:18.000000000 -0500
-+++ linux/arch/sh/kernel/localtimer.c	2013-08-26 13:28:32.265604741 -0500
-@@ -32,7 +32,7 @@ static DEFINE_PER_CPU(struct clock_event
-  */
- void local_timer_interrupt(void)
- {
--	struct clock_event_device *clk = &__get_cpu_var(local_clockevent);
-+	struct clock_event_device *clk = this_cpu_ptr(&local_clockevent);
- 
- 	irq_enter();
- 	clk->event_handler(clk);
-Index: linux/arch/sh/kernel/perf_event.c
-===================================================================
---- linux.orig/arch/sh/kernel/perf_event.c	2013-08-26 13:25:18.000000000 -0500
-+++ linux/arch/sh/kernel/perf_event.c	2013-08-26 13:28:32.265604741 -0500
-@@ -227,7 +227,7 @@ again:
- 
- static void sh_pmu_stop(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -245,7 +245,7 @@ static void sh_pmu_stop(struct perf_even
- 
- static void sh_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -262,7 +262,7 @@ static void sh_pmu_start(struct perf_eve
- 
- static void sh_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	sh_pmu_stop(event, PERF_EF_UPDATE);
- 	__clear_bit(event->hw.idx, cpuc->used_mask);
-@@ -272,7 +272,7 @@ static void sh_pmu_del(struct perf_event
- 
- static int sh_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 	int ret = -EAGAIN;
-Index: linux/arch/sh/kernel/smp.c
-===================================================================
---- linux.orig/arch/sh/kernel/smp.c	2013-08-26 13:25:18.000000000 -0500
-+++ linux/arch/sh/kernel/smp.c	2013-08-26 13:28:32.265604741 -0500
-@@ -111,7 +111,7 @@ void play_dead_common(void)
- 	irq_ctx_exit(raw_smp_processor_id());
- 	mb();
- 
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
- 	local_irq_disable();
- }
- 
-
+ 5. Assignment to a per cpu variable
