@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3H1SD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:03:29 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:40832 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab3H1SD2 (ORCPT
+	id S1754691Ab3H1SDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:03:49 -0400
+Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:29917 "EHLO
+	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753047Ab3H1SDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:03:28 -0400
+	Wed, 28 Aug 2013 14:03:46 -0400
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 14:03:46 EDT
+Date: Wed, 28 Aug 2013 17:54:24 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [guv v2 23/31] tile: Replace __get_cpu_var uses
+In-Reply-To: <521E312C.2050004@tilera.com>
+Message-ID: <00000140c60fe2a0-aff878d7-06b3-4fe8-b97f-b319183f3f52-000000@email.amazonses.com>
+References: <20130826204351.725357339@linux.com> <00000140bc69acdb-3b2967b0-e224-424b-ad08-973515704be6-000000@email.amazonses.com> <521BD523.3040706@tilera.com> <00000140c03f13d6-07480caf-b5b0-440b-af95-04878ee9f46c-000000@email.amazonses.com>
+ <521E312C.2050004@tilera.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <521E2635.4070800@linaro.org>
-References: <1377706794-8481-1-git-send-email-robherring2@gmail.com>
-	<521E2635.4070800@linaro.org>
-Date: Wed, 28 Aug 2013 13:03:27 -0500
-Message-ID: <CAL_JsqKx0NBeC6kDjpZEwO1Liu44Uztuq9n-gNNcoV0CH4KGMQ@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] ARM: xen: only set pm function ptrs for Xen guests
-From: Rob Herring <robherring2@gmail.com>
-To: Julien Grall <julien.grall@linaro.org>
-Cc: xen-devel@lists.xensource.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 11:32 AM, Julien Grall <julien.grall@linaro.org> wrote:
-> On 08/28/2013 05:19 PM, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
->> function pointers. This breaks multi-platform kernels. Move this
->> initialization into xen_guest_init, so it is conditional on running as a
->> Xen guest.
->>
->> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> ---
->> This breaks reset and poweroff for Midway when Xen is enabled. This
->> should go into 3.11 or stable.
->> Rob
->>
->>  arch/arm/xen/enlighten.c | 12 +++---------
->>  1 file changed, 3 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
->> index 8a6295c..fa86452 100644
->> --- a/arch/arm/xen/enlighten.c
->> +++ b/arch/arm/xen/enlighten.c
->> @@ -263,6 +263,9 @@ static int __init xen_guest_init(void)
->>       if (xen_vcpu_info == NULL)
->>               return -ENOMEM;
->>
->> +     pm_power_off = xen_power_off;
->> +     arm_pm_restart = xen_restart;
->> +
->
-> I think it's too early to set pm callbacks. If Linux is running as dom0,
-> xen needs to overwrite the power management callback. Otherwise, dom0
-> could shutdown/restart the whole platform, that is annoying.
-> For instance, on the versatile express, the power management callback
-> are set very late (ie during driver initialization).
->
-> pm callbacks should be updated by a late initcall and check if xen is
-> enabled.
->
->>       gnttab_init();
->>       if (!xen_initial_domain())
->>               xenbus_probe(NULL);
->> @@ -271,15 +274,6 @@ static int __init xen_guest_init(void)
->>  }
->>  core_initcall(xen_guest_init);
->>
->> -static int __init xen_pm_init(void)
->> -{
->> -     pm_power_off = xen_power_off;
->> -     arm_pm_restart = xen_restart;
->> -
->> -     return 0;
->> -}
->> -subsys_initcall(xen_pm_init);
->> -
->>  static irqreturn_t xen_arm_callback(int irq, void *arg)
->>  {
->>       xen_hvm_evtchn_do_upcall();
->>
->
->
-> --
-> Julien Grall
+On Wed, 28 Aug 2013, Chris Metcalf wrote:
+
+> Taken into the tile tree, with one extra change; in
+> arch/tile/kernel/messaging.c, using "__this_cpu_read(msg_state)"
+> generated warnings ("'pscr_ret__.opaque[1u]' is used uninitialized in
+> this function", etc), since msg_state is a struct, so I changed it to be
+> "*__this_cpu_ptr(&msg_state)".  Interrupts are disabled here so
+> preemption is not a concern.
+
+Well yes. __this_cpu_read can only be used to read scalars. If you want to
+transfer a struct then memcpy needs to be used (or the compiler can do
+that for you like above).
+
+> In addition, I applied the following commit to clean up the remaining
+> uses that are currently only being carried in the linux-tile tree.
+
+You are going to merge these changes right? I can drop the tile patch from
+my series?
+
+
+One small issue below:
+
+> diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
+> index a7a41a1..30c2c34 100644
+> --- a/arch/tile/kernel/time.c
+> +++ b/arch/tile/kernel/time.c
+> @@ -286,7 +286,7 @@ static int _set_clock_rate_barrier;
+>  static int _set_clock_rate(void *arg)
+>  {
+>         struct _set_clock_rate_args *args = arg;
+> -       struct clock_event_device *evt = &__get_cpu_var(tile_timer);
+> +       struct clock_event_device *evt = get_cpu_ptr(&tile_timer);
+					^^^^ this_cpu_ptr
+
+
