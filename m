@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3H1RLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 13:11:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab3H1RLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 13:11:09 -0400
-Message-ID: <521E2F03.6040806@redhat.com>
-Date: Wed, 28 Aug 2013 13:10:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754543Ab3H1RQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 13:16:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49679 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041Ab3H1RQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 13:16:04 -0400
+Date: Wed, 28 Aug 2013 10:18:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, sedat.dilek@gmail.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
+Message-ID: <20130828171824.GA5012@kroah.com>
+References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
+ <CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
+ <CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+ <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
+ <521DD43D.7070605@samsung.com>
+ <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
+ <521DD6BD.4030700@samsung.com>
+ <20130828165938.GA26483@xanatos>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Don Morris <don.morris@hp.com>, Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3] sched, numa: Use {cpu, pid} to create task groups
- for shared faults
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de> <20130730113857.GR3008@twins.programming.kicks-ass.net> <20130731150751.GA15144@twins.programming.kicks-ass.net> <51F93105.8020503@hp.com> <20130802164715.GP27162@twins.programming.kicks-ass.net> <20130828164100.GS10002@twins.programming.kicks-ass.net>
-In-Reply-To: <20130828164100.GS10002@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130828165938.GA26483@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 12:41 PM, Peter Zijlstra wrote:
-> On Fri, Aug 02, 2013 at 06:47:15PM +0200, Peter Zijlstra wrote:
->> Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
->> From: Peter Zijlstra <peterz@infradead.org>
->> Date: Tue Jul 30 10:40:20 CEST 2013
->>
->> A very simple/straight forward shared fault task grouping
->> implementation.
->>
->> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+On Wed, Aug 28, 2013 at 09:59:38AM -0700, Sarah Sharp wrote:
+> Please trim your replies.
 > 
-> So Rik and me found a possible issue with this -- although in the end it
-> turned out to be a userspace 'feature' instead.
+> On Wed, Aug 28, 2013 at 01:53:49PM +0300, Dmitry Kasatkin wrote:
+> > >>> That change seems to cause the problems:
+> > >>>
+> > >>> commit 0730d52a86919300a39a2be37f6c140997dfb82f
+> > >>> "xhci:prevent "callbacks suppressed" when debug is not enabled"
+> > >>>
+> > >>> - Sedat -
+> > >>>
+> > >>> [1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
+> > >>>
+> > >> Hello,
+> > >>
+> > >> [PATCHv2 1/2] was not applied before.
+> > >> I pointed this out few hours ago...
 > 
-> It might be possible for a COW page to be 'shared' and thus get a
-> last_cpupid set from another process. When we break cow and reuse the
-> now private and writable page might still have this last_cpupid and thus
-> cause a shared fault and form grouping.
+> So commit 0730d52a86919300a39a2be37f6c140997dfb82f 'xhci:prevent
+> "callbacks suppressed" when debug is not enabled' needed to be applied
+> after your first patch?  And basically applying that patch alone breaks
+> the build?
 > 
-> Something like the below resets the last_cpupid field on reuse much like
-> fresh COW copies will have.
-> 
-> There might be something that avoids the above scenario but I'm too
-> tired to come up with anything.
+> Ugh.  Sorry about this.  Greg, how do you want to handle this?
 
-I believe this is a real bug.
+See my other response about your pull request, how about tacking it onto
+there?
 
-It can be avoided by either -1ing out the cpupid like you do, or
-using the current process's cpupid, when we re-use an old page
-in do_wp_page.
+thanks,
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2730,6 +2730,9 @@ static int do_wp_page(struct mm_struct *
->  		get_page(dirty_page);
->  
->  reuse:
-> +		if (old_page)
-> +			page_cpupid_xchg_last(old_page, (1 << LAST_CPUPID_SHIFT) - 1);
-> +
->  		flush_cache_page(vma, address, pte_pfn(orig_pte));
->  		entry = pte_mkyoung(orig_pte);
->  		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
-> 
-
-
--- 
-All rights reversed
+greg k-h
