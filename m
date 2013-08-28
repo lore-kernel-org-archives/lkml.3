@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3H1Pfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:35:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49205 "EHLO mx2.suse.de"
+	id S1754060Ab3H1PjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:39:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31916 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab3H1Pfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:35:50 -0400
-Date: Wed, 28 Aug 2013 17:35:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-08-27-16-51 uploaded
-Message-ID: <20130828153548.GH30126@dhcp22.suse.cz>
-References: <20130827235227.99DB95A41D6@corp2gmr1-2.hot.corp.google.com>
+	id S1753960Ab3H1PjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 11:39:19 -0400
+Subject: [PATCH v3] i915: Update VGA arbiter support for newer devices
+To: intel-gfx@lists.freedesktop.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        ville.syrjala@linux.intel.com
+Date: Wed, 28 Aug 2013 09:39:08 -0600
+Message-ID: <20130828153700.10255.67664.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827235227.99DB95A41D6@corp2gmr1-2.hot.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 27-08-13 16:52:27, Andrew Morton wrote:
-> A git tree which contains the memory management portion of this tree is
-> maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> by Michal Hocko.  It contains the patches which are between the
-> "#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> file, http://www.ozlabs.org/~akpm/mmotm/series.
+This is intended to add VGA arbiter support for Intel HD graphics on
+Core processors.  The old GMCH registers no longer exist, so even
+though it appears that i915 participates in VGA arbitration, it doesn't
+work.  On Intel HD graphics we already attempt to disable VGA regions
+of the device.  This makes registering as a VGA client unnecessary since
+we don't intend to operate differently depending on how many VGA devices
+are present.  We can disable VGA memory regions by clearing the memory
+enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+the VGA arbiter to know that we don't participate in VGA memory
+arbitration.  We also add a hook on unload to re-enable memory and
+reinstate VGA memory arbitration.
 
-I am sorry, but I wasn't online last week and was too busy the last few
-weeks so I didn't get to follow up on the last two mmotm updates in
-my tree.
-The thing is more complicated by many conflicts with the cgroup tree
-which seem to be not worth the hassle as the merge window should open
-shortly. I will continue with the next major Linus' tree.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-Sorry about that.
--- 
-Michal Hocko
-SUSE Labs
+v3: Use explicit LEGACY_IO | LEGACY_MEM when restoring rather than
+    LEGACY_MASK, per Ville's comments.
+
+v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
+    directly.  Also, on the driver unbind VGA enable path, acquire legacy
+    IO to re-enable VGA memory.  Correct comment.
+
+As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
+all patches I'm able to assign a discrete PEG VGA device to a guest and
+execute the VBIOS w/o interference from IGD or corruption of the IGD
+framebuffer.
+
+ drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+ drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index f466980..d9cf216 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	 * then we do not take part in VGA arbitration and the
+ 	 * vga_client_register() fails with -ENODEV.
+ 	 */
+-	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+-	if (ret && ret != -ENODEV)
+-		goto out;
++	if (!HAS_PCH_SPLIT(dev)) {
++		ret = vga_client_register(dev->pdev, dev, NULL,
++					  i915_vga_set_decode);
++		if (ret && ret != -ENODEV)
++			goto out;
++	}
+ 
+ 	intel_register_dsm_handler();
+ 
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 5fb3058..2807760 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	outb(SR01, VGA_SR_INDEX);
+ 	sr1 = inb(VGA_SR_DATA);
+ 	outb(sr1 | 1<<5, VGA_SR_DATA);
++
++	/* Disable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++	}
++
+ 	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+ 	udelay(300);
+ 
+@@ -9526,6 +9535,20 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	POSTING_READ(vga_reg);
+ }
+ 
++static void i915_enable_vga(struct drm_device *dev)
++{
++	/* Enable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
++		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
++						   VGA_RSRC_LEGACY_MEM |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
++	}
++}
++
+ void intel_modeset_init_hw(struct drm_device *dev)
+ {
+ 	intel_init_power_well(dev);
+@@ -9983,6 +10006,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+ 
+ 	intel_disable_fbc(dev);
+ 
++	i915_enable_vga(dev);
++
+ 	intel_disable_gt_powersave(dev);
+ 
+ 	ironlake_teardown_rc6(dev);
+
