@@ -1,157 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3H1OU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:20:26 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42924 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753852Ab3H1OUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:20:24 -0400
-Message-ID: <1377655732.3619.19.camel@joe-AO722>
-Subject: [PATCH] checkpatch:  Add test for positional misuse of section
- specifiers like __initdata
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 27 Aug 2013 19:08:52 -0700
-Mime-Version: 1.0
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Content-Transfer-Encoding: 7bit
+	id S1753849Ab3H1OWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:22:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752932Ab3H1OW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 10:22:29 -0400
+Date: Wed, 28 Aug 2013 11:21:12 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH] perf mem: add priv level filtering support
+Message-ID: <20130828142112.GE3825@infradead.org>
+References: <20130826131121.GA26224@quad>
+ <521BD4F8.5050504@gmail.com>
+ <20130828132703.GD3825@infradead.org>
+ <CABPqkBTf8Ruoq1RZhLcBLkhJY1mzJLpnLsM0J_7Bz=9Eakeajg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTf8Ruoq1RZhLcBLkhJY1mzJLpnLsM0J_7Bz=9Eakeajg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed recently on the arm [1] and lm-sensors [2] lists, it is
-possible to use section markers on variables in a way which gcc doesn't
-understand (or at least not the way the developer intended):
+Em Wed, Aug 28, 2013 at 03:38:28PM +0200, Stephane Eranian escreveu:
+> On Wed, Aug 28, 2013 at 3:27 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > So perhaps we should change both to (and add this to 'report' as well):
+> >
+> >     -U, --hide_kernel_symbols   hide kernel symbols
+> >     -K, --hide_user_symbols     hide user symbols
+> >
+> 
+> Well, I don't know what perf top does here but I don't want to hide
+> the samples. I simply don't want to collect them (do not appear
+> in the perf.data file). If that's what is happening in perf top, then
+> I'll be glad to use the same options.
 
-static struct __initdata samsung_pll_clock exynos4_plls[nr_plls] = {
+Indeed, its for different purposes, 'perf top' when used with one of
+those options will still collect samples for all priv levels and will
+just toggle a flag to not zap the ones asked not to show when decaying
+the samples.
 
-does NOT put exynos4_plls in the .initdata section. The __initdata
-marker can be virtually anywhere on the line, EXCEPT right after
-"struct". The preferred location is before the "=" sign if there is
-one, or before the trailing ";" otherwise.
+When the user presses 'U' or 'K' on the UI, the flags gets toggled and
+samples start being considered/zapped.
 
-[1] http://permalink.gmane.org/gmane.linux.ports.arm.kernel/258149
-[2] http://lists.lm-sensors.org/pipermail/lm-sensors/2013-August/039836.html
+But my worry here is about consistency accross tools for the single
+letter options, so perhaps if you could use:
 
-So, update checkpatch to find these misuses and report an
-error when it's immediately after struct or union, and a
-warning when it's otherwise not immediately before the ; or =.
+     -U		collect only user level samples
+     -K		collect only kernel level samples
 
-A similar patch was suggested by Andi Kleen
-https://lkml.org/lkml/2013/8/5/648
+I think it would stay consistent and clear, what do you think?
 
-Suggested-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Joe Perches <joe@perches.com>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
----
- scripts/checkpatch.pl | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 46 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9ba4fc4..47016c3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -242,6 +242,8 @@ our $Sparse	= qr{
- 			__rcu
- 		}x;
- 
-+our $InitAttribute = qr{__(?:mem|cpu|dev|net_|)(?:initdata|initconst|init\b)};
-+
- # Notes to $Attribute:
- # We need \b after 'init' otherwise 'initconst' will cause a false positive in a check
- our $Attribute	= qr{
-@@ -262,7 +264,7 @@ our $Attribute	= qr{
- 			__deprecated|
- 			__read_mostly|
- 			__kprobes|
--			__(?:mem|cpu|dev|)(?:initdata|initconst|init\b)|
-+			$InitAttribute|
- 			____cacheline_aligned|
- 			____cacheline_aligned_in_smp|
- 			____cacheline_internodealigned_in_smp|
-@@ -292,6 +294,7 @@ our $Operators	= qr{
- 		  }x;
- 
- our $NonptrType;
-+our $NonptrTypeWithAttr;
- our $Type;
- our $Declare;
- 
-@@ -354,6 +357,12 @@ our @typeList = (
- 	qr{${Ident}_handler},
- 	qr{${Ident}_handler_fn},
- );
-+our @typeListWithAttr = (
-+	@typeList,
-+	qr{struct\s+$InitAttribute\s+$Ident},
-+	qr{union\s+$InitAttribute\s+$Ident},
-+);
-+
- our @modifierList = (
- 	qr{fastcall},
- );
-@@ -367,6 +376,7 @@ our $allowed_asm_includes = qr{(?x:
- sub build_types {
- 	my $mods = "(?x:  \n" . join("|\n  ", @modifierList) . "\n)";
- 	my $all = "(?x:  \n" . join("|\n  ", @typeList) . "\n)";
-+	my $allWithAttr = "(?x:  \n" . join("|\n  ", @typeListWithAttr) . "\n)";
- 	$Modifier	= qr{(?:$Attribute|$Sparse|$mods)};
- 	$NonptrType	= qr{
- 			(?:$Modifier\s+|const\s+)*
-@@ -377,6 +387,15 @@ sub build_types {
- 			)
- 			(?:\s+$Modifier|\s+const)*
- 		  }x;
-+	$NonptrTypeWithAttr	= qr{
-+			(?:$Modifier\s+|const\s+)*
-+			(?:
-+				(?:typeof|__typeof__)\s*\([^\)]*\)|
-+				(?:$typeTypedefs\b)|
-+				(?:${allWithAttr}\b)
-+			)
-+			(?:\s+$Modifier|\s+const)*
-+		  }x;
- 	$Type	= qr{
- 			$NonptrType
- 			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
-@@ -3706,6 +3725,32 @@ sub process {
- 			}
- 		}
- 
-+sub string_find_replace {
-+	my ($string, $find, $replace) = @_;
-+
-+	$string =~ s/$find/$replace/g;
-+
-+	return $string;
-+}
-+
-+# check for bad placement of section $InitAttribute (e.g.: __initdata)
-+		if ($line =~ /(\b$InitAttribute\b)/) {
-+			my $attr = $1;
-+			if ($line =~ /^\+\s*static\s+(?:const\s+)?(?:$attr\s+)?($NonptrTypeWithAttr)\s+(?:$attr\s+)?($Ident(?:\[[^]]*\])?)\s*[=;]/) {
-+				my $ptr = $1;
-+				my $var = $2;
-+				if ((($ptr =~ /\b(union|struct)\s+$attr\b/ &&
-+				      ERROR("MISPLACED_INIT",
-+					    "$attr should be placed after $var\n" . $herecurr)) ||
-+				     ($ptr !~ /\b(union|struct)\s+$attr\b/ &&
-+				      WARN("MISPLACED_INIT",
-+					   "$attr should be placed after $var\n" . $herecurr))) &&
-+				    $fix) {
-+					$fixed[$linenr - 1] =~ s/(\bstatic\s+(?:const\s+)?)(?:$attr\s+)?($NonptrTypeWithAttr)\s+(?:$attr\s+)?($Ident(?:\[[^]]*\])?)\s*([=;])\s*/"$1" . trim(string_find_replace($2, "\\s*$attr\\s*", " ")) . " " . trim(string_find_replace($3, "\\s*$attr\\s*", "")) . " $attr" . ("$4" eq ";" ? ";" : " = ")/e;
-+				}
-+			}
-+		}
-+
- # prefer usleep_range over udelay
- 		if ($line =~ /\budelay\s*\(\s*(\d+)\s*\)/) {
- 			# ignore udelay's < 10, however
-
-
+- Arnaldo
