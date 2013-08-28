@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3H1TFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:05:06 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:37936 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab3H1TFE (ORCPT
+	id S1754153Ab3H1TIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:08:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48476 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3H1TI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:05:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130828061623.GJ27005@ZenIV.linux.org.uk>
-References: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
- <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
- <CA+55aFwtVH+MoG7Emt5V5wy2eDbYOBHBgOywRHFQ+Vm2XZn-Ag@mail.gmail.com>
- <CALCETrVerk6evSngbf1fiD=k6E557KgKNCBF4qYQSCXYrOx0ag@mail.gmail.com> <20130828061623.GJ27005@ZenIV.linux.org.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 28 Aug 2013 12:04:43 -0700
-Message-ID: <CALCETrUemSDkci_Z=MaZtU9x8ns-4UFwOSn_HNy_2hpQAOf+-Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: Add user_file_or_path_at and use it for truncate
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Aug 2013 15:08:28 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, gregkh@linuxfoundation.org
+Cc: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fabio.estevam@freescale.com, s.hauer@pengutronix.de,
+        shawn.guo@linaro.org
+Subject: [PATCH 1/2] serial: fsl-imx-uart: Cleanup duplicate device tree binding
+Date: Wed, 28 Aug 2013 14:08:22 -0500
+Message-Id: <1377716903-19699-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:16 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Aug 27, 2013 at 01:28:27PM -0700, Andy Lutomirski wrote:
->> There are also O_PATH fds, and I'm not sure what the semantics of
->> O_PATH fds are or should be when they refer to something other than a
->> directory.
->
-> O_PATH file just points to specific location in the tree, no more and
-> no less.
+We had two bindings for the same serial device, it looks like the one in
+tty/serial/fsl-imx-uart.txt is the more up to date one so go with it and
+merge a few things about the use/need for aliases in from
+serial/fsl-imx-uart.txt.
 
-I don't know whether ftruncate(some O_PATH fd) should work.  But this
-probably barely matters.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ .../devicetree/bindings/serial/fsl-imx-uart.txt    | 35 ----------------------
+ .../bindings/tty/serial/fsl-imx-uart.txt           |  9 +++++-
+ 2 files changed, 8 insertions(+), 36 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/serial/fsl-imx-uart.txt
 
->
-> g) name_to_handle_at().  Not sure if we need any capability checks, but
-> we definitely don't give a damn about the way file had been opened.
+diff --git a/Documentation/devicetree/bindings/serial/fsl-imx-uart.txt b/Documentation/devicetree/bindings/serial/fsl-imx-uart.txt
+deleted file mode 100644
+index c58573b..0000000
+--- a/Documentation/devicetree/bindings/serial/fsl-imx-uart.txt
++++ /dev/null
+@@ -1,35 +0,0 @@
+-* Freescale i.MX UART controller
+-
+-Required properties:
+-- compatible : should be "fsl,imx21-uart"
+-- reg : Address and length of the register set for the device
+-- interrupts : Should contain UART interrupt number
+-
+-Optional properties:
+-- fsl,uart-has-rtscts: indicate that RTS/CTS signals are used
+-
+-Note: Each uart controller should have an alias correctly numbered
+-in "aliases" node.
+-
+-Example:
+-
+-- From imx51.dtsi:
+-aliases {
+-	serial0 = &uart1;
+-	serial1 = &uart2;
+-	serial2 = &uart3;
+-};
+-
+-uart1: serial@73fbc000 {
+-	compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+-	reg = <0x73fbc000 0x4000>;
+-	interrupts = <31>;
+-	status = "disabled";
+-}
+-
+-- From imx51-babbage.dts:
+-uart1: serial@73fbc000 {
+-	fsl,uart-has-rtscts;
+-	status = "okay";
+-};
+-
+diff --git a/Documentation/devicetree/bindings/tty/serial/fsl-imx-uart.txt b/Documentation/devicetree/bindings/tty/serial/fsl-imx-uart.txt
+index c662eb3..35ae1fb 100644
+--- a/Documentation/devicetree/bindings/tty/serial/fsl-imx-uart.txt
++++ b/Documentation/devicetree/bindings/tty/serial/fsl-imx-uart.txt
+@@ -11,9 +11,16 @@ Optional properties:
+ - fsl,dte-mode : Indicate the uart works in DTE mode. The uart works
+                   is DCE mode by default.
+ 
++Note: Each uart controller should have an alias correctly numbered
++in "aliases" node.
++
+ Example:
+ 
+-serial@73fbc000 {
++aliases {
++	serial0 = &uart1;
++};
++
++uart1: serial@73fbc000 {
+ 	compatible = "fsl,imx51-uart", "fsl,imx21-uart";
+ 	reg = <0x73fbc000 0x4000>;
+ 	interrupts = <31>;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-open_by_handle(name_to_handle(read-only fd)) is dangerous for the same
-reason that open("/proc/self/fd/N", O_RDWR) is, but the capability
-checks have that covered.
-
->
-> h) one case in quotactl().  With CAP_SYS_ADMIN required.  If attacker got
-> that, it's too fucking late anyway.
->
-> i) fstatat() and friends, statfs(), utimes() et.al, {set,get,list,remove}xattr()
-> - no difference in checks between pathname- and descriptor-based calls
-> anyway.  Please, note that for fsetxattr() we do *NOT* require the file
-> to be opened for write; adding such requirement would be a user-visible
-> API change, and one fairly likely to break stuff, at that.
-
-Sigh.  I wonder if that was deliberate.  Anyway, it is what it is.
-
->
-> j) umount() and pivot_root().  We really don't care how the file had been
-> opened, and attacker capable of playing with that can do a lot more.
->
-> k) inotify_add_watch()/fanotify_mark().  No descriptor-based versions,
-> no permission checks other than "may read whatever we ended up with".
-> I really doubt that we care about the way fd had been opened in case
-> of /proc/<pid>/fd/<fd>.
->
-> l) truncate() mess.
->
-> m) open() mess.
->
-> AFAICS, the *only* cases when we might possibly care are linkat() target,
-> truncate() and open().  Note, BTW, that right now we *do* allow an attempt
-> to reopen a file via procfs symlink r/w, even when file had been r/o.
-> It's subject to permissions on the object being opened, but that's it.
->
-> I'm not sure we can change that - again, it's a user-visible API, and
-> the change is very likely to break some scripts.  In fact, it's about
-> as dangerous as a full-blown switch to dup-style semantics for procfs
-> opens, and it's a lot less attractive.
->
-> For truncate() we would only need to have FMODE_WRITE reported, more or
-> less the same way as FMODE_FLINK.  And without open() changes it doesn't
-> buy us anything at all...
->
-> I've no problem with unrolling the user_path_at() in do_sys_truncate()
-> into an explicit loop by trailing symlinks and checking for indication
-> left by proc_pid_follow_link(), more or less the same way as with
-> LOOKUP_LINK in lookup_last().  It's _far_ less invasive than playing
-> with "oh, here we fill a struct path or maybe a struct file" horrors,
-> pinning struct file for no reason, etc.
->
-> AFAICS, the real question is whether we dare to change open() behaviour on
-> /proc/*/fd/*.  I've played with that a bit and I believe that I can do
-> the switch to dup-style with very localized changes in fs/namei.c and
-> fs/proc/{base,fd}.c.  Will be even binary compatible kernel-side -
-> ->atomic_open() returns NULL/ERR_PTR where it used to return 0/-error,
-> not that we had many instances to convert.  *IF* that variant is not
-> out of consideration for userland API stability reasons, I would certainly
-> prefer to go that way; turns out that these days we can pull it off without
-> black magic in descriptor handling, etc.  Linus?
-
-I personally find the check-mode-but-get-a-new-struct-file version to
-be less weird that the dup approach.  Either approach will break
-scripts that try to write to /dev/stdin (which is the whole point).
-
---Andy
