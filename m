@@ -1,54 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab3H1MWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:22:43 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:18825 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab3H1MWl (ORCPT
+	id S1755407Ab3H1MYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:24:04 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:61583 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab3H1MYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:22:41 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-2d-521deb901d39
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Len Brown <lenb@kernel.org>, Andy Henroid <andrew.d.henroid@intel.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [RFC] removal of drivers/idle/ directory
-Date: Wed, 28 Aug 2013 14:22:36 +0200
-Message-id: <2998196.JgbABsZZJs@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAd0Jr2WDDLr/iVrsON7PYrHz4Vs2
-	i8u75rBZfO49wmjxY8NjVgdWj8V7XjJ5bFrVyebxeZNcAHMUl01Kak5mWWqRvl0CV8bUiZ2s
-	BUtYKpb8E29gPMjcxcjJISFgIrGu+ymULSZx4d56ti5GLg4hgUWMEvuPzGGHcFqYJK5sOsoC
-	UsUmYCUxsX0VI4gtIuAlcWXvErBuZiC7b/EyMFtYwFDi9d0fYDaLgKrE1VMbwWxeAU2J1zs3
-	gc0RFfCU+DRpKVRcUOLH5HssEHPkJfbtn8oKYWtJrN95nGkCI98sJGWzkJTNQlK2gJF5FaNo
-	akFyQXFSeq6RXnFibnFpXrpecn7uJkZwMD6T3sG4qsHiEKMAB6MSD6/FZpkgIdbEsuLK3EOM
-	EhzMSiK8/Ntlg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFw
-	SjUwqj34fyT37VNFYe2K7JsOe2/3XP2uWrc28kvH58XJexW2Lj0k4Lf/ZdeaOyuuzXuy/MF5
-	NU/n2VtmejHmvNzDwHPPeh/Lp5/bDv//fW4lz7zsq0mHvBrlX13xWyyZ90Ekdtbf8qv/d/in
-	+ntkpfc/jfqau3HHLM/VCzemdD2p+7CTb88NloVSKvVKLMUZiYZazEXFiQAKHdd1QgIAAA==
+	Wed, 28 Aug 2013 08:24:02 -0400
+Message-ID: <521DEBDC.8090207@gmail.com>
+Date: Wed, 28 Aug 2013 14:23:56 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC v2 5/6] ARM: add Armada 1500 and Sony NSZ-GS7 device
+ tree files
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377648874-6714-6-git-send-email-sebastian.hesselbarth@gmail.com> <20130828121403.GL19598@titan.lakedaemon.net>
+In-Reply-To: <20130828121403.GL19598@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/28/13 14:14, Jason Cooper wrote:
+> On Wed, Aug 28, 2013 at 02:14:33AM +0200, Sebastian Hesselbarth wrote:
+>> This adds very basic device tree files for the Marvell Armada 1500 SoC
+>> (88DE3100) and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has
+>> nodes for cpus, some clocks, l2 cache controller, local timer, apb timers,
+>> uart, and interrupt controllers. The Sony NSZ-GS7 is a GoogleTV consumer
+>> device comprising the Armada 1500 SoC above.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Changelog:
+>> v1->v2:
+>> - add binding documentation (Reported by Jason Cooper)
+>> - change l2cc from aurora to tauros3 (Reported by Thomas Petazzoni)
+>> - add copyright reference
+>> - adapt compatibles to mach-berlin instead of mach-mvebu
+>>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: devicetree@vger.kernel.org
+>> Cc: linux-doc@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   .../devicetree/bindings/arm/marvell,berlin.txt     |   23 ++
+>>   arch/arm/boot/dts/Makefile                         |    2 +
+>>   arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts      |   29 +++
+>>   arch/arm/boot/dts/mv88de3100.dtsi                  |  222 ++++++++++++++++++++
+>>   4 files changed, 276 insertions(+), 0 deletions(-)
+>>   create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
+>>   create mode 100644 arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
+>>   create mode 100644 arch/arm/boot/dts/mv88de3100.dtsi
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+>> new file mode 100644
+>> index 0000000..a4c3056
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+>> @@ -0,0 +1,23 @@
+>> +Marvell Berlin (88DE3xxx) family SoCs Device Tree Bindings
+>> +---------------------------------------------------------------
+>> +
+>> +Boards with a SoC of the Marvell Berlin (88DE3xxx) family, e.g. Armada 1500
+>> +shall have the following properties:
+>> +
+>> +* Required root node properties:
+>> +compatible: must contain "marvell,berlin"
+>> +
+>> +In addition, the above compatible shall be extended with the specific
+>> +SoC used, i.e.
+>> +    "marvell,88de3100"	for Marvell 88DE3100 (Armada 1500),
+>> +    "marvell,88de3010"	for Marvell 88DE3010 (Armada 1000),
+>> +    "marvell,88de3005"	for Marvell 88DE3005 (Armada 1500-mini)
+>> +
+>> +* Example:
+>> +
+>> +/ {
+>> +	model = "Sony NSZ-GS7";
+>> +	compatible = "marvell,88de3100", "marvell,berlin";
+>
+> I would make this:
+>
+> 	compatible = "sony,nsz-gs7", "marvell,88de3100", "marvell,berlin";
 
-Hi,
+Ok.
 
-drivers/idle/ directory currently contains only two drivers:
+>> +
+>> +	...
+>> +}
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index d45058e..2989b51 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -43,6 +43,8 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d35ek.dtb
+>>
+>>   dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+>>   dtb-$(CONFIG_ARCH_BCM) += bcm11351-brt.dtb
+>> +dtb-$(CONFIG_ARCH_BERLIN) += \
+>> +	mv88de3100-sony-nsz-gs7.dtb
+>>   dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+>>   	da850-evm.dtb
+>>   dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
+>> diff --git a/arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts b/arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
+>> new file mode 100644
+>> index 0000000..1081bc1
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
+>> @@ -0,0 +1,29 @@
+>> +/*
+>> + * Device Tree file for Sony NSZ-GS7
+>> + *
+>> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public
+>> + * License version 2.  This program is licensed "as is" without any
+>> + * warranty of any kind, whether express or implied.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +
+>> +#include "mv88de3100.dtsi"
+>> +
+>> +/ {
+>> +	model = "Sony NSZ-GS7";
+>> +	compatible = "sony,nsz-gs7", "marvell,88de3100", "marvell,berlin";
+>> +
+>> +	chosen {
+>> +		bootargs = "console=ttyS0,115200 earlyprintk verbose debug";
+>
+> I would remove 'verbose debug' before official submission, no point to
+> defaulting to log-spammer.
 
-* intel_idle which is a cpuidle driver for certain Intel processors
+Agree.
 
-* i7300_idle which is a driver for certain Intel x86_64 servers
-  (it provides idle memory power savings)
+Maybe, for the next patches, I'll add some I/O device drivers that
+allow you to actually boot into some rootfs. All those fooHCI IP
+shouldn't be that hard - hopefully some quirks only.
 
-How's about moving intel_idle to drivers/cpuidle/ (where it should
-belong as cpuidle driver) and i7300_idle to drivers/platform/x86/
-(or eventually to a new directory named drivers/memidle/)?
+I also had a look at I2C and SPI, both DW IP with mainline drivers
+available. SPI needs a little DT tweaking and I did not carry out any
+functional tests, yet.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Thanks for the constant reviews!
 
+Sebastian
