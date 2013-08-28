@@ -1,158 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3H1IRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 04:17:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:17182 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab3H1IR1 (ORCPT
+	id S1754685Ab3H1ITO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 04:19:14 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:2457
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752423Ab3H1ITK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 04:17:27 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-b0-521db2151098
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Pratyush Anand'" <pratyush.anand@st.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Mohit KUMAR DCG'" <Mohit.KUMAR@st.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <003d01ce9fc6$9c0f1c20$d42d5460$%han@samsung.com>
- <20130823083539.GB3937@pratyush-vbox>
-In-reply-to: <20130823083539.GB3937@pratyush-vbox>
-Subject: Re: [PATCH V2] PCI: exynos: add support for MSI
-Date: Wed, 28 Aug 2013 17:17:24 +0900
-Message-id: <001801cea3c7$06bca9d0$1435fd70$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6f28+a/xoNj5uATiKdEyEb171RbwD6tUhA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t8zQ13RTbJBBkv/8Vv8nXSM3WJJU4bF
-	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLFU1b
-	GS1+7prHYvH0QROTRePRB6wWrU8eMDoIevz+NYnR48mmi4weO2fdZfdYsKnU4/vC+ewefVtW
-	MXo8/bGX2eP4je1MHp83yQVwRnHZpKTmZJalFunbJXBlTHn2jbHgqXDF7A7OBsaNfF2MnBwS
-	AiYSx1q7WCFsMYkL99azdTFycQgJLGOUOLnmOFCCA6xoz0I9iPgiRombG1qZIZxfjBK3zjYz
-	gnSzCahJfPlymB3EFhHQkTi+YilYEbPAfRaJA1/XMIEkhARSJfbf3Qu2jlPASOLI/qlgzcIC
-	FhJnGy+xgdgsAqoSj+6/B4vzCthKnGv4zw5hC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZohL
-	1SUe/dWFuMFI4sPG3cwQJSIS+168YwS5R0LgAodE3/WVjBC7BCS+TT7EAtErK7HpADMkJCQl
-	Dq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQISSC9
-	OxhvH7A+xJgMtH4is5Rocj4wAeWVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpa
-	kFoUX1Sak1p8iJGJg1OqgXHbAut5DlWdDLslontl64oM2texqN+bv//SKaVPfzZNTQ/Z56rz
-	0GjCjP/VOQ5e1V8tX3SnMLLWa88ok6usj4/kfup7j/XB132CHg4RnzKvBPFsC335Vt7jr2f6
-	+lkhyQxcre8DK66myUuVHJganXTpsltR8M2Vx1xTvA5svblW+U/hZkWzeiWW4oxEQy3mouJE
-	AJP9DUk2AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e+xgK7oJtkggx2nOC3+TjrGbrGkKcPi
-	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFiqat
-	jBY/d81jsXj6oInJovHoA1aL1icPGB0EPX7/msTo8WTTRUaPnbPusnss2FTq8X3hfHaPvi2r
-	GD2e/tjL7HH8xnYmj8+b5AI4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyV
-	FPISc1NtlVx8AnTdMnOAPlFSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYx
-	Zkx59o2x4KlwxewOzgbGjXxdjBwcEgImEnsW6nUxcgKZYhIX7q1n62Lk4hASWMQocXNDKzOE
-	84tR4tbZZkaQKjYBNYkvXw6zg9giAjoSx1csBStiFrjPInHg6xomkISQQKrE/rt7WUFsTgEj
-	iSP7p4I1CwtYSJxtvMQGYrMIqEo8uv8eLM4rYCtxruE/O4QtKPFj8j0WEJtZQEti/c7jTBC2
-	vMTmNW+ZIa5Wl3j0VxfiBiOJDxt3M0OUiEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRN
-	LUguKE5KzzXUK07MLS7NS9dLzs/dxAhOT8+kdjCubLA4xCjAwajEw2uxWSZIiDWxrLgy9xCj
-	BAezkghvyX+gEG9KYmVValF+fFFpTmrxIcZkoEcnMkuJJucDU2deSbyhsYmZkaWRmYWRibk5
-	acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTCev8XIOSPN7xuP6Zpp7sWvl7G8i3y56v+e
-	vMC7S8yjpU0WMS0Ss/kgPUVNO+yP8/9i09dHg79n+s4MO5xWLiAsf87bZs61WEMtHuePwr+/
-	mDQpfLI4uNdk5my7u3sN10vfmde9/vo1i+w1HmuZzK9yneL1/cBydu9JeTG37iqZSwX7DkQw
-	2UxRYinOSDTUYi4qTgQA4rkEQJMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 28 Aug 2013 04:19:10 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h1155h)
+Message-ID: <521DB26F.8010501@freescale.com>
+Date: Wed, 28 Aug 2013 16:18:55 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 1/3] DMA: Freescale: revise device tree binding document
+References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com> <1377600123-5746-2-git-send-email-hongbo.zhang@freescale.com> <20130827112509.GH19893@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130827112509.GH19893@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 23, 2013 5:36 PM, Pratyush Anand wrote:
-> On Fri, Aug 23, 2013 at 02:04:20PM +0800, Jingoo Han wrote:
+On 08/27/2013 07:25 PM, Mark Rutland wrote:
+> On Tue, Aug 27, 2013 at 11:42:01AM +0100, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>
+>> This patch updates the discription of each type of DMA controller and its
+>> channels, it is preparation for adding another new DMA controller binding, it
+>> also fixes some defects of indent for text alignment at the same time.
+>>
+>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>> ---
+>>   .../devicetree/bindings/powerpc/fsl/dma.txt        |   62 +++++++++-----------
+>>   1 file changed, 27 insertions(+), 35 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>> index 2a4b4bc..ddf17af 100644
+>> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>> @@ -1,33 +1,29 @@
+>> -* Freescale 83xx DMA Controller
+>> +* Freescale DMA Controllers
+>>   
+>> -Freescale PowerPC 83xx have on chip general purpose DMA controllers.
+>> +** Freescale Elo DMA Controller
+>> +   This is a little-endian DMA controller, used in Freescale mpc83xx series
+>> +   chips such as mpc8315, mpc8349, mpc8379 etc.
+>>   
+>>   Required properties:
+>>   
+>> -- compatible        : compatible list, contains 2 entries, first is
+>> -		 "fsl,CHIP-dma", where CHIP is the processor
+>> -		 (mpc8349, mpc8360, etc.) and the second is
+>> -		 "fsl,elo-dma"
+>> -- reg               : <registers mapping for DMA general status reg>
+>> -- ranges		: Should be defined as specified in 1) to describe the
+>> -		  DMA controller channels.
+>> +- compatible        : must include "fsl,elo-dma"
+> We should list the other values that may be in the list also, unless
+> they are really of no consequence, in which case their presence in dt is
+> questionable.
+Hmm.  Stephen questioned here too, it seems this is a default rule.
+Although Scott@freescale had explained our thoughts, I'd like to edit 
+this item like this:
 
-[.....]
+"must include "fsl,eloplus-dma", and a "fsl,CHIP-dma" is optional, where 
+CHIP is the processor name"
 
-> > +#define MAX_MSI_IRQS                   32
-> 
-> DW MSI controller can support upto 256. However, 32 seems a practical
-> choice, as there might not be any system which may use more
-> than 32. But a comment like as follows can be put here:
-> 
-> /*
-> * Maximum number of MSI IRQs can be 256 per controller. But keep
-> * it 32 as of now. Probably we will never need more than 32. If needed,
-> * then increment it in multiple of 32.
-> */
+We don't list all the chip name because we have tens of them and we 
+cannot list all of them, and it is unnecessary to list them because we 
+even don't use "fsl,CHIP-dma" in the new driver, add "fsl,CHIP-dma" here 
+just make it questionable when it presents in example and  old dts files.
 
-OK.
-I will add this comment.
-
-> 
-> > +#define MAX_MSI_CTRLS                  8
-> 
-> Why to waste cpu cycles when MAX_MSI_IRQS is 32 only.
-> #define MAX_MSI_CTRLS   (MAX_MSI_IRQS / 32)
-
-OK.
-I will fix it as you guide.
-
-> 
-> > +
-> > +static unsigned int msi_data;
-> > +static DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
-> 
-> What if one has more than one RC.
-> There are SOCs which support 3 RCs.
-> So something like this:
-> 
-> #define MAX_PCIE_PORT_SUPPORTED 3
-> static DECLARE_BITMAP(msi_irq_in_use[MAX_PCIE_PORT_SUPPORTED],
->                   NUM_MSI_IRQS);
-> static unsigned int *msi_data[MAX_PCIE_PORT_SUPPORTED];
-
-No, there is no need to do it.
-Without this, we can use 3 RCs by adding a node of 3rd RC to dt file.
-
-> 
-> Allocate msi_data using __get_free_pages(GFP_KERNEL, 0)) as Thierry
-> suggested.
-
-OK.
-I will use '__get_free_pages(GFP_KERNEL, 0))' as Thierry guide.
-
-> >  int dw_pcie_link_up(struct pcie_port *pp)
-> >  {
-> >         if (pp->ops->link_up)
-> > @@ -225,6 +432,13 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
-> >                 return -EINVAL;
-> >         }
-> >
-> > +       if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> > +               if (of_property_read_u32(np, "msi-base", &pp->msi_irq_start)) {
-> > +                       dev_err(pp->dev, "Failed to parse the number of lanes\n");
-> > +                       return -EINVAL;
-> > +               }
-> > +       }
-> > +
-> 
-> What if an implementor want to use irq_domain method for msi_irq_start
-> allocation? Is it fine to return error if msi-base is not passed from
-> dt?
-
-Sure, I will consider using irq_domain method.
-
+I remove the examples in bracket "(mpc8349, mpc8360, etc.)" because we 
+can see the real example below.
+I don't say" if "fsl,CHIP-dma" presents, it should be the first one, and 
+the "fsl,eloplus-dma" should be the second" because it is common rule.
+the description language should be clear and concise too I think.
+>> +- reg               : <registers specifier for DMA general status reg>
+>> +- ranges            : describes the mapping between the address space of the
+>> +                      DMA channels and the address space of the DMA controller
+>>   - cell-index        : controller index.  0 for controller @ 0x8100
+>> -- interrupts        : <interrupt mapping for DMA IRQ>
+>> +- interrupts        : <interrupt specifier for DMA IRQ>
+>>   - interrupt-parent  : optional, if needed for interrupt mapping
+>>   
+>> -
+>>   - DMA channel nodes:
+>> -        - compatible        : compatible list, contains 2 entries, first is
+>> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
+>> -			 (mpc8349, mpc8350, etc.) and the second is
+>> -			 "fsl,elo-dma-channel". However, see note below.
+>> -        - reg               : <registers mapping for channel>
+>> +        - compatible        : must include "fsl,elo-dma-channel"
+>> +                              However, see note below.
+> Again, I think we should list the other entries that may be in the list.
+> Otherwise it's not clear what the binding defines. Similarly for the
+> other compatible list definitions below...
 >
-> Also, with the limited knowledge of dt I do not understand one thing, how
-> would dt understand that you have used 32 msi irqs (MAX_MSI_IRQS)?
+>> +        - reg               : <registers specifier for channel>
+>>           - cell-index        : dma channel index starts at 0.
+> I realise you haven't changed it, but it's unclear what the cell-index
+> property is (and somewhat confusingly there seem to be multiple
+> defnitions). It might be worth clarifying it while performing the other
+> cleanup.
+not clear with your point "multiple definitions", we really have 
+multiple dma channels for one dma controller.
+cell-index is used as channel index, this is an old method used by old 
+driver, my patch didn't touch this part.
+>>   
+>>   Optional properties:
+>> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
+>> -			  (on 83xx this is expected to be identical to
+>> -			   the interrupts property of the parent node)
+>> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+>> +                              (on 83xx this is expected to be identical to
+>> +                              the interrupts property of the parent node)
+>>           - interrupt-parent  : optional, if needed for interrupt mapping
+>>   
+>>   Example:
+>> @@ -70,30 +66,26 @@ Example:
+>>   		};
+>>   	};
+>>   
+>> -* Freescale 85xx/86xx DMA Controller
+>> -
+>> -Freescale PowerPC 85xx/86xx have on chip general purpose DMA controllers.
+>> +** Freescale EloPlus DMA Controller
+>> +   This is DMA controller with extended addresses and chaining, mainly used in
+>> +   Freescale mpc85xx/86xx, Pxxx and BSC series chips, such as mpc8540, mpc8641
+>> +   p4080, bsc9131 etc.
+>>   
+>>   Required properties:
+>>   
+>> -- compatible        : compatible list, contains 2 entries, first is
+>> -		 "fsl,CHIP-dma", where CHIP is the processor
+>> -		 (mpc8540, mpc8540, etc.) and the second is
+>> -		 "fsl,eloplus-dma"
+>> -- reg               : <registers mapping for DMA general status reg>
+>> +- compatible        : must include "fsl,eloplus-dma"
+>> +- reg               : <registers specifier for DMA general status reg>
+>>   - cell-index        : controller index.  0 for controller @ 0x21000,
+>>                                            1 for controller @ 0xc000
+>> -- ranges		: Should be defined as specified in 1) to describe the
+>> -		  DMA controller channels.
+>> +- ranges            : describes the mapping between the address space of the
+>> +                      DMA channels and the address space of the DMA controller
+>>   
+>>   - DMA channel nodes:
+>> -        - compatible        : compatible list, contains 2 entries, first is
+>> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
+>> -			 (mpc8540, mpc8560, etc.) and the second is
+>> -			 "fsl,eloplus-dma-channel". However, see note below.
+>> +        - compatible        : must include "fsl,eloplus-dma-channel"
+>> +                              However, see note below.
+>>           - cell-index        : dma channel index starts at 0.
+>> -        - reg               : <registers mapping for channel>
+>> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
+>> +        - reg               : <registers specifier for channel>
+>> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+>>           - interrupt-parent  : optional, if needed for interrupt mapping
+>>   
+>>   Example:
+>> -- 
+>> 1.7.9.5
+> Thanks,
+> Mark.
+>
 
-Sorry, I cannot understand exactly. :-(
-I will look into it.
 
-I really appreciate your comments. :-)
-
-Best regards,
-Jingoo Han
 
