@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3H1G23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 02:28:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40285 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754319Ab3H1G22 (ORCPT
+	id S1754636Ab3H1G3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 02:29:13 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:61127 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752728Ab3H1G3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 02:28:28 -0400
-Message-ID: <521D9889.7090109@free-electrons.com>
-Date: Wed, 28 Aug 2013 08:28:25 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 02:29:09 -0400
+X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 02:29:08 EDT
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-10.tower-194.messagelabs.com!1377670963!15397188!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 28 Aug 2013 08:22:44 +0200
+Date: Wed, 28 Aug 2013 08:22:32 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2] documentation/devicetree: Move DT bindigns from
+ gpio to watchdog
+Message-ID: <20130828062232.GA10368@jtlinux>
+References: <521672A1.6010202@wwwdotorg.org>
+ <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de>
+ <521D1D16.9080106@wwwdotorg.org>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2 07/16] ARM: mvebu: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-8-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1377638890-371-8-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <521D1D16.9080106@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 28 Aug 2013 06:22:43.0605 (UTC) FILETIME=[01464C50:01CEA3B7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-On 27/08/2013 23:28, Sebastian Hesselbarth wrote:
-> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> remove custom .init_time hooks.
+On Tue, Aug 27, 2013 at 03:41:42PM -0600, Stephen Warren wrote:
+> On 08/27/2013 05:10 AM, Johannes Thumshirn wrote:
+> > I accidently put the devicetree bindings for the MEN A21 watchdog driver in
+> > Documentation/devicetree/bindings/gpio instead of
+> > Documentation/devicetree/bindings/watchdog, this patch addresses this error.
+>
+> >  Changes to v1:
+> >  - Use named gpios, as suggested by Stephen Warren
+>
+> The move and the change to the binding should probably be separate
+> patches since they're logically separate things. I didn't intend you to
+> update the rename patch to fix the binding issue I pointed out.
+>
 
-You should update the commit log, the .init_time hooks won't be removed
-with this patch.
+Oops. Looks like I've misunderstood you there. I'll re-send the rename patch
+then.
 
-Gregory
+> Is the driver updated for this binding change? Are there DTs in released
+> kernels that won't work now, or is the driver very new; there may be a
+> need for the driver to support the old binding and the binding doc to
+> document the old gpios property, but mark it deprecated.
 
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> v1->v2:
-> - only remove of_clk_init from custom timer hook, further cleanup
->   will be carried out later (Reported by Gregory Clement)
-> 
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-mvebu/armada-370-xp.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-> index 829b573..164c62b 100644
-> --- a/arch/arm/mach-mvebu/armada-370-xp.c
-> +++ b/arch/arm/mach-mvebu/armada-370-xp.c
-> @@ -14,7 +14,6 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/init.h>
-> -#include <linux/clk-provider.h>
->  #include <linux/of_address.h>
->  #include <linux/of_platform.h>
->  #include <linux/io.h>
-> @@ -36,7 +35,6 @@ static void __init armada_370_xp_map_io(void)
->  
->  static void __init armada_370_xp_timer_and_clk_init(void)
->  {
-> -	of_clk_init(NULL);
->  	armada_370_xp_timer_init();
->  	coherency_init();
->  	BUG_ON(mvebu_mbus_dt_init());
-> 
+The driver is not yet updated, this is why I've sent it as an RFC. Are the
+bindings acceptable this way? If yes I'll update the driver and re-send the
+bindings with the driver as a new patch series.
 
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Johannes
