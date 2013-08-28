@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3H1Dqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 23:46:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab3H1Dqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 23:46:38 -0400
-Date: Tue, 27 Aug 2013 23:46:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: rostedt@goodmis.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-Message-ID: <20130828034627.GA30596@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, rostedt@goodmis.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1753535Ab3H1DzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 23:55:25 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:53153 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3H1DzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 23:55:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130827184447.GR3005@radagast>
+References: <1373416455-30358-1-git-send-email-jwerner@chromium.org>
+	<20130710052534.GB15674@arwen.pp.htv.fi>
+	<CAODwPW9dmwpXeyBeVER9azsh2uW3NXLTbDtz3mJaXrvSwb6opg@mail.gmail.com>
+	<20130712065734.GE31802@arwen.pp.htv.fi>
+	<CAHbNUh0Sa-atYMHbhEUX2vnVAcsdBJxw9RRzAp+6vqE8hi=p1w@mail.gmail.com>
+	<20130827184447.GR3005@radagast>
+Date: Wed, 28 Aug 2013 09:25:22 +0530
+Message-ID: <CAHbNUh06Rxd9JRieeXCydB_JwiUOrUXADL6nUGZxONQJmz2-CQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: phy: samsung-usb2: Toggle HSIC GPIO from device tree
+From: Tushar Behera <tushar.behera@linaro.org>
+To: balbi@ti.com
+Cc: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Praveen Paneri <p.paneri@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: CPU: 0 PID: 8961 at kernel/trace/ftrace.c:1640 __ftrace_hash_rec_update.part.37+0x20a/0x240()
-Modules linked in: bridge stp fuse hidp bnep rfcomm nfnetlink ipt_ULOG scsi_transport_iscsi can_bcm nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel snd_hda_codec pcspkr snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd e1000e ptp soundcore pps_core
-CPU: 0 PID: 8961 Comm: trinity-child4 Not tainted 3.11.0-rc7+ #30 
- ffffffff81a21901 ffff880210039c60 ffffffff816f9e2f 0000000000000000
- ffff880210039c98 ffffffff81052dcd 0000000000000000 0000000000000001
- ffff8801cc5d2000 0000000000000000 ffff88022f357248 ffff880210039ca8
-Call Trace:
- [<ffffffff816f9e2f>] dump_stack+0x54/0x74
- [<ffffffff81052dcd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff81052eaa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81115d1a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
- [<ffffffff81117e18>] ftrace_shutdown+0xb8/0x160
- [<ffffffff811182a0>] unregister_ftrace_function+0x30/0x50
- [<ffffffff81135e57>] perf_ftrace_event_register+0x87/0x130
- [<ffffffff81135cdc>] perf_trace_destroy+0x2c/0x50
- [<ffffffff8113df29>] tp_perf_event_destroy+0x9/0x10
- [<ffffffff81140507>] free_event+0xa7/0x300
- [<ffffffff811407c4>] perf_event_release_kernel+0x64/0x90
- [<ffffffff811413c3>] put_event+0x133/0x1c0
- [<ffffffff811412c0>] ? put_event+0x30/0x1c0
- [<ffffffff81141460>] perf_release+0x10/0x20
- [<ffffffff811b969a>] __fput+0xfa/0x2e0
- [<ffffffff811b98ce>] ____fput+0xe/0x10
- [<ffffffff8107a2fc>] task_work_run+0xac/0xe0
- [<ffffffff8105469c>] do_exit+0x2cc/0xcd0
- [<ffffffff8170cfc0>] ? ftrace_call+0x5/0x2f
- [<ffffffff8105643c>] do_group_exit+0x4c/0xc0
- [<ffffffff810564c4>] SyS_exit_group+0x14/0x20
- [<ffffffff8170d594>] tracesys+0xdd/0xe2
----[ end trace e1bf4ddc241d086b ]---
+On 28 August 2013 00:14, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Aug 13, 2013 at 02:11:27PM +0530, Tushar Behera wrote:
+>> On 12 July 2013 12:27, Felipe Balbi <balbi@ti.com> wrote:
+>> > Hi,
+>> >
+>> > On Wed, Jul 10, 2013 at 10:42:27AM -0700, Julius Werner wrote:
+>> >> Hi Felipe,
+>> >>
+>> >> This is intended to pull down a reset signal line, not to switch power
+>> >> to the device. I could implement that with the regulator framework
+>> >> too, but I think that would just be confusing and harder to understand
+>> >> without providing any benefit. It's really just a plain old GPIO.
+>> >
+>> > alright, in that case how about using drivers/reset/ ?
+>> >
+>>
+>> IIUC, reset-gpio driver only provides APIs for reset controls (reset,
+>> assert, deassert). We still need to find out the location from where
+>> we would be calling the reset function.
+>
+> that's fair, but at least you reuse a bunch of boilerplate code to claim
+> the GPIO, set proper direction and value. No need to duplicate that in
+> your driver.
+>
 
+SMSC3503 driver code was recently updated by Mark Brown [1] which
+allows the device to work even if it is not connected to I2C bus. The
+timing is still an issue though [2]. With this USB works on
+linux-next, but surely that [2] is not the solution.
 
-1640                         if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-1641                                 return;
-
-
+[1] http://comments.gmane.org/gmane.linux.usb.general/92061
+[2] https://lkml.org/lkml/2013/8/14/814
+-- 
+Tushar Behera
