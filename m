@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3H1NyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:54:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6832 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab3H1NyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:54:09 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=jxQzypR4wcoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qWrlR9Lw5PkA:10 a=20KFwNOVAAAA:8 a=sTcujxoSGD2Pd2_0HTwA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 28 Aug 2013 09:54:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-Message-ID: <20130828095408.37c3dd83@gandalf.local.home>
-In-Reply-To: <20130828034627.GA30596@redhat.com>
-References: <20130828034627.GA30596@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753926Ab3H1NzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:55:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab3H1NzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 09:55:10 -0400
+Date: Wed, 28 Aug 2013 15:54:59 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
+        mgahagan@redhat.com, agospoda@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 3/4] gcov: compile specific gcov implementation based
+ on gcc version
+Message-ID: <20130828135459.GA2329@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+ <1377247176-13537-4-git-send-email-fhrbata@redhat.com>
+ <52177C87.4090003@linux.vnet.ibm.com>
+ <52177DE8.6090704@linux.vnet.ibm.com>
+ <20130824194413.GB2365@localhost.localdomain>
+ <521B62AF.2030408@linux.vnet.ibm.com>
+ <20130827133439.GB2418@localhost.localdomain>
+ <521DFF1D.4020908@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521DFF1D.4020908@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013 23:46:27 -0400
-Dave Jones <davej@redhat.com> wrote:
-
-> WARNING: CPU: 0 PID: 8961 at kernel/trace/ftrace.c:1640 __ftrace_hash_rec_update.part.37+0x20a/0x240()
-> Modules linked in: bridge stp fuse hidp bnep rfcomm nfnetlink ipt_ULOG scsi_transport_iscsi can_bcm nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel snd_hda_codec pcspkr snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd e1000e ptp soundcore pps_core
-> CPU: 0 PID: 8961 Comm: trinity-child4 Not tainted 3.11.0-rc7+ #30 
->  ffffffff81a21901 ffff880210039c60 ffffffff816f9e2f 0000000000000000
->  ffff880210039c98 ffffffff81052dcd 0000000000000000 0000000000000001
->  ffff8801cc5d2000 0000000000000000 ffff88022f357248 ffff880210039ca8
-> Call Trace:
->  [<ffffffff816f9e2f>] dump_stack+0x54/0x74
->  [<ffffffff81052dcd>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff81052eaa>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff81115d1a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
->  [<ffffffff81117e18>] ftrace_shutdown+0xb8/0x160
-
-OK, this is a hint. The __unregister_ftrace_function returned an error
-code, and called ftrace_shutdown(). This is an error path that is not
-tested much. So perhaps you did find another place that can cause the
-accounting to get out of sync.
-
-I'll investigate this.
-
-Thanks!
-
--- Steve
-
->  [<ffffffff811182a0>] unregister_ftrace_function+0x30/0x50
->  [<ffffffff81135e57>] perf_ftrace_event_register+0x87/0x130
->  [<ffffffff81135cdc>] perf_trace_destroy+0x2c/0x50
->  [<ffffffff8113df29>] tp_perf_event_destroy+0x9/0x10
->  [<ffffffff81140507>] free_event+0xa7/0x300
->  [<ffffffff811407c4>] perf_event_release_kernel+0x64/0x90
->  [<ffffffff811413c3>] put_event+0x133/0x1c0
->  [<ffffffff811412c0>] ? put_event+0x30/0x1c0
->  [<ffffffff81141460>] perf_release+0x10/0x20
->  [<ffffffff811b969a>] __fput+0xfa/0x2e0
->  [<ffffffff811b98ce>] ____fput+0xe/0x10
->  [<ffffffff8107a2fc>] task_work_run+0xac/0xe0
->  [<ffffffff8105469c>] do_exit+0x2cc/0xcd0
->  [<ffffffff8170cfc0>] ? ftrace_call+0x5/0x2f
->  [<ffffffff8105643c>] do_group_exit+0x4c/0xc0
->  [<ffffffff810564c4>] SyS_exit_group+0x14/0x20
->  [<ffffffff8170d594>] tracesys+0xdd/0xe2
-> ---[ end trace e1bf4ddc241d086b ]---
+On Wed, Aug 28, 2013 at 03:46:05PM +0200, Peter Oberparleiter wrote:
+> On 27.08.2013 15:34, Frantisek Hrbata wrote:
+> > On Mon, Aug 26, 2013 at 04:14:07PM +0200, Peter Oberparleiter wrote:
+> >> On 24.08.2013 21:44, Frantisek Hrbata wrote:
+> >>> On Fri, Aug 23, 2013 at 05:21:12PM +0200, Peter Oberparleiter wrote:
+> >>>> On 23.08.2013 17:15, Peter Oberparleiter wrote:
+> >>>>> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+> >>>>>> Compile the correct gcov implementation file for a specific gcc version. In
+> >>>>>> the future, if another file is added, the conditions will need to be somehow
+> >>>>>> adjusted to if-elif-else case, but at this point the simple cc-ifversion should
+> >>>>>> be enough.
+> >>>>
+> >>>> As promised, I'm also adding the patch that makes the format-specific part
+> >>>> of gcov-kernel a loadable kernel module:
+> >>>>
+> >>>> ---
+> >>>> kernel: gcov: make format-specific code loadable
+> >>>>
+> >>>> Turn the format-specific part of gcov-kernel into a loadable kernel
+> >>>> module. This enables the use of gcov-kernel with kernel modules
+> >>>> that were compiled with a version of GCC that produces a different
+> >>>> gcov format when compared to the version of GCC that was used to
+> >>>> compile the kernel.
+> >>>
+> >>> If I understand it correctly, this would mean that you will be able to use only
+> >>> one implementation of gcov format at the time. Meaning you will be able to get
+> >>> coverage data for module, but not for kernel if it was compiled with different
+> >>> gcc(gcda format). This is probably ok if you work only on your module, but I'm
+> >>> not sure this is generally the right approach. In this case I would probably
+> >>> rather see some support for more gcov formats at the same time(e.g. set of
+> >>> callback operations per gcov version). Again I'm probably missing something, but
+> >>> I still cannot see reason why to add such feature. If you want gcov support just
+> >>> compile your kernel and modules with the same gcc version(gcda format). But if
+> >>> this is really needed maybe it would be better to consider some parallel support
+> >>> for more gcov formats based on the gcov_info version.
+> >>
+> >> The callback approach has other drawbacks (see previous mail).
+> > 
+> > Agreed, I did not realized these problems for the first time when I was thinking
+> > about the callback approach.
+> > 	
+> >>
+> >>> Would it be possible to add support for the modified gcc 4.7 gcov format and
+> >>> deal with this later? I can incorporate your changes: iter to use buffer,
+> >>> .init_array for modules and possibility to explicitly select the gcda format.
+> >>> In this case we will have at least the basic support in kernel. This is just me
+> >>> thinking out loud.
+> >>
+> >> I think that's an approach I can live with. Maybe the need for a multi-version
+> >> support will surface again later in a more refined form, but until then there
+> >> should be no reason to delay base GCC 4.7 support any further.
+> > 
+> > Great. I can incorporate the changes you proposed and post V2. Or do you prefer
+> > to post it by your self? Based on the info and patches you already provided I
+> > guess you already have something ready. Simply what suits you best :).
 > 
+> If it's not too much hassle, I'd prefer that you post V2 of your patches. Also
+> I guess it would make sense to put Andrew Morton on CC since the initial
+> gcov-patches were picked up by him.
+
+Ok, no problem. I will prepare v2. Again many thanks Peter for your help and
+input. It's really appreciated.
+
 > 
-> 1640                         if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-> 1641                                 return;
+> -- 
+> Peter Oberparleiter
+> Linux on System z Development - IBM Germany
 > 
 
+-- 
+Frantisek Hrbata
