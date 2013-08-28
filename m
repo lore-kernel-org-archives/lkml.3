@@ -1,173 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3H1APc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 20:15:32 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:53677 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab3H1AOp (ORCPT
+	id S1754507Ab3H1AOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 20:14:44 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:55872 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab3H1AOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 20:14:45 -0400
+	Tue, 27 Aug 2013 20:14:42 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Jason Cooper <jason@lakedaemon.net>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v2 6/6] ARM: add initial support for Marvell Berlin SoCs
-Date: Wed, 28 Aug 2013 02:14:34 +0200
-Message-Id: <1377648874-6714-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH RFC v2 0/6] ARM: Initial support for Marvell Armada 1500
+Date: Wed, 28 Aug 2013 02:14:28 +0200
+Message-Id: <1377648874-6714-1-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds initial support for the Marvell Berlin (88DE3xxx) SoC family
-and basic machine setup for Armada 1500 (88DE3100) SoCs.
+This is the second RFC to add initial support for the Marvell Armada 1500
+(88DE3100) found on various consumer devices. The changes compared to v1
+have been quite fundamental, so I'll also summarize them in this cover letter.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-v1->v2:
-- nuke .map_io (Reported by Arnd Bergmann)
-- add copyright reference
-- switch to mach-berlin instead of mach-mvebu
+I have addressed the following comments given during v1:
+- moved to new mach-berlin subdir to reflect the difference from Armada 370/XP.
+- removed redundant map_io hook and reduced DT soc range
+- added SoC binding documentation
+- added to Marvell SoC documentation
+- have extra DEBUG_ Kconfig option for Marvell Berlin SoCs
+- build with multi_v7_defconfig
+- reorder things alphabetically
 
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/Kconfig              |    2 +
- arch/arm/Makefile             |    1 +
- arch/arm/mach-berlin/Kconfig  |   24 ++++++++++++++++++++
- arch/arm/mach-berlin/Makefile |    1 +
- arch/arm/mach-berlin/berlin.c |   49 +++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 77 insertions(+), 0 deletions(-)
+Comments I have not addressed:
+- left .init_time hook as common arch clock init is currently under
+  discussion in a separate patch set (comment added)
+- left non-DT l2x0_of_init as I was allowed to choose only one cleanup
+  out of the two prerequesites (comment added)
+
+Also, I added copyright credits to the Asus Cube GPL'ed 2.6 kernel
+source I was using as datasheet replacement. I have taken virtually
+nothing out of it except register offsets, irq numbers, and clock
+hierarchy. Actually, I would even put Marvell's direct copyright into
+it just because I'd love to see them to continue their community efforts
+they have started in the past. Anyway, I am not affiliated with Marvell,
+so I cannot just make them resposible for the current, rudimentary SoC
+skeleton patches.
+
+This time the patches have been based on linux-next's next-20130827
+tag, which better reflects the targeted 1 or 2 merge windows.
+
+Sebastian Hesselbarth (6):
+  irqchip: add DesignWare APB ICTL interrupt controller
+  ARM: add Marvell Berlin SoC familiy to Marvell doc
+  ARM: add Marvell Berlin and Armada 1500 to multi_v7_defconfig
+  ARM: add Marvell Berlin UART0 lowlevel debug
+  ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
+  ARM: add initial support for Marvell Berlin SoCs
+
+ Documentation/arm/Marvell/README                   |   22 ++
+ .../devicetree/bindings/arm/marvell,berlin.txt     |   23 ++
+ .../interrupt-controller/snps,dw-apb-ictl.txt      |   29 +++
+ arch/arm/Kconfig                                   |    2 +
+ arch/arm/Kconfig.debug                             |   10 +
+ arch/arm/Makefile                                  |    1 +
+ arch/arm/boot/dts/Makefile                         |    2 +
+ arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts      |   29 +++
+ arch/arm/boot/dts/mv88de3100.dtsi                  |  222 ++++++++++++++++++++
+ arch/arm/configs/multi_v7_defconfig                |    2 +
+ arch/arm/mach-berlin/Kconfig                       |   24 ++
+ arch/arm/mach-berlin/Makefile                      |    1 +
+ arch/arm/mach-berlin/berlin.c                      |   49 +++++
+ drivers/irqchip/Kconfig                            |    4 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-dw-apb-ictl.c                  |  142 +++++++++++++
+ 16 files changed, 563 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+ create mode 100644 arch/arm/boot/dts/mv88de3100-sony-nsz-gs7.dts
+ create mode 100644 arch/arm/boot/dts/mv88de3100.dtsi
  create mode 100644 arch/arm/mach-berlin/Kconfig
  create mode 100644 arch/arm/mach-berlin/Makefile
  create mode 100644 arch/arm/mach-berlin/berlin.c
+ create mode 100644 drivers/irqchip/irq-dw-apb-ictl.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index d41b122..329be50 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -930,6 +930,8 @@ source "arch/arm/mach-bcm/Kconfig"
- 
- source "arch/arm/mach-bcm2835/Kconfig"
- 
-+source "arch/arm/mach-berlin/Kconfig"
-+
- source "arch/arm/mach-clps711x/Kconfig"
- 
- source "arch/arm/mach-cns3xxx/Kconfig"
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index a37a50f..3ba332b 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -147,6 +147,7 @@ textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
- machine-$(CONFIG_ARCH_AT91)		+= at91
- machine-$(CONFIG_ARCH_BCM)		+= bcm
- machine-$(CONFIG_ARCH_BCM2835)		+= bcm2835
-+machine-$(CONFIG_ARCH_BERLIN)		+= berlin
- machine-$(CONFIG_ARCH_CLPS711X)		+= clps711x
- machine-$(CONFIG_ARCH_CNS3XXX)		+= cns3xxx
- machine-$(CONFIG_ARCH_DAVINCI)		+= davinci
-diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-new file mode 100644
-index 0000000..56a671e
---- /dev/null
-+++ b/arch/arm/mach-berlin/Kconfig
-@@ -0,0 +1,24 @@
-+config ARCH_BERLIN
-+	bool "Marvell Berlin (88DE3xxx) SoCs" if ARCH_MULTI_V7
-+	select GENERIC_CLOCKEVENTS
-+	select GENERIC_IRQ_CHIP
-+	select COMMON_CLK
-+	select DW_APB_ICTL
-+	select DW_APB_TIMER_OF
-+
-+if ARCH_BERLIN
-+
-+menu "Marvell Berlin (88DE3xxx) SoC variants"
-+
-+config MACH_MV88DE3100
-+	bool "Marvell 88DE3100 (Armada 1500)"
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select CPU_PJ4B
-+	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_SMP
-+	select LOCAL_TIMERS if SMP
-+
-+endmenu
-+
-+endif
-diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
-new file mode 100644
-index 0000000..ab69fe9
---- /dev/null
-+++ b/arch/arm/mach-berlin/Makefile
-@@ -0,0 +1 @@
-+obj-y += berlin.o
-diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
-new file mode 100644
-index 0000000..8ed03c8
---- /dev/null
-+++ b/arch/arm/mach-berlin/berlin.c
-@@ -0,0 +1,49 @@
-+/*
-+ * Device Tree support for Marvell Berlin (88DE3xxx) platforms.
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * based on GPL'ed 2.6 kernel sources
-+ *  (c) Marvell International Ltd.
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/of_platform.h>
-+#include <asm/hardware/cache-l2x0.h>
-+#include <asm/mach/arch.h>
-+
-+static void __init berlin_init_time(void)
-+{
-+	/* with arch-wide of_clk_init, .init_time can be removed */
-+	of_clk_init(NULL);
-+	clocksource_of_init();
-+}
-+
-+static void __init berlin_init_machine(void)
-+{
-+	/*
-+	 * with DT probing for Tauros L2CC, .init_machine can be removed
-+	 * Note: 88DE3005 (Armada 1500-mini) uses pl310 l2cc
-+	 */
-+	l2x0_of_init(0x70c00000, 0xfeffffff);
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const berlin_dt_compat[] = {
-+	"marvell,berlin",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
-+	.dt_compat      = berlin_dt_compat,
-+	.init_machine   = berlin_init_machine,
-+	.init_time	= berlin_init_time,
-+MACHINE_END
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 -- 
 1.7.2.5
 
