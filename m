@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3H1KPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:15:05 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:40352 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab3H1KPC (ORCPT
+	id S1753520Ab3H1KUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:20:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41351 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752513Ab3H1KT7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:15:02 -0400
-Message-ID: <521DCD80.9010105@gmail.com>
-Date: Wed, 28 Aug 2013 12:14:24 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: linux-arm-kernel@lists.infradead.org, Jason Cooper <jason@lakedaemon.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
-References: <20130828113521.35c53365@armhf>
-In-Reply-To: <20130828113521.35c53365@armhf>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Aug 2013 06:19:59 -0400
+Date: Wed, 28 Aug 2013 12:19:43 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
+Message-ID: <20130828121943.1c8327ca@skate>
+In-Reply-To: <521DCD33.2070008@gmail.com>
+References: <20130828113459.48ecbb34@armhf>
+	<521DCD33.2070008@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 11:35 AM, Jean-Francois Moine wrote:
-> This patch activates the audio device of the Cubox and sets the i2s
-> and S/PDIF pins.
->
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->   arch/arm/boot/dts/dove-cubox.dts                  | 13 +++++++++++++
->   1 file changed, 13 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
-> index 4af59b6..003d95b 100644
-> --- a/arch/arm/boot/dts/dove-cubox.dts
-> +++ b/arch/arm/boot/dts/dove-cubox.dts
-> @@ -132,3 +132,16 @@
->   		reg = <0>;
->   	};
->   };
-> +
-> +&pinctrl {
-> +	pmx_audio1_i2s1_spdifo: pmx-audio1-i2s1-spdifo {
-> +		marvell,pins = "mpp_audio1";
-> +		marvell,function = "i2s1/spdifo";
-> +	};
-> +};
-> +
-> +&i2s1 {
-> +	status = "okay";
-> +	pinctrl-0 = <&pmx_audio1_i2s1_spdifo>;
-> +	pinctrl-names = "default";
-> +};
+Sebastian, Jean-François,
 
-Please also add the external clock connected from si5351.
+On Wed, 28 Aug 2013 12:13:07 +0200, Sebastian Hesselbarth wrote:
+> On 08/28/2013 11:34 AM, Jean-Francois Moine wrote:
+> > This patch adds the nodes to instantiate the audio devices of the Dove
+> > boards.
+> >
+> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> > ---
+> >   arch/arm/boot/dts/dove.dtsi                  | 18 ++++++++++++++++++
+> >   1 file changed, 18 insertions(+)
+> >
+> > diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> > index 499abad..78227e2 100644
+> > --- a/arch/arm/boot/dts/dove.dtsi
+> > +++ b/arch/arm/boot/dts/dove.dtsi
+> > @@ -573,6 +573,24 @@
+> >   					phy-handle = <&ethphy>;
+> >   				};
+> >   			};
+> > +
+> > +			i2s0: audio-controller@b0000 {
+> > +				compatible = "marvell,mvebu-audio";
+> 
+> [added Gregory to Cc]
+> 
+> Jean-Francois,
+> 
+> as Mark Brown already took the bindings patch for above generic
+> compatible, how are we going to discriminate different
+> implementations/features of Dove, Kirkwood, and Armada 370?
 
-Sebastian
+I agree that mvebu-audio is not a really good compatible string. It
+should use the first SoC that introduced the IP block, so that if
+future SOCs have variations, we can introduce separate compatible
+strings.
+
+So for now, the compatible string should be kirkwood-audio.
+
+Thanks,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
