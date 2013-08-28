@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab3H1LEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 07:04:23 -0400
-Received: from 13.mo3.mail-out.ovh.net ([188.165.33.202]:39570 "EHLO
+	id S1754881Ab3H1LF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 07:05:29 -0400
+Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:34546 "EHLO
 	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753082Ab3H1LEV (ORCPT
+	with ESMTP id S1752175Ab3H1LF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 07:04:21 -0400
+	Wed, 28 Aug 2013 07:05:26 -0400
+X-Greylist: delayed 163339 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 07:05:26 EDT
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -20,13 +21,13 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH 2/9] ARM: at91/dt: add ethernet phy to at91rm9200ek board
-Date: Wed, 28 Aug 2013 13:03:39 +0200
-Message-Id: <1377687819-10653-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH 3/9] ARM: at91/dt: add usb1 vbus and pullup pins
+Date: Wed, 28 Aug 2013 13:04:41 +0200
+Message-Id: <1377687881-10688-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
 References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 15639875607332878560
+X-Ovh-Tracer-Id: 15657608531033159904
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -40,36 +41,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ethernet phy node in at91rm9200ek.dts.
-The reg register is not specified, as it may differ depending on the init
-process of the board:
-ADDR0/1 phy pins are connected to PA13/14 rm9200 pins. Which means the phy
-will take its address from these pins during the reset process.
-
-The macb driver will launch a full scan on the mdio bus to discover the phy
-address.
+Add vbus and pullup pinctrl definitions.
+Request the vbus and pullup pins in usb1 node.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- arch/arm/boot/dts/at91rm9200ek.dts |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/at91rm9200ek.dts |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/arch/arm/boot/dts/at91rm9200ek.dts b/arch/arm/boot/dts/at91rm9200ek.dts
-index d2d72c3..37b0880 100644
+index 37b0880..76f3e87 100644
 --- a/arch/arm/boot/dts/at91rm9200ek.dts
 +++ b/arch/arm/boot/dts/at91rm9200ek.dts
-@@ -47,6 +47,11 @@
- 			macb0: ethernet@fffbc000 {
- 				phy-mode = "rmii";
- 				status = "okay";
+@@ -29,6 +29,18 @@
+ 
+ 	ahb {
+ 		apb {
++			pinctrl@fffff400 {
++				usb1 {
++					pinctrl_usb1_vbus: usb1_vbus-0 {
++						atmel,pins = <AT91_PIOD 4 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
++					};
 +
-+				phy0: ethernet-phy {
-+					interrupt-parent = <&pioC>;
-+					interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
++					pinctrl_usb1_pullup: usb1_pullup-0 {
++						atmel,pins = <AT91_PIOD 5 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;
++					};
 +				};
++			};
++
+ 			dbgu: serial@fffff200 {
+ 				status = "okay";
  			};
+@@ -56,6 +68,9 @@
  
  			usb1: gadget@fffb0000 {
+ 				atmel,vbus-gpio = <&pioD 4 GPIO_ACTIVE_HIGH>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_usb1_vbus
++					     &pinctrl_usb1_pullup>;
+ 				status = "okay";
+ 			};
+ 
 -- 
 1.7.9.5
 
