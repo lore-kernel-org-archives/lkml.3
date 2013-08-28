@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3H1VEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:04:49 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:59672 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab3H1VED (ORCPT
+	id S1755672Ab3H1VFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:05:44 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:51641 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab3H1VD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 17:04:03 -0400
+	Wed, 28 Aug 2013 17:03:59 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/9] cgroup: combine css handling loops in cgroup_create()
-Date: Wed, 28 Aug 2013 17:03:46 -0400
-Message-Id: <1377723829-22814-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/9] cgroup: make for_each_subsys() useable under cgroup_root_mutex
+Date: Wed, 28 Aug 2013 17:03:43 -0400
+Message-Id: <1377723829-22814-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
 References: <1377723829-22814-1-git-send-email-tj@kernel.org>
@@ -21,93 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that css operations in cgroup_create() are back-to-back, there
-isn't much point in allocating css's in one loop and onlining them in
-another.  Merge the two loops so that a css is allocated and onlined
-on each iteration.
+We want to use for_each_subsys() in cgroupfs_root handling where only
+cgroup_root_mutex is held.  The only way cgroup_subsys[] can change is
+through module load/unload, make cgroup_[un]load_subsys() grab
+cgroup_root_mutex too and update the lockdep annotation in
+for_each_subsys() to allow either cgroup_mutex or cgroup_root_mutex.
 
-css_ar[] is no longer necessary and replaced with a single pointer.
-This also simplifies the error handling path.
+* Lockdep annotation is moved from inner 'if' condition to outer 'for'
+  init caluse.  There's no reason to execute the assertion every loop.
+
+* Loop index @i is renamed to @ssid.  Indices iterating through subsys
+  will be [re]named to @ssid gradually.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 25 +++++++------------------
- 1 file changed, 7 insertions(+), 18 deletions(-)
+ kernel/cgroup.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d41ddab..20cd24b 100644
+index a10baf8..a65be0c 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4396,7 +4396,7 @@ static void offline_css(struct cgroup_subsys_state *css)
- static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			     umode_t mode)
- {
--	struct cgroup_subsys_state *css_ar[CGROUP_SUBSYS_COUNT] = { };
-+	struct cgroup_subsys_state *css = NULL;
- 	struct cgroup *cgrp;
- 	struct cgroup_name *name;
- 	struct cgroupfs_root *root = parent->root;
-@@ -4485,15 +4485,14 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	if (err)
- 		goto err_destroy;
+@@ -291,14 +291,17 @@ static int notify_on_release(const struct cgroup *cgrp)
+ /**
+  * for_each_subsys - iterate all loaded cgroup subsystems
+  * @ss: the iteration cursor
+- * @i: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
++ * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
+  *
+- * Should be called under cgroup_mutex.
++ * Iterates through all loaded subsystems.  Should be called under
++ * cgroup_mutex or cgroup_root_mutex.
+  */
+-#define for_each_subsys(ss, i)						\
+-	for ((i) = 0; (i) < CGROUP_SUBSYS_COUNT; (i)++)			\
+-		if (({ lockdep_assert_held(&cgroup_mutex);		\
+-		       !((ss) = cgroup_subsys[i]); })) { }		\
++#define for_each_subsys(ss, ssid)					\
++	for (({ WARN_ON_ONCE(debug_locks &&				\
++			     (!lockdep_is_held(&cgroup_mutex) &&	\
++			      !lockdep_is_held(&cgroup_root_mutex)));	\
++	     (ssid) = 0; }); (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)	\
++		if (!((ss) = cgroup_subsys[(ssid)])) { }		\
+ 		else
  
-+	/* let's create and online css's */
- 	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css;
--
- 		css = ss->css_alloc(cgroup_css(parent, ss));
- 		if (IS_ERR(css)) {
- 			err = PTR_ERR(css);
-+			css = NULL;
- 			goto err_destroy;
- 		}
--		css_ar[ss->subsys_id] = css;
+ /**
+@@ -4911,6 +4914,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 	cgroup_init_cftsets(ss);
  
- 		err = percpu_ref_init(&css->refcnt, css_release);
- 		if (err)
-@@ -4506,11 +4505,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			if (err)
- 				goto err_destroy;
- 		}
--	}
--
--	/* creation succeeded, notify subsystems */
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+ 	mutex_lock(&cgroup_mutex);
++	mutex_lock(&cgroup_root_mutex);
+ 	cgroup_subsys[ss->subsys_id] = ss;
  
- 		err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
- 		if (err)
-@@ -4520,12 +4514,11 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		if (err)
- 			goto err_destroy;
+ 	/*
+@@ -4966,10 +4970,12 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 		goto err_unload;
  
--		/* each css holds a ref to the cgroup's dentry and parent css */
- 		dget(dentry);
- 		css_get(css->parent);
- 
- 		/* mark it consumed for error path */
--		css_ar[ss->subsys_id] = NULL;
-+		css = NULL;
- 
- 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
- 		    parent->parent) {
-@@ -4555,13 +4548,9 @@ err_free_cgrp:
- 	return err;
- 
- err_destroy:
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
--
--		if (css) {
--			percpu_ref_cancel_init(&css->refcnt);
--			ss->css_free(css);
--		}
-+	if (css) {
-+		percpu_ref_cancel_init(&css->refcnt);
-+		css->ss->css_free(css);
- 	}
- 	cgroup_destroy_locked(cgrp);
+ 	/* success! */
++	mutex_unlock(&cgroup_root_mutex);
  	mutex_unlock(&cgroup_mutex);
+ 	return 0;
+ 
+ err_unload:
++	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 	/* @ss can't be mounted here as try_module_get() would fail */
+ 	cgroup_unload_subsys(ss);
+@@ -4999,6 +5005,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	BUG_ON(ss->root != &cgroup_dummy_root);
+ 
+ 	mutex_lock(&cgroup_mutex);
++	mutex_lock(&cgroup_root_mutex);
+ 
+ 	offline_css(cgroup_css(cgroup_dummy_top, ss));
+ 
+@@ -5037,6 +5044,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	ss->css_free(cgroup_css(cgroup_dummy_top, ss));
+ 	RCU_INIT_POINTER(cgroup_dummy_top->subsys[ss->subsys_id], NULL);
+ 
++	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ }
+ EXPORT_SYMBOL_GPL(cgroup_unload_subsys);
 -- 
 1.8.3.1
 
