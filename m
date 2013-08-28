@@ -1,190 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab3H1NB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:01:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43844 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3H1NB1 convert rfc822-to-8bit (ORCPT
+	id S1753746Ab3H1NBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:01:44 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:50727 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3H1NBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:01:27 -0400
-Date: Wed, 28 Aug 2013 15:01:24 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, lee.jones@linaro.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling support
-Message-ID: <20130828130124.GC14111@linutronix.de>
-References: <1377470724-15710-1-git-send-email-zubair.lutfullah@gmail.com>
- <1377470724-15710-3-git-send-email-zubair.lutfullah@gmail.com>
+	Wed, 28 Aug 2013 09:01:42 -0400
+Message-ID: <521DF4B2.6070205@baylibre.com>
+Date: Wed, 28 Aug 2013 15:01:38 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1377470724-15710-3-git-send-email-zubair.lutfullah@gmail.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Olof Johansson <olof@lixom.net>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au> <521C6961.9020103@linutronix.de> <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com> <521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de> <521CB046.9070408@baylibre.com> <878uznxjnl.fsf@linaro.org> <521CC4E3.8030204@linutronix.de> <20130827161203.GA22852@quad.lixom.net>
+In-Reply-To: <20130827161203.GA22852@quad.lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Zubair Lutfullah | 2013-08-25 23:45:24 [+0100]:
+Hi Olof,
 
-I am mostly happy with it. There are just two things I pointed out.
-Besides that, it looks good from my side.
+On 27/08/2013 18:12, Olof Johansson wrote:
+> On Tue, Aug 27, 2013 at 05:25:23PM +0200, Sebastian Andrzej Siewior wrote:
+>> On 08/27/2013 05:01 PM, Kevin Hilman wrote:
+>>>>> What do we do now?
+>>>>
+>>>> Cannot you just merge the stable arm-soc/dt branch into your branch
+>>>> before applying your patches?
+>>>
+>>> Unfortunately, the next/dt branch of arm-soc is not necessarily stable
+>>> so should *not* be merged.  In fact none of the arm-soc branches should
+>>> be considered stable.
+>>>
+>>> As was already mentioned, this should be split up into driver changes
+>>> and DTS changes through arm-soc.  They'll both merge for v3.12.
+>>
+>> But splitting will break the driver until .dts & code is in sync again.
+>>
+>>> BTW, how did this patch get merged without a signoff/ack from the OMAP
+>>> DT maintainer in the first place?  Hmm, looks like Benoit was not copied
+>>> nor was linux-omap or linux-arm-kernel copied in the original mails.
+>>
+>> Hmm. I had Benoit's okay [0] to do the change "as long as Felipe is
+>> fine with it". I indeed forgot to Cc Benoit on the dts changes.
+>> For the phy-rename Felipe pinged you and we did the topic-branch, here
+>> I forgot.
+>
+> No. Read that email again. What Benoit said was that if Felipe was fine
+> with the change _HE_ would take it. Huge difference, and one that would have
+> avoided this situation.
+>
+> The only way to solve these things in the future is to make the driver handle
+> both the new and the old binding. Bindings are not supposed to change in
+> incompatible ways any more, unless for special circumstances and/or when the
+> old binding was completely broken.
+>
+>
+> The only way forward here, since Greg runs a stable tree that he doesn't
+> rebase, is for us to rebuild without the OMAP DT branch, and ask Benoit to take
+> out the conflicting changes.
+>
+> Benoit, I know this is none of your fault, but would you mind preparing a new
+> copy of the DT branch without the conflicting patches, and hold those to 3.13?
+> I haven't looked to see how many those were.
 
->diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->index a952538..ae2202b 100644
->--- a/drivers/iio/adc/ti_am335x_adc.c
->+++ b/drivers/iio/adc/ti_am335x_adc.c
->@@ -85,7 +96,175 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
-> 		adc_dev->channel_step[i] = steps;
-> 		steps++;
-> 	}
->+}
->+
->+static irqreturn_t tiadc_irq(int irq, void *private)
->+{
->+	struct iio_dev *indio_dev = private;
->+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->+	unsigned int status, config;
->+	status = tiadc_readl(adc_dev, REG_IRQSTATUS);
->+
->+	/*
->+	 * ADC and touchscreen share the IRQ line.
->+	 * FIFO0 interrupts are used by TSC. Handle FIFO1 IRQs here only
->+	 */
->+	if (status & IRQENB_FIFO1OVRRUN) {
->+		/* FIFO Overrun. Clear flag. Disable/Enable ADC to recover */
->+		config = tiadc_readl(adc_dev, REG_CTRL);
->+		config &= ~(CNTRLREG_TSCSSENB);
->+		tiadc_writel(adc_dev, REG_CTRL, config);
->+		tiadc_writel(adc_dev, REG_IRQSTATUS, IRQENB_FIFO1OVRRUN
->+				| IRQENB_FIFO1UNDRFLW | IRQENB_FIFO1THRES);
->+		tiadc_writel(adc_dev, REG_CTRL, (config | CNTRLREG_TSCSSENB));
->+	} else if (status & IRQENB_FIFO1THRES) {
->+		/* Trigger to push FIFO data to iio buffer */
->+		tiadc_writel(adc_dev, REG_IRQCLR, IRQENB_FIFO1THRES);
->+		iio_trigger_poll(indio_dev->trig, iio_get_time_ns());
->+	} else
->+		return IRQ_NONE;
->+
->+	/* If any IRQ flags left, return none. So TSC can handle its IRQs */
->+	status = tiadc_readl(adc_dev, REG_IRQSTATUS);
->+	if (status == false)
->+		return IRQ_HANDLED;
->+	else
->+		return IRQ_NONE;
+OK, I'll do that ASAP and check how many should be removed to avoid a 
+conflict with usb-next.
 
-As I said in 1/2 of this series, you shouldn't do this. Both handlers of a
-shared line are invoked once an interrupt is detected.
+Regards,
+Benoit
 
-…
-
->+static int tiadc_buffer_postenable(struct iio_dev *indio_dev)
->+{
->+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->+	struct iio_buffer *buffer = indio_dev->buffer;
->+	unsigned int enb = 0, stepnum;
->+	u8 bit;
->+
->+	adc_dev->data = kmalloc(indio_dev->scan_bytes, GFP_KERNEL);
->+	if (adc_dev->data == NULL)
->+		return -ENOMEM;
->+
->+	tiadc_step_config(indio_dev);
->+	for_each_set_bit(bit, buffer->scan_mask,
->+			adc_dev->channels) {
->+		struct iio_chan_spec const *chan = indio_dev->channels + bit;
->+		/*
->+		 * There are a total of 16 steps available
->+		 * that are shared between ADC and touchscreen.
->+		 * We start configuring from step 16 to 0 incase of
->+		 * ADC. Hence the relation between input channel
->+		 * and step for ADC would be as below.
->+		 */
->+		stepnum = chan->channel + 9;
->+		enb |= (1 << stepnum);
-
-Hmm. This looks odd.
- 
-In tiadc_step_config() we do:
-| steps = TOTAL_STEPS - adc_dev->channels;
-|…
-| for (i = 0; i < adc_dev->channels; i++) {
-|         chan = adc_dev->channel_line[i];
-|         tiadc_writel(adc_dev,
-|                         REG_STEPCONFIG(steps),
-|                         stepconfig
-|                         |
-|                         STEPCONFIG_INP(chan));
-|         tiadc_writel(adc_dev,
-|                         REG_STEPDELAY(steps),
-|                         STEPCONFIG_OPENDLY);
-|         adc_dev->channel_step[i]
-|                 =
-|                 steps;
-|         steps++;
-| }
-
-That means if we have only one channel we enable the last step bit /
-topmost that is bit 16. For the "default" four channels we get 0x1e000
-as mask which means bit 13 to 16. 
-If you do have only one channel with the number 4 you then
-get_adc_step_mask() will compute the correct step mask but here enable
-step 14 instead of step 16.
-
-What about the following as replacement?
-
-index 08681d3..3bfcf1b 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -65,6 +65,11 @@ static u32 get_adc_step_mask(struct tiadc_device *adc_dev)
- 	return step_en;
- }
- 
-+static u32 get_adc_step_bit(struct tiadc_device *adc_dev, int chan)
-+{
-+	return 1 << adc_dev->channel_step[chan];
-+}
-+
- static void tiadc_step_config(struct iio_dev *indio_dev)
- {
- 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
-@@ -179,7 +187,7 @@ static int tiadc_buffer_postenable(struct iio_dev *indio_dev)
- {
- 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
- 	struct iio_buffer *buffer = indio_dev->buffer;
--	unsigned int enb = 0, stepnum;
-+	unsigned int enb = 0;
- 	u8 bit;
- 
- 	adc_dev->data = kmalloc(indio_dev->scan_bytes, GFP_KERNEL);
-@@ -187,19 +195,8 @@ static int tiadc_buffer_postenable(struct iio_dev *indio_dev)
- 		return -ENOMEM;
- 
- 	tiadc_step_config(indio_dev);
--	for_each_set_bit(bit, buffer->scan_mask,
--			adc_dev->channels) {
--		struct iio_chan_spec const *chan = indio_dev->channels + bit;
--		/*
--		 * There are a total of 16 steps available
--		 * that are shared between ADC and touchscreen.
--		 * We start configuring from step 16 to 0 incase of
--		 * ADC. Hence the relation between input channel
--		 * and step for ADC would be as below.
--		 */
--		stepnum = chan->channel + 9;
--		enb |= (1 << stepnum);
--	}
-+	for_each_set_bit(bit, buffer->scan_mask, adc_dev->channels)
-+		enb |= get_adc_step_bit(adc_dev, bit);
- 
- 	adc_dev->buffer_en_ch_steps = enb;
- 	am335x_tsc_se_set(adc_dev->mfd_tscadc, enb);
-
-
-Would it work? This is untested but it could work :)
-
-Sebastian
