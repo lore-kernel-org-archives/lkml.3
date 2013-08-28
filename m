@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3H1Q5E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 12:57:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18989 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3H1Q5C (ORCPT
+	id S1754753Ab3H1Q5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 12:57:16 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:22695 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab3H1Q5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 12:57:02 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=jxQzypR4wcoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qWrlR9Lw5PkA:10 a=TiaNW0bfAAAA:8 a=NEAV23lmAAAA:8 a=dtPOJR9oX_xSaj3Fd34A:9 a=CjuIK1q_8ugA:10 a=B0KwX_7kBuMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 28 Aug 2013 12:57:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-Message-ID: <20130828125701.1ca6ccd0@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1308281245370.6937@pianoman.cluster.toy>
-References: <20130828034627.GA30596@redhat.com>
-	<20130828103101.3f5679bc@gandalf.local.home>
-	<20130828162321.GA14689@redhat.com>
-	<alpine.DEB.2.02.1308281245370.6937@pianoman.cluster.toy>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Wed, 28 Aug 2013 12:57:13 -0400
+Message-ID: <1377708941.10300.855.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking
+ problems
+From: Toshi Kani <toshi.kani@hp.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Date: Wed, 28 Aug 2013 10:55:41 -0600
+In-Reply-To: <521D5C80.7010904@cn.fujitsu.com>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan>
+	  <4785337.sqQqDSPcpL@vostro.rjw.lan> <3389643.Fdir3g6c6B@vostro.rjw.lan>
+	  <1430120.G7JdUKlgj6@vostro.rjw.lan> <521C6FA8.4070804@cn.fujitsu.com>
+	 <1377639529.10300.847.camel@misato.fc.hp.com>
+	 <521D5C80.7010904@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Aug 2013 12:50:36 -0400 (EDT)
-Vince Weaver <vince@deater.net> wrote:
-
-> On Wed, 28 Aug 2013, Dave Jones wrote:
-> > Quite often just rerunning that last syscall that caused the oops/warn
-> > isn't sufficient to trigger an issue. (Though it may be for this specific
-> > bug that may not be the case..)
+On Wed, 2013-08-28 at 10:12 +0800, Gu Zheng wrote:
+> On 08/28/2013 05:38 AM, Toshi Kani wrote:
+ :
+> >>
+> >> What about changing device_hotplug_lock and acpi_scan_lock to rwsem? like the
+> >> attached one(With a preliminary test, it also can make the splat go away).:)
 > > 
-> > Vince has a variant of trinity focussed just on perf which also has some
-> > neat replay/bisecting capabilities to narrow down test cases.
-> > I think I might need to add something like that at some point.
+> > I am curious how msleep(10) & restart_syscall() work in the change
+> > below.  Doesn't the msleep() make s_active held longer time, which can
+> > lead the thread holding device_hotplug_lock to wait it for deletion?
 > 
-> Yes, you can get the perf_fuzzer code here:
->    git clone https://github.com/deater/perf_event_tests.git
-> in the fuzzer directory
+> Yes, but it can avoid busy waiting. 
+
+I know, but it's kinda unfortunate to sleep with s_active held in this
+situation.  But I am fine with the 5ms Rafael used in this latest
+patchset since this is a rare case anyway.
+
+> > Also, does restart_syscall() release s_active and reopen this file
+> > again?
 > 
-> Bisecting down which perf_event_open() call causes problems is still very 
-> labor intensive even with the other tools I've added to help.  Even if the 
-> bug is triggered right away (within the first 100,000 calls or so) it can 
-> take hours to narrow things down to the two or three syscalls needed to 
-> reproduce the problem.  Especially if you need to reboot after triggering 
-> the issue.
+> Sure, it just set a TIF_SIGPENDING flag and return an -ERESTARTNOINTR error, s_active/file
+> will be released/closed in the failed path. And when do_signal() catches the -ERESTARTNOINTR,
+> it will change the regs to restart the syscall.
 
-Note, I have an idea that it's not even that many perf calls. I have a
-good idea what perf syscalls with what options are the issue. I think
-the issue is the calling order that is the problem.
+I see.  This is a clever functionality. 
 
-Dave, I'm assuming that trinidy does things as threads, such that it
-may be two threads calling perf with the same descriptor, and if we
-don't have the proper locks, things can get bad, right?
+Thanks,
+-Toshi
 
--- Steve
+
