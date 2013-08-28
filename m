@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3H1FfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:35:03 -0400
-Received: from mailout02.t-online.de ([194.25.134.17]:54023 "EHLO
-	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab3H1FfB (ORCPT
+	id S1754498Ab3H1FfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:35:23 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:45608 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460Ab3H1FfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:35:01 -0400
-Message-ID: <521D8BF9.7070704@t-online.de>
-Date: Wed, 28 Aug 2013 07:34:49 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 01:35:20 -0400
 MIME-Version: 1.0
-To: Hans Verkuil <hansverk@cisco.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [REGRESSION 3.11-rc] wm8775 9-001b: I2C: cannot write ??? to
- register R??
-References: <521A269D.3020909@t-online.de> <521C5493.1050407@cisco.com> <521C72FF.5070902@t-online.de> <521C7697.6070809@cisco.com>
-In-Reply-To: <521C7697.6070809@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ID: EAQTyrZTYh-o8YSfI-Zxkh5esL0lktbb8HDz0pv5b8oWjGW2+gRnuPuCqKLN9ZsQFM
-X-TOI-MSGID: cfa86899-148b-4ad3-a3c3-776cc78e756a
+In-Reply-To: <521CE317.20908@semaphore.gr>
+References: <521BA068.8030003@semaphore.gr>
+	<CAKohpo=xBmpEv=oN1qEnq9RKhfjtc4wZayVYyVzjWOU8BnwVJQ@mail.gmail.com>
+	<521CC9B8.2020801@semaphore.gr>
+	<CAKohpo=XhHtRfsVrUZr0DQCK5L5zU_6DB4PBOA4QrJBvvcbe0Q@mail.gmail.com>
+	<521CE317.20908@semaphore.gr>
+Date: Wed, 28 Aug 2013 11:05:19 +0530
+Message-ID: <CAKohpokg3xqKRmDgzeL+dZc07x1KUZ=hKdx_YrVoDbi572N_sg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: governors: Remove duplicate check of target freq
+ in supported range
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.08.2013 11:51, Hans Verkuil wrote:
-> On 08/27/2013 11:35 AM, Knut Petersen wrote:
->> On 27.08.2013 09:26, Hans Verkuil wrote:
->>> On 08/25/2013 05:45 PM, Knut Petersen wrote:
->>>> Booting current git kernel dmesg shows a set of new  warnings:
->>>>
->>>>       "wm8775 9-001b: I2C: cannot write ??? to register R??"
->>>>
->>>> Nevertheless, the hardware seems to work fine.
->>>>
->>>> This is a new problem, introduced after kernel 3.10.
->>>> If necessary I can bisect.
->>> Can you try this patch? I'm pretty sure this will fix it.
->> Indeed, it does cure the problem. Thanks.
->>
->> Tested-by: Knut Petersen <Knut_Petersen@t-online.de>
-> Thanks for testing this! I've posted the pull request for this.
-> Hopefully it will make 3.11 before it is released.
+ 27 August 2013 23:04, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> I'm sorry. Let me try to explain this better.
 
-As I wrote in the initial bug report, the problem has been introduced _after_ kernel 3.10,
-facd23664f1d63c33fbc6da52261c8548ed3fbd4 is _not_ part of kernel 3.10.x
+Don't be :)
 
-Therefore the CC to stable@vger.kernel.org for v3.10 in
-b9a1dfd3ba3ae00b0c1d1a396ed43fac85a32990 is wrong.
-
-cu,
-  Knut
-> Regards,
+> With my patch, dbs_info->requested_freq will not be capped within
+> policy->min and policy->max in cs_check_cpu.
+> So, temporarily it may have a value greater than policy->max
+> or lower that policy->min.
+> When we call __cpufreq_driver_target, the correct frequency will be selected
+> because __cpufreq_driver_target takes care to adjust the
+> target frequency within policy range.
+> But, eventually, dbs_cpufreq_notifier will adjust dbs_info->requested
+> within policy range, if needed.
 >
-> 	Hans
+> If we remove
 >
+>         if (dbs_info->requested_freq == policy->max)
+>                 return;
+> and
 >
+>         if (policy->cur == policy->min)
+>                 return;
+>
+> request_freq will keep increasing or decreasing in each iteration and
+> finally will overflow or underflow.
+>
+> Consider, for example, that in a CPU with policy->max = 1000MHz
+> the current frequency is 950MHz. With a constant load above
+> up_threshold, the requested_freq in first iteration will be 1000MHz
+> and __cpufreq_driver_target will select 1000MHz freq.
+>
+> In second iteration, requested_freq will be 1050MHz, and
+> __cpufreq_driver_target will select 1000MHz. dbs_cpufreq_notifier
+> will adjust requested_freq back to 1000MHz.
+>
+> In next iterations, dbs_cpufreq_notifier will not be called, so we
+> need the above check (dbs_info->requested_freq == policy->max) to
+> prevent requested_freq to grow arbitrary.
+>
+> I hope my explanation was better now. :)
 
+Yes, your initial patch is fine.
