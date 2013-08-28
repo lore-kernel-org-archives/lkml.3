@@ -1,100 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3H1KG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:06:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37112 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab3H1KGa (ORCPT
+	id S1753893Ab3H1KGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:06:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42024 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab3H1KGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:06:30 -0400
+	Wed, 28 Aug 2013 06:06:20 -0400
 From: Vaughan Cao <vaughan.cao@oracle.com>
 To: James.Bottomley@HansenPartnership.com
 Cc: joern@logfs.org, vaughan.cao@oracle.com, dgilbert@interlog.com,
         JBottomley@parallels.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v6 3/4] sg: checking sdp->detached isn't protected when open
-Date: Wed, 28 Aug 2013 18:07:51 +0800
-Message-Id: <1377684472-7815-4-git-send-email-vaughan.cao@oracle.com>
+Subject: [PATCH v6 1/4] sg: use rwsem to solve race during exclusive open
+Date: Wed, 28 Aug 2013 18:07:49 +0800
+Message-Id: <1377684472-7815-2-git-send-email-vaughan.cao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1377684472-7815-1-git-send-email-vaughan.cao@oracle.com>
 References: <1377662419.2005.12.camel@dabdike>
  <1377684472-7815-1-git-send-email-vaughan.cao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@detached is set under the protection of sg_index_lock. Without getting the
-lock, new sfp will be added during sg removal and there is no chance for it
-to be picked out. So check with sg_index_lock held in sg_add_sfp().
+A race condition may happen if two threads are both trying to open the same sg
+with O_EXCL simultaneously. It's possible that they both find fsds list is
+empty and get_exclude(sdp) returns 0, then they both call set_exclude() and
+break out from wait_event_interruptible and resume open.
+
+Now use rwsem to protect this process. Exclusive open gets write lock and
+others get read lock. The lock will be held until file descriptor is closed.
+This also leads 'exclude' only a status rather than a check mark.
 
 Changes from v5:
- * remove sem_out label.
-Changes from v4:
- * use ERR_PTR series instead of adding another parameter in sg_add_sfp
+ * remove unused variables
+ * fix insane code dealing with sg_add_sfp.
 
 Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
 ---
- drivers/scsi/sg.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/scsi/sg.c | 83 +++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 44 insertions(+), 39 deletions(-)
 
 diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index dcbd95f..6bffe52 100644
+index df5e961..7a54c92 100644
 --- a/drivers/scsi/sg.c
 +++ b/drivers/scsi/sg.c
-@@ -295,10 +295,6 @@ sg_open(struct inode *inode, struct file *filp)
- 	if (flags & O_EXCL)
- 		sdp->exclude = 1;	/* used by release lock */
+@@ -170,11 +170,11 @@ typedef struct sg_fd {		/* holds the state of a file descriptor */
  
--	if (sdp->detached) {
--		retval = -ENODEV;
--		goto sem_out;
--	}
+ typedef struct sg_device { /* holds the state of each scsi generic device */
+ 	struct scsi_device *device;
+-	wait_queue_head_t o_excl_wait;	/* queue open() when O_EXCL in use */
+ 	int sg_tablesize;	/* adapter's max scatter-gather table size */
+ 	u32 index;		/* device index number */
+ 	/* sfds is protected by sg_index_lock */
+ 	struct list_head sfds;
++	struct rw_semaphore o_sem;	/* exclude open should hold this rwsem */
+ 	volatile char detached;	/* 0->attached, 1->detached pending removal */
+ 	/* exclude protected by sg_open_exclusive_lock */
+ 	char exclude;		/* opened for exclusive access */
+@@ -265,7 +265,6 @@ sg_open(struct inode *inode, struct file *filp)
+ 	struct request_queue *q;
+ 	Sg_device *sdp;
+ 	Sg_fd *sfp;
+-	int res;
+ 	int retval;
+ 
+ 	nonseekable_open(inode, filp);
+@@ -294,35 +293,35 @@ sg_open(struct inode *inode, struct file *filp)
+ 		goto error_out;
+ 	}
+ 
+-	if (flags & O_EXCL) {
+-		if (O_RDONLY == (flags & O_ACCMODE)) {
+-			retval = -EPERM; /* Can't lock it with read only access */
+-			goto error_out;
+-		}
+-		if (!sfds_list_empty(sdp) && (flags & O_NONBLOCK)) {
+-			retval = -EBUSY;
+-			goto error_out;
+-		}
+-		res = wait_event_interruptible(sdp->o_excl_wait,
+-					   ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 : set_exclude(sdp, 1)));
+-		if (res) {
+-			retval = res;	/* -ERESTARTSYS because signal hit process */
+-			goto error_out;
+-		}
+-	} else if (get_exclude(sdp)) {	/* some other fd has an exclusive lock on dev */
+-		if (flags & O_NONBLOCK) {
+-			retval = -EBUSY;
+-			goto error_out;
+-		}
+-		res = wait_event_interruptible(sdp->o_excl_wait, !get_exclude(sdp));
+-		if (res) {
+-			retval = res;	/* -ERESTARTSYS because signal hit process */
+-			goto error_out;
++	if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
++		retval = -EPERM; /* Can't lock it with read only access */
++		goto error_out;
++	}
++	if (flags & O_NONBLOCK) {
++		if (flags & O_EXCL) {
++			if (!down_write_trylock(&sdp->o_sem)) {
++				retval = -EBUSY;
++				goto error_out;
++			}
++		} else {
++			if (!down_read_trylock(&sdp->o_sem)) {
++				retval = -EBUSY;
++				goto error_out;
++			}
+ 		}
++	} else {
++		if (flags & O_EXCL)
++			down_write(&sdp->o_sem);
++		else
++			down_read(&sdp->o_sem);
+ 	}
++	/* Since write lock is held, no need to check sfd_list */
++	if (flags & O_EXCL)
++		set_exclude(sdp, 1);
++
+ 	if (sdp->detached) {
+ 		retval = -ENODEV;
+-		goto error_out;
++		goto sem_out;
+ 	}
  	if (sfds_list_empty(sdp)) {	/* no existing opens on this device */
  		sdp->sgdebug = 0;
- 		q = sdp->device->request_queue;
-@@ -309,16 +305,16 @@ sg_open(struct inode *inode, struct file *filp)
- 		/* retval is already provably zero at this point because of the
- 		 * check after retval = scsi_autopm_get_device(sdp->device))
- 		 */
--	else
--		retval = -ENOMEM;
--
--	if (retval) {
--sem_out:
-+	else {
-+		retval = PTR_ERR(sfp);
- 		if (flags & O_EXCL) {
- 			sdp->exclude = 0;	/* undo if error */
- 			up_write(&sdp->o_sem);
- 		} else
- 			up_read(&sdp->o_sem);
-+	}
+@@ -331,17 +330,20 @@ sg_open(struct inode *inode, struct file *filp)
+ 	}
+ 	if ((sfp = sg_add_sfp(sdp, dev)))
+ 		filp->private_data = sfp;
+-	else {
++		/* retval is already provably zero at this point because of the
++		 * check after retval = scsi_autopm_get_device(sdp->device))
++		 */
++	else
++		retval = -ENOMEM;
 +
 +	if (retval) {
++sem_out:
+ 		if (flags & O_EXCL) {
+ 			set_exclude(sdp, 0);	/* undo if error */
+-			wake_up_interruptible(&sdp->o_excl_wait);
+-		}
+-		retval = -ENOMEM;
+-		goto error_out;
+-	}
+-	retval = 0;
++			up_write(&sdp->o_sem);
++		} else
++			up_read(&sdp->o_sem);
  error_out:
+-	if (retval) {
  		scsi_autopm_put_device(sdp->device);
  sdp_put:
-@@ -2047,7 +2043,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ 		scsi_device_put(sdp->device);
+@@ -358,13 +360,18 @@ sg_release(struct inode *inode, struct file *filp)
+ {
+ 	Sg_device *sdp;
+ 	Sg_fd *sfp;
++	int excl;
  
- 	sfp = kzalloc(sizeof(*sfp), GFP_ATOMIC | __GFP_NOWARN);
- 	if (!sfp)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
+ 	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
+ 		return -ENXIO;
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
  
- 	init_waitqueue_head(&sfp->read_wait);
- 	rwlock_init(&sfp->rq_list_lock);
-@@ -2062,6 +2058,10 @@ sg_add_sfp(Sg_device * sdp, int dev)
- 	sfp->keep_orphan = SG_DEF_KEEP_ORPHAN;
- 	sfp->parentdp = sdp;
++	excl = get_exclude(sdp);
+ 	set_exclude(sdp, 0);
+-	wake_up_interruptible(&sdp->o_excl_wait);
++	if (excl)
++		up_write(&sdp->o_sem);
++	else
++		up_read(&sdp->o_sem);
+ 
+ 	scsi_autopm_put_device(sdp->device);
+ 	kref_put(&sfp->f_ref, sg_remove_sfp);
+@@ -1416,7 +1423,7 @@ static Sg_device *sg_alloc(struct gendisk *disk, struct scsi_device *scsidp)
+ 	sdp->disk = disk;
+ 	sdp->device = scsidp;
+ 	INIT_LIST_HEAD(&sdp->sfds);
+-	init_waitqueue_head(&sdp->o_excl_wait);
++	init_rwsem(&sdp->o_sem);
+ 	sdp->sg_tablesize = queue_max_segments(q);
+ 	sdp->index = k;
+ 	kref_init(&sdp->d_ref);
+@@ -2127,13 +2134,11 @@ static void sg_remove_sfp_usercontext(struct work_struct *work)
+ static void sg_remove_sfp(struct kref *kref)
+ {
+ 	struct sg_fd *sfp = container_of(kref, struct sg_fd, f_ref);
+-	struct sg_device *sdp = sfp->parentdp;
+ 	unsigned long iflags;
+ 
  	write_lock_irqsave(&sg_index_lock, iflags);
-+	if (sdp->detached) {
-+		write_unlock_irqrestore(&sg_index_lock, iflags);
-+		return ERR_PTR(-ENODEV);
-+	}
- 	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
+ 	list_del(&sfp->sfd_siblings);
  	write_unlock_irqrestore(&sg_index_lock, iflags);
- 	SCSI_LOG_TIMEOUT(3, printk("sg_add_sfp: sfp=0x%p\n", sfp));
+-	wake_up_interruptible(&sdp->o_excl_wait);
+ 
+ 	INIT_WORK(&sfp->ew.work, sg_remove_sfp_usercontext);
+ 	schedule_work(&sfp->ew.work);
 -- 
 1.8.3.1
 
