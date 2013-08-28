@@ -1,337 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3H1G71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 02:59:27 -0400
-Received: from par-mx.meas-spec.com ([198.190.228.177]:44410 "EHLO
-	par-mx.meas-spec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab3H1G7Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 02:59:25 -0400
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 02:59:25 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754466Ab3H1HEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 03:04:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58232 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753132Ab3H1HES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 03:04:18 -0400
+Message-ID: <521DA0F0.7060501@suse.de>
+Date: Wed, 28 Aug 2013 09:04:16 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] hwmon: (htu21) Add Measurement Specialties HTU21D support
-Date: Wed, 28 Aug 2013 08:49:36 +0200
-Message-ID: <E7458771276B644AB8F21A92079F7D6C53C593@tlse-mail1.europe.msiusa.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] hwmon: (htu21) Add Measurement Specialties HTU21D support
-Thread-Index: Ac6juoJf5rtiZjoTSsyMKjfozxe+qQ==
-From: "Markezana, William" <William.Markezana@meas-spec.com>
-To: <khali@linux-fr.org>, <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>
-Cc: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 28 Aug 2013 06:49:36.0405 (UTC) FILETIME=[C2940C50:01CEA3BA]
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Ewan Milne <emilne@redhat.com>
+Subject: Re: [patch|rfc] block: fix race between request completion and timeout
+ handling
+References: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 55fc390d0079841405d5345b55a6e158ca5f3749 Mon Sep 17 00:00:00 2001
-From: William Markezana <william.markezana@meas-spec.com>
-Date: Wed, 28 Aug 2013 08:33:49 +0200
-Subject: [PATCH] hwmon: (htu21) Add Measurement Specialties HTU21D support
+On 08/27/2013 04:28 PM, Jeff Moyer wrote:
+> Hi,
+> 
+> We have several reports (against a distro kernel) of panics in
+> blk_requeue_request that look like this:
+> 
+> kernel BUG at block/blk-core.c:1045!
+> invalid opcode: 0000 [#1] SMP
+> last sysfs file: /sys/devices/pci0000:40/0000:40:03.0/0000:55:00.0/infiniband_mad/umad0/port
+> CPU 0
+> Modules linked in: ipmi_si ipmi_devintf ipmi_msghandler bonding rdma_ucm(U) rdma_cm(U) iw_cm(U) ib_addr(U) ib_ipoib(U) ib_cm(U) ib_sa(U) ipv6 ib_uverbs(U) ib_umad(U) iw_nes(U) libcrc32c mlx4_ib(U) mlx4_en(U) mlx4_core(U) ib_mthca(U) ib_mad(U) ib_core(U) cdc_ether usbnet mii microcode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
+> 
+> Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+> RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+> RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+> RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+> RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+> RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+> R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+> FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+> CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
+> Stack:
+>  0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+> <0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+> <0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
+> Call Trace:
+>  [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+>  [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+>  [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+>  [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+>  [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+>  [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+>  [<ffffffff810908c6>] kthread+0x96/0xa0
+>  [<ffffffff8100c14a>] child_rip+0xa/0x20
+>  [<ffffffff81090830>] ? kthread+0x0/0xa0
+>  [<ffffffff8100c140>] ? child_rip+0x0/0x20
+> Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+> RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+>  RSP <ffff881057eefd60>
+> 
+> The RIP is this line:
+>         BUG_ON(blk_queued_rq(rq));
+> 
+> After digging through the code, I think there may be a race between the
+> request completion and the timer handler running.
+> 
+> A timer is started for each request put on the device's queue (see
+> blk_start_request->blk_add_timer).  If the request does not complete
+> before the timer expires, the timer handler (blk_rq_timed_out_timer)
+> will mark the request complete atomically:
+> 
+> static inline int blk_mark_rq_complete(struct request *rq)
+> {
+>         return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+> }
+> 
+> and then call blk_rq_timed_out.  The latter function will call
+> scsi_times_out, which will return one of BLK_EH_HANDLED,
+> BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+> returned, blk_clear_rq_complete is called, and blk_add_timer is again
+> called to simply wait longer for the request to complete.
+> 
+> Now, if the request happens to complete while this is going on, what
+> happens?  Given that we know the completion handler will bail if it
+> finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+> handler running after that bit is cleared.  So, from the above
+> paragraph, after the call to blk_clear_rq_complete.  If the completion
+> sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+> there (I haven't seen this in the cores).  Next, if we get the
+> completion before the call to list_add_tail, then the timer will
+> eventually fire for an old req, which may either be freed or reallocated
+> (there is evidence that this might be the case).  Finally, if the
+> completion comes in *after* the addition to the timeout list, I think
+> it's harmless.  The request will be removed from the timeout list,
+> req_atom_complete will be set, and all will be well.
+> 
+> This RFC patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+> &req->atomic_flags)); from blk_add_timer to the only caller that could
+> trip over it (blk_start_request).  It then inverts the calls to
+> blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+> the race.  I've boot tested this patch, but nothing more.
+> 
+> Jens, James, others, what do you think?
+> 
+> Cheers,
+> Jeff
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 93a18d1..236ae0a 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -2229,6 +2229,7 @@ void blk_start_request(struct request *req)
+>  	if (unlikely(blk_bidi_rq(req)))
+>  		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
+>  
+> +	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+>  	blk_add_timer(req);
+>  }
+>  EXPORT_SYMBOL(blk_start_request);
+> diff --git a/block/blk-timeout.c b/block/blk-timeout.c
+> index 65f1035..655ba90 100644
+> --- a/block/blk-timeout.c
+> +++ b/block/blk-timeout.c
+> @@ -91,8 +91,8 @@ static void blk_rq_timed_out(struct request *req)
+>  		__blk_complete_request(req);
+>  		break;
+>  	case BLK_EH_RESET_TIMER:
+> -		blk_clear_rq_complete(req);
+>  		blk_add_timer(req);
+> +		blk_clear_rq_complete(req);
+>  		break;
+>  	case BLK_EH_NOT_HANDLED:
+>  		/*
+> @@ -174,7 +174,6 @@ void blk_add_timer(struct request *req)
+>  		return;
+>  
+>  	BUG_ON(!list_empty(&req->timeout_list));
+> -	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+>  
+>  	/*
+>  	 * Some LLDs, like scsi, peek at the timeout to prevent a
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
----
- Documentation/hwmon/htu21 |   43 ++++++++++
- drivers/hwmon/Kconfig     |   10 +++
- drivers/hwmon/Makefile    |    1 +
- drivers/hwmon/htu21.c     |  201 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 255 insertions(+)
- create mode 100644 Documentation/hwmon/htu21
- create mode 100644 drivers/hwmon/htu21.c
+So, looked into things a bit more.
+It looks as if you're on the right track, although I doubt your
+patch will fix the issue for me :-(
 
-diff --git a/Documentation/hwmon/htu21 b/Documentation/hwmon/htu21
-new file mode 100644
-index 0000000..ab756bc
---- /dev/null
-+++ b/Documentation/hwmon/htu21
-@@ -0,0 +1,43 @@
-+Kernel driver htu21
-+===================
-+
-+Supported chips:
-+  * Measurement Specialties HTU21D
-+    Prefix: 'htu21'
-+    Addresses scanned: none
-+    Datasheet: Publicly available at the Measurement Specialties website
-+    http://www.meas-spec.com/downloads/HTU21D.pdf
-+
-+
-+Author:
-+  William Markezana <william.markezana@meas-spec.com>
-+
-+Description
-+-----------
-+
-+HTU21D(F), the new digital humidity sensor with temperature output of MEAS is about 
-+to set new standards in terms of size and intelligence: Embedded in a reflow 
-+solderable Dual Flat No leads (DFN) package of 3 x 3 mm foot print and 0.9 mm height 
-+it provides calibrated, linearized signals in digital, I²C format.
-+
-+The devices communicate with the I2C protocol. All sensors are set to the same
-+I2C address 0x40, so an entry with I2C_BOARD_INFO("htu21", 0x40) can be used
-+in the board setup code.
-+
-+sysfs-Interface
-+---------------
-+
-+temp1_input - temperature input
-+humidity1_input - humidity input
-+
-+Notes
-+-----
-+
-+The driver uses the default resolution settings of 12 bit for humidity and 14
-+bit for temperature, which results in typical measurement times of 11 ms for
-+humidity and 44 ms for temperature. To keep self heating below 0.1 degree
-+Celsius, the device should not be active for more than 10% of the time,
-+e.g. maximum two measurements per second at the given resolution.
-+
-+Different resolutions, the on-chip heater, using the CRC checksum and reading
-+the serial number are not supported yet.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index e989f7f..eb46eb8 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -511,6 +511,16 @@ config SENSORS_HIH6130
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called hih6130.
- 
-+config SENSORS_HTU21
-+	tristate "Measurement Specialties HTU21D humidity and temperature sensors"
-+	depends on I2C
-+	help
-+	  If you say yes here you get support for the Measurement Specialties
-+	  HTU21D humidity and temperature sensors.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called htu21.
-+
- config SENSORS_CORETEMP
- 	tristate "Intel Core/Core2/Atom temperature sensor"
- 	depends on X86
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 4f0fb52..ec7cde0 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_SENSORS_GL518SM)	+= gl518sm.o
- obj-$(CONFIG_SENSORS_GL520SM)	+= gl520sm.o
- obj-$(CONFIG_SENSORS_GPIO_FAN)	+= gpio-fan.o
- obj-$(CONFIG_SENSORS_HIH6130)	+= hih6130.o
-+obj-$(CONFIG_SENSORS_HTU21)	+= htu21.o
- obj-$(CONFIG_SENSORS_ULTRA45)	+= ultra45_env.o
- obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
- obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
-diff --git a/drivers/hwmon/htu21.c b/drivers/hwmon/htu21.c
-new file mode 100644
-index 0000000..8b8d132
---- /dev/null
-+++ b/drivers/hwmon/htu21.c
-@@ -0,0 +1,201 @@
-+/* Measurement Specialties HTU21D humidity and temperature sensor driver
-+ *
-+ * Copyright (C) 2013 William Markezana <william.markezana@meas-spec.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Data sheet available (7/2013) at
-+ * http://www.meas-spec.com/downloads/HTU21D.pdf
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/device.h>
-+#include <linux/jiffies.h>
-+
-+/* HTU21 Commands */
-+#define HTU21_T_MEASUREMENT_HM  0xE3
-+#define HTU21_RH_MEASUREMENT_HM 0xE5
-+
-+struct htu21 {
-+	struct device *hwmon_dev;
-+	struct mutex lock;
-+	char valid;
-+	unsigned long last_update;
-+	int temperature;
-+	int humidity;
-+};
-+
-+static inline int htu21_temp_ticks_to_millicelsius(int ticks)
-+{
-+	ticks &= ~0x0003; /* clear status bits */
-+	/*
-+	 * Formula T = -46.85 + 175.72 * ST / 2^16 from datasheet p14,
-+	 * optimized for integer fixed point (3 digits) arithmetic
-+	 */
-+	return ((21965 * ticks) >> 13) - 46850;
-+}
-+
-+static inline int htu21_rh_ticks_to_per_cent_mille(int ticks)
-+{
-+	ticks &= ~0x0003; /* clear status bits */
-+	/*
-+	 * Formula RH = -6 + 125 * SRH / 2^16 from datasheet p14,
-+	 * optimized for integer fixed point (3 digits) arithmetic
-+	 */
-+	return ((15625 * ticks) >> 13) - 6000;
-+}
-+
-+static int htu21_update_measurements(struct i2c_client *client)
-+{
-+	int ret = 0;
-+	struct htu21 *htu21 = i2c_get_clientdata(client);
-+
-+	mutex_lock(&htu21->lock);
-+
-+	if (time_after(jiffies, htu21->last_update + HZ / 2) || !htu21->valid) {
-+		ret = i2c_smbus_read_word_swapped(client, HTU21_T_MEASUREMENT_HM);
-+		if (ret < 0)
-+			goto out;
-+		htu21->temperature = htu21_temp_ticks_to_millicelsius(ret);
-+		ret = i2c_smbus_read_word_swapped(client, HTU21_RH_MEASUREMENT_HM);
-+		if (ret < 0)
-+			goto out;
-+		htu21->humidity = htu21_rh_ticks_to_per_cent_mille(ret);
-+		htu21->last_update = jiffies;
-+		htu21->valid = 1;
-+	}
-+out:
-+	mutex_unlock(&htu21->lock);
-+
-+	return ret >= 0 ? 0 : ret;
-+}
-+
-+static ssize_t htu21_show_temperature(struct device *dev,
-+	struct device_attribute *attr,
-+	char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct htu21 *htu21 = i2c_get_clientdata(client);
-+	int ret = htu21_update_measurements(client);
-+	if (ret < 0)
-+		return ret;
-+	return sprintf(buf, "%d\n", htu21->temperature);
-+}
-+
-+static ssize_t htu21_show_humidity(struct device *dev,
-+	struct device_attribute *attr,
-+	char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct htu21 *htu21 = i2c_get_clientdata(client);
-+	int ret = htu21_update_measurements(client);
-+	if (ret < 0)
-+		return ret;
-+	return sprintf(buf, "%d\n", htu21->humidity);
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, htu21_show_temperature,	NULL, 0);
-+static SENSOR_DEVICE_ATTR(humidity1_input, S_IRUGO, htu21_show_humidity, NULL, 0);
-+
-+static struct attribute *htu21_attributes[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_humidity1_input.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group htu21_group = {
-+	.attrs = htu21_attributes,
-+};
-+
-+static int htu21_probe(struct i2c_client *client,
-+	const struct i2c_device_id *id)
-+{
-+	struct htu21 *htu21;
-+	int err;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_WORD_DATA)) {
-+		dev_err(&client->dev,
-+			"adapter does not support SMBus word transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	htu21 = devm_kzalloc(&client->dev, sizeof(*htu21), GFP_KERNEL);
-+	if (!htu21)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(client, htu21);
-+
-+	mutex_init(&htu21->lock);
-+
-+	err = sysfs_create_group(&client->dev.kobj, &htu21_group);
-+	if (err) {
-+		dev_dbg(&client->dev, "could not create sysfs files\n");
-+		return err;
-+	}
-+	htu21->hwmon_dev = hwmon_device_register(&client->dev);
-+	if (IS_ERR(htu21->hwmon_dev)) {
-+		dev_dbg(&client->dev, "unable to register hwmon device\n");
-+		err = PTR_ERR(htu21->hwmon_dev);
-+		goto error;
-+	}
-+
-+	dev_info(&client->dev, "initialized\n");
-+
-+	return 0;
-+
-+error:
-+	sysfs_remove_group(&client->dev.kobj, &htu21_group);
-+	return err;
-+}
-+
-+static int htu21_remove(struct i2c_client *client)
-+{
-+	struct htu21 *htu21 = i2c_get_clientdata(client);
-+
-+	hwmon_device_unregister(htu21->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &htu21_group);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id htu21_id[] = {
-+	{ "htu21", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, htu21_id);
-+
-+static struct i2c_driver htu21_driver = {
-+	.class = I2C_CLASS_HWMON,
-+	.driver = {
-+		.name	= "htu21",
-+	},
-+	.probe       = htu21_probe,
-+	.remove      = htu21_remove,
-+	.id_table    = htu21_id,
-+};
-+
-+module_i2c_driver(htu21_driver);
-+
-+MODULE_AUTHOR("William Markezana <william.markezana@meas-spec.com>");
-+MODULE_DESCRIPTION("Measurement Specialties HTU21D humidity and temperature sensor driver");
-+MODULE_LICENSE("GPL");
+Thing is, you're right there is a race window between requeuing
+and softirq triggering, which could well be fixed by your patch.
+So for that reason alone I would like to take it.
+
+However, including your patch will end up opening another can of
+worms: the softirq might now be triggering _while the request is
+queued on the request queue_.
+blk_requeue_request will be putting the request back on the request
+queue, where it'll be stuck until being pulled off from
+scsi_request_fn().
+So if the softirq triggers during that condition we'll end up
+calling the BUG_ON((!list_empty(&req->queuelist)) in
+__blk_put_request().
+
+Guess we'd need to fix that one, too ...
+
+Cheers,
+
+Hannes
 -- 
-1.7.10.4
-
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
