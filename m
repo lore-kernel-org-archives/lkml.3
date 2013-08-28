@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3H1UeZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:34:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39290 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3H1UeY (ORCPT
+	id S1755505Ab3H1UfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:35:25 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:62778 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3H1UfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:34:24 -0400
-Date: Wed, 28 Aug 2013 22:34:19 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] imx-drm: Fix probe failure
-Message-ID: <20130828203418.GW30088@pengutronix.de>
-References: <1377657163-6606-1-git-send-email-festevam@gmail.com>
- <20130828052758.GQ30088@pengutronix.de>
- <CAOMZO5BiE7tqja9p51gOGEwtWsKjyX23qZ3=ewyuubMwsgXcLA@mail.gmail.com>
- <20130828185459.GV30088@pengutronix.de>
- <CAOMZO5CuGAH+5+8cE7tjzZTXhLbFxMRt13mhimuBLJkRQz6+7Q@mail.gmail.com>
+	Wed, 28 Aug 2013 16:35:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5CuGAH+5+8cE7tjzZTXhLbFxMRt13mhimuBLJkRQz6+7Q@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 22:32:37 up 4 days,  6:03, 28 users,  load average: 0.00, 0.08, 0.10
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20130828203023.GA22866@redhat.com>
+References: <20130618013602.GC2200@redhat.com>
+	<1257782958.19234314.1371520167209.JavaMail.root@redhat.com>
+	<20130730005335.GA6836@redhat.com>
+	<20130805074033.GX22035@phenom.ffwll.local>
+	<20130828203023.GA22866@redhat.com>
+Date: Thu, 29 Aug 2013 06:35:22 +1000
+Message-ID: <CAPM=9twByvO7Ok6TaPa0g3ptHoC_19QU37_jBk1BRQsipOFJ=A@mail.gmail.com>
+Subject: Re: [3.10rc6] /proc/dri/0/vma broken on nouveau.
+From: Dave Airlie <airlied@gmail.com>
+To: Dave Jones <davej@redhat.com>, David Airlie <airlied@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 05:10:16PM -0300, Fabio Estevam wrote:
-> On Wed, Aug 28, 2013 at 3:54 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> 
-> > Do the open/close callbacks work?
-> 
-> The 'open' callback maps to the generic 'drm_open', so we cannot use it.
+On Thu, Aug 29, 2013 at 6:30 AM, Dave Jones <davej@redhat.com> wrote:
+> On Mon, Aug 05, 2013 at 09:40:33AM +0200, Daniel Vetter wrote:
+>  > On Mon, Jul 29, 2013 at 08:53:35PM -0400, Dave Jones wrote:
+>  > > On Mon, Jun 17, 2013 at 09:49:27PM -0400, David Airlie wrote:
+>  > >  >
+>  > >  > > Reading /proc/dri/0/vma causes bad things to happen on a box with nouveau
+>  > >  > > loaded.
+>  > >  > > (Note, no X running on that box)
+>  > >  > >
+>  > >  > > Trace below shows trinity, but I can reproduce it with just cat
+>  > >  > > /proc/dri/0/vma
+>  > >  >
+>  > >  > How about this, lets just rip it all out.
+>  > >
+>  > > No-one objected, and this is still around in 3.11-rc3 in the same
+>  > > easily oopsable state.. I vote we kill it with fire.
+>  >
+>  > Can we make it burn brighter while at it?
+>  >
+>  > http://cgit.freedesktop.org/~danvet/drm/commit/?h=for-dvdhrm&id=151591c2828e18fde1eb8447874704f3422168b0
+>
+> This went kinda quiet, what's the plan here ?
 
-We could replace this, but...
+We nuked it from orbit in drm-next.
 
-> 
-> Shouldn't we rely on the refcount done by the drm core instead of
-> doing this manually in imx-drm?
-
-...This could be a better solution.
-
-you mean (struct drm_device)->open_count, right?
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Dave.
