@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab3H1Fyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:54:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10547 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab3H1Fyf (ORCPT
+	id S1754445Ab3H1FzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:55:00 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:42868 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab3H1Fy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:54:35 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-29-521d909851e6
+	Wed, 28 Aug 2013 01:54:59 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-6a-521d90b10021
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>
@@ -18,42 +18,42 @@ Cc: linux-kernel@vger.kernel.org,
         "'Chris Ball'" <cjb@laptop.org>, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000301cea3b2$c06f2a20$414d7e60$%han@samsung.com>
 In-reply-to: <000301cea3b2$c06f2a20$414d7e60$%han@samsung.com>
-Subject: [PATCH 3/5] mfd: tc6387xb: Remove .set_pwr() callback
-Date: Wed, 28 Aug 2013 14:54:32 +0900
-Message-id: <000b01cea3b3$113e92b0$33bbb810$%han@samsung.com>
+Subject: [PATCH 4/5] mfd: tc6393xb: Remove .set_pwr() callback
+Date: Wed, 28 Aug 2013 14:54:57 +0900
+Message-id: <000c01cea3b3$20282b60$60788220$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6jssAlip17A5gXTNKNBqRYWYD+6gAAEUEg
+Thread-index: Ac6jssAlip17A5gXTNKNBqRYWYD+6gAAFIWg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zQ90ZE2SDDNr3Klhsf72RzeL9xnlM
-	FvuanrNYXF54idViYtMdFov7X48yWlzeNYfN4nQ3qwOHx9/n11k8PnyM85jdMZPV49CVtYwe
-	d67tYfOYdzLQo2/LKkaPz5vkAjiiuGxSUnMyy1KL9O0SuDK2/F7GUnCVr6LnzRu2BsZzPF2M
-	nBwSAiYSqyd+YYawxSQu3FvP1sXIxSEksIxRYtu7D6wwRfM6zkElpjNKLN12gR3C+cUo0bXs
-	IhNIFZuAmsSXL4eBEhwcIgJ+Eg0rwGqYBdqZJH7PWMAGUiMkYCtxtreVBcTmFLCTONF+kxGk
-	XhjIfrAtGiTMIqAqsefJP7ASXqDyi/0NULagxI/J98BsZgEtifU7jzNB2PISm9e8ZQYZIyGg
-	LvHory5IWETASGLe3pvMECUiEvtevGMEOUdCoJFDoqP/BwvELgGJb5MPsUD0ykpsOgANCEmJ
-	gytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzFC4rt3
-	B+PtA9aHGJOB1k9klhJNzgemh7ySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1ML
-	Uovii0pzUosPMTJxcEo1MF6fy86kZCpu9PZAktlzxecuhqqZOSffPtzjYL6kwrz2zITL/5UD
-	nWXaP1imrmLPc8kTmedWUsv6S/zO7LM1vHeF7t/62R4++6K76ekdgtnbpaYsFFhunGNy5uqN
-	X0Gi16PizienizLEhW8SMjxmvbFt0/yT+1f3broeMzsqPuJoZtvUwu9Xk5RYijMSDbWYi4oT
-	AZ+5joQFAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jQd0ZE2SDDC40yFhsf72RzeL9xnlM
-	FvuanrNYXF54idViYtMdFov7X48yWlzeNYfN4nQ3qwOHx9/n11k8PnyM85jdMZPV49CVtYwe
-	d67tYfOYdzLQo2/LKkaPz5vkAjiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0t
-	zJUU8hJzU22VXHwCdN0yc4AOU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS
-	1jFmbPm9jKXgKl9Fz5s3bA2M53i6GDk5JARMJOZ1nGODsMUkLtxbD2RzcQgJTGeUWLrtAjuE
-	84tRomvZRSaQKjYBNYkvXw4DJTg4RAT8JBpWgNUwC7QzSfyesQBskpCArcTZ3lYWEJtTwE7i
-	RPtNRpB6YSD7wbZokDCLgKrEnif/wEp4gcov9jdA2YISPybfA7OZBbQk1u88zgRhy0tsXvOW
-	GWSMhIC6xKO/uiBhEQEjiXl7bzJDlIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1I
-	LihOSs811CtOzC0uzUvXS87P3cQITh7PpHYwrmywOMQowMGoxMNrsVkmSIg1say4MvcQowQH
-	s5IIb8l/oBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJLiSbnAxNbXkm8obGJmZGlkZmFkYm5OWnC
-	SuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwRqreWn/Np867fXOOrn1DrNrEZwn/nx86NfFB
-	8n2DijCPo3tfi09+csRQ9MW5oP/z+apOp3tbzI3eIn5ne0TgnEWirGczdq95rdBnpReWprOE
-	4XFneI+HdfUsg6dzD2XGppXwf9z+tUyn9+K5qUfvO/5fJWpascqW+bvko72vHq38tFXEf/Ns
-	DSWW4oxEQy3mouJEAGKgyARiAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t8zfd2NE2SDDOZOULbY/nojm8X7jfOY
+	LPY1PWexuLzwEqvFxKY7LBb3vx5ltLi8aw6bxeluVgcOj7/Pr7N4fPgY5zG7Yyarx6Eraxk9
+	7lzbw+Yx72SgR9+WVYwenzfJBXBEcdmkpOZklqUW6dslcGWcWXaXsWAJX8XMe+1sDYwzeboY
+	OTgkBEwktrSwdzFyApliEhfurWfrYuTiEBJYxiixvXshVMJEYu3Uk1CJRYwSOz9dYYVwfjFK
+	nF7xmhWkik1ATeLLl8PsIFNFBPwkGlawg9QwC7QzSfyesYANpEZIwFbibG8rC4jNKWAncaL9
+	JiNIvTCQva01ASTMIqAqMWPDAbCRvEDl+2fvYoOwBSV+TL4H1sosoCWxfudxJghbXmLzmrfM
+	EM+oSzz6qwsSFhEwktgy9SI7RImIxL4X7xhBzpEQ6OSQWLTtOzvELgGJb5MPsUD0ykpsOsAM
+	8a+kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsY
+	IdHdu4Px9gHrQ4zJQOsnMkuJJucDk0NeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp
+	2ampBalF8UWlOanFhxiZODilGhgFDi26c4S/etqKJzc42A1ONO/7Yn3SaL11M7+gMkvSBLtO
+	N+61rAESYgurfG4WbM/WVXh+8tOmPX9PiTnb/9xQvCT9c18hU/mjn7dWF5pmboiV4Msrcd0s
+	cDaw7vnP+1mJj6TkLPTv8J2wWX/BwnSdhbtNhbtH2Kv8u6fqO+unbPaxOrXjXa8SS3FGoqEW
+	c1FxIgC34yGZBAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jAd2NE2SDDJbvl7PY/nojm8X7jfOY
+	LPY1PWexuLzwEqvFxKY7LBb3vx5ltLi8aw6bxeluVgcOj7/Pr7N4fPgY5zG7Yyarx6Eraxk9
+	7lzbw+Yx72SgR9+WVYwenzfJBXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpa
+	mCsp5CXmptoqufgE6Lpl5gAdpqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0k
+	rGPMOLPsLmPBEr6Kmffa2RoYZ/J0MXJySAiYSKydepINwhaTuHBvPZDNxSEksIhRYuenK6wQ
+	zi9GidMrXrOCVLEJqEl8+XKYvYuRg0NEwE+iYQU7SA2zQDuTxO8ZC8AmCQnYSpztbWUBsTkF
+	7CROtN9kBKkXBrK3tSaAhFkEVCVmbDgANpIXqHz/7F1sELagxI/J98BamQW0JNbvPM4EYctL
+	bF7zlhlkjISAusSjv7ogYREBI4ktUy+yQ5SISOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxi
+	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4ez6R3MK5qsDjEKMDBqMTDa7FZJkiINbGsuDL3
+	EKMEB7OSCG/Jf6AQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wMTW15JvKGxiZmRpZGZhZGJ
+	uTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MEZ8mu17KeGbbEiX8/bgrXNmb517/wv7
+	/EcfdV727/ttsqfLM32StWn2gXguhUU+V+4ZT/3bN+HRuyvzL0yt2L2qr9k64YjhA7fjh0wf
+	Hjj5pqHu5ZZavp4vW9d81pvRbxdwZwK/5PSfE0MvHNkTnjGriK/xeN/1Wx7atatb35xYy3vt
+	xk4/7/V2SizFGYmGWsxFxYkAq+99SmIDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,9 +66,9 @@ platform data", .set_pwr() callback is removed from platform data.
 Thus, .set_pwr() is not used anymore. Also, this patch fixes
 the following build error and warning.
 
-drivers/mfd/tc6387xb.c:123:2: error: unknown field 'set_pwr' specified in initializer
-drivers/mfd/tc6387xb.c:123:2: warning: initialization makes integer from pointer without a cast [enabled by default]
-drivers/mfd/tc6387xb.c:123:2: warning: (near initialization for 'tc6387xb_mmc_data.capabilities' [enabled by default]
+drivers/mfd/tc6393xb.c:381:2: error: unknown field 'set_pwr' specified in initializer
+drivers/mfd/tc6393xb.c:381:2: warning: initialization makes integer from pointer without a cast [enabled by default]
+drivers/mfd/tc6393xb.c:381:2: warning: (near initialization for 'tc6393xb_mmc_data.capabilities' [enabled by default]
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
@@ -76,34 +76,34 @@ Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 Cc: Ian Molton <ian.molton@collabora.co.uk>
 Cc: Chris Ball <cjb@laptop.org>
 ---
- drivers/mfd/tc6387xb.c |    9 ---------
+ drivers/mfd/tc6393xb.c |    9 ---------
  1 file changed, 9 deletions(-)
 
-diff --git a/drivers/mfd/tc6387xb.c b/drivers/mfd/tc6387xb.c
-index acd0f3a..001c1cf 100644
---- a/drivers/mfd/tc6387xb.c
-+++ b/drivers/mfd/tc6387xb.c
-@@ -78,14 +78,6 @@ static int tc6387xb_resume(struct platform_device *dev)
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index 11c19e5..7c5c351 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -360,14 +360,6 @@ static int tc6393xb_mmc_resume(struct platform_device *mmc)
+ 	return 0;
+ }
  
- /*--------------------------------------------------------------------------*/
- 
--static void tc6387xb_mmc_pwr(struct platform_device *mmc, int state)
+-static void tc6393xb_mmc_pwr(struct platform_device *mmc, int state)
 -{
 -	struct platform_device *dev = to_platform_device(mmc->dev.parent);
--	struct tc6387xb *tc6387xb = platform_get_drvdata(dev);
+-	struct tc6393xb *tc6393xb = platform_get_drvdata(dev);
 -
--	tmio_core_mmc_pwr(tc6387xb->scr + 0x200, 0, state);
+-	tmio_core_mmc_pwr(tc6393xb->scr + 0x200, 0, state);
 -}
 -
- static void tc6387xb_mmc_clk_div(struct platform_device *mmc, int state)
+ static void tc6393xb_mmc_clk_div(struct platform_device *mmc, int state)
  {
  	struct platform_device *dev = to_platform_device(mmc->dev.parent);
-@@ -120,7 +112,6 @@ static int tc6387xb_mmc_disable(struct platform_device *mmc)
+@@ -378,7 +370,6 @@ static void tc6393xb_mmc_clk_div(struct platform_device *mmc, int state)
  
- static struct tmio_mmc_data tc6387xb_mmc_data = {
+ static struct tmio_mmc_data tc6393xb_mmc_data = {
  	.hclk = 24000000,
--	.set_pwr = tc6387xb_mmc_pwr,
- 	.set_clk_div = tc6387xb_mmc_clk_div,
+-	.set_pwr = tc6393xb_mmc_pwr,
+ 	.set_clk_div = tc6393xb_mmc_clk_div,
  };
  
 -- 
