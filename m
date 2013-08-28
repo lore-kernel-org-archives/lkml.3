@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab3H1Kw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:52:57 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:42493 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab3H1Kwz (ORCPT
+	id S1754929Ab3H1Kx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:53:56 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55210 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab3H1Kxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:52:55 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
-References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
-	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
-	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
-	<CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
-	<521DD43D.7070605@samsung.com>
-	<CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
-Date: Wed, 28 Aug 2013 12:52:53 +0200
-Message-ID: <CA+icZUXzkwA7OG7TwtoKSA_ZRxtxGTVLJeH65_X-dOq6jRKRAQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+	Wed, 28 Aug 2013 06:53:54 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-ce-521dd6c07492
+Message-id: <521DD6BD.4030700@samsung.com>
+Date: Wed, 28 Aug 2013 13:53:49 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: sedat.dilek@gmail.com
 Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
         linux-next <linux-next@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
+References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
+ <CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
+ <CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+ <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
+ <521DD43D.7070605@samsung.com>
+ <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
+In-reply-to: <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xa7oHrskGGfxdamjRvHg9m8XlXXPY
+	LA4ubGO0WLSsldmi+cQpZot1U0+wWGzde5Xdgd2j8cYNNo+ds+6ye8w7Geixf+4ado/Pm+QC
+	WKO4bFJSczLLUov07RK4Mm6+P8ZecF+p4uTti2wNjPtkuxg5OSQETCQ+ff7GDmGLSVy4t54N
+	xBYSWMoosfStfhcjF5DdyCSx5nwzI0RiLqPEjVm+IDavgJZEb/9WVhCbRUBV4vO6+WDNbAJ6
+	Ehuaf4ANFRWIkFi55AErRL2gxI/J91hAbBEBSYl3318wgyxgFvjBKPH98XWwImEBB4kJjx6w
+	Q2zuZ5aYf3cG2FROgWCJJ38ngtnMAuoSk+YtYoaw5SU2r3nLDHGdqkT32rVsEO8oSpyefI55
+	AqPwLCTLZyFpn4WkfQEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkHj5soNx8TGrQ4wC
+	HIxKPLwWm2WChFgTy4orcw8xSnAwK4nw8m+XDRLiTUmsrEotyo8vKs1JLT7EyMTBKdXA2H6m
+	77DK+RpF/Q8X/Av1zF7V1TjduPz24V3TdLMkNrYLBm+4NWYU5IjtnRa+xGn1ls72WIkFf+6f
+	EKrd/uNkqXRcwmmlppRFiulGRYmFcaZd7O8vdQYFr1W+f0SAMe/TWuZGts0fZvb4LHtwVmTd
+	EmXXO9tb2t7o+G/2vmrrfzYr/F/ClUcaSizFGYmGWsxFxYkAuGAufXUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 12:46 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On 28/08/13 13:46, Sedat Dilek wrote:
 > On Wed, Aug 28, 2013 at 12:43 PM, Dmitry Kasatkin
 > <d.kasatkin@samsung.com> wrote:
 >> On 28/08/13 13:38, Sedat Dilek wrote:
@@ -125,7 +140,6 @@ On Wed, Aug 28, 2013 at 12:46 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >>
 >> - Dmitry
 >>
->
 > Yupp, just read it a few seconds ago.
 >
 > Where is that whatever 2nd fix?
@@ -133,13 +147,13 @@ On Wed, Aug 28, 2013 at 12:46 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 > - Sedat -
 >
 > [1] http://marc.info/?l=linux-usb&m=137767590629869&w=2
+>
 
-Was 1/2 sent to linux-usb, too?
+1/2 - was not applied
+https://patchwork.kernel.org/patch/2850217/
 
-I found your patch in the linux-kernel offline mail-archives.
+2/2 - this one was applied
+https://patchwork.kernel.org/patch/2850218/
 
-[PATCHv2 1/2] dev-core: fix build break when DEBUG is enabled
+- Dmitry
 
-- Sedat -
-
-http://marc.info/?l=linux-kernel&m=137761487111748&w=2
