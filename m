@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3H1WhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:37:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35375 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3H1WhC (ORCPT
+	id S1755758Ab3H1Whs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:37:48 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:39928 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755542Ab3H1Whq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:37:02 -0400
-Message-ID: <521E7B8A.6060203@linaro.org>
-Date: Wed, 28 Aug 2013 15:36:58 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 18:37:46 -0400
+Date: Wed, 28 Aug 2013 18:37:43 -0400 (EDT)
+From: Lenny Szubowicz <lszubowi@redhat.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
+Message-ID: <1241952070.8587861.1377729463830.JavaMail.root@redhat.com>
+In-Reply-To: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+Subject: Re: [PATCH 0/10] Add additional security checks when module loading
+ is restricted
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv3] drivers: power: Detect device suspend/resume lockup
- and log event in pstore.
-References: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org> <3196266.rMZQj4Yosc@vostro.rjw.lan> <CAME+o4n8HqvGtAGX0wO+Zs_pdanKuhai6T3jg2V1Q4nWzxKk9A@mail.gmail.com> <1761440.cq52yMKNRv@vostro.rjw.lan>
-In-Reply-To: <1761440.cq52yMKNRv@vostro.rjw.lan>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
+Thread-Topic: Add additional security checks when module loading is restricted
+Thread-Index: Nz5hbGPlr11vDxoZBtCj48/bXxVZzg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 01:52 PM, Rafael J. Wysocki wrote:
-> On Wednesday, August 28, 2013 10:45:45 AM Zoran Markovic wrote:
->> Hi Rafael,
->>> It doesn't look too bad from a quick look, but there's a couple of things
->>> I don't like in it still (relatively minor).
->> If there are things you would like changed in this patch, please let
->> me know. It would be nice to catch the 3.12 merge window.
-> Well, it's not in my queue to be honest.
->
-> Is there any practical reason why it should go into the next release?
-
-I wouldn't say its critical for the next release, but I feel like this
-was the same response last cycle. Zoran's since investigated the various
-alternative approaches you've suggested, and continues to be interested
-in resolving your remaining objections.
-
-Its a useful feature the Android devs use, which could also help
-non-android developers debug suspend issues on their systems.
-
-If you really just feel its something best left out of tree, that's hard
-to argue against. Its just a debug tool and the android guys don't have
-an issue carrying their own tree, after all. But the cost of leaving it
-out is just the potential of others having to re-implement similar hacks
-on their own instead of collaborating on shared infrastructure.
-
-thanks
--john
 
 
+----- Original Message -----
+> From: "Matthew Garrett" <matthew.garrett@nebula.com>
+> To: linux-kernel@vger.kernel.org
+> Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
+> Sent: Monday, August 19, 2013 1:26:01 PM
+> Subject: [PATCH 0/10] Add additional security checks when module loading is restricted
+> 
+> We have two in-kernel mechanisms for restricting module loading - disabling
+> it entirely, or limiting it to the loading of modules signed with a trusted
+> key. These can both be configured in such a way that even root is unable to
+> relax the restrictions.
+> 
+> However, right now, there's several other straightforward ways for root to
+> modify running kernel code. At the most basic level these allow root to
+> reset the configuration such that modules can be loaded again, rendering
+> the existing restrictions useless.
+> 
+> This patchset adds additional restrictions to various kernel entry points
+> that would otherwise make it straightforward for root to disable enforcement
+> of module loading restrictions. It also provides a patch that allows the
+> kernel to be configured such that module signing will be automatically
+> enabled when the system is booting via UEFI Secure Boot, allowing a stronger
+> guarantee of kernel integrity.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
+Did you purposely exclude similar checks for hibernate that were covered
+by earlier versions of your patch set?
+
+I think you should include it and any patch set that attempts to add support
+for doing hibernate securely would make appropriate changes.
+
+                              -Lenny.
