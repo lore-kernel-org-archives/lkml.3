@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3H1OPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:15:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41086 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab3H1OPO (ORCPT
+	id S1754067Ab3H1OSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:18:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44572 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab3H1OSi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:15:14 -0400
-Date: Wed, 28 Aug 2013 15:15:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130828141509.GJ10783@sirena.org.uk>
-References: <20130827202711.6230c38d@armhf>
+	Wed, 28 Aug 2013 10:18:38 -0400
+Date: Wed, 28 Aug 2013 16:18:35 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: jic23@cam.ac.uk, lee.jones@linaro.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling support
+Message-ID: <20130828141835.GD14111@linutronix.de>
+References: <1377470724-15710-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1377470724-15710-3-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s7VmGO2m7mcnuX8Q"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130827202711.6230c38d@armhf>
-X-Cookie: Snow Day -- stay home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoc: kirkwood: Use the Kirkwood audio driver in Dove
- boards
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1377470724-15710-3-git-send-email-zubair.lutfullah@gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Zubair Lutfullah | 2013-08-25 23:45:24 [+0100]:
 
---s7VmGO2m7mcnuX8Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+>index a952538..ae2202b 100644
+>--- a/drivers/iio/adc/ti_am335x_adc.c
+>+++ b/drivers/iio/adc/ti_am335x_adc.c
+…
 
-On Tue, Aug 27, 2013 at 08:27:11PM +0200, Jean-Francois Moine wrote:
-> This patch permits the generation of the Kirkwood audio driver which
-> may be used in the Dove boards.
+>+static struct iio_trigger *tiadc_iio_allocate_trigger(struct iio_dev *indio_dev)
+>+{
+>+	struct iio_trigger *trig;
+>+	int ret;
+>+
+>+	trig = iio_trigger_alloc("%s-dev%d", indio_dev->name, indio_dev->id);
+>+	if (trig == NULL)
+>+		return NULL;
+>+
+>+	trig->dev.parent = indio_dev->dev.parent;
+>+	trig->ops = &tiadc_trigger_ops;
+>+	iio_trigger_set_drvdata(trig, indio_dev);
+>+
+>+	ret = iio_trigger_register(trig);
+>+	if (ret)
 
-Applied, thanks.
+shouldn't you free the trigger / undo iio_trigger_alloc() here?
 
---s7VmGO2m7mcnuX8Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>+		return NULL;
+>+
+>+	return trig;
+> }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+> 
+> static const char * const chan_name_ain[] = {
+>@@ -220,7 +394,8 @@ static int tiadc_probe(struct platform_device *pdev)
+> 					  sizeof(struct tiadc_device));
+> 	if (indio_dev == NULL) {
+> 		dev_err(&pdev->dev, "failed to allocate iio device\n");
+>-		return -ENOMEM;
+>+		err = -ENOMEM;
+>+		goto err_ret;
+Why the jump instead of leave right away?
 
-iQIcBAEBAgAGBQJSHgXqAAoJELSic+t+oim93k8P/3B1712mADk7mYBhgWCt7lVS
-RAmKpwu8JDr48FKquc+AOSI3hZT0pg1Dg/zL5ZzxRMgu4ydNZCrP9Jts9LGJ1Bzr
-GK9O09EMAMt8FIaS0Yfp7PbaBZT8fJGnv7OA7oWnhqX/TOJ3zJ0PJMWR45IikAOg
-ykPHJ3ScR0FLXKFEqBBJAgxI7D45kt2tt1iWrl3dIoVS40HBFam3failRIgn8DPY
-fmNIUik7mboojNj76PT3529hRFI3Fy5M4rK3XuqLODbmj51hkhay+3aEqHPwOSpt
-QefPXFMZnZN14j+KmeT/2ccRX+SHcXc3hCL9HcDxJEjQ++oBMMH8SDEruqUChIEF
-39ee/M7PamgAvWlN1tBKujnPdw3TA3dAbX61w7GPLuROuNXFKxeg0Ly012DX1RfH
-sifgL3Y3seWZ9iBUM6Yw0ry5P8RxijG40/vKtUyc2S8FK7qjJWoh/L4JQF6u3jgc
-ZnaSNSwiYTsg2AjWLfijXvhd2dMb0UJIR+uPrym9WgWDIavMvELbTOASGyw7Gf4E
-cbyEJcKu0aTtTNc5ekhD9CCVvnEgh1bWiAXavEKbQHLTVry3IM+MkVQ7osY9veuj
-QRRl1HOWdL6VkfCLzWWrtHzhOOXSl4idO4J6UZxMhIlI+cZwPC/TaDByyMiPj08P
-iFzqCAcgAyEgVxSgNhCV
-=GNad
------END PGP SIGNATURE-----
+> 	}
+> 	adc_dev = iio_priv(indio_dev);
+> 
+>@@ -262,11 +465,14 @@ static int tiadc_remove(struct platform_device *pdev)
+> 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+> 	u32 step_en;
+> 
+>+	free_irq(adc_dev->irq, indio_dev);
+> 	iio_device_unregister(indio_dev);
+>+	iio_buffer_unregister(indio_dev);
+> 	tiadc_channels_remove(indio_dev);
 
---s7VmGO2m7mcnuX8Q--
+I think you need also to
+
+	iio_trigger_unregister(adc_dev->trig);
+	iio_trigger_free(adc_dev->trig);
+
+here.
+ 
+> 	step_en = get_adc_step_mask(adc_dev);
+> 	am335x_tsc_se_clr(adc_dev->mfd_tscadc, step_en);
+>+	iio_device_free(indio_dev);
+> 
+> 	return 0;
+> }
+
+Sebastian
