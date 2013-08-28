@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab3H1PAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:00:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40568 "EHLO
+	id S1754284Ab3H1PAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:00:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40573 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab3H1O7v (ORCPT
+	with ESMTP id S1753903Ab3H1O7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Aug 2013 10:59:51 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/21] perf trace: Add --verbose option
-Date: Wed, 28 Aug 2013 11:59:26 -0300
-Message-Id: <1377701977-2085-11-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/21] perf tools: Add debug prints
+Date: Wed, 28 Aug 2013 11:59:20 -0300
+Message-Id: <1377701977-2085-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1377701977-2085-1-git-send-email-acme@infradead.org>
 References: <1377701977-2085-1-git-send-email-acme@infradead.org>
@@ -28,74 +29,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+It is useful to see the arguments to perf_event_open and whether the
+perf events ring buffer was mmapped per-cpu or per-thread.
+
+That information will now be displayed when verbose is 2 i.e option -vv.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ain6q4u8g3bpnh18yhw24v2x@git.kernel.org
+Link: http://lkml.kernel.org/r/1376484517-5339-3-git-send-email-adrian.hunter@intel.com
+[ fixup trivial conflict with fcb14f7 ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt |  4 ++++
- tools/perf/builtin-trace.c              | 12 ++++++++----
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ tools/perf/util/evlist.c |  3 +++
+ tools/perf/util/evsel.c  | 67 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 69 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 4754f11..fe19811 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -49,6 +49,10 @@ OPTIONS
- --uid=::
-         Record events in threads owned by uid. Name or number.
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index c7d111f..1f5105a 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "debug.h"
+ #include <unistd.h>
  
-+-v::
-+--verbose=::
-+        Verbosity level.
-+
- -i::
- --no-inherit::
- 	Child tasks do not inherit counters.
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 6ab7a7a..c907e7e 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1,6 +1,7 @@
- #include <traceevent/event-parse.h>
- #include "builtin.h"
- #include "util/color.h"
-+#include "util/debug.h"
- #include "util/evlist.h"
- #include "util/machine.h"
- #include "util/thread.h"
-@@ -311,10 +312,12 @@ static struct syscall *trace__syscall_info(struct trace *trace,
- 	return &trace->syscalls.table[id];
+ #include "parse-events.h"
+@@ -486,6 +487,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
  
- out_cant_read:
--	fprintf(trace->output, "Problems reading syscall %d", id);
--	if (id <= trace->syscalls.max && trace->syscalls.table[id].name != NULL)
--		fprintf(trace->output, "(%s)", trace->syscalls.table[id].name);
--	fputs(" information", trace->output);
-+	if (verbose) {
-+		fprintf(trace->output, "Problems reading syscall %d", id);
-+		if (id <= trace->syscalls.max && trace->syscalls.table[id].name != NULL)
-+			fprintf(trace->output, "(%s)", trace->syscalls.table[id].name);
-+		fputs(" information\n", trace->output);
-+	}
- 	return NULL;
++	pr_debug2("perf event ring buffer mmapped per cpu\n");
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		int output = -1;
+ 
+@@ -524,6 +526,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per thread\n");
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a29c8d0..47cbe1e 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -22,6 +22,7 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "perf_regs.h"
++#include "debug.h"
+ 
+ static struct {
+ 	bool sample_id_all;
+@@ -862,6 +863,65 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
+ 	return fd;
  }
  
-@@ -714,6 +717,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "show only events with duration > N.M ms",
- 		     trace__set_duration),
- 	OPT_BOOLEAN(0, "sched", &trace.sched, "show blocking scheduler events"),
-+	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
- 	OPT_END()
- 	};
- 	int err;
++#define __PRINT_ATTR(fmt, cast, field)  \
++	fprintf(fp, "  %-19s "fmt"\n", #field, cast attr->field)
++
++#define PRINT_ATTR_U32(field)  __PRINT_ATTR("%u" , , field)
++#define PRINT_ATTR_X32(field)  __PRINT_ATTR("%#x", , field)
++#define PRINT_ATTR_U64(field)  __PRINT_ATTR("%" PRIu64, (uint64_t), field)
++#define PRINT_ATTR_X64(field)  __PRINT_ATTR("%#"PRIx64, (uint64_t), field)
++
++#define PRINT_ATTR2N(name1, field1, name2, field2)	\
++	fprintf(fp, "  %-19s %u    %-19s %u\n",		\
++	name1, attr->field1, name2, attr->field2)
++
++#define PRINT_ATTR2(field1, field2) \
++	PRINT_ATTR2N(#field1, field1, #field2, field2)
++
++static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
++{
++	size_t ret = 0;
++
++	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
++	ret += fprintf(fp, "perf_event_attr:\n");
++
++	ret += PRINT_ATTR_U32(type);
++	ret += PRINT_ATTR_U32(size);
++	ret += PRINT_ATTR_X64(config);
++	ret += PRINT_ATTR_U64(sample_period);
++	ret += PRINT_ATTR_U64(sample_freq);
++	ret += PRINT_ATTR_X64(sample_type);
++	ret += PRINT_ATTR_X64(read_format);
++
++	ret += PRINT_ATTR2(disabled, inherit);
++	ret += PRINT_ATTR2(pinned, exclusive);
++	ret += PRINT_ATTR2(exclude_user, exclude_kernel);
++	ret += PRINT_ATTR2(exclude_hv, exclude_idle);
++	ret += PRINT_ATTR2(mmap, comm);
++	ret += PRINT_ATTR2(freq, inherit_stat);
++	ret += PRINT_ATTR2(enable_on_exec, task);
++	ret += PRINT_ATTR2(watermark, precise_ip);
++	ret += PRINT_ATTR2(mmap_data, sample_id_all);
++	ret += PRINT_ATTR2(exclude_host, exclude_guest);
++	ret += PRINT_ATTR2N("excl.callchain_kern", exclude_callchain_kernel,
++			    "excl.callchain_user", exclude_callchain_user);
++
++	ret += PRINT_ATTR_U32(wakeup_events);
++	ret += PRINT_ATTR_U32(wakeup_watermark);
++	ret += PRINT_ATTR_X32(bp_type);
++	ret += PRINT_ATTR_X64(bp_addr);
++	ret += PRINT_ATTR_X64(config1);
++	ret += PRINT_ATTR_U64(bp_len);
++	ret += PRINT_ATTR_X64(config2);
++	ret += PRINT_ATTR_X64(branch_sample_type);
++	ret += PRINT_ATTR_X64(sample_regs_user);
++	ret += PRINT_ATTR_U32(sample_stack_user);
++
++	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
++
++	return ret;
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+@@ -886,6 +946,9 @@ retry_sample_id:
+ 	if (perf_missing_features.sample_id_all)
+ 		evsel->attr.sample_id_all = 0;
+ 
++	if (verbose >= 2)
++		perf_event_attr__fprintf(&evsel->attr, stderr);
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -895,8 +958,10 @@ retry_sample_id:
+ 				pid = threads->map[thread];
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+-
+ retry_open:
++			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++				  pid, cpus->map[cpu], group_fd, flags);
++
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     pid,
+ 								     cpus->map[cpu],
 -- 
 1.8.1.4
 
