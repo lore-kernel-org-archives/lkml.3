@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3H1Tfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:35:36 -0400
-Received: from mail.tpi.com ([74.45.170.26]:54362 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753618Ab3H1Tff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:35:35 -0400
-X-Greylist: delayed 1567 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:35:34 EDT
-Message-ID: <521E4AE6.7080703@canonical.com>
-Date: Wed, 28 Aug 2013 13:09:26 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Re: [PATCH net-next 1/1] net: neighbour: Simplify ifdefs around neigh_app_ns()
-References: <1377714286-51816-1-git-send-email-tim.gardner@canonical.com> <1377715873.1928.47.camel@joe-AO722>
-In-Reply-To: <1377715873.1928.47.camel@joe-AO722>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754861Ab3H1Tln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:41:43 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:52241 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753901Ab3H1Tlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 15:41:42 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:41:42 EDT
+Message-ID: <00000140c66bc4a4-435cc325-a774-46a8-9369-5814c4a18cda-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Wed, 28 Aug 2013 19:34:46 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [gcv v3 01/35] x86: Use this_cpu_inc/dec for debug registers
+References: <20130828193457.140443630@linux.com>
+X-SES-Outgoing: 2013.08.28-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 12:51 PM, Joe Perches wrote:
-> On Wed, 2013-08-28 at 12:24 -0600, Tim Gardner wrote:
->> Drop a couple of ifdef/endif pairs by moving the ifdef
->> surrounding neigh_app_ns() to the interior of neigh_app_ns().
-> []
->> This is an admittedly trivial change. I stumbled on it while trying to figure
->> out why Ubuntu doesn't have CONFIG_ARPD enabled.
-> 
-> I'd be more inclined to make neigh_app_ns static inline
-> in the .h file and remove the EXPORT_SYMBOL
-> 
+I think this patch already exists in one form or another in some x86 tree.
 
-I thought about that as well, but then you'd have to extern
-__neigh_notify(), which is currently a static function and large enough
-to not really be suitable for inlining. Seems like unnecessary churn to me.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+Index: linux/arch/x86/include/asm/debugreg.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
++++ linux/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
+@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
+ DECLARE_PER_CPU(int, debug_stack_usage);
+ static inline void debug_stack_usage_inc(void)
+ {
+-	__get_cpu_var(debug_stack_usage)++;
++	__this_cpu_inc(debug_stack_usage);
+ }
+ static inline void debug_stack_usage_dec(void)
+ {
+-	__get_cpu_var(debug_stack_usage)--;
++	__this_cpu_dec(debug_stack_usage);
+ }
+ int is_debug_stack(unsigned long addr);
+ void debug_stack_set_zero(void);
+Index: linux/arch/x86/kernel/cpu/common.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/common.c	2013-07-19 09:06:36.850047837 -0500
++++ linux/arch/x86/kernel/cpu/common.c	2013-08-06 13:54:36.426384889 -0500
+@@ -1144,9 +1144,9 @@ DEFINE_PER_CPU(int, debug_stack_usage);
+ 
+ int is_debug_stack(unsigned long addr)
+ {
+-	return __get_cpu_var(debug_stack_usage) ||
+-		(addr <= __get_cpu_var(debug_stack_addr) &&
+-		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
++	return __this_cpu_read(debug_stack_usage) ||
++		(addr <= __this_cpu_read(debug_stack_addr) &&
++		 addr > (__this_cpu_read(debug_stack_addr) - DEBUG_STKSZ));
+ }
+ 
+ DEFINE_PER_CPU(u32, debug_idt_ctr);
+
