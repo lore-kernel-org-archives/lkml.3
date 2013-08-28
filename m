@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab3H1Bjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 21:39:48 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:48103 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752607Ab3H1Bjr (ORCPT
+	id S1753855Ab3H1Bk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 21:40:26 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:43521 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab3H1BkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 21:39:47 -0400
-Message-ID: <521D54BE.5060100@atmel.com>
-Date: Wed, 28 Aug 2013 09:39:10 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 27 Aug 2013 21:40:24 -0400
+Date: Tue, 27 Aug 2013 18:35:38 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] power/reset: Make vexpress driver depend on required
+ infrastructure
+Message-ID: <20130828013538.GF10506@lizard>
+References: <20130815114401.GD23006@n2100.arm.linux.org.uk>
+ <1376580952-21677-1-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: <akpm@linux-foundation.org>, <mm-commits@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: mmotm 2013-08-27-16-51 uploaded
-References: <20130827235227.99DB95A41D6@corp2gmr1-2.hot.corp.google.com> <521D494F.1010507@codeaurora.org>
-In-Reply-To: <521D494F.1010507@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1376580952-21677-1-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen Boyd,
+On Thu, Aug 15, 2013 at 04:35:52PM +0100, Pawel Moll wrote:
+> ARM Versatile Express reset driver requires platform-specific
+> config infrastructure to be present in the kernel. When
+> VEXPRESS_CONFIG is not selected, the build will fail like this:
+> 
+> drivers/built-in.o: In function `vexpress_reset_do.clone.0':
+> iio-trig-interrupt.c:(.text+0x1aff38): undefined reference to `__vexpress_config_func_get'
+> iio-trig-interrupt.c:(.text+0x1aff4c): undefined reference to `vexpress_config_write'
+> 
+> Added required dependency to the Kconfig entry.
+> 
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 
-On 08/28/2013 08:50 AM, Stephen Boyd wrote:
-> On 08/27/13 16:52, akpm@linux-foundation.org wrote:
->> * kernel-time-sched_clockc-correct-the-comparison-parameter-of-mhz.patch
->>
->
-> I believe Russell nacked this change[1]? This should probably be dropped
+Applied, thanks!
 
-Yes, this is RFC patch, and NACKed by Russell, so we can drop it.
-
-> unless there's been more discussion. Or maybe reworked into a comment in
-> the code that doesn't lead to the same change again.
->
-> [1] https://lkml.org/lkml/2013/8/7/95
->
-
-Best Regards,
-Bo Shen
+Anton
