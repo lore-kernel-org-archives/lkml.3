@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3H1TsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:48:22 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:41415 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755183Ab3H1TsQ (ORCPT
+	id S1755374Ab3H1Ts0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:48:26 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:60907 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755183Ab3H1TsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:48:16 -0400
-Message-ID: <00000140c6781c2f-3662e9d5-678c-4103-88e9-b96dfa5f4022-000000@email.amazonses.com>
+	Wed, 28 Aug 2013 15:48:24 -0400
+Message-ID: <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:15 +0000
+Date: Wed, 28 Aug 2013 19:48:23 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Robert Richter <rric@kernel.org>,
-        oprofile-list@lists.sf.net
+Cc: akpm@linuxfoundation.org, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 16/35] drivers/oprofile: Replace __get_cpu_var uses
+Subject: [gcv v3 27/35] arm: Replace __get_cpu_var uses
 References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.78
+X-SES-Outgoing: 2013.08.28-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -122,66 +123,295 @@ Transformations done to __get_cpu_var()
 
 
 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/oprofile/cpu_buffer.c
+Index: linux/arch/arm/kernel/hw_breakpoint.c
 ===================================================================
---- linux.orig/drivers/oprofile/cpu_buffer.c	2013-08-27 14:36:45.000000000 -0500
-+++ linux/drivers/oprofile/cpu_buffer.c	2013-08-27 14:37:04.284928047 -0500
-@@ -45,7 +45,7 @@ unsigned long oprofile_get_cpu_buffer_si
+--- linux.orig/arch/arm/kernel/hw_breakpoint.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm/kernel/hw_breakpoint.c	2013-08-26 13:48:40.952795024 -0500
+@@ -344,13 +344,13 @@ int arch_install_hw_breakpoint(struct pe
+ 		/* Breakpoint */
+ 		ctrl_base = ARM_BASE_BCR;
+ 		val_base = ARM_BASE_BVR;
+-		slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
++		slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
+ 		max_slots = core_num_brps;
+ 	} else {
+ 		/* Watchpoint */
+ 		ctrl_base = ARM_BASE_WCR;
+ 		val_base = ARM_BASE_WVR;
+-		slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++		slots = (struct perf_event **)__this_cpu_read(wp_on_reg);
+ 		max_slots = core_num_wrps;
+ 	}
  
- void oprofile_cpu_buffer_inc_smpl_lost(void)
+@@ -396,12 +396,12 @@ void arch_uninstall_hw_breakpoint(struct
+ 	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
+ 		/* Breakpoint */
+ 		base = ARM_BASE_BCR;
+-		slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
++		slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
+ 		max_slots = core_num_brps;
+ 	} else {
+ 		/* Watchpoint */
+ 		base = ARM_BASE_WCR;
+-		slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++		slots = (struct perf_event **)__this_cpu_read(wp_on_reg);
+ 		max_slots = core_num_wrps;
+ 	}
+ 
+@@ -697,7 +697,7 @@ static void watchpoint_handler(unsigned
+ 	struct arch_hw_breakpoint *info;
+ 	struct arch_hw_breakpoint_ctrl ctrl;
+ 
+-	slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++	slots = (struct perf_event **)__this_cpu_read(wp_on_reg);
+ 
+ 	for (i = 0; i < core_num_wrps; ++i) {
+ 		rcu_read_lock();
+@@ -768,7 +768,7 @@ static void watchpoint_single_step_handl
+ 	struct perf_event *wp, **slots;
+ 	struct arch_hw_breakpoint *info;
+ 
+-	slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++	slots = (struct perf_event **)__this_cpu_read(wp_on_reg);
+ 
+ 	for (i = 0; i < core_num_wrps; ++i) {
+ 		rcu_read_lock();
+@@ -802,7 +802,7 @@ static void breakpoint_handler(unsigned
+ 	struct arch_hw_breakpoint *info;
+ 	struct arch_hw_breakpoint_ctrl ctrl;
+ 
+-	slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
++	slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
+ 
+ 	/* The exception entry code places the amended lr in the PC. */
+ 	addr = regs->ARM_pc;
+Index: linux/arch/arm/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/arm/kernel/kprobes.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm/kernel/kprobes.c	2013-08-26 13:48:40.952795024 -0500
+@@ -171,13 +171,13 @@ static void __kprobes save_previous_kpro
+ 
+ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
  {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	cpu_buf->sample_lost_overflow++;
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe.status;
  }
-@@ -297,7 +297,7 @@ __oprofile_add_ext_sample(unsigned long
- 			  unsigned long event, int is_kernel,
- 			  struct task_struct *task)
+ 
+ static void __kprobes set_current_kprobe(struct kprobe *p)
  {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 	unsigned long backtrace = oprofile_backtrace_depth;
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ }
+ 
+ static void __kprobes
+@@ -421,10 +421,10 @@ static __used __kprobes void *trampoline
+ 			continue;
+ 
+ 		if (ri->rp && ri->rp->handler) {
+-			__get_cpu_var(current_kprobe) = &ri->rp->kp;
++			__this_cpu_write(current_kprobe, &ri->rp->kp);
+ 			get_kprobe_ctlblk()->kprobe_status = KPROBE_HIT_ACTIVE;
+ 			ri->rp->handler(ri, regs);
+-			__get_cpu_var(current_kprobe) = NULL;
++			__this_cpu_write(current_kprobe, NULL);
+ 		}
+ 
+ 		orig_ret_address = (unsigned long)ri->ret_addr;
+Index: linux/arch/arm/kernel/perf_event_cpu.c
+===================================================================
+--- linux.orig/arch/arm/kernel/perf_event_cpu.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm/kernel/perf_event_cpu.c	2013-08-26 13:48:40.952795024 -0500
+@@ -68,7 +68,7 @@ EXPORT_SYMBOL_GPL(perf_num_counters);
+ 
+ static struct pmu_hw_events *cpu_pmu_get_cpu_events(void)
+ {
+-	return &__get_cpu_var(cpu_hw_events);
++	return this_cpu_ptr(&cpu_hw_events);
+ }
+ 
+ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+Index: linux/arch/arm/kvm/arm.c
+===================================================================
+--- linux.orig/arch/arm/kvm/arm.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm/kvm/arm.c	2013-08-26 13:48:40.952795024 -0500
+@@ -65,7 +65,7 @@ static bool vgic_present;
+ static void kvm_arm_set_running_vcpu(struct kvm_vcpu *vcpu)
+ {
+ 	BUG_ON(preemptible());
+-	__get_cpu_var(kvm_arm_running_vcpu) = vcpu;
++	__this_cpu_write(kvm_arm_running_vcpu, vcpu);
+ }
+ 
+ /**
+@@ -75,7 +75,7 @@ static void kvm_arm_set_running_vcpu(str
+ struct kvm_vcpu *kvm_arm_get_running_vcpu(void)
+ {
+ 	BUG_ON(preemptible());
+-	return __get_cpu_var(kvm_arm_running_vcpu);
++	return __this_cpu_read(kvm_arm_running_vcpu);
+ }
+ 
+ /**
+@@ -811,7 +811,7 @@ static void cpu_init_hyp_mode(void *dumm
+ 
+ 	boot_pgd_ptr = kvm_mmu_get_boot_httbr();
+ 	pgd_ptr = kvm_mmu_get_httbr();
+-	stack_page = __get_cpu_var(kvm_arm_hyp_stack_page);
++	stack_page = __this_cpu_read(kvm_arm_hyp_stack_page);
+ 	hyp_stack_ptr = stack_page + PAGE_SIZE;
+ 	vector_ptr = (unsigned long)__kvm_hyp_vector;
+ 
+Index: linux/arch/arm64/kernel/debug-monitors.c
+===================================================================
+--- linux.orig/arch/arm64/kernel/debug-monitors.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm64/kernel/debug-monitors.c	2013-08-26 13:48:40.952795024 -0500
+@@ -98,11 +98,11 @@ void enable_debug_monitors(enum debug_el
+ 
+ 	WARN_ON(preemptible());
+ 
+-	if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
++	if (this_cpu_inc_return(mde_ref_count) == 1)
+ 		enable = DBG_MDSCR_MDE;
+ 
+ 	if (el == DBG_ACTIVE_EL1 &&
+-	    local_inc_return(&__get_cpu_var(kde_ref_count)) == 1)
++	    this_cpu_inc_return(kde_ref_count) == 1)
+ 		enable |= DBG_MDSCR_KDE;
+ 
+ 	if (enable && debug_enabled) {
+@@ -118,11 +118,11 @@ void disable_debug_monitors(enum debug_e
+ 
+ 	WARN_ON(preemptible());
+ 
+-	if (local_dec_and_test(&__get_cpu_var(mde_ref_count)))
++	if (local_dec_and_test(this_cpu_ptr(&mde_ref_count)))
+ 		disable = ~DBG_MDSCR_MDE;
+ 
+ 	if (el == DBG_ACTIVE_EL1 &&
+-	    local_dec_and_test(&__get_cpu_var(kde_ref_count)))
++	    local_dec_and_test(this_cpu_ptr(&kde_ref_count)))
+ 		disable &= ~DBG_MDSCR_KDE;
+ 
+ 	if (disable) {
+Index: linux/arch/arm64/kernel/hw_breakpoint.c
+===================================================================
+--- linux.orig/arch/arm64/kernel/hw_breakpoint.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm64/kernel/hw_breakpoint.c	2013-08-26 13:48:40.952795024 -0500
+@@ -184,14 +184,14 @@ int arch_install_hw_breakpoint(struct pe
+ 		/* Breakpoint */
+ 		ctrl_reg = AARCH64_DBG_REG_BCR;
+ 		val_reg = AARCH64_DBG_REG_BVR;
+-		slots = __get_cpu_var(bp_on_reg);
++		slots = __this_cpu_read(bp_on_reg);
+ 		max_slots = core_num_brps;
+ 		reg_enable = !debug_info->bps_disabled;
+ 	} else {
+ 		/* Watchpoint */
+ 		ctrl_reg = AARCH64_DBG_REG_WCR;
+ 		val_reg = AARCH64_DBG_REG_WVR;
+-		slots = __get_cpu_var(wp_on_reg);
++		slots = __this_cpu_read(wp_on_reg);
+ 		max_slots = core_num_wrps;
+ 		reg_enable = !debug_info->wps_disabled;
+ 	}
+@@ -230,12 +230,12 @@ void arch_uninstall_hw_breakpoint(struct
+ 	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
+ 		/* Breakpoint */
+ 		base = AARCH64_DBG_REG_BCR;
+-		slots = __get_cpu_var(bp_on_reg);
++		slots = __this_cpu_read(bp_on_reg);
+ 		max_slots = core_num_brps;
+ 	} else {
+ 		/* Watchpoint */
+ 		base = AARCH64_DBG_REG_WCR;
+-		slots = __get_cpu_var(wp_on_reg);
++		slots = __this_cpu_read(wp_on_reg);
+ 		max_slots = core_num_wrps;
+ 	}
+ 
+@@ -505,11 +505,11 @@ static void toggle_bp_registers(int reg,
+ 
+ 	switch (reg) {
+ 	case AARCH64_DBG_REG_BCR:
+-		slots = __get_cpu_var(bp_on_reg);
++		slots = __this_cpu_read(bp_on_reg);
+ 		max_slots = core_num_brps;
+ 		break;
+ 	case AARCH64_DBG_REG_WCR:
+-		slots = __get_cpu_var(wp_on_reg);
++		slots = __this_cpu_read(wp_on_reg);
+ 		max_slots = core_num_wrps;
+ 		break;
+ 	default:
+@@ -546,7 +546,7 @@ static int breakpoint_handler(unsigned l
+ 	struct debug_info *debug_info;
+ 	struct arch_hw_breakpoint_ctrl ctrl;
+ 
+-	slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
++	slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
+ 	addr = instruction_pointer(regs);
+ 	debug_info = &current->thread.debug;
+ 
+@@ -596,7 +596,7 @@ unlock:
+ 			user_enable_single_step(current);
+ 	} else {
+ 		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL1, 0);
+-		kernel_step = &__get_cpu_var(stepping_kernel_bp);
++		kernel_step = this_cpu_ptr(&stepping_kernel_bp);
+ 
+ 		if (*kernel_step != ARM_KERNEL_STEP_NONE)
+ 			return 0;
+@@ -623,7 +623,7 @@ static int watchpoint_handler(unsigned l
+ 	struct arch_hw_breakpoint *info;
+ 	struct arch_hw_breakpoint_ctrl ctrl;
+ 
+-	slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
++	slots = (struct perf_event **)__this_cpu_read(wp_on_reg);
+ 	debug_info = &current->thread.debug;
+ 
+ 	for (i = 0; i < core_num_wrps; ++i) {
+@@ -698,7 +698,7 @@ unlock:
+ 			user_enable_single_step(current);
+ 	} else {
+ 		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 0);
+-		kernel_step = &__get_cpu_var(stepping_kernel_bp);
++		kernel_step = this_cpu_ptr(&stepping_kernel_bp);
+ 
+ 		if (*kernel_step != ARM_KERNEL_STEP_NONE)
+ 			return 0;
+@@ -722,7 +722,7 @@ int reinstall_suspended_bps(struct pt_re
+ 	struct debug_info *debug_info = &current->thread.debug;
+ 	int handled_exception = 0, *kernel_step;
+ 
+-	kernel_step = &__get_cpu_var(stepping_kernel_bp);
++	kernel_step = this_cpu_ptr(&stepping_kernel_bp);
  
  	/*
-@@ -357,7 +357,7 @@ oprofile_write_reserve(struct op_entry *
+ 	 * Called from single-step exception handler.
+Index: linux/arch/arm64/kernel/perf_event.c
+===================================================================
+--- linux.orig/arch/arm64/kernel/perf_event.c	2013-08-26 13:48:40.956794980 -0500
++++ linux/arch/arm64/kernel/perf_event.c	2013-08-26 13:48:40.952795024 -0500
+@@ -1041,7 +1041,7 @@ static irqreturn_t armv8pmu_handle_irq(i
+ 	 */
+ 	regs = get_irq_regs();
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+ 		struct hw_perf_event *hwc;
+@@ -1254,7 +1254,7 @@ device_initcall(register_pmu_driver);
+ 
+ static struct pmu_hw_events *armpmu_get_cpu_events(void)
  {
- 	struct op_sample *sample;
- 	int is_kernel = !user_mode(regs);
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	cpu_buf->sample_received++;
- 
-@@ -412,13 +412,13 @@ int oprofile_write_commit(struct op_entr
- 
- void oprofile_add_pc(unsigned long pc, int is_kernel, unsigned long event)
- {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 	log_sample(cpu_buf, pc, 0, is_kernel, event, NULL);
+-	return &__get_cpu_var(cpu_hw_events);
++	return this_cpu_ptr(&cpu_hw_events);
  }
  
- void oprofile_add_trace(unsigned long pc)
- {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	if (!cpu_buf->tracing)
- 		return;
-Index: linux/drivers/oprofile/timer_int.c
-===================================================================
---- linux.orig/drivers/oprofile/timer_int.c	2013-08-27 14:36:45.000000000 -0500
-+++ linux/drivers/oprofile/timer_int.c	2013-08-27 14:37:04.284928047 -0500
-@@ -32,7 +32,7 @@ static enum hrtimer_restart oprofile_hrt
- 
- static void __oprofile_hrtimer_start(void *unused)
- {
--	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
-+	struct hrtimer *hrtimer = this_cpu_ptr(&oprofile_hrtimer);
- 
- 	if (!ctr_running)
- 		return;
+ static void __init cpu_pmu_init(struct arm_pmu *armpmu)
 
