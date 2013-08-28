@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab3H1NPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:15:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5858 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3H1NPc (ORCPT
+	id S1753960Ab3H1NQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:16:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47147 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab3H1NQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:15:32 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=MkLg_yf6oqsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Xf-hRFNtRvAA:10 a=JfrnYn6hAAAA:8 a=dqoypbJFFhR-UKVw3AYA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 28 Aug 2013 09:15:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Fyodorov <halcy@yandex.ru>, Waiman Long <waiman.long@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue
- spinlock implementation
-Message-ID: <20130828091530.7ffe9ad0@gandalf.local.home>
-In-Reply-To: <20130828130529.GP10002@twins.programming.kicks-ass.net>
-References: <336901377100289@web16f.yandex.ru>
-	<5215638E.5020702@hp.com>
-	<169431377178121@web21f.yandex.ru>
-	<521BB71F.6080300@hp.com>
-	<66111377605355@web12m.yandex.ru>
-	<20130827091436.3d5971a0@gandalf.local.home>
-	<20130827135309.GF10002@twins.programming.kicks-ass.net>
-	<20130828012128.GT3871@linux.vnet.ibm.com>
-	<20130828081937.GH10002@twins.programming.kicks-ass.net>
-	<20130828085957.728a5375@gandalf.local.home>
-	<20130828130529.GP10002@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Aug 2013 09:16:43 -0400
+Date: Wed, 28 Aug 2013 15:16:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] host1x: hdmi: Detect whether display is connected
+ with HDMI or DVI
+Message-ID: <20130828131608.GA604@ulmo>
+References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com>
+ <1377686459-16634-3-git-send-email-mperttunen@nvidia.com>
+ <20130828120727.GA32254@ulmo>
+ <521DEE6D.4050503@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+In-Reply-To: <521DEE6D.4050503@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Aug 2013 15:05:29 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Wed, Aug 28, 2013 at 08:59:57AM -0400, Steven Rostedt wrote:
-> > On Wed, 28 Aug 2013 10:19:37 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > Spin locks only prevent leaks out of the critical section. It does not
-> > guarantee leaks into the critical section, thus:
-> 
-> What's your point? You're just re-iterating the semantics in case
-> anybody forgot about them?
+On Wed, Aug 28, 2013 at 03:34:53PM +0300, Mikko Perttunen wrote:
+> On 08/28/2013 03:07 PM, Thierry Reding wrote:
+> >* PGP Signed by an unknown key
+> >
+> >On Wed, Aug 28, 2013 at 01:40:56PM +0300, Mikko Perttunen wrote:
+> >>Use EDID data to determine whether the display supports HDMI or just DV=
+I.
+> >>This used to be hardcoded to be HDMI, which broke support for DVI displ=
+ays
+> >>that couldn't understand the interspersed audio/other data.
+> >>
+> >>If the EDID data isn't available, default to DVI, which should be a saf=
+er
+> >>choice.
+> >>
+> >>Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> >>---
+> >>  drivers/gpu/host1x/drm/hdmi.c | 8 ++++++++
+> >>  1 file changed, 8 insertions(+)
+> >>
+> >>diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdm=
+i.c
+> >>index d81fac8..140339b 100644
+> >>--- a/drivers/gpu/host1x/drm/hdmi.c
+> >>+++ b/drivers/gpu/host1x/drm/hdmi.c
+> >>@@ -702,6 +702,14 @@ static int tegra_output_hdmi_enable(struct tegra_o=
+utput *output)
+> >>  	unsigned long value;
+> >>  	int retries =3D 1000;
+> >>  	int err;
+> >>+	struct drm_property_blob *edid_blob =3D output->connector.edid_blob_p=
+tr;
+> >>+
+> >>+	if (edid_blob && edid_blob->data &&
+> >>+		drm_detect_hdmi_monitor((struct edid *)edid_blob->data)) {
+> >>+		hdmi->dvi =3D false;
+> >>+	} else {
+> >>+		hdmi->dvi =3D true;
+> >>+	}
+> >>
+> >>  	pclk =3D mode->clock * 1000;
+> >>  	h_sync_width =3D mode->hsync_end - mode->hsync_start;
+> >
+> >Odd, now that I see that code I remember that there was a similar patch
+> >a few months back, but it was never applied for some reason:
+> >
+> >	http://lists.freedesktop.org/archives/dri-devel/2013-January/033509.html
+> >
+> >That was already reviewed by me and Jon Mayo, so I'll go ahead and apply
+> >that one instead.
+> >
+> >Thierry
+> >
+> >* Unknown Key
+> >* 0x7F3EB3A1
+> >
+>=20
+> That patch seems to cause a warning for me:
+> drivers/gpu/host1x/drm/hdmi.c: In function =E2=80=98tegra_output_hdmi_ena=
+ble=E2=80=99:
+> drivers/gpu/host1x/drm/hdmi.c:706:2: warning: passing argument 1 of
+> =E2=80=98drm_detect_hdmi_monitor=E2=80=99 discards =E2=80=98const=E2=80=
+=99 qualifier from pointer
+> target type [enabled by default]
+> include/drm/drm_crtc.h:1037:13: note: expected =E2=80=98struct edid *=E2=
+=80=99 but
+> argument is of type =E2=80=98const struct edid *=E2=80=99
 
+Given the discussion about this back in January, I think the best way,
+at least for now, is to keep a copy of the EDID data so that it can
+actually be modified.
 
-I think we are all misunderstanding each other. It sounded like you
-didn't want to reimplement a lock to remove memory barriers.
+But looking at the problem more closely, I don't think the patch from
+January is quite correct. The problem is that it uses the EDID stored
+within the struct tegra_output. That's problematic because that field
+is not updated when EDID is probed via DDC. That would make the patch
+that you proposed more correct.
 
-Are you for the smp_mb__after_spin_unlock() ?
+Thierry
 
-I'm getting confused by who is arguing what :-)
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHfgYAAoJEN0jrNd/PrOhLoAP/ROg98PTWP/OoDyWRRLelWVx
+LZfc3BYBQwLLn4Y7/bwbWUBacGdJ28pwMOuF7rc7Se3SkfcqiZCXBcbhoxv0oZ4y
+seT9NxQynIh5CzrEL9SyqqlaP5ZeidbHVfHOoJQfXKTQN1cSQTmf957RaO7ueMwH
+Osl3O11LAt9HUhQRYn5pClxLrhO3Jhbr6LpEc3hp19IImrV5h4YnDr4OpCclMwGz
+ple9/MtL/Uyco4YEyriv8ABzZqHdtUheVyxNhuBZO74/LZ5GWHSfIrfFjxxeaIXg
+/RBxwj88izUREY1GCxyK+VCzX7WSZZGeMNrERqIiMk/x314Tfre2rvjOZ7788S3y
+93R7ePghv4Pw2GU1TbHjlwmwpBIaySUSbUen1v2EioD4J18fPatiaAXVz6YlWHdj
+fWhG2IC+dDatg0wje6XaiA5vRc6RNpgAC/fqGbBfiXLNs4LmXT9n/jCfjfuI+3PJ
+9yAkrnNFIUBs8tIFVE34UmhRkpMcLLOlDz5TZ+uVMVx+TRMW5vDx6/7ixFQ58k8X
+Pv69D/lxPq6yVSIbT7+RI+AjFpyAo5QyCK/V1CQCp5xSnVHpTBSW/GUOTybcuk5c
+KXAUy08lGn3hexL3V603HTFZrbei5MvgIfShP4IlYKCfvcD/jE05dnP5OTH1R+0p
+EXVafjW78C0n/G0eVSCg
+=4f73
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
