@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3H1UIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:08:06 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60460 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab3H1UIE (ORCPT
+	id S1754772Ab3H1UKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:10:19 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:49216 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3H1UKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:08:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,977,1367971200"; 
-   d="scan'208";a="46156669"
-Date: Wed, 28 Aug 2013 21:07:52 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v4 10/10] xen/arm,arm64: enable SWIOTLB_XEN
-In-Reply-To: <1376600325.9273.223.camel@hastur.hellion.org.uk>
-Message-ID: <alpine.DEB.2.02.1308282104000.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308151200580.4470@kaball.uk.xensource.com>  <1376565054-24153-10-git-send-email-stefano.stabellini@eu.citrix.com> <1376600325.9273.223.camel@hastur.hellion.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 28 Aug 2013 16:10:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+In-Reply-To: <20130828185459.GV30088@pengutronix.de>
+References: <1377657163-6606-1-git-send-email-festevam@gmail.com>
+	<20130828052758.GQ30088@pengutronix.de>
+	<CAOMZO5BiE7tqja9p51gOGEwtWsKjyX23qZ3=ewyuubMwsgXcLA@mail.gmail.com>
+	<20130828185459.GV30088@pengutronix.de>
+Date: Wed, 28 Aug 2013 17:10:16 -0300
+Message-ID: <CAOMZO5CuGAH+5+8cE7tjzZTXhLbFxMRt13mhimuBLJkRQz6+7Q@mail.gmail.com>
+Subject: Re: [PATCH] imx-drm: Fix probe failure
+From: Fabio Estevam <festevam@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013, Ian Campbell wrote:
-> On Thu, 2013-08-15 at 12:10 +0100, Stefano Stabellini wrote:
-> > At the moment always rely on swiotlb-xen, but when Xen starts supporting
-> > hardware IOMMUs we'll be able to avoid it conditionally on the presence
-> > of an IOMMU on the platform.
-> 
-> Do we have any idea how we are going to do this?
-> 
-> It's extra complicated if you consider that on some systems on some of
-> the devices are behind an IOMMU :-/
-> 
-> I wonder if we can enumerate which devices have an IOMMU at boot time
-> and force a ludicrous dma mask (such as 0) if one isn't present in order
-> to force us to always take the exchange_and_pin path?
+On Wed, Aug 28, 2013 at 3:54 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
 
-We don't need to worry about how to specify which devices need to go via
-the swiotlb internally, because we have our own arm specific
-dma_map_ops. At the moment they are just implemented using the
-swiotlb-xen functions, but we could easily provide wrappers that check
-our own internal whitelist/blacklist and go via swiotlb-xen only in
-those cases.
+> Do the open/close callbacks work?
+
+The 'open' callback maps to the generic 'drm_open', so we cannot use it.
+
+Shouldn't we rely on the refcount done by the drm core instead of
+doing this manually in imx-drm?
