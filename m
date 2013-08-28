@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3H1StN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:49:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47367 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab3H1StL convert rfc822-to-8bit (ORCPT
+	id S1754843Ab3H1Sta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:49:30 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:40749 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab3H1St2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:49:11 -0400
-Subject: Re: merging device tree binding dirs for serial bindings
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Wed, 28 Aug 2013 14:49:28 -0400
+Date: Wed, 28 Aug 2013 19:49:22 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        lee.jones@linaro.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] input: ti_am335x_tsc: Enable shared IRQ for TSC
+Message-ID: <20130828184921.GC3777@gmail.com>
+References: <1377470724-15710-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1377470724-15710-2-git-send-email-zubair.lutfullah@gmail.com>
+ <20130828104211.GB14111@linutronix.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130828183534.GC14627@kroah.com>
-Date: Wed, 28 Aug 2013 13:49:13 -0500
-Cc: devicetree@vger.kernel.org,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "shawn.guo@linaro.org Guo" <shawn.guo@linaro.org>,
-        "s.hauer@pengutronix.de Hauer" <s.hauer@pengutronix.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0F60E12D-C0BF-4185-85FF-0BC879B3C1F0@codeaurora.org>
-References: <F93329E6-1426-4197-871D-211F34455DDE@codeaurora.org> <20130828183534.GC14627@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <20130828104211.GB14111@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Aug 28, 2013, at 1:35 PM, Greg Kroah-Hartman wrote:
-
-> On Wed, Aug 28, 2013 at 01:02:14PM -0500, Kumar Gala wrote:
->> We appear to have:
->> 
->> Documentation/devicetree/bindings/serial/
->> 
->> and
->> 
->> Documentation/devicetree/bindings/tty/serial/
->> 
->> Which one do we want to keep, I'd pick the first, but I don't care too much.
+On Wed, Aug 28, 2013 at 12:42:11PM +0200, Sebastian Andrzej Siewior wrote:
+> * Zubair Lutfullah | 2013-08-25 23:45:23 [+0100]:
 > 
-> I don't care, I never created either one, and don't do any devicetree
-> stuff, so it's up to the devicetree maintainers to pick one.
+> >diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+> >index e1c5300..4124e580 100644
+> >--- a/drivers/input/touchscreen/ti_am335x_tsc.c
+> >+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+> >@@ -315,11 +321,17 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+...
+> >+	/* If any IRQ flags left, return none. So ADC can handle its IRQs */
+> >+	status = titsc_readl(ts_dev, REG_IRQSTATUS);
+> >+	if (status == false)
+> >+		return IRQ_HANDLED;
+> >+	else
+> >+		return IRQ_NONE;
 > 
-> thanks,
-> 
-> greg k-h
+> If I understand this correctly you return IRQ_NONE the TSC interrupt has
+> been handled and no ADC interrupt is outstanding.
 
-Since you don't care we'll go with bindings/serial.
+Its actually the opposite. TSC handler checks if there are any ADC IRQ flags
+outstanding.
 
-I'll send a patch to merge and clean this up.
+If there is no outstanding, then IRQ_HANDLED is returned.
+If there is ADC IRQ outstanding, then IRQ_NONE is returned.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+ZubairLK
