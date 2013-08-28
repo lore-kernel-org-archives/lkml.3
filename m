@@ -1,148 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3H1VJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:09:12 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:57778 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3H1VJK (ORCPT
+	id S1755497Ab3H1VKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 17:10:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54076 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab3H1VKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 17:09:10 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 8/9] cgroup: implement for_each_css()
-Date: Wed, 28 Aug 2013 17:03:48 -0400
-Message-Id: <1377723829-22814-9-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
-References: <1377723829-22814-1-git-send-email-tj@kernel.org>
+	Wed, 28 Aug 2013 17:10:21 -0400
+Date: Wed, 28 Aug 2013 14:10:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] percpu ida: Switch to cpumask_t, add some comments
+Message-Id: <20130828141019.25aff643c87e43ffafdbcb7e@linux-foundation.org>
+In-Reply-To: <20130828210010.GD1357@kmo-pixel>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+	<1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
+	<20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
+	<20130828195517.GF8032@kmo-pixel>
+	<20130828132550.d0ce4d3a4d40ee07e7e8a1c1@linux-foundation.org>
+	<20130828210010.GD1357@kmo-pixel>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are enough places where css's of a cgroup are iterated, which
-currently uses for_each_root_subsys() + explicit cgroup_css().  This
-patch implements for_each_css() and replaces the above combination
-with it.
+On Wed, 28 Aug 2013 14:00:10 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
 
-This patch doesn't introduce any behavior changes.
+> On Wed, Aug 28, 2013 at 01:25:50PM -0700, Andrew Morton wrote:
+> > On Wed, 28 Aug 2013 12:55:17 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
+> > 
+> > > Fixup patch, addressing Andrew's review feedback:
+> > 
+> > Looks reasonable.
+> > 
+> > >  lib/idr.c           | 38 +++++++++++++++++++++-----------------
+> > 
+> > I still don't think it should be in this file.
+> > 
+> > You say that some as-yet-unmerged patches will tie the new code into
+> > the old ida code.  But will it do it in a manner which requires that
+> > the two reside in the same file?
+> 
+> Not require, no - but it's just intimate enough with my ida rewrite that
+> I think it makes sense; it makes some use of stuff that should be
+> internal to the ida code.
+> 
+> Mostly just sharing the lock though, since I got rid of the ida
+> interfaces that don't do locking, but percpu ida needs a lock that also
+> covers what ida needs.
+> 
+> It also makes use of a ganged allocation interface, but there's no real
+> reason ida can't expose that, it's just unlikely to be useful to
+> anything but percpu ida.
+> 
+> The other reason I think it makes sense to live in idr.c is more for
+> users of the code; as you pointed out as far as the user's perspective
+> percpu ida isn't doing anything fundamentally different from ida, so I
+> think it makes sense for the code to live in the same place as a
+> kindness to future kernel developers who are trying to find their way
+> around the various library code.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 53 +++++++++++++++++++++++++++++++----------------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index cd53b49..88684ce 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -289,6 +289,21 @@ static int notify_on_release(const struct cgroup *cgrp)
- }
- 
- /**
-+ * for_each_css - iterate all css's of a cgroup
-+ * @css: the iteration cursor
-+ * @ssid: the index of the subsystem, CGROUP_SUBSYS_COUNT after reaching the end
-+ * @cgrp: the target cgroup to iterate css's of
-+ *
-+ * Should be called under cgroup_mutex.
-+ */
-+#define for_each_css(css, ssid, cgrp)					\
-+	for ((ssid) = 0; (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)	\
-+		if (!((css) = rcu_dereference_check(			\
-+				(cgrp)->subsys[(ssid)],			\
-+				lockdep_is_held(&cgroup_mutex)))) { }	\
-+		else
-+
-+/**
-  * for_each_subsys - iterate all loaded cgroup subsystems
-  * @ss: the iteration cursor
-  * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
-@@ -2007,8 +2022,8 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 			      bool threadgroup)
- {
- 	int retval, i, group_size;
--	struct cgroup_subsys *ss, *failed_ss = NULL;
- 	struct cgroupfs_root *root = cgrp->root;
-+	struct cgroup_subsys_state *css, *failed_css = NULL;
- 	/* threadgroup list cursor and array */
- 	struct task_struct *leader = tsk;
- 	struct task_and_cgroup *tc;
-@@ -2081,13 +2096,11 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
- 	 */
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
--
--		if (ss->can_attach) {
--			retval = ss->can_attach(css, &tset);
-+	for_each_css(css, i, cgrp) {
-+		if (css->ss->can_attach) {
-+			retval = css->ss->can_attach(css, &tset);
- 			if (retval) {
--				failed_ss = ss;
-+				failed_css = css;
- 				goto out_cancel_attach;
- 			}
- 		}
-@@ -2123,12 +2136,9 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
- 	/*
- 	 * step 4: do subsystem attach callbacks.
- 	 */
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
--
--		if (ss->attach)
--			ss->attach(css, &tset);
--	}
-+	for_each_css(css, i, cgrp)
-+		if (css->ss->attach)
-+			css->ss->attach(css, &tset);
- 
- 	/*
- 	 * step 5: success! and cleanup
-@@ -2145,13 +2155,11 @@ out_put_css_set_refs:
- 	}
- out_cancel_attach:
- 	if (retval) {
--		for_each_root_subsys(root, ss) {
--			struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
--
--			if (ss == failed_ss)
-+		for_each_css(css, i, cgrp) {
-+			if (css == failed_css)
- 				break;
--			if (ss->cancel_attach)
--				ss->cancel_attach(css, &tset);
-+			if (css->ss->cancel_attach)
-+				css->ss->cancel_attach(css, &tset);
- 		}
- 	}
- out_free_group_list:
-@@ -4694,8 +4702,9 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- {
- 	struct dentry *d = cgrp->dentry;
- 	struct cgroup_event *event, *tmp;
--	struct cgroup_subsys *ss;
-+	struct cgroup_subsys_state *css;
- 	bool empty;
-+	int ssid;
- 
- 	lockdep_assert_held(&d->d_inode->i_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
-@@ -4715,8 +4724,8 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	 * will be invoked to perform the rest of destruction once the
- 	 * percpu refs of all css's are confirmed to be killed.
- 	 */
--	for_each_root_subsys(cgrp->root, ss)
--		kill_css(cgroup_css(cgrp, ss));
-+	for_each_css(css, ssid, cgrp)
-+		kill_css(css);
- 
- 	/*
- 	 * Mark @cgrp dead.  This prevents further task migration and child
--- 
-1.8.3.1
-
+I found things to be quite the opposite - it took 5 minutes of staring,
+head-scratching, double-checking and penny-dropping before I was
+confident that the newly-added code actually has nothing at all to do
+with the current code.  Putting it in the same file was misleading, and
+I got misled.
