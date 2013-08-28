@@ -1,206 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3H1Mt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:49:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64242 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752175Ab3H1Mt0 (ORCPT
+	id S1755434Ab3H1Mts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:49:48 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5496 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3H1Mtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:49:26 -0400
-Date: Wed, 28 Aug 2013 13:48:57 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "djbw@fb.com" <djbw@fb.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 1/3] DMA: Freescale: revise device tree binding
- document
-Message-ID: <20130828124857.GB10250@e106331-lin.cambridge.arm.com>
-References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com>
- <1377600123-5746-2-git-send-email-hongbo.zhang@freescale.com>
- <20130827112509.GH19893@e106331-lin.cambridge.arm.com>
- <521DB26F.8010501@freescale.com>
+	Wed, 28 Aug 2013 08:49:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 28 Aug 2013 05:49:46 -0700
+Message-ID: <521DF1E9.7050504@nvidia.com>
+Date: Wed, 28 Aug 2013 15:49:45 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521DB26F.8010501@freescale.com>
-Thread-Topic: [PATCH v8 1/3] DMA: Freescale: revise device tree binding
- document
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] ARM: tegra: Add hdmi to Tegra114 Dalmore device tree
+References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com> <1377686459-16634-6-git-send-email-mperttunen@nvidia.com> <20130828123008.GC32254@ulmo>
+In-Reply-To: <20130828123008.GC32254@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 09:18:55AM +0100, Hongbo Zhang wrote:
-> On 08/27/2013 07:25 PM, Mark Rutland wrote:
-> > On Tue, Aug 27, 2013 at 11:42:01AM +0100, hongbo.zhang@freescale.com wrote:
-> >> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> >>
-> >> This patch updates the discription of each type of DMA controller and its
-> >> channels, it is preparation for adding another new DMA controller binding, it
-> >> also fixes some defects of indent for text alignment at the same time.
-> >>
-> >> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> >> ---
-> >>   .../devicetree/bindings/powerpc/fsl/dma.txt        |   62 +++++++++-----------
-> >>   1 file changed, 27 insertions(+), 35 deletions(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> >> index 2a4b4bc..ddf17af 100644
-> >> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> >> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> >> @@ -1,33 +1,29 @@
-> >> -* Freescale 83xx DMA Controller
-> >> +* Freescale DMA Controllers
-> >>   
-> >> -Freescale PowerPC 83xx have on chip general purpose DMA controllers.
-> >> +** Freescale Elo DMA Controller
-> >> +   This is a little-endian DMA controller, used in Freescale mpc83xx series
-> >> +   chips such as mpc8315, mpc8349, mpc8379 etc.
-> >>   
-> >>   Required properties:
-> >>   
-> >> -- compatible        : compatible list, contains 2 entries, first is
-> >> -		 "fsl,CHIP-dma", where CHIP is the processor
-> >> -		 (mpc8349, mpc8360, etc.) and the second is
-> >> -		 "fsl,elo-dma"
-> >> -- reg               : <registers mapping for DMA general status reg>
-> >> -- ranges		: Should be defined as specified in 1) to describe the
-> >> -		  DMA controller channels.
-> >> +- compatible        : must include "fsl,elo-dma"
-> > We should list the other values that may be in the list also, unless
-> > they are really of no consequence, in which case their presence in dt is
-> > questionable.
-> Hmm.  Stephen questioned here too, it seems this is a default rule.
-> Although Scott@freescale had explained our thoughts, I'd like to edit 
-> this item like this:
-> 
-> "must include "fsl,eloplus-dma", and a "fsl,CHIP-dma" is optional, where 
-> CHIP is the processor name"
-> 
-> We don't list all the chip name because we have tens of them and we 
-> cannot list all of them, and it is unnecessary to list them because we 
-> even don't use "fsl,CHIP-dma" in the new driver, add "fsl,CHIP-dma" here 
-> just make it questionable when it presents in example and  old dts files.
-> 
-> I remove the examples in bracket "(mpc8349, mpc8360, etc.)" because we 
-> can see the real example below.
-> I don't say" if "fsl,CHIP-dma" presents, it should be the first one, and 
-> the "fsl,eloplus-dma" should be the second" because it is common rule.
-> the description language should be clear and concise too I think.
+On 08/28/2013 03:30 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Aug 28, 2013 at 01:40:59PM +0300, Mikko Perttunen wrote:
+>> Add hdmi node to Dalmore device tree to supply Dalmore-specific
+>
+> s/hdmi/HDMI/
 
-Actually, you've convinced me for the form as you originally converted
-it (must include "fsl,elo-dma"), given that the other strings aren't
-used to give information anywhere and "fsl,CHIP-dma" doesn't fully
-define a valid string.
+Will fix.
 
-> >> +- reg               : <registers specifier for DMA general status reg>
-> >> +- ranges            : describes the mapping between the address space of the
-> >> +                      DMA channels and the address space of the DMA controller
-> >>   - cell-index        : controller index.  0 for controller @ 0x8100
-> >> -- interrupts        : <interrupt mapping for DMA IRQ>
-> >> +- interrupts        : <interrupt specifier for DMA IRQ>
-> >>   - interrupt-parent  : optional, if needed for interrupt mapping
-> >>   
-> >> -
-> >>   - DMA channel nodes:
-> >> -        - compatible        : compatible list, contains 2 entries, first is
-> >> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
-> >> -			 (mpc8349, mpc8350, etc.) and the second is
-> >> -			 "fsl,elo-dma-channel". However, see note below.
-> >> -        - reg               : <registers mapping for channel>
-> >> +        - compatible        : must include "fsl,elo-dma-channel"
-> >> +                              However, see note below.
-> > Again, I think we should list the other entries that may be in the list.
-> > Otherwise it's not clear what the binding defines. Similarly for the
-> > other compatible list definitions below...
-> >
-> >> +        - reg               : <registers specifier for channel>
-> >>           - cell-index        : dma channel index starts at 0.
-> > I realise you haven't changed it, but it's unclear what the cell-index
-> > property is (and somewhat confusingly there seem to be multiple
-> > defnitions). It might be worth clarifying it while performing the other
-> > cleanup.
-> not clear with your point "multiple definitions", we really have 
-> multiple dma channels for one dma controller.
-> cell-index is used as channel index, this is an old method used by old 
-> driver, my patch didn't touch this part.
+>
+>> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+> [...]
+>> +	host1x {
+>> +		hdmi {
+>> +			status = "okay";
+>> +
+>> +			vdd-supply = <&vdd_hdmi_reg>;
+>> +			pll-supply = <&palmas_smps3_reg>;
+>> +			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+>
+> I prefer to use a blank line to separate "standard" from
+> "vendor-specific" properties.
 
-Sorry, I'd misunderstood the cell-index property. More noise from me.
+Will fix.
 
-Given that, this looks fine to me.
+>
+>> +			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+>
+> Other .dts files split this so it doesn't exceed 80 characters. I'm not
+> sure how useful that is as a general rule for DT source files, though.
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+Will fix. I guess check_patch.pl doesn't check for line length in *.dts.
 
-> >>   
-> >>   Optional properties:
-> >> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
-> >> -			  (on 83xx this is expected to be identical to
-> >> -			   the interrupts property of the parent node)
-> >> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
-> >> +                              (on 83xx this is expected to be identical to
-> >> +                              the interrupts property of the parent node)
-> >>           - interrupt-parent  : optional, if needed for interrupt mapping
-> >>   
-> >>   Example:
-> >> @@ -70,30 +66,26 @@ Example:
-> >>   		};
-> >>   	};
-> >>   
-> >> -* Freescale 85xx/86xx DMA Controller
-> >> -
-> >> -Freescale PowerPC 85xx/86xx have on chip general purpose DMA controllers.
-> >> +** Freescale EloPlus DMA Controller
-> >> +   This is DMA controller with extended addresses and chaining, mainly used in
-> >> +   Freescale mpc85xx/86xx, Pxxx and BSC series chips, such as mpc8540, mpc8641
-> >> +   p4080, bsc9131 etc.
-> >>   
-> >>   Required properties:
-> >>   
-> >> -- compatible        : compatible list, contains 2 entries, first is
-> >> -		 "fsl,CHIP-dma", where CHIP is the processor
-> >> -		 (mpc8540, mpc8540, etc.) and the second is
-> >> -		 "fsl,eloplus-dma"
-> >> -- reg               : <registers mapping for DMA general status reg>
-> >> +- compatible        : must include "fsl,eloplus-dma"
-> >> +- reg               : <registers specifier for DMA general status reg>
-> >>   - cell-index        : controller index.  0 for controller @ 0x21000,
-> >>                                            1 for controller @ 0xc000
-> >> -- ranges		: Should be defined as specified in 1) to describe the
-> >> -		  DMA controller channels.
-> >> +- ranges            : describes the mapping between the address space of the
-> >> +                      DMA channels and the address space of the DMA controller
-> >>   
-> >>   - DMA channel nodes:
-> >> -        - compatible        : compatible list, contains 2 entries, first is
-> >> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
-> >> -			 (mpc8540, mpc8560, etc.) and the second is
-> >> -			 "fsl,eloplus-dma-channel". However, see note below.
-> >> +        - compatible        : must include "fsl,eloplus-dma-channel"
-> >> +                              However, see note below.
-> >>           - cell-index        : dma channel index starts at 0.
-> >> -        - reg               : <registers mapping for channel>
-> >> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
-> >> +        - reg               : <registers specifier for channel>
-> >> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
-> >>           - interrupt-parent  : optional, if needed for interrupt mapping
-> >>   
-> >>   Example:
-> >> -- 
-> >> 1.7.9.5
-> > Thanks,
-> > Mark.
-> >
-> 
-> 
-> 
-> 
+>
+>>   	i2c@7000d000 {
+>>   		status = "okay";
+>>   		clock-frequency = <400000>;
+>> @@ -1169,6 +1184,8 @@
+>>   			regulator-min-microvolt = <5000000>;
+>>   			regulator-max-microvolt = <5000000>;
+>>   			enable-active-high;
+>> +			regulator-always-on;
+>> +			regulator-boot-on;
+>
+> This warrants at least a mention in the commit message.
+
+Hmm, yeah. Looks like the HDMI driver only enables the Vdd in 
+tegra_output_hdmi_enable, which is too late at least for DDC. I guess a 
+better patch would be to enable it earlier. In _probe?
+
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
