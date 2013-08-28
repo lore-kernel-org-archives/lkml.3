@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3H1B7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 21:59:51 -0400
-Received: from server2.irisoft.sk ([82.208.7.68]:53655 "EHLO
-	server2.irisoft.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3H1B7u (ORCPT
+	id S1753456Ab3H1CDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 22:03:17 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49827 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab3H1CDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 21:59:50 -0400
-X-Greylist: delayed 5575 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 21:59:49 EDT
-Message-ID: <eb691671281065de97489e5c28389932.squirrel@82.208.7.68>
-Date: Wed, 28 Aug 2013 01:02:43 +0200 (CEST)
-Subject: =?iso-8859-2?Q?V=E1=BEen=ED_E-mail_u=BE=EDvate=B5a;?=
-From: "webmail update" <info@upcmail.sk>
-User-Agent: SquirrelMail/1.4.16
+	Tue, 27 Aug 2013 22:03:16 -0400
+Date: Tue, 27 Aug 2013 18:58:34 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Message-ID: <20130828015834.GH10506@lizard>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
+ <20130813090039.GA5604@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130813090039.GA5604@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vá¾ení E-mail u¾ívateµa;
+On Tue, Aug 13, 2013 at 12:00:39PM +0300, Dan Carpenter wrote:
+> > > > Use the wrapper function for retrieving the platform data instead of
+> > > > accessing dev->platform_data directly.
+> > > 
+> > > Um.. what is the benefit or rationale of this patch?
+> > 
+> > CC'ed Joe Perches, Dan Carpenter
+> > 
+> > Hi Anton Vorontsov,
+> > 
+> > Usually, using the wrapper function makes the code simpler.
+> > Also, it make the code more readable.
+> 
+> Since people are asking my opinion, then yes using
+> dev_get_platdata() as intended is better than open coding.  It's a
+> coding standard thing.
 
-Prekroèili ste 23432 boxy nastavi» svoje
-Webová slu¾ba / Administrátor, a budete ma» problémy pri odosielaní a
-prijíma» e-maily, kým znova overi». Musíte aktualizova» kliknutím na
-odkaz ni¾¹ie a vyplòte údaje pre overenie vá¹ho úètu
-Prosím, kliknite na odkaz ni¾¹ie alebo skopírova» vlo¾i» do
-e-prehliadaè pre overenie Schránky.
+I don't see any immediate benefit of applying this patch... It does not
+fix anything now or in the near future (or we are about to add something
+into dev_get_platdata() wrapper, or get rid of dev.platform_data member?
+Any plans for this? Then it should be in the commit message.)
 
-http://webmailupdate20324.jimdo.com/
-Pozor!
-Ak tak neurobíte, budú ma» obmedzený prístup k e-mailu schránky. Ak
-sa
-nepodarí aktualizova» svoj &#8203;&#8203;úèet do troch dní od aktualizácie
-oznámenia,
-bude vá¹ úèet natrvalo uzavretá.
-S pozdravom,
-System Administrator &#174;
+Without any plans to actually use the wrapper the patch is just a churn
+[that might result into patch conflicts that I'll have to deal with], so
+I'll refrain from applying it.
 
+Thanks,
+
+Anton
