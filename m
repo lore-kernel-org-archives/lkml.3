@@ -1,150 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3H1Toc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:44:32 -0400
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:41245 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753390Ab3H1Tob (ORCPT
+	id S1755050Ab3H1Tqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:46:38 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:49597 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab3H1Tqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:44:31 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:44:30 EDT
-Message-ID: <00000140c66bc35e-0dd2d091-0f50-4afc-b79a-15f9fc190cef-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:34:45 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 00/35] percpu v3: Replace __get_cpu_var
-X-SES-Outgoing: 2013.08.28-54.240.9.50
+	Wed, 28 Aug 2013 15:46:36 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support other architectures
+To: Mark Rutland <mark.rutland@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+In-Reply-To: <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
+References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <2032060.4bgTKOdEX2@flatron> <1376777376.25016.11.camel@pasglop> <20130819101922.GI3719@e106331-lin.cambridge.arm.com> <5212177C.8000709@gmail.com> <521223FA.5050903@arm.com> <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
+Date: Wed, 28 Aug 2013 20:46:38 +0100
+Message-Id: <20130828194638.AB78E3E0A6F@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2->V3:
-- Numerous corrections
-- Patch flow will be through individual maintainers tree. Rest will be merged
-  via percpu tree.
-- Break up the drivers patch into patches for individual maintainer domains
-- The patches are available via git from git://gentwo.org/christoph gcv
-- Drop tile arch portion since that one is going to be merged by Chris Metcalf.
+On Thu, 22 Aug 2013 14:59:30 +0100, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Mon, Aug 19, 2013 at 02:56:10PM +0100, Sudeep KarkadaNagesha wrote:
+> > On 19/08/13 14:02, Rob Herring wrote:
+> > > On 08/19/2013 05:19 AM, Mark Rutland wrote:
+> > >> On Sat, Aug 17, 2013 at 11:09:36PM +0100, Benjamin Herrenschmidt wrote:
+> > >>> On Sat, 2013-08-17 at 12:50 +0200, Tomasz Figa wrote:
+> > >>>> I wonder how would this handle uniprocessor ARM (pre-v7) cores, for
+> > >>>> which 
+> > >>>> the updated bindings[1] define #address-cells = <0> and so no reg 
+> > >>>> property.
+> > >>>>
+> > >>>> [1] - http://thread.gmane.org/gmane.linux.ports.arm.kernel/260795
+> > >>>
+> > >>> Why did you do that in the binding ? That sounds like looking to create
+> > >>> problems ... 
+> > >>>
+> > >>> Traditionally, UP setups just used "0" as the "reg" property on other
+> > >>> architectures, why do differently ?
+> > >>
+> > >> The decision was taken because we defined our reg property to refer to
+> > >> the MPIDR register's Aff{2,1,0} bitfields, and on UP cores before v7
+> > >> there's no MPIDR register at all. Given there can only be a single CPU
+> > >> in that case, describing a register that wasn't present didn't seem
+> > >> necessary or helpful.
+> > > 
+> > > What exactly reg represents is up to the binding definition, but it
+> > > still should be present IMO. I don't see any issue with it being
+> > > different for pre-v7.
+> > > 
+> > Yes it's better to have 'reg' with value 0 than not having it.
+> > Otherwise this generic of_get_cpu_node implementation would need some
+> > _hack_ to handle that case.
+> 
+> I'm not sure that having some code to handle a difference in standard
+> between two architectures is a hack. If anything, I'd argue encoding a
+> reg of 0 that corresponds to a nonexistent MPIDR value (given that's
+> what the reg property is defined to map to on ARM) is more of a hack ;)
+> 
+> I'm not averse to having a reg value of 0 for this case, but given that
+> there are existing devicetrees without it, requiring a reg property will
+> break compatibility with them.
 
-V1->V2:
- - Break up larger patches.
- - CC maintainers
- - Include description in each patch.
+Then special cases those device trees, but you changing existing
+convention really needs to be avoided. The referenced documentation
+change is brand new, so we're not stuck with it.
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
-
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&x), y, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-These conversions lead to some savings in code size.
-
-Before
-
-size arch/x86/boot/bzImage
-   text	   data	    bss	    dec	    hex	filename
-3996624	      0	      0	3996624	 3cfbd0	arch/x86/boot/bzImage
-
-After
-
-size arch/x86/boot/bzImage
-   text	   data	    bss	    dec	    hex	filename
-3995840	      0	      0	3995840	 3cf8c0	arch/x86/boot/bzImage
-
+g.
 
