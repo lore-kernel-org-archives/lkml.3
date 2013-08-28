@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab3H1Stz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:49:55 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:60413 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859Ab3H1Sth (ORCPT
+	id S1755018Ab3H1Sur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:50:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50491 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab3H1Suq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:49:37 -0400
+	Wed, 28 Aug 2013 14:50:46 -0400
+Date: Wed, 28 Aug 2013 11:53:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: Missing removal of sysfs attributes in gpiolib
+Message-ID: <20130828185306.GA3346@kroah.com>
+References: <20130828175717.GA7493@roeck-us.net>
+ <20130828183139.GA14627@kroah.com>
+ <20130828184433.GA8240@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <20130821155751.GB3046@ab42.lan>
-References: <20130618092516.GC18663@ab42.lan>
-	<1371547751-13873-2-git-send-email-christian.ruppert@abilis.com>
-	<CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com>
-	<20130805115118.GF20936@ab42.lan>
-	<CACRpkdaXqHHF5oDsWSCyhzUOurrxfLhS40=csGJFT8fK4WkA4A@mail.gmail.com>
-	<20130821155751.GB3046@ab42.lan>
-Date: Wed, 28 Aug 2013 20:49:36 +0200
-Message-ID: <CACRpkda5KT8QWDK+76j0_yfW2LShOb_3mkssFd=nt8tLXx2Q3Q@mail.gmail.com>
-Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130828184433.GA8240@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 5:57 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
-> On Wed, Aug 14, 2013 at 06:53:56PM +0200, Linus Walleij wrote:
->>
->> OK, that can also be called a "bank" or "register" but whatever.
->
-> As you suggested below I re-read Documentation/pinctrl.txt and it got me
-> even more confused:
-> Am I right in my understanding that the whole concept of a
-> "port/bank/register" or whatever we would like to call it does not exist
-> in the pinctrl framework?
+On Wed, Aug 28, 2013 at 11:44:33AM -0700, Guenter Roeck wrote:
+> On Wed, Aug 28, 2013 at 11:31:39AM -0700, Greg Kroah-Hartman wrote:
+> > On Wed, Aug 28, 2013 at 10:57:17AM -0700, Guenter Roeck wrote:
+> > > Hi,
+> > > 
+> > > I noticed that gpiolib does not explicitly remove the sysfs attributes it
+> > > created when exporting a gpio pin when the pin is unexported, ie when the
+> > > associated device is removed.
+> > > 
+> > > Are those attributes auto-removed when device_unregister() is called ?
+> > 
+> > Yes they are.
+> > 
+> Does that mean that the explicit attribute removal that is implemented
+> in many drivers can be dropped ? That might save a lot of code.
 
-Not that I know :-)
+Yes, they could be dropped, but I think it's nicer to be explicit about
+this.  Originally, it could be a long time before the kernel would
+remove the sysfs device from the tree, so removing the files could cause
+problems as the callbacks would happen for a device that the driver was
+not expecting to be present.
 
-If what it means is a number of registers from address x thru x+n
-words in memory that is called a register range usually, the
-Device Tree "regs" property.
+Also, if a driver is "unbound" from a device, and the device sticks
+around, the sysfs files are not removed automatically, it's up to the
+driver to remove them, so it's good practice to remove them.
 
-If you're referring to a subset of registers dealing with a batch
-of pins or a single pin that can use whatever terminology you
-want, I consider it a driver-internal detail. Some GPIO drivers
-talk about "ports" when they have e.g. 2 x 32bit registers
-handling a total of 64 pins, then that is port 0 and port 1 or
-something like this, but it's really up to the driver.
+> > > Sorry if this is a dumb question - I have not noticed this anywhere else,
+> > > and I don't seem to be able to find the code actually performing auto-removal
+> > > of manually created attributes, so I wonder if this is a bug or intentional.
+> > 
+> > Hm, I thought this was listed in the kobject.txt documentation file, but
+> > I don't seem to find it there.
+> > 
+> Would be great if this could be documented somewhere (unless it is and
+> I didn't find it ;). I would volunteer to do it myself, but I have no idea
+> what the conditions for auto-removal are nor how to phrase it, nor where
+> to put it.
 
-Yours,
-Linus Walleij
+When the kobject is removed from the system, the sysfs files attached to
+it are also removed.  That could go into kobject.txt somewhere, but the
+attributes are what need to be highlighted, and used, so that's a better
+thing to focus on at the moment.
+
+> > But, ideally you aren't creating individual attributes directly, you are
+> > using attribute groups for the device, right?
+> > 
+> gpiolib does currently create individual attributes as well as attribute
+> groups after registering the device. I was in the process of converting
+> it to use device_create_with_groups() when I noticed that there is no
+> removal, so I wondered.
+
+The driver core will remove the attributes at the point the device goes
+away, no need to remove them on your own here at all.
+
+> I take it that attribute groups created with sysfs_create_group()
+> are auto-removed as well, correct ?  
+
+Yes they are, but no driver, or subsystem, should be making that call,
+they should be using the driver core pointers for attributes instead to
+properly handle the lifespan of the attributes for the device.
+
+thanks,
+
+greg k-h
