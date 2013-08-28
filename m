@@ -1,598 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3H1UNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:13:51 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:46060 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab3H1UNu (ORCPT
+	id S1755434Ab3H1UN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:13:58 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:36130 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755403Ab3H1UNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:13:50 -0400
-From: Mischa Jonker <Mischa.Jonker@synopsys.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: [PATCH] ARC: Add perf support
-Date: Wed, 28 Aug 2013 22:13:34 +0200
-Message-Id: <1377720814-2779-1-git-send-email-mjonker@synopsys.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 28 Aug 2013 16:13:55 -0400
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 16:13:55 EDT
+Message-ID: <00000140c688e916-ddb57313-75d3-4200-8529-3e8f72c8c1bf-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Wed, 28 Aug 2013 20:06:37 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [gcv v3 15/35] drivers/cpuidle: Replace __get_cpu_var uses
+References: <20130828193457.140443630@linux.com>
+X-SES-Outgoing: 2013.08.28-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds basic perf support for ARC. Most PERF_COUNT_HW* events are
-supported now. Cache events and callchains are not (yet).
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
----
- arch/arc/boot/dts/angel4.dts      |    4 +
- arch/arc/include/asm/perf_event.h |  190 +++++++++++++++++++++-
- arch/arc/kernel/Makefile          |    1 +
- arch/arc/kernel/perf_event.c      |  323 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 517 insertions(+), 1 deletion(-)
- create mode 100644 arch/arc/kernel/perf_event.c
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
-index 4fb2d6f..fd34b5d 100644
---- a/arch/arc/boot/dts/angel4.dts
-+++ b/arch/arc/boot/dts/angel4.dts
-@@ -67,5 +67,9 @@
- 				reg = <1>;
- 			};
- 		};
-+
-+		arcpmu0: pmu {
-+			compatible = "snps,arc_pmu";
-+		};
- 	};
- };
-diff --git a/arch/arc/include/asm/perf_event.h b/arch/arc/include/asm/perf_event.h
-index 115ad96..e56c5bb 100644
---- a/arch/arc/include/asm/perf_event.h
-+++ b/arch/arc/include/asm/perf_event.h
-@@ -1,5 +1,7 @@
- /*
-- * Copyright (C) 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ * Linux performance counter support for ARC
-+ *
-+ * Copyright (C) 2011-2013 Synopsys, Inc. (www.synopsys.com)
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -10,4 +12,190 @@
- #ifndef __ASM_PERF_EVENT_H
- #define __ASM_PERF_EVENT_H
- 
-+/* real maximum varies per CPU, this is the maximum supported by the driver */
-+#define ARC_PMU_MAX_HWEVENTS	64
-+
-+#define ARC_REG_CC_BUILD	0xF6
-+#define ARC_REG_CC_INDEX	0x240
-+#define ARC_REG_CC_NAME0	0x241
-+#define ARC_REG_CC_NAME1	0x242
-+
-+#define ARC_REG_PCT_BUILD	0xF5
-+#define ARC_REG_PCT_COUNTL	0x250
-+#define ARC_REG_PCT_COUNTH	0x251
-+#define ARC_REG_PCT_SNAPL	0x252
-+#define ARC_REG_PCT_SNAPH	0x253
-+#define ARC_REG_PCT_CONFIG	0x254
-+#define ARC_REG_PCT_CONTROL	0x255
-+#define ARC_REG_PCT_INDEX	0x256
-+
-+#define ARC_REG_PCT_CONTROL_CC	(1 << 16)	/* clear counts */
-+#define ARC_REG_PCT_CONTROL_SN	(1 << 17)	/* snapshot */
-+
-+struct arc_reg_pct_build {
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	unsigned int m:8, c:8, r:6, s:2, v:8;
-+#else
-+	unsigned int v:8, s:2, r:6, c:8, m:8;
-+#endif
-+};
-+
-+struct arc_reg_cc_build {
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	unsigned int c:16, r:8, v:8;
-+#else
-+	unsigned int v:8, r:8, c:16;
-+#endif
-+};
-+
-+#define PERF_COUNT_ARC_DCLM	(PERF_COUNT_HW_MAX + 0)
-+#define PERF_COUNT_ARC_DCSM	(PERF_COUNT_HW_MAX + 1)
-+#define PERF_COUNT_ARC_ICM	(PERF_COUNT_HW_MAX + 2)
-+#define PERF_COUNT_ARC_BPOK	(PERF_COUNT_HW_MAX + 3)
-+#define PERF_COUNT_ARC_EDTLB	(PERF_COUNT_HW_MAX + 4)
-+#define PERF_COUNT_ARC_EITLB	(PERF_COUNT_HW_MAX + 5)
-+#define PERF_COUNT_ARC_HW_MAX	(PERF_COUNT_HW_MAX + 6)
-+
-+/* The "generalized" performance events seem to really be a copy
-+   of the available events on x86 processors; the mapping to ARC
-+   events is not always possible 1-to-1. Fortunately, there doesn't
-+   seem to be an exact definition for these events, so we can cheat
-+   a bit where necessary */
-+static const char * const arc_pmu_ev_hw_map[] = {
-+	/* cycles not in halted state */
-+	[PERF_COUNT_HW_CPU_CYCLES] = "crun",
-+	/* reference cycles not in halted state; also "crun" as we don't
-+	   do Dynamic Voltage/Frequency Scaling (yet) */
-+	[PERF_COUNT_HW_REF_CPU_CYCLES] = "crun",
-+	/* Unclear what this means, Intel uses 0x013c, which according to
-+	   their datasheet means "unhalted reference cycles". Don't ask
-+	   me what the difference is with PERF_COUNT_HW_REF_CPU_CYCLES */
-+	[PERF_COUNT_HW_BUS_CYCLES] = "crun",
-+	[PERF_COUNT_HW_INSTRUCTIONS] = "iall",
-+	[PERF_COUNT_HW_BRANCH_MISSES] = "bpfail",
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] = "ijmp",
-+	/* ARC can either measure stalls per pipeline stage, or all stalls
-+	   combined; for now we assign all stalls to STALLED_CYCLES_BACKEND
-+	   and all pipeline flushes (e.g. caused by mispredicts, etc.) to
-+	   STALLED_CYCLES_FRONTEND.
-+
-+	   We could start multiple performance counters and combine everything
-+	   afterwards, but that makes it complicated, and users can always
-+	   use PERF_TYPE_RAW.
-+
-+	   Note that I$ cache misses aren't counted by either of the two! */
-+	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = "bflush",
-+	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = "bstall",
-+	[PERF_COUNT_ARC_DCLM] = "dclm",
-+	[PERF_COUNT_ARC_DCSM] = "dcsm",
-+	[PERF_COUNT_ARC_ICM] = "icm",
-+	[PERF_COUNT_ARC_BPOK] = "bpok",
-+	[PERF_COUNT_ARC_EDTLB] = "edtlb",
-+	[PERF_COUNT_ARC_EITLB] = "eitlb",
-+};
-+
-+#define C(_x)			PERF_COUNT_HW_CACHE_##_x
-+#define CACHE_OP_UNSUPPORTED	0xffff
-+
-+
-+static const unsigned arc_pmu_cache_map[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
-+	[C(L1D)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= PERF_COUNT_ARC_DCLM,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= PERF_COUNT_ARC_DCSM,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(L1I)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= PERF_COUNT_ARC_ICM,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(LL)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(DTLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= PERF_COUNT_ARC_EDTLB,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(ITLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= PERF_COUNT_ARC_EITLB,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(BPU)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)] = PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
-+			[C(RESULT_MISS)]	= PERF_COUNT_HW_BRANCH_MISSES,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+};
- #endif /* __ASM_PERF_EVENT_H */
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-index c242ef0..8004b4f 100644
---- a/arch/arc/kernel/Makefile
-+++ b/arch/arc/kernel/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_KPROBES)      		+= kprobes.o
- obj-$(CONFIG_ARC_MISALIGN_ACCESS) 	+= unaligned.o
- obj-$(CONFIG_KGDB)			+= kgdb.o
- obj-$(CONFIG_ARC_METAWARE_HLINK)	+= arc_hostlink.o
-+obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
- obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
- CFLAGS_fpu.o   += -mdpfp
-diff --git a/arch/arc/kernel/perf_event.c b/arch/arc/kernel/perf_event.c
-new file mode 100644
-index 0000000..2733006
---- /dev/null
-+++ b/arch/arc/kernel/perf_event.c
-@@ -0,0 +1,323 @@
-+/*
-+ * Linux performance counter support for ARC
-+ *
-+ * Copyright (C) 2013 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This code is inspired by the perf support of various other architectures.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *
-+ * TODO:
-+ *	- support for RAW events
-+ *	- SMP
-+ */
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/perf_event.h>
-+#include <linux/platform_device.h>
-+#include <asm/arcregs.h>
-+#define DEBUG
-+
-+struct arc_pmu {
-+	struct pmu	pmu;
-+	int		counter_size;	/* in bits */
-+	int		n_counters;
-+	unsigned long	used_mask[BITS_TO_LONGS(ARC_PMU_MAX_HWEVENTS)];
-+	int		ev_hw_idx[PERF_COUNT_ARC_HW_MAX];
-+};
-+
-+/* read counter #idx; note that counter# != event# on ARC! */
-+static uint64_t arc_pmu_read_counter(int idx)
-+{
-+	uint32_t tmp;
-+	uint64_t result;
-+
-+	/* ARC supports making 'snapshots' of the counters, so we don't
-+	   need to care about counters wrapping to 0 underneath our feet */
-+	write_aux_reg(ARC_REG_PCT_INDEX, idx);
-+	tmp = read_aux_reg(ARC_REG_PCT_CONTROL);
-+	write_aux_reg(ARC_REG_PCT_CONTROL, tmp | ARC_REG_PCT_CONTROL_SN);
-+	result = (uint64_t) (read_aux_reg(ARC_REG_PCT_SNAPH)) << 32;
-+	result |= read_aux_reg(ARC_REG_PCT_SNAPL);
-+
-+	return result;
-+}
-+
-+static void arc_perf_event_update(struct perf_event *event,
-+				  struct hw_perf_event *hwc, int idx)
-+{
-+	struct arc_pmu *arc_pmu = container_of(event->pmu, struct arc_pmu, pmu);
-+	uint64_t prev_raw_count, new_raw_count;
-+	int64_t delta;
-+
-+	do {
-+		prev_raw_count = local64_read(&hwc->prev_count);
-+		new_raw_count = arc_pmu_read_counter(idx);
-+	} while (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+				 new_raw_count) != prev_raw_count);
-+
-+	delta = (new_raw_count - prev_raw_count) &
-+		((1ULL << arc_pmu->counter_size) - 1ULL);
-+
-+	local64_add(delta, &event->count);
-+	local64_sub(delta, &hwc->period_left);
-+}
-+
-+static void arc_pmu_read(struct perf_event *event)
-+{
-+	arc_perf_event_update(event, &event->hw, event->hw.idx);
-+}
-+
-+static int arc_pmu_cache_event(u64 config)
-+{
-+	unsigned int cache_type, cache_op, cache_result;
-+	int ret;
-+
-+	cache_type	= (config >>  0) & 0xff;
-+	cache_op	= (config >>  8) & 0xff;
-+	cache_result	= (config >> 16) & 0xff;
-+	if (cache_type >= PERF_COUNT_HW_CACHE_MAX)
-+		return -EINVAL;
-+	if (cache_type >= PERF_COUNT_HW_CACHE_OP_MAX)
-+		return -EINVAL;
-+	if (cache_type >= PERF_COUNT_HW_CACHE_RESULT_MAX)
-+		return -EINVAL;
-+
-+	ret = arc_pmu_cache_map[cache_type][cache_op][cache_result];
-+
-+	if (ret == CACHE_OP_UNSUPPORTED)
-+		return -ENOENT;
-+
-+	return ret;
-+}
-+
-+/* initializes hw_perf_event structure if event is supported */
-+static int arc_pmu_event_init(struct perf_event *event)
-+{
-+	struct arc_pmu *arc_pmu = container_of(event->pmu, struct arc_pmu, pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int ret;
-+
-+	switch (event->attr.type) {
-+	case PERF_TYPE_HARDWARE:
-+		if (event->attr.config >= PERF_COUNT_HW_MAX)
-+			return -ENOENT;
-+		if (arc_pmu->ev_hw_idx[event->attr.config] < 0)
-+			return -ENOENT;
-+		hwc->config = arc_pmu->ev_hw_idx[event->attr.config];
-+		pr_debug("initializing event %d with cfg %d\n",
-+			 (int) event->attr.config, (int) hwc->config);
-+		return 0;
-+	case PERF_TYPE_HW_CACHE:
-+		ret = arc_pmu_cache_event(event->attr.config);
-+		if (ret < 0)
-+			return ret;
-+		hwc->config = arc_pmu->ev_hw_idx[ret];
-+		return 0;
-+	default:
-+		return -ENOENT;
-+	}
-+}
-+
-+/* starts all counters */
-+static void arc_pmu_enable(struct pmu *pmu)
-+{
-+	uint32_t tmp;
-+	tmp = read_aux_reg(ARC_REG_PCT_CONTROL);
-+	write_aux_reg(ARC_REG_PCT_CONTROL, (tmp & 0xffff0000) | 0x1);
-+}
-+
-+/* stops all counters */
-+static void arc_pmu_disable(struct pmu *pmu)
-+{
-+	uint32_t tmp;
-+	tmp = read_aux_reg(ARC_REG_PCT_CONTROL);
-+	write_aux_reg(ARC_REG_PCT_CONTROL, (tmp & 0xffff0000) | 0x0);
-+}
-+
-+/* assigns hardware counter to hardware condition.
-+   note that there is no separate start/stop mechanism;
-+   stopping is achieved by assigning the 'never' condition */
-+static void arc_pmu_start(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	if (WARN_ON_ONCE(idx == -1))
-+		return;
-+
-+	if (flags & PERF_EF_RELOAD)
-+		WARN_ON_ONCE(!(event->hw.state & PERF_HES_UPTODATE));
-+
-+	event->hw.state = 0;
-+
-+	/* enable ARC pmu here */
-+	write_aux_reg(ARC_REG_PCT_INDEX, idx);
-+	write_aux_reg(ARC_REG_PCT_CONFIG, hwc->config);
-+}
-+
-+static void arc_pmu_stop(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	if (!(event->hw.state & PERF_HES_STOPPED)) {
-+		/* stop ARC pmu here */
-+		write_aux_reg(ARC_REG_PCT_INDEX, idx);
-+		/* condition code #0 is always "never" */
-+		write_aux_reg(ARC_REG_PCT_CONFIG, 0);
-+
-+		event->hw.state |= PERF_HES_STOPPED;
-+	}
-+
-+	if ((flags & PERF_EF_UPDATE) &&
-+	    !(event->hw.state & PERF_HES_UPTODATE)) {
-+		arc_perf_event_update(event, &event->hw, idx);
-+		event->hw.state |= PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static void arc_pmu_del(struct perf_event *event, int flags)
-+{
-+	struct arc_pmu *arc_pmu = container_of(event->pmu, struct arc_pmu, pmu);
-+
-+	arc_pmu_stop(event, PERF_EF_UPDATE);
-+	__clear_bit(event->hw.idx, arc_pmu->used_mask);
-+
-+	perf_event_update_userpage(event);
-+}
-+
-+/* allocate hardware counter and optionally start counting */
-+static int arc_pmu_add(struct perf_event *event, int flags)
-+{
-+	struct arc_pmu *arc_pmu = container_of(event->pmu, struct arc_pmu, pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	if (__test_and_set_bit(idx, arc_pmu->used_mask)) {
-+		idx = find_first_zero_bit(arc_pmu->used_mask,
-+					  arc_pmu->n_counters);
-+		if (idx == arc_pmu->n_counters)
-+			return -EAGAIN;
-+
-+		__set_bit(idx, arc_pmu->used_mask);
-+		hwc->idx = idx;
-+	}
-+
-+	write_aux_reg(ARC_REG_PCT_INDEX, idx);
-+	write_aux_reg(ARC_REG_PCT_CONFIG, 0);
-+	write_aux_reg(ARC_REG_PCT_COUNTL, 0);
-+	write_aux_reg(ARC_REG_PCT_COUNTH, 0);
-+	local64_set(&hwc->prev_count, 0);
-+
-+	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+	if (flags & PERF_EF_START)
-+		arc_pmu_start(event, PERF_EF_RELOAD);
-+
-+	perf_event_update_userpage(event);
-+
-+	return 0;
-+}
-+
-+static int arc_pmu_device_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct arc_pmu *arc_pmu;
-+	struct arc_reg_pct_build pct_bcr;
-+	struct arc_reg_cc_build cc_bcr;
-+	int i, j;
-+
-+	union cc_name {
-+		struct {
-+			uint32_t word0, word1;
-+			char sentinel;
-+		} indiv;
-+		char str[9];
-+	} cc_name;
-+
-+
-+	READ_BCR(ARC_REG_PCT_BUILD, pct_bcr);
-+	if (!pct_bcr.v) {
-+		pr_err("This core does not have performance counters!\n");
-+		return -ENODEV;
-+	}
-+
-+	arc_pmu = devm_kzalloc(&pdev->dev, sizeof(struct arc_pmu),
-+			       GFP_KERNEL);
-+	if (!arc_pmu)
-+		return -ENOMEM;
-+
-+	arc_pmu->n_counters = pct_bcr.c;
-+	BUG_ON(arc_pmu->n_counters > ARC_PMU_MAX_HWEVENTS);
-+
-+	arc_pmu->counter_size = 32 + (pct_bcr.s << 4);
-+	pr_info("ARC PMU found with %d counters of size %d bits\n",
-+		arc_pmu->n_counters, arc_pmu->counter_size);
-+
-+	READ_BCR(ARC_REG_CC_BUILD, cc_bcr);
-+
-+	if (!cc_bcr.v)
-+		pr_err("Strange! Performance counters exist, but no countable conditions?\n");
-+
-+	pr_info("ARC PMU has %d countable conditions\n", cc_bcr.c);
-+
-+	cc_name.str[8] = 0;
-+	for (i = 0; i < PERF_COUNT_HW_MAX; i++)
-+		arc_pmu->ev_hw_idx[i] = -1;
-+
-+	for (j = 0; j < cc_bcr.c; j++) {
-+		write_aux_reg(ARC_REG_CC_INDEX, j);
-+		cc_name.indiv.word0 = read_aux_reg(ARC_REG_CC_NAME0);
-+		cc_name.indiv.word1 = read_aux_reg(ARC_REG_CC_NAME1);
-+		for (i = 0; i < ARRAY_SIZE(arc_pmu_ev_hw_map); i++) {
-+			if (arc_pmu_ev_hw_map[i] &&
-+			    !strcmp(arc_pmu_ev_hw_map[i], cc_name.str) &&
-+			    strlen(arc_pmu_ev_hw_map[i])) {
-+				pr_debug("mapping %d to idx %d with name %s\n",
-+					 i, j, cc_name.str);
-+				arc_pmu->ev_hw_idx[i] = j;
-+			}
-+		}
-+	}
-+
-+	arc_pmu->pmu = (struct pmu) {
-+		.pmu_enable	= arc_pmu_enable,
-+		.pmu_disable	= arc_pmu_disable,
-+		.event_init	= arc_pmu_event_init,
-+		.add		= arc_pmu_add,
-+		.del		= arc_pmu_del,
-+		.start		= arc_pmu_start,
-+		.stop		= arc_pmu_stop,
-+		.read		= arc_pmu_read,
-+	};
-+
-+	ret = perf_pmu_register(&arc_pmu->pmu, pdev->name, PERF_TYPE_RAW);
-+
-+	return ret;
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id arc_pmu_match[] = {
-+	{ .compatible = "snps,arc_pmu" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, arc_pmu_match);
-+#endif
-+
-+static struct platform_driver arc_pmu_driver = {
-+	.driver	= {
-+		.name		= "arc_pmu",
-+		.of_match_table = of_match_ptr(arc_pmu_match),
-+	},
-+	.probe		= arc_pmu_device_probe,
-+};
-+
-+module_platform_driver(arc_pmu_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Mischa Jonker <mjonker@synopsys.com>");
-+MODULE_DESCRIPTION("ARC PMU driver");
--- 
-1.7.9.5
+Other use cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+
+__get_cpu_var() is defined as :
+
+
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+
+
+
+__get_cpu_var() always only does an address determination. However, store and retrieve operations
+could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+
+this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
+optimized assembly code to read and write per cpu variables.
+
+
+This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
+or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
+and less registers are used when code is generated.
+
+At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
+
+The patchset includes passes over all arches as well. Once these operations are used throughout then
+specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+f.e. using a global register that may be set to the per cpu base.
+
+
+
+
+Transformations done to __get_cpu_var()
+
+
+1. Determine the address of the percpu instance of the current processor.
+
+	DEFINE_PER_CPU(int, y);
+	int *x = &__get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(&y);
+
+
+2. Same as #1 but this time an array structure is involved.
+
+	DEFINE_PER_CPU(int, y[20]);
+	int *x = __get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(y);
+
+
+3. Retrieve the content of the current processors instance of a per cpu variable.
+
+	DEFINE_PER_CPU(int, u);
+	int x = __get_cpu_var(y)
+
+   Converts to
+
+	int x = __this_cpu_read(y);
+
+
+4. Retrieve the content of a percpu struct
+
+	DEFINE_PER_CPU(struct mystruct, y);
+	struct mystruct x = __get_cpu_var(y);
+
+   Converts to
+
+	memcpy(this_cpu_ptr(&x), y, sizeof(x));
+
+
+5. Assignment to a per cpu variable
+
+	DEFINE_PER_CPU(int, y)
+	__get_cpu_var(y) = x;
+
+   Converts to
+
+	this_cpu_write(y, x);
+
+
+6. Increment/Decrement etc of a per cpu variable
+
+	DEFINE_PER_CPU(int, y);
+	__get_cpu_var(y)++
+
+   Converts to
+
+	this_cpu_inc(y)
+
+
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/drivers/cpuidle/governors/ladder.c
+===================================================================
+--- linux.orig/drivers/cpuidle/governors/ladder.c	2013-08-27 14:31:00.000000000 -0500
++++ linux/drivers/cpuidle/governors/ladder.c	2013-08-27 14:34:26.170362548 -0500
+@@ -66,7 +66,7 @@ static inline void ladder_do_selection(s
+ static int ladder_select_state(struct cpuidle_driver *drv,
+ 				struct cpuidle_device *dev)
+ {
+-	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
++	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
+ 	struct ladder_device_state *last_state;
+ 	int last_residency, last_idx = ldev->last_state_idx;
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+@@ -170,7 +170,7 @@ static int ladder_enable_device(struct c
+  */
+ static void ladder_reflect(struct cpuidle_device *dev, int index)
+ {
+-	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
++	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
+ 	if (index > 0)
+ 		ldev->last_state_idx = index;
+ }
+Index: linux/drivers/cpuidle/governors/menu.c
+===================================================================
+--- linux.orig/drivers/cpuidle/governors/menu.c	2013-08-27 14:31:00.000000000 -0500
++++ linux/drivers/cpuidle/governors/menu.c	2013-08-27 14:34:26.170362548 -0500
+@@ -258,7 +258,7 @@ again:
+  */
+ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+ 	int i;
+ 	int multiplier;
+@@ -342,7 +342,7 @@ static int menu_select(struct cpuidle_dr
+  */
+ static void menu_reflect(struct cpuidle_device *dev, int index)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	data->last_state_idx = index;
+ 	if (index >= 0)
+ 		data->needs_update = 1;
+@@ -355,7 +355,7 @@ static void menu_reflect(struct cpuidle_
+  */
+ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	int last_idx = data->last_state_idx;
+ 	unsigned int last_idle_us = cpuidle_get_last_residency(dev);
+ 	struct cpuidle_state *target = &drv->states[last_idx];
 
