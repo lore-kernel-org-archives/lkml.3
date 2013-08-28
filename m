@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3H1Kly (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:41:54 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13327 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3H1KlV (ORCPT
+	id S1754968Ab3H1KmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:42:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42588 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3H1KmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:41:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 28 Aug 2013 03:41:21 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <thierry.reding@gmail.com>
-CC: <tbergstrom@nvidia.com>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH 3/5] clk: tegra114: Initialize clocks needed for HDMI
-Date: Wed, 28 Aug 2013 13:40:57 +0300
-Message-ID: <1377686459-16634-4-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com>
-References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 28 Aug 2013 06:42:13 -0400
+Date: Wed, 28 Aug 2013 12:42:11 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: jic23@cam.ac.uk, lee.jones@linaro.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] input: ti_am335x_tsc: Enable shared IRQ for TSC
+Message-ID: <20130828104211.GB14111@linutronix.de>
+References: <1377470724-15710-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1377470724-15710-2-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1377470724-15710-2-git-send-email-zubair.lutfullah@gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add host1x, disp1 and disp2 clocks to the clock initialization table.
-These clocks are required for HDMI support.
+* Zubair Lutfullah | 2013-08-25 23:45:23 [+0100]:
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- drivers/clk/tegra/clk-tegra114.c | 3 +++
- 1 file changed, 3 insertions(+)
+>diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+>index e1c5300..4124e580 100644
+>--- a/drivers/input/touchscreen/ti_am335x_tsc.c
+>+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+>@@ -315,11 +321,17 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+> 	}
+> 
+> 	if (irqclr) {
+>-		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+>-		am335x_tsc_se_update(ts_dev->mfd_tscadc);
+>-		return IRQ_HANDLED;
+>+		titsc_writel(ts_dev, REG_IRQSTATUS, (status | irqclr));
+>+		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
+> 	}
+>-	return IRQ_NONE;
+>+
+>+	/* If any IRQ flags left, return none. So ADC can handle its IRQs */
+>+	status = titsc_readl(ts_dev, REG_IRQSTATUS);
+>+	if (status == false)
+>+		return IRQ_HANDLED;
+>+	else
+>+		return IRQ_NONE;
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index cd94b0c..a491dea 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -2211,6 +2211,9 @@ static struct tegra_clk_init_table init_table[] __initdata = {
- 	{i2s4, pll_a_out0, 11289600, 0},
- 	{dfll_soc, pll_p, 51000000, 1},
- 	{dfll_ref, pll_p, 51000000, 1},
-+	{host1x, pll_c, 150000000, 0},
-+	{disp1, pll_p, 600000000, 0},
-+	{disp2, pll_p, 600000000, 0},
- 	{clk_max, clk_max, 0, 0}, /* This MUST be the last entry. */
- };
- 
--- 
-1.8.1.5
+If I understand this correctly you return IRQ_NONE the TSC interrupt has
+been handled and no ADC interrupt is outstanding.
+This is bad because if you received 1k _only_ TSC interrupts you return
+always IRQ_NONE and the irq-core will disable the interrupt line. You
+don't want this.
 
+Now, if you handle an interrupt at the TSC level and return IRQ_HANDLED
+then the second handler, the ADC in your case, is also invoked.
+So you can drop this and return IRQ_HANDLED if you *did* something here
+and NONE if didn't do anything.
+
+Basides that, I'm fine with it.
+
+>+
+> }
+
+Sebastian
