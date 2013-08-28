@@ -1,172 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab3H1Cn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 22:43:27 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36666 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab3H1Cn0 (ORCPT
+	id S1753407Ab3H1C5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 22:57:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37707 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481Ab3H1C5X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 22:43:26 -0400
+	Tue, 27 Aug 2013 22:57:23 -0400
+Date: Tue, 27 Aug 2013 19:57:21 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: mutex warning in cpufreq + RFC patch
+Message-ID: <20130828025721.GA19754@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130827152405.GQ19893@e106331-lin.cambridge.arm.com>
-References: <1374301266-26726-1-git-send-email-prabhakar.csengg@gmail.com>
- <1374301266-26726-3-git-send-email-prabhakar.csengg@gmail.com>
- <5217A3E7.50706@samsung.com> <CA+V-a8tStFRbELAmZL=418VpR9SJgp8uo_4hrtny2UEMEoXakg@mail.gmail.com>
- <20130827152405.GQ19893@e106331-lin.cambridge.arm.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 28 Aug 2013 08:13:04 +0530
-Message-ID: <CA+V-a8vuYNNiXJ+iGgceaTqHdM_Q9X2dVDyiHHZPJ+-rSbJgLQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] media: i2c: adv7343: add OF support
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        LDOC <linux-doc@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+I'm running this simple test code in a shell on my 3.10 kernel and running
+into this warning rather quickly.
 
-On Tue, Aug 27, 2013 at 8:54 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> [fixing up devicetree list address]
->
-Thanks!
+	cd /sys/devices/system/cpu/cpu1
+	while true
+	do
+	echo 0 > online
+	echo 1 > online
+	done &
+	while true
+	do
+	echo 300000 > cpufreq/scaling_min_freq
+	echo 1000000 > cpufreq/scaling_min_freq
+	done
 
-> On Mon, Aug 26, 2013 at 03:41:45AM +0100, Prabhakar Lad wrote:
->> Hi Sylwester,
->>
->> On Fri, Aug 23, 2013 at 11:33 PM, Sylwester Nawrocki
->> <s.nawrocki@samsung.com> wrote:
->> > Cc: DT binding maintainers
->
-> Cheers!
->
->> >
->> > On 07/20/2013 08:21 AM, Lad, Prabhakar wrote:
->> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->> >>
->> >> add OF support for the adv7343 driver.
->> >>
->> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> >> ---
->> > [...]
->> >>  .../devicetree/bindings/media/i2c/adv7343.txt      |   48 ++++++++++++++++++++
->> >>  drivers/media/i2c/adv7343.c                        |   46 ++++++++++++++++++-
->> >>  2 files changed, 93 insertions(+), 1 deletion(-)
->> >>  create mode 100644 Documentation/devicetree/bindings/media/i2c/adv7343.txt
->> >>
->> >> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7343.txt b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
->> >> new file mode 100644
->> >> index 0000000..5653bc2
->> >> --- /dev/null
->> >> +++ b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
->> >> @@ -0,0 +1,48 @@
->> >> +* Analog Devices adv7343 video encoder
->> >> +
->> >> +The ADV7343 are high speed, digital-to-analog video encoders in a 64-lead LQFP
->> >> +package. Six high speed, 3.3 V, 11-bit video DACs provide support for composite
->> >> +(CVBS), S-Video (Y-C), and component (YPrPb/RGB) analog outputs in standard
->> >> +definition (SD), enhanced definition (ED), or high definition (HD) video
->> >> +formats.
->> >> +
->> >> +Required Properties :
->> >> +- compatible: Must be "adi,adv7343"
->> >> +
->> >> +Optional Properties :
->> >> +- adi,power-mode-sleep-mode: on enable the current consumption is reduced to
->> >> +                           micro ampere level. All DACs and the internal PLL
->> >> +                           circuit are disabled.
->
-> This seems to be a boolean property, and I couldn't find any description
-> in the linked datasheet of the constraints under which the unit may be
-> put into sleep mode.
->
-> Why do we require this property in the dt? Can the driver not always put
-> a adv734x into sleep mode if it wants to, and then wake it up as
-> required?
->
-The adv7343 decoder, fits on da850/dm6467 etc.. For the da850 it supports
-only SD where as the dm6467 supports HD/SD/ED for which DAC 1-6 of
-Register 0x0 varies for this board so I added them as the platform data
-but I got a review comment in the ML asking to add entire register as
-the pdata instead of DAC 1-6, so because of which it is being converted
-in the same way for DT.
+(Note you should place valid values for min/max freq in the example
+above.)
 
->> >
->> > Sorry for getting back so late to this. I realize this is already queued in
->> > the media tree. But this binding doesn't look good enough to me. I think it
->> > will need to be corrected during upcoming -rc period.
->> >
->> Thanks for the catch :-)
->>
->> > It might be hard to figure out only from the chip's datasheet what
->> > adi,power-mode-sleep-mode really refers to. AFAICS it is for assigning some
->> > value to a specific register. If we really need to specify register values
->> > in the device tree then it would probably make sense to describe to which
->> > register this apply. Now the name looks like derived from some structure
->> > member name in the Linux driver of the device.
->> >
->> the property is derived from the datasheet itself for example the
->> 'adi,power-mode-sleep-mode' --> Register 0x0 power mode bit 0
->> 'adi,power-mode-pll-ctrl' ---> Register 0x0 power mode bit 1
->> 'adi,dac-enable' ----> Register 0x0 power mode bit 2-7
->> 'adi,sd-dac-enable' ---> Register 0x82 SD mode register bit 1-2
->>
->> [1] http://www.analog.com/static/imported-files/data_sheets/ADV7342_7343.pdf
->>
->> >> +- adi,power-mode-pll-ctrl: PLL and oversampling control. This control allows
->> >> +                        internal PLL 1 circuit to be powered down and the
->> >> +                        oversampling to be switched off.
->
-> This affects whether or not oversampling is possible. That sounds like
-> it should be a run-time configurable rather than a fixed property of the
-> device.
->
-ditto
+WARNING: at kernel/mutex.c:341 __mutex_lock_slowpath+0x14c/0x410()              DEBUG_LOCKS_WARN_ON(l->magic != l)
+Modules linked in:                                                              CPU: 0 PID: 1960 Comm: sh Tainted: G        W    3.10.0 #32                     [<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)                                                                              [<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)                                                                          [<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)                                                                   [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c08a0334>] (__mutex_lock_slowpath+0x14c/0x410)                                                                [<c08a0334>] (__mutex_lock_slowpath+0x14c/0x410) from [<c08a0618>] (mutex_lock+0x20/0x3c)                                                                       [<c08a0618>] (mutex_lock+0x20/0x3c) from [<c0636114>] (cpufreq_governor_dbs+0x568/0x5f8)                                                                        [<c0636114>] (cpufreq_governor_dbs+0x568/0x5f8) from [<c06325b0>] (__cpufreq_governor+0xdc/0x1a4)                                                               [<c06325b0>] (__cpufreq_governor+0xdc/0x1a4) from [<c06328f0>] (__cpufreq_set_policy+0x278/0x2c0)                                                               [<c06328f0>] (__cpufreq_set_policy+0x278/0x2c0) from [<c0632ea0>] (store_scaling_min_freq+0x80/0x9c)                                                            [<c0632ea0>] (store_scaling_min_freq+0x80/0x9c) from [<c0633ae4>] (store+0x58/0x90)                                                                             [<c0633ae4>] (store+0x58/0x90) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
+[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
+[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)     [<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
 
->> >
->> > Similar comments applies to this property.
->> >
->> >> +- ad,adv7343-power-mode-dac: array configuring the power on/off DAC's 1..6,
->> >> +                           0 = OFF and 1 = ON, Default value when this
->> >> +                           property is not specified is <0 0 0 0 0 0>.
->> >
->> > Name of the property is incorrect here. It has changed to "adi,dac-enable".
->> >
->> OK
->
-> Why do we need this property at all? Might some DACs not be wired up to
-> anything?
->
-> Surely this could be configured at run-time as and when the user wants
-> to use the DACs.
->
->>
->> >> +- ad,adv7343-sd-config-dac-out: array configure SD DAC Output's 1 and 2, 0 = OFF
->> >> +                              and 1 = ON, Default value when this property is
->> >> +                              not specified is <0 0>.
->> >
->> > Similarly, "adi,sd-dac-enable.
->> >
->> OK
->
-> Again, couldn't this be done at run-time?
->
-> Do we need to permanently disable/enable some DACs? If so, why?
->
-ditto.
+This is happening because the governor is stopped via hotplug and
+while we're in the middle of touching the scaling_min_freq file.
+When the governor is stopped we destroy the timer_mutex that the
+scaling_min_freq thread is just about to acquire. From what I can
+tell, we shouldn't be stopping the governor until after the
+kobjects go away or we should start and stop the governor while
+holding the policy semaphore otherwise userspace can come in and
+use uninitialized things. I have this hack which seems to mostly
+work. Thoughts?
 
-> I also note from the spec that the unit has two clocks, CLKIN_A and
-> CLKIN_B that aren't in the binding, but should be. Some regulators
-> too (VDD, PVDD, VAA, VDD_IO, VREF?).
->
-OK
+----8<----
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index cbfe3c1..134004b 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -823,11 +823,11 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+ 	policy = cpufreq_cpu_get(sibling);
+ 	WARN_ON(!policy);
+ 
++	lock_policy_rwsem_write(sibling);
++
+ 	if (has_target)
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 
+-	lock_policy_rwsem_write(sibling);
+-
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+ 
+ 	cpumask_set_cpu(cpu, policy->cpus);
+@@ -835,12 +835,11 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+ 	per_cpu(cpufreq_cpu_data, cpu) = policy;
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+-	unlock_policy_rwsem_write(sibling);
+-
+ 	if (has_target) {
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_START);
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+ 	}
++	unlock_policy_rwsem_write(sibling);
+ 
+ 	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+ 	if (ret) {
+@@ -1037,9 +1036,6 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 		return -EINVAL;
+ 	}
+ 
+-	if (cpufreq_driver->target)
+-		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
+-
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	if (!cpufreq_driver->setpolicy)
+ 		strncpy(per_cpu(cpufreq_cpu_governor, cpu),
+@@ -1048,9 +1044,6 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 
+ 	WARN_ON(lock_policy_rwsem_write(cpu));
+ 	cpus = cpumask_weight(data->cpus);
+-
+-	if (cpus > 1)
+-		cpumask_clear_cpu(cpu, data->cpus);
+ 	unlock_policy_rwsem_write(cpu);
+ 
+ 	if (cpu != data->cpu) {
+@@ -1086,9 +1079,6 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-		if (cpufreq_driver->target)
+-			__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+-
+ 		lock_policy_rwsem_read(cpu);
+ 		kobj = &data->kobj;
+ 		cmp = &data->kobj_unregister;
+@@ -1103,6 +1093,11 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 		wait_for_completion(cmp);
+ 		pr_debug("wait complete\n");
+ 
++		if (cpufreq_driver->target) {
++			__cpufreq_governor(data, CPUFREQ_GOV_STOP);
++			__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
++		}
++
+ 		if (cpufreq_driver->exit)
+ 			cpufreq_driver->exit(data);
+ 
+@@ -1113,8 +1108,13 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 		pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+ 		cpufreq_cpu_put(data);
+ 		if (cpufreq_driver->target) {
++			WARN_ON(lock_policy_rwsem_write(cpu));
++			__cpufreq_governor(data, CPUFREQ_GOV_STOP);
++			if (cpus > 1)
++				cpumask_clear_cpu(cpu, data->cpus);
+ 			__cpufreq_governor(data, CPUFREQ_GOV_START);
+ 			__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
++			unlock_policy_rwsem_write(cpu);
+ 		}
+ 	}
+ 
 
-Regards,
---Prabhakar Lad
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
