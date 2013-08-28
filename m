@@ -1,137 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab3H1KnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:43:16 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:55866 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab3H1KnO (ORCPT
+	id S1755171Ab3H1Kom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:44:42 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48254 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3H1Koj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:43:14 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-a4-521dd43f2b03
-Message-id: <521DD43D.7070605@samsung.com>
-Date: Wed, 28 Aug 2013 13:43:09 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
- <CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
- <CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
- <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
-In-reply-to: <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xy7r2V2SDDE6dtbJoXryezeLyrjls
-	FgcXtjFaLFrWymzRfOIUs8W6qSdYLLbuvcruwO7ReOMGm8fOWXfZPeadDPTYP3cNu8fnTXIB
-	rFFcNimpOZllqUX6dglcGQ+mP2MveCZbcbz7GmMD4wLJLkZODgkBE4k7k+axQNhiEhfurWfr
-	YuTiEBJYyihxcf96dginkUli1c4WRghnLqPE7i+TwVp4BbQkDve+Aqri4GARUJW4vjYWJMwm
-	oCexofkHO4gtKhAhsXLJA1aIckGJH5PvgbWKCEhKvPv+ghlkJrPAD0aJ74+vgxUJCzhITHj0
-	AGrzciaJp6tAqjg5OAWCJU7Oeg42lVlAXWLSvEXMELa8xOY1b8FsIaAjuteuZYP4R1Hi9ORz
-	zBMYhWchWT4LSfssJO0LGJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoREzNcdjEuPWR1i
-	FOBgVOLhnbBVJkiINbGsuDL3EKMEB7OSCC//dtkgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyb
-	GV8cjjpqskj+68G+lNrrop1KYZUBD+u2p509vODhyV/6gdWtbonzzQxUQw7dbF4/NbxLYJ6J
-	5ba6x4v1lHd8rP577IfrGbEVZ6+bOhzv3X/tadz/i8vc2RY4RCwUfBh8IXJHysNPYnmHVQpj
-	Nj4q3uGXfpzv+JF/h+66zG41K5+w++cH4aIsJZbijERDLeai4kQAD1BcFXYCAAA=
+	Wed, 28 Aug 2013 06:44:39 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v5 1/5] ARM/ARM64: arch_timer: add macros for bits in control register
+Date: Wed, 28 Aug 2013 11:44:45 +0100
+Message-Id: <1377686689-30828-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 28 Aug 2013 10:44:36.0845 (UTC) FILETIME=[971871D0:01CEA3DB]
+X-MC-Unique: 113082811443705801
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7SAil7l005367
 
-On 28/08/13 13:38, Sedat Dilek wrote:
-> On Wed, Aug 28, 2013 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Wed, Aug 28, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20130827:
->>>>
->>>> The f2fs tree lost its build failure.
->>>>
->>>> The md tree gained a conflict against the arm tree.
->>>>
->>>> The libata tree lost its build failure.
->>>>
->>>> The spi tree lost its build failure.
->>>>
->>>> The arm-soc tree gained conflicts against the usb tree.
->>>>
->>>> The dma-mapping tree gained a conflict against the driver-core tree.
->>>>
->>>> The akpm-current tree gained a conflict against the net tree.
->>>>
->>>> ----------------------------------------------------------------------------
->>>>
->>>> My build here breaks like this:
->>>>
->>>>   CC      drivers/usb/host/xhci-ring.o
->>>>   CC      drivers/video/console/softcursor.o
->>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
->>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
->>>> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
->>>> [-Werror=implicit-function-declaration]
->>>> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
->>>> (first use in this function)
->>>> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
->>>> is reported only once for each function it appears in
->>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
->>>> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
->>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
->>>> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
->>>> (first use in this function)
->>>> cc1: some warnings being treated as errors
->>>> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
->>>> make[4]: *** [drivers/usb/host] Error 2
->>>>
->>>> My kernel-config is attached.
->>>>
->>> Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
->>>
->>> $ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
->>> linux/include/linux/device.h:1118:
->>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
->>> linux/include/linux/device.h:1121:
->>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
->>> linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
->>> _ddebug *descriptor, const char *fmt, ...);
->>> linux/include/linux/dynamic_debug.h:63:#define
->>> DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
->>> linux/include/linux/dynamic_debug.h:76:
->>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>> linux/include/linux/dynamic_debug.h:78:
->>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
->>> linux/include/linux/dynamic_debug.h:84:
->>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>> linux/include/linux/dynamic_debug.h:92:
->>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
->>> linux/include/linux/dynamic_debug.h:101:
->>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
->>>
->>> Can't say which one is preferred here.
->>>
->> looks like device.h is preferred or used in the sources, but this does
->> not fix the issue here.
->> sth. wrong with dev_dbg_ratelimited()?
->>
-> That change seems to cause the problems:
->
-> commit 0730d52a86919300a39a2be37f6c140997dfb82f
-> "xhci:prevent "callbacks suppressed" when debug is not enabled"
->
-> - Sedat -
->
-> [1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
->
-Hello,
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-[PATCHv2 1/2] was not applied before.
-I pointed this out few hours ago...
+Add macros to describe the bitfields in the ARM architected timer
+control register to make code easy to understand.
 
-- Dmitry
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+---
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+ arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
+ include/clocksource/arm_arch_timer.h |  8 ++++++++
+ 3 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index e406d57..1a3e967 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
+ 
+ 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+ 
+-	/* disable user access to everything */
+-	cntkctl &= ~((3 << 8) | (7 << 0));
++	/* Disable user access to both physical/virtual counters/timers */
++	/* Also disable virtual event stream */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_VIRT_EVT_EN
++			| ARCH_TIMER_USR_VCT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+ 
+ 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+ }
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 98abd47..fa4af76 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
+ {
+ 	u32 cntkctl;
+ 
+-	/* Disable user access to the timers and the physical counter. */
+ 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+-	cntkctl &= ~((3 << 8) | (1 << 0));
+ 
+-	/* Enable user access to the virtual counter and frequency. */
+-	cntkctl |= (1 << 1);
++	/* Disable user access to the timers and the physical counter */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
++
++	/* Enable user access to the virtual counter */
++	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
++
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
+ 
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index c463ce9..551f7e9 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -29,6 +29,14 @@
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
+ 
++#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
++#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
++#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
++#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
++#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
++#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
++
+ #ifdef CONFIG_ARM_ARCH_TIMER
+ 
+ extern u32 arch_timer_get_rate(void);
+-- 
+1.8.1.2
+
 
