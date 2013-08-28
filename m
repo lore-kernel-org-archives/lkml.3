@@ -1,124 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3H1QCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 12:02:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34735 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753809Ab3H1QCC (ORCPT
+	id S1754122Ab3H1QNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 12:13:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:47861 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab3H1QNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 12:02:02 -0400
-Date: Wed, 28 Aug 2013 17:01:51 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
-Message-ID: <20130828160151.GA17229@e106331-lin.cambridge.arm.com>
-References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
- <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
- <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
- <20130812180553.GD27954@radagast>
- <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
- <20130827185329.GT3005@radagast>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827185329.GT3005@radagast>
-Thread-Topic: [PATCH] usb: dwc3: core: clarify usb-phy array binding
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 28 Aug 2013 12:13:49 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-73-521e21bbe2b2
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: kyungmin.park@samsung.com
+Cc: t.stanislaws@samsung.com, m.chehab@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ian.campbell@citrix.com, rob@landley.net, mturquette@linaro.org,
+        tomasz.figa@gmail.com, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, s.nawrocki@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org,
+        linux-samsung-soc@vger.kernel.org,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Subject: [PATCH v3 0/6] ARM: S5PV210: move to common clk framework
+Date: Wed, 28 Aug 2013 18:12:58 +0200
+Message-id: <1377706384-3697-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t9jAd3dinJBBtt7xSwmrTvAZDH/yDlW
+	ize9HSwWvQuuslmcbXrDbrHp8TVWi4VtS1gsLu+aw2bRs2Erq8WM8/uYLG5f5rW4uE7e4vSa
+	U8wWS69fZLJ4OuEim8WE6WtZLA6vAJq27uV0IOtNO6vFq4NtLBbz2l+yWhybsYTRYtWuP4wO
+	4h5r5q1h9Ghp7mHzWPD5CrvH68kTGD3+rnrB7LFz1l12j1erZ7J63Lm2h81j85J6j4Pv9jB5
+	9G1ZxejxeZOcx8a5oQG8UVw2Kak5mWWpRfp2CVwZDe01BX9FKybMiG1gvCLQxcjJISFgIvFy
+	5hpGCFtM4sK99WxdjFwcQgKLGCUmfPjKAuG0M0lcunaaCaSKTcBcYuKzTSwgtoiArMTEyV+Y
+	QYqYBW6ySOy40wOWEBZwkvix9SqYzSKgKnH4ZDuQzcHBK+Ar0fSzGmKbgsTPyyfYJjByL2Bk
+	WMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHAvPpHcwrmqwOMQowMGoxMMb8Vs2SIg1say4
+	MvcQowQHs5II728RuSAh3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1MLUotg
+	skwcnFINjHVTVSzKrCRCPolde6fwcffr83cmHCiZ9nmWwr8VD/mqAlcfn2/KpXbwq0qB2pWL
+	8pefWPRlbpdOFyzay3lYXOR6n94yYz05gUhx06pcrYlCMnxmdzI6Xp8MnjP53La8iMV57xJu
+	2Of39l/LXGSgl31YyGfNNo6AmWe1pktN5hep3sCWv3qavBJLcUaioRZzUXEiAH/Ojm6BAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 07:53:29PM +0100, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Aug 13, 2013 at 02:34:10PM +0100, Mark Rutland wrote:
-> > On Mon, Aug 12, 2013 at 07:05:53PM +0100, Felipe Balbi wrote:
-> > > On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
-> > > > 
-> > > > On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
-> > > > 
-> > > > > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
-> > > > >> The binding spec wasn't clear that the order of the phandles in the
-> > > > >> usb-phy array has meaning.  Clarify this point in the binding that
-> > > > >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
-> > > > >> 
-> > > > >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> > > > >> ---
-> > > > >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
-> > > > >> 1 file changed, 3 insertions(+), 1 deletion(-)
-> > > > >> 
-> > > > >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-> > > > >> index 7a95c65..8a9770b 100644
-> > > > >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
-> > > > >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-> > > > >> @@ -6,7 +6,9 @@ Required properties:
-> > > > >>  - compatible: must be "synopsys,dwc3"
-> > > > >>  - reg : Address and length of the register set for the device
-> > > > >>  - interrupts: Interrupts used by the dwc3 controller.
-> > > > >> - - usb-phy : array of phandle for the PHY device
-> > > > >> + - usb-phy : array of phandle for the PHY device.  The first element
-> > > > >> +   in the array is expected to be a handle to the USB2/HS PHY and
-> > > > >> +   the second element is expected to be a handle to the USB3/SS PHY
-> > > > > 
-> > > > > Just to check - it's not valid to have a USB3 phy without a USB2 phy?
-> > > > 
-> > > > Don't know, hopefully Felipe will chime in on that.
-> > > 
-> > > that'd be a really non-standard implementation. Per-spec, USB3 is
-> > > *always* backwards compatible with USB2.
-> > 
-> > I'm slightly confused here. From a quick look at the driver, it expects
-> > two separate phys to be present -- one handling only USB2, and one
-> > handling USB3 (with USB2 backwards compatibility).
-> > 
-> > So it's not physically possible for someone to just wire up a single phy
-> > to the device, either USB2-only or USB3?
-> 
-> of course it is :-) In fact, TI has done it. But it causes a whole bunch
-> of other problems to support that sort of model. For one, in some
-> systems, a clock generated by the USB3 PHY is backfed into the IP and if
-> USB3 PHY isn't running, the dwc3 IP won't start.
+This patch series is the new s5pv210 clock implementation
+(using common clk framework).
 
-That sounds like a mess. But unless I've misunderstood, that doesn't
-sound like a general problem with having one phy, but rather an
-integration issue on a specific system? Presumably in that case as long
-as the phy was brought up before poking the rest of the IP, the unit
-would function correctly.
+This implementation is compatible with device tree definition and board files.
 
-> 
-> I even wrote a patch making USB3 PHY optional, but didn't push it
-> exactly because it broke some other systems and I can't guarantee users
-> won't mess up their DTS/pdata.
+This patch series is based on linux-next and has been tested on goni and aquila 
+boards using board file.
 
-Does that mean that their dts or pdata are wrong at the moment, but
-they're spared because the driver bails out due to a missing phy? If
-their pdata's wrong, that should be fixable relatively easily, but if
-the dt is wrong then I'm not sure how we can support those systems
-sensibly. That sounds like an ideal candidate for a dt quirks
-mechanism...
+This patch series require adding new registration method
+for PLL45xx and PLL46xx, which is included in this patch series:
+clk: samsung: pll: Use new registration method for PLL46xx
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg21653.html
+clk: samsung: pll: Use new registration method for PLL45xx
+http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg21652.html
+clk: samsung: exynos4: Rename exynos4_plls to exynos4x12_plls
+http://www.spinics.net/lists/arm-kernel/msg268486.html
 
-> 
-> > You can describe the USB2-only case in the dt by only listing the first
-> > phy (though the driver won't support it as it expects both to be
-> > present), but it's impossible to describe that you've wired up a single
-> > phy that's USB3 capable.
-> 
-> you might be right there...
+Mateusz Krawczuk (6):
+  media: s5p-tv: Replace mxr_ macro by default dev_
+  media: s5p-tv: Restore vpll clock rate
+  media: s5p-tv: Fix sdo driver to work with CCF
+  media: s5p-tv: Fix mixer driver to work with CCF
+  clk: samsung: Add clock driver for s5pc110/s5pv210
+  ARM: s5pv210: Migrate clock handling to Common Clock Framework
 
-Would it be possible to have something like (an optional) usb-phy-names?
-If not present, we assume the current situation, if present then we use
-it to figure out which phys are present. Maybe I'm missing something
-that makes that impossible?
+ .../bindings/clock/samsung,s5pv210-clock.txt       |  72 ++
+ arch/arm/mach-s5pv210/Kconfig                      |   9 +
+ arch/arm/mach-s5pv210/Makefile                     |   4 +-
+ arch/arm/mach-s5pv210/common.c                     |  17 +
+ arch/arm/mach-s5pv210/common.h                     |  13 +
+ arch/arm/mach-s5pv210/mach-aquila.c                |   1 +
+ arch/arm/mach-s5pv210/mach-goni.c                  |   3 +-
+ arch/arm/mach-s5pv210/mach-smdkc110.c              |   1 +
+ arch/arm/mach-s5pv210/mach-smdkv210.c              |   1 +
+ arch/arm/mach-s5pv210/mach-torbreck.c              |   1 +
+ arch/arm/plat-samsung/Kconfig                      |   2 +-
+ arch/arm/plat-samsung/init.c                       |   2 -
+ drivers/clk/samsung/Makefile                       |   3 +
+ drivers/clk/samsung/clk-s5pv210.c                  | 732 +++++++++++++++++++++
+ drivers/media/platform/s5p-tv/mixer.h              |  12 -
+ drivers/media/platform/s5p-tv/mixer_drv.c          |  80 ++-
+ drivers/media/platform/s5p-tv/mixer_grp_layer.c    |   2 +-
+ drivers/media/platform/s5p-tv/mixer_reg.c          |   6 +-
+ drivers/media/platform/s5p-tv/mixer_video.c        | 100 +--
+ drivers/media/platform/s5p-tv/mixer_vp_layer.c     |   2 +-
+ drivers/media/platform/s5p-tv/sdo_drv.c            |  45 +-
+ include/dt-bindings/clock/samsung,s5pv210-clock.h  | 221 +++++++
+ 22 files changed, 1216 insertions(+), 113 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
+ create mode 100644 drivers/clk/samsung/clk-s5pv210.c
+ create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
 
-Thanks,
-Mark.
+-- 
+1.8.1.2
+
