@@ -1,232 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3H1GUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 02:20:18 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:63594 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab3H1GUP (ORCPT
+	id S1754535Ab3H1GWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 02:22:14 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:55362 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132Ab3H1GWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 02:20:15 -0400
+	Wed, 28 Aug 2013 02:22:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <CADGdYn5fykqperPUJtGbh-E9sECFP4J8xSyjB3YA4_KzO3ZwNA@mail.gmail.com>
-References: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com>
- <1377668719-8602-1-git-send-email-ch.naveen@samsung.com> <1377668719-8602-4-git-send-email-ch.naveen@samsung.com>
- <CADGdYn5fykqperPUJtGbh-E9sECFP4J8xSyjB3YA4_KzO3ZwNA@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 28 Aug 2013 11:49:54 +0530
-Message-ID: <CAHfPSqBubNwj7ASY8dfU3q2-O1xhr+6xXC+TcRbRiPhVVRsJ7Q@mail.gmail.com>
-Subject: Re: [PATCH 3/3] thermal: exynos: Handle the misplaced TRIMINFO register
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org
+In-Reply-To: <CANVTcTZOQWLHOs5+DpopTDMpMf2dgAzjUGEv4gGd4Z2Le5TM7A@mail.gmail.com>
+References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
+	<1376189294-32022-28-git-send-email-yinghai@kernel.org>
+	<CANVTcTZOQWLHOs5+DpopTDMpMf2dgAzjUGEv4gGd4Z2Le5TM7A@mail.gmail.com>
+Date: Tue, 27 Aug 2013 23:22:09 -0700
+X-Google-Sender-Auth: DCJXGGvY3sQJPP_NimhzMahyEu8
+Message-ID: <CAE9FiQX8bQsC0ezhO8ZtcS4XOuFmc50P9GeJsE3do5vd_NHycw@mail.gmail.com>
+Subject: Re: [PATCH v4 27/28] PCI, x86, ACPI: Enable ioapic hotplug support
+ with acpi host bridge.
+From: Yinghai Lu <yinghai@kernel.org>
+To: rui wang <ruiv.wang@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 August 2013 11:33, amit daniel kachhap <amit.daniel@samsung.com> wrote:
-> Hi Naveen
->
-> On Wed, Aug 28, 2013 at 11:15 AM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> This patch adds code to handle the misplaced TRIMINFO register
->> incase of Exynos5420.
+On Tue, Aug 27, 2013 at 3:25 AM, rui wang <ruiv.wang@gmail.com> wrote:
+> On 8/11/13, Yinghai Lu <yinghai@kernel.org> wrote:
+>> We need to have ioapic setup before normal pci drivers.
+>> otherwise other pci driver can not setup irq.
 >>
->> On Exynos5420 we have a TRIMINFO register being misplaced for
->> TMU channels 2, 3 and 4
+>> So we should not treat them as normal pci devices.
+>> Also we will need to support ioapic hotplug without pci device around.
 >>
->> TRIMINFO at 0x1006c000 contains data for TMU channel 3
->> TRIMINFO at 0x100a0000 contains data for TMU channel 4
->> TRIMINFO at 0x10068000 contains data for TMU channel 2
+>> We need to call ioapic add/remove during host-bridge add/remove.
 >>
->> The misplaced register address is passed through devicetree and
->> map it seperately during probe.
->> Also, adds the documentation under devicetree/bindings/thermal/
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 >> ---
->>  .../devicetree/bindings/thermal/exynos-thermal.txt |   21 +++++++++++++
->>  drivers/thermal/samsung/exynos_tmu.c               |   32 +++++++++++++++++---
->>  2 files changed, 49 insertions(+), 4 deletions(-)
+>>  drivers/acpi/pci_root.c  |   4 ++
+>>  drivers/pci/ioapic.c     | 147
+>> ++++++++++++++++++++++++++++++-----------------
+>>  include/linux/pci-acpi.h |   8 +++
+>>  3 files changed, 106 insertions(+), 53 deletions(-)
 >>
->> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> index 284f530..e818473 100644
->> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> @@ -7,12 +7,21 @@
->>                "samsung,exynos4210-tmu"
->>                "samsung,exynos5250-tmu"
->>                "samsung,exynos5440-tmu"
->> +              "samsung,exynos5420-tmu"
->>  - interrupt-parent : The phandle for the interrupt controller
->>  - reg : Address range of the thermal registers. For soc's which has multiple
->>         instances of TMU and some registers are shared across all TMU's like
->>         interrupt related then 2 set of register has to supplied. First set
->>         belongs to each instance of TMU and second set belongs to common TMU
->>         registers.
->> +
->> + ** NOTE FOR EXYNOS5420 **
->> +    TRIMINFO register is being misplaced for TMU channels 2, 3 and 4
->> +
->> +    TERMINFO for TMU channel 2 is present in address space of TMU channel 3
->> +    TERMINFO for TMU channel 3 is present in address space of TMU channel 4
->> +    TERMINFO for TMU channel 4 is present in address space of TMU channel 2
->> +
->>  - interrupts : Should contain interrupt for thermal system
->>  - clocks : The main clock for TMU device
->>  - clock-names : Thermal system clock name
->> @@ -43,6 +52,18 @@ Example 2):
->>                 clock-names = "tmu_apbif";
->>         };
+>> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+>> index 5917839..7577175 100644
+>> --- a/drivers/acpi/pci_root.c
+>> +++ b/drivers/acpi/pci_root.c
+>> @@ -532,6 +532,8 @@ static int acpi_pci_root_add(struct acpi_device
+>> *device,
+>>               pci_enable_bridges(root->bus);
+>>       }
 >>
->> +Example 3): In case of Exynos5420 TMU channel 3
+>> +     acpi_pci_ioapic_add(root);
 >> +
->> +       /* tmu for CPU3 */
->> +       tmu@1006c000 {
->> +               compatible = "samsung,exynos5420-tmu";
->> +               /* 2nd reg is for the misplaced TRIMINFO register */
->> +               reg = <0x1006c000 0x100>, <0x100a0000 0x4>;
->> +               interrupts = <0 185 0>;
->> +               clocks = <&clock 318>;
->> +               clock-names = "tmu_apbif";
->> +       };
->> +
->>  Note: For multi-instance tmu each instance should have an alias correctly
->>  numbered in "aliases" node.
+>>       pci_bus_add_devices(root->bus);
+>>       return 1;
 >>
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index bfdfbd6..f95844e 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -42,6 +42,7 @@
->>   * @pdata: pointer to the tmu platform/configuration data
->>   * @base: base address of the single instance of the TMU controller.
->>   * @base_common: base address of the common registers of the TMU controller.
->> + * @triminfo_base: misplaced register base for TRIMINFO on Exynos5420 only
+>> @@ -546,6 +548,8 @@ static void acpi_pci_root_remove(struct acpi_device
+>> *device)
+>>
+>>       pci_stop_root_bus(root->bus);
+>>
+>> +     acpi_pci_ioapic_remove(root);
+>> +
+>>       device_set_run_wake(root->bus->bridge, false);
+>>       pci_acpi_remove_bus_pm_notifier(device);
+>>
+>> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+>> index 7d6b157..60351b2 100644
+>> --- a/drivers/pci/ioapic.c
+>> +++ b/drivers/pci/ioapic.c
+>> @@ -22,101 +22,142 @@
+>>  #include <linux/slab.h>
+>>  #include <acpi/acpi_bus.h>
+>>
+>> -struct ioapic {
+>> -     acpi_handle     handle;
+>> +struct acpi_pci_ioapic {
+>> +     acpi_handle     root_handle;
+>>       u32             gsi_base;
+>> +     struct pci_dev *pdev;
+>> +     struct list_head list;
+>>  };
+>>
+>> -static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id
+>> *ent)
+>> +static LIST_HEAD(ioapic_list);
+>> +static DEFINE_MUTEX(ioapic_list_lock);
+>> +
+>> +static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+>> +                              u32 *pgsi_base)
+>>  {
+>> -     acpi_handle handle;
+>>       acpi_status status;
+>>       unsigned long long gsb;
+>> -     struct ioapic *ioapic;
+>> +     struct pci_dev *dev;
+>> +     u32 gsi_base;
+>>       int ret;
+>>       char *type;
+>> -     struct resource *res;
+>> +     struct resource r;
+>> +     struct resource *res = &r;
+>> +     char objname[64];
+>> +     struct acpi_buffer buffer = {sizeof(objname), objname};
+>>
+>> -     handle = DEVICE_ACPI_HANDLE(&dev->dev);
+>> -     if (!handle)
+>> -             return -EINVAL;
+>> +     *pdev = NULL;
+>> +     *pgsi_base = 0;
+>>
+>>       status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
+>> -     if (ACPI_FAILURE(status))
+>> -             return -EINVAL;
+>> -
+>> -     /*
+>> -      * The previous code in acpiphp evaluated _MAT if _GSB failed, but
+>> -      * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
+>> -      */
+>> +     if (ACPI_FAILURE(status) || !gsb)
+>> +             return;
+>>
+>> -     ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
+>> -     if (!ioapic)
+>> -             return -ENOMEM;
+>> +     dev = acpi_get_pci_dev(handle);
+>> +     if (!dev)
+>> +             return;
+>>
+>> -     ioapic->handle = handle;
+>> -     ioapic->gsi_base = (u32) gsb;
+>> +     acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>>
+>> -     if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+>> -             type = "IOAPIC";
+>> -     else
+>> -             type = "IOxAPIC";
+>> +     gsi_base = gsb;
+>> +     type = "IOxAPIC";
+>>
+>>       ret = pci_enable_device(dev);
+>>       if (ret < 0)
+>> -             goto exit_free;
+>> +             goto exit_put;
+>>
+>>       pci_set_master(dev);
+>>
+>> +     if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+>> +             type = "IOAPIC";
+>> +
+>>       if (pci_request_region(dev, 0, type))
+>>               goto exit_disable;
+>>
+>>       res = &dev->resource[0];
+>> -     if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
+>> +
+>> +     if (acpi_register_ioapic(handle, res->start, gsi_base))
+>>               goto exit_release;
 >
-> Instead of creating this new field you can re-use base_common for
-> accessing the second set of register for misplaced triminfo address.
-> Also you can rename this variable as base_second.
-
-The purpose and the meaning of the fields are entirely different.
-The triminfo is a hardware bug present only in Exynos5420
-and the common registers are available only on Exynos5440 i guess.
-
-IMHO, reusing is not a nice idea.
-I'm willing to modify the code if there is a better idea.
+> Here acpi_register_ioapic() fails for IOAPICs already described by the
+> static MADT. So they won't be added to the ioapic_list. Subsequent
+> hot-removal will also fail because they're not found by
+> acpi_pci_ioapic_remove() on the ioapic_list.
 >
->>   * @irq: irq number of the TMU controller.
->>   * @soc: id of the SOC type.
->>   * @irq_work: pointer to the irq work structure.
->> @@ -57,6 +58,7 @@ struct exynos_tmu_data {
->>         struct exynos_tmu_platform_data *pdata;
->>         void __iomem *base;
->>         void __iomem *base_common;
->> +       void __iomem *triminfo_base;            /* Needed only Exynos5420 */
->>         int irq;
->>         enum soc_type soc;
->>         struct work_struct irq_work;
->> @@ -186,7 +188,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->>                         EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
->>                 }
->>         } else {
->> -               trim_info = readl(data->base + reg->triminfo_data);
->> +               /* On exynos5420 TRIMINFO is misplaced for some channels */
->> +               if (data->triminfo_base)
->> +                       trim_info = readl(data->triminfo_base +
->> +                                               reg->triminfo_data);
->> +               else
->> +                       trim_info = readl(data->base + reg->triminfo_data);
->>         }
->>         data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
->>         data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
->> @@ -586,8 +593,17 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->>          * Check if the TMU shares some registers and then try to map the
->>          * memory of common registers.
->>          */
->> -       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
->> +       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY)) {
->> +               /* For Exynos5420 The misplaced TERMINFO register address will
->> +                * be passed from device tree node.
->> +                *
->> +                * We cannot use devm_request_and_ioremap, as the base address
->> +                * over laps with the address space of the other TMU channel.
->> +                * Check Documentation for details
->> +                */
->> +               data->triminfo_base = of_iomap(pdev->dev.of_node, 1);
->>                 return 0;
->> +       }
-> In the below code, remove the request resource API for common_base and
-> use simple of_iomap API.
-
-That will be a separate fix patch. Will submit separately,
-This patchset is to add exynos5420 support
-
-Is the res_size for the common registers fixed ?
-
+> Here's what I used to fix it:
 >
-> Thanks,
-> Amit Daniel
->>
->>         if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
->>                 dev_err(&pdev->dev, "failed to get Resource 1\n");
->> @@ -632,12 +648,13 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>         data->clk = devm_clk_get(&pdev->dev, "tmu_apbif");
->>         if (IS_ERR(data->clk)) {
->>                 dev_err(&pdev->dev, "Failed to get clock\n");
->> -               return  PTR_ERR(data->clk);
->> +               ret = PTR_ERR(data->clk);
->> +               goto err_triminfo_base;
->>         }
->>
->>         ret = clk_prepare(data->clk);
->>         if (ret)
->> -               return ret;
->> +               goto err_triminfo_base;
->>
->>         if (pdata->type == SOC_ARCH_EXYNOS ||
->>                 pdata->type == SOC_ARCH_EXYNOS4210 ||
->> @@ -707,9 +724,13 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>         }
->>
->>         return 0;
->> +
->>  err_clk:
->>         clk_unprepare(data->clk);
->>         return ret;
->> +err_triminfo_base:
->> +       if (data->triminfo_base)
->> +               iounmap(data->triminfo_base);
->>  }
->>
->>  static int exynos_tmu_remove(struct platform_device *pdev)
->> @@ -720,6 +741,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->>
->>         exynos_unregister_thermal(data->reg_conf);
->>
->> +       if (data->triminfo_base)
->> +               iounmap(data->triminfo_base);
->> +
->>         clk_unprepare(data->clk);
->>
->>         if (!IS_ERR(data->regulator))
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> From 2fff3297b4c71c88d92b04ba9ad0a8931b3e99b8 Mon Sep 17 00:00:00 2001
+> From: Rui Wang <rui.y.wang@intel.com>
+> Date: Tue, 27 Aug 2013 11:23:43 -0400
+> Subject: [PATCH] Hotadd of IOAPICs described in static MADT
+>
+> For IOAPICs described in static MADT, we already called __mp_register_ioapic()
+> in arch_early_irq_init(). During boot PCI root hotadd will call it again and
+> will find it already registered, thus register_ioapic() won't add it to the
+> ioapic_list. Subsequent hot-removal will also fail because it is not
+> found on the
+> ioapic_list.
+>
+> Signed-off-by: Rui Wang <rui.y.wang@intel.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    4 +++-
+>  drivers/pci/ioapic.c           |    3 ++-
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index fb9bf06..15ab9f1 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3956,8 +3956,10 @@ int __mp_register_ioapic(int id, u32 address,
+> u32 gsi_base, bool hotadd)
+>
+>         /* already registered ? */
+>         idx = __mp_find_ioapic(gsi_base);
+> -       if (idx >= 0)
+> +       if (idx >= 0) {
+> +               ret = -EEXIST;
+>                 goto out;
+> +       }
+>
+>         idx = find_first_zero_bit(ioapics_mask, MAX_IO_APICS);
+>         if (idx >= MAX_IO_APICS) {
+> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+> index 41f7c69..83b002b 100644
+> --- a/drivers/pci/ioapic.c
+> +++ b/drivers/pci/ioapic.c
+> @@ -126,7 +126,8 @@ static void handle_ioapic_add(acpi_handle handle,
+> struct pci_dev **pdev,
+>                 }
+>         }
+>
+> -       if (acpi_register_ioapic(handle, res->start, gsi_base)) {
+> +       ret = acpi_register_ioapic(handle, res->start, gsi_base);
+> +       if (ret && ret != -EEXIST) {
+>                 if (dev)
+>                         goto exit_release;
+>                 return;
+> --
 
+ok, will put it my series.
 
+Thanks
 
--- 
-Shine bright,
-(: Nav :)
+Yinghai
