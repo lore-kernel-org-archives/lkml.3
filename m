@@ -1,130 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3H1SAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:00:44 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43748 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab3H1SAl (ORCPT
+	id S1754172Ab3H1SB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:01:58 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:41854 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3H1SB4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:00:41 -0400
-Date: Wed, 28 Aug 2013 13:00:25 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: Re: [PATCH RFC v2 3/5] spmi: add generic SPMI controller binding
- documentation
-Message-ID: <20130828180025.GA808@joshc.qualcomm.com>
-References: <cover.1377202730.git.joshc@codeaurora.org>
- <e42576b69ef3d4e624fbfa2f32f6f79a931b55d6.1377202730.git.joshc@codeaurora.org>
- <5217DB0C.7000101@wwwdotorg.org>
- <20130827170120.GR4035@joshc.qualcomm.com>
- <521D2047.8030300@wwwdotorg.org>
+	Wed, 28 Aug 2013 14:01:56 -0400
+Date: Wed, 28 Aug 2013 13:01:42 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH V13 4/4] Documentation/kvm : Add documentation on
+ Hypercalls and features used for PV spinlock
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, gleb@redhat.com,
+        pbonzini@redhat.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        peterz@infradead.org, tglx@linutronix.de, agraf@suse.de,
+        digitaleric@google.com, riel@redhat.com, avi.kivity@gmail.com,
+        habanero@linux.vnet.ibm.com, chegu_vinod@hp.com, ouyang@cs.pitt.edu,
+        drjones@redhat.com, linux-doc@vger.kernel.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, andi@firstfloor.org,
+        virtualization@lists.linux-foundation.org, mtosatti@redhat.com,
+        srivatsa.vaddagiri@gmail.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <y>
+	<1377506916-26946-5-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1377506916-26946-5-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+	(from raghavendra.kt@linux.vnet.ibm.com on Mon Aug 26 03:48:36 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377712902.2737.137@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <521D2047.8030300@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 03:55:19PM -0600, Stephen Warren wrote:
-> On 08/27/2013 11:01 AM, Josh Cartwright wrote:
-> ...
-> > If we want to ensure for the generic bindings that we are fulling
-> > characterizing/describing the SPMI bus, then we'll additionally need to
-> > tackle an additional identified assumption:
-> >
-> >   4. One master per SPMI bus.  (The SPMI spec allows for up to 4
-> >      masters)
-> >
-> > On the Snapdragon 800 series, there exists only one software-controlled
-> > master, but it is conceivably possible to have a setup with two
-> > software-controlled masters on the same SPMI bus.
-> >
-> > This necessarily means that the description of the slaves and the
-> > masters will need to be decoupled; I'm imagining a generic binding
-> > supporting multiple masters would look something like this:
->
-> Is there a need to represent the other masters in the DT? Sure they're
-> there in HW, but if there's no specific way for the
-> CPU-to-which-the-DT-applies to actually interact with those other
-> masters (except perhaps by experiencing some arbitration delays) then
-> presumably there's no need to represent the other masters in DT?
-
-My example is contrived, but there is nothing in the SPMI spec
-preventing two masters from being controllable by the same
-CPU-to-which-the-DT-applies, sharing the same underlying bus.
-
-I would also expect this configuration to be uncommon, I'm checking with
-some folks with more SPMI experience to make sure they agree.
-
-Interestingly, i2c as far as I can tell has also made the same
-assumption.  There doesn't appear to be any way to express a
-multi-master i2c setup where both masters are controlled by the same OS.
-
-> > 	master0: master@0 {
-> > 		compatible = "...";
-> > 		#spmi-master-cells = <0>;
-> > 		spmi-mid = <0>;
-> > 
-> > 		...
-> > 	};
-> > 
-> > 	master2: master@2 {
-> > 		compatible = "...";
-> > 		#spmi-master-cells = <0>;
-> > 		spmi-mid = <2>;
-> > 
-> > 		...
-> > 	};
-> > 
-> > 	spmi_bus {
-> > 		compatible = "...";
-> > 
-> > 		spmi-masters = <&master0 &master2>;
-> > 
-> > 		foo@0 {
-> > 			compatible = "...";
-> > 			reg = <0 ...>;
-> > 		};
-> > 
-> > 		foo@8 {
-> > 			compatible = "...";
-> > 			reg = <8 ...>;
-> > 		};
-> > 	};
-> > 
-> > (This will also necessitate a change in the underlying SPMI driver
-> > model, in the current implementation, a SPMI master 'owns' a particular
-> > device.  This is not a valid assumption to make.)
-> > 
-> > Would this property-containing-phandle-vector be considered the
-> > canonical way of representing nodes with multiple parents in the device
-> > tree?
+On 08/26/2013 03:48:36 AM, Raghavendra K T wrote:
+> KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual  
+> spinlock
+> enabled guest.
 > 
-> I don't think I've seen anything like this before, although that
-> in-and-of-itself doesn't make it wrong.
+> KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can  
+> be enabled
+> in guest.
 > 
-> Another approach might be to encode master-vs-slave into a cell in the
-> reg property? Something like:
-> 
-> cell 0 - address type (0: master, 1: unique ID, 2: group ID, ...)
-> cell 1 - address value
-> 
-> I haven't thought much about that; perhaps there are disadvantages doing
-> that.
+> Thanks Vatsa for rewriting KVM_HC_KICK_CPU
+> Cc: Rob Landley <rob@landley.net>
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Looks like documentation to me:
+
+Acked-by: Rob Landley <rob@landley.net>
+
+Rob
