@@ -1,199 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3H1JTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 05:19:34 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35353 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab3H1JTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 05:19:33 -0400
-Message-ID: <521DC09B.2070000@linux.vnet.ibm.com>
-Date: Wed, 28 Aug 2013 17:19:23 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+	id S1754736Ab3H1JUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 05:20:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3H1JUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 05:20:16 -0400
+Date: Wed, 28 Aug 2013 12:20:01 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 07/12] KVM: MMU: redesign the algorithm of pte_list
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130828081205.GN22899@redhat.com> <521DB6CC.4030107@linux.vnet.ibm.com> <20130828085841.GP22899@redhat.com>
-In-Reply-To: <20130828085841.GP22899@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082820-3568-0000-0000-0000042656E7
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130828092001.GQ22899@redhat.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 04:58 PM, Gleb Natapov wrote:
-> On Wed, Aug 28, 2013 at 04:37:32PM +0800, Xiao Guangrong wrote:
->> On 08/28/2013 04:12 PM, Gleb Natapov wrote:
->>
->>>> +
->>>> +	rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
->>>> +	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
->>>> +
->>>> +	/* No empty position in the desc. */
->>>> +	if (desc->sptes[PTE_LIST_EXT - 1]) {
->>>> +		struct pte_list_desc *new_desc;
->>>> +		new_desc = mmu_alloc_pte_list_desc(vcpu);
->>>> +		new_desc->more = desc;
->>>> +		desc = new_desc;
->>>> +		*pte_list = (unsigned long)desc | 1;
->>>>  	}
->>>> -	return count;
->>>> +
->>>> +	free_pos = find_first_free(desc);
->>>> +	desc->sptes[free_pos] = spte;
->>>> +	return count_spte_number(desc);
->>> Should it be count_spte_number(desc) - 1? The function should returns
->>> the number of pte entries before the spte was added.
->>
->> Yes. We have handled it count_spte_number(), we count the number like this:
->>
->> 	return first_free + desc_num * PTE_LIST_EXT;
->>
->> The first_free is indexed from 0.
->>
-> Suppose when pte_list_add() is called there is one full desc, so the
-> number that should be returned is PTE_LIST_EXT, correct? But since
-> before calling count_spte_number() one more desc will be added and
-> desc->sptes[0] will be set in it the first_free in count_spte_number
-> will be 1 and PTE_LIST_EXT + 1 will be returned.
-
-Oh, yes, you are right. Will fix it in the next version, thanks for you
-pointing it out.
-
+On Tue, Jul 30, 2013 at 09:02:07PM +0800, Xiao Guangrong wrote:
+> The basic idea is from nulls list which uses a nulls to indicate
+> whether the desc is moved to different pte-list
 > 
->> Maybe it is clearer to let count_spte_number() return the real number.
->>
->>>
->>>>  }
->>>>  
->>>>  static void
->>>> -pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
->>>> -			   int i, struct pte_list_desc *prev_desc)
->>>> +pte_list_desc_remove_entry(unsigned long *pte_list,
->>>> +			   struct pte_list_desc *desc, int i)
->>>>  {
->>>> -	int j;
->>>> +	struct pte_list_desc *first_desc;
->>>> +	int last_used;
->>>> +
->>>> +	first_desc = (struct pte_list_desc *)(*pte_list & ~1ul);
->>>> +	last_used = find_last_used(first_desc);
->>>>  
->>>> -	for (j = PTE_LIST_EXT - 1; !desc->sptes[j] && j > i; --j)
->>>> -		;
->>>> -	desc->sptes[i] = desc->sptes[j];
->>>> -	desc->sptes[j] = NULL;
->>>> -	if (j != 0)
->>>> +	/*
->>>> +	 * Move the entry from the first desc to this position we want
->>>> +	 * to remove.
->>>> +	 */
->>>> +	desc->sptes[i] = first_desc->sptes[last_used];
->>>> +	first_desc->sptes[last_used] = NULL;
->>>> +
->>> What if desc == first_desc and i < last_used. You still move spte
->>> backwards so lockless walk may have already examined entry at i and
->>> will miss spte that was moved there from last_used position, no?
->>
->> Right. I noticed it too and fixed in the v2 which is being tested.
->> I fixed it by bottom-up walk desc, like this:
->>
->> pte_list_walk_lockless():
->>
->> 	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
->> 	while (!desc_is_a_nulls(desc)) {
->> 		/*
->> 		 * We should do bottom-up walk since we always use the
->> 		 * bottom entry to replace the deleted entry if only
->> 		 * one desc is used in the rmap when a spte is removed.
->> 		 * Otherwise the moved entry will be missed.
->> 		 */
-> I would call it top-down walk since we are walking from big indices to
-> smaller once.
-
-Okay, will fix the comments.
-
+> Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
 > 
->> 		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
->> 			fn(desc->sptes[i]);
->>
->> 		desc = ACCESS_ONCE(desc->more);
->>
->> 		/* It is being initialized. */
->> 		if (unlikely(!desc))
->> 			goto restart;
->> 	}
->>
->> How about this?
->>
-> Tricky, very very tricky :)
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 50 insertions(+), 1 deletion(-)
 > 
->>>
->>>> +	/* No valid entry in this desc, we can free this desc now. */
->>>> +	if (!first_desc->sptes[0]) {
->>>> +		struct pte_list_desc *next_desc = first_desc->more;
->>>> +
->>>> +		/*
->>>> +		 * Only one entry existing but still use a desc to store it?
->>>> +		 */
->>>> +		WARN_ON(!next_desc);
->>>> +
->>>> +		mmu_free_pte_list_desc(first_desc);
->>>> +		first_desc = next_desc;
->>>> +		*pte_list = (unsigned long)first_desc | 1ul;
->>>>  		return;
->>>> -	if (!prev_desc && !desc->more)
->>>> -		*pte_list = (unsigned long)desc->sptes[0];
->>>> -	else
->>>> -		if (prev_desc)
->>>> -			prev_desc->more = desc->more;
->>>> -		else
->>>> -			*pte_list = (unsigned long)desc->more | 1;
->>>> -	mmu_free_pte_list_desc(desc);
->>>> +	}
->>>> +
->>>> +	WARN_ON(!first_desc->sptes[0]);
->>>> +
->>>> +	/*
->>>> +	 * Only one entry in this desc, move the entry to the head
->>>> +	 * then the desc can be freed.
->>>> +	 */
->>>> +	if (!first_desc->sptes[1] && !first_desc->more) {
->>>> +		*pte_list = (unsigned long)first_desc->sptes[0];
->>>> +		mmu_free_pte_list_desc(first_desc);
->>>> +	}
->>>>  }
->>>>  
->>>>  static void pte_list_remove(u64 *spte, unsigned long *pte_list)
->>>>  {
->>>>  	struct pte_list_desc *desc;
->>>> -	struct pte_list_desc *prev_desc;
->>>>  	int i;
->>>>  
->>>>  	if (!*pte_list) {
->>>> -		printk(KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
->>>> -		BUG();
->>>> -	} else if (!(*pte_list & 1)) {
->>>> +		WARN(1, KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
->>> Why change BUG() to WARN() here and below?
->>
->> WARN(1, "xxx") can replace two lines in the origin code. And personally,
->> i prefer WARN() to BUG() since sometimes BUG() can stop my box and i need to
->> get the full log by using kdump.
->>
->> If you object it, i will change it back in the next version. :)
->>
-> For debugging WARN() is doubtlessly better, but outside of development
-> you do not want to allow kernel to run after serious MMU corruption is
-> detected. It may be exploitable further, we do not know, so the safe
-> choice is to stop the kernel.
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 36caf6a..f8fc0cc 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1010,6 +1010,14 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+>  		desc->sptes[0] = (u64 *)*pte_list;
+>  		desc->sptes[1] = spte;
+>  		desc_mark_nulls(pte_list, desc);
+> +
+> +		/*
+> +		 * Esure the old spte has been updated into desc, so
+> +		 * that the another side can not get the desc from pte_list
+> +		 * but miss the old spte.
+> +		 */
+> +		smp_wmb();
+> +
+>  		*pte_list = (unsigned long)desc | 1;
+>  		return 1;
+>  	}
+> @@ -1131,6 +1139,47 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
+>  	WARN_ON(desc_get_nulls_value(desc) != pte_list);
+>  }
+>  
+> +/* The caller should hold rcu lock. */
+> +typedef void (*pte_list_walk_lockless_fn) (u64 *spte, int level);
+> +static void pte_list_walk_lockless(unsigned long *pte_list,
+> +				   pte_list_walk_lockless_fn fn, int level)
+> +{
+> +	struct pte_list_desc *desc;
+> +	unsigned long pte_list_value;
+> +	int i;
+> +
+> +restart:
+> +	pte_list_value = ACCESS_ONCE(*pte_list);
+> +	if (!pte_list_value)
+> +		return;
+> +
+> +	if (!(pte_list_value & 1))
+> +		return fn((u64 *)pte_list_value, level);
+> +
+> +	/*
+> +	 * fetch pte_list before read sptes in the desc, see the comments
+> +	 * in pte_list_add().
+> +	 *
+> +	 * There is the data dependence since the desc is got from pte_list.
+> +	 */
+> +	smp_read_barrier_depends();
+> +
+> +	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
+> +	while (!desc_is_a_nulls(desc)) {
+> +		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
+> +			fn(desc->sptes[i], level);
+> +
+> +		desc = ACCESS_ONCE(desc->more);
+> +
+> +		/* It is being initialized. */
+> +		if (unlikely(!desc))
+> +			goto restart;
+> +	}
+> +
+> +	if (unlikely(desc_get_nulls_value(desc) != pte_list))
+> +		goto restart;
+So is it really enough to guaranty safety and correctness? What if desc
+is moved to another rmap while we walking it so fn() is called on
+incorrect sptes? Or what if desc is moved to another rmap, but then it
+is moved back to initial rmap (but another place in the desc list) so
+the check here will not catch that we need to restart walking?
 
-Okay, will keep BUG() in the next version.
 
+> +}
+> +
+>  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+>  				    struct kvm_memory_slot *slot)
+>  {
+> @@ -4557,7 +4606,7 @@ int kvm_mmu_module_init(void)
+>  {
+>  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
+>  					    sizeof(struct pte_list_desc),
+> -					    0, 0, NULL);
+> +					    0, SLAB_DESTROY_BY_RCU, NULL);
+>  	if (!pte_list_desc_cache)
+>  		goto nomem;
+>  
+> -- 
+> 1.8.1.4
 
-
+--
+			Gleb.
