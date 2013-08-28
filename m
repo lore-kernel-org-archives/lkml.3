@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3H1SDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:03:49 -0400
-Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:29917 "EHLO
-	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753047Ab3H1SDq (ORCPT
+	id S1753540Ab3H1SE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:04:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44193 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab3H1SE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:03:46 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 14:03:46 EDT
-Date: Wed, 28 Aug 2013 17:54:24 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [guv v2 23/31] tile: Replace __get_cpu_var uses
-In-Reply-To: <521E312C.2050004@tilera.com>
-Message-ID: <00000140c60fe2a0-aff878d7-06b3-4fe8-b97f-b319183f3f52-000000@email.amazonses.com>
-References: <20130826204351.725357339@linux.com> <00000140bc69acdb-3b2967b0-e224-424b-ad08-973515704be6-000000@email.amazonses.com> <521BD523.3040706@tilera.com> <00000140c03f13d6-07480caf-b5b0-440b-af95-04878ee9f46c-000000@email.amazonses.com>
- <521E312C.2050004@tilera.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.81
+	Wed, 28 Aug 2013 14:04:56 -0400
+Subject: Re: [PATCH v3 2/2] ARM: dts: msm: Update uartdm compatible strings
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1377648764-23453-3-git-send-email-sboyd@codeaurora.org>
+Date: Wed, 28 Aug 2013 13:04:57 -0500
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0092782E-9E89-4350-B3B5-EB1275F2F8E3@codeaurora.org>
+References: <1377648764-23453-1-git-send-email-sboyd@codeaurora.org> <1377648764-23453-3-git-send-email-sboyd@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Aug 2013, Chris Metcalf wrote:
 
-> Taken into the tile tree, with one extra change; in
-> arch/tile/kernel/messaging.c, using "__this_cpu_read(msg_state)"
-> generated warnings ("'pscr_ret__.opaque[1u]' is used uninitialized in
-> this function", etc), since msg_state is a struct, so I changed it to be
-> "*__this_cpu_ptr(&msg_state)".  Interrupts are disabled here so
-> preemption is not a concern.
+On Aug 27, 2013, at 7:12 PM, Stephen Boyd wrote:
 
-Well yes. __this_cpu_read can only be used to read scalars. If you want to
-transfer a struct then memcpy needs to be used (or the compiler can do
-that for you like above).
+> Let's follow the ratified DT binding and use uartdm instead of
+> hsuart. This does break backwards compatibility but this
+> shouldn't be a problem because the uart driver isn't probing on
+> these devices without adding clock support (which isn't merged so
+> far).
 
-> In addition, I applied the following commit to clean up the remaining
-> uses that are currently only being carried in the linux-tile tree.
+I'm not seeing any driver upstream even using the compatibles so might be worth adding that we aren't even breaking anything upstream.
 
-You are going to merge these changes right? I can drop the tile patch from
-my series?
+Otherwise you can add:
 
+Acked-by: Kumar Gala <galak@codeaurora.org>
 
-One small issue below:
+> 
+> Cc: David Brown <davidb@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> arch/arm/boot/dts/msm8660-surf.dts | 2 +-
+> arch/arm/boot/dts/msm8960-cdp.dts  | 2 +-
+> 2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+> index cdc010e..386d428 100644
+> --- a/arch/arm/boot/dts/msm8660-surf.dts
+> +++ b/arch/arm/boot/dts/msm8660-surf.dts
+> @@ -38,7 +38,7 @@
+> 	};
+> 
+> 	serial@19c40000 {
+> -		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+> +		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
+> 		reg = <0x19c40000 0x1000>,
+> 		      <0x19c00000 0x1000>;
+> 		interrupts = <0 195 0x0>;
+> diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+> index db2060c..532050b 100644
+> --- a/arch/arm/boot/dts/msm8960-cdp.dts
+> +++ b/arch/arm/boot/dts/msm8960-cdp.dts
+> @@ -38,7 +38,7 @@
+> 	};
+> 
+> 	serial@16440000 {
+> -		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+> +		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
+> 		reg = <0x16440000 0x1000>,
+> 		      <0x16400000 0x1000>;
+> 		interrupts = <0 154 0x0>;
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
-> index a7a41a1..30c2c34 100644
-> --- a/arch/tile/kernel/time.c
-> +++ b/arch/tile/kernel/time.c
-> @@ -286,7 +286,7 @@ static int _set_clock_rate_barrier;
->  static int _set_clock_rate(void *arg)
->  {
->         struct _set_clock_rate_args *args = arg;
-> -       struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-> +       struct clock_event_device *evt = get_cpu_ptr(&tile_timer);
-					^^^^ this_cpu_ptr
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
