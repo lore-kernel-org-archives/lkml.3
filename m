@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab3H1Pym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:54:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab3H1Pyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:54:40 -0400
-Date: Wed, 28 Aug 2013 17:56:21 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Mike Christie <mchristie@fusionio.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130828155620.GA7026@dhcp-26-207.brq.redhat.com>
-References: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
- <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
- <1374248000.2266.20.camel@dabdike>
- <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
- <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <51EAA33C.9010405@fusionio.com>
- <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
- <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
- <20130815162316.GA27882@dhcp-26-207.brq.redhat.com>
- <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
+	id S1754905Ab3H1PzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:55:22 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:44954 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab3H1PzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 11:55:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <521C0F07.6030102@schaufler-ca.com>
+References: <20130806063002.GF2280@outflux.net>
+	<520177E8.5080906@schaufler-ca.com>
+	<CAGXu5jL6dtB0F7fPh17pyhD22q0Q9Nn=wxbPf5AMYsrJuTvvJA@mail.gmail.com>
+	<521C0F07.6030102@schaufler-ca.com>
+Date: Wed, 28 Aug 2013 08:55:19 -0700
+X-Google-Sender-Auth: gT1R_E1xYipG3HEOUICUPGTTAUA
+Message-ID: <CAGXu5jKgQoVqa9u48gbHXqR0x9Kgy7f3xmXjWRfXAm0EB0vMFw@mail.gmail.com>
+Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
+From: Kees Cook <keescook@chromium.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 07:19:29PM -0700, Nicholas A. Bellinger wrote:
-> Anyways, before digging further into reserved tags logic, Jens, what are
-> your thoughts for addressing this special queue_depth=1 case for libata
-> + the like..?
+On Mon, Aug 26, 2013 at 7:29 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 8/6/2013 3:36 PM, Kees Cook wrote:
+>> On Tue, Aug 6, 2013 at 3:25 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>> On 8/5/2013 11:30 PM, Kees Cook wrote:
+>>>> On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>> The /proc/*/attr interfaces are given to one LSM. This can be
+>>>>> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
+>>>>> have been created in /proc/*/attr so that each LSM has its own
+>>>>> named interfaces. The name of the presenting LSM can be read from
+>>>> For me, this is one problem that was bothering me, but it was a cosmetic
+>>>> one that I'd mentioned before: I really disliked the /proc/$pid/attr
+>>>> interface being named "$lsm.$file". I feel it's important to build
+>>>> directories in attr/ for each LSM. So, I spent time to figure out a way to
+>>>> do this. This patch changes the interface to /proc/$pid/attr/$lsm/$file
+>>>> instead, which I feel has a much more appealing organizational structure.
+>>> I will confess that the reason I went with <lsm>.current instead of
+>>> <lsm>/current was that the former was easier to implement.
+>> Yeah, that's totally fine. It wasn't very obvious (to me) how to
+>> implement this initially, so no problem at all. I'm glad there was
+>> something more than bug fixes I could contribute to this series. :)
+>
+> Oh dear. I'm rebasing for 3.12 and the macros don't generate compiling
+> code any longer. It seems that, among other things, readdir is no longer
+> a member of file_operations.
 
-Hi Jens,
+Agh. I will take a look.
 
-Have some comments?
+-Kees
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Kees Cook
+Chrome OS Security
