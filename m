@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3H1NLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:11:14 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:60348 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab3H1NLM (ORCPT
+	id S1753855Ab3H1NLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:11:21 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:50709 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3H1NLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:11:12 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-45-521df6ee4d4b
-Message-id: <521DF6EC.6030206@samsung.com>
-Date: Wed, 28 Aug 2013 15:11:08 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Leelakrishna A <l.krishna@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [Patch v2] pinctrl: Add s5pv210 support to pinctrl-exynos
-References: <1377608890-8528-1-git-send-email-m.krawczuk@partner.samsung.com>
- <CACRpkdYiB5OG-YPRozwEurPHECDzZjQUs2s_E8gCdeqDPyr+WA@mail.gmail.com>
-In-reply-to: <CACRpkdYiB5OG-YPRozwEurPHECDzZjQUs2s_E8gCdeqDPyr+WA@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e/4Nd1332SDDPafFbOYf+Qcq8Wb3g4W
-	i94FV9ksdm65wWYx5c9yJotNj6+xWlzeNYfNYsb5fUwWp9ecYrZYev0ik8WE6WtZLA6vOMBk
-	se7ldCDrTTurxauDbSwW62e8ZrE4NmMJo4Ogx5p5axg9Fny+wu7xevIERo9Xq2eyety5tofN
-	Y/OSeo+D7/YwefRtWcXo8XmTnMfGuaEBXFFcNimpOZllqUX6dglcGa96t7IVbGOt6J37lqWB
-	cTVLFyMHh4SAicS5k45djJxAppjEhXvr2boYuTiEBJYySlxdc5wZwvnEKNH6oIkFpIpXQEti
-	3+o7jCA2i4CqxOf9s1hBbDYBQ4neo31gcVGBAInFS86xQ9QLSvyYfA+sV0RAR6J7209WkKHM
-	Au9YJeYu7wUrEhZwk1jZ+Atq2xRGibcr+sGmcgoES/xc+pQNxGYG6t7fOg3KlpfYvOYt8wRG
-	gVlIlsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGx92UH4+JjVocYBTgY
-	lXh4LTbLBAmxJpYVV+YeYpTgYFYS4eXfLhskxJuSWFmVWpQfX1Sak1p8iJGJg1OqgdGE6fDG
-	5a/Oamfu3rPe+rn4YYZJD4PuHb5hpFVo+nyhuImJSfJEIT/r80f3NSRKCLC1KC/yCn1lINEg
-	FlLhs8TOujK4oVRA9vrVAo7pylVWP+Qco9fcyt7+vzyhxXiVfkbY/aKyKw8Ktq4q+Js2+2jI
-	/MXnM6wFkk9PZpDqUrNa/DQ/wO7SDyWW4oxEQy3mouJEAFMtGEibAgAA
+	Wed, 28 Aug 2013 09:11:18 -0400
+Message-ID: <521DF6F2.9090200@xs4all.nl>
+Date: Wed, 28 Aug 2013 15:11:14 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Andreas Mohr <andi@lisas.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: weird keyboard issue (ps/2 port?) 3.9.x/3.10.x?
+References: <20130827174156.GA19152@rhlx01.hs-esslingen.de>
+In-Reply-To: <20130827174156.GA19152@rhlx01.hs-esslingen.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 02:51 PM, Linus Walleij wrote:
-> On Tue, Aug 27, 2013 at 3:08 PM, Mateusz Krawczuk
-> <m.krawczuk@partner.samsung.com> wrote:
+On 2013-08-27 19:41, Andreas Mohr wrote:
+>> What could this be?
+>> Is it really a software issue?
+>> If so: how could I help fix this?
 > 
->> This patch implements pinctrl support and adds device tree bindings
->> for s5pv210.
->>
->> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+> Perhaps watching the output of some input event tools could help
+> gather some clues to eventually get it nailed down?
+
+Sure.
+First my input:
+
+When I run this small script to fix the irq issue, I see that also the
+stream of ^@^@^@ stops (or at least appears to do so), when those ^@^@^@
+were active:
+
+service motion stop
+rmmod pwc
+echo 0000:00:13.0 >/sys/bus/pci/drivers/ohci_hcd/unbind
+echo 0000:00:13.0 >/sys/bus/pci/drivers/ohci_hcd/bind
+modprobe pwc
+service motion start
+
+> Some candidates:
 > 
-> Oh this one does add bindings, sorry for previous comment.
-> 
-> I want an ACK from Kukjin or Sylwester for this since it's
-> something new for S5P.
+> evtest - utility to monitor Linux input device events
+> input-utils - utilities for the input layer of the Linux kernel
+> xinput - Runtime configuration and test of XInput devices
 
-I'm happy to see this, it will allow us to clean up some common
-S5P/Exynos drivers by removing non-dt support from them, once
-S5PV210 is converted to DT.
+I'll look into these!
 
+> And what do /proc/interrupts counts say? Does PS/2 (i8042) generate events?
 
-Regards,
--- 
-Sylwester Nawrocki
-Samsung R&D Institute Poland
+Currently it does. But I must see what happens when all is quiet, and
+the problem reappears, right?
+
