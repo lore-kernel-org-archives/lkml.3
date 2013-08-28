@@ -1,42 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3H1Au1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 20:50:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56934 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab3H1AuZ (ORCPT
+	id S1754199Ab3H1AvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 20:51:12 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:52663 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab3H1AvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 20:50:25 -0400
-Message-ID: <521D494F.1010507@codeaurora.org>
-Date: Tue, 27 Aug 2013 17:50:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 20:51:11 -0400
+Message-ID: <521D4977.7060803@ozlabs.ru>
+Date: Wed, 28 Aug 2013 10:51:03 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, voice.shen@atmel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: mmotm 2013-08-27-16-51 uploaded
-References: <20130827235227.99DB95A41D6@corp2gmr1-2.hot.corp.google.com>
-In-Reply-To: <20130827235227.99DB95A41D6@corp2gmr1-2.hot.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8] KVM: PPC: reserve a capability and ioctl numbers for
+ realmode VFIO
+References: <1376552966-8529-1-git-send-email-aik@ozlabs.ru> <20130827075600.GE22899@redhat.com> <521C666A.3020508@ozlabs.ru> <20130827105832.GH22899@redhat.com>
+In-Reply-To: <20130827105832.GH22899@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/13 16:52, akpm@linux-foundation.org wrote:
-> * kernel-time-sched_clockc-correct-the-comparison-parameter-of-mhz.patch
->
+On 08/27/2013 08:58 PM, Gleb Natapov wrote:
+> On Tue, Aug 27, 2013 at 06:42:18PM +1000, Alexey Kardashevskiy wrote:
+>> On 08/27/2013 05:56 PM, Gleb Natapov wrote:
+>>> On Thu, Aug 15, 2013 at 05:49:26PM +1000, Alexey Kardashevskiy wrote:
+>>>> This is to reserve a capablity number for upcoming support
+>>>> of VFIO-IOMMU DMA operations in real mode.
+>>>>
+>>>> The last ioctl in the group which KVM_CREATE_SPAPR_TCE_IOMMU is added to
+>>>> is 0xac, the next two numbers are taken - 0xad for KVM_KVMCLOCK_CTRL and
+>>> 0xac was also taken by KVM_SET_ONE_REG :(
+>>>
+>>>> 0xae for KVM_ARM_VCPU_INIT. So the KVM_CREATE_SPAPR_TCE_IOMMU ioclt gets
+>>>> 0xaf.
+>>>>
+>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>
+>>>> ---
+>>>> Changes:
+>>>> 2013/08/15 v8:
+>>>> * fixed comment again
+>>>>
+>>>> 2013/08/15:
+>>>> * fixed mistype in comments
+>>>> * fixed commit message which says what uses ioctls 0xad and 0xae
+>>>>
+>>>> 2013/07/16:
+>>>> * changed the number
+>>>>
+>>>> 2013/07/11:
+>>>> * changed order in a file, added comment about a gap in ioctl number
+>>>> ---
+>>>>  include/uapi/linux/kvm.h | 6 ++++++
+>>>>  1 file changed, 6 insertions(+)
+>>>>
+>>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>>>> index 99c2533..bd94127 100644
+>>>> --- a/include/uapi/linux/kvm.h
+>>>> +++ b/include/uapi/linux/kvm.h
+>>>> @@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
+>>>>  #define KVM_CAP_IRQ_XICS 92
+>>>>  #define KVM_CAP_ARM_EL1_32BIT 93
+>>>>  #define KVM_CAP_SPAPR_MULTITCE 94
+>>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 95
+>>>>  
+>>>>  #ifdef KVM_CAP_IRQ_ROUTING
+>>>>  
+>>>> @@ -933,6 +934,11 @@ struct kvm_s390_ucas_mapping {
+>>>>  #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
+>>>>  /* Available with KVM_CAP_PPC_RTAS */
+>>>>  #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
+>>>> +/* 0xad is taken by KVM_KVMCLOCK_CTRL */
+>>>> +/* 0xae is taken by KVM_ARM_VCPU_INIT */
+>>>> +/* Available with KVM_CAP_SPAPR_TCE_IOMMU */
+>>>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, \
+>>>> +					struct kvm_create_spapr_tce_iommu)
+>>>>  
+>>> Why not use KVM_CREATE_DEVICE API for that?
+>>
+>>
+>> Because when I came up with my ioctl first time, it was not in upstream and
+>> since then nobody pointed me to this new ioctl :)
+> Sorry about that :(. The ioctl exists for a while now, but with v8 patch I
+> imaging your patch series predates it.
 
-I believe Russell nacked this change[1]? This should probably be dropped
-unless there's been more discussion. Or maybe reworked into a comment in
-the code that doesn't lead to the same change again.
+The ioctl I made up is basically a copy of KVM_CREATE_SPAPR_TCE which does
+the same thing for emulated devices and it is there for quite a while but
+it is not really extensible. And these two ioctls share some bits of code.
+Now we will have 2 pieces of code which do almost the same thing but in a
+different way. Kinda sucks :(
 
-[1] https://lkml.org/lkml/2013/8/7/95
+>> So my stuff is not going to upstream again. Heh. Ok. I'll implement it.
+>>
+> Thanks! Should I keep KVM_CAP_SPAPR_MULTITCE capability patch or can I
+> drop it for now?
+
+Please keep it, it is unrelated to the IOMMU-VFIO thing.
+
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Alexey
