@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3H1KNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:13:48 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:56575 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab3H1KNr (ORCPT
+	id S1754837Ab3H1KN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:13:57 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:41949 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab3H1KNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:13:47 -0400
-Message-ID: <521DCD33.2070008@gmail.com>
-Date: Wed, 28 Aug 2013 12:13:07 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: linux-arm-kernel@lists.infradead.org, Jason Cooper <jason@lakedaemon.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
-References: <20130828113459.48ecbb34@armhf>
-In-Reply-To: <20130828113459.48ecbb34@armhf>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 28 Aug 2013 06:13:51 -0400
+Message-ID: <521DCD57.7000401@linux.vnet.ibm.com>
+Date: Wed, 28 Aug 2013 18:13:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130828092001.GQ22899@redhat.com> <521DC3FD.1020507@linux.vnet.ibm.com> <20130828094630.GR22899@redhat.com>
+In-Reply-To: <20130828094630.GR22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082810-5140-0000-0000-000003BD43A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 11:34 AM, Jean-Francois Moine wrote:
-> This patch adds the nodes to instantiate the audio devices of the Dove
-> boards.
->
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->   arch/arm/boot/dts/dove.dtsi                  | 18 ++++++++++++++++++
->   1 file changed, 18 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-> index 499abad..78227e2 100644
-> --- a/arch/arm/boot/dts/dove.dtsi
-> +++ b/arch/arm/boot/dts/dove.dtsi
-> @@ -573,6 +573,24 @@
->   					phy-handle = <&ethphy>;
->   				};
->   			};
-> +
-> +			i2s0: audio-controller@b0000 {
-> +				compatible = "marvell,mvebu-audio";
+On 08/28/2013 05:46 PM, Gleb Natapov wrote:
+> On Wed, Aug 28, 2013 at 05:33:49PM +0800, Xiao Guangrong wrote:
+>>> Or what if desc is moved to another rmap, but then it
+>>> is moved back to initial rmap (but another place in the desc list) so
+>>> the check here will not catch that we need to restart walking?
+>>
+>> It is okay. We always add the new desc to the head, then we will walk
+>> all the entires under this case.
+>>
+> Which races another question: What if desc is added in front of the list
+> behind the point where lockless walker currently is?
 
-[added Gregory to Cc]
+That case is new spte is being added into the rmap. We need not to care the
+new sptes since it will set the dirty-bitmap then they can be write-protected
+next time.
 
-Jean-Francois,
+> 
+>> Right?
+> Not sure. While lockless walker works on a desc rmap can be completely
+> destroyed and recreated again. It can be any order.
 
-as Mark Brown already took the bindings patch for above generic
-compatible, how are we going to discriminate different
-implementations/features of Dove, Kirkwood, and Armada 370?
-
-Sebastian
-
-> +				reg = <0xb0000 0x2210>;
-> +				interrupts = <19>, <20>;
-> +				clocks = <&gate_clk 12>;
-> +				clock-names = "internal";
-> +				status = "disabled";
-> +			};
-> +
-> +			i2s1: audio-controller@b4000 {
-> +				compatible = "marvell,mvebu-audio";
-> +				reg = <0xb4000 0x2210>;
-> +				interrupts = <21>, <22>;
-> +				clocks = <&gate_clk 13>;
-> +				clock-names = "internal";
-> +				status = "disabled";
-> +			};
->   		};
->   	};
->   };
->
->
+I think the thing is very similar as include/linux/rculist_nulls.h
 
