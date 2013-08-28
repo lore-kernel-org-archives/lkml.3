@@ -1,159 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab3H1M3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:29:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42369 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753099Ab3H1M3O convert rfc822-to-8bit (ORCPT
+	id S1755461Ab3H1Mao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:30:44 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:63333 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988Ab3H1Mam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:29:14 -0400
-Date: Wed, 28 Aug 2013 14:29:09 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
-Message-ID: <20130828142909.3521064b@skate>
-In-Reply-To: <20130828121320.GK6617@n2100.arm.linux.org.uk>
-References: <20130828113459.48ecbb34@armhf>
-	<521DCD33.2070008@gmail.com>
-	<20130828121943.1c8327ca@skate>
-	<521DD057.4040208@gmail.com>
-	<20130828131548.0009d613@skate>
-	<521DE2B3.9050508@gmail.com>
-	<20130828135827.2307c89e@skate>
-	<20130828121320.GK6617@n2100.arm.linux.org.uk>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Aug 2013 08:30:42 -0400
+Date: Wed, 28 Aug 2013 14:30:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] ARM: tegra: Add hdmi to Tegra114 Dalmore device tree
+Message-ID: <20130828123008.GC32254@ulmo>
+References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com>
+ <1377686459-16634-6-git-send-email-mperttunen@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Md/poaVZ8hnGTzuv"
+Content-Disposition: inline
+In-Reply-To: <1377686459-16634-6-git-send-email-mperttunen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Russell King - ARM Linux,
 
-On Wed, 28 Aug 2013 13:13:20 +0100, Russell King - ARM Linux wrote:
+--Md/poaVZ8hnGTzuv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > > I guess, yes.
-> > 
-> > Jean-François, could you cook and submit a patch to change the
-> > compatible string?
-> 
-> I don't think this is a good idea.  The configuration of this IP is
-> not based on the SoC as a single SoC can have a mixture of different
-> configurations.
+On Wed, Aug 28, 2013 at 01:40:59PM +0300, Mikko Perttunen wrote:
+> Add hdmi node to Dalmore device tree to supply Dalmore-specific
 
-Using the name of the oldest SoC in the family that had the IP block is
-the norm, because it's really what "compatible" means: the IP block in
-Dove is *compatible* with the one that was originally introduced in
-Kirkwood.
+s/hdmi/HDMI/
 
-See what Rob Herring (one of the DT maintainer) says in
-http://lists.infradead.org/pipermail/linux-mtd/2012-March/040417.html:
+> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+[...]
+> +	host1x {
+> +		hdmi {
+> +			status = "okay";
+> +
+> +			vdd-supply = <&vdd_hdmi_reg>;
+> +			pll-supply = <&palmas_smps3_reg>;
+> +			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 
-"""
-There is no reason all machines can't use "st,spear600-smi" in their
-dts. It doesn't have to be a spear600, just compatible with it. Really
-you want the string to be the oldest SOC the block is in and then newer
-SOCs can claim compatibility with the old version.
-"""
+I prefer to use a blank line to separate "standard" from
+"vendor-specific" properties.
 
-The thread was precisely about replacing a SoC-specific compatible
-string "st,spear600-smi" by a more generic "st,spear-smi" and Rob
-Herring (above) was opposing to that.
+> +			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 
-> I think marvell,mvebu-audio is a reasonable compatible string for this,
-> and that the different configurations should be described by properties
-> indicating which inputs and outputs have been implemented.
-> 
-> For instance, on the Dove, there are two of these blocks.  One has I2S
-> in and out only, but the other block has I2S in and out, and SPDIF out.
-> On some other Marvell devices, this block has I2S in and out and SPDIF
-> in and out.
-> 
-> Otherwise, they're functionally the same.
+Other .dts files split this so it doesn't exceed 80 characters. I'm not
+sure how useful that is as a general rule for DT source files, though.
 
-Right, that's why they can both use "kirkwood-audio" as the compatible
-string.
+>  	i2c@7000d000 {
+>  		status = "okay";
+>  		clock-frequency = <400000>;
+> @@ -1169,6 +1184,8 @@
+>  			regulator-min-microvolt = <5000000>;
+>  			regulator-max-microvolt = <5000000>;
+>  			enable-active-high;
+> +			regulator-always-on;
+> +			regulator-boot-on;
 
-> > Though, if the difference between the two units is the availability of
-> > SPDIF support, then we shouldn't encode the channel number, but instead
-> > the availability of SPDIF, i.e:
-> > 
-> > 	audio0 {
-> > 		reg = <... ...>;
-> > 		compatible = "marvell,kirkwood-audio";
-> > 		marvell,has-spdif;
-> > 	};
-> > 
-> > 	audio1 {
-> > 		reg = <... ...>;
-> > 		compatible = "marvell,kirkwood-audio";
-> > 	};
-> 
-> ... which means there's no problem with using marvell,mvebu-audio as the
-> compatible string if you're going to use properties to describe what
-> facilities are available.
+This warrants at least a mention in the commit message.
 
-I disagree, because how do you know if a future "mvebu" SOC such as
-Armada 370, or one that doesn't exist yet, will not have a different
-audio IP block? It will still be audio, it will still be mvebu, but it
-will not be able to use a "marvell,mvebu-audio" driver. Or maybe it can
-use the same driver, but with a few variations, so a different
-compatible string will be needed to identify the original IP
-("marvell,kirkwood-audio", used on Kirkwood/Dove) and slightly newer
-versions of the IP ("marvell,some-funky-soc-audio").
+Thierry
 
-> In any case "marvell,has-spdif" is too generic - as I've indicated above,
-> there's versions with spdif out, and other versions with spdif in and
-> out.
+--Md/poaVZ8hnGTzuv
+Content-Type: application/pgp-signature
 
-Right, the above was just an example to illustrate that we can have
-additional properties to encode the differences between each instance
-of the audio devices.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-For example, for XOR engines, we have:
+iQIcBAEBAgAGBQJSHe1QAAoJEN0jrNd/PrOhUEEQALTRdp0a0ujfpSDkqXgGimz/
+rNCATrIasfn44HWxrTLZ+VN2Fw117PFr8HPaNfZNI8bx6CWK1Jy7bc0pxUPoFKxg
+1wk74esVdPBazVfQplI9dYh+VyBf5ZEQ5Nu+fDiZJ4a3osUwm970UKqfGnUgP4zD
+qH0n6ztQQXBnCc/vJoRwr/uc4tVUBsg7tDWLQp/HVttsHldNTMRkO9vj8zlOhBaB
+ZU4ZLapHYGIcC1YCNXG3dVvP0sA7VNU7bc/eoDeemodNj+2fnlHJ7atWc04hv3cF
+KX+jCyHbQFMZx5OD8BCBeOpzOKW71B4cq9RmXC6A+HKC5qT2Ray5QH46sx941zf1
+vrLhiwsi9TeU1k9eJF92pXOODb/gRzl5N4AN1BE959/1fQLSjygth/i8PXz5uQza
+XAl+DjEdPLIt1KsSRu6S/NTPMHpyW0itAGuxgG86PsRfxWi1sb0S7LAQpKEHKCp8
+6sp3K3vhizdHCYiRyHbMOFHGtLN7z6KF8qlqgzGROdK4IU/MeHOmxUYknnKmjRk7
+em0PyHOEyrPlnNn/f0HrBjVCXf7BSepyjYJ6+ZUFp0YAtoeRpQS1vumqeE39RAH3
+pp4cO21zFF2LNGjTlYVBdn3yUZZWPvXTWxOQrWJhbcelU1cDu4xN9lfHkpwYWsEh
+sm0sTTCCvPU/ct71ltMI
+=hwyi
+-----END PGP SIGNATURE-----
 
-                        xor@60900 {
-                                compatible = "marvell,orion-xor";
-                                reg = <0x60900 0x100
-                                       0x60b00 0x100>;
-                                clocks = <&gateclk 22>;
-                                status = "okay";
-
-                                xor10 {
-                                        interrupts = <51>;
-                                        dmacap,memcpy;
-                                        dmacap,xor;
-                                };
-                                xor11 {
-                                        interrupts = <52>;
-                                        dmacap,memcpy;
-                                        dmacap,xor;
-                                        dmacap,memset;
-                                };
-                        };
-
-because the first channel of each XOR engine has only memcpy and xor
-capabilities, while the second channel has memcpy, xor and memset
-capabilities.
-
-Thanks,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+--Md/poaVZ8hnGTzuv--
