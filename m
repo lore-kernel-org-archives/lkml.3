@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3H1PJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:09:19 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:61434 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab3H1PJS (ORCPT
+	id S1754424Ab3H1PKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:10:52 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:41674 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab3H1PKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:09:18 -0400
-Message-ID: <521E1292.5060709@gmail.com>
-Date: Wed, 28 Aug 2013 20:39:06 +0530
-From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+	Wed, 28 Aug 2013 11:10:50 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <521E12FF.4030709@kernel.org>
+Date: Wed, 28 Aug 2013 16:10:55 +0100
+From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3] xHCI: Fixing xhci_readl definition and function call
-References: <1377482937-7486-1-git-send-email-kumargauravgupta3@gmail.com> <20130828071304.GO6329@mwanda>
-In-Reply-To: <20130828071304.GO6329@mwanda>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+CC: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        jic23@cam.ac.uk, denis.ciocca@st.com, lars@metafoo.de
+Subject: Re: [PATCH v5 1/2] staging: iio: Documentation sysfs-bus-iio add
+ power_mode
+References: <1377687678-5761-1-git-send-email-o.v.kravchenko@globallogic.com> <521E1255.2090201@linux.intel.com>
+In-Reply-To: <521E1255.2090201@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 August 2013 12:43 PM, Dan Carpenter wrote:
-> On Mon, Aug 26, 2013 at 07:38:57AM +0530, Kumar Gaurav wrote:
->> This patch redefine function xhci_readl.xhci_readl function doesn't use xhci_hcd argument.
->> Hence there is no need of keeping it in the function arguments.
+On 28/08/13 16:08, Srinivas Pandruvada wrote:
+> On 08/28/2013 04:01 AM, Oleksandr Kravchenko wrote:
+>> Add description about in_accelX_power_mode and
+>> in_accel_power_mode_available.
 >>
->> Redefining this function breaks other functions which calls this function.
->> This phatch also correct those calls in xhci driver.
->>
->> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+>> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 >> ---
-> Could you put a list of changes since v2 here?:
->
-> v3:  blah blah changelog mostly.
->
-> Also this doesn't apply for me against linux-next.
->
-> regards,
-> dan carpenter
->
-There's no change from v2. I was sending the same patch again because 
-the last one was lacking good description and i was told (or as i 
-understood) that if I'm sending the same patch or patch for the same 
-purpose as previous then i should increment version so i did.
+>>   Documentation/ABI/testing/sysfs-bus-iio |   10 ++++++++++
+>>   1 file changed, 10 insertions(+)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio
+>> b/Documentation/ABI/testing/sysfs-bus-iio
+>> index dda81ff..1a333f3 100644
+>> --- a/Documentation/ABI/testing/sysfs-bus-iio
+>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+>> @@ -792,3 +792,13 @@ Contact:    linux-iio@vger.kernel.org
+>>   Description:
+>>           This attribute is used to read the amount of quadrature error
+>>           present in the device at a given time.
+>> +
+>> +What:        /sys/.../iio:deviceX/in_accelX_power_mode
+> Shall we add power_mode to all sensors not just accelerometer? HID
+> sensor hub spec allows every sensor in it to go low power mode.
+> This is not same as OFF.
+Feel free to add the relevant lines in the patch that adds the 
+attribute.  We should not add stuff here that is not used.
 
-I had developed this patch against linux-git, haven't tested that on 
-linux-next as i haven't cloned  linux-next yet.
+>> +KernelVersion:    3.11
+>> +Contact:    linux-iio@vger.kernel.org
+>> +Description:
+>> +        Specifies the chip power mode.
+>> +        low_noise: reduce noise level from ADC,
+>> +        low_power: enable low current consumption.
+>> +        For a list of available output power modes read
+>> +        in_accel_power_mode_available.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I've started cloning linux-next and as it's not applying on linux-next, 
-I'll try it on linux-next (once i cloned it)  and will send again.
-
-Regards
-Kumar Gaurav
