@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3H1VEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 17:04:07 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52623 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438Ab3H1VEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755477Ab3H1VEE (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Aug 2013 17:04:04 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:54066 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab3H1VEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 17:04:00 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/9] cgroup: factor out cgroup_subsys_state creation into create_css()
-Date: Wed, 28 Aug 2013 17:03:47 -0400
-Message-Id: <1377723829-22814-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/9] cgroup: move css_id commit from cgroup_populate_dir() to online_css()
+Date: Wed, 28 Aug 2013 17:03:44 -0400
+Message-Id: <1377723829-22814-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
 References: <1377723829-22814-1-git-send-email-tj@kernel.org>
@@ -21,159 +21,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all opertations to create a css (cgroup_subsys_state) are
-collected into a single loop in cgroup_create(), it's easy to factor
-it out into its own function.  Factor out css creation into
-create_css().  This makes the code easier to follow and will enable
-decoupling css creation from cgroup creation which is necessary for
-the planned unified hierarchy.
+css_id should be committed after a css is brought online fully.  This
+is currently done form cgroup_populate_dir() but we're gonna reorder
+operations such that cgroup_populate_dir() is called before css is
+onlined.  Let's move css_id commit from cgroup_populate_dir() to
+online_css().
+
+This change makes it possible for cgroup creation to fail after css_id
+is committed; however, as css is already fully initialized, the
+cleanup isn't different from the cgroup being removed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 107 +++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 63 insertions(+), 44 deletions(-)
+ kernel/cgroup.c | 53 +++++++++++++++++++++++++----------------------------
+ 1 file changed, 25 insertions(+), 28 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 20cd24b..cd53b49 100644
+index a65be0c..6a3ad20 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4385,6 +4385,68 @@ static void offline_css(struct cgroup_subsys_state *css)
- 	RCU_INIT_POINTER(css->cgroup->subsys[ss->subsys_id], css);
- }
- 
-+/**
-+ * create_css - create a cgroup_subsys_state
-+ * @cgrp: the cgroup new css will be associated with
-+ * @ss: the subsys of new css
-+ *
-+ * Create a new css associated with @cgrp - @ss pair.  On success, the new
-+ * css is online and installed in @cgrp with all interface files created.
-+ * Returns 0 on success, -errno on failure.
-+ */
-+static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
-+{
-+	struct cgroup *parent = cgrp->parent;
-+	struct cgroup_subsys_state *css;
-+	int err;
-+
-+	lockdep_assert_held(&cgrp->dentry->d_inode->i_mutex);
-+	lockdep_assert_held(&cgroup_mutex);
-+
-+	css = ss->css_alloc(cgroup_css(parent, ss));
-+	if (IS_ERR(css))
-+		return PTR_ERR(css);
-+
-+	err = percpu_ref_init(&css->refcnt, css_release);
-+	if (err)
-+		goto err_free;
-+
-+	init_css(css, ss, cgrp);
-+
-+	if (ss->use_id) {
-+		err = alloc_css_id(css);
-+		if (err)
-+			goto err_free;
-+	}
-+
-+	err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
-+	if (err)
-+		goto err_free;
-+
-+	err = online_css(css);
-+	if (err)
-+		goto err_free;
-+
-+	dget(cgrp->dentry);
-+	css_get(css->parent);
-+
-+	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
-+	    parent->parent) {
-+		pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-+			   current->comm, current->pid, ss->name);
-+		if (!strcmp(ss->name, "memory"))
-+			pr_warning("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
-+		ss->warned_broken_hierarchy = true;
-+	}
-+
-+	return 0;
-+
-+err_free:
-+	percpu_ref_cancel_init(&css->refcnt);
-+	ss->css_free(css);
-+	return err;
-+}
-+
- /*
-  * cgroup_create - create a cgroup
-  * @parent: cgroup that will be parent of the new cgroup
-@@ -4396,7 +4458,6 @@ static void offline_css(struct cgroup_subsys_state *css)
- static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			     umode_t mode)
+@@ -4244,7 +4244,7 @@ static struct cftype cgroup_base_files[] = {
+ static int cgroup_populate_dir(struct cgroup *cgrp, unsigned long subsys_mask)
  {
--	struct cgroup_subsys_state *css = NULL;
- 	struct cgroup *cgrp;
- 	struct cgroup_name *name;
- 	struct cgroupfs_root *root = parent->root;
-@@ -4487,47 +4548,9 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	struct cgroup_subsys *ss;
+-	int i, ret = 0;
++	int i, ret;
  
- 	/* let's create and online css's */
- 	for_each_root_subsys(root, ss) {
--		css = ss->css_alloc(cgroup_css(parent, ss));
--		if (IS_ERR(css)) {
--			err = PTR_ERR(css);
--			css = NULL;
--			goto err_destroy;
--		}
--
--		err = percpu_ref_init(&css->refcnt, css_release);
--		if (err)
--			goto err_destroy;
--
--		init_css(css, ss, cgrp);
--
--		if (ss->use_id) {
--			err = alloc_css_id(css);
--			if (err)
--				goto err_destroy;
--		}
--
--		err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
--		if (err)
--			goto err_destroy;
--
--		err = online_css(css);
-+		err = create_css(cgrp, ss);
- 		if (err)
- 			goto err_destroy;
--
--		dget(dentry);
--		css_get(css->parent);
--
--		/* mark it consumed for error path */
--		css = NULL;
--
--		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
--		    parent->parent) {
--			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
--				   current->comm, current->pid, ss->name);
--			if (!strcmp(ss->name, "memory"))
--				pr_warning("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
--			ss->warned_broken_hierarchy = true;
--		}
+ 	/* process cftsets of each subsystem */
+ 	for_each_subsys(ss, i) {
+@@ -4255,29 +4255,14 @@ static int cgroup_populate_dir(struct cgroup *cgrp, unsigned long subsys_mask)
+ 
+ 		list_for_each_entry(set, &ss->cftsets, node) {
+ 			ret = cgroup_addrm_files(cgrp, set->cfts, true);
+-			if (ret < 0)
+-				goto err;
++			if (ret < 0) {
++				cgroup_clear_dir(cgrp, subsys_mask);
++				return ret;
++			}
+ 		}
  	}
  
- 	mutex_unlock(&cgroup_mutex);
-@@ -4548,10 +4571,6 @@ err_free_cgrp:
- 	return err;
- 
- err_destroy:
--	if (css) {
--		percpu_ref_cancel_init(&css->refcnt);
--		css->ss->css_free(css);
+-	/* This cgroup is ready now */
+-	for_each_root_subsys(cgrp->root, ss) {
+-		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
+-		struct css_id *id = rcu_dereference_protected(css->id, true);
+-
+-		/*
+-		 * Update id->css pointer and make this css visible from
+-		 * CSS ID functions. This pointer will be dereferened
+-		 * from RCU-read-side without locks.
+-		 */
+-		if (id)
+-			rcu_assign_pointer(id->css, css);
 -	}
- 	cgroup_destroy_locked(cgrp);
- 	mutex_unlock(&cgroup_mutex);
- 	mutex_unlock(&dentry->d_inode->i_mutex);
+-
+ 	return 0;
+-err:
+-	cgroup_clear_dir(cgrp, subsys_mask);
+-	return ret;
+ }
+ 
+ /*
+@@ -4356,18 +4341,30 @@ static void init_css(struct cgroup_subsys_state *css, struct cgroup_subsys *ss,
+ static int online_css(struct cgroup_subsys_state *css)
+ {
+ 	struct cgroup_subsys *ss = css->ss;
+-	int ret = 0;
++	struct css_id *id = rcu_dereference_protected(css->id, true);
++	int ret;
+ 
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+-	if (ss->css_online)
++	if (ss->css_online) {
+ 		ret = ss->css_online(css);
+-	if (!ret) {
+-		css->flags |= CSS_ONLINE;
+-		css->cgroup->nr_css++;
+-		rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
++		if (ret)
++			return ret;
+ 	}
+-	return ret;
++
++	css->flags |= CSS_ONLINE;
++	css->cgroup->nr_css++;
++	rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
++
++	/*
++	 * Update id->css pointer and make this css visible from CSS ID
++	 * functions. This pointer will be dereferened from RCU-read-side
++	 * without locks.
++	 */
++	if (id)
++		rcu_assign_pointer(id->css, css);
++
++	return 0;
+ }
+ 
+ /* if the CSS is online, invoke ->css_offline() on it and mark it offline */
+@@ -5678,7 +5675,7 @@ static int alloc_css_id(struct cgroup_subsys_state *child_css)
+ 	child_id->stack[depth] = child_id->id;
+ 	/*
+ 	 * child_id->css pointer will be set after this cgroup is available
+-	 * see cgroup_populate_dir()
++	 * see online_css()
+ 	 */
+ 	rcu_assign_pointer(child_css->id, child_id);
+ 
 -- 
 1.8.3.1
 
