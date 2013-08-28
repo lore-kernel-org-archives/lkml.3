@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab3H1NOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:14:01 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:61137 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab3H1NN6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:13:58 -0400
+	id S1754043Ab3H1NOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:14:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:39475 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753134Ab3H1NOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 09:14:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
+Date: Wed, 28 Aug 2013 15:24:45 +0200
+Message-ID: <1592448.YZbpON5n7n@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130828122422.GA18348@mtj.dyndns.org>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan> <2885746.SMJa75jgiX@vostro.rjw.lan> <20130828122422.GA18348@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <521C587E.6050706@atmel.com>
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
-	<1377380109-11247-1-git-send-email-b.brezillon@overkiz.com>
-	<521B875E.1010605@wwwdotorg.org>
-	<521B89D1.6010902@overkiz.com>
-	<521C2347.4080702@wwwdotorg.org>
-	<521C4451.1060908@overkiz.com>
-	<521C587E.6050706@atmel.com>
-Date: Wed, 28 Aug 2013 15:13:58 +0200
-Message-ID: <CACRpkdaRBSGJYrCgOC-dSPEeEMWZ1N=aqhM9O-ZO+mGnEBQ=1g@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for
- deglitch filter
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: boris brezillon <b.brezillon@overkiz.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 9:42 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> On 27/08/2013 08:16, boris brezillon :
+On Wednesday, August 28, 2013 08:24:22 AM Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On Tue, Aug 27, 2013 at 11:45:46PM +0200, Rafael J. Wysocki wrote:
+> > I've thought about that a bit over the last several hours and I'm still
+> > thinking that that patch is a bit overkill, because it will trigger the
+> > restart_syscall() for all cases when device_hotplug_lock is locked, even
+> > if they can't lead to any deadlocks.  The only deadlockish situation is
+> > when device *removal* is in progress when store_online(), for example,
+> > is called.
+> > 
+> > So to address that particular situation without adding too much overhead for
+> > other cases, I've come up with the appended patch (untested for now).
+> > 
+> > This is how it is supposed to work.
+> > 
+> > There are three "lock levels" for device hotplug, "normal", "remove"
+> > and "weak".  The difference is related to how __lock_device_hotplug()
+> > works.  Namely, if device hotplug is currently locked, that function
+> > will either block or return false, depending on the "current lock
+> > level" and its argument (the "new lock level").  The rules here are
+> > that false is returned immediately if the "current lock level" is
+> > "remove" and the "new lock level" is "weak".  The function blocks
+> > for all other combinations of the two.
+> 
+> I think this is going way too far and a massive overkill in terms of
+> complexity, which is way more important than for doing some
+> restart_syscall loops during some rare sysfs file access, which isn't
+> gonna be that common anyway.  Fancy locking always sucks.  The root
+> cause of the problem is file removal ref draining from sysfs side and
+> a proper solution should be implemented there.  Adding all this
+> complexity to device hotplug lock won't solve problems involving other
+> locks while obfuscating what's going on through all the complexity.
+> Also, when sysfs is updated with a proper solution, a simpler
+> workaround from device hotplug side would be far easier to convert to
+> the new solution than this, which over time is likely to grow
+> interesting uses.
+> 
+> Let's *please* stick to something simple.
 
-> Deglitch and
-> Debounce filters are different features in at91 (even if they pursuit the
-> same goal). So I do prefer to let the user choose which feature is preferred
-> for his application and add a different flag.
+OK, I'll use restart_syscall() approach in the simplest form, then.
 
-Electrically speaking debounce and deglitch are totally different things.
+Thanks,
+Rafael
 
-Debounce is for, well debouncing. To even out the effect of pressing
-a button which due to mechanical characteristics create a sharp
-series of spikes like that:
-  _   _
-_| |_| |_
 
-I highly suspect that "deglitch" is either:
-
-- A one-spike version of the above (in which case a custom config
-  may be warranted) or
-
-- What we usually call schmitt-trigger, i.e. handling of analog
-  swing-in.
-
-Can you describe exactly what the two features do, in electrical
-terms?
-
-> The question is: how much this "generic" pinconf is... well... generic! And
-> it is not a answer I can give.
-
-The generic configs are defined from electrical use-cases that
-appear in practice and also have the character of appearing in
-similar implementations in I/O cells of several vendors, to the point
-that from a software perspective they are identical.
-
-> On the other hand, if the "generic" is not going to overcome the native
-> pinctrl, I do not feel like switching to this at the cost of changing the
-> whole dtsi/dts entries that we already have.
-
-The question we ask in this case is whether the electrical construction
-is so fantastically unique and ingenious that no other ASIC pad
-implementer sitting in his chamber working on I/O cells would
-possibly ever come up with the same concept.
-
-If that is true, then it warrants its own, custom binding.
-
-If you ask some other randong cell implementer whether this is
-something they would do, and they say "yeah I have that in the
-next version of my cell library" then it is generic, because we will
-see the same thing in other systems as time moves on.
-
-Yours,
-Linus Walleij
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
