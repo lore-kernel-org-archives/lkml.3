@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab3H1Kto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:49:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753916Ab3H1Ktm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:49:42 -0400
-Date: Wed, 28 Aug 2013 13:49:38 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
-Message-ID: <20130828104938.GT22899@redhat.com>
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130828092001.GQ22899@redhat.com>
- <521DC3FD.1020507@linux.vnet.ibm.com>
- <20130828094630.GR22899@redhat.com>
- <521DCD57.7000401@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521DCD57.7000401@linux.vnet.ibm.com>
+	id S1753705Ab3H1Kwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:52:30 -0400
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:40932 "EHLO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3H1Kw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 06:52:28 -0400
+From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+To: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, grygorii.strashko@globallogic.com
+Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: [PATCH v5 1/2] staging: iio: Documentation sysfs-bus-iio add power_mode
+Date: Wed, 28 Aug 2013 13:51:48 +0300
+Message-Id: <1377687110-5632-1-git-send-email-o.v.kravchenko@globallogic.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 06:13:43PM +0800, Xiao Guangrong wrote:
-> On 08/28/2013 05:46 PM, Gleb Natapov wrote:
-> > On Wed, Aug 28, 2013 at 05:33:49PM +0800, Xiao Guangrong wrote:
-> >>> Or what if desc is moved to another rmap, but then it
-> >>> is moved back to initial rmap (but another place in the desc list) so
-> >>> the check here will not catch that we need to restart walking?
-> >>
-> >> It is okay. We always add the new desc to the head, then we will walk
-> >> all the entires under this case.
-> >>
-> > Which races another question: What if desc is added in front of the list
-> > behind the point where lockless walker currently is?
-> 
-> That case is new spte is being added into the rmap. We need not to care the
-> new sptes since it will set the dirty-bitmap then they can be write-protected
-> next time.
-> 
-OK.
+Add description about in_accelX_power_mode and
+in_accel_power_mode_available.
 
-> > 
-> >> Right?
-> > Not sure. While lockless walker works on a desc rmap can be completely
-> > destroyed and recreated again. It can be any order.
-> 
-> I think the thing is very similar as include/linux/rculist_nulls.h
-include/linux/rculist_nulls.h is for implementing hash tables, so they
-may not care about add/del/lookup race for instance, but may be we are
-(you are saying above that we are not), so similarity does not prove
-correctness for our case. BTW I do not see
-rcu_assign_pointer()/rcu_dereference() in your patches which hints on
-incorrect usage of RCU. I think any access to slab pointers will need to
-use those.
+Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+---
+ Documentation/ABI/testing/sysfs-bus-iio |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---
-			Gleb.
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+index dda81ff..1a333f3 100644
+--- a/Documentation/ABI/testing/sysfs-bus-iio
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -792,3 +792,13 @@ Contact:	linux-iio@vger.kernel.org
+ Description:
+ 		This attribute is used to read the amount of quadrature error
+ 		present in the device at a given time.
++
++What:		/sys/.../iio:deviceX/in_accelX_power_mode
++KernelVersion:	3.11
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Specifies the chip power mode.
++		low_noise: reduce noise level from ADC,
++		low_power: enable low current consumption.
++		For a list of available output power modes read
++		in_accel_power_mode_available.
+-- 
+1.7.9.5
+
