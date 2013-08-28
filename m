@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3H1PBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:01:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40607 "EHLO
+	id S1754585Ab3H1PBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:01:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40609 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab3H1O7y (ORCPT
+	with ESMTP id S1754055Ab3H1O7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Aug 2013 10:59:54 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/21] perf tools: Sample after exit loses thread correlation
-Date: Wed, 28 Aug 2013 11:59:23 -0300
-Message-Id: <1377701977-2085-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 20/21] perf tools: Add pid to struct thread
+Date: Wed, 28 Aug 2013 11:59:36 -0300
+Message-Id: <1377701977-2085-21-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1377701977-2085-1-git-send-email-acme@infradead.org>
 References: <1377701977-2085-1-git-send-email-acme@infradead.org>
@@ -28,154 +29,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Occassionally events (e.g., context-switch, sched tracepoints) are losing
-the conversion of sample data associated with a thread. For example:
+Record pid on struct thread.  The member is named 'pid_' to avoid
+confusion with the 'tid' member which was previously named 'pid'.
 
-$ perf record -e sched:sched_switch -c 1 -a -- sleep 5
-$ perf script
-<selected events shown>
-    ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-    ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-:30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-
-The last line lost the conversion from tid to comm. If you look at the events
-(perf script -D) you see why - a SAMPLE event is generated after the EXIT:
-
-0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
-0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
-... thread: :30482:30482
-
-When perf processes the EXIT event the thread is moved to the dead_threads
-list. When the SAMPLE event is processed no thread exists for the pid so a new
-one is created by machine__findnew_thread.
-
-This patch address the problem by delaying the move to the dead_threads list
-until the tid is re-used (per Adrian's suggestion).
-
-With this patch we get the previous example shows:
-
-  ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-  ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-  ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-
-and
-
-  0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
-  0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
-  ... thread: ls:30482
-
-v4: per Arnaldo's request add dead flag to thread struct and set when task exits
-
-v3: re-do from a time based check to a delayed move to dead_threads list
-
-v2: Rebased to latest perf/core branch. Changed time comparison to use
-    a macro which explicitly shows the time basis
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1376491767-84171-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1377522030-27870-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 34 ++++++++++++++++++++--------------
- tools/perf/util/thread.h  |  5 +++++
- 2 files changed, 25 insertions(+), 14 deletions(-)
+ tools/perf/util/machine.c | 16 +++++++++++-----
+ tools/perf/util/thread.c  |  3 ++-
+ tools/perf/util/thread.h  |  3 ++-
+ 3 files changed, 15 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 4514e7e..574feb7 100644
+index 574feb7..59486c1 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -1031,11 +1031,27 @@ out_problem:
- 	return 0;
+@@ -253,7 +253,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
+ 	return;
  }
  
-+static void machine__remove_thread(struct machine *machine, struct thread *th)
-+{
-+	machine->last_match = NULL;
-+	rb_erase(&th->rb_node, &machine->threads);
-+	/*
-+	 * We may have references to this thread, for instance in some hist_entry
-+	 * instances, so just move them to a separate list.
-+	 */
-+	list_add_tail(&th->node, &machine->dead_threads);
-+}
-+
- int machine__process_fork_event(struct machine *machine, union perf_event *event)
+-static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
++static struct thread *__machine__findnew_thread(struct machine *machine,
++						pid_t pid, pid_t tid,
+ 						bool create)
  {
--	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
-+	struct thread *thread = machine__find_thread(machine, event->fork.tid);
- 	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+ 	struct rb_node **p = &machine->threads.rb_node;
+@@ -265,8 +266,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 	 * so most of the time we dont have to look up
+ 	 * the full rbtree:
+ 	 */
+-	if (machine->last_match && machine->last_match->tid == tid)
++	if (machine->last_match && machine->last_match->tid == tid) {
++		if (pid && pid != machine->last_match->pid_)
++			machine->last_match->pid_ = pid;
+ 		return machine->last_match;
++	}
  
-+	/* if a thread currently exists for the thread id remove it */
-+	if (thread != NULL)
-+		machine__remove_thread(machine, thread);
-+
-+	thread = machine__findnew_thread(machine, event->fork.tid);
- 	if (dump_trace)
- 		perf_event__fprintf_task(event, stdout);
+ 	while (*p != NULL) {
+ 		parent = *p;
+@@ -274,6 +278,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
  
-@@ -1048,18 +1064,8 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
- 	return 0;
- }
+ 		if (th->tid == tid) {
+ 			machine->last_match = th;
++			if (pid && pid != th->pid_)
++				th->pid_ = pid;
+ 			return th;
+ 		}
  
--static void machine__remove_thread(struct machine *machine, struct thread *th)
--{
--	machine->last_match = NULL;
--	rb_erase(&th->rb_node, &machine->threads);
--	/*
--	 * We may have references to this thread, for instance in some hist_entry
--	 * instances, so just move them to a separate list.
--	 */
--	list_add_tail(&th->node, &machine->dead_threads);
--}
--
--int machine__process_exit_event(struct machine *machine, union perf_event *event)
-+int machine__process_exit_event(struct machine *machine __maybe_unused,
-+				union perf_event *event)
+@@ -286,7 +292,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 	if (!create)
+ 		return NULL;
+ 
+-	th = thread__new(tid);
++	th = thread__new(pid, tid);
+ 	if (th != NULL) {
+ 		rb_link_node(&th->rb_node, parent, p);
+ 		rb_insert_color(&th->rb_node, &machine->threads);
+@@ -298,12 +304,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 
+ struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
  {
- 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
- 
-@@ -1067,7 +1073,7 @@ int machine__process_exit_event(struct machine *machine, union perf_event *event
- 		perf_event__fprintf_task(event, stdout);
- 
- 	if (thread != NULL)
--		machine__remove_thread(machine, thread);
-+		thread__exited(thread);
- 
- 	return 0;
+-	return __machine__findnew_thread(machine, tid, true);
++	return __machine__findnew_thread(machine, 0, tid, true);
  }
+ 
+ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+ {
+-	return __machine__findnew_thread(machine, tid, false);
++	return __machine__findnew_thread(machine, 0, tid, false);
+ }
+ 
+ int machine__process_comm_event(struct machine *machine, union perf_event *event)
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 6feeb88..e3d4a55 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -7,12 +7,13 @@
+ #include "util.h"
+ #include "debug.h"
+ 
+-struct thread *thread__new(pid_t tid)
++struct thread *thread__new(pid_t pid, pid_t tid)
+ {
+ 	struct thread *self = zalloc(sizeof(*self));
+ 
+ 	if (self != NULL) {
+ 		map_groups__init(&self->mg);
++		self->pid_ = pid;
+ 		self->tid = tid;
+ 		self->ppid = -1;
+ 		self->comm = malloc(32);
 diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 13c62c9..32d0601 100644
+index 32d0601..4ebbb40 100644
 --- a/tools/perf/util/thread.h
 +++ b/tools/perf/util/thread.h
-@@ -16,6 +16,7 @@ struct thread {
+@@ -12,6 +12,7 @@ struct thread {
+ 		struct list_head node;
+ 	};
+ 	struct map_groups	mg;
++	pid_t			pid_; /* Not all tools update this */
+ 	pid_t			tid;
  	pid_t			ppid;
  	char			shortname[3];
- 	bool			comm_set;
-+	bool			dead; /* if set thread has exited */
- 	char			*comm;
- 	int			comm_len;
+@@ -25,7 +26,7 @@ struct thread {
  
-@@ -26,6 +27,10 @@ struct machine;
+ struct machine;
  
- struct thread *thread__new(pid_t tid);
+-struct thread *thread__new(pid_t tid);
++struct thread *thread__new(pid_t pid, pid_t tid);
  void thread__delete(struct thread *self);
-+static inline void thread__exited(struct thread *thread)
-+{
-+	thread->dead = true;
-+}
- 
- int thread__set_comm(struct thread *self, const char *comm);
- int thread__comm_len(struct thread *self);
+ static inline void thread__exited(struct thread *thread)
+ {
 -- 
 1.8.1.4
 
