@@ -1,124 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3H1JUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 05:20:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab3H1JUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 05:20:16 -0400
-Date: Wed, 28 Aug 2013 12:20:01 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
-Message-ID: <20130828092001.GQ22899@redhat.com>
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1752735Ab3H1J2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 05:28:33 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:52217 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab3H1J2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 05:28:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1377668719-8602-3-git-send-email-ch.naveen@samsung.com>
+References: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com>
+	<1377668719-8602-1-git-send-email-ch.naveen@samsung.com>
+	<1377668719-8602-3-git-send-email-ch.naveen@samsung.com>
+Date: Wed, 28 Aug 2013 14:58:29 +0530
+X-Google-Sender-Auth: T-yM23a-z5Eq8MoDqd2zHOMTAo8
+Message-ID: <CADGdYn40-fAyYX9FhdkpMeu5P29wEq5jYL0yu_qSH-ZdHv=huA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] thermal: samsung: Add TMU support for Exynos5420 SoCs
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 09:02:07PM +0800, Xiao Guangrong wrote:
-> The basic idea is from nulls list which uses a nulls to indicate
-> whether the desc is moved to different pte-list
-> 
-> Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+On Wed, Aug 28, 2013 at 11:15 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> This patch adds the neccessary register changes and arch information
+> to support Exynos5420 SoCs
+> Exynos5420 has 5 TMU channels one for each CPU 0, 1, 2 and 3 and GPU
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+For all patch in this series,
+Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>.
+
+A minor comment, please rename the flag SHARED_MEMORY to
+MULTIPLE_MEMORY as this is more consistent.
+
+Thanks,
+Amit Daniel
 > ---
->  arch/x86/kvm/mmu.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 50 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 36caf6a..f8fc0cc 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1010,6 +1010,14 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
->  		desc->sptes[0] = (u64 *)*pte_list;
->  		desc->sptes[1] = spte;
->  		desc_mark_nulls(pte_list, desc);
+>  drivers/thermal/samsung/exynos_tmu.c      |    4 ++
+>  drivers/thermal/samsung/exynos_tmu.h      |    1 +
+>  drivers/thermal/samsung/exynos_tmu_data.c |   90 +++++++++++++++++++++++++++++
+>  drivers/thermal/samsung/exynos_tmu_data.h |    7 +++
+>  4 files changed, 102 insertions(+)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index d201ed8..bfdfbd6 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -499,6 +499,10 @@ static const struct of_device_id exynos_tmu_match[] = {
+>                 .compatible = "samsung,exynos5440-tmu",
+>                 .data = (void *)EXYNOS5440_TMU_DRV_DATA,
+>         },
+> +       {
+> +               .compatible = "samsung,exynos5420-tmu",
+> +               .data = (void *)EXYNOS5420_TMU_DRV_DATA,
+> +       },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos_tmu_match);
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index 7c6c34a..d88a536 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -43,6 +43,7 @@ enum soc_type {
+>         SOC_ARCH_EXYNOS4210 = 1,
+>         SOC_ARCH_EXYNOS,
+>         SOC_ARCH_EXYNOS5440,
+> +       SOC_ARCH_EXYNOS5420,
+>  };
+>
+>  /**
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> index 23fea23..5adbb36 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -177,6 +177,96 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+>  };
+>  #endif
+>
+> +#if defined(CONFIG_SOC_EXYNOS5420)
+> +static const struct exynos_tmu_registers exynos5420_tmu_registers = {
+> +       .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+> +       .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+> +       .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+> +       .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+> +       .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> +       .buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+> +       .therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+> +       .therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+> +       .therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> +       .buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+> +       .buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
+> +       .core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+> +       .tmu_status = EXYNOS_TMU_REG_STATUS,
+> +       .tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
+> +       .threshold_th0 = EXYNOS_THD_TEMP_RISE,
+> +       .threshold_th1 = EXYNOS_THD_TEMP_FALL,
+> +       .tmu_inten = EXYNOS_TMU_REG_INTEN,
+> +       .inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
+> +       .inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
+> +       .inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
+> +       .inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
+> +       .inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
+> +       .inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
+> +       .inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
+> +       /* INTEN_RISE3 Not availble in exynos5420 */
+> +       .inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
+> +       .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
+> +       .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+> +       .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> +       .intclr_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
+> +       .emul_con = EXYNOS_EMUL_CON,
+> +       .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> +       .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
+> +       .emul_time_mask = EXYNOS_EMUL_TIME_MASK,
+> +};
 > +
-> +		/*
-> +		 * Esure the old spte has been updated into desc, so
-> +		 * that the another side can not get the desc from pte_list
-> +		 * but miss the old spte.
-> +		 */
-> +		smp_wmb();
+> +#define EXYNOS5420_TMU_DATA \
+> +       .threshold_falling = 10, \
+> +       .trigger_levels[0] = 85, \
+> +       .trigger_levels[1] = 103, \
+> +       .trigger_levels[2] = 110, \
+> +       .trigger_levels[3] = 120, \
+> +       .trigger_enable[0] = true, \
+> +       .trigger_enable[1] = true, \
+> +       .trigger_enable[2] = true, \
+> +       .trigger_enable[3] = false, \
+> +       .trigger_type[0] = THROTTLE_ACTIVE, \
+> +       .trigger_type[1] = THROTTLE_ACTIVE, \
+> +       .trigger_type[2] = SW_TRIP, \
+> +       .trigger_type[3] = HW_TRIP, \
+> +       .max_trigger_level = 4, \
+> +       .gain = 8, \
+> +       .reference_voltage = 16, \
+> +       .noise_cancel_mode = 4, \
+> +       .cal_type = TYPE_ONE_POINT_TRIMMING, \
+> +       .efuse_value = 55, \
+> +       .min_efuse_value = 40, \
+> +       .max_efuse_value = 100, \
+> +       .first_point_trim = 25, \
+> +       .second_point_trim = 85, \
+> +       .default_temp_offset = 50, \
+> +       .freq_tab[0] = { \
+> +               .freq_clip_max = 800 * 1000, \
+> +               .temp_level = 85, \
+> +       }, \
+> +       .freq_tab[1] = { \
+> +               .freq_clip_max = 200 * 1000, \
+> +               .temp_level = 103, \
+> +       }, \
+> +       .freq_tab_count = 2, \
+> +       .type = SOC_ARCH_EXYNOS5420, \
+> +       .registers = &exynos5420_tmu_registers, \
+> +       .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+> +                       TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+> +                       TMU_SUPPORT_EMUL_TIME)
 > +
->  		*pte_list = (unsigned long)desc | 1;
->  		return 1;
->  	}
-> @@ -1131,6 +1139,47 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
->  	WARN_ON(desc_get_nulls_value(desc) != pte_list);
->  }
->  
-> +/* The caller should hold rcu lock. */
-> +typedef void (*pte_list_walk_lockless_fn) (u64 *spte, int level);
-> +static void pte_list_walk_lockless(unsigned long *pte_list,
-> +				   pte_list_walk_lockless_fn fn, int level)
-> +{
-> +	struct pte_list_desc *desc;
-> +	unsigned long pte_list_value;
-> +	int i;
+> +struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
+> +       .tmu_data = {
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +       },
+> +       .tmu_count = 5,
+> +};
+> +#endif
 > +
-> +restart:
-> +	pte_list_value = ACCESS_ONCE(*pte_list);
-> +	if (!pte_list_value)
-> +		return;
+>  #if defined(CONFIG_SOC_EXYNOS5440)
+>  static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> index 8788a87..3ce94cd 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -153,4 +153,11 @@ extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+>  #define EXYNOS5440_TMU_DRV_DATA (NULL)
+>  #endif
+>
+> +#if defined(CONFIG_SOC_EXYNOS5420)
+> +extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
+> +#define EXYNOS5420_TMU_DRV_DATA (&exynos5420_default_tmu_data)
+> +#else
+> +#define EXYNOS5420_TMU_DRV_DATA (NULL)
+> +#endif
 > +
-> +	if (!(pte_list_value & 1))
-> +		return fn((u64 *)pte_list_value, level);
-> +
-> +	/*
-> +	 * fetch pte_list before read sptes in the desc, see the comments
-> +	 * in pte_list_add().
-> +	 *
-> +	 * There is the data dependence since the desc is got from pte_list.
-> +	 */
-> +	smp_read_barrier_depends();
-> +
-> +	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
-> +	while (!desc_is_a_nulls(desc)) {
-> +		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
-> +			fn(desc->sptes[i], level);
-> +
-> +		desc = ACCESS_ONCE(desc->more);
-> +
-> +		/* It is being initialized. */
-> +		if (unlikely(!desc))
-> +			goto restart;
-> +	}
-> +
-> +	if (unlikely(desc_get_nulls_value(desc) != pte_list))
-> +		goto restart;
-So is it really enough to guaranty safety and correctness? What if desc
-is moved to another rmap while we walking it so fn() is called on
-incorrect sptes? Or what if desc is moved to another rmap, but then it
-is moved back to initial rmap (but another place in the desc list) so
-the check here will not catch that we need to restart walking?
-
-
-> +}
-> +
->  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
->  				    struct kvm_memory_slot *slot)
->  {
-> @@ -4557,7 +4606,7 @@ int kvm_mmu_module_init(void)
->  {
->  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
->  					    sizeof(struct pte_list_desc),
-> -					    0, 0, NULL);
-> +					    0, SLAB_DESTROY_BY_RCU, NULL);
->  	if (!pte_list_desc_cache)
->  		goto nomem;
->  
-> -- 
-> 1.8.1.4
-
---
-			Gleb.
+>  #endif /*_EXYNOS_TMU_DATA_H*/
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
