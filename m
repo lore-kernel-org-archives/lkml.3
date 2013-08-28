@@ -1,167 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3H1Mrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:47:36 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:65429 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab3H1Mre (ORCPT
+	id S1755350Ab3H1Mt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:49:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64242 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752175Ab3H1Mt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:47:34 -0400
+	Wed, 28 Aug 2013 08:49:26 -0400
+Date: Wed, 28 Aug 2013 13:48:57 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 1/3] DMA: Freescale: revise device tree binding
+ document
+Message-ID: <20130828124857.GB10250@e106331-lin.cambridge.arm.com>
+References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com>
+ <1377600123-5746-2-git-send-email-hongbo.zhang@freescale.com>
+ <20130827112509.GH19893@e106331-lin.cambridge.arm.com>
+ <521DB26F.8010501@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <1377595171-31116-1-git-send-email-m.krawczuk@partner.samsung.com>
-References: <1377595171-31116-1-git-send-email-m.krawczuk@partner.samsung.com>
-Date: Wed, 28 Aug 2013 14:47:33 +0200
-Message-ID: <CACRpkdbeHte_GNYh_5uMzM64yqhm2qmm1=N=3sv69Lo+_Z_QvA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] pinctrl: Add s5pv210 support to pinctrl-exynos
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521DB26F.8010501@freescale.com>
+Thread-Topic: [PATCH v8 1/3] DMA: Freescale: revise device tree binding
+ document
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:19 AM, Mateusz Krawczuk
-<m.krawczuk@partner.samsung.com> wrote:
+On Wed, Aug 28, 2013 at 09:18:55AM +0100, Hongbo Zhang wrote:
+> On 08/27/2013 07:25 PM, Mark Rutland wrote:
+> > On Tue, Aug 27, 2013 at 11:42:01AM +0100, hongbo.zhang@freescale.com wrote:
+> >> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >>
+> >> This patch updates the discription of each type of DMA controller and its
+> >> channels, it is preparation for adding another new DMA controller binding, it
+> >> also fixes some defects of indent for text alignment at the same time.
+> >>
+> >> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >> ---
+> >>   .../devicetree/bindings/powerpc/fsl/dma.txt        |   62 +++++++++-----------
+> >>   1 file changed, 27 insertions(+), 35 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> index 2a4b4bc..ddf17af 100644
+> >> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> @@ -1,33 +1,29 @@
+> >> -* Freescale 83xx DMA Controller
+> >> +* Freescale DMA Controllers
+> >>   
+> >> -Freescale PowerPC 83xx have on chip general purpose DMA controllers.
+> >> +** Freescale Elo DMA Controller
+> >> +   This is a little-endian DMA controller, used in Freescale mpc83xx series
+> >> +   chips such as mpc8315, mpc8349, mpc8379 etc.
+> >>   
+> >>   Required properties:
+> >>   
+> >> -- compatible        : compatible list, contains 2 entries, first is
+> >> -		 "fsl,CHIP-dma", where CHIP is the processor
+> >> -		 (mpc8349, mpc8360, etc.) and the second is
+> >> -		 "fsl,elo-dma"
+> >> -- reg               : <registers mapping for DMA general status reg>
+> >> -- ranges		: Should be defined as specified in 1) to describe the
+> >> -		  DMA controller channels.
+> >> +- compatible        : must include "fsl,elo-dma"
+> > We should list the other values that may be in the list also, unless
+> > they are really of no consequence, in which case their presence in dt is
+> > questionable.
+> Hmm.  Stephen questioned here too, it seems this is a default rule.
+> Although Scott@freescale had explained our thoughts, I'd like to edit 
+> this item like this:
+> 
+> "must include "fsl,eloplus-dma", and a "fsl,CHIP-dma" is optional, where 
+> CHIP is the processor name"
+> 
+> We don't list all the chip name because we have tens of them and we 
+> cannot list all of them, and it is unnecessary to list them because we 
+> even don't use "fsl,CHIP-dma" in the new driver, add "fsl,CHIP-dma" here 
+> just make it questionable when it presents in example and  old dts files.
+> 
+> I remove the examples in bracket "(mpc8349, mpc8360, etc.)" because we 
+> can see the real example below.
+> I don't say" if "fsl,CHIP-dma" presents, it should be the first one, and 
+> the "fsl,eloplus-dma" should be the second" because it is common rule.
+> the description language should be clear and concise too I think.
 
-> This patch implements pinctrl for s5pv210 and adds required device tree bindings.
->
-> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Actually, you've convinced me for the form as you originally converted
+it (must include "fsl,elo-dma"), given that the other strings aren't
+used to give information anywhere and "fsl,CHIP-dma" doesn't fully
+define a valid string.
 
-Bindings is something you add in Documentation/devicetree/bindings,
-so atleast alter the commit message. This merely *uses* some
-device tree bindings.
+> >> +- reg               : <registers specifier for DMA general status reg>
+> >> +- ranges            : describes the mapping between the address space of the
+> >> +                      DMA channels and the address space of the DMA controller
+> >>   - cell-index        : controller index.  0 for controller @ 0x8100
+> >> -- interrupts        : <interrupt mapping for DMA IRQ>
+> >> +- interrupts        : <interrupt specifier for DMA IRQ>
+> >>   - interrupt-parent  : optional, if needed for interrupt mapping
+> >>   
+> >> -
+> >>   - DMA channel nodes:
+> >> -        - compatible        : compatible list, contains 2 entries, first is
+> >> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
+> >> -			 (mpc8349, mpc8350, etc.) and the second is
+> >> -			 "fsl,elo-dma-channel". However, see note below.
+> >> -        - reg               : <registers mapping for channel>
+> >> +        - compatible        : must include "fsl,elo-dma-channel"
+> >> +                              However, see note below.
+> > Again, I think we should list the other entries that may be in the list.
+> > Otherwise it's not clear what the binding defines. Similarly for the
+> > other compatible list definitions below...
+> >
+> >> +        - reg               : <registers specifier for channel>
+> >>           - cell-index        : dma channel index starts at 0.
+> > I realise you haven't changed it, but it's unclear what the cell-index
+> > property is (and somewhat confusingly there seem to be multiple
+> > defnitions). It might be worth clarifying it while performing the other
+> > cleanup.
+> not clear with your point "multiple definitions", we really have 
+> multiple dma channels for one dma controller.
+> cell-index is used as channel index, this is an old method used by old 
+> driver, my patch didn't touch this part.
 
-Yours,
-Linus Walleij
+Sorry, I'd misunderstood the cell-index property. More noise from me.
 
-> ---
->  drivers/pinctrl/Kconfig           |  2 +-
->  drivers/pinctrl/pinctrl-exynos.c  | 58 +++++++++++++++++++++++++++++++++++++++
->  drivers/pinctrl/pinctrl-samsung.c |  3 +-
->  drivers/pinctrl/pinctrl-samsung.h |  1 +
->  4 files changed, 62 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-> index bdb1a87..ffe4b49 100644
-> --- a/drivers/pinctrl/Kconfig
-> +++ b/drivers/pinctrl/Kconfig
-> @@ -252,7 +252,7 @@ config PINCTRL_SAMSUNG
->
->  config PINCTRL_EXYNOS
->         bool "Pinctrl driver data for Samsung EXYNOS SoCs other than 5440"
-> -       depends on OF && GPIOLIB && ARCH_EXYNOS
-> +       depends on OF && GPIOLIB && (ARCH_EXYNOS || ARCH_S5PV210)
->         select PINCTRL_SAMSUNG
->
->  config PINCTRL_EXYNOS5440
-> diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
-> index a74b3cb..fc3e1d7 100644
-> --- a/drivers/pinctrl/pinctrl-exynos.c
-> +++ b/drivers/pinctrl/pinctrl-exynos.c
-> @@ -660,6 +660,64 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
->                         exynos_pinctrl_resume_bank(drvdata, bank);
->  }
->
-> +/* pin banks of s5pv210 pin-controller */
-> +static struct samsung_pin_bank s5pv210_pin_banks0[] = {
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpa0", 0x00),
-> +       EXYNOS_PIN_BANK_EINTG(6, 0x020, "gpa1", 0x04),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpb", 0x08),
-> +       EXYNOS_PIN_BANK_EINTG(5, 0x060, "gpc0", 0x0c),
-> +       EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpc1", 0x10),
-> +       EXYNOS_PIN_BANK_EINTG(4, 0x0A0, "gpd0", 0x14),
-> +       EXYNOS_PIN_BANK_EINTG(4, 0x0C0, "gpd1", 0x18),
-> +       EXYNOS_PIN_BANK_EINTG(5, 0x0E0, "gpe0", 0x1c),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x100, "gpe1", 0x20),
-> +       EXYNOS_PIN_BANK_EINTG(6, 0x120, "gpf0", 0x24),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x140, "gpf1", 0x28),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x160, "gpf2", 0x2c),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x180, "gpf3", 0x30),
-> +       EXYNOS_PIN_BANK_EINTG(7, 0x1A0, "gpg0", 0x34),
-> +       EXYNOS_PIN_BANK_EINTG(7, 0x1C0, "gpg1", 0x38),
-> +       EXYNOS_PIN_BANK_EINTG(7, 0x1E0, "gpg2", 0x3c),
-> +       EXYNOS_PIN_BANK_EINTG(7, 0x200, "gpg3", 0x40),
-> +       EXYNOS_PIN_BANK_EINTN(7, 0x220, "gpgi"),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x240, "gpj0", 0x44),
-> +       EXYNOS_PIN_BANK_EINTG(6, 0x260, "gpj1", 0x48),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x280, "gpj2", 0x4c),
-> +       EXYNOS_PIN_BANK_EINTG(8, 0x2A0, "gpj3", 0x50),
-> +       EXYNOS_PIN_BANK_EINTG(5, 0x2C0, "gpj4", 0x54),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x2E0, "mp01"),
-> +       EXYNOS_PIN_BANK_EINTN(4, 0x300, "mp02"),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x320, "mp03"),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x340, "mp04"),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x360, "mp05"),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x300, "mp06"),
-> +       EXYNOS_PIN_BANK_EINTN(8, 0x320, "mp07"),
-> +       EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gph0", 0x00),
-> +       EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gph1", 0x04),
-> +       EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gph2", 0x08),
-> +       EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gph3", 0x0c),
-> +};
-> +
-> +struct samsung_pin_ctrl s5pv210_pin_ctrl[] = {
-> +       {
-> +               /* pin-controller instance 0 data */
-> +               .pin_banks      = s5pv210_pin_banks0,
-> +               .nr_banks       = ARRAY_SIZE(s5pv210_pin_banks0),
-> +               .geint_con      = EXYNOS_GPIO_ECON_OFFSET,
-> +               .geint_mask     = EXYNOS_GPIO_EMASK_OFFSET,
-> +               .geint_pend     = EXYNOS_GPIO_EPEND_OFFSET,
-> +               .weint_con      = EXYNOS_WKUP_ECON_OFFSET,
-> +               .weint_mask     = EXYNOS_WKUP_EMASK_OFFSET,
-> +               .weint_pend     = EXYNOS_WKUP_EPEND_OFFSET,
-> +               .svc            = EXYNOS_SVC_OFFSET,
-> +               .eint_gpio_init = exynos_eint_gpio_init,
-> +               .eint_wkup_init = exynos_eint_wkup_init,
-> +               .suspend        = exynos_pinctrl_suspend,
-> +               .resume         = exynos_pinctrl_resume,
-> +               .label          = "s5pv210-gpio-ctrl0",
-> +       },
-> +};
-> +
->  /* pin banks of exynos4210 pin-controller 0 */
->  static struct samsung_pin_bank exynos4210_pin_banks0[] = {
->         EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpa0", 0x00),
-> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-> index 439f2ef..f14b379 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.c
-> +++ b/drivers/pinctrl/pinctrl-samsung.c
-> @@ -878,7 +878,6 @@ static struct samsung_pin_ctrl *samsung_pinctrl_get_soc_data(
->         }
->         match = of_match_node(samsung_pinctrl_dt_match, node);
->         ctrl = (struct samsung_pin_ctrl *)match->data + id;
-> -
->         bank = ctrl->pin_banks;
->         for (i = 0; i < ctrl->nr_banks; ++i, ++bank) {
->                 spin_lock_init(&bank->slock);
-> @@ -1113,6 +1112,8 @@ static const struct of_device_id samsung_pinctrl_dt_match[] = {
->                 .data = (void *)exynos5250_pin_ctrl },
->         { .compatible = "samsung,exynos5420-pinctrl",
->                 .data = (void *)exynos5420_pin_ctrl },
-> +       { .compatible = "samsung,s5pv210-pinctrl",
-> +               .data = (void *)s5pv210_pin_ctrl },
->  #endif
->  #ifdef CONFIG_PINCTRL_S3C64XX
->         { .compatible = "samsung,s3c64xx-pinctrl",
-> diff --git a/drivers/pinctrl/pinctrl-samsung.h b/drivers/pinctrl/pinctrl-samsung.h
-> index 11bb75b..30622d9 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.h
-> +++ b/drivers/pinctrl/pinctrl-samsung.h
-> @@ -260,5 +260,6 @@ extern struct samsung_pin_ctrl s3c2412_pin_ctrl[];
->  extern struct samsung_pin_ctrl s3c2416_pin_ctrl[];
->  extern struct samsung_pin_ctrl s3c2440_pin_ctrl[];
->  extern struct samsung_pin_ctrl s3c2450_pin_ctrl[];
-> +extern struct samsung_pin_ctrl s5pv210_pin_ctrl[];
->
->  #endif /* __PINCTRL_SAMSUNG_H */
-> --
-> 1.8.1.2
->
+Given that, this looks fine to me.
+
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+> >>   
+> >>   Optional properties:
+> >> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
+> >> -			  (on 83xx this is expected to be identical to
+> >> -			   the interrupts property of the parent node)
+> >> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+> >> +                              (on 83xx this is expected to be identical to
+> >> +                              the interrupts property of the parent node)
+> >>           - interrupt-parent  : optional, if needed for interrupt mapping
+> >>   
+> >>   Example:
+> >> @@ -70,30 +66,26 @@ Example:
+> >>   		};
+> >>   	};
+> >>   
+> >> -* Freescale 85xx/86xx DMA Controller
+> >> -
+> >> -Freescale PowerPC 85xx/86xx have on chip general purpose DMA controllers.
+> >> +** Freescale EloPlus DMA Controller
+> >> +   This is DMA controller with extended addresses and chaining, mainly used in
+> >> +   Freescale mpc85xx/86xx, Pxxx and BSC series chips, such as mpc8540, mpc8641
+> >> +   p4080, bsc9131 etc.
+> >>   
+> >>   Required properties:
+> >>   
+> >> -- compatible        : compatible list, contains 2 entries, first is
+> >> -		 "fsl,CHIP-dma", where CHIP is the processor
+> >> -		 (mpc8540, mpc8540, etc.) and the second is
+> >> -		 "fsl,eloplus-dma"
+> >> -- reg               : <registers mapping for DMA general status reg>
+> >> +- compatible        : must include "fsl,eloplus-dma"
+> >> +- reg               : <registers specifier for DMA general status reg>
+> >>   - cell-index        : controller index.  0 for controller @ 0x21000,
+> >>                                            1 for controller @ 0xc000
+> >> -- ranges		: Should be defined as specified in 1) to describe the
+> >> -		  DMA controller channels.
+> >> +- ranges            : describes the mapping between the address space of the
+> >> +                      DMA channels and the address space of the DMA controller
+> >>   
+> >>   - DMA channel nodes:
+> >> -        - compatible        : compatible list, contains 2 entries, first is
+> >> -			 "fsl,CHIP-dma-channel", where CHIP is the processor
+> >> -			 (mpc8540, mpc8560, etc.) and the second is
+> >> -			 "fsl,eloplus-dma-channel". However, see note below.
+> >> +        - compatible        : must include "fsl,eloplus-dma-channel"
+> >> +                              However, see note below.
+> >>           - cell-index        : dma channel index starts at 0.
+> >> -        - reg               : <registers mapping for channel>
+> >> -        - interrupts        : <interrupt mapping for DMA channel IRQ>
+> >> +        - reg               : <registers specifier for channel>
+> >> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+> >>           - interrupt-parent  : optional, if needed for interrupt mapping
+> >>   
+> >>   Example:
+> >> -- 
+> >> 1.7.9.5
+> > Thanks,
+> > Mark.
+> >
+> 
+> 
+> 
+> 
