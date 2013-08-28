@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab3H1M64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:58:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab3H1M6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:58:53 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: axboe@kernel.dk, JBottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Ewan Milne <emilne@redhat.com>
-Subject: Re: [patch|rfc] block: fix race between request completion and timeout handling
-References: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
-	<521DA0F0.7060501@suse.de> <521DA913.1010505@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 28 Aug 2013 08:58:41 -0400
-In-Reply-To: <521DA913.1010505@suse.de> (Hannes Reinecke's message of "Wed, 28
-	Aug 2013 09:38:59 +0200")
-Message-ID: <x49sixuynsu.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753519Ab3H1NAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:00:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20939 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab3H1NAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 09:00:00 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=MkLg_yf6oqsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Xf-hRFNtRvAA:10 a=JfrnYn6hAAAA:8 a=-Hruq60_mDZDeuMr8VIA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 28 Aug 2013 08:59:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Fyodorov <halcy@yandex.ru>, Waiman Long <waiman.long@hp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue
+ spinlock implementation
+Message-ID: <20130828085957.728a5375@gandalf.local.home>
+In-Reply-To: <20130828081937.GH10002@twins.programming.kicks-ass.net>
+References: <15321377012704@web8h.yandex.ru>
+	<52142D6C.6000400@hp.com>
+	<336901377100289@web16f.yandex.ru>
+	<5215638E.5020702@hp.com>
+	<169431377178121@web21f.yandex.ru>
+	<521BB71F.6080300@hp.com>
+	<66111377605355@web12m.yandex.ru>
+	<20130827091436.3d5971a0@gandalf.local.home>
+	<20130827135309.GF10002@twins.programming.kicks-ass.net>
+	<20130828012128.GT3871@linux.vnet.ibm.com>
+	<20130828081937.GH10002@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hannes Reinecke <hare@suse.de> writes:
+On Wed, 28 Aug 2013 10:19:37 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
->> So, looked into things a bit more.
->> It looks as if you're on the right track, although I doubt your
->> patch will fix the issue for me :-(
->> 
->> Thing is, you're right there is a race window between requeuing
->> and softirq triggering, which could well be fixed by your patch.
->> So for that reason alone I would like to take it.
->> 
->> However, including your patch will end up opening another can of
->> worms: the softirq might now be triggering _while the request is
->> queued on the request queue_.
->> blk_requeue_request will be putting the request back on the request
->> queue, where it'll be stuck until being pulled off from
->> scsi_request_fn().
->> So if the softirq triggers during that condition we'll end up
->> calling the BUG_ON((!list_empty(&req->queuelist)) in
->> __blk_put_request().
->> 
->> Guess we'd need to fix that one, too ...
->> 
-> Ah. Now I see it.
->
-> We're requeuing from the softirq context, ie after the completion
-> has triggered. So the above scenario can't actually happen and the
-> patch is valid.
 
-Do you still think it won't solve the issue you're seeing?  What issue
-is that, btw?
+> > An unlock followed by a lock needs to act like a full barrier, but there
+> > is no requirement that a lock or unlock taken separately act like a
+> > full barrier.
+> 
+> But that is already a property of the acquisition/release barrier.
 
->
-> So:
->
-> Acked-by: Hannes Reinecke <hare@suse.de>
+As I mentioned in my fixes for the -rt swait barrier patches I sent.
+Spin locks only prevent leaks out of the critical section. It does not
+guarantee leaks into the critical section, thus:
 
-Thanks, I guess I'll have to send a properly signed-off patch, now.  ;-)
 
-Cheers,
-Jeff
+	A = 1
+
+	spin_lock()
+
+
+
+	spin_unlock()
+
+	B = C
+
+Can turn into:
+
+
+	(A = 1)
+
+	spin_lock()
+
+	load C
+
+	store 1 into A
+
+	spin_unlock()
+
+	B = C
+
+This shows that a spin_lock()/unlock() combo is not equivalent to a
+mb(). But as Paul has mentioned, if we had:
+
+	A = 1
+
+	spin_unlock()
+
+	spin_lock()
+
+	B = C
+
+That would be equivalent to
+
+	A = 1
+
+	mb()
+
+	B = C
+
+as the unlock prevents leaks going past it, and lock prevents leaks
+going before it.
+
+-- Steve
