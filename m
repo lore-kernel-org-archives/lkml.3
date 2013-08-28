@@ -1,61 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3H1H07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 03:26:59 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:48914 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab3H1H06 (ORCPT
+	id S1754686Ab3H1Ha5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 03:30:57 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:61711 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab3H1Hay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 03:26:58 -0400
+	Wed, 28 Aug 2013 03:30:54 -0400
+Message-ID: <521DA744.1020807@atmel.com>
+Date: Wed, 28 Aug 2013 09:31:16 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130814200442.GA20372@8bytes.org>
-References: <1376509818-22163-1-git-send-email-joro@8bytes.org>
-	<20130814195701.GY23006@n2100.arm.linux.org.uk>
-	<20130814200442.GA20372@8bytes.org>
-Date: Wed, 28 Aug 2013 09:26:57 +0200
-Message-ID: <CACRpkdZVAG=0zvLbR4E+UEjHUaYOgqUxsfGoZybPtm1DwDAJ1Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: integrator: Make sure INTEGRATOR_AP depends on PCI
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        "Jiri Kosina" <jkosina@suse.cz>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pinctrl: at91: add support for OUTPUT config
+References: <1377615082-16808-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1377615082-16808-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 10:04 PM, Joerg Roedel <joro@8bytes.org> wrote:
-
-> So when integrator does not depend on PCI this diff is more appropriate?
+On 27/08/2013 16:51, Boris BREZILLON :
+> Add support for pin output control through the pinctrl config:
+>   - support enabling/disabling output on a given pin
+>   - support output level setting (high or low)
 >
-> diff --git a/arch/arm/mach-integrator/pci_v3.h b/arch/arm/mach-integrator/pci_v3.h
-> index 755fd29..51738e0 100644
-> --- a/arch/arm/mach-integrator/pci_v3.h
-> +++ b/arch/arm/mach-integrator/pci_v3.h
-> @@ -1,2 +1,9 @@
-> -/* Simple oneliner include to the PCIv3 early init */
-> +/* Define PCIv3 early init */
-> +#ifdef CONFIG_PCI
->  extern int pci_v3_early_init(void);
-> +#else
-> +static inline int pci_v3_early_init(void)
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>   .../bindings/pinctrl/atmel,at91-pinctrl.txt        |    2 ++
+>   drivers/pinctrl/pinctrl-at91.c                     |   22 ++++++++++++++++++++
+>   include/dt-bindings/pinctrl/at91.h                 |    2 ++
+>   3 files changed, 26 insertions(+)
+>
+> diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+> index cf7c7bc..5a22e0d 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+> @@ -90,6 +90,8 @@ MULTIDRIVE	(1 << 1): indicate this pin need to be configured as multidrive.
+>   DEGLITCH	(1 << 2): indicate this pin need deglitch.
+>   PULL_DOWN	(1 << 3): indicate this pin need a pull down.
+>   DIS_SCHMIT	(1 << 4): indicate this pin need to disable schmit trigger.
+> +OUTPUT		(1 << 5): indicate this pin need to be configured as an output.
+> +OUTPUT_VAL	(0x1 << 6): output val (1 = high, 0 = low)
+>   DEBOUNCE	(1 << 16): indicate this pin need debounce.
+>   DEBOUNCE_VAL	(0x3fff << 17): debounce val.
+>
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index 19afb9a..1578a0d 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -61,6 +61,9 @@ static int gpio_banks;
+>   #define DEGLITCH	(1 << 2)
+>   #define PULL_DOWN	(1 << 3)
+>   #define DIS_SCHMIT	(1 << 4)
+> +#define OUTPUT		(1 << 5)
+> +#define OUTPUT_VAL_SHIFT	6
+> +#define OUTPUT_VAL	(0x1 << OUTPUT_VAL_SHIFT)
+>   #define DEBOUNCE	(1 << 16)
+>   #define DEBOUNCE_VAL_SHIFT	17
+>   #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
+> @@ -333,6 +336,19 @@ static void at91_mux_set_pullup(void __iomem *pio, unsigned mask, bool on)
+>   	writel_relaxed(mask, pio + (on ? PIO_PUER : PIO_PUDR));
+>   }
+>
+> +static bool at91_mux_get_output(void __iomem *pio, unsigned pin, bool *val)
 > +{
-> +       return 0;
+> +	*val = (readl_relaxed(pio + PIO_ODSR) >> pin) & 0x1;
+> +	return (readl_relaxed(pio + PIO_OSR) >> pin) & 0x1;
 > +}
-> +#endif
+> +
+> +static void at91_mux_set_output(void __iomem *pio, unsigned mask, bool is_on,
+> +				bool val)
+> +{
+> +	writel_relaxed(mask, pio + (val ? PIO_SODR : PIO_CODR));
+> +	writel_relaxed(mask, pio + (is_on ? PIO_OER : PIO_ODR));
+> +}
+> +
+>   static unsigned at91_mux_get_multidrive(void __iomem *pio, unsigned pin)
+>   {
+>   	return (readl_relaxed(pio + PIO_MDSR) >> pin) & 0x1;
+> @@ -712,6 +728,7 @@ static int at91_pinconf_get(struct pinctrl_dev *pctldev,
+>   	void __iomem *pio;
+>   	unsigned pin;
+>   	int div;
+> +	bool out;
+>
+>   	dev_dbg(info->dev, "%s:%d, pin_id=%d, config=0x%lx", __func__, __LINE__, pin_id, *config);
+>   	pio = pin_to_controller(info, pin_to_bank(pin_id));
+> @@ -732,6 +749,9 @@ static int at91_pinconf_get(struct pinctrl_dev *pctldev,
+>   	if (info->ops->get_schmitt_trig && info->ops->get_schmitt_trig(pio, pin))
+>   		*config |= DIS_SCHMIT;
+>
+> +	if (at91_mux_get_output(pio, pin, &out))
+> +		*config |= OUTPUT | (out << OUTPUT_VAL_SHIFT);
+> +
+>   	return 0;
+>   }
+>
+> @@ -749,6 +769,8 @@ static int at91_pinconf_set(struct pinctrl_dev *pctldev,
+>   	if (config & PULL_UP && config & PULL_DOWN)
+>   		return -EINVAL;
+>
+> +	at91_mux_set_output(pio, mask, config & OUTPUT,
+> +			    (config & OUTPUT_VAL) >> OUTPUT_VAL_SHIFT);
+>   	at91_mux_set_pullup(pio, mask, config & PULL_UP);
+>   	at91_mux_set_multidrive(pio, mask, config & MULTI_DRIVE);
+>   	if (info->ops->set_deglitch)
+> diff --git a/include/dt-bindings/pinctrl/at91.h b/include/dt-bindings/pinctrl/at91.h
+> index d7988b4..9fd4d48 100644
+> --- a/include/dt-bindings/pinctrl/at91.h
+> +++ b/include/dt-bindings/pinctrl/at91.h
+> @@ -15,6 +15,8 @@
+>   #define AT91_PINCTRL_DEGLITCH		(1 << 2)
+>   #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
+>   #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
+> +#define AT91_PINCTRL_OUTPUT		(1 << 5)
+> +#define AT91_PINCTRL_OUTPUT_VAL(x)	((x & 0x1) << 6)
 
-Yes.
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Can you add this change to the documentation as well:
+Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
 
-And can you please create and send a proper patch with this
-content to arm@kernel.org and the mailing list on CC, with
-a request for the ARM SoC maintainers to apply it directly
-as a fix?
 
-You might as well add Cc: stable@vger.kernel.org as well.
+>   #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
+>   #define AT91_PINCTRL_DEBOUNCE_VA(x)	(x << 17)
 
-Yours,
-Linus Walleij
+Oh, we have a nice typo here! ---^^^^^^
+And moreover it would be good to add the mask as well.
+
+>
+>
+
+Once the documentation added, you can stick my:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks, bye,
+-- 
+Nicolas Ferre
