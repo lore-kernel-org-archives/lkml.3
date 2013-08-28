@@ -1,120 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab3H1WVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:21:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab3H1WVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:21:17 -0400
-Date: Wed, 28 Aug 2013 18:21:14 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: oleg@redhat.com, eparis@redhat.com, akpm@linux-foundation.org,
-        rgb@redhat.com
-Subject: [RFC] audit: avoid soft lockup in audit_log_start()
-Message-ID: <20130828182114.6b67ea90@redhat.com>
-Organization: Red Hat
+	id S1755598Ab3H1WZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:25:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50666 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3H1WZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 18:25:04 -0400
+Date: Wed, 28 Aug 2013 18:25:02 -0400 (EDT)
+Message-Id: <20130828.182502.839052585388582662.davem@davemloft.net>
+To: clbchenlibo.chen@huawei.com
+Cc: anirudh@xilinx.com, John.Linn@xilinx.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH] net: xilinx: fix memleak
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <521ACBEF.7020301@huawei.com>
+References: <521ACBEF.7020301@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 28 Aug 2013 15:25:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm getting the following soft lockup:
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+Date: Mon, 26 Aug 2013 11:30:55 +0800
 
-CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- 0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
- ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
- ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
-Call Trace:
- <IRQ>  [<ffffffff815324df>] dump_stack+0x46/0x58
- [<ffffffff8152e669>] panic+0xbb/0x1c4
- [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
- [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
- [<ffffffff810d0260>] ? watchdog+0x30/0x30
- [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
- [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
- [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
- [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
- <EOI>  [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
- [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
- [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
- [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
- [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
- [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
- [<ffffffff81540794>] sysret_audit+0x17/0x21
+> 
+>  decrease device_node refcount np1 in err case.
+> 
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
 
-The reproducer is somewhat unusual:
-
- 1. Install RHEL6.5 (maybe a similar older user-space will do)
- 2. Boot the just installed system
- 3. In this first boot you'll meet the firstboot script, which
-    will do some setup and (depending on your answers) it will
-    reboot the machine
- 4. During that first reboot the system hangs while terminating
-    all processes:
-
-       Sending all processes the TERM signal...
-
-    It's when the soft lockup above happens. And yes, I managed
-    to get this with latest upstream kernel (HEAD fa8218def1b1)
-
-I'm reproducing it on a VM, but the first report was on bare-metal.
-
-This is what is happening:
-
- 1. audit_log_start() is called
- 2. As we have SKBs waiting in audit_skb_queue and all conditions
-    evaluate to true, we sleep in wait_for_auditd()
- 3. Go to 2, until sleep_time gets negative and audit_log_start()
-    just busy-waits
-
-Now, *why* this is happening is a mistery to me. I tried debugging
-it, but all I could find is that at some point the kauditd thread
-never wakes up after having called schedule(). I even tried waking
-it up before calling wait_for_auditd(), but it didn't.
-
-This patch is a RFC because it doesn't actually fix anything. It
-just bails out before we busy-wait. Which is better than nothing,
-but the system will still give a long pause when terminating all
-processes. Besides, we risk papering over the real bug...
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- kernel/audit.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 91e53d0..33e9c4c 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1097,6 +1097,7 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 	unsigned int		uninitialized_var(serial);
- 	int reserve;
- 	unsigned long timeout_start = jiffies;
-+	unsigned long sleep_time;
- 
- 	if (audit_initialized != AUDIT_INITIALIZED)
- 		return NULL;
-@@ -1112,13 +1113,11 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 
- 	while (audit_backlog_limit
- 	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
--		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
--			unsigned long sleep_time;
--
- 			sleep_time = timeout_start + audit_backlog_wait_time -
- 					jiffies;
--			if ((long)sleep_time > 0)
--				wait_for_auditd(sleep_time);
-+		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
-+			&& sleep_time > 0) {
-+			wait_for_auditd(sleep_time);
- 			continue;
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
--- 
-1.8.1.4
-
+Applied, thank you.
