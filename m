@@ -1,149 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3H1IGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 04:06:54 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:61525 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752299Ab3H1IGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 04:06:50 -0400
-Message-ID: <521DAF3C.9030201@imgtec.com>
-Date: Wed, 28 Aug 2013 09:05:16 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754488Ab3H1IIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 04:08:20 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:18078 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977Ab3H1IIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 04:08:17 -0400
+Message-ID: <521DB007.5040405@atmel.com>
+Date: Wed, 28 Aug 2013 10:08:39 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Mike Turquette <mturquette@linaro.org>,
-        =?UTF-8?B?U8O2cmVuIEJyaW5rbWFu?= =?UTF-8?B?bg==?= 
-	<soren.brinkmann@xilinx.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: linux-next: manual merge of the clk tree with Linus' tree
-References: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au> <521C7AF0.1020903@imgtec.com> <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local> <20130827165319.8231.9@quantum> <20130828100431.3005d52d77c565c241399269@canb.auug.org.au> <20130828172225.97f295645c9de0bbd2979fcd@canb.auug.org.au>
-In-Reply-To: <20130828172225.97f295645c9de0bbd2979fcd@canb.auug.org.au>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="kiWfljf2Nm0IqQG0XnVofrBhOpnf1OR7H"
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_08_28_09_06_45
+To: boris brezillon <b.brezillon@overkiz.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pinctrl: at91: add support for OUTPUT config
+References: <1377615082-16808-1-git-send-email-b.brezillon@overkiz.com> <521DA744.1020807@atmel.com> <521DA82C.7020905@overkiz.com> <521DAA28.2070507@atmel.com>
+In-Reply-To: <521DAA28.2070507@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kiWfljf2Nm0IqQG0XnVofrBhOpnf1OR7H
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 28/08/2013 09:43, Nicolas Ferre :
+> On 28/08/2013 09:35, boris brezillon :
+>> On 28/08/2013 09:31, Nicolas Ferre wrote:
+>>> On 27/08/2013 16:51, Boris BREZILLON :
+>>>> Add support for pin output control through the pinctrl config:
+>>>>     - support enabling/disabling output on a given pin
+>>>>     - support output level setting (high or low)
+>>>>
+>>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>>>> ---
+>>>>     .../bindings/pinctrl/atmel,at91-pinctrl.txt        |    2 ++
+>>>>     drivers/pinctrl/pinctrl-at91.c                     |   22
+>>>> ++++++++++++++++++++
+>>>>     include/dt-bindings/pinctrl/at91.h                 |    2 ++
+>>>>     3 files changed, 26 insertions(+)
+>>>>
+>>>> diff --git
+>>>> a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>>> b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>>> index cf7c7bc..5a22e0d 100644
+>>>> --- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>>> +++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>>>> @@ -90,6 +90,8 @@ MULTIDRIVE    (1 << 1): indicate this pin need to
+>>>> be configured as multidrive.
+>>>>     DEGLITCH    (1 << 2): indicate this pin need deglitch.
+>>>>     PULL_DOWN    (1 << 3): indicate this pin need a pull down.
+>>>>     DIS_SCHMIT    (1 << 4): indicate this pin need to disable schmit
+>>>> trigger.
+>>>> +OUTPUT        (1 << 5): indicate this pin need to be configured as
+>>>> an output.
+>>>> +OUTPUT_VAL    (0x1 << 6): output val (1 = high, 0 = low)
+>>>>     DEBOUNCE    (1 << 16): indicate this pin need debounce.
+>>>>     DEBOUNCE_VAL    (0x3fff << 17): debounce val.
+>>>>
+>>>> diff --git a/drivers/pinctrl/pinctrl-at91.c
+>>>> b/drivers/pinctrl/pinctrl-at91.c
+>>>> index 19afb9a..1578a0d 100644
+>>>> --- a/drivers/pinctrl/pinctrl-at91.c
+>>>> +++ b/drivers/pinctrl/pinctrl-at91.c
+>>>> @@ -61,6 +61,9 @@ static int gpio_banks;
+>>>>     #define DEGLITCH    (1 << 2)
+>>>>     #define PULL_DOWN    (1 << 3)
+>>>>     #define DIS_SCHMIT    (1 << 4)
+>>>> +#define OUTPUT        (1 << 5)
+>>>> +#define OUTPUT_VAL_SHIFT    6
+>>>> +#define OUTPUT_VAL    (0x1 << OUTPUT_VAL_SHIFT)
+>>>>     #define DEBOUNCE    (1 << 16)
+>>>>     #define DEBOUNCE_VAL_SHIFT    17
+>>>>     #define DEBOUNCE_VAL    (0x3fff << DEBOUNCE_VAL_SHIFT)
+>>>> @@ -333,6 +336,19 @@ static void at91_mux_set_pullup(void __iomem
+>>>> *pio, unsigned mask, bool on)
+>>>>         writel_relaxed(mask, pio + (on ? PIO_PUER : PIO_PUDR));
+>>>>     }
+>>>>
+>>>> +static bool at91_mux_get_output(void __iomem *pio, unsigned pin,
+>>>> bool *val)
+>>>> +{
+>>>> +    *val = (readl_relaxed(pio + PIO_ODSR) >> pin) & 0x1;
+>>>> +    return (readl_relaxed(pio + PIO_OSR) >> pin) & 0x1;
+>>>> +}
+>>>> +
+>>>> +static void at91_mux_set_output(void __iomem *pio, unsigned mask,
+>>>> bool is_on,
+>>>> +                bool val)
+>>>> +{
+>>>> +    writel_relaxed(mask, pio + (val ? PIO_SODR : PIO_CODR));
+>>>> +    writel_relaxed(mask, pio + (is_on ? PIO_OER : PIO_ODR));
+>>>> +}
+>>>> +
+>>>>     static unsigned at91_mux_get_multidrive(void __iomem *pio, unsigned
+>>>> pin)
+>>>>     {
+>>>>         return (readl_relaxed(pio + PIO_MDSR) >> pin) & 0x1;
+>>>> @@ -712,6 +728,7 @@ static int at91_pinconf_get(struct pinctrl_dev
+>>>> *pctldev,
+>>>>         void __iomem *pio;
+>>>>         unsigned pin;
+>>>>         int div;
+>>>> +    bool out;
+>>>>
+>>>>         dev_dbg(info->dev, "%s:%d, pin_id=%d, config=0x%lx", __func__,
+>>>> __LINE__, pin_id, *config);
+>>>>         pio = pin_to_controller(info, pin_to_bank(pin_id));
+>>>> @@ -732,6 +749,9 @@ static int at91_pinconf_get(struct pinctrl_dev
+>>>> *pctldev,
+>>>>         if (info->ops->get_schmitt_trig &&
+>>>> info->ops->get_schmitt_trig(pio, pin))
+>>>>             *config |= DIS_SCHMIT;
+>>>>
+>>>> +    if (at91_mux_get_output(pio, pin, &out))
+>>>> +        *config |= OUTPUT | (out << OUTPUT_VAL_SHIFT);
+>>>> +
+>>>>         return 0;
+>>>>     }
+>>>>
+>>>> @@ -749,6 +769,8 @@ static int at91_pinconf_set(struct pinctrl_dev
+>>>> *pctldev,
+>>>>         if (config & PULL_UP && config & PULL_DOWN)
+>>>>             return -EINVAL;
+>>>>
+>>>> +    at91_mux_set_output(pio, mask, config & OUTPUT,
+>>>> +                (config & OUTPUT_VAL) >> OUTPUT_VAL_SHIFT);
+>>>>         at91_mux_set_pullup(pio, mask, config & PULL_UP);
+>>>>         at91_mux_set_multidrive(pio, mask, config & MULTI_DRIVE);
+>>>>         if (info->ops->set_deglitch)
+>>>> diff --git a/include/dt-bindings/pinctrl/at91.h
+>>>> b/include/dt-bindings/pinctrl/at91.h
+>>>> index d7988b4..9fd4d48 100644
+>>>> --- a/include/dt-bindings/pinctrl/at91.h
+>>>> +++ b/include/dt-bindings/pinctrl/at91.h
+>>>> @@ -15,6 +15,8 @@
+>>>>     #define AT91_PINCTRL_DEGLITCH        (1 << 2)
+>>>>     #define AT91_PINCTRL_PULL_DOWN        (1 << 3)
+>>>>     #define AT91_PINCTRL_DIS_SCHMIT        (1 << 4)
+>>>> +#define AT91_PINCTRL_OUTPUT        (1 << 5)
+>>>> +#define AT91_PINCTRL_OUTPUT_VAL(x)    ((x & 0x1) << 6)
+>>>
+>>> Can you add this change to the documentation as well:
+>>> Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
 
-Hi Stephen
-
-On 28/08/13 08:22, Stephen Rothwell wrote:
-> On Wed, 28 Aug 2013 10:04:31 +1000 Stephen Rothwell <sfr@canb.auug.org.=
-au> wrote:
->> >
->> > On Tue, 27 Aug 2013 09:53:19 -0700 Mike Turquette <mturquette@linaro=
-=2Eorg> wrote:
->>> > >
->>> > > Quoting S=C3=B6ren Brinkmann (2013-08-27 08:44:11)
->>>> > > > On Tue, Aug 27, 2013 at 11:09:52AM +0100, James Hogan wrote:
->>>>> > > > > On 27/08/13 10:03, Stephen Rothwell wrote:
->>>>>> > > > > > Hi Mike,
->>>>>> > > > > >=20
->>>>>> > > > > > Today's linux-next merge of the clk tree got a conflict =
-in
->>>>>> > > > > > drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("c=
-lk/zynq/clkc: Add
->>>>>> > > > > > dedicated spinlock for the SWDT") and 765b7d4c4cb3
->>>>>> > > > > > ("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to etherne=
-t muxes") from
->>>>>> > > > > > Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_R=
-ATE_NO_REPARENT
->>>>>> > > > > > flag") from the clk tree.
->>>>>> > > > > >=20
->>>>>> > > > > > I fixed it up (see below and in a couple of places I cho=
-se
->>>>>> > > > > > CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which=
- may, of course,
->>>>>> > > > > > be wrong) and can carry the fix as necessary (no action =
-is required).
->>>>> > > > >=20
->>>>> > > > > The case you mentioned looks correct to me.
->>>>> > > > >=20
->>>>> > > > > I can't see todays -next yet, but if by "choose CLK_SET_RAT=
-E_NO_REPARENT
->>>>> > > > > over CLK_SET_RATE_PARENT" you mean one branch adds CLK_SET_=
-RATE_PARENT,
->>>>> > > > > clk-next adds CLK_SET_RATE_NO_REPARENT, and the resolution =
-ends up with
->>>>> > > > > only CLK_SET_RATE_NOREPARENT then that sounds wrong, as the=
- two flags
->>>>> > > > > are orthogonal.
->>>> > > >=20
->>>> > > > I can just agree, the case included in the mail looks correct,=
- but in
->>>> > > > case of other conflicts both flags should be set. Just like in=
- the case
->>>> > > > shown here.
->>> > >=20
->>> > > Stephen's fix is correct. The Zynq patches came in as fixes so I =
-think
->>> > > this will be a rare event.
->> >=20
->> > Can you guys discuss this and come up with a single answer.  I read =
-the above as:
->> >=20
->> > (for the two places I used CLK_SET_RATE_NO_REPARENT where the two
->> > branches each added that and CLK_SET_RATE_NOREPARENT respectively)
->> >=20
->> > "Stephen was wrong"
->> > "Stephen should have taken both"
->> > "Stephen was right"
->> >=20
->> > :-)
-
-:-)
-
-I think the 3 way diff omitting hunks where once branch's changes are
-discarded might have confused us, even though you mentioned that there
-were other conflicts (I only twigged why I couldn't see them after
-seeing your new resolution).
-
->> >=20
->> > I can fix up my merge resolution if you tell me the correct fix.  Al=
-so,
->> > you will need to know so that you can tell Linus (or whoever else ha=
-s to
->> > resolve these conflicts).
-> OK, I thought about it some more and the resolution now looks like
-> below.  Is this correct/better?
-
-It looks correct to me now.
-
-Thanks
-James
+Oops! it is already in this patch: sorry for the noise!
 
 
---kiWfljf2Nm0IqQG0XnVofrBhOpnf1OR7H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>>>>     #define AT91_PINCTRL_DEBOUNCE        (1 << 16)
+>>>>     #define AT91_PINCTRL_DEBOUNCE_VA(x)    (x << 17)
+>>>
+>>> Oh, we have a nice typo here! ---^^^^^^
+>>> And moreover it would be good to add the mask as well.
+>>
+>> Do you want me to fix this typo and add mask for DEBOUNCE
+>> in a separate patch ?
+>
+> Yep, if you want.
+>
+>>> Once the documentation added, you can stick my:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+No condition anymore here then.
 
-iQIbBAEBAgAGBQJSHa9CAAoJEKHZs+irPybfZMIP+OYlM1bc2XWXTohjN6EG76Kq
-59JfzMVdiTa2Mcf834TaWlcTMBb1JEbMe3v6THvKZoM25ugkkQymxfkeu9DClrCE
-oXLd01FuPTS01VaSnRrumPUKSSQZVi1eoGi5zTc20Hd+fDHdc/ZuIpLHedqW19Du
-qqBxItlobYstR7iag/gLVhqG1LJUF4/b/tTaUo5zzIpHV06lM0svqWGJOF6LZjXP
-R2p+Arw6s1x8aZ5QGQq3/qXV9EyZmBAHVUOH1Vv4l21ZJOWB9kf2BVZ+zqLHhnRu
-e6RR8ajfVMOfnmYbHzgJJ7/EcPaM5YAIVp23z1Ak39I6wdf0LboaMSTlDKkq2Qyj
-FVOslYj2DLB29qYSlpZCVQ+gp008WMZTSW5ntvllPjt6AMsQvRqh+Jgf3oIxzHte
-+xK1PypqmX+ZUNxRL8IOOnuSMZdMaOG62t2fapXxMo51tDmuFFlGPMDNjItIWfSN
-fLKpw/smUtGgEs18xTYp/yniFjx6JFfc3LC5/3Y4ilGmvdBj1E1jhkm5KgaSxpzJ
-9+XDe3BeaR7r+VoDtimzQJ1X9eCRDOuTBaJm5/hQ+vWwOMf/HADhqy5XIj9gC1vk
-lK7zfp9H60FXKMZtvsT6+I1KRWRn8XXFyc8j3BYYbzl9kDd6BZL2cEYOkfHyKysV
-PR9cf3wVcsviHQRqniM=
-=Rdd2
------END PGP SIGNATURE-----
+>>>
+>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>
+>>> Thanks, bye,
+>>
+>>
+>>
+>
+>
 
---kiWfljf2Nm0IqQG0XnVofrBhOpnf1OR7H--
 
+-- 
+Nicolas Ferre
