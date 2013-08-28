@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3H1UVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:21:00 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34227 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3H1UU6 (ORCPT
+	id S1754816Ab3H1UXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:23:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52050 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3H1UXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:20:58 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 1/1] of: fdt: fix memory initialization for expanded DT
-To: Wladislav Wiebe <wladislav.kw@gmail.com>, rob.herring@calxeda.com,
-        devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <5208C04A.5000303@gmail.com>
-References: <5208C04A.5000303@gmail.com>
-Date: Wed, 28 Aug 2013 21:21:00 +0100
-Message-Id: <20130828202100.9134B3E0B6B@localhost>
+	Wed, 28 Aug 2013 16:23:35 -0400
+Date: Wed, 28 Aug 2013 13:23:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH-v3 1/4] idr: Percpu ida
+Message-Id: <20130828132332.6d5263ee9622235ae0fcc615@linux-foundation.org>
+In-Reply-To: <20130828195317.GE8032@kmo-pixel>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+	<1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
+	<20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
+	<20130828195317.GE8032@kmo-pixel>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Aug 2013 13:00:26 +0200, Wladislav Wiebe <wladislav.kw@gmail.com> wrote:
-> Already existing property flags are filled wrong for properties created from
-> initial FDT. This could cause problems if this DYNAMIC device-tree functions
-> are used later, i.e. properties are attached/detached/replaced. Simply dumping
-> flags from the running system show, that some initial static (not allocated via
-> kzmalloc()) nodes are marked as dynamic.
-> 
-> I putted some debug extensions to property_proc_show(..) :
-> ..
-> +       if (OF_IS_DYNAMIC(pp))
-> +               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
-> +       if (OF_IS_DETACHED(pp))
-> +               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
-> 
-> when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
-> will see that those flags are filled wrong, basically in most cases it will dump
-> a DYNAMIC or DETACHED status, which is in not true.
-> (BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
-> make a test_bit(OF_DETACHED, &x->_flags)
-> 
-> If nodes are dynamic kernel is allowed to kfree() them. But it will crash
-> attempting to do so on the nodes from FDT -- they are not allocated via
-> kzmalloc().
-> 
-> Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-> ---
->  drivers/of/fdt.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 6bb7cf2..b10ba00 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -392,6 +392,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
->  	mem = (unsigned long)
->  		dt_alloc(size + 4, __alignof__(struct device_node));
-> 
-> +	memset((void *)mem, 0, size);
-> +
+On Wed, 28 Aug 2013 12:53:17 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
 
-It seems to me that this would be a problem for any call to the early
-allocation function; early_init_dt_alloc_memory_arch(). There is at
-least one other call to the allocator via of_alias_scan(). I think this
-patch is okay for now (I'll add the missing hunk), but it should be
-revisited.
+> > > +	while (1) {
+> > > +		spin_lock(&pool->lock);
+> > > +
+> > > +		/*
+> > > +		 * prepare_to_wait() must come before steal_tags(), in case
+> > > +		 * percpu_ida_free() on another cpu flips a bit in
+> > > +		 * cpus_have_tags
+> > > +		 *
+> > > +		 * global lock held and irqs disabled, don't need percpu lock
+> > > +		 */
+> > > +		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
+> > > +
+> > > +		if (!tags->nr_free)
+> > > +			alloc_global_tags(pool, tags);
+> > > +		if (!tags->nr_free)
+> > > +			steal_tags(pool, tags);
+> > > +
+> > > +		if (tags->nr_free) {
+> > > +			tag = tags->freelist[--tags->nr_free];
+> > > +			if (tags->nr_free)
+> > > +				set_bit(smp_processor_id(),
+> > > +					pool->cpus_have_tags);
+> > > +		}
+> > > +
+> > > +		spin_unlock(&pool->lock);
+> > > +		local_irq_restore(flags);
+> > > +
+> > > +		if (tag >= 0 || !(gfp & __GFP_WAIT))
+> > > +			break;
+> > > +
+> > > +		schedule();
+> > > +
+> > > +		local_irq_save(flags);
+> > > +		tags = this_cpu_ptr(pool->tag_cpu);
+> > > +	}
+> > 
+> > What guarantees that this wait will terminate?
+> 
+> It seems fairly clear to me from the break statement a couple lines up;
+> if we were passed __GFP_WAIT we terminate iff we succesfully allocated a
+> tag. If we weren't passed __GFP_WAIT we never actually sleep.
 
-Most of the platforms use the memblock_alloc implementation; that can
-probably be consolidated and removed from arch code. I've just crafted a
-patch and I'll be posting it shortly.
+OK ;)  Let me rephrase.  What guarantees that a tag will become available?
 
-g.
+If what we have here is an open-coded __GFP_NOFAIL then that is
+potentially problematic.
