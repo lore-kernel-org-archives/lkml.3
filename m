@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab3H1OOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:14:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52865 "EHLO bear.ext.ti.com"
+	id S1754039Ab3H1OOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:14:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52889 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab3H1OOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:14:04 -0400
+	id S1753734Ab3H1OOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 10:14:19 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
 CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -16,60 +16,47 @@ CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>,
         <davidb@codeaurora.org>, <arnd@arndb.de>, <swarren@nvidia.com>,
         <popcornmix@gmail.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 0/3] Add Generic USB VBUS/ID detection via GPIO using extcon
-Date: Wed, 28 Aug 2013 19:29:09 +0530
-Message-ID: <1377698352-27689-1-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 2/3] drivers: Makefile: Extcon is a framework so bump it up
+Date: Wed, 28 Aug 2013 19:29:11 +0530
+Message-ID: <1377698352-27689-3-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1377698352-27689-1-git-send-email-george.cherian@ti.com>
+References: <1377698352-27689-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Bump up the order, since extcon is a framework and needed by
+other drivers. With the previous order it failed to detect
+extcon device in DWC3 when both were compiled built-in.
 
-These patches add generic support for USB VBUS/ID pin detection using extcon framework. 
-The USB ID pin on DRA7xx is connected via the gpio expander pcf8575. 
-The interrupt line of the same is connected to the gpio 11 of bank 6. 
-The following driver relies on  the  gpio interrupt to notify the actual 
-ID pin values by which the dwc3 driver determines the HOST/Peripheral roles.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-These patches are on top of following merges.
-v3.11-rc3 dra7 baseport tree [1] , with balbi/next ,control-usb multi instance support [2],
-chanwoo/extcon-next, roger's patches for USB host adaptation[3],Laurent Pinchart's patch to 
-Enable pcf857x GPIO expander for Device Tree[4] and pcf857x cleanup patch [5].
-
-Patches are available at 
-extcon_gpio_usbvid
-in git tree
-git://git.ti.com/~georgecherian/ti-linux-kernel/georgec-connectivity-linux-feature-tree.git 
-
-[1] - dra7 base tree
-	https://github.com/lokeshvutla/linux/tree/dra7-3.11-rc3-base
-[2] - multiple control-usb instances
-	https://github.com/rogerq/linux/tree/usb-control-module
-[3] - [PATCH 0/4] ARM: DRA7-evm: USB host adaptation
-	https://lkml.org/lkml/2013/8/1/335
-[4] - [PATCH v5] gpio: pcf857x: Add OF support 
- 	https://lkml.org/lkml/2013/8/27/70
-[5] - [PATCH] gpio: pcf857x: cleanup irq_demux_work and use threaded irq
-	https://lkml.org/lkml/2013/8/27/207
-
-George Cherian (3):
-  extcon: extcon-gpio-usbvid: Generic USB VBUS/ID detection via GPIO
-  drivers: Makefile: Extcon is a framework so bump it up
-  ARM: dts: dra7-evm: Add extcon nodes for USB ID pin detection
-
- .../bindings/extcon/extcon-gpio-usbvid.txt         |  20 +++
- arch/arm/boot/dts/dra7-evm.dts                     |  52 +++++-
- drivers/Makefile                                   |   2 +-
- drivers/extcon/Kconfig                             |   7 +-
- drivers/extcon/Makefile                            |   2 +-
- drivers/extcon/extcon-gpio-usbvid.c                | 185 +++++++++++++++++----
- 6 files changed, 226 insertions(+), 42 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio-usbvid.txt
-
+diff --git a/drivers/Makefile b/drivers/Makefile
+index ab93de8..4573b8d 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -49,6 +49,7 @@ obj-y				+= char/
+ obj-y				+= gpu/
+ 
+ obj-$(CONFIG_CONNECTOR)		+= connector/
++obj-$(CONFIG_EXTCON)		+= extcon/
+ 
+ # i810fb and intelfb depend on char/agp/
+ obj-$(CONFIG_FB_I810)           += video/i810/
+@@ -145,7 +146,6 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
+ obj-$(CONFIG_HYPERV)		+= hv/
+ 
+ obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+-obj-$(CONFIG_EXTCON)		+= extcon/
+ obj-$(CONFIG_MEMORY)		+= memory/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_VME_BUS)		+= vme/
 -- 
 1.8.1.4
 
