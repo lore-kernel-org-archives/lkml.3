@@ -1,158 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3H1PBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:01:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40609 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab3H1O7y (ORCPT
+	id S1754533Ab3H1PBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:01:30 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.140]:14645 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753664Ab3H1PB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:59:54 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 20/21] perf tools: Add pid to struct thread
-Date: Wed, 28 Aug 2013 11:59:36 -0300
-Message-Id: <1377701977-2085-21-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1377701977-2085-1-git-send-email-acme@infradead.org>
-References: <1377701977-2085-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 28 Aug 2013 11:01:26 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-10.tower-180.messagelabs.com!1377702081!30734734!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 28 Aug 2013 17:01:21 +0200
+Date: Wed, 28 Aug 2013 17:01:12 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2] documentation/devicetree: Move DT bindigns from
+ gpio to watchdog
+Message-ID: <20130828150112.GA17200@jtlinux>
+References: <521672A1.6010202@wwwdotorg.org>
+ <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de>
+ <521D1D16.9080106@wwwdotorg.org>
+ <20130828062232.GA10368@jtlinux>
+ <521E0B80.6040302@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <521E0B80.6040302@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 28 Aug 2013 15:01:21.0312 (UTC) FILETIME=[74DF9200:01CEA3FF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Wed, Aug 28, 2013 at 08:38:56AM -0600, Stephen Warren wrote:
+> On 08/28/2013 12:22 AM, Johannes Thumshirn wrote:
+> > On Tue, Aug 27, 2013 at 03:41:42PM -0600, Stephen Warren wrote:
+> >> On 08/27/2013 05:10 AM, Johannes Thumshirn wrote:
+> >>> I accidently put the devicetree bindings for the MEN A21 watchdog driver in
+> >>> Documentation/devicetree/bindings/gpio instead of
+> >>> Documentation/devicetree/bindings/watchdog, this patch addresses this error.
+> >>
+> >>>  Changes to v1:
+> >>>  - Use named gpios, as suggested by Stephen Warren
+> >>
+> >> The move and the change to the binding should probably be separate
+> >> patches since they're logically separate things. I didn't intend you to
+> >> update the rename patch to fix the binding issue I pointed out.
+> >>
+> >
+> > Oops. Looks like I've misunderstood you there. I'll re-send the rename patch
+> > then.
+> >
+> >> Is the driver updated for this binding change? Are there DTs in released
+> >> kernels that won't work now, or is the driver very new; there may be a
+> >> need for the driver to support the old binding and the binding doc to
+> >> document the old gpios property, but mark it deprecated.
+> >
+> > The driver is not yet updated, this is why I've sent it as an RFC. Are the
+> > bindings acceptable this way? If yes I'll update the driver and re-send the
+> > bindings with the driver as a new patch series.
+>
+> Well, XXX says:
+>
+> > GPIO properties should be named "[<name>-]gpios"
+>
+> whereas in this patch, some of the renamed properties were "-gpio"
+> rather than "-gpios". Aside from that, the new binding looks reasonable.
+>
+> However, I see that the existing binding will be released as part of
+> v3.11. That implies that we should continue to support the old binding
+> for compatibility. As such, I'm not convinced whether it's worth
+> changing this binding now.
 
-Record pid on struct thread.  The member is named 'pid_' to avoid
-confusion with the 'tid' member which was previously named 'pid'.
+Well I'm be perfectly happy with not changing the bindings and therefore not
+changing the driver. If this O.K. for you.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377522030-27870-3-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 16 +++++++++++-----
- tools/perf/util/thread.c  |  3 ++-
- tools/perf/util/thread.h  |  3 ++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+Should I resend my 1st patch, or is it O.K. to pick up the old one?
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 574feb7..59486c1 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -253,7 +253,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
- }
- 
--static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-+static struct thread *__machine__findnew_thread(struct machine *machine,
-+						pid_t pid, pid_t tid,
- 						bool create)
- {
- 	struct rb_node **p = &machine->threads.rb_node;
-@@ -265,8 +266,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid)
-+	if (machine->last_match && machine->last_match->tid == tid) {
-+		if (pid && pid != machine->last_match->pid_)
-+			machine->last_match->pid_ = pid;
- 		return machine->last_match;
-+	}
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -274,6 +278,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
-+			if (pid && pid != th->pid_)
-+				th->pid_ = pid;
- 			return th;
- 		}
- 
-@@ -286,7 +292,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	if (!create)
- 		return NULL;
- 
--	th = thread__new(tid);
-+	th = thread__new(pid, tid);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-@@ -298,12 +304,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, true);
-+	return __machine__findnew_thread(machine, 0, tid, true);
- }
- 
- struct thread *machine__find_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, false);
-+	return __machine__findnew_thread(machine, 0, tid, false);
- }
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event)
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 6feeb88..e3d4a55 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,12 +7,13 @@
- #include "util.h"
- #include "debug.h"
- 
--struct thread *thread__new(pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid)
- {
- 	struct thread *self = zalloc(sizeof(*self));
- 
- 	if (self != NULL) {
- 		map_groups__init(&self->mg);
-+		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
- 		self->comm = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 32d0601..4ebbb40 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -12,6 +12,7 @@ struct thread {
- 		struct list_head node;
- 	};
- 	struct map_groups	mg;
-+	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
- 	char			shortname[3];
-@@ -25,7 +26,7 @@ struct thread {
- 
- struct machine;
- 
--struct thread *thread__new(pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
- static inline void thread__exited(struct thread *thread)
- {
--- 
-1.8.1.4
-
+Johannes
