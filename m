@@ -1,139 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3H1Ttl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:49:41 -0400
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:59061 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755239Ab3H1TsR (ORCPT
+	id S1755456Ab3H1TvC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:51:02 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54812 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab3H1TvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:48:17 -0400
-Message-ID: <00000140c6781cfa-5624d7f6-8021-42d1-a6ab-d98d2a20d763-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:16 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, James Hogan <james.hogan@imgtec.com>
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 19/35] drivers: Replace __get_cpu_var uses
-References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.10.51
+	Wed, 28 Aug 2013 15:51:00 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2] of_net.h: Make of_get_phy_mode() return int i.s.o. const int
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+In-Reply-To: <1376823690-29179-1-git-send-email-geert@linux-m68k.org>
+References: <1376823690-29179-1-git-send-email-geert@linux-m68k.org>
+Date: Wed, 28 Aug 2013 20:51:03 +0100
+Message-Id: <20130828195103.1C90E3E0AF4@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+On Sun, 18 Aug 2013 13:01:30 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> include/linux/of_net.h:16: warning: type qualifiers ignored on function return type
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+Applied, thanks.
 
-__get_cpu_var() is defined as :
+g.
 
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&x), y, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/drivers/clocksource/metag_generic.c
-===================================================================
---- linux.orig/drivers/clocksource/metag_generic.c	2013-08-27 14:47:06.602928492 -0500
-+++ linux/drivers/clocksource/metag_generic.c	2013-08-27 14:47:06.594928572 -0500
-@@ -90,7 +90,7 @@ static struct clocksource clocksource_me
- 
- static irqreturn_t metag_timer_interrupt(int irq, void *dummy)
- {
--	struct clock_event_device *evt = &__get_cpu_var(local_clockevent);
-+	struct clock_event_device *evt = this_cpu_ptr(&local_clockevent);
- 
- 	evt->event_handler(evt);
- 
+> v2: update the actual function in drivers/of/of_net.c.
+> 
+>  drivers/of/of_net.c    |    2 +-
+>  include/linux/of_net.h |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
+> index ea174c8..8f9be2e 100644
+> --- a/drivers/of/of_net.c
+> +++ b/drivers/of/of_net.c
+> @@ -39,7 +39,7 @@ static const char *phy_modes[] = {
+>   * The function gets phy interface string from property 'phy-mode',
+>   * and return its index in phy_modes table, or errno in error case.
+>   */
+> -const int of_get_phy_mode(struct device_node *np)
+> +int of_get_phy_mode(struct device_node *np)
+>  {
+>  	const char *pm;
+>  	int err, i;
+> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
+> index 61bf53b..34597c8 100644
+> --- a/include/linux/of_net.h
+> +++ b/include/linux/of_net.h
+> @@ -9,10 +9,10 @@
+>  
+>  #ifdef CONFIG_OF_NET
+>  #include <linux/of.h>
+> -extern const int of_get_phy_mode(struct device_node *np);
+> +extern int of_get_phy_mode(struct device_node *np);
+>  extern const void *of_get_mac_address(struct device_node *np);
+>  #else
+> -static inline const int of_get_phy_mode(struct device_node *np)
+> +static inline int of_get_phy_mode(struct device_node *np)
+>  {
+>  	return -ENODEV;
+>  }
+> -- 
+> 1.7.9.5
+> 
 
