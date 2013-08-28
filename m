@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3H1CQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 22:16:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:3971 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113Ab3H1CQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 22:16:43 -0400
-X-IronPort-AV: E=Sophos;i="4.89,972,1367942400"; 
-   d="scan'208";a="8325720"
-Message-ID: <521D5C80.7010904@cn.fujitsu.com>
-Date: Wed, 28 Aug 2013 10:12:16 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
-References: <1543475.L7gSB7lLAu@vostro.rjw.lan>  <4785337.sqQqDSPcpL@vostro.rjw.lan> <3389643.Fdir3g6c6B@vostro.rjw.lan>  <1430120.G7JdUKlgj6@vostro.rjw.lan> <521C6FA8.4070804@cn.fujitsu.com> <1377639529.10300.847.camel@misato.fc.hp.com>
-In-Reply-To: <1377639529.10300.847.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/28 10:14:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/28 10:14:44,
-	Serialize complete at 2013/08/28 10:14:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753550Ab3H1CTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 22:19:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62140 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab3H1CTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 22:19:46 -0400
+X-AuditID: cbfee68e-b7f756d000004512-1c-521d5e3f6a5d
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Anton Vorontsov'" <anton@enomsg.org>
+Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com> <20130813090039.GA5604@mwanda>
+ <20130828015834.GH10506@lizard>
+In-reply-to: <20130828015834.GH10506@lizard>
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Date: Wed, 28 Aug 2013 11:19:43 +0900
+Message-id: <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6jksNzBPxSqeoGQJ2CuGnm8G+flQAAIizw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zY137ONkgg+XzzSzmrF/DZnFwq6bF
+	1IdP2Cxe/5vOYjFx5WRmi+bF69ksLi+8xGox+/5jFovLu+awOXB6TOj/xOixeYWWx6ZVnWwe
+	J2b8ZvHYP3cNu8fHp7dYPL6susbs0bdlFaPH501yAZxRXDYpqTmZZalF+nYJXBmd5z+wFFzg
+	rXj15TZbA+MVri5GTg4JAROJmROWsEDYYhIX7q1n62Lk4hASWMYocXXtGnaYol2nroPZQgKL
+	GCXa33tAFP1ilJi3tg2sm01ATeLLl8NgRSICGhJtq6ewgBQxCxxlknh5eSsbRPdLRolPu0pA
+	bE4BHYl9s5czg9jCAhYS7d2tYM0sAqoSd45MB7I5OHgFbCU+PGMFCfMKCEr8mHyPBSTMLKAu
+	MWVKLkiYWUBeYvOat8wgYQmg8KO/uhAXGElcXXSQBaJERGLfi3eMINdICMzkkPh56h8jxCYB
+	iW+TD7FA9MpKbDrADPGupMTBFTdYJjBKzEKyeBbC4llIFs9CsmEBI8sqRtHUguSC4qT0IiO9
+	4sTc4tK8dL3k/NxNjJCI79vBePOA9SHGZKDtE5mlRJPzgQkjryTe0NjMyMLUxNTYyNzSjDRh
+	JXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MxUpW3MxRi4TdeVh6p/W53ahq/T+z
+	s7NzffTE7/qrrzp+kvt0LuZFenYD04SXcx/dN2oJ5Ek6wqA+L+Py3oCrNr+y1FdMWPLiEYtF
+	z17LLfNLyte73zUP11JzeMq6rHr7T691dz9atmqfX7n62PyIMmUNt93P4t+uesCsPYXJ/Umh
+	nfldS25pJZbijERDLeai4kQA6xKiIQ4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jAV37ONkgg2s7DC3mrF/DZnFwq6bF
+	1IdP2Cxe/5vOYjFx5WRmi+bF69ksLi+8xGox+/5jFovLu+awOXB6TOj/xOixeYWWx6ZVnWwe
+	J2b8ZvHYP3cNu8fHp7dYPL6susbs0bdlFaPH501yAZxRDYw2GamJKalFCql5yfkpmXnptkre
+	wfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA3KimUJeaUAoUCEouLlfTtME0IDXHTtYBp
+	jND1DQmC6zEyQAMJ6xgzOs9/YCm4wFvx6stttgbGK1xdjJwcEgImErtOXWeHsMUkLtxbzwZi
+	CwksYpRof+/RxcgFZP9ilJi3to0FJMEmoCbx5cthsAYRAQ2JttVTWECKmAWOMkm8vLwVqvsl
+	o8SnXSUgNqeAjsS+2cuZQWxhAQuJ9u5WsGYWAVWJO0emA9kcHLwCthIfnrGChHkFBCV+TL7H
+	AhJmFlCXmDIlFyTMLCAvsXnNW2aQsARQ+NFfXYgLjCSuLjrIAlEiIrHvxTvGCYxCs5AMmoUw
+	aBaSQbOQdCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZxOnkntYFzZYHGIUYCDUYmH
+	12KzTJAQa2JZcWXuIUYJDmYlEd6S/0Ah3pTEyqrUovz4otKc1OJDjMlAX05klhJNzgemuryS
+	eENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYNyxdX7A6T+/ivxE
+	D2k+N2BljdqicTGf5/YfU5X39uylr9W766MPxH3ICre/OyPgOOOb0yu/31lyQZlV4XXJ60KZ
+	hfNzZbKfiHuwLjmU7nvofcXLZwoupbu1byyua5/deGT6HocVkawB3ysnH6pSlVmRxnMhxEvz
+	yxHviMeb7gd8OMX7SEW4sF+JpTgj0VCLuag4EQBpqo4uawMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
-
-On 08/28/2013 05:38 AM, Toshi Kani wrote:
-
-> On Tue, 2013-08-27 at 17:21 +0800, Gu Zheng wrote:
->> Hi Rafael,
->>
->> On 08/26/2013 11:02 PM, Rafael J. Wysocki wrote:
->>
->>> On Monday, August 26, 2013 04:43:26 PM Rafael J. Wysocki wrote:
->>>> On Monday, August 26, 2013 02:42:09 PM Rafael J. Wysocki wrote:
->>>>> On Monday, August 26, 2013 11:13:13 AM Gu Zheng wrote:
->>>>>> Hi Rafael,
->>>
->>> [...]
->>>
->>>>
->>>> OK, so the patch below is quick and dirty and overkill, but it should make the
->>>> splat go away at least.
->>>
->>> And if this patch does make the splat go away for you, please also test the
->>> appended one (Tejun, thanks for the hint!).
->>>
->>> I'll address the ACPI part differently later.
->>
->> What about changing device_hotplug_lock and acpi_scan_lock to rwsem? like the
->> attached one(With a preliminary test, it also can make the splat go away).:)
+On Wednesday, August 28, 2013 10:59 AM, Anton Vorontsov wrote:
+> On Tue, Aug 13, 2013 at 12:00:39PM +0300, Dan Carpenter wrote:
+> > > > > Use the wrapper function for retrieving the platform data instead of
+> > > > > accessing dev->platform_data directly.
+> > > >
+> > > > Um.. what is the benefit or rationale of this patch?
+> > >
+> > > CC'ed Joe Perches, Dan Carpenter
+> > >
+> > > Hi Anton Vorontsov,
+> > >
+> > > Usually, using the wrapper function makes the code simpler.
+> > > Also, it make the code more readable.
+> >
+> > Since people are asking my opinion, then yes using
+> > dev_get_platdata() as intended is better than open coding.  It's a
+> > coding standard thing.
 > 
-> I am curious how msleep(10) & restart_syscall() work in the change
-> below.  Doesn't the msleep() make s_active held longer time, which can
-> lead the thread holding device_hotplug_lock to wait it for deletion?
+> I don't see any immediate benefit of applying this patch... It does not
+> fix anything now or in the near future (or we are about to add something
+> into dev_get_platdata() wrapper, or get rid of dev.platform_data member?
+> Any plans for this? Then it should be in the commit message.)
 
-Yes, but it can avoid busy waiting. 
+CC'ed Greg Kroah-Hartman, Andrew Morton, Mark Brown
 
-> Also, does restart_syscall() release s_active and reopen this file
-> again?
+The benefit is that this wrapper function makes the code simpler and
+enhances readability. I don't know why you disagree. :(
+Also, this is a cosmetic change which does not have harmful effect.
 
-Sure, it just set a TIF_SIGPENDING flag and return an -ERESTARTNOINTR error, s_active/file
-will be released/closed in the failed path. And when do_signal() catches the -ERESTARTNOINTR,
-it will change the regs to restart the syscall.
-
-Thanks,
-Gu
+There is no special plan.
+I just want to make the best use of this wrapper function in order to
+enhance readability and make the code simpler.
 
 > 
-> @@ -408,9 +408,13 @@ static ssize_t show_online(struct device *dev,
-> struct device_attribute *attr,
->  {
->         bool val;
-> 
-> -       lock_device_hotplug();
-> +       if (!read_lock_device_hotplug()) {
-> +               msleep(10);
-> +               return restart_syscall();
-> +       }
-> +
-> 
-> Thanks,
-> -Toshi
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Without any plans to actually use the wrapper the patch is just a churn
+> [that might result into patch conflicts that I'll have to deal with], so
+> I'll refrain from applying it.
+
+Um, if you want, I will send v2 patch re-based on the latest git tree.
+Please, consider this patch positively. :-)
+Thank you.
+
+Best regards,
+Jingoo Han
 
 
