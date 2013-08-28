@@ -1,187 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab3H1IIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 04:08:20 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:18078 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977Ab3H1IIR (ORCPT
+	id S1754706Ab3H1IJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 04:09:54 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:32775 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab3H1IJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 04:08:17 -0400
-Message-ID: <521DB007.5040405@atmel.com>
-Date: Wed, 28 Aug 2013 10:08:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: boris brezillon <b.brezillon@overkiz.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pinctrl: at91: add support for OUTPUT config
-References: <1377615082-16808-1-git-send-email-b.brezillon@overkiz.com> <521DA744.1020807@atmel.com> <521DA82C.7020905@overkiz.com> <521DAA28.2070507@atmel.com>
-In-Reply-To: <521DAA28.2070507@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Wed, 28 Aug 2013 04:09:52 -0400
+Date: Wed, 28 Aug 2013 18:09:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: linux-next: manual merge of the akpm-current tree with the net tree
+Message-Id: <20130828180940.b571fb3354d4d95a9ac0e04f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Aug_2013_18_09_40_+1000_X03=4LYTJEDF0C3X"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/2013 09:43, Nicolas Ferre :
-> On 28/08/2013 09:35, boris brezillon :
->> On 28/08/2013 09:31, Nicolas Ferre wrote:
->>> On 27/08/2013 16:51, Boris BREZILLON :
->>>> Add support for pin output control through the pinctrl config:
->>>>     - support enabling/disabling output on a given pin
->>>>     - support output level setting (high or low)
->>>>
->>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>>> ---
->>>>     .../bindings/pinctrl/atmel,at91-pinctrl.txt        |    2 ++
->>>>     drivers/pinctrl/pinctrl-at91.c                     |   22
->>>> ++++++++++++++++++++
->>>>     include/dt-bindings/pinctrl/at91.h                 |    2 ++
->>>>     3 files changed, 26 insertions(+)
->>>>
->>>> diff --git
->>>> a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
->>>> b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
->>>> index cf7c7bc..5a22e0d 100644
->>>> --- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
->>>> +++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
->>>> @@ -90,6 +90,8 @@ MULTIDRIVE    (1 << 1): indicate this pin need to
->>>> be configured as multidrive.
->>>>     DEGLITCH    (1 << 2): indicate this pin need deglitch.
->>>>     PULL_DOWN    (1 << 3): indicate this pin need a pull down.
->>>>     DIS_SCHMIT    (1 << 4): indicate this pin need to disable schmit
->>>> trigger.
->>>> +OUTPUT        (1 << 5): indicate this pin need to be configured as
->>>> an output.
->>>> +OUTPUT_VAL    (0x1 << 6): output val (1 = high, 0 = low)
->>>>     DEBOUNCE    (1 << 16): indicate this pin need debounce.
->>>>     DEBOUNCE_VAL    (0x3fff << 17): debounce val.
->>>>
->>>> diff --git a/drivers/pinctrl/pinctrl-at91.c
->>>> b/drivers/pinctrl/pinctrl-at91.c
->>>> index 19afb9a..1578a0d 100644
->>>> --- a/drivers/pinctrl/pinctrl-at91.c
->>>> +++ b/drivers/pinctrl/pinctrl-at91.c
->>>> @@ -61,6 +61,9 @@ static int gpio_banks;
->>>>     #define DEGLITCH    (1 << 2)
->>>>     #define PULL_DOWN    (1 << 3)
->>>>     #define DIS_SCHMIT    (1 << 4)
->>>> +#define OUTPUT        (1 << 5)
->>>> +#define OUTPUT_VAL_SHIFT    6
->>>> +#define OUTPUT_VAL    (0x1 << OUTPUT_VAL_SHIFT)
->>>>     #define DEBOUNCE    (1 << 16)
->>>>     #define DEBOUNCE_VAL_SHIFT    17
->>>>     #define DEBOUNCE_VAL    (0x3fff << DEBOUNCE_VAL_SHIFT)
->>>> @@ -333,6 +336,19 @@ static void at91_mux_set_pullup(void __iomem
->>>> *pio, unsigned mask, bool on)
->>>>         writel_relaxed(mask, pio + (on ? PIO_PUER : PIO_PUDR));
->>>>     }
->>>>
->>>> +static bool at91_mux_get_output(void __iomem *pio, unsigned pin,
->>>> bool *val)
->>>> +{
->>>> +    *val = (readl_relaxed(pio + PIO_ODSR) >> pin) & 0x1;
->>>> +    return (readl_relaxed(pio + PIO_OSR) >> pin) & 0x1;
->>>> +}
->>>> +
->>>> +static void at91_mux_set_output(void __iomem *pio, unsigned mask,
->>>> bool is_on,
->>>> +                bool val)
->>>> +{
->>>> +    writel_relaxed(mask, pio + (val ? PIO_SODR : PIO_CODR));
->>>> +    writel_relaxed(mask, pio + (is_on ? PIO_OER : PIO_ODR));
->>>> +}
->>>> +
->>>>     static unsigned at91_mux_get_multidrive(void __iomem *pio, unsigned
->>>> pin)
->>>>     {
->>>>         return (readl_relaxed(pio + PIO_MDSR) >> pin) & 0x1;
->>>> @@ -712,6 +728,7 @@ static int at91_pinconf_get(struct pinctrl_dev
->>>> *pctldev,
->>>>         void __iomem *pio;
->>>>         unsigned pin;
->>>>         int div;
->>>> +    bool out;
->>>>
->>>>         dev_dbg(info->dev, "%s:%d, pin_id=%d, config=0x%lx", __func__,
->>>> __LINE__, pin_id, *config);
->>>>         pio = pin_to_controller(info, pin_to_bank(pin_id));
->>>> @@ -732,6 +749,9 @@ static int at91_pinconf_get(struct pinctrl_dev
->>>> *pctldev,
->>>>         if (info->ops->get_schmitt_trig &&
->>>> info->ops->get_schmitt_trig(pio, pin))
->>>>             *config |= DIS_SCHMIT;
->>>>
->>>> +    if (at91_mux_get_output(pio, pin, &out))
->>>> +        *config |= OUTPUT | (out << OUTPUT_VAL_SHIFT);
->>>> +
->>>>         return 0;
->>>>     }
->>>>
->>>> @@ -749,6 +769,8 @@ static int at91_pinconf_set(struct pinctrl_dev
->>>> *pctldev,
->>>>         if (config & PULL_UP && config & PULL_DOWN)
->>>>             return -EINVAL;
->>>>
->>>> +    at91_mux_set_output(pio, mask, config & OUTPUT,
->>>> +                (config & OUTPUT_VAL) >> OUTPUT_VAL_SHIFT);
->>>>         at91_mux_set_pullup(pio, mask, config & PULL_UP);
->>>>         at91_mux_set_multidrive(pio, mask, config & MULTI_DRIVE);
->>>>         if (info->ops->set_deglitch)
->>>> diff --git a/include/dt-bindings/pinctrl/at91.h
->>>> b/include/dt-bindings/pinctrl/at91.h
->>>> index d7988b4..9fd4d48 100644
->>>> --- a/include/dt-bindings/pinctrl/at91.h
->>>> +++ b/include/dt-bindings/pinctrl/at91.h
->>>> @@ -15,6 +15,8 @@
->>>>     #define AT91_PINCTRL_DEGLITCH        (1 << 2)
->>>>     #define AT91_PINCTRL_PULL_DOWN        (1 << 3)
->>>>     #define AT91_PINCTRL_DIS_SCHMIT        (1 << 4)
->>>> +#define AT91_PINCTRL_OUTPUT        (1 << 5)
->>>> +#define AT91_PINCTRL_OUTPUT_VAL(x)    ((x & 0x1) << 6)
->>>
->>> Can you add this change to the documentation as well:
->>> Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+--Signature=_Wed__28_Aug_2013_18_09_40_+1000_X03=4LYTJEDF0C3X
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oops! it is already in this patch: sorry for the noise!
+Hi Andrew,
 
+Today's linux-next merge of the akpm-current tree got a conflict in
+kernel/fork.c between commit c2b1df2eb429 ("Rename nsproxy.pid_ns to
+nsproxy.pid_ns_for_children") from the net tree and commits 74a7cb7237ad
+("pidns: fix vfork() after unshare(CLONE_NEWPID)"), 98c53a09f937 ("pidns:
+kill the unnecessary CLONE_NEWPID in copy_process()") and ddb3b016a3f7
+("fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks") from the
+akpm-current tree.
 
->>>>     #define AT91_PINCTRL_DEBOUNCE        (1 << 16)
->>>>     #define AT91_PINCTRL_DEBOUNCE_VA(x)    (x << 17)
->>>
->>> Oh, we have a nice typo here! ---^^^^^^
->>> And moreover it would be good to add the mask as well.
->>
->> Do you want me to fix this typo and add mask for DEBOUNCE
->> in a separate patch ?
->
-> Yep, if you want.
->
->>> Once the documentation added, you can stick my:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-No condition anymore here then.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->>>
->>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>
->>> Thanks, bye,
->>
->>
->>
->
->
+diff --cc kernel/fork.c
+index df6e2a8,04a8c2a..0000000
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@@ -1173,13 -1171,15 +1171,16 @@@ static struct task_struct *copy_process
+  		return ERR_PTR(-EINVAL);
+ =20
+  	/*
+- 	 * If the new process will be in a different pid namespace
+- 	 * don't allow the creation of threads.
++ 	 * If the new process will be in a different pid or user namespace
++ 	 * do not allow it to share a thread group or signal handlers or
++ 	 * parent with the forking task.
+  	 */
+- 	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
+- 	    (task_active_pid_ns(current) !=3D
+- 	     current->nsproxy->pid_ns_for_children))
+- 		return ERR_PTR(-EINVAL);
++ 	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
++ 		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
+ -		    (task_active_pid_ns(current) !=3D current->nsproxy->pid_ns))
+++		    (task_active_pid_ns(current) !=3D
+++		     current->nsproxy->pid_ns_for_children))
++ 			return ERR_PTR(-EINVAL);
++ 	}
+ =20
+  	retval =3D security_task_create(clone_flags);
+  	if (retval)
 
+--Signature=_Wed__28_Aug_2013_18_09_40_+1000_X03=4LYTJEDF0C3X
+Content-Type: application/pgp-signature
 
--- 
-Nicolas Ferre
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHbBIAAoJEECxmPOUX5FEWugP/0NGmWV04tV5DD/hX36DKAYs
+GocVd5SR5Ri+fm3aAiP0cuf2ec4Sm4bpI/oAYhsje62oJjysVCxKgs75ws2LWfpt
+DJN8t4RBGpl5PErqN4qn8PX4Z2WwwFlQ5WO3BuN7K+XWPgMIxzc/ua26ALAJXf3l
+uN9EDQ8xB2hJmWpkTm1AuJRI1K8RtUBe4ZNF5NfUaFqDpuU3G9C2ewnuXOqDfBpm
+c96Kk6tcXSDsAu3jnbUtdGJN5j7KxpqiP2+SWybrFOyCPfwNVxFwMRunPYZWF5y9
+jyxH43tHkJg5vyMCRDwOsNRe17rJjA9NdvYISJf6U70s8usZTdxpwLpXvsFWHImq
+9E1Dkd1Ctw02bVBL1XFIml7Wr+WHzHfsQomLGnpF7xEwB+/sM3uVhAJ/DsQzrn2s
+DjT0oThiFfFNmakc6hFOVrUcZH9T2RV+8yc7uwYNdWtI9NwWetIPQ/4tDo9d9BqE
+sbr2QBLEGjXAGNoZ+1nIQBR5zVJ2xyNdVpzf1WoWcwOHVjt4mBtJl8ak41Q3SxWs
+PCM6BYDJQnhcs2Qn6O3cgSJt/NlzCXBydOhxa3tFSsaWpySZLtqpRkRwd1SZDBjA
+2fISof93N3IAf3LVJws2buC4MWXw6CTGNStoZ7Ze33YU7JbsWtl9NdLPO505ySwK
+p5eqcsRBqWWZPb2WyTIB
+=NwuK
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Aug_2013_18_09_40_+1000_X03=4LYTJEDF0C3X--
