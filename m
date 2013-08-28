@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab3H1NWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:22:43 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:54920 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3H1NWl (ORCPT
+	id S1753815Ab3H1NXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:23:50 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:32817 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab3H1NXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:22:41 -0400
+	Wed, 28 Aug 2013 09:23:47 -0400
+Date: Wed, 28 Aug 2013 09:23:33 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Stefan Seyfried <stefan.seyfried@googlemail.com>
+Subject: Re: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie
+ hotplug use when available
+Message-ID: <20130828132333.GA3146@neilslaptop.think-freely.org>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+ <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
+ <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
+ <20130827234345.GA11187@neilslaptop.think-freely.org>
+ <CAErSpo4jq-GTGsgfDkfuRQz_8Vi6RmMC1fGCUcu_3tExUw=EFQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <521D1B19.6080204@wwwdotorg.org>
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
-	<1377380109-11247-1-git-send-email-b.brezillon@overkiz.com>
-	<521B875E.1010605@wwwdotorg.org>
-	<521B89D1.6010902@overkiz.com>
-	<521C2347.4080702@wwwdotorg.org>
-	<521C4451.1060908@overkiz.com>
-	<521C587E.6050706@atmel.com>
-	<521D1B19.6080204@wwwdotorg.org>
-Date: Wed, 28 Aug 2013 15:22:40 +0200
-Message-ID: <CACRpkda+92ZAWs1umtXeemLQu+zzi6iak=Nwb27+SO6oD9TOzg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for
- deglitch filter
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        boris brezillon <b.brezillon@overkiz.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4jq-GTGsgfDkfuRQz_8Vi6RmMC1fGCUcu_3tExUw=EFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/27/2013 01:42 AM, Nicolas Ferre wrote:
+On Wed, Aug 28, 2013 at 07:04:47AM -0600, Bjorn Helgaas wrote:
+> On Tue, Aug 27, 2013 at 5:43 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> > On Tue, Aug 27, 2013 at 03:34:11PM -0600, Bjorn Helgaas wrote:
+> >> [+cc Stefan]
+> >>
+> >> On Mon, Aug 26, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> >> > Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
+> >> > slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
+> >> > uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
+> >> > pci_acpi_scan_root before setting the osc flags for the device handle.
+> >> > pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
+> >> > to determine if a given slot has pcie hotplug capabilties, whcih checks the
+> >> > devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
+> >> > until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
+> >> > slots are hotplug capable and configures them all to use acpi instead.
+> >>
+> >> I'd like to make it more explicit what we're fixing.  Apparently this
+> >> is a regression between v3.9 and v3.10.
+> >>
+> >> Is this a fix for problems like
+> >> https://bugzilla.kernel.org/show_bug.cgi?id=60736 ?  That bug is that
+> >> an ExpressCard slot doesn't work unless we boot with
+> >> "acpiphp.disable=1".  I think what happens there is that acpiphp
+> >> claims the slot before we run _OSC, so pciehp doesn't claim it, even
+> >> though _OSC did grant us control over native PCIe hotplug.
+> >>
+> > Yes, that bug is precisely what I am trying to fix (although your wording above is
+> > inverted from the problem in the bug).  What happens is that acpiphp claims the
+> > pcie ports, because acpiphp init runs first, and we haven't yet parsed _OSC,
+> > which would have told acpiphp to yield control to pciehp.  The initial fix I
+> > proposed fixed this by parsing _OSC prior to running the acpiphp bus scan, but
+> > that reintroduced the problem of not handling pcie 1.1 aspm properly.  That has
+> > been fixed in v2/v3 by deferring the setting of aspm_disable until after the bus
+> > scan.
+> >
+> > Shall I submit a v4 with an updated changelog?
+> 
+> No need, I'll update the changelog and include the bugzilla reference
+> and post it for your approval.  Thanks!
+> 
+> Bjorn
+> 
+Great, thanks!
+Neil
 
->> The question is: how much this "generic" pinconf is... well... generic!
->
-> This is why I don't really like the concept of generic pinconf; it ends
-> up being more: whoever defines something first imposes their SoCs'
-> viewpoint on that feature/property, and then everything else is declared
-> non-generic.
-
-I do not see it that way. For pinconf what we're dealing with is a very
-small community of electrical engineers that produce the cell libraries
-for the pads of these ASICs, and connect some of the control lines to
-software-controlled registers and sometimes hard-code their
-characteristics. Or a mix.
-
-They are all learning from each other and reproducing the design
-patterns of other engineers, much in the same way as software
-engineers do. That is why everyone is implementing some things
-like pull-up/pull-down/drive strength/schmitt-trigger etc.
-
-We already have 7 drivers using GENERIC_PINCONF without
-any ontological conflicts like this so even if the rest of the world
-end up not using it we have already saved a few thousand lines
-of code by not reimplementing this (including DT bindings and
-parsing code) over and over again for each.
-
-And given that pinctrl-single is one of these, I do hope and think
-that the ACPI people are taking notice and in their case, since
-standardized ACPI tables must describe all systems out there,
-a top-down ten commandments type of pin config is necessary
-for their specs. (My interpretation though.)
-
-Yours,
-Linus Walleij
