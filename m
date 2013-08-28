@@ -1,52 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab3H1SYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:24:49 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:35586 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623Ab3H1SYr (ORCPT
+	id S1753843Ab3H1S06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:26:58 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:37558 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab3H1S0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:24:47 -0400
+	Wed, 28 Aug 2013 14:26:55 -0400
+Date: Wed, 28 Aug 2013 14:26:50 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Cgroups <cgroups@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>
+Subject: [PATCH] blkcg: relocate root_blkg setting and clearing
+Message-ID: <20130828182650.GA18971@mtj.dyndns.org>
+References: <CAOMFOmV-k_0RxNwY2JEXn9sHmsoJYArWwURNj1-Srph=FzbFUQ@mail.gmail.com>
+ <20130823172424.GN3277@htj.dyndns.org>
+ <CAOMFOmUKwvkhgB_9ywRk+2OR01oXjVpFz0w_AZOXgeaJcLC9Qw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHbNUh06Rxd9JRieeXCydB_JwiUOrUXADL6nUGZxONQJmz2-CQ@mail.gmail.com>
-References: <1373416455-30358-1-git-send-email-jwerner@chromium.org>
-	<20130710052534.GB15674@arwen.pp.htv.fi>
-	<CAODwPW9dmwpXeyBeVER9azsh2uW3NXLTbDtz3mJaXrvSwb6opg@mail.gmail.com>
-	<20130712065734.GE31802@arwen.pp.htv.fi>
-	<CAHbNUh0Sa-atYMHbhEUX2vnVAcsdBJxw9RRzAp+6vqE8hi=p1w@mail.gmail.com>
-	<20130827184447.GR3005@radagast>
-	<CAHbNUh06Rxd9JRieeXCydB_JwiUOrUXADL6nUGZxONQJmz2-CQ@mail.gmail.com>
-Date: Wed, 28 Aug 2013 11:24:46 -0700
-X-Google-Sender-Auth: XrC1rFZPo9hl5X8un_AoJJvP0B4
-Message-ID: <CAODwPW-NSrpeptTxts+9wkVwPeUgtHTBEKV0505cfz6f68EnRg@mail.gmail.com>
-Subject: Re: [PATCH] usb: phy: samsung-usb2: Toggle HSIC GPIO from device tree
-From: Julius Werner <jwerner@chromium.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Felipe Balbi <balbi@ti.com>, Julius Werner <jwerner@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Praveen Paneri <p.paneri@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMFOmUKwvkhgB_9ywRk+2OR01oXjVpFz0w_AZOXgeaJcLC9Qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've tried to get the 3503 driver to work in my case for quite some
-time, but ultimately gave up. For me, playing around with the load
-order was not enough to solve all issues. When you try to build a
-permanent, clean solution for this, you should definitely also test
-the case where the hub has already been initialized and configured by
-firmware before the kernel booted, because that brought on another
-bunch of issues for me.
+Hello, Jens.
 
-I think it ultimately only works reliably when you first reset the
-hub, then reset the HSIC port on the PHY side before the USB core gets
-a chance to talk to it again (thus one of the drivers needs to be
-directly connected to and call the other).
+The original thread can be read from
+
+ http://thread.gmane.org/gmane.linux.kernel.cgroups/8937
+
+While it leads to oops, given that it only triggers under specific
+configurations which aren't common.  I don't think it's necessary to
+backport it through -stable and merging it during the coming merge
+window should be enough.
+
+Thanks!
+
+----- 8< -----
+Currently, q->root_blkg and q->root_rl.blkg are set from
+blkcg_activate_policy() and cleared from blkg_destroy_all().  This
+doesn't necessarily coincide with the lifetime of the root blkcg_gq
+leading to the following oops when blkcg is enabled but no policy is
+activated because __blk_queue_next_rl() malfunctions expecting the
+root_blkg pointers to be set.
+
+  BUG: unable to handle kernel NULL pointer dereference at           (null)
+  IP: [<ffffffff810c58cb>] __wake_up_common+0x2b/0x90
+  PGD 60f7a9067 PUD 60f4c9067 PMD 0
+  Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+  gsmi: Log Shutdown Reason 0x03
+  Modules linked in: act_mirred cls_tcindex cls_prioshift sch_dsmark xt_multiport iptable_mangle sata_mv elephant elephant_dev_num cdc_acm uhci_hcd ehci_hcd i2c_d
+  CPU: 9 PID: 41382 Comm: iSCSI-write- Not tainted 3.11.0-dbg-DEV #19
+  Hardware name: Intel XXX
+  task: ffff88060d16eec0 ti: ffff88060d170000 task.ti: ffff88060d170000
+  RIP: 0010:[<ffffffff810c58cb>] [<ffffffff810c58cb>] __wake_up_common+0x2b/0x90
+  RSP: 0000:ffff88060d171818  EFLAGS: 00010096
+  RAX: 0000000000000082 RBX: ffff880baa3dee60 RCX: 0000000000000000
+  RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff880baa3dee60
+  RBP: ffff88060d171858 R08: 0000000000000000 R09: 0000000000000000
+  R10: 0000000000000000 R11: 0000000000000002 R12: ffff880baa3dee98
+  R13: 0000000000000003 R14: 0000000000000000 R15: 0000000000000003
+  FS:  00007f977cba6700(0000) GS:ffff880c79c60000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000000 CR3: 000000060f7a5000 CR4: 00000000000007e0
+  Stack:
+   0000000000000082 0000000000000000 ffff88060d171858 ffff880baa3dee60
+   0000000000000082 0000000000000003 0000000000000000 0000000000000000
+   ffff88060d171898 ffffffff810c7848 ffff88060d171888 ffff880bde4bc4b8
+  Call Trace:
+   [<ffffffff810c7848>] __wake_up+0x48/0x70
+   [<ffffffff8131da53>] __blk_drain_queue+0x123/0x190
+   [<ffffffff8131dbb5>] blk_cleanup_queue+0xf5/0x210
+   [<ffffffff8141877a>] __scsi_remove_device+0x5a/0xd0
+   [<ffffffff81418824>] scsi_remove_device+0x34/0x50
+   [<ffffffff814189cb>] scsi_remove_target+0x16b/0x220
+   [<ffffffff814210f1>] __iscsi_unbind_session+0xd1/0x1b0
+   [<ffffffff814212b2>] iscsi_remove_session+0xe2/0x1c0
+   [<ffffffff814213a6>] iscsi_destroy_session+0x16/0x60
+   [<ffffffff81423a59>] iscsi_session_teardown+0xd9/0x100
+   [<ffffffff8142b75a>] iscsi_sw_tcp_session_destroy+0x5a/0xb0
+   [<ffffffff81420948>] iscsi_if_rx+0x10e8/0x1560
+   [<ffffffff81573335>] netlink_unicast+0x145/0x200
+   [<ffffffff815736f3>] netlink_sendmsg+0x303/0x410
+   [<ffffffff81528196>] sock_sendmsg+0xa6/0xd0
+   [<ffffffff815294bc>] ___sys_sendmsg+0x38c/0x3a0
+   [<ffffffff811ea840>] ? fget_light+0x40/0x160
+   [<ffffffff811ea899>] ? fget_light+0x99/0x160
+   [<ffffffff811ea840>] ? fget_light+0x40/0x160
+   [<ffffffff8152bc79>] __sys_sendmsg+0x49/0x90
+   [<ffffffff8152bcd2>] SyS_sendmsg+0x12/0x20
+   [<ffffffff815fb642>] system_call_fastpath+0x16/0x1b
+  Code: 66 66 66 66 90 55 48 89 e5 41 57 41 89 f7 41 56 41 89 ce 41 55 41 54 4c 8d 67 38 53 48 83 ec 18 89 55 c4 48 8b 57 38 4c 89 45 c8 <4c> 8b 2a 48 8d 42 e8 49
+
+Fix it by moving r->root_blkg and q->root_rl.blkg setting to
+blkg_create() and clearing to blkg_destroy() so that they area
+initialized when a root blkg is created and cleared when destroyed.
+
+Reported-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-cgroup.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 290792a..db30b6b 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -235,8 +235,13 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
+ 	blkg->online = true;
+ 	spin_unlock(&blkcg->lock);
+ 
+-	if (!ret)
++	if (!ret) {
++		if (blkcg == &blkcg_root) {
++			q->root_blkg = blkg;
++			q->root_rl.blkg = blkg;
++		}
+ 		return blkg;
++	}
+ 
+ 	/* @blkg failed fully initialized, use the usual release path */
+ 	blkg_put(blkg);
+@@ -335,6 +340,15 @@ static void blkg_destroy(struct blkcg_gq *blkg)
+ 		rcu_assign_pointer(blkcg->blkg_hint, NULL);
+ 
+ 	/*
++	 * If root blkg is destroyed.  Just clear the pointer since root_rl
++	 * does not take reference on root blkg.
++	 */
++	if (blkcg == &blkcg_root) {
++		blkg->q->root_blkg = NULL;
++		blkg->q->root_rl.blkg = NULL;
++	}
++
++	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+ 	 */
+@@ -360,13 +374,6 @@ static void blkg_destroy_all(struct request_queue *q)
+ 		blkg_destroy(blkg);
+ 		spin_unlock(&blkcg->lock);
+ 	}
+-
+-	/*
+-	 * root blkg is destroyed.  Just clear the pointer since
+-	 * root_rl does not take reference on root blkg.
+-	 */
+-	q->root_blkg = NULL;
+-	q->root_rl.blkg = NULL;
+ }
+ 
+ /*
+@@ -973,8 +980,6 @@ int blkcg_activate_policy(struct request_queue *q,
+ 		ret = PTR_ERR(blkg);
+ 		goto out_unlock;
+ 	}
+-	q->root_blkg = blkg;
+-	q->root_rl.blkg = blkg;
+ 
+ 	list_for_each_entry(blkg, &q->blkg_list, q_node)
+ 		cnt++;
