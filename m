@@ -1,167 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3H1T44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:56:56 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:32827 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3H1TzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755515Ab3H1TzM (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Aug 2013 15:55:12 -0400
-Date: Wed, 28 Aug 2013 12:55:17 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH] percpu ida: Switch to cpumask_t, add some comments
-Message-ID: <20130828195517.GF8032@kmo-pixel>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
- <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
- <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from a9-97.smtp-out.amazonses.com ([54.240.9.97]:45594 "EHLO
+	a9-97.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754729Ab3H1TzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 15:55:08 -0400
+Message-ID: <00000140c67829e5-34f81443-fc07-41e9-b3e9-7563551162cd-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Wed, 28 Aug 2013 19:48:20 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [gcv v3 14/35] drivers/char: Replace __get_cpu_var uses
+References: <20130828193457.140443630@linux.com>
+X-SES-Outgoing: 2013.08.28-54.240.9.97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixup patch, addressing Andrew's review feedback:
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
----
- include/linux/idr.h |  2 +-
- lib/idr.c           | 38 +++++++++++++++++++++-----------------
- 2 files changed, 22 insertions(+), 18 deletions(-)
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index f0db12b..cdf39be 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -267,7 +267,7 @@ struct percpu_ida {
- 	 * will just keep looking - but the bitmap _must_ be set whenever a
- 	 * percpu freelist does have tags.
- 	 */
--	unsigned long			*cpus_have_tags;
-+	cpumask_t			cpus_have_tags;
- 
- 	struct {
- 		spinlock_t		lock;
-diff --git a/lib/idr.c b/lib/idr.c
-index 26495e1..15c021c 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -1178,7 +1178,13 @@ EXPORT_SYMBOL(ida_init);
- #define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
- 
- struct percpu_ida_cpu {
-+	/*
-+	 * Even though this is percpu, we need a lock for tag stealing by remote
-+	 * CPUs:
-+	 */
- 	spinlock_t			lock;
-+
-+	/* nr_free/freelist form a stack of free IDs */
- 	unsigned			nr_free;
- 	unsigned			freelist[];
- };
-@@ -1209,21 +1215,21 @@ static inline void steal_tags(struct percpu_ida *pool,
- 	unsigned cpus_have_tags, cpu = pool->cpu_last_stolen;
- 	struct percpu_ida_cpu *remote;
- 
--	for (cpus_have_tags = bitmap_weight(pool->cpus_have_tags, nr_cpu_ids);
-+	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
- 	     cpus_have_tags * IDA_PCPU_SIZE > pool->nr_tags / 2;
- 	     cpus_have_tags--) {
--		cpu = find_next_bit(pool->cpus_have_tags, nr_cpu_ids, cpu);
-+		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
- 
--		if (cpu == nr_cpu_ids)
--			cpu = find_first_bit(pool->cpus_have_tags, nr_cpu_ids);
-+		if (cpu >= nr_cpu_ids)
-+			cpu = cpumask_first(&pool->cpus_have_tags);
- 
--		if (cpu == nr_cpu_ids)
-+		if (cpu >= nr_cpu_ids)
- 			BUG();
- 
- 		pool->cpu_last_stolen = cpu;
- 		remote = per_cpu_ptr(pool->tag_cpu, cpu);
- 
--		clear_bit(cpu, pool->cpus_have_tags);
-+		cpumask_clear_cpu(cpu, &pool->cpus_have_tags);
- 
- 		if (remote == tags)
- 			continue;
-@@ -1246,6 +1252,10 @@ static inline void steal_tags(struct percpu_ida *pool,
- 	}
- }
- 
-+/*
-+ * Pop up to IDA_PCPU_BATCH_MOVE IDs off the global freelist, and push them onto
-+ * our percpu freelist:
-+ */
- static inline void alloc_global_tags(struct percpu_ida *pool,
- 				     struct percpu_ida_cpu *tags)
+Other use cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+
+__get_cpu_var() is defined as :
+
+
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+
+
+
+__get_cpu_var() always only does an address determination. However, store and retrieve operations
+could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+
+this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
+optimized assembly code to read and write per cpu variables.
+
+
+This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
+or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
+and less registers are used when code is generated.
+
+At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
+
+The patchset includes passes over all arches as well. Once these operations are used throughout then
+specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+f.e. using a global register that may be set to the per cpu base.
+
+
+
+
+Transformations done to __get_cpu_var()
+
+
+1. Determine the address of the percpu instance of the current processor.
+
+	DEFINE_PER_CPU(int, y);
+	int *x = &__get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(&y);
+
+
+2. Same as #1 but this time an array structure is involved.
+
+	DEFINE_PER_CPU(int, y[20]);
+	int *x = __get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(y);
+
+
+3. Retrieve the content of the current processors instance of a per cpu variable.
+
+	DEFINE_PER_CPU(int, u);
+	int x = __get_cpu_var(y)
+
+   Converts to
+
+	int x = __this_cpu_read(y);
+
+
+4. Retrieve the content of a percpu struct
+
+	DEFINE_PER_CPU(struct mystruct, y);
+	struct mystruct x = __get_cpu_var(y);
+
+   Converts to
+
+	memcpy(this_cpu_ptr(&x), y, sizeof(x));
+
+
+5. Assignment to a per cpu variable
+
+	DEFINE_PER_CPU(int, y)
+	__get_cpu_var(y) = x;
+
+   Converts to
+
+	this_cpu_write(y, x);
+
+
+6. Increment/Decrement etc of a per cpu variable
+
+	DEFINE_PER_CPU(int, y);
+	__get_cpu_var(y)++
+
+   Converts to
+
+	this_cpu_inc(y)
+
+
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/drivers/char/random.c
+===================================================================
+--- linux.orig/drivers/char/random.c	2013-08-27 14:31:00.000000000 -0500
++++ linux/drivers/char/random.c	2013-08-27 14:31:34.275916299 -0500
+@@ -744,7 +744,7 @@ static DEFINE_PER_CPU(struct fast_pool,
+ void add_interrupt_randomness(int irq, int irq_flags)
  {
-@@ -1317,8 +1327,8 @@ int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
- 		if (tags->nr_free) {
- 			tag = tags->freelist[--tags->nr_free];
- 			if (tags->nr_free)
--				set_bit(smp_processor_id(),
--					pool->cpus_have_tags);
-+				cpumask_set_cpu(smp_processor_id(),
-+						&pool->cpus_have_tags);
- 		}
- 
- 		spin_unlock(&pool->lock);
-@@ -1363,8 +1373,8 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 	spin_unlock(&tags->lock);
- 
- 	if (nr_free == 1) {
--		set_bit(smp_processor_id(),
--			pool->cpus_have_tags);
-+		cpumask_set_cpu(smp_processor_id(),
-+				&pool->cpus_have_tags);
- 		wake_up(&pool->wait);
- 	}
- 
-@@ -1398,7 +1408,6 @@ EXPORT_SYMBOL_GPL(percpu_ida_free);
- void percpu_ida_destroy(struct percpu_ida *pool)
- {
- 	free_percpu(pool->tag_cpu);
--	kfree(pool->cpus_have_tags);
- 	free_pages((unsigned long) pool->freelist,
- 		   get_order(pool->nr_tags * sizeof(unsigned)));
- }
-@@ -1428,7 +1437,7 @@ int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
- 
- 	/* Guard against overflow */
- 	if (nr_tags > (unsigned) INT_MAX + 1) {
--		pr_err("tags.c: nr_tags too large\n");
-+		pr_err("percpu_ida_init(): nr_tags too large\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1442,11 +1451,6 @@ int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
- 
- 	pool->nr_free = nr_tags;
- 
--	pool->cpus_have_tags = kzalloc(BITS_TO_LONGS(nr_cpu_ids) *
--				       sizeof(unsigned long), GFP_KERNEL);
--	if (!pool->cpus_have_tags)
--		goto err;
--
- 	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
- 				       IDA_PCPU_SIZE * sizeof(unsigned),
- 				       sizeof(unsigned));
--- 
-1.8.4.rc3
+ 	struct entropy_store	*r;
+-	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
++	struct fast_pool	*fast_pool = this_cpu_ptr(&irq_randomness);
+ 	struct pt_regs		*regs = get_irq_regs();
+ 	unsigned long		now = jiffies;
+ 	__u32			input[4], cycles = get_cycles();
 
