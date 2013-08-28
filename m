@@ -1,159 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab3H1MwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:52:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42578 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754969Ab3H1MwA (ORCPT
+	id S1755493Ab3H1MwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:52:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64312 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755463Ab3H1MwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:52:00 -0400
-Date: Wed, 28 Aug 2013 14:51:51 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
-Message-ID: <20130828145151.6db29d70@skate>
-In-Reply-To: <20130828124255.GL6617@n2100.arm.linux.org.uk>
-References: <20130828113459.48ecbb34@armhf>
-	<521DCD33.2070008@gmail.com>
-	<20130828121943.1c8327ca@skate>
-	<521DD057.4040208@gmail.com>
-	<20130828131548.0009d613@skate>
-	<521DE2B3.9050508@gmail.com>
-	<20130828135827.2307c89e@skate>
-	<20130828121320.GK6617@n2100.arm.linux.org.uk>
-	<20130828142909.3521064b@skate>
-	<20130828124255.GL6617@n2100.arm.linux.org.uk>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Aug 2013 08:52:04 -0400
+Date: Wed, 28 Aug 2013 13:51:53 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/3] DMA: Freescale: Add new 8-channel DMA engine
+ device tree nodes
+Message-ID: <20130828125153.GC10250@e106331-lin.cambridge.arm.com>
+References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com>
+ <1377600123-5746-3-git-send-email-hongbo.zhang@freescale.com>
+ <20130827113534.GI19893@e106331-lin.cambridge.arm.com>
+ <521D9E89.7040700@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521D9E89.7040700@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Russell King - ARM Linux,
+On Wed, Aug 28, 2013 at 07:54:01AM +0100, Hongbo Zhang wrote:
+> On 08/27/2013 07:35 PM, Mark Rutland wrote:
+> > On Tue, Aug 27, 2013 at 11:42:02AM +0100, hongbo.zhang@freescale.com wrote:
+> >> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >>
+> >> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
+> >> the device tree nodes for them.
+> >>
+> >> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> >> ---
+> >>   .../devicetree/bindings/powerpc/fsl/dma.txt        |   66 ++++++++++++++++
+> >>   arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+> >>   arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++++++++
+> >>   arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++++++++
+> >>   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+> >>   5 files changed, 232 insertions(+), 4 deletions(-)
+> >>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> >>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> index ddf17af..10fd031 100644
+> >> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> >> @@ -126,6 +126,72 @@ Example:
+> >>                  };
+> >>          };
+> >>
+> >> +** Freescale Elo3 DMA Controller
+> >> +   This is EloPlus controller with 8 channels, used in Freescale Txxx and Bxxx
+> >> +   series chips, such as t1040, t4240, b4860.
+> >> +
+> >> +Required properties:
+> >> +
+> >> +- compatible        : must include "fsl,elo3-dma"
+> >> +- reg               : <registers specifier for DMA general status reg>
+> >> +- ranges            : describes the mapping between the address space of the
+> >> +                      DMA channels and the address space of the DMA controller
+> >> +
+> >> +- DMA channel nodes:
+> >> +        - compatible        : must include "fsl,eloplus-dma-channel"
+> >> +        - reg               : <registers specifier for channel>
+> >> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+> >> +        - interrupt-parent  : optional, if needed for interrupt mapping
+> >> +
+> >> +Example:
+> >> +dma@100300 {
+> >> +       #address-cells = <1>;
+> >> +       #size-cells = <1>;
+> >> +       compatible = "fsl,elo3-dma";
+> >> +       reg = <0x100300 0x4 0x100600 0x4>;
+> > Is that one reg entry where #size-cells=2 and #address-cells=2?
+> >
+> > That's what the binding implies (given it only describes a single reg
+> > entry).
+> >
+> > if it's two entries, we should make that explicit (both in the binding
+> > and example):
+> >
+> > 	reg = <0x100300 0x4>,
+> > 	      <0x100600 0x4>;
+> Yes they are two entries, I will change it this way.
 
-On Wed, 28 Aug 2013 13:42:55 +0100, Russell King - ARM Linux wrote:
+Ok. Could you make sure you document what the two reg entries correspond
+to? That's not clear from "<registers specifier for channel>".
 
-> > Using the name of the oldest SoC in the family that had the IP block is
-> > the norm, because it's really what "compatible" means: the IP block in
-> > Dove is *compatible* with the one that was originally introduced in
-> > Kirkwood.
-> > 
-> > See what Rob Herring (one of the DT maintainer) says in
-> > http://lists.infradead.org/pipermail/linux-mtd/2012-March/040417.html:
-> > 
-> > """
-> > There is no reason all machines can't use "st,spear600-smi" in their
-> > dts. It doesn't have to be a spear600, just compatible with it. Really
-> > you want the string to be the oldest SOC the block is in and then newer
-> > SOCs can claim compatibility with the old version.
-> > """
-> > 
-> > The thread was precisely about replacing a SoC-specific compatible
-> > string "st,spear600-smi" by a more generic "st,spear-smi" and Rob
-> > Herring (above) was opposing to that.
-> 
-> We're not talking about replacing a pre-existing string, we're talking
-> about adding one, which is a different situation.
+> >> +       ranges = <0x0 0x100100 0x500>;
+> > If it is one reg entry then the example ranges property isn't big enough
+> > to contain the parent-bus-address.
+> They are two reg entries, so the range is big enough.
 
-I don't see how this makes this a different situation. See for example
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-April/161065.html
-and
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-March/087702.html
-where Arnd also said using the oldest SoC that has the same IP block as
-the compatible string was the right thing to do.
+Ok.
 
-> > > ... which means there's no problem with using marvell,mvebu-audio as the
-> > > compatible string if you're going to use properties to describe what
-> > > facilities are available.
-> > 
-> > I disagree, because how do you know if a future "mvebu" SOC such as
-> > Armada 370, or one that doesn't exist yet, will not have a different
-> > audio IP block?
-> 
-> The Dove already contains _three_ audio blocks, two of which are this
-> one, and another which is block for driving an AC'97 codec (which doesn't
-> have a driver.)  That's no problem because you won't call that one an
-> "audio" block but an AC'97 block.  So...
+> >
+> >> +       dma-channel@0 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x0 0x80>;
+> >> +               interrupts = <28 2 0 0>;
+> >> +       };
+> >> +       dma-channel@80 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x80 0x80>;
+> >> +               interrupts = <29 2 0 0>;
+> >> +       };
+> >> +       dma-channel@100 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x100 0x80>;
+> >> +               interrupts = <30 2 0 0>;
+> >> +       };
+> >> +       dma-channel@180 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x180 0x80>;
+> >> +               interrupts = <31 2 0 0>;
+> >> +       };
+> >> +       dma-channel@300 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x300 0x80>;
+> >> +               interrupts = <76 2 0 0>;
+> >> +       };
+> >> +       dma-channel@380 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x380 0x80>;
+> >> +               interrupts = <77 2 0 0>;
+> >> +       };
+> >> +       dma-channel@400 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x400 0x80>;
+> >> +               interrupts = <78 2 0 0>;
+> >> +       };
+> >> +       dma-channel@480 {
+> >> +               compatible = "fsl,eloplus-dma-channel";
+> >> +               reg = <0x480 0x80>;
+> >> +               interrupts = <79 2 0 0>;
+> >> +       };
+> >> +};
+> >> +
+> >>   Note on DMA channel compatible properties: The compatible property must say
+> >>   "fsl,elo-dma-channel" or "fsl,eloplus-dma-channel" to be used by the Elo DMA
+> >>   driver (fsldma).  Any DMA channel used by fsldma cannot be used by another
+> >> diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> >> index 7399154..ea53ea1 100644
+> >> --- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> >> +++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+> >> @@ -223,13 +223,13 @@
+> >>                  reg = <0xe2000 0x1000>;
+> >>          };
+> >>
+> >> -/include/ "qoriq-dma-0.dtsi"
+> >> +/include/ "elo3-dma-0.dtsi"
+> >>          dma@100300 {
+> >>                  fsl,iommu-parent = <&pamu0>;
+> >>                  fsl,liodn-reg = <&guts 0x580>; /* DMA1LIODNR */
+> >>          };
+> >>
+> >> -/include/ "qoriq-dma-1.dtsi"
+> >> +/include/ "elo3-dma-1.dtsi"
+> >>          dma@101300 {
+> >>                  fsl,iommu-parent = <&pamu0>;
+> >>                  fsl,liodn-reg = <&guts 0x584>; /* DMA2LIODNR */
+> >> diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> >> new file mode 100644
+> >> index 0000000..69a3277
+> >> --- /dev/null
+> >> +++ b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+> >> @@ -0,0 +1,81 @@
+> >> +/*
+> >> + * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
+> > Copy-pasted?
+> >
+> > Presumably should be "Elo3 DMA devicetree stub", or similar?
+> >
+> > Similarly for elo3-dma-1.dtsi.
+> Yes copy-pasted, but QorIQ isn't wrong, it is name of Freescale series 
+> chips.
+> To be more specific, I'd like to use "QorIQ Elo3 DMA devicetree stub"
 
-And? If that's a different IP block, it'll have a different compatible
-string, that's it.
+That sounds good to me.
 
-That doesn't change my point: using "marvell,mvebu-audio" as the
-compatible string is stupid, because you have absolutely no idea what
-the future of audio in mvebu SOCs will be. However, you do know,
-*today* that Kirkwood and Dove have compatible IP blocks for audio, and
-that they were first introduced with Kirkwood.
-
-> > It will still be audio, it will still be mvebu, but it
-> > will not be able to use a "marvell,mvebu-audio" driver. Or maybe it can
-> > use the same driver, but with a few variations, so a different
-> > compatible string will be needed to identify the original IP
-> > ("marvell,kirkwood-audio", used on Kirkwood/Dove) and slightly newer
-> > versions of the IP ("marvell,some-funky-soc-audio").
-> 
-> I don't think this really applies.
-
-It does. We're exactly in this situation, as I will soon be working on
-Armada 370 audio support, and while the IP looks similar, I have
-checked all the details to see if it's exactly identical.
-
-And Armada 370 is really a mvebu architecture: it's even supported in
-mach-mvebu/, while Kirkwood and Dove are not (yet).
-
-
-> > > In any case "marvell,has-spdif" is too generic - as I've indicated above,
-> > > there's versions with spdif out, and other versions with spdif in and
-> > > out.
-> > 
-> > Right, the above was just an example to illustrate that we can have
-> > additional properties to encode the differences between each instance
-> > of the audio devices.
-> 
-> I think this is a mistake too: these properties will just tell us what
-> may be possible, and the driver will take no real action on them.  I
-> suppose that a property specifying whether there is a SPDIF output could
-> be used to control whether the IEC958 channel status controls are
-> registered.  However...
-> 
-> What's more important is which outputs are actually wired up, and
-> therefore which bits of this hardware are enabled.  Even then, we
-> wouldn't want to expose (eg) the IEC958 channel status controls if
-> the SPDIF output isn't wired.  So all in all, I don't see any point
-> to a set of properties saying "we have SPDIF" etc.  That information
-> should come solely from whether the SPDIF output has been "wired up".
-> 
-> Let me put that another way: we _can_ provide those properties to
-> indicate what facilities the hardware has, we just wouldn't use them
-> at all - and to provide them seems like over-design to me.
-
-I am not arguing about the properties, as I haven't looked at the
-specific problem that needs to be solved. By suggesting properties, I
-was merely suggesting one possible solution to the problem that
-Sebastian was raising, where the different instances of the IP block
-don't have the same capabilities.
-
-What I am however strongly arguing on is the choice of the compatible
-string. marvell,mvebu-audio is a wrong choice.
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Cheers,
+Mark.
