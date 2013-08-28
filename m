@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3H1NOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:14:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39475 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab3H1NOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:14:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
-Date: Wed, 28 Aug 2013 15:24:45 +0200
-Message-ID: <1592448.YZbpON5n7n@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130828122422.GA18348@mtj.dyndns.org>
-References: <1543475.L7gSB7lLAu@vostro.rjw.lan> <2885746.SMJa75jgiX@vostro.rjw.lan> <20130828122422.GA18348@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753796Ab3H1NPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:15:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5858 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab3H1NPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 09:15:32 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=MkLg_yf6oqsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Xf-hRFNtRvAA:10 a=JfrnYn6hAAAA:8 a=dqoypbJFFhR-UKVw3AYA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 28 Aug 2013 09:15:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Fyodorov <halcy@yandex.ru>, Waiman Long <waiman.long@hp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue
+ spinlock implementation
+Message-ID: <20130828091530.7ffe9ad0@gandalf.local.home>
+In-Reply-To: <20130828130529.GP10002@twins.programming.kicks-ass.net>
+References: <336901377100289@web16f.yandex.ru>
+	<5215638E.5020702@hp.com>
+	<169431377178121@web21f.yandex.ru>
+	<521BB71F.6080300@hp.com>
+	<66111377605355@web12m.yandex.ru>
+	<20130827091436.3d5971a0@gandalf.local.home>
+	<20130827135309.GF10002@twins.programming.kicks-ass.net>
+	<20130828012128.GT3871@linux.vnet.ibm.com>
+	<20130828081937.GH10002@twins.programming.kicks-ass.net>
+	<20130828085957.728a5375@gandalf.local.home>
+	<20130828130529.GP10002@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 28, 2013 08:24:22 AM Tejun Heo wrote:
-> Hello, Rafael.
+On Wed, 28 Aug 2013 15:05:29 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, Aug 28, 2013 at 08:59:57AM -0400, Steven Rostedt wrote:
+> > On Wed, 28 Aug 2013 10:19:37 +0200
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+
 > 
-> On Tue, Aug 27, 2013 at 11:45:46PM +0200, Rafael J. Wysocki wrote:
-> > I've thought about that a bit over the last several hours and I'm still
-> > thinking that that patch is a bit overkill, because it will trigger the
-> > restart_syscall() for all cases when device_hotplug_lock is locked, even
-> > if they can't lead to any deadlocks.  The only deadlockish situation is
-> > when device *removal* is in progress when store_online(), for example,
-> > is called.
-> > 
-> > So to address that particular situation without adding too much overhead for
-> > other cases, I've come up with the appended patch (untested for now).
-> > 
-> > This is how it is supposed to work.
-> > 
-> > There are three "lock levels" for device hotplug, "normal", "remove"
-> > and "weak".  The difference is related to how __lock_device_hotplug()
-> > works.  Namely, if device hotplug is currently locked, that function
-> > will either block or return false, depending on the "current lock
-> > level" and its argument (the "new lock level").  The rules here are
-> > that false is returned immediately if the "current lock level" is
-> > "remove" and the "new lock level" is "weak".  The function blocks
-> > for all other combinations of the two.
+> > Spin locks only prevent leaks out of the critical section. It does not
+> > guarantee leaks into the critical section, thus:
 > 
-> I think this is going way too far and a massive overkill in terms of
-> complexity, which is way more important than for doing some
-> restart_syscall loops during some rare sysfs file access, which isn't
-> gonna be that common anyway.  Fancy locking always sucks.  The root
-> cause of the problem is file removal ref draining from sysfs side and
-> a proper solution should be implemented there.  Adding all this
-> complexity to device hotplug lock won't solve problems involving other
-> locks while obfuscating what's going on through all the complexity.
-> Also, when sysfs is updated with a proper solution, a simpler
-> workaround from device hotplug side would be far easier to convert to
-> the new solution than this, which over time is likely to grow
-> interesting uses.
-> 
-> Let's *please* stick to something simple.
-
-OK, I'll use restart_syscall() approach in the simplest form, then.
-
-Thanks,
-Rafael
+> What's your point? You're just re-iterating the semantics in case
+> anybody forgot about them?
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I think we are all misunderstanding each other. It sounded like you
+didn't want to reimplement a lock to remove memory barriers.
+
+Are you for the smp_mb__after_spin_unlock() ?
+
+I'm getting confused by who is arguing what :-)
+
+-- Steve
