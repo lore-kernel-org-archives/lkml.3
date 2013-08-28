@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab3H1PzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:55:22 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:44954 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab3H1PzU (ORCPT
+	id S1754207Ab3H1QCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 12:02:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34735 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753809Ab3H1QCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:55:20 -0400
+	Wed, 28 Aug 2013 12:02:02 -0400
+Date: Wed, 28 Aug 2013 17:01:51 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kumar Gala <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Message-ID: <20130828160151.GA17229@e106331-lin.cambridge.arm.com>
+References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+ <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
+ <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
+ <20130812180553.GD27954@radagast>
+ <20130813133410.GO27165@e106331-lin.cambridge.arm.com>
+ <20130827185329.GT3005@radagast>
 MIME-Version: 1.0
-In-Reply-To: <521C0F07.6030102@schaufler-ca.com>
-References: <20130806063002.GF2280@outflux.net>
-	<520177E8.5080906@schaufler-ca.com>
-	<CAGXu5jL6dtB0F7fPh17pyhD22q0Q9Nn=wxbPf5AMYsrJuTvvJA@mail.gmail.com>
-	<521C0F07.6030102@schaufler-ca.com>
-Date: Wed, 28 Aug 2013 08:55:19 -0700
-X-Google-Sender-Auth: gT1R_E1xYipG3HEOUICUPGTTAUA
-Message-ID: <CAGXu5jKgQoVqa9u48gbHXqR0x9Kgy7f3xmXjWRfXAm0EB0vMFw@mail.gmail.com>
-Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
-From: Kees Cook <keescook@chromium.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130827185329.GT3005@radagast>
+Thread-Topic: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 7:29 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> On 8/6/2013 3:36 PM, Kees Cook wrote:
->> On Tue, Aug 6, 2013 at 3:25 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>> On 8/5/2013 11:30 PM, Kees Cook wrote:
->>>> On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>>>> The /proc/*/attr interfaces are given to one LSM. This can be
->>>>> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
->>>>> have been created in /proc/*/attr so that each LSM has its own
->>>>> named interfaces. The name of the presenting LSM can be read from
->>>> For me, this is one problem that was bothering me, but it was a cosmetic
->>>> one that I'd mentioned before: I really disliked the /proc/$pid/attr
->>>> interface being named "$lsm.$file". I feel it's important to build
->>>> directories in attr/ for each LSM. So, I spent time to figure out a way to
->>>> do this. This patch changes the interface to /proc/$pid/attr/$lsm/$file
->>>> instead, which I feel has a much more appealing organizational structure.
->>> I will confess that the reason I went with <lsm>.current instead of
->>> <lsm>/current was that the former was easier to implement.
->> Yeah, that's totally fine. It wasn't very obvious (to me) how to
->> implement this initially, so no problem at all. I'm glad there was
->> something more than bug fixes I could contribute to this series. :)
->
-> Oh dear. I'm rebasing for 3.12 and the macros don't generate compiling
-> code any longer. It seems that, among other things, readdir is no longer
-> a member of file_operations.
+On Tue, Aug 27, 2013 at 07:53:29PM +0100, Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Aug 13, 2013 at 02:34:10PM +0100, Mark Rutland wrote:
+> > On Mon, Aug 12, 2013 at 07:05:53PM +0100, Felipe Balbi wrote:
+> > > On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
+> > > > 
+> > > > On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
+> > > > 
+> > > > > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
+> > > > >> The binding spec wasn't clear that the order of the phandles in the
+> > > > >> usb-phy array has meaning.  Clarify this point in the binding that
+> > > > >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
+> > > > >> 
+> > > > >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> > > > >> ---
+> > > > >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
+> > > > >> 1 file changed, 3 insertions(+), 1 deletion(-)
+> > > > >> 
+> > > > >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+> > > > >> index 7a95c65..8a9770b 100644
+> > > > >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> > > > >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> > > > >> @@ -6,7 +6,9 @@ Required properties:
+> > > > >>  - compatible: must be "synopsys,dwc3"
+> > > > >>  - reg : Address and length of the register set for the device
+> > > > >>  - interrupts: Interrupts used by the dwc3 controller.
+> > > > >> - - usb-phy : array of phandle for the PHY device
+> > > > >> + - usb-phy : array of phandle for the PHY device.  The first element
+> > > > >> +   in the array is expected to be a handle to the USB2/HS PHY and
+> > > > >> +   the second element is expected to be a handle to the USB3/SS PHY
+> > > > > 
+> > > > > Just to check - it's not valid to have a USB3 phy without a USB2 phy?
+> > > > 
+> > > > Don't know, hopefully Felipe will chime in on that.
+> > > 
+> > > that'd be a really non-standard implementation. Per-spec, USB3 is
+> > > *always* backwards compatible with USB2.
+> > 
+> > I'm slightly confused here. From a quick look at the driver, it expects
+> > two separate phys to be present -- one handling only USB2, and one
+> > handling USB3 (with USB2 backwards compatibility).
+> > 
+> > So it's not physically possible for someone to just wire up a single phy
+> > to the device, either USB2-only or USB3?
+> 
+> of course it is :-) In fact, TI has done it. But it causes a whole bunch
+> of other problems to support that sort of model. For one, in some
+> systems, a clock generated by the USB3 PHY is backfed into the IP and if
+> USB3 PHY isn't running, the dwc3 IP won't start.
 
-Agh. I will take a look.
+That sounds like a mess. But unless I've misunderstood, that doesn't
+sound like a general problem with having one phy, but rather an
+integration issue on a specific system? Presumably in that case as long
+as the phy was brought up before poking the rest of the IP, the unit
+would function correctly.
 
--Kees
+> 
+> I even wrote a patch making USB3 PHY optional, but didn't push it
+> exactly because it broke some other systems and I can't guarantee users
+> won't mess up their DTS/pdata.
 
--- 
-Kees Cook
-Chrome OS Security
+Does that mean that their dts or pdata are wrong at the moment, but
+they're spared because the driver bails out due to a missing phy? If
+their pdata's wrong, that should be fixable relatively easily, but if
+the dt is wrong then I'm not sure how we can support those systems
+sensibly. That sounds like an ideal candidate for a dt quirks
+mechanism...
+
+> 
+> > You can describe the USB2-only case in the dt by only listing the first
+> > phy (though the driver won't support it as it expects both to be
+> > present), but it's impossible to describe that you've wired up a single
+> > phy that's USB3 capable.
+> 
+> you might be right there...
+
+Would it be possible to have something like (an optional) usb-phy-names?
+If not present, we assume the current situation, if present then we use
+it to figure out which phys are present. Maybe I'm missing something
+that makes that impossible?
+
+Thanks,
+Mark.
