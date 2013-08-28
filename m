@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3H1NLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:11:21 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:50709 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab3H1NLS (ORCPT
+	id S1753014Ab3H1NOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:14:01 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:61137 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab3H1NN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:11:18 -0400
-Message-ID: <521DF6F2.9090200@xs4all.nl>
-Date: Wed, 28 Aug 2013 15:11:14 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 09:13:58 -0400
 MIME-Version: 1.0
-To: Andreas Mohr <andi@lisas.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: weird keyboard issue (ps/2 port?) 3.9.x/3.10.x?
-References: <20130827174156.GA19152@rhlx01.hs-esslingen.de>
-In-Reply-To: <20130827174156.GA19152@rhlx01.hs-esslingen.de>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <521C587E.6050706@atmel.com>
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
+	<1377380109-11247-1-git-send-email-b.brezillon@overkiz.com>
+	<521B875E.1010605@wwwdotorg.org>
+	<521B89D1.6010902@overkiz.com>
+	<521C2347.4080702@wwwdotorg.org>
+	<521C4451.1060908@overkiz.com>
+	<521C587E.6050706@atmel.com>
+Date: Wed, 28 Aug 2013 15:13:58 +0200
+Message-ID: <CACRpkdaRBSGJYrCgOC-dSPEeEMWZ1N=aqhM9O-ZO+mGnEBQ=1g@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for
+ deglitch filter
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: boris brezillon <b.brezillon@overkiz.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-08-27 19:41, Andreas Mohr wrote:
->> What could this be?
->> Is it really a software issue?
->> If so: how could I help fix this?
-> 
-> Perhaps watching the output of some input event tools could help
-> gather some clues to eventually get it nailed down?
+On Tue, Aug 27, 2013 at 9:42 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> On 27/08/2013 08:16, boris brezillon :
 
-Sure.
-First my input:
+> Deglitch and
+> Debounce filters are different features in at91 (even if they pursuit the
+> same goal). So I do prefer to let the user choose which feature is preferred
+> for his application and add a different flag.
 
-When I run this small script to fix the irq issue, I see that also the
-stream of ^@^@^@ stops (or at least appears to do so), when those ^@^@^@
-were active:
+Electrically speaking debounce and deglitch are totally different things.
 
-service motion stop
-rmmod pwc
-echo 0000:00:13.0 >/sys/bus/pci/drivers/ohci_hcd/unbind
-echo 0000:00:13.0 >/sys/bus/pci/drivers/ohci_hcd/bind
-modprobe pwc
-service motion start
+Debounce is for, well debouncing. To even out the effect of pressing
+a button which due to mechanical characteristics create a sharp
+series of spikes like that:
+  _   _
+_| |_| |_
 
-> Some candidates:
-> 
-> evtest - utility to monitor Linux input device events
-> input-utils - utilities for the input layer of the Linux kernel
-> xinput - Runtime configuration and test of XInput devices
+I highly suspect that "deglitch" is either:
 
-I'll look into these!
+- A one-spike version of the above (in which case a custom config
+  may be warranted) or
 
-> And what do /proc/interrupts counts say? Does PS/2 (i8042) generate events?
+- What we usually call schmitt-trigger, i.e. handling of analog
+  swing-in.
 
-Currently it does. But I must see what happens when all is quiet, and
-the problem reappears, right?
+Can you describe exactly what the two features do, in electrical
+terms?
 
+> The question is: how much this "generic" pinconf is... well... generic! And
+> it is not a answer I can give.
+
+The generic configs are defined from electrical use-cases that
+appear in practice and also have the character of appearing in
+similar implementations in I/O cells of several vendors, to the point
+that from a software perspective they are identical.
+
+> On the other hand, if the "generic" is not going to overcome the native
+> pinctrl, I do not feel like switching to this at the cost of changing the
+> whole dtsi/dts entries that we already have.
+
+The question we ask in this case is whether the electrical construction
+is so fantastically unique and ingenious that no other ASIC pad
+implementer sitting in his chamber working on I/O cells would
+possibly ever come up with the same concept.
+
+If that is true, then it warrants its own, custom binding.
+
+If you ask some other randong cell implementer whether this is
+something they would do, and they say "yeah I have that in the
+next version of my cell library" then it is generic, because we will
+see the same thing in other systems as time moves on.
+
+Yours,
+Linus Walleij
