@@ -1,170 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3H1Ngq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:36:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754451Ab3H1Ngo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:36:44 -0400
-Date: Wed, 28 Aug 2013 16:36:36 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
-Message-ID: <20130828133635.GU22899@redhat.com>
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130828092001.GQ22899@redhat.com>
- <521DC3FD.1020507@linux.vnet.ibm.com>
- <20130828094630.GR22899@redhat.com>
- <521DCD57.7000401@linux.vnet.ibm.com>
- <20130828104938.GT22899@redhat.com>
- <521DE9E8.2040908@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521DE9E8.2040908@linux.vnet.ibm.com>
+	id S1754535Ab3H1Ngx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:36:53 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:52229 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452Ab3H1Ngs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 09:36:48 -0400
+From: John Horan <knasher@gmail.com>
+To: m.chehab@samsung.com
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Horan <knasher@gmail.com>
+Subject: [PATCH] media: dvb-frontends: ts2020: Added in a option for frequency divider value for s600 devices
+Date: Wed, 28 Aug 2013 14:37:37 +0100
+Message-Id: <1377697057-23676-1-git-send-email-knasher@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 08:15:36PM +0800, Xiao Guangrong wrote:
-> On 08/28/2013 06:49 PM, Gleb Natapov wrote:
-> > On Wed, Aug 28, 2013 at 06:13:43PM +0800, Xiao Guangrong wrote:
-> >> On 08/28/2013 05:46 PM, Gleb Natapov wrote:
-> >>> On Wed, Aug 28, 2013 at 05:33:49PM +0800, Xiao Guangrong wrote:
-> >>>>> Or what if desc is moved to another rmap, but then it
-> >>>>> is moved back to initial rmap (but another place in the desc list) so
-> >>>>> the check here will not catch that we need to restart walking?
-> >>>>
-> >>>> It is okay. We always add the new desc to the head, then we will walk
-> >>>> all the entires under this case.
-> >>>>
-> >>> Which races another question: What if desc is added in front of the list
-> >>> behind the point where lockless walker currently is?
-> >>
-> >> That case is new spte is being added into the rmap. We need not to care the
-> >> new sptes since it will set the dirty-bitmap then they can be write-protected
-> >> next time.
-> >>
-> > OK.
-> > 
-> >>>
-> >>>> Right?
-> >>> Not sure. While lockless walker works on a desc rmap can be completely
-> >>> destroyed and recreated again. It can be any order.
-> >>
-> >> I think the thing is very similar as include/linux/rculist_nulls.h
-> > include/linux/rculist_nulls.h is for implementing hash tables, so they
-> > may not care about add/del/lookup race for instance, but may be we are
-> > (you are saying above that we are not), so similarity does not prove
-> > correctness for our case. 
-> 
-> We do not care the "add" and "del" too when lookup the rmap. Under the "add"
-> case, it is okay, the reason i have explained above. Under the "del" case,
-> the spte becomes unpresent and flush all tlbs immediately, so it is also okay.
-> 
-> I always use a stupid way to check the correctness, that is enumerating
-> all cases we may meet, in this patch, we may meet these cases:
-> 
-> 1) kvm deletes the desc before we are current on
->    that descs have been checked, do not need to care it.
-> 
-> 2) kvm deletes the desc after we are currently on
->    Since we always add/del the head desc, we can sure the current desc has been
->    deleted, then we will meet case 3).
-> 
-> 3) kvm deletes the desc that we are currently on
->    3.a): the desc stays in slab cache (do not be reused).
->          all spte entires are empty, then the fn() will skip the nonprsent spte,
->          and desc->more is
->          3.a.1) still pointing to next-desc, then we will continue the lookup
->          3.a.2) or it is the "nulls list", that means we reach the last one,
->                 then finish the walk.
-> 
->    3.b): the desc is alloc-ed from slab cache and it's being initialized.
->          we will see "desc->more == NULL" then restart the walking. It's okay.
-> 
->    3.c): the desc is added to rmap or pte_list again.
->          3.c.1): the desc is added to the current rmap again.
-> 		 the new desc always acts as the head desc, then we will walk
->                  all entries, some entries are double checked and not entry
->                  can be missed. It is okay.
-> 
->          3.c.2): the desc is added to another rmap or pte_list
->                  since kvm_set_memory_region() and get_dirty are serial by slots-lock.
->                  so the "nulls" can not be reused during lookup. Then we we will
->                  meet the different "nulls" at the end of walking that will cause
->                  rewalk.
-> 
-> I know check the algorithm like this is really silly, do you have other idea?
-> 
-Not silly, but easy to miss cases. For instance 3.c.3 can be:
- the desc is added to another rmap then we move to another desc on the
- wrong rmap, this other desc is also deleted and reinserted into
- original rmap. Seams like justification from 3.c.1 applies to that to
- though.
+When the tuner part of the ds3000 driver was split to share code with the m88rs2000 driver, the ts2020 driver used
+the frequency divider value from the m88rs2000 driver.  However the ds3000 driver requires a different value, and this
+resulted in some frequecies being invisible to the tuner.  This patch adds back in the value needed for the ds3000 driver
+and configured as an option in the dw2102 frontend driver.
 
-> > BTW I do not see
-> > rcu_assign_pointer()/rcu_dereference() in your patches which hints on
-> 
-> IIUC, We can not directly use rcu_assign_pointer(), that is something like:
-> p = v to assign a pointer to a pointer. But in our case, we need:
->    *pte_list = (unsigned long)desc | 1;
->From Documentation/RCU/whatisRCU.txt:
+It may also apply to su3000 devices, which use the same ds3000 driver, but for now it is only applied to the s660 device.
 
-The updater uses this function to assign a new value to an RCU-protected pointer.
+Signed-off-by: John Horan <knasher@gmail.com>
+---
+ drivers/media/dvb-frontends/ts2020.c |  4 +++-
+ drivers/media/dvb-frontends/ts2020.h |  1 +
+ drivers/media/usb/dvb-usb/dw2102.c   | 13 ++++++++++---
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
-This is what we do, no? (assuming slot->arch.rmap[] is what rcu protects here)
-The fact that the value is not correct pointer should not matter.
+diff --git a/drivers/media/dvb-frontends/ts2020.c b/drivers/media/dvb-frontends/ts2020.c
+index ad7ad85..678f13a 100644
+--- a/drivers/media/dvb-frontends/ts2020.c
++++ b/drivers/media/dvb-frontends/ts2020.c
+@@ -31,6 +31,7 @@ struct ts2020_priv {
+ 	struct i2c_adapter *i2c;
+ 	u8 clk_out_div;
+ 	u32 frequency;
++	u32 frequency_div;
+ };
+ 
+ static int ts2020_release(struct dvb_frontend *fe)
+@@ -193,7 +194,7 @@ static int ts2020_set_params(struct dvb_frontend *fe)
+ 	u8 lo = 0x01, div4 = 0x0;
+ 
+ 	/* Calculate frequency divider */
+-	if (frequency < 1060000) {
++	if (frequency < priv->frequency_div) {
+ 		lo |= 0x10;
+ 		div4 = 0x1;
+ 		ndiv = (frequency * 14 * 4) / TS2020_XTAL_FREQ;
+@@ -340,6 +341,7 @@ struct dvb_frontend *ts2020_attach(struct dvb_frontend *fe,
+ 	priv->i2c_address = config->tuner_address;
+ 	priv->i2c = i2c;
+ 	priv->clk_out_div = config->clk_out_div;
++	priv->frequency_div = config->frequency_div;
+ 	fe->tuner_priv = priv;
+ 
+ 	/* Wake Up the tuner */
+diff --git a/drivers/media/dvb-frontends/ts2020.h b/drivers/media/dvb-frontends/ts2020.h
+index 5bcb9a7..b2fe6bb 100644
+--- a/drivers/media/dvb-frontends/ts2020.h
++++ b/drivers/media/dvb-frontends/ts2020.h
+@@ -28,6 +28,7 @@
+ struct ts2020_config {
+ 	u8 tuner_address;
+ 	u8 clk_out_div;
++	u32 frequency_div;
+ };
+ 
+ #if IS_ENABLED(CONFIG_DVB_TS2020)
+diff --git a/drivers/media/usb/dvb-usb/dw2102.c b/drivers/media/usb/dvb-usb/dw2102.c
+index 6e237b6..6136a2c 100644
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -955,9 +955,10 @@ static struct ds3000_config dw2104_ds3000_config = {
+ 	.demod_address = 0x68,
+ };
+ 
+-static struct ts2020_config dw2104_ts2020_config  = {
++static struct ts2020_config dw2104_ts2020_config = {
+ 	.tuner_address = 0x60,
+ 	.clk_out_div = 1,
++	.frequency_div = 1060000,
+ };
+ 
+ static struct ds3000_config s660_ds3000_config = {
+@@ -966,6 +967,12 @@ static struct ds3000_config s660_ds3000_config = {
+ 	.set_lock_led = dw210x_led_ctrl,
+ };
+ 
++static struct ts2020_config s660_ts2020_config = {
++	.tuner_address = 0x60,
++	.clk_out_div = 1,
++	.frequency_div = 1146000,
++};
++
+ static struct stv0900_config dw2104a_stv0900_config = {
+ 	.demod_address = 0x6a,
+ 	.demod_mode = 0,
+@@ -1205,7 +1212,7 @@ static int ds3000_frontend_attach(struct dvb_usb_adapter *d)
+ 	if (d->fe_adap[0].fe == NULL)
+ 		return -EIO;
+ 
+-	dvb_attach(ts2020_attach, d->fe_adap[0].fe, &dw2104_ts2020_config,
++	dvb_attach(ts2020_attach, d->fe_adap[0].fe, &s660_ts2020_config,
+ 		&d->dev->i2c_adap);
+ 
+ 	st->old_set_voltage = d->fe_adap[0].fe->ops.set_voltage;
+@@ -1213,7 +1220,7 @@ static int ds3000_frontend_attach(struct dvb_usb_adapter *d)
+ 
+ 	dw210x_op_rw(d->dev->udev, 0x8a, 0, 0, obuf, 2, DW210X_WRITE_MSG);
+ 
+-	info("Attached ds3000+ds2020!\n");
++	info("Attached ds3000+ts2020!\n");
+ 
+ 	return 0;
+ }
+-- 
+1.8.4
 
-> 
-> So i add the smp_wmb() by myself:
-> 		/*
-> 		 * Esure the old spte has been updated into desc, so
-> 		 * that the another side can not get the desc from pte_list
-> 		 * but miss the old spte.
-> 		 */
-> 		smp_wmb();
-> 
-> 		*pte_list = (unsigned long)desc | 1;
-> 
-> But i missed it when inserting a empty desc, in that case, we need the barrier
-> too since we should make desc->more visible before assign it to pte_list to
-> avoid the lookup side seeing the invalid "nulls".
-> 
-> I also use own code instead of rcu_dereference():
-> pte_list_walk_lockless():
-> 	pte_list_value = ACCESS_ONCE(*pte_list);
-> 	if (!pte_list_value)
-> 		return;
-> 
-> 	if (!(pte_list_value & 1))
-> 		return fn((u64 *)pte_list_value);
-> 
-> 	/*
-> 	 * fetch pte_list before read sptes in the desc, see the comments
-> 	 * in pte_list_add().
-> 	 *
-> 	 * There is the data dependence since the desc is got from pte_list.
-> 	 */
-> 	smp_read_barrier_depends();
-> 
-> That part can be replaced by rcu_dereference().
-> 
-Yes please, also see commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 for
-kind of scary bugs we can get here.
-
-> > incorrect usage of RCU. I think any access to slab pointers will need to
-> > use those.
-> 
-> Remove desc is not necessary i think since we do not mind to see the old
-> info. (hlist_nulls_del_rcu() does not use rcu_dereference() too)
-> 
-May be a bug. I also noticed that rculist_nulls uses rcu_dereference()
-to access ->next, but it does not use rcu_assign_pointer() pointer to
-assign it.
-
---
-			Gleb.
