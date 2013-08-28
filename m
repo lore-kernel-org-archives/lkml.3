@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab3H1PS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:18:59 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3663 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3H1PS5 (ORCPT
+	id S1754554Ab3H1PTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:19:18 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:34393 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3H1PTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:18:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 28 Aug 2013 08:16:25 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <mturquette@linaro.org>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, <linux-usb@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 2nd RESEND] clk: tegra30: Don't wait for PLL_U lock bit
-Date: Wed, 28 Aug 2013 18:18:47 +0300
-Message-ID: <1377703127-7020-2-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1377703127-7020-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1377703127-7020-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 28 Aug 2013 11:19:14 -0400
+Date: Wed, 28 Aug 2013 11:19:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+Message-ID: <20130828151909.GE9295@htj.dyndns.org>
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock bit on PLL_U does not seem to be working correctly and
-sometimes never gets set when waiting for the PLL to come up.
-Remove the TEGRA_PLL_USE_LOCK flag to use a constant delay.
+On Tue, Aug 27, 2013 at 05:37:37PM +0800, Tang Chen wrote:
+> Tang Chen (11):
+>   memblock: Rename current_limit to current_limit_high in memblock.
+>   memblock: Rename memblock_set_current_limit() to
+>     memblock_set_current_limit_high().
+>   memblock: Introduce lowest limit in memblock.
+>   memblock: Introduce memblock_set_current_limit_low() to set lower
+>     limit of memblock.
+>   memblock: Introduce allocation order to memblock.
+>   memblock: Improve memblock to support allocation from lower address.
+>   x86, memblock: Set lowest limit for memblock_alloc_base_nid().
+>   x86, acpi, memblock: Use __memblock_alloc_base() in
+>     acpi_initrd_override()
+>   mem-hotplug: Introduce movablenode boot option to {en|dis}able using
+>     SRAT.
+>   x86, mem-hotplug: Support initialize page tables from low to high.
+>   x86, mem_hotplug: Allocate memory near kernel image before SRAT is
+>     parsed.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Doesn't apply to -master, -next or tip.  Again, can you please include
+which tree and git commit the patches are against in the patch
+description?  How is one supposed to know on top of which tree you're
+working?  It is in your benefit to make things easier for the prosepct
+reviewers.  Trying to guess and apply the patches to different devel
+branches and failing isn't productive and frustates your prospect
+reviewers who would of course have negative pre-perception going into
+the review and this isn't the first time this issue was raised either.
 
----
- drivers/clk/tegra/clk-tegra30.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index e2c6ca0..9103fc8 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -971,7 +971,7 @@ static void __init tegra30_pll_init(void)
- 	/* PLLU */
- 	clk = tegra_clk_register_pll("pll_u", "pll_ref", clk_base, pmc_base, 0,
- 			    0, &pll_u_params, TEGRA_PLLU | TEGRA_PLL_HAS_CPCON |
--			    TEGRA_PLL_SET_LFCON | TEGRA_PLL_USE_LOCK,
-+			    TEGRA_PLL_SET_LFCON,
- 			    pll_u_freq_table,
- 			    NULL);
- 	clk_register_clkdev(clk, "pll_u", NULL);
 -- 
-1.8.1.5
-
+tejun
