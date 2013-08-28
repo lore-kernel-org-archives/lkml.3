@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3H1NXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 09:23:50 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:32817 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab3H1NXr (ORCPT
+	id S1752989Ab3H1N02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 09:26:28 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:44749 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3H1N00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 09:23:47 -0400
-Date: Wed, 28 Aug 2013 09:23:33 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Stefan Seyfried <stefan.seyfried@googlemail.com>
-Subject: Re: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie
- hotplug use when available
-Message-ID: <20130828132333.GA3146@neilslaptop.think-freely.org>
-References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
- <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
- <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
- <20130827234345.GA11187@neilslaptop.think-freely.org>
- <CAErSpo4jq-GTGsgfDkfuRQz_8Vi6RmMC1fGCUcu_3tExUw=EFQ@mail.gmail.com>
+	Wed, 28 Aug 2013 09:26:26 -0400
+Date: Wed, 28 Aug 2013 15:25:53 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Terje Bergstrom <tbergstrom@nvidia.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] ARM: tegra: Add hdmi to Tegra114 Dalmore device tree
+Message-ID: <20130828132552.GC604@ulmo>
+References: <1377686459-16634-1-git-send-email-mperttunen@nvidia.com>
+ <1377686459-16634-6-git-send-email-mperttunen@nvidia.com>
+ <20130828123008.GC32254@ulmo>
+ <521DF1E9.7050504@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xesSdrSSBC0PokLI"
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4jq-GTGsgfDkfuRQz_8Vi6RmMC1fGCUcu_3tExUw=EFQ@mail.gmail.com>
+In-Reply-To: <521DF1E9.7050504@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 07:04:47AM -0600, Bjorn Helgaas wrote:
-> On Tue, Aug 27, 2013 at 5:43 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > On Tue, Aug 27, 2013 at 03:34:11PM -0600, Bjorn Helgaas wrote:
-> >> [+cc Stefan]
-> >>
-> >> On Mon, Aug 26, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> >> > Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
-> >> > slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
-> >> > uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
-> >> > pci_acpi_scan_root before setting the osc flags for the device handle.
-> >> > pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
-> >> > to determine if a given slot has pcie hotplug capabilties, whcih checks the
-> >> > devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
-> >> > until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
-> >> > slots are hotplug capable and configures them all to use acpi instead.
-> >>
-> >> I'd like to make it more explicit what we're fixing.  Apparently this
-> >> is a regression between v3.9 and v3.10.
-> >>
-> >> Is this a fix for problems like
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=60736 ?  That bug is that
-> >> an ExpressCard slot doesn't work unless we boot with
-> >> "acpiphp.disable=1".  I think what happens there is that acpiphp
-> >> claims the slot before we run _OSC, so pciehp doesn't claim it, even
-> >> though _OSC did grant us control over native PCIe hotplug.
-> >>
-> > Yes, that bug is precisely what I am trying to fix (although your wording above is
-> > inverted from the problem in the bug).  What happens is that acpiphp claims the
-> > pcie ports, because acpiphp init runs first, and we haven't yet parsed _OSC,
-> > which would have told acpiphp to yield control to pciehp.  The initial fix I
-> > proposed fixed this by parsing _OSC prior to running the acpiphp bus scan, but
-> > that reintroduced the problem of not handling pcie 1.1 aspm properly.  That has
-> > been fixed in v2/v3 by deferring the setting of aspm_disable until after the bus
-> > scan.
-> >
-> > Shall I submit a v4 with an updated changelog?
-> 
-> No need, I'll update the changelog and include the bugzilla reference
-> and post it for your approval.  Thanks!
-> 
-> Bjorn
-> 
-Great, thanks!
-Neil
 
+--xesSdrSSBC0PokLI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 28, 2013 at 03:49:45PM +0300, Mikko Perttunen wrote:
+> On 08/28/2013 03:30 PM, Thierry Reding wrote:
+> >On Wed, Aug 28, 2013 at 01:40:59PM +0300, Mikko Perttunen wrote:
+[...]
+> >>  			regulator-min-microvolt =3D <5000000>;
+> >>  			regulator-max-microvolt =3D <5000000>;
+> >>  			enable-active-high;
+> >>+			regulator-always-on;
+> >>+			regulator-boot-on;
+> >
+> >This warrants at least a mention in the commit message.
+>=20
+> Hmm, yeah. Looks like the HDMI driver only enables the Vdd in
+> tegra_output_hdmi_enable, which is too late at least for DDC. I
+> guess a better patch would be to enable it earlier. In _probe?
+
+I don't think that would be much better. That way the supply will still
+always be on, independent of whether we're actually using HDMI or not.
+I'm thinking that perhaps we need to allow HDMI to override get_modes()
+by something custom. That should also help with the EDID problem in the
+earlier patch.
+
+Thierry
+
+--xesSdrSSBC0PokLI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHfpgAAoJEN0jrNd/PrOhD+8P/0AL5x/hr33/Tng2tV3i9iyO
+o4cuIpRbbi8GurRtvsCgg0GJQgfSSN4owwdZtKDdogBVvLkt6bNEGPG6YWVDUyQr
+KGd8iNtBmpJ2f/ZXfclHqxLUXPJarjYNwj1Z2TW0jossRysxXso2yIGPYdR5769+
+iUiyix5wAYCylEYGApepdH/jk7hyxWO6lMb+3vBC/Bf4fIJXTymQVZNIuWBRstX8
+NLY0YvA0jiD0ldQXshUcPVrvjRa+6H5VNBc4JkP2ALyf2N2+oppVZ7+o+yDp4G26
+b6TDEdFj5Gvf6FaCHy1X5KIxQvQ22c7qn2JXR0EcAR7ALfksEUBkS+5/YzI1pS7k
+FoV5FrAtvWxG0K3pvNcTQOyGQ1u+PUsNceFZxYJJLyeN539dBy/Q+TCwuww5kxkR
+p/viwukxWVFjaYui86ruADJBSEMbEOSpkMjUq00geUu4nwHJCDep7i6iq6aPomTy
+Xpx7NuDXBbKiBh4lRFsTOi4JwVDy0A4ZUW/JutXyqQB31l3te774MdZLKdaz+CE5
+x4133zP9JH39bQnqQZMAmHru5T75fjKLDWDAj5flrlBd/u5p5NfPwttpJWVj6um7
+A5Fy0Iwyy9709VZOvp5g4IL3rdmLhlu6l3keEh6Q07nrp0jpjkMw3DvLTHyE7KlX
+1aT5i0jLhRPjjA4HaOpQ
+=n80n
+-----END PGP SIGNATURE-----
+
+--xesSdrSSBC0PokLI--
