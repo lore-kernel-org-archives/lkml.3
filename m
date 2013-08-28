@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab3H1UfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:35:25 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62778 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3H1UfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:35:24 -0400
+	id S1755528Ab3H1UgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:36:05 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:60439 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752913Ab3H1UgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 16:36:03 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Mark Brown <broonie@kernel.org>, Steven Miao <realmz6@gmail.com>
+Subject: Re: [PATCH] blackfin: Ignore generated uImages
+Date: Wed, 28 Aug 2013 16:36:04 -0400
+User-Agent: KMail/1.13.7 (Linux/3.10.6; KDE/4.6.5; x86_64; ; )
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+References: <1376991562-26109-1-git-send-email-broonie@kernel.org> <201308241801.45830.vapier@gentoo.org> <20130826115905.GC10783@sirena.org.uk>
+In-Reply-To: <20130826115905.GC10783@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20130828203023.GA22866@redhat.com>
-References: <20130618013602.GC2200@redhat.com>
-	<1257782958.19234314.1371520167209.JavaMail.root@redhat.com>
-	<20130730005335.GA6836@redhat.com>
-	<20130805074033.GX22035@phenom.ffwll.local>
-	<20130828203023.GA22866@redhat.com>
-Date: Thu, 29 Aug 2013 06:35:22 +1000
-Message-ID: <CAPM=9twByvO7Ok6TaPa0g3ptHoC_19QU37_jBk1BRQsipOFJ=A@mail.gmail.com>
-Subject: Re: [3.10rc6] /proc/dri/0/vma broken on nouveau.
-From: Dave Airlie <airlied@gmail.com>
-To: Dave Jones <davej@redhat.com>, David Airlie <airlied@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1632075.MqJRZubXBM";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308281636.06080.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 6:30 AM, Dave Jones <davej@redhat.com> wrote:
-> On Mon, Aug 05, 2013 at 09:40:33AM +0200, Daniel Vetter wrote:
->  > On Mon, Jul 29, 2013 at 08:53:35PM -0400, Dave Jones wrote:
->  > > On Mon, Jun 17, 2013 at 09:49:27PM -0400, David Airlie wrote:
->  > >  >
->  > >  > > Reading /proc/dri/0/vma causes bad things to happen on a box with nouveau
->  > >  > > loaded.
->  > >  > > (Note, no X running on that box)
->  > >  > >
->  > >  > > Trace below shows trinity, but I can reproduce it with just cat
->  > >  > > /proc/dri/0/vma
->  > >  >
->  > >  > How about this, lets just rip it all out.
->  > >
->  > > No-one objected, and this is still around in 3.11-rc3 in the same
->  > > easily oopsable state.. I vote we kill it with fire.
->  >
->  > Can we make it burn brighter while at it?
->  >
->  > http://cgit.freedesktop.org/~danvet/drm/commit/?h=for-dvdhrm&id=151591c2828e18fde1eb8447874704f3422168b0
->
-> This went kinda quiet, what's the plan here ?
+--nextPart1632075.MqJRZubXBM
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-We nuked it from orbit in drm-next.
+On Monday 26 August 2013 07:59:05 Mark Brown wrote:
+> On Sat, Aug 24, 2013 at 06:01:44PM -0400, Mike Frysinger wrote:
+> > Acked-by: Mike Frysinger <vapier@gentoo.org>
+>=20
+> Thanks.  Do you know who might be likely to apply this - MAINTAINERS
+> lists you?
 
-Dave.
+looks like they haven't updated the MAINTAINERS file.  Steven is the mainta=
+iner=20
+last i heard.
+=2Dmike
+
+--nextPart1632075.MqJRZubXBM
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJSHl81AAoJEEFjO5/oN/WBy1kP/j+nfmTib8oJGtmtSYUHcIF4
+NWzAXHF3qmDJTvrg0iNOiDpwbDP52ms5Vdh+o065U4Q3U1ewaq5Hw23QReE5PX04
+UuBv9wHK1p/hYuj81ifhI4jakuXusP+UIpJ3PPl0KUCQgSj3lX5znhOX7GkIADhD
+ndZPp6sxCO5aZWL2e1Teuty1Iem3iSAsQHVPTvf6V8o4JDWyFqMB3eWI2gFA9u/X
+/dn3/Ba5nRwbZInjavRouFeV/I/t35+W6eEJlBuOKEYFIZyLB1FgcVVOjVA6s0+9
+mP/II+Nbzcd6nIxsd9+S/HU8uEetxzyy8iAnwTQoYoNjKzIsW+KqR1SJngdXtVzX
+GOJEVmVfNu9dWVbEaVBNPFF5PIrIaJwBnNZoFGs/Efr/hnvCw07bokmpJWlZ6sGU
+MownzHCoDIoEDfXKWlDGu008SrElEdmOfVdUJZS5uPbkO9x56nTU2rVOUW5MVQ3i
+8Edk3I9xL7khz2Z5NmSkzqq1jGfLyflTAzmxqTdRJ3pBT6itgqGT6EuNy8srjvj0
+TdkSp65yZO64qxOxtdPqD+AxJZn95rPxb6IZHlCJ2SOr3o+op07eZRjcF4Dd4UN3
+9F2wMNKplLDba/fMa65XGYmyxmUUb4rtavPEgoNbSru2pQVhyAyfZnwjl5Utg7ZT
+IIxs87Btd22Q1bEKyHJl
+=a/OT
+-----END PGP SIGNATURE-----
+
+--nextPart1632075.MqJRZubXBM--
