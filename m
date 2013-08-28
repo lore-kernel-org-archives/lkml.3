@@ -1,193 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab3H1Iho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 04:37:44 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:42152 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab3H1Ihk (ORCPT
+	id S1754738Ab3H1IiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 04:38:09 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56358 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab3H1IiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 04:37:40 -0400
-Message-ID: <521DB6CC.4030107@linux.vnet.ibm.com>
-Date: Wed, 28 Aug 2013 16:37:32 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 07/12] KVM: MMU: redesign the algorithm of pte_list
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130828081205.GN22899@redhat.com>
-In-Reply-To: <20130828081205.GN22899@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082808-4790-0000-0000-00000A04F33D
+	Wed, 28 Aug 2013 04:38:01 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Alexander Graf <agraf@suse.de>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-mm@kvack.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v9 00/13] KVM: PPC: IOMMU in-kernel handling of VFIO
+Date: Wed, 28 Aug 2013 18:37:37 +1000
+Message-Id: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.8.4.rc4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 04:12 PM, Gleb Natapov wrote:
+This accelerates VFIO DMA operations on POWER by moving them
+into kernel.
 
->> +
->> +	rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
->> +	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
->> +
->> +	/* No empty position in the desc. */
->> +	if (desc->sptes[PTE_LIST_EXT - 1]) {
->> +		struct pte_list_desc *new_desc;
->> +		new_desc = mmu_alloc_pte_list_desc(vcpu);
->> +		new_desc->more = desc;
->> +		desc = new_desc;
->> +		*pte_list = (unsigned long)desc | 1;
->>  	}
->> -	return count;
->> +
->> +	free_pos = find_first_free(desc);
->> +	desc->sptes[free_pos] = spte;
->> +	return count_spte_number(desc);
-> Should it be count_spte_number(desc) - 1? The function should returns
-> the number of pte entries before the spte was added.
+This depends on VFIO external API patch which is on its way to upstream.
 
-Yes. We have handled it count_spte_number(), we count the number like this:
+Changes:
+v9:
+* replaced the "link logical bus number to IOMMU group" ioctl to KVM
+with a KVM device doing the same thing, i.e. the actual changes are in
+these 3 patches:
+  KVM: PPC: reserve a capability and KVM device type for realmode VFIO
+  KVM: PPC: remove warning from kvmppc_core_destroy_vm
+  KVM: PPC: Add support for IOMMU in-kernel handling
 
-	return first_free + desc_num * PTE_LIST_EXT;
+* moved some VFIO external API bits to a separate patch to reduce the size
+of the "KVM: PPC: Add support for IOMMU in-kernel handling" patch
 
-The first_free is indexed from 0.
+* fixed code style problems reported by checkpatch.pl.
 
-Maybe it is clearer to let count_spte_number() return the real number.
+v8:
+* fixed comments about capabilities numbers
 
-> 
->>  }
->>  
->>  static void
->> -pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
->> -			   int i, struct pte_list_desc *prev_desc)
->> +pte_list_desc_remove_entry(unsigned long *pte_list,
->> +			   struct pte_list_desc *desc, int i)
->>  {
->> -	int j;
->> +	struct pte_list_desc *first_desc;
->> +	int last_used;
->> +
->> +	first_desc = (struct pte_list_desc *)(*pte_list & ~1ul);
->> +	last_used = find_last_used(first_desc);
->>  
->> -	for (j = PTE_LIST_EXT - 1; !desc->sptes[j] && j > i; --j)
->> -		;
->> -	desc->sptes[i] = desc->sptes[j];
->> -	desc->sptes[j] = NULL;
->> -	if (j != 0)
->> +	/*
->> +	 * Move the entry from the first desc to this position we want
->> +	 * to remove.
->> +	 */
->> +	desc->sptes[i] = first_desc->sptes[last_used];
->> +	first_desc->sptes[last_used] = NULL;
->> +
-> What if desc == first_desc and i < last_used. You still move spte
-> backwards so lockless walk may have already examined entry at i and
-> will miss spte that was moved there from last_used position, no?
+v7:
+* rebased on v3.11-rc3.
+* VFIO external user API will go through VFIO tree so it is
+excluded from this series.
+* As nobody ever reacted on "hashtable: add hash_for_each_possible_rcu_notrace()",
+Ben suggested to push it via his tree so I included it to the series.
+* realmode_(get|put)_page is reworked.
 
-Right. I noticed it too and fixed in the v2 which is being tested.
-I fixed it by bottom-up walk desc, like this:
+More details in the individual patch comments.
 
-pte_list_walk_lockless():
+Alexey Kardashevskiy (13):
+  KVM: PPC: POWERNV: move iommu_add_device earlier
+  hashtable: add hash_for_each_possible_rcu_notrace()
+  KVM: PPC: reserve a capability number for multitce support
+  KVM: PPC: reserve a capability and KVM device type for realmode VFIO
+  powerpc: Prepare to support kernel handling of IOMMU map/unmap
+  powerpc: add real mode support for dma operations on powernv
+  KVM: PPC: enable IOMMU_API for KVM_BOOK3S_64 permanently
+  KVM: PPC: Add support for multiple-TCE hcalls
+  powerpc/iommu: rework to support realmode
+  KVM: PPC: remove warning from kvmppc_core_destroy_vm
+  KVM: PPC: add trampolines for VFIO external API
+  KVM: PPC: Add support for IOMMU in-kernel handling
+  KVM: PPC: Add hugepage support for IOMMU in-kernel handling
 
-	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
-	while (!desc_is_a_nulls(desc)) {
-		/*
-		 * We should do bottom-up walk since we always use the
-		 * bottom entry to replace the deleted entry if only
-		 * one desc is used in the rmap when a spte is removed.
-		 * Otherwise the moved entry will be missed.
-		 */
-		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
-			fn(desc->sptes[i]);
+ Documentation/virtual/kvm/api.txt                  |  26 +
+ .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 ++
+ arch/powerpc/include/asm/iommu.h                   |  18 +-
+ arch/powerpc/include/asm/kvm_host.h                |  38 ++
+ arch/powerpc/include/asm/kvm_ppc.h                 |  16 +-
+ arch/powerpc/include/asm/machdep.h                 |  12 +
+ arch/powerpc/include/asm/pgtable-ppc64.h           |   2 +
+ arch/powerpc/include/uapi/asm/kvm.h                |   8 +
+ arch/powerpc/kernel/iommu.c                        | 243 +++++----
+ arch/powerpc/kvm/Kconfig                           |   1 +
+ arch/powerpc/kvm/book3s_64_vio.c                   | 597 ++++++++++++++++++++-
+ arch/powerpc/kvm/book3s_64_vio_hv.c                | 408 +++++++++++++-
+ arch/powerpc/kvm/book3s_hv.c                       |  42 +-
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S            |   8 +-
+ arch/powerpc/kvm/book3s_pr_papr.c                  |  35 ++
+ arch/powerpc/kvm/powerpc.c                         |   4 +
+ arch/powerpc/mm/init_64.c                          |  50 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c          |  57 +-
+ arch/powerpc/platforms/powernv/pci-p5ioc2.c        |   2 +-
+ arch/powerpc/platforms/powernv/pci.c               |  75 ++-
+ arch/powerpc/platforms/powernv/pci.h               |   3 +-
+ arch/powerpc/platforms/pseries/iommu.c             |   8 +-
+ include/linux/hashtable.h                          |  15 +
+ include/linux/kvm_host.h                           |   1 +
+ include/linux/mm.h                                 |  14 +
+ include/linux/page-flags.h                         |   4 +-
+ include/uapi/linux/kvm.h                           |   3 +
+ virt/kvm/kvm_main.c                                |   5 +
+ 28 files changed, 1564 insertions(+), 168 deletions(-)
+ create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
 
-		desc = ACCESS_ONCE(desc->more);
-
-		/* It is being initialized. */
-		if (unlikely(!desc))
-			goto restart;
-	}
-
-How about this?
-
-> 
->> +	/* No valid entry in this desc, we can free this desc now. */
->> +	if (!first_desc->sptes[0]) {
->> +		struct pte_list_desc *next_desc = first_desc->more;
->> +
->> +		/*
->> +		 * Only one entry existing but still use a desc to store it?
->> +		 */
->> +		WARN_ON(!next_desc);
->> +
->> +		mmu_free_pte_list_desc(first_desc);
->> +		first_desc = next_desc;
->> +		*pte_list = (unsigned long)first_desc | 1ul;
->>  		return;
->> -	if (!prev_desc && !desc->more)
->> -		*pte_list = (unsigned long)desc->sptes[0];
->> -	else
->> -		if (prev_desc)
->> -			prev_desc->more = desc->more;
->> -		else
->> -			*pte_list = (unsigned long)desc->more | 1;
->> -	mmu_free_pte_list_desc(desc);
->> +	}
->> +
->> +	WARN_ON(!first_desc->sptes[0]);
->> +
->> +	/*
->> +	 * Only one entry in this desc, move the entry to the head
->> +	 * then the desc can be freed.
->> +	 */
->> +	if (!first_desc->sptes[1] && !first_desc->more) {
->> +		*pte_list = (unsigned long)first_desc->sptes[0];
->> +		mmu_free_pte_list_desc(first_desc);
->> +	}
->>  }
->>  
->>  static void pte_list_remove(u64 *spte, unsigned long *pte_list)
->>  {
->>  	struct pte_list_desc *desc;
->> -	struct pte_list_desc *prev_desc;
->>  	int i;
->>  
->>  	if (!*pte_list) {
->> -		printk(KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
->> -		BUG();
->> -	} else if (!(*pte_list & 1)) {
->> +		WARN(1, KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
-> Why change BUG() to WARN() here and below?
-
-WARN(1, "xxx") can replace two lines in the origin code. And personally,
-i prefer WARN() to BUG() since sometimes BUG() can stop my box and i need to
-get the full log by using kdump.
-
-If you object it, i will change it back in the next version. :)
-
-> 
->> +		return;
->> +	}
->> +
->> +	if (!(*pte_list & 1)) {
->>  		rmap_printk("pte_list_remove:  %p 1->0\n", spte);
->>  		if ((u64 *)*pte_list != spte) {
->> -			printk(KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
->> -			BUG();
->> +			WARN(1, KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
->>  		}
-> Remove {} since only one statement left in the if(). Or better yet why
-> not:
->   WARN ((u64 *)*pte_list != spte, ....)?
-
-Yes, it is better.
-
-> But again why not BUG()?
-
-The explanation is above. :)
-
+-- 
+1.8.4.rc4
 
