@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3H1AGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 20:06:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39517 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab3H1AGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 20:06:52 -0400
-Date: Wed, 28 Aug 2013 10:06:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with Linus' tree
-Message-Id: <20130828100650.717c22af5bea88e89371393d@canb.auug.org.au>
-In-Reply-To: <521CD111.9030905@wwwdotorg.org>
-References: <20130827182935.ff4005b60cc1ce80d32d5e46@canb.auug.org.au>
-	<521CD111.9030905@wwwdotorg.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+	id S1754213Ab3H1AMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 20:12:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44876 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038Ab3H1AMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 20:12:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,971,1367996400"; 
+   d="scan'208";a="392969395"
+Message-ID: <1377648836.2335.252.camel@rzhang-lenovo>
+Subject: Re: [PATCH 3/5] drivers: thermal: make usage of
+ CONFIG_THERMAL_HWMON optional
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Peter Feuerer <peter@piie.net>, platform-driver-x86@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Date: Wed, 28 Aug 2013 08:13:56 +0800
+In-Reply-To: <8131326.8QGX41MW6c@vostro.rjw.lan>
+References: <1377295396-17289-1-git-send-email-eduardo.valentin@ti.com>
+	 <4832825.8PCMQe7StP@vostro.rjw.lan> <521CEF61.6040504@ti.com>
+	 <8131326.8QGX41MW6c@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Aug_2013_10_06_50_+1000_m9n_HWRyBT=K9xCW"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Aug_2013_10_06_50_+1000_m9n_HWRyBT=K9xCW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 二, 2013-08-27 at 23:17 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, August 27, 2013 02:26:41 PM Eduardo Valentin wrote:
+> > On 23-08-2013 19:08, Rafael J. Wysocki wrote:
+> > > On Friday, August 23, 2013 06:03:14 PM Eduardo Valentin wrote:
+> > >> When registering a new thermal_device, the thermal framework
+> > >> will always add a hwmon sysfs interface.
+> > >>
+> > >> This patch adds a flag to make this behavior optional. Now
+> > >> when registering a new thermal device, the caller needs
+> > >> to say if the hwmon interface is required.
+> > >>
+> > >> In order to keep same behavior as of today, all current
+> > >> calls will by default create the hwmon interface.
+> > > 
+> > > Well, instead of modifying all of the callers this way, why don't
+> > > you add new versions taking the additional argument as, for example,
+> > > 
+> > > thermal_zone_device_register_full()
+> > > 
+> > > and redefine the old ones as static inline wrappers, for example
+> > > 
+> > > static inline struct thermal_zone_device *thermal_zone_device_register(args)
+> > > {
+> > > 	return thermal_zone_device_register_full(args, true);
+> > > }
+> > > 
+> > > ?
+> > 
+> > Yeah, that is another way to go and I thought of doing it like that. I
+> > just could not come out with a good API naming:
+> > 
+> > thermal_zone_device_register_full(all args)
+> > 
+> > thermal_zone_device_register(args) /* on hwmon == true */
+> > thermal_zone_device_register_no_hwmon(args) /* on hwmon == false */
+> > 
+> > Would this sound reasonable naming?
+> 
+> Yeah, sounds good to me.
+> 
+Well, actually, Tianyu is working on a patch set to move all the
+thermal_zone_device_register() parameters to struct thermal_zone_params.
 
-Hi Stephen,
+But with that patch set done, what you need to do next is just to
+introduce a new field in struct thermal_zone_params and make sure 0
+means registering hwmon sysfs I/F.
 
-On Tue, 27 Aug 2013 10:17:21 -0600 Stephen Warren <swarren@wwwdotorg.org> w=
-rote:
->
-> On 08/27/2013 02:29 AM, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the arm-soc tree got a conflict in=20
-> > arch/arm/boot/dts/tegra20-trimslice.dts between commit
-> > 30ca2226bea6 ("ARM: tegra: always enable USB VBUS regulators") from
-> > Linus' tree and commit 23f95ef2d951 ("ARM: tegra: use TEGRA_GPIO()
-> > in a couple more places") from the arm-soc tree.
-> >=20
-> > I fixed it up (see below) and can carry the fix as necessary (no
-> > action is required).
->=20
-> > diff --cc arch/arm/boot/dts/tegra20-trimslice.dts
->=20
-> > usb@c5000000 { status =3D "okay"; -		nvidia,vbus-gpio =3D <&gpio
-> > TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>; };
->=20
-> That chunk isn't part of either of the two commits above.
+thanks,
+rui
 
-Yeah.
+> Thanks,
+> Rafael
+> 
 
-> It is however part of commit 103566e "arm: tegra: Remove obsolete
-> nvidia,vbus-gpio properties" from the USB tree, so it's fine that the
-> change is part of linux-next.
->
-> I'm just not sure if it's expected for that chunk to show up in this
-> merge resolution email? If it's normal, then there's no problem; the
-> issue would be with me not having too much git merge conflict
-> resolution experience:-)
 
-It did not actually cause a conflict that I had to fix manually, but is
-part of the overall merge changes.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__28_Aug_2013_10_06_50_+1000_m9n_HWRyBT=K9xCW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSHT8aAAoJEECxmPOUX5FEwmIP/jrDc6YFUiWT17SGcaIGBDZn
-p5VEMV15KR3bPwMbEG3VB9bPBrYdokSM93i/q5bKTHehHMKoMRg6xFKytstxQJlZ
-dREaA4gTpYN/H6/zNcwiUvXz/cRxbeBBIcgroErbLehHlDzdws3opCuTfJbK3LKq
-k8WGqAwMItorzVs5k0fjhv+ia6UtLngscJO+BS3quOCZWtUwtKfiUIlDLnciCZIE
-cItUv+B5NcHyJfZ4BI33eoEyxKS/fSL8+Dpg+1oMeT0UzAhjbQXqXSKnNY03z7pg
-G+EQqjuRUYnDV8MiF5CiJfq4QFKsil9obmysVee8oKlWBhClwQCGQzHjTbxOAyGj
-NLkfXSYPxKz4sm2r3JSiRBNNvJcS1lyIAremD+rC+IC658P0xW7A5ghicN7iYpbm
-DPgsAW8MWB0+xXFuUdDdeiZqmN3aQPf4wRPNsvOQhs1sH+IE2CfkojCHNCG7HVW1
-DB0Z82PJXtkIDo9rKkOBuvCule4HTL7PWyR5PeA21wfigrlkq+ac5hQ6Ypm+6DkM
-sJpRFys3ExkY57etzBx+5h0o1z1h4wNvbJJZBFPfeQJdFIc1S3flWF9nZAxmVXKN
-nIyVIknUEMLPsebt3UmlDx08rohkl4+rcZGK18JZkyA9Fyl0LPj/C8BRRihS99oJ
-gO8wwnjimd1rGNoNx3kx
-=STmp
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Aug_2013_10_06_50_+1000_m9n_HWRyBT=K9xCW--
