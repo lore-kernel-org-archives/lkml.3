@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3H1UGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:06:24 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:51753 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755231Ab3H1UGX (ORCPT
+	id S1755342Ab3H1UIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:08:06 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60460 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab3H1UIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:06:23 -0400
-X-Greylist: delayed 1085 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 16:06:23 EDT
-Message-ID: <00000140c678246b-29eb9519-707e-497c-9fb7-59161f0dc74e-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:17 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 35/35] Remove __get_cpu_var and __raw_get_cpu_var macros [only in 3.13]
-References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.62
+	Wed, 28 Aug 2013 16:08:04 -0400
+X-IronPort-AV: E=Sophos;i="4.89,977,1367971200"; 
+   d="scan'208";a="46156669"
+Date: Wed, 28 Aug 2013 21:07:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 10/10] xen/arm,arm64: enable SWIOTLB_XEN
+In-Reply-To: <1376600325.9273.223.camel@hastur.hellion.org.uk>
+Message-ID: <alpine.DEB.2.02.1308282104000.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308151200580.4470@kaball.uk.xensource.com>  <1376565054-24153-10-git-send-email-stefano.stabellini@eu.citrix.com> <1376600325.9273.223.camel@hastur.hellion.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No user is left in the kernel source tree. Therefore we can
-drop the definitions.
+On Thu, 15 Aug 2013, Ian Campbell wrote:
+> On Thu, 2013-08-15 at 12:10 +0100, Stefano Stabellini wrote:
+> > At the moment always rely on swiotlb-xen, but when Xen starts supporting
+> > hardware IOMMUs we'll be able to avoid it conditionally on the presence
+> > of an IOMMU on the platform.
+> 
+> Do we have any idea how we are going to do this?
+> 
+> It's extra complicated if you consider that on some systems on some of
+> the devices are behind an IOMMU :-/
+> 
+> I wonder if we can enumerate which devices have an IOMMU at boot time
+> and force a ludicrous dma mask (such as 0) if one isn't present in order
+> to force us to always take the exchange_and_pin path?
 
-[Patch should not be merged until all the replacement patches have been
-merged. Probably this means hold until the 3.13 merge window]
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/include/asm-generic/percpu.h
-===================================================================
---- linux.orig/include/asm-generic/percpu.h	2013-08-26 14:40:32.528082727 -0500
-+++ linux/include/asm-generic/percpu.h	2013-08-26 14:40:32.520082812 -0500
-@@ -65,9 +65,6 @@ extern unsigned long __per_cpu_offset[NR
- #define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
- #endif
- 
--#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
--#define __raw_get_cpu_var(var) (*__this_cpu_ptr(&(var)))
--
- #ifdef CONFIG_HAVE_SETUP_PER_CPU_AREA
- extern void setup_per_cpu_areas(void);
- #endif
-@@ -80,8 +77,6 @@ extern void setup_per_cpu_areas(void);
- })
- 
- #define per_cpu(var, cpu)	(*((void)(cpu), VERIFY_PERCPU_PTR(&(var))))
--#define __get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
--#define __raw_get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
- #define this_cpu_ptr(ptr)	per_cpu_ptr(ptr, 0)
- #define __this_cpu_ptr(ptr)	this_cpu_ptr(ptr)
- 
-
+We don't need to worry about how to specify which devices need to go via
+the swiotlb internally, because we have our own arm specific
+dma_map_ops. At the moment they are just implemented using the
+swiotlb-xen functions, but we could easily provide wrappers that check
+our own internal whitelist/blacklist and go via swiotlb-xen only in
+those cases.
