@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3H1SCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:02:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43919 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3H1SCM convert rfc822-to-8bit (ORCPT
+	id S1754584Ab3H1SD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:03:29 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:40832 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3H1SD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:02:12 -0400
-From: Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: merging device tree binding dirs for serial bindings
-Date: Wed, 28 Aug 2013 13:02:14 -0500
-Message-Id: <F93329E6-1426-4197-871D-211F34455DDE@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "shawn.guo@linaro.org Guo" <shawn.guo@linaro.org>,
-        "s.hauer@pengutronix.de Hauer" <s.hauer@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1283)
-X-Mailer: Apple Mail (2.1283)
+	Wed, 28 Aug 2013 14:03:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <521E2635.4070800@linaro.org>
+References: <1377706794-8481-1-git-send-email-robherring2@gmail.com>
+	<521E2635.4070800@linaro.org>
+Date: Wed, 28 Aug 2013 13:03:27 -0500
+Message-ID: <CAL_JsqKx0NBeC6kDjpZEwO1Liu44Uztuq9n-gNNcoV0CH4KGMQ@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] ARM: xen: only set pm function ptrs for Xen guests
+From: Rob Herring <robherring2@gmail.com>
+To: Julien Grall <julien.grall@linaro.org>
+Cc: xen-devel@lists.xensource.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We appear to have:
-
-Documentation/devicetree/bindings/serial/
-
-and
-
-Documentation/devicetree/bindings/tty/serial/
-
-Which one do we want to keep, I'd pick the first, but I don't care too much.
-
-Also, there appears to be a duplicated (but different) binding for the fsl-imx-uart.txt in these two dirs.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+On Wed, Aug 28, 2013 at 11:32 AM, Julien Grall <julien.grall@linaro.org> wrote:
+> On 08/28/2013 05:19 PM, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
+>> function pointers. This breaks multi-platform kernels. Move this
+>> initialization into xen_guest_init, so it is conditional on running as a
+>> Xen guest.
+>>
+>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>> This breaks reset and poweroff for Midway when Xen is enabled. This
+>> should go into 3.11 or stable.
+>> Rob
+>>
+>>  arch/arm/xen/enlighten.c | 12 +++---------
+>>  1 file changed, 3 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+>> index 8a6295c..fa86452 100644
+>> --- a/arch/arm/xen/enlighten.c
+>> +++ b/arch/arm/xen/enlighten.c
+>> @@ -263,6 +263,9 @@ static int __init xen_guest_init(void)
+>>       if (xen_vcpu_info == NULL)
+>>               return -ENOMEM;
+>>
+>> +     pm_power_off = xen_power_off;
+>> +     arm_pm_restart = xen_restart;
+>> +
+>
+> I think it's too early to set pm callbacks. If Linux is running as dom0,
+> xen needs to overwrite the power management callback. Otherwise, dom0
+> could shutdown/restart the whole platform, that is annoying.
+> For instance, on the versatile express, the power management callback
+> are set very late (ie during driver initialization).
+>
+> pm callbacks should be updated by a late initcall and check if xen is
+> enabled.
+>
+>>       gnttab_init();
+>>       if (!xen_initial_domain())
+>>               xenbus_probe(NULL);
+>> @@ -271,15 +274,6 @@ static int __init xen_guest_init(void)
+>>  }
+>>  core_initcall(xen_guest_init);
+>>
+>> -static int __init xen_pm_init(void)
+>> -{
+>> -     pm_power_off = xen_power_off;
+>> -     arm_pm_restart = xen_restart;
+>> -
+>> -     return 0;
+>> -}
+>> -subsys_initcall(xen_pm_init);
+>> -
+>>  static irqreturn_t xen_arm_callback(int irq, void *arg)
+>>  {
+>>       xen_hvm_evtchn_do_upcall();
+>>
+>
+>
+> --
+> Julien Grall
