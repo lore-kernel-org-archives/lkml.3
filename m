@@ -1,176 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab3H1MWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:22:03 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49176 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3H1MWB (ORCPT
+	id S1755388Ab3H1MWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:22:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:18825 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab3H1MWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:22:01 -0400
-Subject: [PATCH] fuse: hotfix truncate_pagecache() issue
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: xemul@parallels.com, fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        linux-fsdevel@vger.kernel.org, devel@openvz.org
-Date: Wed, 28 Aug 2013 16:21:46 +0400
-Message-ID: <20130828121920.23965.78383.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Aug 2013 08:22:41 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-2d-521deb901d39
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Len Brown <lenb@kernel.org>, Andy Henroid <andrew.d.henroid@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: [RFC] removal of drivers/idle/ directory
+Date: Wed, 28 Aug 2013 14:22:36 +0200
+Message-id: <2998196.JgbABsZZJs@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAd0Jr2WDDLr/iVrsON7PYrHz4Vs2
+	i8u75rBZfO49wmjxY8NjVgdWj8V7XjJ5bFrVyebxeZNcAHMUl01Kak5mWWqRvl0CV8bUiZ2s
+	BUtYKpb8E29gPMjcxcjJISFgIrGu+ymULSZx4d56ti5GLg4hgUWMEvuPzGGHcFqYJK5sOsoC
+	UsUmYCUxsX0VI4gtIuAlcWXvErBuZiC7b/EyMFtYwFDi9d0fYDaLgKrE1VMbwWxeAU2J1zs3
+	gc0RFfCU+DRpKVRcUOLH5HssEHPkJfbtn8oKYWtJrN95nGkCI98sJGWzkJTNQlK2gJF5FaNo
+	akFyQXFSeq6RXnFibnFpXrpecn7uJkZwMD6T3sG4qsHiEKMAB6MSD6/FZpkgIdbEsuLK3EOM
+	EhzMSiK8/Ntlg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFw
+	SjUwqj34fyT37VNFYe2K7JsOe2/3XP2uWrc28kvH58XJexW2Lj0k4Lf/ZdeaOyuuzXuy/MF5
+	NU/n2VtmejHmvNzDwHPPeh/Lp5/bDv//fW4lz7zsq0mHvBrlX13xWyyZ90Ekdtbf8qv/d/in
+	+ntkpfc/jfqau3HHLM/VCzemdD2p+7CTb88NloVSKvVKLMUZiYZazEXFiQAKHdd1QgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way how fuse calls truncate_pagecache() from fuse_change_attributes()
-is completely wrong. Because, w/o i_mutex held, we never sure whether
-'oldsize' and 'attr->size' are valid by the time of execution of
-truncate_pagecache(inode, oldsize, attr->size). In fact, as soon as we
-released fc->lock in the middle of fuse_change_attributes(), we completely
-loose control of actions which may happen with given inode until we reach
-truncate_pagecache. The list of potentially dangerous actions includes mmap-ed
-reads and writes, ftruncate(2) and write(2) extending file size.
 
-The typical outcome of doing truncate_pagecache() with outdated arguments is
-data corruption from user point of view. This is (in some sense) acceptable
-in cases when the issue is triggered by a change of the file on the server
-(i.e. externally wrt fuse operation), but it is absolutely intolerable in
-scenarios when a single fuse client modifies a file without any external
-intervention. A real life case I discovered by fsx-linux looked like this:
+Hi,
 
-1. Shrinking ftruncate(2) comes to fuse_do_setattr(). The latter sends
-FUSE_SETATTR to the server synchronously, but before getting fc->lock ...
-2. fuse_dentry_revalidate() is asynchronously called. It sends FUSE_LOOKUP
-to the server synchronously, then calls fuse_change_attributes(). The latter
-updates i_size, releases fc->lock, but before comparing oldsize vs attr->size..
-3. fuse_do_setattr() from the first step proceeds by acquiring fc->lock and
-updating attributes and i_size, but now oldsize is equal to outarg.attr.size
-because i_size has just been updated (step 2). Hence, fuse_do_setattr()
-returns w/o calling truncate_pagecache().
-4. As soon as ftruncate(2) completes, the user extends file size by write(2)
-making a hole in the middle of file, then reads data from the hole either by
-read(2) or mmap-ed read. The user expects to get zero data from the hole, but
-gets stale data because truncate_pagecache() is not executed yet.
+drivers/idle/ directory currently contains only two drivers:
 
-The patch is a hotfix resolving the issue in a simplistic way: let's skip
-dangerous i_size update and truncate_pagecache if an operation changing file
-size is in progress. This simplistic approach looks correct for the cases
-w/o external changes. And to handle them properly, more sophisticated and
-intrusive techniques (e.g. NFS-like one) would be required. I'd like
-to postpone it until the issue is well discussed on the mailing list(s).
+* intel_idle which is a cpuidle driver for certain Intel processors
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
----
- fs/fuse/dir.c    |    7 ++++++-
- fs/fuse/file.c   |    8 +++++++-
- fs/fuse/fuse_i.h |    2 ++
- fs/fuse/inode.c  |    3 ++-
- 4 files changed, 17 insertions(+), 3 deletions(-)
+* i7300_idle which is a driver for certain Intel x86_64 servers
+  (it provides idle memory power savings)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 72a5d5b..c3eb878 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1590,6 +1590,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 		    struct file *file)
- {
- 	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_req *req;
- 	struct fuse_setattr_in inarg;
- 	struct fuse_attr_out outarg;
-@@ -1617,8 +1618,10 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 	if (IS_ERR(req))
- 		return PTR_ERR(req);
- 
--	if (is_truncate)
-+	if (is_truncate) {
- 		fuse_set_nowrite(inode);
-+		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
-+	}
- 
- 	memset(&inarg, 0, sizeof(inarg));
- 	memset(&outarg, 0, sizeof(outarg));
-@@ -1680,12 +1683,14 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 		invalidate_inode_pages2(inode->i_mapping);
- 	}
- 
-+	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
- 	return 0;
- 
- error:
- 	if (is_truncate)
- 		fuse_release_nowrite(inode);
- 
-+	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
- 	return err;
- }
- 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 5c121fe..2f1e87c 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -629,7 +629,8 @@ static void fuse_read_update_size(struct inode *inode, loff_t size,
- 	struct fuse_inode *fi = get_fuse_inode(inode);
- 
- 	spin_lock(&fc->lock);
--	if (attr_ver == fi->attr_version && size < inode->i_size) {
-+	if (attr_ver == fi->attr_version && size < inode->i_size &&
-+	    !test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
- 		fi->attr_version = ++fc->attr_version;
- 		i_size_write(inode, size);
- 	}
-@@ -1032,12 +1033,16 @@ static ssize_t fuse_perform_write(struct file *file,
- {
- 	struct inode *inode = mapping->host;
- 	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 	int err = 0;
- 	ssize_t res = 0;
- 
- 	if (is_bad_inode(inode))
- 		return -EIO;
- 
-+	if (inode->i_size < pos + iov_iter_count(ii))
-+		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
-+
- 	do {
- 		struct fuse_req *req;
- 		ssize_t count;
-@@ -1073,6 +1078,7 @@ static ssize_t fuse_perform_write(struct file *file,
- 	if (res > 0)
- 		fuse_write_update_size(inode, pos);
- 
-+	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
- 	fuse_invalidate_attr(inode);
- 
- 	return res > 0 ? res : err;
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index fde7249..5ced199 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -115,6 +115,8 @@ struct fuse_inode {
- enum {
- 	/** Advise readdirplus  */
- 	FUSE_I_ADVISE_RDPLUS,
-+	/** An operation changing file size is in progress  */
-+	FUSE_I_SIZE_UNSTABLE,
- };
- 
- struct fuse_conn;
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 0b57859..e0fe703 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -201,7 +201,8 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
- 	struct timespec old_mtime;
- 
- 	spin_lock(&fc->lock);
--	if (attr_version != 0 && fi->attr_version > attr_version) {
-+	if ((attr_version != 0 && fi->attr_version > attr_version) ||
-+	    test_bit(FUSE_I_SIZE_UNSTABLE, &fi->state)) {
- 		spin_unlock(&fc->lock);
- 		return;
- 	}
+How's about moving intel_idle to drivers/cpuidle/ (where it should
+belong as cpuidle driver) and i7300_idle to drivers/platform/x86/
+(or eventually to a new directory named drivers/memidle/)?
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
