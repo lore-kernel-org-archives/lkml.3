@@ -1,130 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab3H1Kz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:55:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33089 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab3H1Kz1 convert rfc822-to-8bit (ORCPT
+	id S1753829Ab3H1K6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:58:45 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:34302 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab3H1K6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:55:27 -0400
-Message-ID: <521DD72D.7070000@arm.com>
-Date: Wed, 28 Aug 2013 11:55:41 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 06:58:43 -0400
 MIME-Version: 1.0
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v5 5/5] drivers: clocksource: add CPU PM notifier for
- ARM architected timer
-References: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1377686689-30828-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-In-Reply-To: <1377686689-30828-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 28 Aug 2013 10:55:24.0328 (UTC) FILETIME=[19068280:01CEA3DD]
-X-MC-Unique: 113082811552600601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <521DD6BD.4030700@samsung.com>
+References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
+	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
+	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+	<CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
+	<521DD43D.7070605@samsung.com>
+	<CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
+	<521DD6BD.4030700@samsung.com>
+Date: Wed, 28 Aug 2013 12:58:41 +0200
+Message-ID: <CA+icZUUndfWjQ7_DYOUYLs-aUTznAkz-EF-=knf37HQ09WXfxw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/13 11:44, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> Few control settings done in architected timer as part of initialisation
-> can be lost when CPU enters deeper power states. They need to be
-> re-initialised when the CPU is (warm)reset again.
-> 
-> This patch adds CPU PM notifiers to do the timer initialisation on warm
-> resets. It also save the event stream divider value calculated during
-> cold reset and uses the same in warm reset path.
-> 
-Ah, forgot to update the commit log. It's now updated:
+On Wed, Aug 28, 2013 at 12:53 PM, Dmitry Kasatkin
+<d.kasatkin@samsung.com> wrote:
+> On 28/08/13 13:46, Sedat Dilek wrote:
+>> On Wed, Aug 28, 2013 at 12:43 PM, Dmitry Kasatkin
+>> <d.kasatkin@samsung.com> wrote:
+>>> On 28/08/13 13:38, Sedat Dilek wrote:
+>>>> On Wed, Aug 28, 2013 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> On Wed, Aug 28, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>> On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>>> Hi all,
+>>>>>>>
+>>>>>>> Changes since 20130827:
+>>>>>>>
+>>>>>>> The f2fs tree lost its build failure.
+>>>>>>>
+>>>>>>> The md tree gained a conflict against the arm tree.
+>>>>>>>
+>>>>>>> The libata tree lost its build failure.
+>>>>>>>
+>>>>>>> The spi tree lost its build failure.
+>>>>>>>
+>>>>>>> The arm-soc tree gained conflicts against the usb tree.
+>>>>>>>
+>>>>>>> The dma-mapping tree gained a conflict against the driver-core tree.
+>>>>>>>
+>>>>>>> The akpm-current tree gained a conflict against the net tree.
+>>>>>>>
+>>>>>>> ----------------------------------------------------------------------------
+>>>>>>>
+>>>>>>> My build here breaks like this:
+>>>>>>>
+>>>>>>>   CC      drivers/usb/host/xhci-ring.o
+>>>>>>>   CC      drivers/video/console/softcursor.o
+>>>>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
+>>>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>>>>>> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
+>>>>>>> [-Werror=implicit-function-declaration]
+>>>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
+>>>>>>> (first use in this function)
+>>>>>>> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
+>>>>>>> is reported only once for each function it appears in
+>>>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>>>>>> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
+>>>>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
+>>>>>>> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
+>>>>>>> (first use in this function)
+>>>>>>> cc1: some warnings being treated as errors
+>>>>>>> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
+>>>>>>> make[4]: *** [drivers/usb/host] Error 2
+>>>>>>>
+>>>>>>> My kernel-config is attached.
+>>>>>>>
+>>>>>> Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
+>>>>>>
+>>>>>> $ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
+>>>>>> linux/include/linux/device.h:1118:
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
+>>>>>> linux/include/linux/device.h:1121:
+>>>>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
+>>>>>> linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
+>>>>>> _ddebug *descriptor, const char *fmt, ...);
+>>>>>> linux/include/linux/dynamic_debug.h:63:#define
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
+>>>>>> linux/include/linux/dynamic_debug.h:76:
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>>>> linux/include/linux/dynamic_debug.h:78:
+>>>>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
+>>>>>> linux/include/linux/dynamic_debug.h:84:
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>>>> linux/include/linux/dynamic_debug.h:92:
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>>>> linux/include/linux/dynamic_debug.h:101:
+>>>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
+>>>>>>
+>>>>>> Can't say which one is preferred here.
+>>>>>>
+>>>>> looks like device.h is preferred or used in the sources, but this does
+>>>>> not fix the issue here.
+>>>>> sth. wrong with dev_dbg_ratelimited()?
+>>>>>
+>>>> That change seems to cause the problems:
+>>>>
+>>>> commit 0730d52a86919300a39a2be37f6c140997dfb82f
+>>>> "xhci:prevent "callbacks suppressed" when debug is not enabled"
+>>>>
+>>>> - Sedat -
+>>>>
+>>>> [1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
+>>>>
+>>> Hello,
+>>>
+>>> [PATCHv2 1/2] was not applied before.
+>>> I pointed this out few hours ago...
+>>>
+>>> - Dmitry
+>>>
+>> Yupp, just read it a few seconds ago.
+>>
+>> Where is that whatever 2nd fix?
+>>
+>> - Sedat -
+>>
+>> [1] http://marc.info/?l=linux-usb&m=137767590629869&w=2
+>>
+>
+> 1/2 - was not applied
+> https://patchwork.kernel.org/patch/2850217/
+>
+> 2/2 - this one was applied
+> https://patchwork.kernel.org/patch/2850218/
+>
+> - Dmitry
+>
 
-Few control settings done in architected timer as part of initialisation
-can be lost when CPU enters deeper power states. They need to be
-restored when the CPU is (warm)reset again.
+Thanks for the patchwork-URLs, it's easier to apply from there.
 
-This patch adds CPU PM notifiers to save the counter control register
-when entering low power modes and restore it when CPU exits low power.
-
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Reviewed-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> ---
->  drivers/clocksource/arm_arch_timer.c | 34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
-> 
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index f42bef4..ffb0bfb 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -13,6 +13,7 @@
->  #include <linux/device.h>
->  #include <linux/smp.h>
->  #include <linux/cpu.h>
-> +#include <linux/cpu_pm.h>
->  #include <linux/clockchips.h>
->  #include <linux/interrupt.h>
->  #include <linux/of_irq.h>
-> @@ -281,6 +282,33 @@ static struct notifier_block arch_timer_cpu_nb = {
->  	.notifier_call = arch_timer_cpu_notify,
->  };
->  
-> +#ifdef CONFIG_CPU_PM
-> +static unsigned int saved_cntkctl;
-> +static int arch_timer_cpu_pm_notify(struct notifier_block *self,
-> +				    unsigned long action, void *hcpu)
-> +{
-> +	if (action == CPU_PM_ENTER)
-> +		saved_cntkctl = arch_timer_get_cntkctl();
-> +	else if (action == CPU_PM_ENTER_FAILED || action == CPU_PM_EXIT)
-> +		arch_timer_set_cntkctl(saved_cntkctl);
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block arch_timer_cpu_pm_notifier = {
-> +	.notifier_call = arch_timer_cpu_pm_notify,
-> +};
-> +
-> +static int __init arch_timer_cpu_pm_init(void)
-> +{
-> +	return cpu_pm_register_notifier(&arch_timer_cpu_pm_notifier);
-> +}
-> +#else
-> +static int __init arch_timer_cpu_pm_init(void)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  static int __init arch_timer_register(void)
->  {
->  	int err;
-> @@ -330,11 +358,17 @@ static int __init arch_timer_register(void)
->  	if (err)
->  		goto out_free_irq;
->  
-> +	err = arch_timer_cpu_pm_init();
-> +	if (err)
-> +		goto out_unreg_notify;
-> +
->  	/* Immediately configure the timer on the boot CPU */
->  	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
->  
->  	return 0;
->  
-> +out_unreg_notify:
-> +	unregister_cpu_notifier(&arch_timer_cpu_nb);
->  out_free_irq:
->  	if (arch_timer_use_virtual)
->  		free_percpu_irq(arch_timer_ppi[VIRT_PPI], arch_timer_evt);
-> 
-
-
+- Sedat -
