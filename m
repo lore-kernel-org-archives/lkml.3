@@ -1,126 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3H1Khf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:37:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41454 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752458Ab3H1Khe (ORCPT
+	id S1753991Ab3H1Kih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:38:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41308 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab3H1Kif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:37:34 -0400
-Date: Wed, 28 Aug 2013 07:37:33 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
-        Will Deacon <will.deacon@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
-Message-ID: <20130828103732.GB2348@localhost>
-References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
+	Wed, 28 Aug 2013 06:38:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
+	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
+	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+Date: Wed, 28 Aug 2013 12:38:33 +0200
+Message-ID: <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Aug 28, 2013 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Aug 28, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130827:
+>>>
+>>> The f2fs tree lost its build failure.
+>>>
+>>> The md tree gained a conflict against the arm tree.
+>>>
+>>> The libata tree lost its build failure.
+>>>
+>>> The spi tree lost its build failure.
+>>>
+>>> The arm-soc tree gained conflicts against the usb tree.
+>>>
+>>> The dma-mapping tree gained a conflict against the driver-core tree.
+>>>
+>>> The akpm-current tree gained a conflict against the net tree.
+>>>
+>>> ----------------------------------------------------------------------------
+>>>
+>>> My build here breaks like this:
+>>>
+>>>   CC      drivers/usb/host/xhci-ring.o
+>>>   CC      drivers/video/console/softcursor.o
+>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
+>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
+>>> [-Werror=implicit-function-declaration]
+>>> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
+>>> (first use in this function)
+>>> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
+>>> is reported only once for each function it appears in
+>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
+>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
+>>> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
+>>> (first use in this function)
+>>> cc1: some warnings being treated as errors
+>>> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
+>>> make[4]: *** [drivers/usb/host] Error 2
+>>>
+>>> My kernel-config is attached.
+>>>
+>>
+>> Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
+>>
+>> $ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
+>> linux/include/linux/device.h:1118:
+>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
+>> linux/include/linux/device.h:1121:
+>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
+>> linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
+>> _ddebug *descriptor, const char *fmt, ...);
+>> linux/include/linux/dynamic_debug.h:63:#define
+>> DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
+>> linux/include/linux/dynamic_debug.h:76:
+>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>> linux/include/linux/dynamic_debug.h:78:
+>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
+>> linux/include/linux/dynamic_debug.h:84:
+>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>> linux/include/linux/dynamic_debug.h:92:
+>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>> linux/include/linux/dynamic_debug.h:101:
+>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
+>>
+>> Can't say which one is preferred here.
+>>
+>
+> looks like device.h is preferred or used in the sources, but this does
+> not fix the issue here.
+> sth. wrong with dev_dbg_ratelimited()?
+>
 
-Andrew suggested you might have opinions on this, so I'm cc'ing you.
-Since you'll probably want some better context, here it is:
+That change seems to cause the problems:
 
-http://lwn.net/Articles/564709/
+commit 0730d52a86919300a39a2be37f6c140997dfb82f
+"xhci:prevent "callbacks suppressed" when debug is not enabled"
 
-On Sat, Aug 24, 2013 at 12:35:29PM -0300, Ezequiel Garcia wrote:
-> Some platforms have MMIO regions that are shared across orthogonal
-> subsystems. This commit implements a possible solution for the
-> thread-safe access of such regions through a spinlock-protected API.
-> 
-> Concurrent access is protected with a single spinlock for the
-> entire MMIO address space. While this protects shared-registers,
-> it also serializes access to unrelated/unshared registers.
-> 
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> ---
->  include/linux/io.h |  5 +++++
->  lib/Makefile       |  2 +-
->  lib/atomicio.c     | 27 +++++++++++++++++++++++++++
->  3 files changed, 33 insertions(+), 1 deletion(-)
->  create mode 100644 lib/atomicio.c
-> 
-> diff --git a/include/linux/io.h b/include/linux/io.h
-> index f4f42fa..c331dcb 100644
-> --- a/include/linux/io.h
-> +++ b/include/linux/io.h
-> @@ -101,4 +101,9 @@ static inline void arch_phys_wc_del(int handle)
->  #define arch_phys_wc_add arch_phys_wc_add
->  #endif
->  
-> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
-> +/* Atomic MMIO-wide IO modify */
-> +extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
-> +#endif
-> +
->  #endif /* _LINUX_IO_H */
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 7baccfd..695d6e2 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
->  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-> -	 earlycpio.o percpu-refcount.o
-> +	 earlycpio.o percpu-refcount.o atomicio.o
->  
->  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->  lib-$(CONFIG_MMU) += ioremap.o
-> diff --git a/lib/atomicio.c b/lib/atomicio.c
-> new file mode 100644
-> index 0000000..1750f9d
-> --- /dev/null
-> +++ b/lib/atomicio.c
-> @@ -0,0 +1,27 @@
-> +#include <linux/io.h>
-> +#include <linux/spinlock.h>
-> +
-> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
-> +/*
-> + * Generic atomic MMIO modify.
-> + *
-> + * Allows thread-safe access to registers shared by unrelated subsystems.
-> + * The access is protected by a single MMIO-wide lock.
-> + *
-> + * Optimized variants can be implemented on a per-architecture basis.
-> + */
-> +static DEFINE_RAW_SPINLOCK(__io_lock);
-> +void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
-> +{
-> +	unsigned long flags;
-> +	u32 value;
-> +
-> +	raw_spin_lock_irqsave(&__io_lock, flags);
-> +	value = readl(reg) & ~mask;
-> +	value |= (set & mask);
-> +	writel(value, reg);
-> +	raw_spin_unlock_irqrestore(&__io_lock, flags);
-> +
-> +}
-> +EXPORT_SYMBOL(atomic_io_modify);
-> +#endif
-> -- 
-> 1.8.1.5
-> 
+- Sedat -
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+[1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
