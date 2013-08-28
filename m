@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab3H1M0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 08:26:22 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:58653 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab3H1M0T (ORCPT
+	id S1755427Ab3H1M2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 08:28:05 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:55450 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3H1M2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 08:26:19 -0400
-Date: Wed, 28 Aug 2013 08:26:15 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@freescale.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-next@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH linux-next] cgroup: fix warning in css_from_id()
-Message-ID: <20130828122615.GB18348@mtj.dyndns.org>
-References: <1377691485-26013-1-git-send-email-vincent.stehle@freescale.com>
+	Wed, 28 Aug 2013 08:28:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377691485-26013-1-git-send-email-vincent.stehle@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377380400-11331-1-git-send-email-b.brezillon@overkiz.com>
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
+	<1377380400-11331-1-git-send-email-b.brezillon@overkiz.com>
+Date: Wed, 28 Aug 2013 14:28:02 +0200
+Message-ID: <CACRpkdbGWAg19Redc-KB4=dUnNOqCVvFN4H=wAAoki6Y=Zp-wA@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/3] ARM: at91/dt: move sama5 to generic pinconf
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 02:04:45PM +0200, Vincent Stehlé wrote:
-> Commit ca8bdcaff0d77990fb69e0f946018c96a70851cc changes cgroup_css() second
-> argument type; update css_from_id() accordingly.
-> 
-> This fixes the following compilation warning:
-> 
->   kernel/cgroup.c: In function 'css_from_id':
->   kernel/cgroup.c:5723:3: warning: passing argument 2 of 'cgroup_css' makes pointer from integer without a cast [enabled by default]
->   kernel/cgroup.c:237:36: note: expected 'struct cgroup_subsys *' but argument is of type 'int'
-> 
-> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
+On Sat, Aug 24, 2013 at 11:40 PM, Boris BREZILLON
+<b.brezillon@overkiz.com> wrote:
 
-Fixed up yesterday in cgroup/for-3.12 branch.  Today's next should be
-okay.
+> Add generic pinconf definitions and reference appropriate configs in
+> atmel,pins properties.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+(...)
+>                         pinctrl@fffff200 {
+>                                 #address-cells = <1>;
+>                                 #size-cells = <1>;
+> -                               compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "simple-bus";
+> +                               compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "generic-pinconf", "simple-bus";
 
-Thanks.
+What kind of compatible string is that "generic-pinconf"?
 
--- 
-tejun
+There is no driver that can instantiate against this string but I'm not
+100% sure about such things. Is there some other driver doing this?
+
+Else I think it'd just be removed.
+
+> +                               pcfg_none: pcfg_none {
+> +                                       bias-disable;
+> +                               };
+> +
+> +                               pcfg_pull_up: pcfg_pull_up {
+> +                                       bias-pull-up;
+> +                               };
+
+Nice.
+
+> +                               pcfg_deglitch: pcfg_deglitch {
+> +                                       input-deglitch = <1>;
+> +                               };
+> +
+> +                               pcfg_pull_up_deglitch: pcfg_pull_up_deglitch {
+> +                                       bias-pull-up;
+> +                                       input-deglitch = <1>;
+> +                               };
+
+input-deglitch seems like a proposed generic binding but I haven't seen
+these yet?
+
+(It might be in my violently exploding INBOX though sorry in that case.)
+
+This would need adding to
+Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+Plus changes to pinctrl core for handling.
+
+BTW: this is really moving in the right direction!
+
+Yours,
+Linus Walleij
