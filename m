@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab3H1HFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 03:05:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55637 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab3H1HFO (ORCPT
+	id S1754318Ab3H1HG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 03:06:29 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47351 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab3H1HG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 03:05:14 -0400
-Date: Wed, 28 Aug 2013 17:05:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hanjun Guo <hanjun.guo@linaro.org>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the dma-mapping tree with the
- driver-core tree
-Message-Id: <20130828170503.de07a17bcd5994a7434477da@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Aug_2013_17_05_03_+1000_KI+VhXQ6jmsAxCl4"
+	Wed, 28 Aug 2013 03:06:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1376243970-6489-10-git-send-email-tomasz.figa@gmail.com>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+	<1376243970-6489-10-git-send-email-tomasz.figa@gmail.com>
+Date: Wed, 28 Aug 2013 09:06:27 +0200
+Message-ID: <CACRpkdZd+LJeZdSjsD6OCLOnZ0VrDg0aa-e163NXsw6ajWf7rA@mail.gmail.com>
+Subject: Re: [PATCH 09/18] ASoC: Samsung: Do not queue cyclic buffers multiple times
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Aug_2013_17_05_03_+1000_KI+VhXQ6jmsAxCl4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Aug 11, 2013 at 7:59 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
-Hi all,
+> The legacy S3C-DMA API required every period of a cyclic buffer to be
+> queued separately. After conversion of Samsung ASoC to Samsung DMA
+> wrappers somebody made an assumption that the same is needed for DMA
+> engine API, which is not true.
+>
+> In effect, Samsung ASoC DMA code was queuing the whole cyclic buffer
+> multiple times with a shift of one period per iteration, leading to:
+>   a) severe memory waste - up to 13x times more DMA transfer descriptors
+>      are allocated than needed,
+>   b) possible memory corruption, because further cyclic buffers were out
+>      of the original buffers, due to the offset.
+>
+> This patch fixes this problem by making the legacy S3C-DMA API use the
+> same semantics as DMA engine (the whole cyclic buffer is enqueued at
+> once) and modifying users of Samsung DMA wrappers in cyclic mode to
+> behave appropriately.
+>
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Today's linux-next merge of the dma-mapping tree got a conflict in
-drivers/base/dma-contiguous.c between commit cebcac7c59e8 ("drivers /
-dma-contiguous: Fix __init attribute location") from the driver-core tree
-and commit a2547380393a ("drivers: dma-contiguous: clean source code and
-prepare for device tree") from the dma-mapping tree.
+If patch 1 thru 9 are uncontroversial now, maybe Vinod can apply
+these for v3.12 so we can get less noise and risk of collissions
+in the next merge window?
 
-I fixed it up (the latter is a superset of the former, so I used that)
-and can carry the fix as necessary (no action is required).
+Just an idea.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__28_Aug_2013_17_05_03_+1000_KI+VhXQ6jmsAxCl4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSHaEkAAoJEECxmPOUX5FE7+gP/39VCaxh2TaObEvQUgM7ddqq
-Yq/krbQBz221DMiq9W7ngxakXbt3EwJbEE/ekr4CEKQM/JmMfwlzD/GwbTaG4g9R
-bpJW+Enu5QbqrOMA1zb0sboDLDDouD+Z5v0ET7JtUDf7YlqB7CHVZyp91GdgHBel
-gRMn32FdezAEfEHyVkBUqEe09Uj4soHDCNFB6u0yMRSXI5gI2EgnjnRCfDZ5danD
-Q5khczql+s+tOaQVy8WlXyzmg1YCDHSP5Taejb+3uSaa4vMMuvnrCfv22BGqAdnu
-rXOTWe3fqB4cImbPzrx+feo+4CMtBnyEmVUFkHCppozmnxDNppI1EEIrvXkRpVfs
-6uHHt2kMYWs61GopoqBt1XKjJp+1BprFSgBdgs4CMvYQDj3gxiIIXIyeHZs447S5
-X3jwBEGASxve33eK2HCX697KTbd/MoLTlE47vxX/qeN43pXq1tLmgZBNZ2kleH7T
-AmoJKzD1zbE92P5/6hjTEL8nbM5ZR1ID2lQE53nrccaiOEgVArXd3BEYNYX+dvoQ
-yFGGcvqiTaBwJklF32AgLyE8SsdZ/+ZMaLHxo+nWDhRvTtI9IQSd/OvPqoYgPTMT
-8dGD1wAQs8cYQ1JZg1vxPQnvuUkXUVJrghXLc4VNIdyjMJkA7IWCWHCs1vKNrbva
-lCp6qxEKNKG7GbzllRUn
-=qXGm
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Aug_2013_17_05_03_+1000_KI+VhXQ6jmsAxCl4--
+Yours,
+Linus Walleij
