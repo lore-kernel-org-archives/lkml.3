@@ -1,137 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab3H1Kq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 06:46:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48297 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab3H1Koj (ORCPT
+	id S1755332Ab3H1Kqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:46:36 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:54295 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755288Ab3H1Kqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 06:44:39 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v5 2/5] ARM: arch_timer: add support to configure and enable event stream
-Date: Wed, 28 Aug 2013 11:44:46 +0100
-Message-Id: <1377686689-30828-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 28 Aug 2013 10:44:37.0485 (UTC) FILETIME=[977A19D0:01CEA3DB]
-X-MC-Unique: 113082811443803801
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 28 Aug 2013 06:46:33 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <521DD43D.7070605@samsung.com>
+References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
+	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
+	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
+	<CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
+	<521DD43D.7070605@samsung.com>
+Date: Wed, 28 Aug 2013 12:46:31 +0200
+Message-ID: <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7SAkWFJ005403
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On Wed, Aug 28, 2013 at 12:43 PM, Dmitry Kasatkin
+<d.kasatkin@samsung.com> wrote:
+> On 28/08/13 13:38, Sedat Dilek wrote:
+>> On Wed, Aug 28, 2013 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> On Wed, Aug 28, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>> On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> Changes since 20130827:
+>>>>>
+>>>>> The f2fs tree lost its build failure.
+>>>>>
+>>>>> The md tree gained a conflict against the arm tree.
+>>>>>
+>>>>> The libata tree lost its build failure.
+>>>>>
+>>>>> The spi tree lost its build failure.
+>>>>>
+>>>>> The arm-soc tree gained conflicts against the usb tree.
+>>>>>
+>>>>> The dma-mapping tree gained a conflict against the driver-core tree.
+>>>>>
+>>>>> The akpm-current tree gained a conflict against the net tree.
+>>>>>
+>>>>> ----------------------------------------------------------------------------
+>>>>>
+>>>>> My build here breaks like this:
+>>>>>
+>>>>>   CC      drivers/usb/host/xhci-ring.o
+>>>>>   CC      drivers/video/console/softcursor.o
+>>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
+>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>>>> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
+>>>>> [-Werror=implicit-function-declaration]
+>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
+>>>>> (first use in this function)
+>>>>> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
+>>>>> is reported only once for each function it appears in
+>>>>> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
+>>>>> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
+>>>>> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
+>>>>> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
+>>>>> (first use in this function)
+>>>>> cc1: some warnings being treated as errors
+>>>>> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
+>>>>> make[4]: *** [drivers/usb/host] Error 2
+>>>>>
+>>>>> My kernel-config is attached.
+>>>>>
+>>>> Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
+>>>>
+>>>> $ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
+>>>> linux/include/linux/device.h:1118:
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
+>>>> linux/include/linux/device.h:1121:
+>>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
+>>>> linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
+>>>> _ddebug *descriptor, const char *fmt, ...);
+>>>> linux/include/linux/dynamic_debug.h:63:#define
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
+>>>> linux/include/linux/dynamic_debug.h:76:
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>> linux/include/linux/dynamic_debug.h:78:
+>>>> __dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
+>>>> linux/include/linux/dynamic_debug.h:84:
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>> linux/include/linux/dynamic_debug.h:92:
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
+>>>> linux/include/linux/dynamic_debug.h:101:
+>>>> DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
+>>>>
+>>>> Can't say which one is preferred here.
+>>>>
+>>> looks like device.h is preferred or used in the sources, but this does
+>>> not fix the issue here.
+>>> sth. wrong with dev_dbg_ratelimited()?
+>>>
+>> That change seems to cause the problems:
+>>
+>> commit 0730d52a86919300a39a2be37f6c140997dfb82f
+>> "xhci:prevent "callbacks suppressed" when debug is not enabled"
+>>
+>> - Sedat -
+>>
+>> [1] http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/drivers/usb/host/xhci-ring.c?h=usb-next&id=0730d52a86919300a39a2be37f6c140997dfb82f
+>>
+> Hello,
+>
+> [PATCHv2 1/2] was not applied before.
+> I pointed this out few hours ago...
+>
+> - Dmitry
+>
 
-This patch adds support for configuring the event stream frequency
-and enabling it.
+Yupp, just read it a few seconds ago.
 
-It also adds the hwcaps definitions to the user to detect this event
-stream feature.
+Where is that whatever 2nd fix?
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/arm/include/asm/arch_timer.h | 33 ++++++++++++++++++++++++++++-----
- arch/arm/include/uapi/asm/hwcap.h |  1 +
- arch/arm/kernel/setup.c           |  1 +
- 3 files changed, 30 insertions(+), 5 deletions(-)
+- Sedat -
 
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index 1a3e967..4e38609 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -89,22 +89,45 @@ static inline u64 arch_counter_get_cntvct(void)
- 	return cval;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline u32 arch_timer_get_cntkctl(void)
- {
- 	u32 cntkctl;
--
- 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-+	return cntkctl;
-+}
-+
-+static inline void arch_timer_set_cntkctl(u32 cntkctl)
-+{
-+	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-+}
-+
-+static inline void arch_counter_set_user_access(void)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
- 
- 	/* Disable user access to both physical/virtual counters/timers */
--	/* Also disable virtual event stream */
- 	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
- 			| ARCH_TIMER_USR_VT_ACCESS_EN
--			| ARCH_TIMER_VIRT_EVT_EN
- 			| ARCH_TIMER_USR_VCT_ACCESS_EN
- 			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-+	arch_timer_set_cntkctl(cntkctl);
-+}
- 
--	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-+static inline void arch_timer_evtstrm_config(bool enable, int divider)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
-+	if (enable) {
-+		cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
-+		/* Set the divider and enable virtual event stream */
-+		cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
-+				| ARCH_TIMER_VIRT_EVT_EN;
-+		elf_hwcap |= HWCAP_EVTSTRM;
-+	} else {
-+		cntkctl &= ~ARCH_TIMER_VIRT_EVT_EN; /* disable event stream */
-+	}
-+	arch_timer_set_cntkctl(cntkctl);
- }
-+
- #endif
- 
- #endif
-diff --git a/arch/arm/include/uapi/asm/hwcap.h b/arch/arm/include/uapi/asm/hwcap.h
-index 6d34d08..7dcc10d 100644
---- a/arch/arm/include/uapi/asm/hwcap.h
-+++ b/arch/arm/include/uapi/asm/hwcap.h
-@@ -26,5 +26,6 @@
- #define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
- #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
- #define HWCAP_LPAE	(1 << 20)
-+#define HWCAP_EVTSTRM	(1 << 21)
- 
- #endif /* _UAPI__ASMARM_HWCAP_H */
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index afc2489..305ffc9 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -975,6 +975,7 @@ static const char *hwcap_str[] = {
- 	"idivt",
- 	"vfpd32",
- 	"lpae",
-+	"evtstrm",
- 	NULL
- };
- 
--- 
-1.8.1.2
-
-
+[1] http://marc.info/?l=linux-usb&m=137767590629869&w=2
