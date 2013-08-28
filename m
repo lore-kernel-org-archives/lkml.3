@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3H1PjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:39:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab3H1PjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:39:19 -0400
-Subject: [PATCH v3] i915: Update VGA arbiter support for newer devices
-To: intel-gfx@lists.freedesktop.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
-        ville.syrjala@linux.intel.com
-Date: Wed, 28 Aug 2013 09:39:08 -0600
-Message-ID: <20130828153700.10255.67664.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1754125Ab3H1Pkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:40:31 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:34608 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab3H1Pk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 11:40:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAHfPSqDYLYDEDqEhd20e4RQP+-ciu+d6MTyOWRi8OHD29dOhSA@mail.gmail.com>
+References: <1369031689-23189-1-git-send-email-ch.naveen@samsung.com>
+	<CAD=FV=Xppyb+Y0atygnwA8oBHmGHDx7Bit2fN12GX5Tt-Y9H1A@mail.gmail.com>
+	<519D3594.4070305@kernel.org>
+	<CAHfPSqD0zpR3dRDaH4c3uxHS81vYn6mPyNjCmJ6c-TC1wpZeig@mail.gmail.com>
+	<CAHfPSqDYLYDEDqEhd20e4RQP+-ciu+d6MTyOWRi8OHD29dOhSA@mail.gmail.com>
+Date: Wed, 28 Aug 2013 08:40:27 -0700
+X-Google-Sender-Auth: 9FW4lEprW0P3_vdRxb3Kc1BzP6s
+Message-ID: <CAD=FV=V4bGrP58XuL_s2zr_O81iTPNB90MrKengF2JYv5SWi1A@mail.gmail.com>
+Subject: Re: [PATCH] iio: exynos_adc: fix wrong structure extration in suspend
+ and resume
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is intended to add VGA arbiter support for Intel HD graphics on
-Core processors.  The old GMCH registers no longer exist, so even
-though it appears that i915 participates in VGA arbitration, it doesn't
-work.  On Intel HD graphics we already attempt to disable VGA regions
-of the device.  This makes registering as a VGA client unnecessary since
-we don't intend to operate differently depending on how many VGA devices
-are present.  We can disable VGA memory regions by clearing the memory
-enable bit in the VGA MSR.  That only leaves VGA IO, which we update
-the VGA arbiter to know that we don't participate in VGA memory
-arbitration.  We also add a hook on unload to re-enable memory and
-reinstate VGA memory arbitration.
+Naveen
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+On Tue, Aug 27, 2013 at 10:33 PM, Naveen Krishna Ch
+<naveenkrishna.ch@gmail.com> wrote:
+>> I would like to know any comments on
+>>
+>> https://patchwork.kernel.org/patch/2513361/
+>>
+>> Its been pending for a while now.
+>>
+>> Thanks,
+>> Naveen
+> Ping
+> Any comments please
 
-v3: Use explicit LEGACY_IO | LEGACY_MEM when restoring rather than
-    LEGACY_MASK, per Ville's comments.
+I assume you're asking for a ping for the _other_ patch (AKA: "Handle
+timeout issues"), not the one you're replying to here.
 
-v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
-    directly.  Also, on the driver unbind VGA enable path, acquire legacy
-    IO to re-enable VGA memory.  Correct comment.
+Can you please just do a REPOST of the patch you'd like comments on?
 
-As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
-all patches I'm able to assign a discrete PEG VGA device to a guest and
-execute the VBIOS w/o interference from IGD or corruption of the IGD
-framebuffer.
-
- drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
- drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index f466980..d9cf216 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
- 	 * then we do not take part in VGA arbitration and the
- 	 * vga_client_register() fails with -ENODEV.
- 	 */
--	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
--	if (ret && ret != -ENODEV)
--		goto out;
-+	if (!HAS_PCH_SPLIT(dev)) {
-+		ret = vga_client_register(dev->pdev, dev, NULL,
-+					  i915_vga_set_decode);
-+		if (ret && ret != -ENODEV)
-+			goto out;
-+	}
- 
- 	intel_register_dsm_handler();
- 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 5fb3058..2807760 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
- 	outb(SR01, VGA_SR_INDEX);
- 	sr1 = inb(VGA_SR_DATA);
- 	outb(sr1 | 1<<5, VGA_SR_DATA);
-+
-+	/* Disable VGA memory on Intel HD */
-+	if (HAS_PCH_SPLIT(dev)) {
-+		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-+		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-+						   VGA_RSRC_NORMAL_IO |
-+						   VGA_RSRC_NORMAL_MEM);
-+	}
-+
- 	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
- 	udelay(300);
- 
-@@ -9526,6 +9535,20 @@ static void i915_disable_vga(struct drm_device *dev)
- 	POSTING_READ(vga_reg);
- }
- 
-+static void i915_enable_vga(struct drm_device *dev)
-+{
-+	/* Enable VGA memory on Intel HD */
-+	if (HAS_PCH_SPLIT(dev)) {
-+		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-+		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-+		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-+						   VGA_RSRC_LEGACY_MEM |
-+						   VGA_RSRC_NORMAL_IO |
-+						   VGA_RSRC_NORMAL_MEM);
-+		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-+	}
-+}
-+
- void intel_modeset_init_hw(struct drm_device *dev)
- {
- 	intel_init_power_well(dev);
-@@ -9983,6 +10006,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
- 
- 	intel_disable_fbc(dev);
- 
-+	i915_enable_vga(dev);
-+
- 	intel_disable_gt_powersave(dev);
- 
- 	ironlake_teardown_rc6(dev);
-
+-Doug
