@@ -1,52 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab3H1WaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:30:10 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:33503 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3H1WaJ (ORCPT
+	id S1755643Ab3H1WbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:31:18 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:35780 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3H1WbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:30:09 -0400
+	Wed, 28 Aug 2013 18:31:16 -0400
+From: Peter Wu <lekensteyn@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] writeback: fix NULL dereference when device is gone
+Date: Thu, 29 Aug 2013 00:31:11 +0200
+Message-ID: <2884335.eGSKV8oXr1@al>
+User-Agent: KMail/4.11 (Linux/3.11.0-1-custom; KDE/4.11.0; x86_64; ; )
+In-Reply-To: <20130820133308.GE3926@htj.dyndns.org>
+References: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org> <1755678.6GItDDY0bW@al> <20130820133308.GE3926@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20130828203418.GW30088@pengutronix.de>
-References: <1377657163-6606-1-git-send-email-festevam@gmail.com>
-	<20130828052758.GQ30088@pengutronix.de>
-	<CAOMZO5BiE7tqja9p51gOGEwtWsKjyX23qZ3=ewyuubMwsgXcLA@mail.gmail.com>
-	<20130828185459.GV30088@pengutronix.de>
-	<CAOMZO5CuGAH+5+8cE7tjzZTXhLbFxMRt13mhimuBLJkRQz6+7Q@mail.gmail.com>
-	<20130828203418.GW30088@pengutronix.de>
-Date: Wed, 28 Aug 2013 19:30:08 -0300
-Message-ID: <CAOMZO5Bv1sQVw5O=tYz2kZoQhnPSNXUn7EchBCNUXA_tpbyt4g@mail.gmail.com>
-Subject: Re: [PATCH] imx-drm: Fix probe failure
-From: Fabio Estevam <festevam@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 5:34 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Aug 28, 2013 at 05:10:16PM -0300, Fabio Estevam wrote:
->> On Wed, Aug 28, 2013 at 3:54 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
->>
->> > Do the open/close callbacks work?
->>
->> The 'open' callback maps to the generic 'drm_open', so we cannot use it.
->
-> We could replace this, but...
->
->>
->> Shouldn't we rely on the refcount done by the drm core instead of
->> doing this manually in imx-drm?
->
-> ...This could be a better solution.
->
-> you mean (struct drm_device)->open_count, right?
+Hi,
 
-Yes, and open_count is already handled by drm_open/drm_release
-callbacks, which is something we currently use inside imx-drm-core.
+On Tuesday 20 August 2013 09:33:08 Tejun Heo wrote:
+> On Tue, Aug 20, 2013 at 12:13:58PM +0200, Peter Wu wrote:
+> ...
+> 
+> > > Hmmm... bdi->dev is cleared after bdi_wb_shutdown() so the work item
+> > > should no longer be running.  It seems like something is queueing the
+> > > work item after shutdown and the proper fix would be finding out which
+> > > and fixing it.  Can you please verify whether adding
+> > > WARN_ON(!bdi->dev) in bdi_wakeup_thread_delayed() trigger anything?
+> >
+> > 
+> >
+> > Initially I did not get any warnings, so I added more. The patch (on top
+> > of
+> 
+> > v3.11-rc6-27-g94fc5d9 plus some unrelated r8169 patches):
+> ...
+> 
+> > [  245.978170] WARNING: CPU: 1 PID: 2608 at
+> > /home/pc/Linux-src/linux/mm/backing-dev.c:293
+> > bdi_wakeup_thread_delayed+0x5e/0x60() [  245.978189] Modules linked in:
+> > kvm_intel kvm dm_crypt binfmt_misc joydev snd_hda_codec_hdmi
+> > snd_hda_codec_realtek hid_logitech_dj hid_generic mxm_wmi nls_iso8859_1
+> > snd_hda_intel snd_hda_codec usbhid hid snd_hwdep psmouse usb_storage
+> > snd_pcm serio_raw lpc_ich snd_seq_midi snd_seq_midi_event snd_rawmidi
+> > snd_seq snd_seq_device snd_timer snd wmi it87 mac_hid hwmon_vid coretemp
+> > soundcore snd_page_alloc r8169 eeprom_93cx6 mii pci_stub ahci libahci
+> > i915 drm_kms_helper drm video i2c_algo_bit [  245.978191] CPU: 1 PID:
+> > 2608 Comm: ata_id Tainted:
+> > G        W    3.11.0-rc6-usbdbg-00030-g693d742-dirty #1 [  245.978192]
+> > Hardware name: Gigabyte Technology Co., Ltd. To be filled by
+> > O.E.M./Z68X-UD3H-B3, BIOS U1l 03/08/2013 [  245.978194]  0000000000000125
+> > ffff8805d3a4fa98 ffffffff8165986e 00000000000060d0
+> > [  245.978196]  0000000000000000 ffff8805d3a4fad8 ffffffff81047acc
+> > ffff880602f6beb8 [  245.978197]  ffff8805fc024618 ffff880602f6be30
+> > ffffffff81c58f80 ffff880602f6beb8 [  245.978198] Call Trace:
+> > [  245.978202]  [<ffffffff8165986e>] dump_stack+0x55/0x76
+> > [  245.978204]  [<ffffffff81047acc>] warn_slowpath_common+0x8c/0xc0
+> > [  245.978206]  [<ffffffff81047b1a>] warn_slowpath_null+0x1a/0x20
+> > [  245.978207]  [<ffffffff811424fe>] bdi_wakeup_thread_delayed+0x5e/0x60
+> > [  245.978211]  [<ffffffff811bdc71>] bdev_inode_switch_bdi+0xf1/0x160
+> > [  245.978212]  [<ffffffff811bedd2>] __blkdev_get+0x372/0x4d0
+> > [  245.978216]  [<ffffffff811bf115>] blkdev_get+0x1e5/0x380
+> > [  245.978221]  [<ffffffff811bf36f>] blkdev_open+0x5f/0x90
+> > [  245.978223]  [<ffffffff81180cd6>] do_dentry_open+0x226/0x2a0
+> > [  245.978225]  [<ffffffff81180fa5>] finish_open+0x35/0x50
+> > [  245.978227]  [<ffffffff81192d9e>] do_last+0x48e/0x7a0
+> > [  245.978229]  [<ffffffff81193174>] path_openat+0xc4/0x4e0
+> > [  245.978230]  [<ffffffff81193d83>] do_filp_open+0x43/0xa0
+> > [  245.978234]  [<ffffffff81182422>] do_sys_open+0x132/0x220
+> > [  245.978236]  [<ffffffff8118252e>] SyS_open+0x1e/0x20
+> > [  245.978238]  [<ffffffff8166e802>] system_call_fastpath+0x16/0x1b
+> 
+> Hmmm... looks like the udev event handling from hotunplugging ends up
+> opening up the device which in turn schedules an already shutdown bdi.
+> The root problem here seems that there is no proper synchronization
+> around bdi shutdown.  Ideally, a bdi should be marked offline
+> preventing further activities and then shut down but we instead shut
+> it down first and then clear bdi->dev.  As bdi's lifetime is tied to
+> the backing request_queue, it might be okay as unsynchronized access
+> to bdi->dev should be safe as long as the bdi struct itself is
+> accessible.  Still nasty tho.
+> 
+> Not sure what to do.  The quick fix would be doing the following from
+> workfn().
+> 
+>         dev = bdi->dev;
+>         if (!dev)               // bdi already shutdown
+>                 return;
+> 
+>         use @dev;               // can't use bdi->dev, as it can be cleared
+> anytime
+>
+> But it's nasty.  A better way to do it would be, from
+> bdi_wb_shutdown(), marking the bdi as offline and ensure that
+> bdi_wakeup_thread_delayed() sees that, flush the work item and then
+> clear bdi->dev.
+
+I applied your fix in the workfn, but now dd does not stop with EIO. If I run 
+`sync`, then I see:
+
+[11882.645618] quiet_error: 591905 callbacks suppressed
+[11882.650589] Buffer I/O error on device sdd, logical block 129652880
+[11882.656850] lost page write due to I/O error on sdd
+[11882.661974] Buffer I/O error on device sdd, logical block 129652881
+...
+
+Any other ideas? For now I will stick to the original patch. That probably 
+does not solve the root issues, but it is at least a workaround to prevent the 
+machine from locking up.
+
+Regards,
+Peter
