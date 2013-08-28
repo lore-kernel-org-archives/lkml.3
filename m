@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3H1J4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 05:56:43 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:48216 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab3H1J4l (ORCPT
+	id S1753917Ab3H1KB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 06:01:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41257 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752565Ab3H1KB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 05:56:41 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
-References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
-Date: Wed, 28 Aug 2013 11:56:39 +0200
-Message-ID: <CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Aug 2013 06:01:27 -0400
+Date: Wed, 28 Aug 2013 12:01:22 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 2/4] ARM: Add atomic_io_modify optimized routines
+Message-ID: <20130828120122.487e6ed6@skate>
+In-Reply-To: <20130828094907.GB2343@localhost>
+References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<1377358532-23802-3-git-send-email-ezequiel.garcia@free-electrons.com>
+	<20130828085340.GB58219@MacBook-Pro.local>
+	<20130828094907.GB2343@localhost>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi all,
->
-> Changes since 20130827:
->
-> The f2fs tree lost its build failure.
->
-> The md tree gained a conflict against the arm tree.
->
-> The libata tree lost its build failure.
->
-> The spi tree lost its build failure.
->
-> The arm-soc tree gained conflicts against the usb tree.
->
-> The dma-mapping tree gained a conflict against the driver-core tree.
->
-> The akpm-current tree gained a conflict against the net tree.
->
-> ----------------------------------------------------------------------------
->
-> My build here breaks like this:
->
->   CC      drivers/usb/host/xhci-ring.o
->   CC      drivers/video/console/softcursor.o
-> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_intr_tx':
-> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
-> function 'DEFINE_DYNAMIC_DEBUG_METADATA'
-> [-Werror=implicit-function-declaration]
-> drivers/usb/host/xhci-ring.c:3090:3: error: 'descriptor' undeclared
-> (first use in this function)
-> drivers/usb/host/xhci-ring.c:3090:3: note: each undeclared identifier
-> is reported only once for each function it appears in
-> drivers/usb/host/xhci-ring.c:3090:3: error: implicit declaration of
-> function '__dynamic_pr_debug' [-Werror=implicit-function-declaration]
-> drivers/usb/host/xhci-ring.c: In function 'xhci_queue_isoc_tx_prepare':
-> drivers/usb/host/xhci-ring.c:3875:3: error: 'descriptor' undeclared
-> (first use in this function)
-> cc1: some warnings being treated as errors
-> make[5]: *** [drivers/usb/host/xhci-ring.o] Error 1
-> make[4]: *** [drivers/usb/host] Error 2
->
-> My kernel-config is attached.
->
+Dear Ezequiel Garcia,
 
-Looks like <linux/device.h> or <linux/dynamic_debug.h> is missing.
+On Wed, 28 Aug 2013 06:49:08 -0300, Ezequiel Garcia wrote:
 
-$ egrep -w '__dynamic_pr_debug|DEFINE_DYNAMIC_DEBUG_METADATA' -nr linux/include/
-linux/include/linux/device.h:1118:
-DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);                 \
-linux/include/linux/device.h:1121:
-__dynamic_pr_debug(&descriptor, pr_fmt(fmt),            \
-linux/include/linux/dynamic_debug.h:45:int __dynamic_pr_debug(struct
-_ddebug *descriptor, const char *fmt, ...);
-linux/include/linux/dynamic_debug.h:63:#define
-DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)         \
-linux/include/linux/dynamic_debug.h:76:
-DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
-linux/include/linux/dynamic_debug.h:78:
-__dynamic_pr_debug(&descriptor, pr_fmt(fmt),    \
-linux/include/linux/dynamic_debug.h:84:
-DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
-linux/include/linux/dynamic_debug.h:92:
-DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);         \
-linux/include/linux/dynamic_debug.h:101:
-DEFINE_DYNAMIC_DEBUG_METADATA(descriptor,               \
+> > Is this any different from the generic one introduced in patch 1/4? I
+> > would rather just use the generic definition.
+> 
+> Well, according to Will Deacon (and as documented in the commit log)
+> we can optimize in ARM by using readl_relaxed instead of readl.
+> 
+> Now, I'm sure you now better than me if that results (or not) in any
+> significant optimization.
+> 
+> > Similarly, a generic
+> > atomic_io_modify_relaxed() but guarded with something like
+> > __HAVE_ARCH_RELAXED_IO.
+> > 
+> 
+> No, that's not possible. As far as I understand, there's no guarantee
+> of _relaxed variants to be available architecture-wide.
 
-Can't say which one is preferred here.
+I think what Catalin was suggesting is that atomic_io_modify() should
+use readl() and writel() (i.e *not* the relaxed variants), and that a
+separate atomic_io_modify_relaxed() could be added on architectures
+that define __HAVE_ARCH_RELAXED_IO.
 
-- Sedat -
+I think you misread Catalin's comment when you say there's no guarantee
+of _relaxed variants to be available architecture-wide, since Catalin
+precisely suggested to guard that with __HAVE_ARCH_RELAXED_IO, which
+indicates that _relaxed variants are available.
+
+Thanks,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
