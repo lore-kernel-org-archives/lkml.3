@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3H1Svb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:51:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50502 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab3H1Sva (ORCPT
+	id S1753992Ab3H1SzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:55:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54787 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab3H1SzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:51:30 -0400
-Date: Wed, 28 Aug 2013 11:53:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] ACPI / hotplug: Remove containers synchronously
-Message-ID: <20130828185350.GB3471@kroah.com>
-References: <1543475.L7gSB7lLAu@vostro.rjw.lan>
- <1592448.YZbpON5n7n@vostro.rjw.lan>
- <26495758.n1zOCiG3iV@vostro.rjw.lan>
- <1883675.1ifF1KoWz3@vostro.rjw.lan>
+	Wed, 28 Aug 2013 14:55:05 -0400
+Date: Wed, 28 Aug 2013 20:54:59 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] imx-drm: Fix probe failure
+Message-ID: <20130828185459.GV30088@pengutronix.de>
+References: <1377657163-6606-1-git-send-email-festevam@gmail.com>
+ <20130828052758.GQ30088@pengutronix.de>
+ <CAOMZO5BiE7tqja9p51gOGEwtWsKjyX23qZ3=ewyuubMwsgXcLA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1883675.1ifF1KoWz3@vostro.rjw.lan>
+In-Reply-To: <CAOMZO5BiE7tqja9p51gOGEwtWsKjyX23qZ3=ewyuubMwsgXcLA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:54:26 up 4 days,  4:25, 38 users,  load average: 0.00, 0.04, 0.11
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 03:51:41PM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Aug 28, 2013 at 11:39:11AM -0300, Fabio Estevam wrote:
+> On Wed, Aug 28, 2013 at 2:27 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
 > 
-> The current protocol for handling hot remove of containers is very
-> fragile and causes acpi_eject_store() to acquire acpi_scan_lock
-> which may deadlock with the removal of the device that it is called
-> for (the reason is that device sysfs attributes cannot be removed
-> while their callbacks are being executed and ACPI device objects
-> are removed under acpi_scan_lock).
+> > Nack. We need the references to prevent that encoders/connectors are
+> > (de)registered while the device is active. Simply dropping this code is
+> > no solution.
 > 
-> The problem is related to the fact that containers are handled by
-> acpi_bus_device_eject() in a special way, which is to emit an
-> offline uevent instead of just removing the container.  Then, user
-> space is expected to handle that uevent and use the container's
-> "eject" attribute to actually remove it.  That is fragile, because
-> user space may fail to complete the ejection (for example, by not
-> using the container's "eject" attribute at all) leaving the BIOS
-> kind of in a limbo.  Moreover, if the eject event is not signaled
-> for a container itself, but for its parent device object (or
-> generally, for an ancestor above it in the ACPI namespace), the
-> container will be removed straight away without doing that whole
-> dance.
+> Any suggestions about a proper way of handling this?
 > 
-> For this reason, modify acpi_bus_device_eject() to remove containers
-> synchronously like any other objects (user space will get its uevent
-> anyway in case it does some other things in response to it) and
-> remove the eject_pending ACPI device flag that is not used any more.
-> This way acpi_eject_store() doesn't have a reason to acquire
-> acpi_scan_lock any more and one possible deadlock scenario goes
-> away (plus the code is simplified a bit).
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> After b5dc0d10, imx_drm_device_get() is called from
+> imx_drm_driver_load(), which increments the 'references' very early
+> now.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Do the open/close callbacks work?
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
