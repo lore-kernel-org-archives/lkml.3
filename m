@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3H1B23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 21:28:29 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52800 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab3H1B22 (ORCPT
+	id S1752974Ab3H1Bch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 21:32:37 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:37356 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab3H1Bcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 21:28:28 -0400
-Message-ID: <521D5239.5080003@hitachi.com>
-Date: Wed, 28 Aug 2013 10:28:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 27 Aug 2013 21:32:35 -0400
+Date: Tue, 27 Aug 2013 18:27:52 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org, pali.rohar@gmail.com
+Subject: Re: [PATCH] power: rx51_battery: Replace hardcoded channels values.
+Message-ID: <20130828012752.GD10506@lizard>
+References: <1377125110-16886-1-git-send-email-marek.belisko@open-nandra.com>
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/10] tracing: trace event triggers (repost)
-References: <cover.1377631572.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1377631572.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1377125110-16886-1-git-send-email-marek.belisko@open-nandra.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/28 4:40), Tom Zanussi wrote:
-> This is a repost of the v7 patchset - I inadvertently used the wrong
-> branch in the previous posting, thought the branch URL was correct in
-> both cases..
+On Thu, Aug 22, 2013 at 12:45:10AM +0200, Marek Belisko wrote:
+> In twl4030_madc header exist defines for fixed channels
+> + add rx51 specific channels and replace all hardcoded channels
+> values.
+> 
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 
-Ah, I directly pulled v7 from your git repository for test & review...
+Applied, thanks!
 
-Thanks,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Anton
