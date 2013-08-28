@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab3H1F5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 01:57:14 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44880 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab3H1F5M (ORCPT
+	id S1754570Ab3H1F60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 01:58:26 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64449 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab3H1F6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 01:57:12 -0400
+	Wed, 28 Aug 2013 01:58:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1377668719-8602-2-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1377668719-8602-3-git-send-email-ch.naveen@samsung.com>
 References: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com>
 	<1377668719-8602-1-git-send-email-ch.naveen@samsung.com>
-	<1377668719-8602-2-git-send-email-ch.naveen@samsung.com>
-Date: Wed, 28 Aug 2013 11:27:10 +0530
-X-Google-Sender-Auth: WY9nKC_seyGHn6LjAAWo2w8rCVM
-Message-ID: <CADGdYn4EESL01aV4B=e=noL8jDbxayoCXdxj=W61VSw8TB26sw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] thermal: samsung: correct the fall interrupt en,
- status bit fields
+	<1377668719-8602-3-git-send-email-ch.naveen@samsung.com>
+Date: Wed, 28 Aug 2013 11:28:22 +0530
+X-Google-Sender-Auth: gPjh4B8F5aBa55SfRNOsC3A9o8U
+Message-ID: <CADGdYn5Pasaq5vr0pR6-m26CcqW_zp+6UJiZKy7nic6GYpks6Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] thermal: samsung: Add TMU support for Exynos5420 SoCs
 From: amit daniel kachhap <amit.daniel@samsung.com>
 To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
@@ -35,191 +34,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Aug 28, 2013 at 11:15 AM, Naveen Krishna Chatradhi
 <ch.naveen@samsung.com> wrote:
-> The FALL interrupt related en, status bits are available at an offset of
-> 16 on INTEN, INTSTAT registers and at an offset of
-> 12 on INTCLEAR register.
->
-> This patch corrects the same for exyns5250 and exynos5440
+> This patch adds the neccessary register changes and arch information
+> to support Exynos5420 SoCs
+> Exynos5420 has 5 TMU channels one for each CPU 0, 1, 2 and 3 and GPU
 >
 > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-The changes looks fine.
 Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
 Thanks,
 Amit
 > ---
->  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
->  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
->  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
->  drivers/thermal/samsung/exynos_tmu_data.h |    3 ++-
->  4 files changed, 7 insertions(+), 2 deletions(-)
+>  drivers/thermal/samsung/exynos_tmu.c      |    4 ++
+>  drivers/thermal/samsung/exynos_tmu.h      |    1 +
+>  drivers/thermal/samsung/exynos_tmu_data.c |   90 +++++++++++++++++++++++++++++
+>  drivers/thermal/samsung/exynos_tmu_data.h |    7 +++
+>  4 files changed, 102 insertions(+)
 >
 > diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index ec01dfe..d201ed8 100644
+> index d201ed8..bfdfbd6 100644
 > --- a/drivers/thermal/samsung/exynos_tmu.c
 > +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -265,7 +265,7 @@ skip_calib_data:
->                                 data->base + reg->threshold_th1);
->
->                 writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-> -                       (reg->inten_fall_mask << reg->inten_fall_shift),
-> +                       (reg->inten_fall_mask << reg->intclr_fall_shift),
->                                 data->base + reg->tmu_intclear);
->
->                 /* if last threshold limit is also present */
+> @@ -499,6 +499,10 @@ static const struct of_device_id exynos_tmu_match[] = {
+>                 .compatible = "samsung,exynos5440-tmu",
+>                 .data = (void *)EXYNOS5440_TMU_DRV_DATA,
+>         },
+> +       {
+> +               .compatible = "samsung,exynos5420-tmu",
+> +               .data = (void *)EXYNOS5420_TMU_DRV_DATA,
+> +       },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos_tmu_match);
 > diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index b364c9e..7c6c34a 100644
+> index 7c6c34a..d88a536 100644
 > --- a/drivers/thermal/samsung/exynos_tmu.h
 > +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -134,6 +134,7 @@ enum soc_type {
->   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
->   * @tmu_intstat: Register containing the interrupt status values.
->   * @tmu_intclear: Register for clearing the raised interrupt status.
-> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
->   * @emul_con: TMU emulation controller register.
->   * @emul_temp_shift: shift bits of emulation temperature.
->   * @emul_time_shift: shift bits of emulation time.
-> @@ -204,6 +205,7 @@ struct exynos_tmu_registers {
->         u32     tmu_intstat;
+> @@ -43,6 +43,7 @@ enum soc_type {
+>         SOC_ARCH_EXYNOS4210 = 1,
+>         SOC_ARCH_EXYNOS,
+>         SOC_ARCH_EXYNOS5440,
+> +       SOC_ARCH_EXYNOS5420,
+>  };
 >
->         u32     tmu_intclear;
-> +       u32     intclr_fall_shift;
->
->         u32     emul_con;
->         u32     emul_temp_shift;
+>  /**
 > diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 9002499..23fea23 100644
+> index 23fea23..5adbb36 100644
 > --- a/drivers/thermal/samsung/exynos_tmu_data.c
 > +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -122,6 +122,7 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
->         .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
->         .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
->         .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
-> +       .intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
->         .emul_con = EXYNOS_EMUL_CON,
->         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
->         .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
-> @@ -210,6 +211,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->         .inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
->         .tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
->         .tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
-> +       .intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
->         .tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
->         .emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
->         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> @@ -177,6 +177,96 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+>  };
+>  #endif
+>
+> +#if defined(CONFIG_SOC_EXYNOS5420)
+> +static const struct exynos_tmu_registers exynos5420_tmu_registers = {
+> +       .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+> +       .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+> +       .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+> +       .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+> +       .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> +       .buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+> +       .therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
+> +       .therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
+> +       .therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> +       .buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
+> +       .buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
+> +       .core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
+> +       .tmu_status = EXYNOS_TMU_REG_STATUS,
+> +       .tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
+> +       .threshold_th0 = EXYNOS_THD_TEMP_RISE,
+> +       .threshold_th1 = EXYNOS_THD_TEMP_FALL,
+> +       .tmu_inten = EXYNOS_TMU_REG_INTEN,
+> +       .inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
+> +       .inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
+> +       .inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
+> +       .inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
+> +       .inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
+> +       .inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
+> +       .inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
+> +       /* INTEN_RISE3 Not availble in exynos5420 */
+> +       .inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
+> +       .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
+> +       .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+> +       .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> +       .intclr_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
+> +       .emul_con = EXYNOS_EMUL_CON,
+> +       .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> +       .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
+> +       .emul_time_mask = EXYNOS_EMUL_TIME_MASK,
+> +};
+> +
+> +#define EXYNOS5420_TMU_DATA \
+> +       .threshold_falling = 10, \
+> +       .trigger_levels[0] = 85, \
+> +       .trigger_levels[1] = 103, \
+> +       .trigger_levels[2] = 110, \
+> +       .trigger_levels[3] = 120, \
+> +       .trigger_enable[0] = true, \
+> +       .trigger_enable[1] = true, \
+> +       .trigger_enable[2] = true, \
+> +       .trigger_enable[3] = false, \
+> +       .trigger_type[0] = THROTTLE_ACTIVE, \
+> +       .trigger_type[1] = THROTTLE_ACTIVE, \
+> +       .trigger_type[2] = SW_TRIP, \
+> +       .trigger_type[3] = HW_TRIP, \
+> +       .max_trigger_level = 4, \
+> +       .gain = 8, \
+> +       .reference_voltage = 16, \
+> +       .noise_cancel_mode = 4, \
+> +       .cal_type = TYPE_ONE_POINT_TRIMMING, \
+> +       .efuse_value = 55, \
+> +       .min_efuse_value = 40, \
+> +       .max_efuse_value = 100, \
+> +       .first_point_trim = 25, \
+> +       .second_point_trim = 85, \
+> +       .default_temp_offset = 50, \
+> +       .freq_tab[0] = { \
+> +               .freq_clip_max = 800 * 1000, \
+> +               .temp_level = 85, \
+> +       }, \
+> +       .freq_tab[1] = { \
+> +               .freq_clip_max = 200 * 1000, \
+> +               .temp_level = 103, \
+> +       }, \
+> +       .freq_tab_count = 2, \
+> +       .type = SOC_ARCH_EXYNOS5420, \
+> +       .registers = &exynos5420_tmu_registers, \
+> +       .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+> +                       TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+> +                       TMU_SUPPORT_EMUL_TIME)
+> +
+> +struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
+> +       .tmu_data = {
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +               { EXYNOS5420_TMU_DATA },
+> +       },
+> +       .tmu_count = 5,
+> +};
+> +#endif
+> +
+>  #if defined(CONFIG_SOC_EXYNOS5440)
+>  static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
 > diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index dc7feb5..8788a87 100644
+> index 8788a87..3ce94cd 100644
 > --- a/drivers/thermal/samsung/exynos_tmu_data.h
 > +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -69,9 +69,10 @@
->  #define EXYNOS_TMU_RISE_INT_MASK       0x111
->  #define EXYNOS_TMU_RISE_INT_SHIFT      0
->  #define EXYNOS_TMU_FALL_INT_MASK       0x111
-> -#define EXYNOS_TMU_FALL_INT_SHIFT      12
-> +#define EXYNOS_TMU_FALL_INT_SHIFT      16
->  #define EXYNOS_TMU_CLEAR_RISE_INT      0x111
->  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 12)
-> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT        12
->  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
->  #define EXYNOS_TMU_TRIP_MODE_MASK      0x7
->  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT 12
+> @@ -153,4 +153,11 @@ extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+>  #define EXYNOS5440_TMU_DRV_DATA (NULL)
+>  #endif
+>
+> +#if defined(CONFIG_SOC_EXYNOS5420)
+> +extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
+> +#define EXYNOS5420_TMU_DRV_DATA (&exynos5420_default_tmu_data)
+> +#else
+> +#define EXYNOS5420_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+>  #endif /*_EXYNOS_TMU_DATA_H*/
 > --
 > 1.7.9.5
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-On Wed, Aug 28, 2013 at 11:15 AM, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> The FALL interrupt related en, status bits are available at an offset of
-> 16 on INTEN, INTSTAT registers and at an offset of
-> 12 on INTCLEAR register.
->
-> This patch corrects the same for exyns5250 and exynos5440
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
->  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
->  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
->  drivers/thermal/samsung/exynos_tmu_data.h |    3 ++-
->  4 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index ec01dfe..d201ed8 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -265,7 +265,7 @@ skip_calib_data:
->                                 data->base + reg->threshold_th1);
->
->                 writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-> -                       (reg->inten_fall_mask << reg->inten_fall_shift),
-> +                       (reg->inten_fall_mask << reg->intclr_fall_shift),
->                                 data->base + reg->tmu_intclear);
->
->                 /* if last threshold limit is also present */
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index b364c9e..7c6c34a 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -134,6 +134,7 @@ enum soc_type {
->   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
->   * @tmu_intstat: Register containing the interrupt status values.
->   * @tmu_intclear: Register for clearing the raised interrupt status.
-> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
->   * @emul_con: TMU emulation controller register.
->   * @emul_temp_shift: shift bits of emulation temperature.
->   * @emul_time_shift: shift bits of emulation time.
-> @@ -204,6 +205,7 @@ struct exynos_tmu_registers {
->         u32     tmu_intstat;
->
->         u32     tmu_intclear;
-> +       u32     intclr_fall_shift;
->
->         u32     emul_con;
->         u32     emul_temp_shift;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 9002499..23fea23 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -122,6 +122,7 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
->         .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
->         .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
->         .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
-> +       .intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
->         .emul_con = EXYNOS_EMUL_CON,
->         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
->         .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
-> @@ -210,6 +211,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->         .inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
->         .tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
->         .tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
-> +       .intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
->         .tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
->         .emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
->         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index dc7feb5..8788a87 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -69,9 +69,10 @@
->  #define EXYNOS_TMU_RISE_INT_MASK       0x111
->  #define EXYNOS_TMU_RISE_INT_SHIFT      0
->  #define EXYNOS_TMU_FALL_INT_MASK       0x111
-> -#define EXYNOS_TMU_FALL_INT_SHIFT      12
-> +#define EXYNOS_TMU_FALL_INT_SHIFT      16
->  #define EXYNOS_TMU_CLEAR_RISE_INT      0x111
->  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 12)
-> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT        12
->  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
->  #define EXYNOS_TMU_TRIP_MODE_MASK      0x7
->  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT 12
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
