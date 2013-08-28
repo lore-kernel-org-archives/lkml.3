@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3H1LND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 07:13:03 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:40651 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3H1LNB (ORCPT
+	id S1754804Ab3H1LNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 07:13:12 -0400
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:33318 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab3H1LNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 07:13:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFRkauCc4jnsEhdX_MrS39xO4Nuh6m7eaaMPzYCf2OyZstNaOQ@mail.gmail.com>
-References: <1376877989.10251.2.camel@phoenix>
-	<1376878066.10251.4.camel@phoenix>
-	<CACRpkdauvk4Gw_k6TaYSH32nA66M_MHHksx6ESrqYx1PetWdug@mail.gmail.com>
-	<CAFRkauCc4jnsEhdX_MrS39xO4Nuh6m7eaaMPzYCf2OyZstNaOQ@mail.gmail.com>
-Date: Wed, 28 Aug 2013 13:13:00 +0200
-Message-ID: <CACRpkdY1RbRA49ZGnco6RG1E34t9i31fV83FePcC3JBPBOenmg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl: core: Add proper mutex lock in pinctrl_request_gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Patrice Chotard <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Aug 2013 07:13:07 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: [PATCH 0/9] ARM: at91/dt: add missing devices to rm9200ek board
+Date: Wed, 28 Aug 2013 13:00:40 +0200
+Message-Id: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 15590054536033433824
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 5:41 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> 2013/8/22 Linus Walleij <linus.walleij@linaro.org>:
+Hello,
 
->>> +       mutex_lock(&pctldev->mutex);
->>> +
->>>         /* Convert to the pin controllers number space */
->>>         pin = gpio_to_pin(range, gpio);
->>>
->>>         ret = pinmux_request_gpio(pctldev, range, pin, gpio);
->>>
->>> +       mutex_unlock(&pctldev->mutex);
->>> +
->>>         return ret;
->>
->> What is this protecting against?
->>
->> I'm not sure I follow this so better ask.
->
-> I think this fixes the race between pin_free() and pin_request() calls.
-> (Well, I don't have a h/w to test at this moment.)
-> It protects accessing the members of pctldev->desc.
-> (e.g. update desc->mux_usecount, desc->gpio_owner, desc->mux_owner, etc)
-> Current code grabs pctldev->mutex before calling pinmux_free_gpio(),
-> but did not grab the mutex while calling pinmux_request_gpio().
+This patch series adds support for the remaining devices (or device options)
+not yet supported in dt.
 
-OK you won me over, patch applied!
+AFAICT there is no more infos/devices not converted to dt for this board,
+and we should be able to remove board-at91rm9200ek.c (when we decide to
+do it).
 
-I also edited in some of the above text into the commit.
+This series was not tested (the dt compilation passed), could someone
+owning this board test it ?
 
-Yours,
-Linus Walleij
+In order to test it, you need to apply these series first:
+https://lkml.org/lkml/2013/8/27/58
+pinctrl: at91: add support for OUTPUT config
+
+Best Regards,
+
+Boris
+
+Boris BREZILLON (9):
+  ARM: at91/dt: rm9200: add spi0 chip select pins definitions
+  ARM: at91/dt: add ethernet phy to at91rm9200ek board
+  ARM: at91/dt: add usb1 vbus and pullup pins
+  ARM: at91/dt: add atmel,pullup-gpio to at91rm9200ek usb1 definition
+  ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek board
+  ARM: at91/dt: add spi0 support to at91rm9200ek board
+  ARM: at91/dt: add i2c devices connected to at91rm9200ek board
+  ARM: at91/dt: add new at91rm9200ek_mmc board
+  ARM: at91/dt: add new at91rm9200ek_dataflash board
+
+ arch/arm/boot/dts/at91rm9200.dtsi            |   20 ++++++
+ arch/arm/boot/dts/at91rm9200ek.dts           |   88 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91rm9200ek_dataflash.dts |   33 ++++++++++
+ arch/arm/boot/dts/at91rm9200ek_mmc.dts       |   23 +++++++
+ 4 files changed, 164 insertions(+)
+ create mode 100644 arch/arm/boot/dts/at91rm9200ek_dataflash.dts
+ create mode 100644 arch/arm/boot/dts/at91rm9200ek_mmc.dts
+
+-- 
+1.7.9.5
+
