@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3H1Lwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 07:52:32 -0400
-Received: from mail1.centrum-group.com ([194.12.254.133]:50720 "EHLO
-	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3H1Lw1 (ORCPT
+	id S1755055Ab3H1L4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 07:56:52 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46893 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab3H1L4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 07:52:27 -0400
-X-Antivirus-centrum-group.com-Mail-From: dangeorge122@outlook.es via mail1
-X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 225.089012 secs Process 20287)
-Message-ID: <12767.88.14.5.177.1377627121.squirrel@mail1.centrum-group.com>
-Date: Tue, 27 Aug 2013 21:12:01 +0300 (EEST)
-Subject: It is Utterly Private
-From: "George Daniels" <dangeorge122@outlook.es>
-Reply-To: dangeorge122@outlook.es
-User-Agent: SquirrelMail/1.4.5
+	Wed, 28 Aug 2013 07:56:51 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Tomasz Figa <t.figa@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
+        devicetree@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linux-gpio@vger.kernel.org, Archit Taneja <archit@ti.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
+Date: Wed, 28 Aug 2013 13:58:13 +0200
+Message-ID: <7583101.2yAsZLOucV@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130827171854.GA2988@katana>
+References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <2400176.9Vcd5TUYl9@avalon> <20130827171854.GA2988@katana>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=WINDOWS-1251
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is Private
+On Tuesday 27 August 2013 19:18:55 Wolfram Sang wrote:
+> > The driver should support the same chip models reardless of whether it's
+> > used with or without DT. If an entry in the OF table has no corresponding
+> > entry in the I2C table I would consider that as a driver bug.
+> 
+> Linus Walleij posted a patch to support DT only probing, but too many
+> side-effects showed up. Some were fixable (probe regressions) and some
+> need more work, if feasible at all. Most prominent is that runtime
+> instantiation of i2c slaves currently needs an entry in the i2c table.
 
-I am George Daniels, a Banker and credit system programmer (HSBC bank).
-I saw your email address while browsing through  the bank D.T.C Screen in
-my office yesterday so I decided to use this very chance to know you. I
-believe we should use every opportunity to know each other better.
-However, I am contacting you for obvious reason which you will understand.
+Linus, I'd like to get this in v3.12 if it's not too late. Could you please 
+provide your input ?
 
-I am sending this mail just to know if this email address is OK,
-reply me back so that I will send  more details to you.
-I have a very important thing to discuss with you, I look forward to
-receiving your response at
-georgedaniels@postino.net. Have a pleasant day.
+-- 
+Regards,
 
-George Daniels
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Laurent Pinchart
 
