@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab3H1WzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:55:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18245 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584Ab3H1WzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:55:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,978,1367996400"; 
-   d="scan'208";a="370001056"
-Subject: Re: [PATCH] Avoid useless inodes and dentries reclamation
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <dchinner@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20130828211902.GA22796@shutemov.name>
-References: <1377726732.3625.31.camel@schen9-DESK>
-	 <20130828211902.GA22796@shutemov.name>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Aug 2013 15:54:57 -0700
-Message-ID: <1377730497.3625.43.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1755310Ab3H1W6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:58:16 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:40718 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3H1W6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 18:58:15 -0400
+Date: Wed, 28 Aug 2013 18:58:12 -0400 (EDT)
+From: Lenny Szubowicz <lszubowi@redhat.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
+Message-ID: <761791749.8594444.1377730692707.JavaMail.root@redhat.com>
+In-Reply-To: <1377729714.27493.2.camel@x230>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com> <1241952070.8587861.1377729463830.JavaMail.root@redhat.com> <1377729714.27493.2.camel@x230>
+Subject: Re: [PATCH 0/10] Add additional security checks when module loading
+ is restricted
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
+Thread-Topic: [PATCH 0/10] Add additional security checks when module
+ loading is restricted
+Thread-Index: Nz5hbGPlr11vDxoZBtCj48/bXxVZzqCFps4AWFn4cQE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 00:19 +0300, Kirill A. Shutemov wrote:
 
-> > ---
-> >  fs/super.c | 8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> > 
-> > diff --git a/fs/super.c b/fs/super.c
-> > index 68307c0..70fa26c 100644
-> > --- a/fs/super.c
-> > +++ b/fs/super.c
-> > @@ -53,6 +53,7 @@ static char *sb_writers_name[SB_FREEZE_LEVELS] = {
-> >   * shrinker path and that leads to deadlock on the shrinker_rwsem. Hence we
-> >   * take a passive reference to the superblock to avoid this from occurring.
-> >   */
-> > +#define SB_CACHE_LOW 5
-> >  static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
-> >  {
-> >  	struct super_block *sb;
-> > @@ -68,6 +69,13 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
-> >  	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_FS))
-> >  		return -1;
-> >  
-> > +	/*
-> > +	 * Don't prune if we have few cached objects to reclaim to
-> > +	 * avoid useless sb_lock contention
-> > +	 */
-> > +	if ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) <= SB_CACHE_LOW)
-> > +		return -1;
+
+----- Original Message -----
+> From: "Matthew Garrett" <matthew.garrett@nebula.com>
+> To: "Lenny Szubowicz" <lszubowi@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
+> Sent: Wednesday, August 28, 2013 6:41:55 PM
+> Subject: Re: [PATCH 0/10] Add additional security checks when module loading is restricted
 > 
-> I don't think it's correct: you don't account fs_objects here and
-> prune_icache_sb() calls invalidate_mapping_pages() which can free a lot of
-> memory. It's too naive approach. You can miss a memory hog easily this
-> way.
+> On Wed, 2013-08-28 at 18:37 -0400, Lenny Szubowicz wrote:
+> 
+> > Did you purposely exclude similar checks for hibernate that were covered
+> > by earlier versions of your patch set?
+> 
+> Yes, I think it's worth tying it in with the encrypted hibernation
+> support. The local attack is significantly harder in the hibernation
+> case - in the face of unknown hardware it basically involves a
+> pre-generated memory image corresponding to your system or the ability
+> to force a reboot into an untrusted environment. I think it's probably
+> more workable to just add a configuration option for forcing encrypted
+> hibernation when secure boot is in use.
+> 
+> --
+> Matthew Garrett <matthew.garrett@nebula.com>
 
-Is it safe to compute sb->s_op->nr_cached_objects(sb), assuming non null
-s_op without holding sb_lock to increment ref count on sb?  
-I think it is safe as we hold the shrinker_rwsem so we cannot 
-unregister the shrinker and the s_op and sb
-structure should still be there.  However, I'm not totally sure.
+I'm root. So I can write anything I want to the swap file that looks
+like a valid hibernate image but is code of my choosing. I can read
+anything I need from /dev/mem or /dev/kmem to help me do that.
+I can then immediately initiate a reboot.
 
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
-diff --git a/fs/super.c b/fs/super.c
-index 68307c0..173d0d9 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -53,6 +53,7 @@ static char *sb_writers_name[SB_FREEZE_LEVELS] = {
-  * shrinker path and that leads to deadlock on the shrinker_rwsem. Hence we
-  * take a passive reference to the superblock to avoid this from occurring.
-  */
-+#define SB_CACHE_LOW 5
- static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
- {
- 	struct super_block *sb;
-@@ -68,6 +69,17 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
- 	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_FS))
- 		return -1;
- 
-+	total_objects = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused;
-+	if (sb->s_op && sb->s_op->nr_cached_objects)
-+		total_objects += sb->s_op->nr_cached_objects(sb);
-+
-+	/*
-+	 * Don't prune if we have few cached objects to reclaim to
-+	 * avoid useless sb_lock contention
-+	 */
-+	if (total_objects <= SB_CACHE_LOW)
-+		return -1;
-+
- 	if (!grab_super_passive(sb))
- 		return -1;
- 
-
-
+                               -Lenny.
