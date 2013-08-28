@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab3H1Scy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 14:32:54 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:47228 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3H1Scw (ORCPT
+	id S1754610Ab3H1Sc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 14:32:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44715 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab3H1Sc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 14:32:52 -0400
-Date: Wed, 28 Aug 2013 19:32:45 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        lee.jones@linaro.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] iio: am335x-iio-adc: select triggered buffer
-Message-ID: <20130828183235.GA3777@gmail.com>
-References: <1377470724-15710-1-git-send-email-zubair.lutfullah@gmail.com>
- <1377470724-15710-3-git-send-email-zubair.lutfullah@gmail.com>
- <20130828103134.GA14111@linutronix.de>
+	Wed, 28 Aug 2013 14:32:56 -0400
+Message-ID: <521E4256.4070805@wwwdotorg.org>
+Date: Wed, 28 Aug 2013 12:32:54 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130828103134.GA14111@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH RFC v2 3/5] spmi: add generic SPMI controller binding
+ documentation
+References: <cover.1377202730.git.joshc@codeaurora.org> <e42576b69ef3d4e624fbfa2f32f6f79a931b55d6.1377202730.git.joshc@codeaurora.org> <5217DB0C.7000101@wwwdotorg.org> <20130827170120.GR4035@joshc.qualcomm.com> <521D2047.8030300@wwwdotorg.org> <20130828180025.GA808@joshc.qualcomm.com>
+In-Reply-To: <20130828180025.GA808@joshc.qualcomm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 12:31:34PM +0200, Sebastian Andrzej Siewior wrote:
-> "triggered buffer" isn't selected so we end up with:
-> |ERROR: "iio_triggered_buffer_setup" [drivers/iio/adc/ti_am335x_adc.ko] undefined!
+On 08/28/2013 12:00 PM, Josh Cartwright wrote:
+> On Tue, Aug 27, 2013 at 03:55:19PM -0600, Stephen Warren wrote:
+>> On 08/27/2013 11:01 AM, Josh Cartwright wrote:
+>> ...
+>>> If we want to ensure for the generic bindings that we are fulling
+>>> characterizing/describing the SPMI bus, then we'll additionally need to
+>>> tackle an additional identified assumption:
+>>>
+>>>   4. One master per SPMI bus.  (The SPMI spec allows for up to 4
+>>>      masters)
+>>>
+>>> On the Snapdragon 800 series, there exists only one software-controlled
+>>> master, but it is conceivably possible to have a setup with two
+>>> software-controlled masters on the same SPMI bus.
+>>>
+>>> This necessarily means that the description of the slaves and the
+>>> masters will need to be decoupled; I'm imagining a generic binding
+>>> supporting multiple masters would look something like this:
+>>
+>> Is there a need to represent the other masters in the DT? Sure they're
+>> there in HW, but if there's no specific way for the
+>> CPU-to-which-the-DT-applies to actually interact with those other
+>> masters (except perhaps by experiencing some arbitration delays) then
+>> presumably there's no need to represent the other masters in DT?
 > 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
-> Please merge this into _this_ patch, it is still required.
-> 
->  drivers/iio/adc/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-> index 09371cb..cfa2039 100644
-> --- a/drivers/iio/adc/Kconfig
-> +++ b/drivers/iio/adc/Kconfig
-> @@ -167,6 +167,7 @@ config TI_ADC081C
->  config TI_AM335X_ADC
->  	tristate "TI's AM335X ADC driver"
->  	depends on MFD_TI_AM335X_TSCADC
-> +	select IIO_TRIGGERED_BUFFER
-Thanks for pointing it out. Added.
+> My example is contrived, but there is nothing in the SPMI spec
+> preventing two masters from being controllable by the same
+> CPU-to-which-the-DT-applies, sharing the same underlying bus.
 
-ZubairLK
+That's true.
+
+> I would also expect this configuration to be uncommon, I'm checking with
+> some folks with more SPMI experience to make sure they agree.
+> 
+> Interestingly, i2c as far as I can tell has also made the same
+> assumption.  There doesn't appear to be any way to express a
+> multi-master i2c setup where both masters are controlled by the same OS.
+
+Yes, I think it's a fair assumption that we don't need to represent
+that; I immediately thought about the I2C counter-example after reading
+your first paragraph.
