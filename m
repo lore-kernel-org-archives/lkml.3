@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab3H1LF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 07:05:29 -0400
-Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:34546 "EHLO
+	id S1755084Ab3H1LGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 07:06:17 -0400
+Received: from 15.mo3.mail-out.ovh.net ([87.98.150.177]:51804 "EHLO
 	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752175Ab3H1LF0 (ORCPT
+	with ESMTP id S1753994Ab3H1LGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 07:05:26 -0400
-X-Greylist: delayed 163339 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 07:05:26 EDT
+	Wed, 28 Aug 2013 07:06:15 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,13 +20,13 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PATCH 3/9] ARM: at91/dt: add usb1 vbus and pullup pins
-Date: Wed, 28 Aug 2013 13:04:41 +0200
-Message-Id: <1377687881-10688-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH 4/9] ARM: at91/dt: add atmel,pullup-gpio to at91rm9200ek usb1 definition
+Date: Wed, 28 Aug 2013 13:05:32 +0200
+Message-Id: <1377687933-10723-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
 References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 15657608531033159904
+X-Ovh-Tracer-Id: 15671682279992424672
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -41,47 +40,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add vbus and pullup pinctrl definitions.
-Request the vbus and pullup pins in usb1 node.
-
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- arch/arm/boot/dts/at91rm9200ek.dts |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/arm/boot/dts/at91rm9200ek.dts |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/at91rm9200ek.dts b/arch/arm/boot/dts/at91rm9200ek.dts
-index 37b0880..76f3e87 100644
+index 76f3e87..f2d6d79 100644
 --- a/arch/arm/boot/dts/at91rm9200ek.dts
 +++ b/arch/arm/boot/dts/at91rm9200ek.dts
-@@ -29,6 +29,18 @@
- 
- 	ahb {
- 		apb {
-+			pinctrl@fffff400 {
-+				usb1 {
-+					pinctrl_usb1_vbus: usb1_vbus-0 {
-+						atmel,pins = <AT91_PIOD 4 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_usb1_pullup: usb1_pullup-0 {
-+						atmel,pins = <AT91_PIOD 5 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;
-+					};
-+				};
-+			};
-+
- 			dbgu: serial@fffff200 {
- 				status = "okay";
- 			};
-@@ -56,6 +68,9 @@
+@@ -68,6 +68,7 @@
  
  			usb1: gadget@fffb0000 {
  				atmel,vbus-gpio = <&pioD 4 GPIO_ACTIVE_HIGH>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_usb1_vbus
-+					     &pinctrl_usb1_pullup>;
- 				status = "okay";
- 			};
- 
++				atmel,pullup-gpio = <&pioD 5 GPIO_ACTIVE_HIGH>;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usb1_vbus
+ 					     &pinctrl_usb1_pullup>;
 -- 
 1.7.9.5
 
