@@ -1,122 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3H1Pqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 11:46:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49484 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab3H1Pql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 11:46:41 -0400
-Date: Wed, 28 Aug 2013 17:46:31 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bjorn Helgaas <bhelgaas@google.com>, Adam Radford <linuxraid@lsi.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-scsi@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
-In-Reply-To: <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz>
-References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz> <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754089Ab3H1PsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 11:48:15 -0400
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:10753
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752677Ab3H1PsN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 11:48:13 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dIc89bh936eI1432I14ffIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h906i1155h192ch)
+Date: Wed, 28 Aug 2013 08:48:03 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Mike Turquette <mturquette@linaro.org>,
+        James Hogan <james.hogan@imgtec.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>
+Subject: Re: linux-next: manual merge of the clk tree with Linus' tree
+References: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
+ <521C7AF0.1020903@imgtec.com>
+ <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local>
+ <20130827165319.8231.9@quantum>
+ <20130828100431.3005d52d77c565c241399269@canb.auug.org.au>
+ <20130828172225.97f295645c9de0bbd2979fcd@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130828172225.97f295645c9de0bbd2979fcd@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <e0d9bd21-a5dd-496c-aa3b-38ef55b34de5@DB8EHSMHS028.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013, Jiri Kosina wrote:
-
-> On Tue, 27 Aug 2013, Jiri Kosina wrote:
+On Wed, Aug 28, 2013 at 05:22:25PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> > Commit d5dea7d95 ("PCI: msi: Disable msi interrupts when we initialize a 
-> > pci device") makes MSIs be forcibly disabled at boot time.
-> > 
-> > It turns out that this breaks 3ware controller -- if MSIs are disabled 
-> > during PCI discovery of this controller, the device doesn't work properly 
-> > (it doesn't respond to any commands that are being sent to it after 
-> > initialization).
-> > 
-> > Reverting d5dea7d95 or not force-disabling MSIs in pci_msi_init_pci_dev()
-> > makes the device work properly again.
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> On Wed, 28 Aug 2013 10:04:31 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 > >
-> > ---
+> > On Tue, 27 Aug 2013 09:53:19 -0700 Mike Turquette <mturquette@linaro.org> wrote:
+> > >
+> > > Quoting Sören Brinkmann (2013-08-27 08:44:11)
+> > > > On Tue, Aug 27, 2013 at 11:09:52AM +0100, James Hogan wrote:
+> > > > > On 27/08/13 10:03, Stephen Rothwell wrote:
+> > > > > > Hi Mike,
+> > > > > > 
+> > > > > > Today's linux-next merge of the clk tree got a conflict in
+> > > > > > drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("clk/zynq/clkc: Add
+> > > > > > dedicated spinlock for the SWDT") and 765b7d4c4cb3
+> > > > > > ("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes") from
+> > > > > > Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_RATE_NO_REPARENT
+> > > > > > flag") from the clk tree.
+> > > > > > 
+> > > > > > I fixed it up (see below and in a couple of places I chose
+> > > > > > CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which may, of course,
+> > > > > > be wrong) and can carry the fix as necessary (no action is required).
+> > > > > 
+> > > > > The case you mentioned looks correct to me.
+> > > > > 
+> > > > > I can't see todays -next yet, but if by "choose CLK_SET_RATE_NO_REPARENT
+> > > > > over CLK_SET_RATE_PARENT" you mean one branch adds CLK_SET_RATE_PARENT,
+> > > > > clk-next adds CLK_SET_RATE_NO_REPARENT, and the resolution ends up with
+> > > > > only CLK_SET_RATE_NOREPARENT then that sounds wrong, as the two flags
+> > > > > are orthogonal.
+> > > > 
+> > > > I can just agree, the case included in the mail looks correct, but in
+> > > > case of other conflicts both flags should be set. Just like in the case
+> > > > shown here.
+> > > 
+> > > Stephen's fix is correct. The Zynq patches came in as fixes so I think
+> > > this will be a rare event.
 > > 
-> > I am adding Adam Radford as a recepient as well, to see whether he is able 
-> > to provide some more explanation why this device would expose this 
-> > behavior.
-
-OK, so Adam Radford's lsi.com address is bouncing, hence I guess we can't 
-expect any feedback from him.
-
-Bjorn, Jesse, any word on this please?
-
-> > Thanks.
+> > Can you guys discuss this and come up with a single answer.  I read the above as:
 > > 
-> >  drivers/pci/msi.c    |    3 +++
-> >  drivers/pci/quirks.c |   10 ++++++++++
-> >  include/linux/pci.h  |    1 +
-> >  3 files changed, 14 insertions(+), 0 deletions(-)
+> > (for the two places I used CLK_SET_RATE_NO_REPARENT where the two
+> > branches each added that and CLK_SET_RATE_NOREPARENT respectively)
 > > 
-> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> > index aca7578..4f36b8b 100644
-> > --- a/drivers/pci/msi.c
-> > +++ b/drivers/pci/msi.c
-> > @@ -1040,6 +1040,9 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
-> >  {
-> >  	INIT_LIST_HEAD(&dev->msi_list);
-> >  
-> > +	if (dev->broken_msi_disable)
-> > +		return;
-> > +
-> >  	/* Disable the msi hardware to avoid screaming interrupts
-> >  	 * during boot.  This is the power on reset default so
-> >  	 * usually this should be a noop.
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index e85d230..4ba3400 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -2890,6 +2890,16 @@ static void quirk_intel_ntb(struct pci_dev *dev)
-> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e08, quirk_intel_ntb);
-> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e0d, quirk_intel_ntb);
-> >  
-> > +/*
-> > + * 3ware 9650SE controller doesn't properly initialize if MSI are
-> > + * disabled on it during PCI device discovery
-> > + */
-> > +static void quirk_broken_msi_disable(struct pci_dev *dev)
-> > +{
-> > +	dev->broken_msi_disable = 1;
-> > +}
-> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_3WARE, 0x1004, quirk_broken_msi_disable);
-> > +
-> >  static ktime_t fixup_debug_start(struct pci_dev *dev,
-> >  				 void (*fn)(struct pci_dev *dev))
-> >  {
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 0fd1f15..c327d74 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -341,6 +341,7 @@ struct pci_dev {
-> >  #ifdef CONFIG_PCI_MSI
-> >  	struct list_head msi_list;
-> >  	struct kset *msi_kset;
-> > +	unsigned int	broken_msi_disable:1;
-> >  #endif
-> >  	struct pci_vpd *vpd;
-> >  #ifdef CONFIG_PCI_ATS
+> > "Stephen was wrong"
+> > "Stephen should have taken both"
+> > "Stephen was right"
 > > 
-> > -- 
-> > Jiri Kosina
-> > SUSE Labs
+> > :-)
 > > 
+> > I can fix up my merge resolution if you tell me the correct fix.  Also,
+> > you will need to know so that you can tell Linus (or whoever else has to
+> > resolve these conflicts).
 > 
-> -- 
-> Jiri Kosina
-> SUSE Labs
-> 
+> OK, I thought about it some more and the resolution now looks like
+> below.  Is this correct/better?
 
--- 
-Jiri Kosina
-SUSE Labs
+Yes, looks correct to me.
+
+	Sören
+
+
