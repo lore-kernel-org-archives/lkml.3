@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3H1AMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 20:12:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53891 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab3H1AMt (ORCPT
+	id S1754577Ab3H1AOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 20:14:47 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:44272 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab3H1AOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 20:12:49 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH v3 2/2] ARM: dts: msm: Update uartdm compatible strings
-Date: Tue, 27 Aug 2013 17:12:44 -0700
-Message-Id: <1377648764-23453-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1377648764-23453-1-git-send-email-sboyd@codeaurora.org>
-References: <1377648764-23453-1-git-send-email-sboyd@codeaurora.org>
+	Tue, 27 Aug 2013 20:14:44 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v2 2/6] ARM: add Marvell Berlin SoC familiy to Marvell doc
+Date: Wed, 28 Aug 2013 02:14:30 +0200
+Message-Id: <1377648874-6714-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's follow the ratified DT binding and use uartdm instead of
-hsuart. This does break backwards compatibility but this
-shouldn't be a problem because the uart driver isn't probing on
-these devices without adding clock support (which isn't merged so
-far).
+This adds known facts and rumors about the Marvell Berlin (88DE3xxx) SoC
+family to the Marvell SoC documentation.
 
-Cc: David Brown <davidb@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- arch/arm/boot/dts/msm8660-surf.dts | 2 +-
- arch/arm/boot/dts/msm8960-cdp.dts  | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Changelog:
+v1->v2:
+- initial patch
 
-diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-index cdc010e..386d428 100644
---- a/arch/arm/boot/dts/msm8660-surf.dts
-+++ b/arch/arm/boot/dts/msm8660-surf.dts
-@@ -38,7 +38,7 @@
- 	};
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-doc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ Documentation/arm/Marvell/README |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/arm/Marvell/README b/Documentation/arm/Marvell/README
+index 8f08a86..dc0dfdd6 100644
+--- a/Documentation/arm/Marvell/README
++++ b/Documentation/arm/Marvell/README
+@@ -126,6 +126,28 @@ Dove family (application processor)
+   Core: ARMv7 compatible
+   Directory: arch/arm/mach-dove
  
- 	serial@19c40000 {
--		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
-+		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
- 		reg = <0x19c40000 0x1000>,
- 		      <0x19c00000 0x1000>;
- 		interrupts = <0 195 0x0>;
-diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
-index db2060c..532050b 100644
---- a/arch/arm/boot/dts/msm8960-cdp.dts
-+++ b/arch/arm/boot/dts/msm8960-cdp.dts
-@@ -38,7 +38,7 @@
- 	};
++Berlin family (Digital Entertainment)
++-------------------------------------
++
++  Flavors:
++	88DE3005, Armada 1500-mini
++		Design name:	BG2-CT
++		Core:		ARM Cortex-A9, PL310 L2CC
++	88DE3010, Armada 1000
++		Design name:	unknown
++		Core:		Marvell Sheeva (possibly PJ4A/B, Tauros2/3)
++		Product Brief:	http://www.marvell.com/digital-entertainment/assets/armada_1000_pb.pdf
++	88DE3100, Armada 1500
++		Design name:	BG2
++		Core:		Marvell PJ4B (ARMv7), Tauros3 L2CC
++		Product Brief:	http://www.marvell.com/digital-entertainment/armada-1500/assets/Marvell-ARMADA-1500-Product-Brief.pdf
++	88DE????
++		Design name:	BG3
++		Core:		ARM Cortex-A15, CA15 integrated L2CC
++
++  Homepage: http://www.marvell.com/digital-entertainment/
++  Directory: arch/arm/mach-berlin
++
+ PXA 2xx/3xx/93x/95x family
+ --------------------------
  
- 	serial@16440000 {
--		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
-+		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
- 		reg = <0x16440000 0x1000>,
- 		      <0x16400000 0x1000>;
- 		interrupts = <0 154 0x0>;
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.2.5
 
