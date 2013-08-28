@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3H1WbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:31:18 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:35780 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3H1WbQ (ORCPT
+	id S1755687Ab3H1Wdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:33:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55599 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3H1Wdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:31:16 -0400
-From: Peter Wu <lekensteyn@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] writeback: fix NULL dereference when device is gone
-Date: Thu, 29 Aug 2013 00:31:11 +0200
-Message-ID: <2884335.eGSKV8oXr1@al>
-User-Agent: KMail/4.11 (Linux/3.11.0-1-custom; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <20130820133308.GE3926@htj.dyndns.org>
-References: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org> <1755678.6GItDDY0bW@al> <20130820133308.GE3926@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 28 Aug 2013 18:33:47 -0400
+Date: Wed, 28 Aug 2013 15:33:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
+        rgb@redhat.com
+Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
+Message-Id: <20130828153345.55631b3b3f6f8940ef1b7614@linux-foundation.org>
+In-Reply-To: <20130828182114.6b67ea90@redhat.com>
+References: <20130828182114.6b67ea90@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 28 Aug 2013 18:21:14 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
-On Tuesday 20 August 2013 09:33:08 Tejun Heo wrote:
-> On Tue, Aug 20, 2013 at 12:13:58PM +0200, Peter Wu wrote:
-> ...
+> I'm getting the following soft lockup:
 > 
-> > > Hmmm... bdi->dev is cleared after bdi_wb_shutdown() so the work item
-> > > should no longer be running.  It seems like something is queueing the
-> > > work item after shutdown and the proper fix would be finding out which
-> > > and fixing it.  Can you please verify whether adding
-> > > WARN_ON(!bdi->dev) in bdi_wakeup_thread_delayed() trigger anything?
-> >
-> > 
-> >
-> > Initially I did not get any warnings, so I added more. The patch (on top
-> > of
+> CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>  0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
+>  ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
+>  ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
+> Call Trace:
+>  <IRQ>  [<ffffffff815324df>] dump_stack+0x46/0x58
+>  [<ffffffff8152e669>] panic+0xbb/0x1c4
+>  [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
+>  [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
+>  [<ffffffff810d0260>] ? watchdog+0x30/0x30
+>  [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
+>  [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
+>  [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
+>  [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
+>  <EOI>  [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
+>  [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
+>  [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
+>  [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
+>  [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
+>  [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
+>  [<ffffffff81540794>] sysret_audit+0x17/0x21
 > 
-> > v3.11-rc6-27-g94fc5d9 plus some unrelated r8169 patches):
-> ...
+> The reproducer is somewhat unusual:
 > 
-> > [  245.978170] WARNING: CPU: 1 PID: 2608 at
-> > /home/pc/Linux-src/linux/mm/backing-dev.c:293
-> > bdi_wakeup_thread_delayed+0x5e/0x60() [  245.978189] Modules linked in:
-> > kvm_intel kvm dm_crypt binfmt_misc joydev snd_hda_codec_hdmi
-> > snd_hda_codec_realtek hid_logitech_dj hid_generic mxm_wmi nls_iso8859_1
-> > snd_hda_intel snd_hda_codec usbhid hid snd_hwdep psmouse usb_storage
-> > snd_pcm serio_raw lpc_ich snd_seq_midi snd_seq_midi_event snd_rawmidi
-> > snd_seq snd_seq_device snd_timer snd wmi it87 mac_hid hwmon_vid coretemp
-> > soundcore snd_page_alloc r8169 eeprom_93cx6 mii pci_stub ahci libahci
-> > i915 drm_kms_helper drm video i2c_algo_bit [  245.978191] CPU: 1 PID:
-> > 2608 Comm: ata_id Tainted:
-> > G        W    3.11.0-rc6-usbdbg-00030-g693d742-dirty #1 [  245.978192]
-> > Hardware name: Gigabyte Technology Co., Ltd. To be filled by
-> > O.E.M./Z68X-UD3H-B3, BIOS U1l 03/08/2013 [  245.978194]  0000000000000125
-> > ffff8805d3a4fa98 ffffffff8165986e 00000000000060d0
-> > [  245.978196]  0000000000000000 ffff8805d3a4fad8 ffffffff81047acc
-> > ffff880602f6beb8 [  245.978197]  ffff8805fc024618 ffff880602f6be30
-> > ffffffff81c58f80 ffff880602f6beb8 [  245.978198] Call Trace:
-> > [  245.978202]  [<ffffffff8165986e>] dump_stack+0x55/0x76
-> > [  245.978204]  [<ffffffff81047acc>] warn_slowpath_common+0x8c/0xc0
-> > [  245.978206]  [<ffffffff81047b1a>] warn_slowpath_null+0x1a/0x20
-> > [  245.978207]  [<ffffffff811424fe>] bdi_wakeup_thread_delayed+0x5e/0x60
-> > [  245.978211]  [<ffffffff811bdc71>] bdev_inode_switch_bdi+0xf1/0x160
-> > [  245.978212]  [<ffffffff811bedd2>] __blkdev_get+0x372/0x4d0
-> > [  245.978216]  [<ffffffff811bf115>] blkdev_get+0x1e5/0x380
-> > [  245.978221]  [<ffffffff811bf36f>] blkdev_open+0x5f/0x90
-> > [  245.978223]  [<ffffffff81180cd6>] do_dentry_open+0x226/0x2a0
-> > [  245.978225]  [<ffffffff81180fa5>] finish_open+0x35/0x50
-> > [  245.978227]  [<ffffffff81192d9e>] do_last+0x48e/0x7a0
-> > [  245.978229]  [<ffffffff81193174>] path_openat+0xc4/0x4e0
-> > [  245.978230]  [<ffffffff81193d83>] do_filp_open+0x43/0xa0
-> > [  245.978234]  [<ffffffff81182422>] do_sys_open+0x132/0x220
-> > [  245.978236]  [<ffffffff8118252e>] SyS_open+0x1e/0x20
-> > [  245.978238]  [<ffffffff8166e802>] system_call_fastpath+0x16/0x1b
+>  1. Install RHEL6.5 (maybe a similar older user-space will do)
+>  2. Boot the just installed system
+>  3. In this first boot you'll meet the firstboot script, which
+>     will do some setup and (depending on your answers) it will
+>     reboot the machine
+>  4. During that first reboot the system hangs while terminating
+>     all processes:
 > 
-> Hmmm... looks like the udev event handling from hotunplugging ends up
-> opening up the device which in turn schedules an already shutdown bdi.
-> The root problem here seems that there is no proper synchronization
-> around bdi shutdown.  Ideally, a bdi should be marked offline
-> preventing further activities and then shut down but we instead shut
-> it down first and then clear bdi->dev.  As bdi's lifetime is tied to
-> the backing request_queue, it might be okay as unsynchronized access
-> to bdi->dev should be safe as long as the bdi struct itself is
-> accessible.  Still nasty tho.
+>        Sending all processes the TERM signal...
 > 
-> Not sure what to do.  The quick fix would be doing the following from
-> workfn().
+>     It's when the soft lockup above happens. And yes, I managed
+>     to get this with latest upstream kernel (HEAD fa8218def1b1)
 > 
->         dev = bdi->dev;
->         if (!dev)               // bdi already shutdown
->                 return;
+> I'm reproducing it on a VM, but the first report was on bare-metal.
 > 
->         use @dev;               // can't use bdi->dev, as it can be cleared
-> anytime
->
-> But it's nasty.  A better way to do it would be, from
-> bdi_wb_shutdown(), marking the bdi as offline and ensure that
-> bdi_wakeup_thread_delayed() sees that, flush the work item and then
-> clear bdi->dev.
+> This is what is happening:
+> 
+>  1. audit_log_start() is called
+>  2. As we have SKBs waiting in audit_skb_queue and all conditions
+>     evaluate to true, we sleep in wait_for_auditd()
+>  3. Go to 2, until sleep_time gets negative and audit_log_start()
+>     just busy-waits
+> 
+> Now, *why* this is happening is a mistery to me. I tried debugging
+> it, but all I could find is that at some point the kauditd thread
+> never wakes up after having called schedule(). I even tried waking
+> it up before calling wait_for_auditd(), but it didn't.
 
-I applied your fix in the workfn, but now dd does not stop with EIO. If I run 
-`sync`, then I see:
+Odd.  If kauditd_thread() is stuck in schedule() in state
+TASK_INTERRUPTIBLE then a wake_up(kauditd_task) should get it running
+again, unless scheduler-related data structures are screwed up.
 
-[11882.645618] quiet_error: 591905 callbacks suppressed
-[11882.650589] Buffer I/O error on device sdd, logical block 129652880
-[11882.656850] lost page write due to I/O error on sdd
-[11882.661974] Buffer I/O error on device sdd, logical block 129652881
-...
+Are you really sure that kauditd is stuck in schedule() and doesn't
+come out?
 
-Any other ideas? For now I will stick to the original patch. That probably 
-does not solve the root issues, but it is at least a workaround to prevent the 
-machine from locking up.
-
-Regards,
-Peter
