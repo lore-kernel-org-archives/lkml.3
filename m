@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3H1TzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:55:12 -0400
-Received: from a9-97.smtp-out.amazonses.com ([54.240.9.97]:45594 "EHLO
-	a9-97.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754729Ab3H1TzI (ORCPT
+	id S1755712Ab3H1T5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:57:41 -0400
+Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:14325 "EHLO
+	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755430Ab3H1T5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:55:08 -0400
-Message-ID: <00000140c67829e5-34f81443-fc07-41e9-b3e9-7563551162cd-000000@email.amazonses.com>
+	Wed, 28 Aug 2013 15:57:39 -0400
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 15:57:39 EDT
+Message-Id: <00000140c6781cab-d0df0392-b65b-4213-8be0-1e4a04f67fb2-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:20 +0000
+Date: Wed, 28 Aug 2013 19:48:15 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: akpm@linuxfoundation.org, Vineet Gupta <vgupta@synopsys.com>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 14/35] drivers/char: Replace __get_cpu_var uses
+Subject: [gcv v3 32/35] arc: Replace __get_cpu_var uses
 References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.97
+X-SES-Outgoing: 199.127.232.35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
 
 __get_cpu_var() is used for multiple purposes in the kernel source. One of them is
 address calculation via the form &__get_cpu_var(x). This calculates the address for
@@ -123,19 +122,49 @@ Transformations done to __get_cpu_var()
 
 
 
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/char/random.c
+Index: linux/arch/arc/kernel/kprobes.c
 ===================================================================
---- linux.orig/drivers/char/random.c	2013-08-27 14:31:00.000000000 -0500
-+++ linux/drivers/char/random.c	2013-08-27 14:31:34.275916299 -0500
-@@ -744,7 +744,7 @@ static DEFINE_PER_CPU(struct fast_pool,
- void add_interrupt_randomness(int irq, int irq_flags)
+--- linux.orig/arch/arc/kernel/kprobes.c	2013-08-26 13:28:53.000000000 -0500
++++ linux/arch/arc/kernel/kprobes.c	2013-08-26 13:29:19.285103021 -0500
+@@ -87,13 +87,13 @@ static void __kprobes save_previous_kpro
+ 
+ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
  {
- 	struct entropy_store	*r;
--	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
-+	struct fast_pool	*fast_pool = this_cpu_ptr(&irq_randomness);
- 	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
- 	__u32			input[4], cycles = get_cycles();
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe.status;
+ }
+ 
+ static inline void __kprobes set_current_kprobe(struct kprobe *p)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ }
+ 
+ static void __kprobes resume_execution(struct kprobe *p, unsigned long addr,
+@@ -237,7 +237,7 @@ int __kprobes arc_kprobe_handler(unsigne
+ 
+ 		return 1;
+ 	} else if (kprobe_running()) {
+-		p = __get_cpu_var(current_kprobe);
++		p = __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
+ 			setup_singlestep(p, regs);
+ 			kcb->kprobe_status = KPROBE_HIT_SS;
+Index: linux/arch/arc/kernel/time.c
+===================================================================
+--- linux.orig/arch/arc/kernel/time.c	2013-08-26 13:28:53.000000000 -0500
++++ linux/arch/arc/kernel/time.c	2013-08-26 13:29:19.285103021 -0500
+@@ -206,7 +206,7 @@ static DEFINE_PER_CPU(struct clock_event
+ 
+ static irqreturn_t timer_irq_handler(int irq, void *dev_id)
+ {
+-	struct clock_event_device *clk = &__get_cpu_var(arc_clockevent_device);
++	struct clock_event_device *clk = this_cpu_ptr(&arc_clockevent_device);
+ 
+ 	arc_timer_event_ack(clk->mode == CLOCK_EVT_MODE_PERIODIC);
+ 	clk->event_handler(clk);
 
