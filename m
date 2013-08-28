@@ -1,246 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab3H1OKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 10:10:18 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:33074 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3H1OKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 10:10:16 -0400
-Date: Wed, 28 Aug 2013 16:11:36 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, dsahern@gmail.com, peterz@infradead.org, mingo@elte.hu,
-        sukadev@linux.vnet.ibm.com, ak@linux.intel.com, jolsa@redhat.com
-Subject: [PATCH v2] perf mem: add priv level filtering support
-Message-ID: <20130828141136.GA1549@quad>
+	id S1753649Ab3H1OOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 10:14:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52865 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab3H1OOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 10:14:04 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <grant.likely@linaro.org>,
+        <rob@landley.net>, <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>,
+        <davidb@codeaurora.org>, <arnd@arndb.de>, <swarren@nvidia.com>,
+        <popcornmix@gmail.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v2 0/3] Add Generic USB VBUS/ID detection via GPIO using extcon
+Date: Wed, 28 Aug 2013 19:29:09 +0530
+Message-ID: <1377698352-27689-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-This patch adds the -u -and -k options to perf to allow
-filtering of load/store sampling based on priv levels.
-This may not be supported by all HW platforms.
+These patches add generic support for USB VBUS/ID pin detection using extcon framework. 
+The USB ID pin on DRA7xx is connected via the gpio expander pcf8575. 
+The interrupt line of the same is connected to the gpio 11 of bank 6. 
+The following driver relies on  the  gpio interrupt to notify the actual 
+ID pin values by which the dwc3 driver determines the HOST/Peripheral roles.
 
-By default, loads/stores are sampled at both user and
-kernel privilege levels.
 
-To sample only at the user level:
-$ perf mem -U -t load rec ......
+These patches are on top of following merges.
+v3.11-rc3 dra7 baseport tree [1] , with balbi/next ,control-usb multi instance support [2],
+chanwoo/extcon-next, roger's patches for USB host adaptation[3],Laurent Pinchart's patch to 
+Enable pcf857x GPIO expander for Device Tree[4] and pcf857x cleanup patch [5].
 
-To sample only at the kernel level:
-$ perf mem -K -t load rec ......
+Patches are available at 
+extcon_gpio_usbvid
+in git tree
+git://git.ti.com/~georgecherian/ti-linux-kernel/georgec-connectivity-linux-feature-tree.git 
 
-Man page updated accordingly.
+[1] - dra7 base tree
+	https://github.com/lokeshvutla/linux/tree/dra7-3.11-rc3-base
+[2] - multiple control-usb instances
+	https://github.com/rogerq/linux/tree/usb-control-module
+[3] - [PATCH 0/4] ARM: DRA7-evm: USB host adaptation
+	https://lkml.org/lkml/2013/8/1/335
+[4] - [PATCH v5] gpio: pcf857x: Add OF support 
+ 	https://lkml.org/lkml/2013/8/27/70
+[5] - [PATCH] gpio: pcf857x: cleanup irq_demux_work and use threaded irq
+	https://lkml.org/lkml/2013/8/27/207
 
-In V2, we renamed the -u, -v options to
--U and -K respectively to be more consistent
-with perf top. Note that in the case of perf
-mem, those options request hardware-level 
-privilege level filtering.
+George Cherian (3):
+  extcon: extcon-gpio-usbvid: Generic USB VBUS/ID detection via GPIO
+  drivers: Makefile: Extcon is a framework so bump it up
+  ARM: dts: dra7-evm: Add extcon nodes for USB ID pin detection
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+ .../bindings/extcon/extcon-gpio-usbvid.txt         |  20 +++
+ arch/arm/boot/dts/dra7-evm.dts                     |  52 +++++-
+ drivers/Makefile                                   |   2 +-
+ drivers/extcon/Kconfig                             |   7 +-
+ drivers/extcon/Makefile                            |   2 +-
+ drivers/extcon/extcon-gpio-usbvid.c                | 185 +++++++++++++++++----
+ 6 files changed, 226 insertions(+), 42 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio-usbvid.txt
 
-diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
-index 888d511..4c4e405 100644
---- a/tools/perf/Documentation/perf-mem.txt
-+++ b/tools/perf/Documentation/perf-mem.txt
-@@ -43,6 +43,12 @@ OPTIONS
- 	option can be passed in record mode. It will be interpreted the same way as perf
- 	record.
- 
-+-K::
-+	Only sample loads/stores at the kernel level (default: user + kernel)
-+
-+-U::
-+	Only sample loads/stores at the user level (default: user + kernel)
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 706a1fa..8ac9d1e 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -9,13 +9,18 @@
- #define MEM_OPERATION_LOAD	"load"
- #define MEM_OPERATION_STORE	"store"
- 
--static const char	*mem_operation		= MEM_OPERATION_LOAD;
-+#define OP_LOAD		0x1
-+#define OP_STORE	0x2
-+
- 
- struct perf_mem {
- 	struct perf_tool	tool;
- 	char const		*input_name;
- 	bool			hide_unresolved;
-+	const char		*mem_op;
- 	bool			dump_raw;
-+	bool			user;
-+	bool			kernel;
- 	const char		*cpu_list;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
-@@ -25,35 +30,88 @@ static const char * const mem_usage[] = {
- 	NULL
- };
- 
--static int __cmd_record(int argc, const char **argv)
-+static inline const char *get_plm(struct perf_mem *mem)
-+{
-+	const char *plm = "";
-+
-+	if (mem->user && !mem->kernel) {
-+		plm = "u";
-+	} else if (!mem->user && mem->kernel) {
-+		plm = "k";
-+	}
-+	return plm;
-+}
-+
-+static int __cmd_record(int argc, const char **argv, struct perf_mem *mem)
- {
- 	int rec_argc, i = 0, j;
- 	const char **rec_argv;
--	char event[64];
--	int ret;
-+	char *str;
-+	int mode = 0;
-+	int ki, ret;
-+
-+
-+	if (!strcmp(mem->mem_op, MEM_OPERATION_STORE))
-+		mode |= OP_STORE;
-+	else if (!strcmp(mem->mem_op, MEM_OPERATION_LOAD))
-+		mode |= OP_LOAD;
-+	else  {
-+		fprintf(stderr, "unknown sampling mode: %s\n", mem->mem_op);
-+		return -1;
-+	}
- 
--	rec_argc = argc + 4;
-+	rec_argc = argc + 6;
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 	if (!rec_argv)
- 		return -1;
- 
- 	rec_argv[i++] = strdup("record");
--	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
--		rec_argv[i++] = strdup("-W");
-+
- 	rec_argv[i++] = strdup("-d");
--	rec_argv[i++] = strdup("-e");
- 
--	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
--		sprintf(event, "cpu/mem-stores/pp");
--	else
--		sprintf(event, "cpu/mem-loads/pp");
-+        if (mode & OP_LOAD) {
-+                rec_argv[i++] = strdup("-W");
- 
--	rec_argv[i++] = strdup(event);
--	for (j = 1; j < argc; j++, i++)
--		rec_argv[i] = argv[j];
-+                rec_argv[i++] = strdup("-e");
-+
-+                str = malloc(strlen("cpu/mem-loads/pp") + 1 + 1);
-+                if (!str) {
-+                        ki = i;
-+                        ret = -1;
-+                        goto end;
-+                }
-+                sprintf(str, "cpu/mem-loads/%spp", get_plm(mem));
-+                rec_argv[i++] = str;
-+        }
-+
-+        if (mode & OP_STORE) {
-+                rec_argv[i++] = strdup("-e");
-+
-+                str = malloc(strlen("cpu/mem-stores/pp") + 1 + 1);
-+                if (!str) {
-+                        ki = i;
-+                        ret = -1;
-+                        goto end;
-+                }
-+                sprintf(str, "cpu/mem-stores/%spp", get_plm(mem));
-+                rec_argv[i++] = str;
-+        }
-+
-+        /* arguments after i are not malloc'd */
-+        ki = i;
- 
--	ret = cmd_record(i, rec_argv, NULL);
-+	for (j = 1; j < argc; j++, ki++)
-+		rec_argv[ki] = argv[j];
-+
-+	ret = cmd_record(ki, rec_argv, NULL);
-+
-+end:
-+	/*
-+	 * XXX: free rec_argv[] entries, difficult because
-+	 * cmd_record() drops some of them...
-+	 */
- 	free(rec_argv);
-+
- 	return ret;
- }
- 
-@@ -171,7 +229,7 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
- 	 * there is no weight (cost) associated with stores, so don't print
- 	 * the column
- 	 */
--	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-+	if (strcmp(mem->mem_op, MEM_OPERATION_LOAD))
- 		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
- 				       "dso_daddr,tlb,locked");
- 
-@@ -199,7 +257,7 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		.input_name		 = "perf.data",
- 	};
- 	const struct option mem_options[] = {
--	OPT_STRING('t', "type", &mem_operation,
-+	OPT_STRING('t', "type", &mem.mem_op,
- 		   "type", "memory operations(load/store)"),
- 	OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
- 		    "dump raw samples in ASCII"),
-@@ -213,13 +271,18 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "separator",
- 		   "separator for columns, no spaces will be added"
- 		   " between columns '.' is reserved."),
-+	OPT_BOOLEAN('U', "user-level", &mem.user,
-+		    "include user-level accesses"),
-+	OPT_BOOLEAN('K', "kernel-level", &mem.kernel,
-+		    "include kernel-level accesses"),
- 	OPT_END()
- 	};
- 
- 	argc = parse_options(argc, argv, mem_options, mem_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 
--	if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
-+	if (!argc || !(strncmp(argv[0], "rec", 3)
-+		       || strncmp(argv[0], "rep", 3)))
- 		usage_with_options(mem_usage, mem_options);
- 
- 	if (!mem.input_name || !strlen(mem.input_name)) {
-@@ -228,9 +291,12 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		else
- 			mem.input_name = "perf.data";
- 	}
-+	/* default to load only, some processors only support loads */
-+	if (!mem.mem_op)
-+		mem.mem_op = MEM_OPERATION_LOAD;
- 
- 	if (!strncmp(argv[0], "rec", 3))
--		return __cmd_record(argc, argv);
-+		return __cmd_record(argc, argv, &mem);
- 	else if (!strncmp(argv[0], "rep", 3))
- 		return report_events(argc, argv, &mem);
- 	else
+-- 
+1.8.1.4
+
