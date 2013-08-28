@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab3H1Wdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 18:33:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55599 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3H1Wdr (ORCPT
+	id S1755501Ab3H1WhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 18:37:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35375 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3H1WhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 18:33:47 -0400
-Date: Wed, 28 Aug 2013 15:33:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
-        rgb@redhat.com
-Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
-Message-Id: <20130828153345.55631b3b3f6f8940ef1b7614@linux-foundation.org>
-In-Reply-To: <20130828182114.6b67ea90@redhat.com>
-References: <20130828182114.6b67ea90@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Aug 2013 18:37:02 -0400
+Message-ID: <521E7B8A.6060203@linaro.org>
+Date: Wed, 28 Aug 2013 15:36:58 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
+        San Mehat <san@google.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCHv3] drivers: power: Detect device suspend/resume lockup
+ and log event in pstore.
+References: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org> <3196266.rMZQj4Yosc@vostro.rjw.lan> <CAME+o4n8HqvGtAGX0wO+Zs_pdanKuhai6T3jg2V1Q4nWzxKk9A@mail.gmail.com> <1761440.cq52yMKNRv@vostro.rjw.lan>
+In-Reply-To: <1761440.cq52yMKNRv@vostro.rjw.lan>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Aug 2013 18:21:14 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+On 08/28/2013 01:52 PM, Rafael J. Wysocki wrote:
+> On Wednesday, August 28, 2013 10:45:45 AM Zoran Markovic wrote:
+>> Hi Rafael,
+>>> It doesn't look too bad from a quick look, but there's a couple of things
+>>> I don't like in it still (relatively minor).
+>> If there are things you would like changed in this patch, please let
+>> me know. It would be nice to catch the 3.12 merge window.
+> Well, it's not in my queue to be honest.
+>
+> Is there any practical reason why it should go into the next release?
 
-> I'm getting the following soft lockup:
-> 
-> CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
-> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->  0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
->  ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
->  ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
-> Call Trace:
->  <IRQ>  [<ffffffff815324df>] dump_stack+0x46/0x58
->  [<ffffffff8152e669>] panic+0xbb/0x1c4
->  [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
->  [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
->  [<ffffffff810d0260>] ? watchdog+0x30/0x30
->  [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
->  [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
->  [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
->  [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
->  <EOI>  [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
->  [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
->  [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
->  [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
->  [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
->  [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
->  [<ffffffff81540794>] sysret_audit+0x17/0x21
-> 
-> The reproducer is somewhat unusual:
-> 
->  1. Install RHEL6.5 (maybe a similar older user-space will do)
->  2. Boot the just installed system
->  3. In this first boot you'll meet the firstboot script, which
->     will do some setup and (depending on your answers) it will
->     reboot the machine
->  4. During that first reboot the system hangs while terminating
->     all processes:
-> 
->        Sending all processes the TERM signal...
-> 
->     It's when the soft lockup above happens. And yes, I managed
->     to get this with latest upstream kernel (HEAD fa8218def1b1)
-> 
-> I'm reproducing it on a VM, but the first report was on bare-metal.
-> 
-> This is what is happening:
-> 
->  1. audit_log_start() is called
->  2. As we have SKBs waiting in audit_skb_queue and all conditions
->     evaluate to true, we sleep in wait_for_auditd()
->  3. Go to 2, until sleep_time gets negative and audit_log_start()
->     just busy-waits
-> 
-> Now, *why* this is happening is a mistery to me. I tried debugging
-> it, but all I could find is that at some point the kauditd thread
-> never wakes up after having called schedule(). I even tried waking
-> it up before calling wait_for_auditd(), but it didn't.
+I wouldn't say its critical for the next release, but I feel like this
+was the same response last cycle. Zoran's since investigated the various
+alternative approaches you've suggested, and continues to be interested
+in resolving your remaining objections.
 
-Odd.  If kauditd_thread() is stuck in schedule() in state
-TASK_INTERRUPTIBLE then a wake_up(kauditd_task) should get it running
-again, unless scheduler-related data structures are screwed up.
+Its a useful feature the Android devs use, which could also help
+non-android developers debug suspend issues on their systems.
 
-Are you really sure that kauditd is stuck in schedule() and doesn't
-come out?
+If you really just feel its something best left out of tree, that's hard
+to argue against. Its just a debug tool and the android guys don't have
+an issue carrying their own tree, after all. But the cost of leaving it
+out is just the potential of others having to re-implement similar hacks
+on their own instead of collaborating on shared infrastructure.
+
+thanks
+-john
+
+
 
