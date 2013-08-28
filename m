@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3H1IiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 04:38:18 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51683 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab3H1IiM (ORCPT
+	id S1754828Ab3H1Ii1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 04:38:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60489 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab3H1IiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 04:38:12 -0400
+	Wed, 28 Aug 2013 04:38:22 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -16,9 +16,9 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Paolo Bonzini <pbonzini@redhat.com>, Alexander Graf <agraf@suse.de>,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         kvm-ppc@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH v9 02/13] hashtable: add hash_for_each_possible_rcu_notrace()
-Date: Wed, 28 Aug 2013 18:37:39 +1000
-Message-Id: <1377679070-3515-3-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH v9 04/13] KVM: PPC: reserve a capability and KVM device type for realmode VFIO
+Date: Wed, 28 Aug 2013 18:37:41 +1000
+Message-Id: <1377679070-3515-5-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 1.8.4.rc4
 In-Reply-To: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
 References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
@@ -26,46 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds hash_for_each_possible_rcu_notrace() which is basically
-a notrace clone of hash_for_each_possible_rcu() which cannot be
-used in real mode due to its tracing/debugging capability.
+This reserves a capability number for upcoming support
+of VFIO-IOMMU DMA operations in real mode.
+
+This reserves a number for a new "SPAPR TCE IOMMU" KVM device
+which is going to manage lifetime of SPAPR TCE IOMMU object.
+
+This defines an attribute of the "SPAPR TCE IOMMU" KVM device
+which is going to be used for initialization.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 
 ---
 Changes:
-v8:
-* fixed warnings from check_patch.pl
----
- include/linux/hashtable.h | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+v9:
+* KVM ioctl is replaced with "SPAPR TCE IOMMU" KVM device type with
+KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE attribute
 
-diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-index a9df51f..519b6e2 100644
---- a/include/linux/hashtable.h
-+++ b/include/linux/hashtable.h
-@@ -174,6 +174,21 @@ static inline void hash_del_rcu(struct hlist_node *node)
- 		member)
+2013/08/15:
+* fixed mistype in comments
+* fixed commit message which says what uses ioctls 0xad and 0xae
+
+2013/07/16:
+* changed the number
+
+2013/07/11:
+* changed order in a file, added comment about a gap in ioctl number
+---
+ arch/powerpc/include/uapi/asm/kvm.h | 8 ++++++++
+ include/uapi/linux/kvm.h            | 2 ++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/powerpc/include/uapi/asm/kvm.h b/arch/powerpc/include/uapi/asm/kvm.h
+index 0fb1a6e..c1ae1e5 100644
+--- a/arch/powerpc/include/uapi/asm/kvm.h
++++ b/arch/powerpc/include/uapi/asm/kvm.h
+@@ -511,4 +511,12 @@ struct kvm_get_htab_header {
+ #define  KVM_XICS_MASKED		(1ULL << 41)
+ #define  KVM_XICS_PENDING		(1ULL << 42)
  
- /**
-+ * hash_for_each_possible_rcu_notrace - iterate over all possible objects hashing
-+ * to the same bucket in an rcu enabled hashtable in a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ *
-+ * This is the same as hash_for_each_possible_rcu() except that it does
-+ * not do any RCU debugging or tracing.
-+ */
-+#define hash_for_each_possible_rcu_notrace(name, obj, member, key) \
-+	hlist_for_each_entry_rcu_notrace(obj, \
-+		&name[hash_min(key, HASH_BITS(name))], member)
++/* SPAPR TCE IOMMU device specification */
++struct kvm_create_spapr_tce_iommu_linkage {
++	__u64 liobn;
++	__u32 fd;
++	__u32 flags;
++};
++#define KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE	0
 +
-+/**
-  * hash_for_each_possible_safe - iterate over all possible objects hashing to the
-  * same bucket safe against removals
-  * @name: hashtable to iterate
+ #endif /* __LINUX_KVM_POWERPC_H */
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index 99c2533..9d20630 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
+ #define KVM_CAP_IRQ_XICS 92
+ #define KVM_CAP_ARM_EL1_32BIT 93
+ #define KVM_CAP_SPAPR_MULTITCE 94
++#define KVM_CAP_SPAPR_TCE_IOMMU 95
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -843,6 +844,7 @@ struct kvm_device_attr {
+ #define KVM_DEV_TYPE_FSL_MPIC_20	1
+ #define KVM_DEV_TYPE_FSL_MPIC_42	2
+ #define KVM_DEV_TYPE_XICS		3
++#define KVM_DEV_TYPE_SPAPR_TCE_IOMMU	4
+ 
+ /*
+  * ioctls for VM fds
 -- 
 1.8.4.rc4
 
