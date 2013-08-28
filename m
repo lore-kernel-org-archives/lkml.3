@@ -1,158 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3H1TsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 15:48:19 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:60907 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754543Ab3H1TsP (ORCPT
+	id S1755424Ab3H1TtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 15:49:18 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:59414 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3H1TtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 15:48:15 -0400
-Message-ID: <00000140c6781711-904ca320-545b-48d2-abfa-c3d8a9d273b9-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Wed, 28 Aug 2013 19:48:14 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [gcv v3 12/35] watchdog: Replace __get_cpu_var uses
-References: <20130828193457.140443630@linux.com>
-X-SES-Outgoing: 2013.08.28-54.240.9.58
+	Wed, 28 Aug 2013 15:49:14 -0400
+Message-ID: <521E5438.90109@cogentembedded.com>
+Date: Wed, 28 Aug 2013 23:49:12 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
+References: <20130828113459.48ecbb34@armhf>
+In-Reply-To: <20130828113459.48ecbb34@armhf>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+Hello.
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+On 08/28/2013 01:34 PM, Jean-Francois Moine wrote:
 
-__get_cpu_var() is defined as :
+> This patch adds the nodes to instantiate the audio devices of the Dove
+> boards.
 
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> ---
+>   arch/arm/boot/dts/dove.dtsi                  | 18 ++++++++++++++++++
+>   1 file changed, 18 insertions(+)
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> index 499abad..78227e2 100644
+> --- a/arch/arm/boot/dts/dove.dtsi
+> +++ b/arch/arm/boot/dts/dove.dtsi
+> @@ -573,6 +573,24 @@
+>   					phy-handle = <&ethphy>;
+>   				};
+>   			};
+> +
+> +			i2s0: audio-controller@b0000 {
 
+     According to ePAPR [1] the node should be called "sound", not 
+"audio-controller".
 
+> +				compatible = "marvell,mvebu-audio";
+> +				reg = <0xb0000 0x2210>;
+> +				interrupts = <19>, <20>;
+> +				clocks = <&gate_clk 12>;
+> +				clock-names = "internal";
+> +				status = "disabled";
+> +			};
+> +
+> +			i2s1: audio-controller@b4000 {
 
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+    Same comment.
 
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
+> +				compatible = "marvell,mvebu-audio";
+> +				reg = <0xb4000 0x2210>;
+> +				interrupts = <21>, <22>;
+> +				clocks = <&gate_clk 13>;
+> +				clock-names = "internal";
+> +				status = "disabled";
+> +			};
 
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
 
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
+WBR, Sergei
 
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&x), y, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/kernel/watchdog.c
-===================================================================
---- linux.orig/kernel/watchdog.c	2013-08-26 14:28:39.000000000 -0500
-+++ linux/kernel/watchdog.c	2013-08-26 14:29:34.471034451 -0500
-@@ -174,8 +174,8 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
- 
- void touch_softlockup_watchdog_sync(void)
- {
--	__raw_get_cpu_var(softlockup_touch_sync) = true;
--	__raw_get_cpu_var(watchdog_touch_ts) = 0;
-+	__this_cpu_write(softlockup_touch_sync, 1);
-+	__this_cpu_write(watchdog_touch_ts, 0);
- }
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-@@ -341,7 +341,7 @@ static void watchdog_set_prio(unsigned i
- 
- static void watchdog_enable(unsigned int cpu)
- {
--	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	struct hrtimer *hrtimer = __this_cpu_ptr(&watchdog_hrtimer);
- 
- 	/* kick off the timer for the hardlockup detector */
- 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-@@ -361,7 +361,7 @@ static void watchdog_enable(unsigned int
- 
- static void watchdog_disable(unsigned int cpu)
- {
--	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	struct hrtimer *hrtimer = __this_cpu_ptr(&watchdog_hrtimer);
- 
- 	watchdog_set_prio(SCHED_NORMAL, 0);
- 	hrtimer_cancel(hrtimer);
 
