@@ -1,65 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3H2PUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:20:55 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:48879 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab3H2PUy (ORCPT
+	id S1754842Ab3H2PVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:21:22 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:45080 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3H2PVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:20:54 -0400
-Message-ID: <521F66C6.6060401@hp.com>
-Date: Thu, 29 Aug 2013 11:20:38 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 29 Aug 2013 11:21:21 -0400
+Date: Thu, 29 Aug 2013 17:21:30 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: airlied@redhat.com, daniel.vetter@ffwll.ch, gregkh@linuxfoundation.org,
+        s.hauer@pengutronix.de, festevam@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] imx-drm: Fix probe failure
+Message-ID: <20130829152130.GD5606@phenom.ffwll.local>
+Mail-Followup-To: Fabio Estevam <fabio.estevam@freescale.com>,
+	airlied@redhat.com, gregkh@linuxfoundation.org,
+	s.hauer@pengutronix.de, festevam@gmail.com,
+	linux-kernel@vger.kernel.org
+References: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com> <1375758759-29629-2-git-send-email-Waiman.Long@hp.com> <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-In-Reply-To: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 09:40 PM, Linus Torvalds wrote:
-> Just FYI: I've merged two preparatory patches in my tree for the whole
-> lockref thing. Instead of applying your four patches as-is during the
-> merge window, I ended up writing two patches that introduce the
-> concept and use it in the dentry code *without* introducing any of the
-> new semantics yet.
->
-> Waiman, I attributed the patches to you, even if they don't actually
-> look much like any of the patches you sent out. And because I was
-> trying very hard to make sure that no actual semantics changed, my
-> version doesn't have the dget_parent() lockless update code, for
-> example. I literally just did a search-and-replace of "->d_count" with
-> "->d_lockref.count" and then I fixed up a few things by hand (undid
-> one replacement in a comment, and used the helper functions where they
-> were semantically identical).
->
->   You don't have to rewrite your patches if you don't want to, I'm
-> planning on cherry-picking the actual code changes during the merge
-> window.
->
->                    Linus
+On Thu, Aug 29, 2013 at 10:59:22AM -0300, Fabio Estevam wrote:
+> Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
+> failure is seen:
+> 
+> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [drm] No driver support for vblank timestamp query.
+> [drm] Initialized imx-drm 1.0.0 20120507 on minor 0
+> imx-ldb ldb.10: adding encoder failed with -16
+> imx-ldb: probe of ldb.10 failed with error -16
+> imx-ipuv3 2400000.ipu: IPUv3H probed
+> imx-ipuv3 2800000.ipu: IPUv3H probed
+> imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
+> 
+> The reason for the probe failure is that now 'imxdrm->references' is incremented
+> early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
+> and imx_drm_add_encoder():
+> 
+> 	if (imxdrm->references) {
+> 		ret = -EBUSY;
+> 		goto err_busy;
+> 	}
+> 
+> ,will always fail.
+> 
+> Let the drm core handle the references instead of doing this manually in 
+> imx-drm. In imx-drm-core the open and close callbacks map to drm_open and 
+> drm_close, which handle the references via open_count.
+> 
+> After this patch, lvds panel is functional on a mx6qsabrelite board.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Thanks for merging the 2 preparatory patches for me. I will rebase my 
-patches with the latest linux git tree. A new v8 patch set will be sent 
-out sometime next week. I am looking forward to the v3.12 merge window 
-which I think is coming soon.
+Yeah, just ripping out the imxdrm->references stuff will restore imx, but
+of course all the funny races are still fundamentally there. So we still
+rely on userspace being really careful to obey the right module loading
+sequence and not start any drm client before that has all completed. So
 
-Cheer,
-Longman
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+Greg, when you slurp this in can you pls also add the imx todo entry from
+the other thread?
+
+http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg43698.html
+
+Or do you want me to send in a real patch?
+
+Thanks, Daniel
+
+
+> ---
+> Changes since v1:
+> - Improved commit log by providing an explanation to the probe failure
+> - Cc'ed Dave/Daniel
+> 
+>  drivers/staging/imx-drm/imx-drm-core.c | 23 -----------------------
+>  1 file changed, 23 deletions(-)
+> 
+> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+> index 47c5888..6f0d24c 100644
+> --- a/drivers/staging/imx-drm/imx-drm-core.c
+> +++ b/drivers/staging/imx-drm/imx-drm-core.c
+> @@ -41,7 +41,6 @@ struct imx_drm_device {
+>  	struct list_head			encoder_list;
+>  	struct list_head			connector_list;
+>  	struct mutex				mutex;
+> -	int					references;
+>  	int					pipes;
+>  	struct drm_fbdev_cma			*fbhelper;
+>  };
+> @@ -241,8 +240,6 @@ struct drm_device *imx_drm_device_get(void)
+>  		}
+>  	}
+>  
+> -	imxdrm->references++;
+> -
+>  	return imxdrm->drm;
+>  
+>  unwind_crtc:
+> @@ -280,8 +277,6 @@ void imx_drm_device_put(void)
+>  	list_for_each_entry(enc, &imxdrm->encoder_list, list)
+>  		module_put(enc->owner);
+>  
+> -	imxdrm->references--;
+> -
+>  	mutex_unlock(&imxdrm->mutex);
+>  }
+>  EXPORT_SYMBOL_GPL(imx_drm_device_put);
+> @@ -485,11 +480,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
+>  
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
+> -
+>  	imx_drm_crtc = kzalloc(sizeof(*imx_drm_crtc), GFP_KERNEL);
+>  	if (!imx_drm_crtc) {
+>  		ret = -ENOMEM;
+> @@ -523,7 +513,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
+>  err_register:
+>  	kfree(imx_drm_crtc);
+>  err_alloc:
+> -err_busy:
+>  	mutex_unlock(&imxdrm->mutex);
+>  	return ret;
+>  }
+> @@ -564,11 +553,6 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
+>  
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
+> -
+>  	imx_drm_encoder = kzalloc(sizeof(*imx_drm_encoder), GFP_KERNEL);
+>  	if (!imx_drm_encoder) {
+>  		ret = -ENOMEM;
+> @@ -595,7 +579,6 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
+>  err_register:
+>  	kfree(imx_drm_encoder);
+>  err_alloc:
+> -err_busy:
+>  	mutex_unlock(&imxdrm->mutex);
+>  
+>  	return ret;
+> @@ -709,11 +692,6 @@ int imx_drm_add_connector(struct drm_connector *connector,
+>  
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
+> -
+>  	imx_drm_connector = kzalloc(sizeof(*imx_drm_connector), GFP_KERNEL);
+>  	if (!imx_drm_connector) {
+>  		ret = -ENOMEM;
+> @@ -738,7 +716,6 @@ int imx_drm_add_connector(struct drm_connector *connector,
+>  err_register:
+>  	kfree(imx_drm_connector);
+>  err_alloc:
+> -err_busy:
+>  	mutex_unlock(&imxdrm->mutex);
+>  
+>  	return ret;
+> -- 
+> 1.8.1.2
+> 
+> 
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
