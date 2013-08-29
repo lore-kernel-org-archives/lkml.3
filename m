@@ -1,86 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3H2NH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:07:27 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58821 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752272Ab3H2NHZ (ORCPT
+	id S1753653Ab3H2NIB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:08:01 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:41792 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3H2NH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:07:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 29 Aug 2013 21:07:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/16] cpufreq: cpu0: use cpufreq_generic_get() routine
-Message-ID: <20130829130725.GL18729@S2101-09.ap.freescale.net>
-References: <cover.1377272740.git.viresh.kumar@linaro.org>
- <6ae0de783646c5356717d761903502f354abfe84.1377272740.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <6ae0de783646c5356717d761903502f354abfe84.1377272740.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 29 Aug 2013 09:07:58 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-0f-521f47accd08
+From: Tomasz Figa <t.figa@samsung.com>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: kyungmin.park@samsung.com, t.stanislaws@samsung.com, m.chehab@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ian.campbell@citrix.com, rob@landley.net, mturquette@linaro.org,
+        tomasz.figa@gmail.com, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, s.nawrocki@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v3 2/6] media: s5p-tv: Restore vpll clock rate
+Date: Thu, 29 Aug 2013 15:07:52 +0200
+Message-id: <6294819.7vFezjQcVy@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11 (Linux/3.10.9-gentoo; KDE/4.11.0; x86_64; ; )
+In-reply-to: <1377706384-3697-3-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1377706384-3697-1-git-send-email-m.krawczuk@partner.samsung.com>
+ <1377706384-3697-3-git-send-email-m.krawczuk@partner.samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t/xK7pr3OWDDA70aFtMWneAyWL+kXOs
+	Fm96O1gsehdcZbM42/SG3WLT42usFgvblrBYXN41h82iZ8NWVosZ5/cxWdy+zGtxcZ28xek1
+	p5gtll6/yGTxdMJFNosJ09eyWBxeATRt3cvpQNabdlaLVwfbWCzmtb9ktTg2Ywmjxapdfxgd
+	xD3WzFvD6NHS3MPmseDzFXaP15MnMHr8XfWC2WPnrLvsHq9Wz2T1uHNtD5vH5iX1Hgff7WHy
+	6NuyitHj8yY5j41zQwN4o7hsUlJzMstSi/TtErgylu+5wFIwUaTixYMdrA2MfQJdjJwcEgIm
+	ElvW7GeFsMUkLtxbzwZiCwksZZRo2mrZxcgFZHcxSez8tg0swSagJvG54RGYLSJgKvHu7jU2
+	kCJmgf0sEk/XTmIESQgLOElcXvCYHcRmEVCV+H6mlQXE5hXQlFh7fQHYNn4BdYl3254ydTFy
+	cIgKuEj0/c0ECXMK+Ekc2drECrF4IqPEklUT2CB6BSV+TL4HNodZQF5i3/6prBC2lsT6nceZ
+	JjAKzkJSNgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMT5lx2Mi49ZHWIU
+	4GBU4uHdYSAfJMSaWFZcmXuIUYKDWUmE9y0nUIg3JbGyKrUoP76oNCe1+BAjEwenVAOj/P0r
+	URP622urWFbNmeRslxnO76+bdXrdqX1yuwQ3tWfqvnHq/Ni8dm8O93tP4+WKvZedlj3m3fot
+	M+LTlbOJ8y5vmq1q+suzU+bdgsrPHcpSerf2SFUk1+ZxuXkVZ3o8XrXvs6HLw5BNR1Tmzj88
+	Zd1f+7Ufs+r61+vIlXutj6ntfsTCLeqkxFKckWioxVxUnAgAvsW899ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 09:20:39PM +0530, Viresh Kumar wrote:
-> We have common infrastructure available with us for getting a CPUs clk rate.
-> Lets use it for this driver.
+Hi Mateusz,
+
+Generally this patch looks good, but I have some minor nitpicks, that I 
+would like to be fixed.
+
+On Wednesday 28 of August 2013 18:13:00 Mateusz Krawczuk wrote:
+> Restore vpll clock rate if start stream fail or stream is off.
 > 
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-
-Both this and imx6q one,
-
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 > ---
->  drivers/cpufreq/cpufreq-cpu0.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
+>  drivers/media/platform/s5p-tv/sdo_drv.c | 24 ++++++++++++++++++++++--
+>  1 file changed, 22 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> index 7273bfc..62e52e3 100644
-> --- a/drivers/cpufreq/cpufreq-cpu0.c
-> +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> @@ -29,11 +29,6 @@ static struct clk *cpu_clk;
->  static struct regulator *cpu_reg;
->  static struct cpufreq_frequency_table *freq_table;
->  
-> -static unsigned int cpu0_get_speed(unsigned int cpu)
-> -{
-> -	return clk_get_rate(cpu_clk) / 1000;
-> -}
-> -
->  static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+> diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c
+> b/drivers/media/platform/s5p-tv/sdo_drv.c index 0afa90f..9dbdfe6 100644
+> --- a/drivers/media/platform/s5p-tv/sdo_drv.c
+> +++ b/drivers/media/platform/s5p-tv/sdo_drv.c
+> @@ -55,6 +55,8 @@ struct sdo_device {
+>  	struct clk *dacphy;
+>  	/** clock for control of VPLL */
+>  	struct clk *fout_vpll;
+> +	/** vpll rate before sdo stream was on */
+> +	int vpll_rate;
+
+Clock frequency should be stored in an unsigned long. (See the return type 
+of clk_get_rate().)
+
+>  	/** regulator for SDO IP power */
+>  	struct regulator *vdac;
+>  	/** regulator for SDO plug detection */
+> @@ -193,17 +195,34 @@ static int sdo_s_power(struct v4l2_subdev *sd, int
+> on)
+> 
+>  static int sdo_streamon(struct sdo_device *sdev)
 >  {
->  	struct opp *opp;
-> @@ -99,6 +94,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
->  
->  static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
->  {
-> +	policy->clk = cpu_clk;
->  	return cpufreq_generic_init(policy, freq_table, transition_latency);
+> +	int ret;
+> +
+>  	/* set proper clock for Timing Generator */
+> -	clk_set_rate(sdev->fout_vpll, 54000000);
+> +	sdev->vpll_rate = clk_get_rate(sdev->fout_vpll);
+> +	ret = clk_set_rate(sdev->fout_vpll, 54000000);
+> +	if (ret < 0) {
+> +		dev_err(sdev->dev,
+> +			"Failed to set vpll rate!\n");
+> +		return ret;
+> +	}
+>  	dev_info(sdev->dev, "fout_vpll.rate = %lu\n",
+>  	clk_get_rate(sdev->fout_vpll));
+>  	/* enable clock in SDO */
+>  	sdo_write_mask(sdev, SDO_CLKCON, ~0, SDO_TVOUT_CLOCK_ON);
+> -	clk_enable(sdev->dacphy);
+> +	ret = clk_enable(sdev->dacphy);
+> +	if (ret < 0) {
+> +		dev_err(sdev->dev,
+> +			"clk_enable(dacphy) failed !\n");
+> +		goto fail;
+> +	}
+>  	/* enable DAC */
+>  	sdo_write_mask(sdev, SDO_DAC, ~0, SDO_POWER_ON_DAC);
+>  	sdo_reg_debug(sdev);
+>  	return 0;
+
+nit: Please insert a blank line here.
+
+Best regards,
+Tomasz
+
+> +fail:
+> +	sdo_write_mask(sdev, SDO_CLKCON, 0, SDO_TVOUT_CLOCK_ON);
+> +	clk_set_rate(sdev->fout_vpll, sdev->vpll_rate);
+> +	return ret;
 >  }
->  
-> @@ -106,7 +102,7 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
->  	.flags = CPUFREQ_STICKY,
->  	.verify = cpufreq_generic_frequency_table_verify,
->  	.target_index = cpu0_set_target,
-> -	.get = cpu0_get_speed,
-> +	.get = cpufreq_generic_get,
->  	.init = cpu0_cpufreq_init,
->  	.exit = cpufreq_generic_exit,
->  	.name = "generic_cpu0",
-> -- 
-> 1.7.12.rc2.18.g61b472e
 > 
+>  static int sdo_streamoff(struct sdo_device *sdev)
+> @@ -220,6 +239,7 @@ static int sdo_streamoff(struct sdo_device *sdev)
+>  	}
+>  	if (tries == 0)
+>  		dev_err(sdev->dev, "failed to stop streaming\n");
+> +	clk_set_rate(sdev->fout_vpll, sdev->vpll_rate);
+>  	return tries ? 0 : -EIO;
+>  }
 
