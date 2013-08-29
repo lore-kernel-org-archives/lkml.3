@@ -1,107 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3H2R7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:59:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34908 "EHLO
+	id S1756237Ab3H2SAD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:00:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34913 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab3H2R7r (ORCPT
+	with ESMTP id S1754776Ab3H2SAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:59:47 -0400
-Date: Thu, 29 Aug 2013 11:02:10 -0700
+	Thu, 29 Aug 2013 14:00:00 -0400
+Date: Thu, 29 Aug 2013 11:02:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.94
-Message-ID: <20130829180210.GA32225@kroah.com>
+Subject: Re: Linux 3.0.94
+Message-ID: <20130829180223.GB32225@kroah.com>
+References: <20130829180210.GA32225@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130829180210.GA32225@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.0.94 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                   |    2 -
- drivers/ata/libata-pmp.c                   |   12 +++---
- drivers/net/wireless/hostap/hostap_ioctl.c |    4 +-
- drivers/net/wireless/zd1201.c              |    4 +-
- drivers/of/fdt.c                           |    2 +
- drivers/s390/scsi/zfcp_erp.c               |   29 +++++++++++---
- drivers/s390/scsi/zfcp_qdio.c              |    8 +---
- drivers/xen/events.c                       |    2 -
- fs/nilfs2/segbuf.c                         |    5 +-
- include/linux/wait.h                       |   57 +++++++++++++++++++++++++++++
- 10 files changed, 98 insertions(+), 27 deletions(-)
-
-Dan Carpenter (1):
-      Hostap: copying wrong data prism2_ioctl_giwaplist()
-
-David Vrabel (1):
-      xen/events: initialize local per-cpu mask for all possible events
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.94
-
-Jussi Kivilinna (1):
-      zd1201: do not use stack as URB transfer_buffer
-
-Martin Peschke (2):
-      SCSI: zfcp: fix lock imbalance by reworking request queue locking
-      SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
-
-Terry Suereth (1):
-      libata: apply behavioral quirks to sil3826 PMP
-
-Vyacheslav Dubeyko (2):
-      nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-      nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
-
-Wladislav Wiebe (1):
-      of: fdt: fix memory initialization for expanded DT
-
-
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSH4yiAAoJEDjbvchgkmk+jWEP/2numQsRqALIqP9OUpkolhoS
-YjkIpG6nvh1iPwBj0wZyYhFPboW5eXSLuuG3OzkimJq+SLQinI6h+/xiyX4woOOC
-YrPqbHshqaa+Ki2DXELmimsCm0DV3ehPDNMUZsfD07KlHwJlDATioGvxjTjqn+gM
-l6UVHm0Y+E60qkJAODjQOY3ooFNaFT8EjQ1rhdlgyNDXhSB4j7i2LT4keyHu83Tu
-wps4kQDnd3HHJBuTYq9Eah31iGtKYt0AWu1qJA+izDkODa4SsHagMskXpn4Wlsic
-N3mu/BlDHzhz+cZY5GPXE8ZGD2y0CjZ6l3Q/1x5HCMo2tnGQrIvitbKADQs9HFdt
-ZkKWgrPeZV3rgm0QJfD/2EMTiHl8ywtIFSVBcbJ25lnYF/4mS7Wgl5CF75i0hSCq
-JwI1Jd19gy1jcuCuNzHHq1pyYOhc0aN7nXil9W+TuKZGiFLPkfj5AWVAtSghgaWf
-dsAxblPGlDnIeosSa5lejiZNdBaWWtWcKQNXam9s+/QZ9FntEYnoQ5zvaCOWt6lQ
-zNcAnWmFGsPoW89d2DETxwNeE+Md1i+T8sz2Ihcw8vdLwHfa081fEl8cy7bFaDMF
-p1PEKv8wt3Ze/zU6ZRlJaraIzE1eHsLr4OZypyMzbw34YqQdnOvi/caMTzAREzh2
-gbH0t+1Bwi4uFW8k2K78
-=8bjj
------END PGP SIGNATURE-----
-
---BXVAT5kNtrzKuDFl--
+diff --git a/Makefile b/Makefile
+index 369ce14..a88b035 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 93
++SUBLEVEL = 94
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
+index f06b7ea..cf9dc09 100644
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -288,24 +288,24 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
+ 
+ 	/* Disable sending Early R_OK.
+ 	 * With "cached read" HDD testing and multiple ports busy on a SATA
+-	 * host controller, 3726 PMP will very rarely drop a deferred
++	 * host controller, 3x26 PMP will very rarely drop a deferred
+ 	 * R_OK that was intended for the host. Symptom will be all
+ 	 * 5 drives under test will timeout, get reset, and recover.
+ 	 */
+-	if (vendor == 0x1095 && devid == 0x3726) {
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
+ 		u32 reg;
+ 
+ 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to read Sil3726 Private Register";
++			reason = "failed to read Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 		reg &= ~0x1;
+ 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to write Sil3726 Private Register";
++			reason = "failed to write Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 	}
+@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 	u16 devid = sata_pmp_gscr_devid(gscr);
+ 	struct ata_link *link;
+ 
+-	if (vendor == 0x1095 && devid == 0x3726) {
+-		/* sil3726 quirks */
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
++		/* sil3x26 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
+diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
+index 12de464..10ce1bc 100644
+--- a/drivers/net/wireless/hostap/hostap_ioctl.c
++++ b/drivers/net/wireless/hostap/hostap_ioctl.c
+@@ -521,9 +521,9 @@ static int prism2_ioctl_giwaplist(struct net_device *dev,
+ 
+ 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
+ 
+-	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
++	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
+ 	data->flags = 1; /* has quality information */
+-	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
++	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
+ 	       sizeof(struct iw_quality) * data->length);
+ 
+ 	kfree(addr);
+diff --git a/drivers/net/wireless/zd1201.c b/drivers/net/wireless/zd1201.c
+index 415eec4..af792a4 100644
+--- a/drivers/net/wireless/zd1201.c
++++ b/drivers/net/wireless/zd1201.c
+@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_device *dev, int apfw)
+ 		goto exit;
+ 
+ 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
+-	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
++	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
+ 	if (err < 0)
+ 		goto exit;
+ 
++	memcpy(&ret, buf, sizeof(ret));
++
+ 	if (ret & 0x80) {
+ 		err = -EIO;
+ 		goto exit;
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 65200af..d3645f6 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -389,6 +389,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+ 	mem = (unsigned long)
+ 		dt_alloc(size + 4, __alignof__(struct device_node));
+ 
++	memset((void *)mem, 0, size);
++
+ 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
+ 
+ 	pr_debug("  unflattening %lx...\n", mem);
+diff --git a/drivers/s390/scsi/zfcp_erp.c b/drivers/s390/scsi/zfcp_erp.c
+index e1b4f80..5c87270 100644
+--- a/drivers/s390/scsi/zfcp_erp.c
++++ b/drivers/s390/scsi/zfcp_erp.c
+@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port(struct zfcp_port *port)
+ 
+ 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
+ 		zfcp_erp_action_dismiss(&port->erp_action);
+-	else
+-		shost_for_each_device(sdev, port->adapter->scsi_host)
++	else {
++		spin_lock(port->adapter->scsi_host->host_lock);
++		__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 			if (sdev_to_zfcp(sdev)->port == port)
+ 				zfcp_erp_action_dismiss_lun(sdev);
++		spin_unlock(port->adapter->scsi_host->host_lock);
++	}
+ }
+ 
+ static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
+@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(struct zfcp_port *port, int clear,
+ {
+ 	struct scsi_device *sdev;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock(port->adapter->scsi_host->host_lock);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
++	spin_unlock(port->adapter->scsi_host->host_lock);
+ }
+ 
+ static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
+@@ -1435,8 +1440,10 @@ void zfcp_erp_set_adapter_status(struct zfcp_adapter *adapter, u32 mask)
+ 		atomic_set_mask(common_mask, &port->status);
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host)
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host)
+ 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1470,11 +1477,13 @@ void zfcp_erp_clear_adapter_status(struct zfcp_adapter *adapter, u32 mask)
+ 	}
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host) {
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host) {
+ 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
+ 		if (clear_counter)
+ 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
+ 	}
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1488,16 +1497,19 @@ void zfcp_erp_set_port_status(struct zfcp_port *port, u32 mask)
+ {
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
++	unsigned long flags;
+ 
+ 	atomic_set_mask(mask, &port->status);
+ 
+ 	if (!common_mask)
+ 		return;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			atomic_set_mask(common_mask,
+ 					&sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1512,6 +1524,7 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
+ 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
++	unsigned long flags;
+ 
+ 	atomic_clear_mask(mask, &port->status);
+ 
+@@ -1521,13 +1534,15 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
+ 	if (clear_counter)
+ 		atomic_set(&port->erp_counter, 0);
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port) {
+ 			atomic_clear_mask(common_mask,
+ 					  &sdev_to_zfcp(sdev)->status);
+ 			if (clear_counter)
+ 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
+ 		}
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+diff --git a/drivers/s390/scsi/zfcp_qdio.c b/drivers/s390/scsi/zfcp_qdio.c
+index d9c40ea..f3922a8 100644
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -199,11 +199,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_qdio *qdio, struct zfcp_qdio_req *q_req,
+ 
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
+ {
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
+ 	return 0;
+ }
+ 
+@@ -221,9 +219,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
+ {
+ 	long ret;
+ 
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
+ 
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -237,7 +234,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
+ 	}
+ 
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
+ }
+ 
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index a2f1f71..7ba4d0e 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -317,7 +317,7 @@ static void init_evtchn_cpu_bindings(void)
+ 
+ 	for_each_possible_cpu(i)
+ 		memset(per_cpu(cpu_evtchn_mask, i),
+-		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
++		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
+ }
+ 
+ static inline void clear_evtchn(int port)
+diff --git a/fs/nilfs2/segbuf.c b/fs/nilfs2/segbuf.c
+index 850a7c0..07a666a 100644
+--- a/fs/nilfs2/segbuf.c
++++ b/fs/nilfs2/segbuf.c
+@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct bio *bio, int err)
+ 
+ 	if (err == -EOPNOTSUPP) {
+ 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+-		bio_put(bio);
+-		/* to be detected by submit_seg_bio() */
++		/* to be detected by nilfs_segbuf_submit_bio() */
+ 	}
+ 
+ 	if (!uptodate)
+@@ -377,12 +376,12 @@ static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
+ 	bio->bi_private = segbuf;
+ 	bio_get(bio);
+ 	submit_bio(mode, bio);
++	segbuf->sb_nbio++;
+ 	if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
+ 		bio_put(bio);
+ 		err = -EOPNOTSUPP;
+ 		goto failed;
+ 	}
+-	segbuf->sb_nbio++;
+ 	bio_put(bio);
+ 
+ 	wi->bio = NULL;
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index bea7ad5..e007f76 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -530,6 +530,63 @@ do {									\
+ 	 ? 0 : __wait_event_interruptible_locked(wq, condition, 1, 1))
+ 
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ #define __wait_event_killable(wq, condition, ret)			\
+ do {									\
