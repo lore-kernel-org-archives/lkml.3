@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab3H2KJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:09:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35055 "EHLO
+	id S1756375Ab3H2KJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:09:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35066 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab3H2KI5 (ORCPT
+	with ESMTP id S1756094Ab3H2KJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:08:57 -0400
-Date: Thu, 29 Aug 2013 03:08:00 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-6q1homkwoayhmoq64y5vhel6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
+	Thu, 29 Aug 2013 06:09:02 -0400
+Date: Thu, 29 Aug 2013 03:08:20 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-236a3bbd5cb51edbf9550f5a7df885665d18a271@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org, efault@gmx.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1376491767-84171-1-git-send-email-dsahern@gmail.com>
+References: <1376491767-84171-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Implement -o/--output filename
-Git-Commit-ID: c24ff998fc420891f17d73acab6766823d492175
+Subject: [tip:perf/core] perf tools:
+  Sample after exit loses thread correlation
+Git-Commit-ID: 236a3bbd5cb51edbf9550f5a7df885665d18a271
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,443 +33,163 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:08:07 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:08:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c24ff998fc420891f17d73acab6766823d492175
-Gitweb:     http://git.kernel.org/tip/c24ff998fc420891f17d73acab6766823d492175
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 19 Aug 2013 12:01:10 -0300
+Commit-ID:  236a3bbd5cb51edbf9550f5a7df885665d18a271
+Gitweb:     http://git.kernel.org/tip/236a3bbd5cb51edbf9550f5a7df885665d18a271
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Wed, 14 Aug 2013 08:49:27 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 26 Aug 2013 16:51:31 -0300
+CommitDate: Mon, 26 Aug 2013 17:25:36 -0300
 
-perf trace: Implement -o/--output filename
+perf tools: Sample after exit loses thread correlation
 
-To output all 'trace' output to a filename, just like 'strace -ofile'
+Occassionally events (e.g., context-switch, sched tracepoints) are losing
+the conversion of sample data associated with a thread. For example:
 
+$ perf record -e sched:sched_switch -c 1 -a -- sleep 5
+$ perf script
+<selected events shown>
+    ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+    ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+:30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+
+The last line lost the conversion from tid to comm. If you look at the events
+(perf script -D) you see why - a SAMPLE event is generated after the EXIT:
+
+0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+... thread: :30482:30482
+
+When perf processes the EXIT event the thread is moved to the dead_threads
+list. When the SAMPLE event is processed no thread exists for the pid so a new
+one is created by machine__findnew_thread.
+
+This patch address the problem by delaying the move to the dead_threads list
+until the tid is re-used (per Adrian's suggestion).
+
+With this patch we get the previous example shows:
+
+  ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+
+and
+
+  0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+  0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+  ... thread: ls:30482
+
+v4: per Arnaldo's request add dead flag to thread struct and set when task exits
+
+v3: re-do from a time based check to a delayed move to dead_threads list
+
+v2: Rebased to latest perf/core branch. Changed time comparison to use
+    a macro which explicitly shows the time basis
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-6q1homkwoayhmoq64y5vhel6@git.kernel.org
+Link: http://lkml.kernel.org/r/1376491767-84171-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt |   4 +
- tools/perf/builtin-trace.c              | 134 ++++++++++++++++++++------------
- 2 files changed, 90 insertions(+), 48 deletions(-)
+ tools/perf/util/machine.c | 34 ++++++++++++++++++++--------------
+ tools/perf/util/thread.h  |  5 +++++
+ 2 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 3b3552a..2794efc 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -30,6 +30,10 @@ OPTIONS
- --expr::
- 	List of events to show, currently only syscall names.
- 
-+-o::
-+--output=::
-+	Output file name.
-+
- -p::
- --pid=::
- 	Record events on existing process ID (comma separated list).
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 120fdfb..4235316 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -63,7 +63,7 @@ static size_t fprintf_duration(unsigned long t, FILE *fp)
- 		printed += color_fprintf(fp, PERF_COLOR_YELLOW, "%6.3f ms", duration);
- 	else
- 		printed += color_fprintf(fp, PERF_COLOR_NORMAL, "%6.3f ms", duration);
--	return printed + fprintf(stdout, "): ");
-+	return printed + fprintf(fp, "): ");
- }
- 
- struct thread_trace {
-@@ -80,7 +80,7 @@ static struct thread_trace *thread_trace__new(void)
- 	return zalloc(sizeof(struct thread_trace));
- }
- 
--static struct thread_trace *thread__trace(struct thread *thread)
-+static struct thread_trace *thread__trace(struct thread *thread, FILE *fp)
- {
- 	struct thread_trace *ttrace;
- 
-@@ -98,12 +98,13 @@ static struct thread_trace *thread__trace(struct thread *thread)
- 
- 	return ttrace;
- fail:
--	color_fprintf(stdout, PERF_COLOR_RED,
-+	color_fprintf(fp, PERF_COLOR_RED,
- 		      "WARNING: not enough memory, dropping samples!\n");
- 	return NULL;
- }
- 
- struct trace {
-+	struct perf_tool	tool;
- 	int			audit_machine;
- 	struct {
- 		int		max;
-@@ -112,6 +113,7 @@ struct trace {
- 	struct perf_record_opts opts;
- 	struct machine		host;
- 	u64			base_time;
-+	FILE			*output;
- 	struct strlist		*ev_qualifier;
- 	unsigned long		nr_events;
- 	bool			sched;
-@@ -151,13 +153,14 @@ static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thre
- 	return printed;
- }
- 
--static int trace__process_event(struct machine *machine, union perf_event *event)
-+static int trace__process_event(struct trace *trace, struct machine *machine,
-+				union perf_event *event)
- {
- 	int ret = 0;
- 
- 	switch (event->header.type) {
- 	case PERF_RECORD_LOST:
--		color_fprintf(stdout, PERF_COLOR_RED,
-+		color_fprintf(trace->output, PERF_COLOR_RED,
- 			      "LOST %" PRIu64 " events!\n", event->lost.lost);
- 		ret = machine__process_lost_event(machine, event);
- 	default:
-@@ -168,12 +171,13 @@ static int trace__process_event(struct machine *machine, union perf_event *event
- 	return ret;
- }
- 
--static int trace__tool_process(struct perf_tool *tool __maybe_unused,
-+static int trace__tool_process(struct perf_tool *tool,
- 			       union perf_event *event,
- 			       struct perf_sample *sample __maybe_unused,
- 			       struct machine *machine)
- {
--	return trace__process_event(machine, event);
-+	struct trace *trace = container_of(tool, struct trace, tool);
-+	return trace__process_event(trace, machine, event);
- }
- 
- static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
-@@ -187,11 +191,11 @@ static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
- 	machine__create_kernel_maps(&trace->host);
- 
- 	if (perf_target__has_task(&trace->opts.target)) {
--		err = perf_event__synthesize_thread_map(NULL, evlist->threads,
-+		err = perf_event__synthesize_thread_map(&trace->tool, evlist->threads,
- 							trace__tool_process,
- 							&trace->host);
- 	} else {
--		err = perf_event__synthesize_threads(NULL, trace__tool_process,
-+		err = perf_event__synthesize_threads(&trace->tool, trace__tool_process,
- 						     &trace->host);
- 	}
- 
-@@ -288,7 +292,7 @@ static struct syscall *trace__syscall_info(struct trace *trace,
- 	int id = perf_evsel__intval(evsel, sample, "id");
- 
- 	if (id < 0) {
--		printf("Invalid syscall %d id, skipping...\n", id);
-+		fprintf(trace->output, "Invalid syscall %d id, skipping...\n", id);
- 		return NULL;
- 	}
- 
-@@ -302,10 +306,10 @@ static struct syscall *trace__syscall_info(struct trace *trace,
- 	return &trace->syscalls.table[id];
- 
- out_cant_read:
--	printf("Problems reading syscall %d", id);
-+	fprintf(trace->output, "Problems reading syscall %d", id);
- 	if (id <= trace->syscalls.max && trace->syscalls.table[id].name != NULL)
--		printf("(%s)", trace->syscalls.table[id].name);
--	puts(" information");
-+		fprintf(trace->output, "(%s)", trace->syscalls.table[id].name);
-+	fputs(" information", trace->output);
- 	return NULL;
- }
- 
-@@ -326,13 +330,13 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 		return 0;
- 
- 	thread = machine__findnew_thread(&trace->host, sample->tid);
--	ttrace = thread__trace(thread);
-+	ttrace = thread__trace(thread, trace->output);
- 	if (ttrace == NULL)
- 		return -1;
- 
- 	args = perf_evsel__rawptr(evsel, sample, "args");
- 	if (args == NULL) {
--		printf("Problems reading syscall arguments\n");
-+		fprintf(trace->output, "Problems reading syscall arguments\n");
- 		return -1;
- 	}
- 
-@@ -352,8 +356,8 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 
- 	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
- 		if (!trace->duration_filter) {
--			trace__fprintf_entry_head(trace, thread, 1, sample->time, stdout);
--			printf("%-70s\n", ttrace->entry_str);
-+			trace__fprintf_entry_head(trace, thread, 1, sample->time, trace->output);
-+			fprintf(trace->output, "%-70s\n", ttrace->entry_str);
- 		}
- 	} else
- 		ttrace->entry_pending = true;
-@@ -377,7 +381,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 		return 0;
- 
- 	thread = machine__findnew_thread(&trace->host, sample->tid);
--	ttrace = thread__trace(thread);
-+	ttrace = thread__trace(thread, trace->output);
- 	if (ttrace == NULL)
- 		return -1;
- 
-@@ -394,14 +398,14 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 	} else if (trace->duration_filter)
- 		goto out;
- 
--	trace__fprintf_entry_head(trace, thread, duration, sample->time, stdout);
-+	trace__fprintf_entry_head(trace, thread, duration, sample->time, trace->output);
- 
- 	if (ttrace->entry_pending) {
--		printf("%-70s", ttrace->entry_str);
-+		fprintf(trace->output, "%-70s", ttrace->entry_str);
- 	} else {
--		printf(" ... [");
--		color_fprintf(stdout, PERF_COLOR_YELLOW, "continued");
--		printf("]: %s()", sc->name);
-+		fprintf(trace->output, " ... [");
-+		color_fprintf(trace->output, PERF_COLOR_YELLOW, "continued");
-+		fprintf(trace->output, "]: %s()", sc->name);
- 	}
- 
- 	if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
-@@ -409,13 +413,13 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
- 			   *e = audit_errno_to_name(-ret);
- 
--		printf(") = -1 %s %s", e, emsg);
-+		fprintf(trace->output, ") = -1 %s %s", e, emsg);
- 	} else if (ret == 0 && sc->fmt && sc->fmt->timeout)
--		printf(") = 0 Timeout");
-+		fprintf(trace->output, ") = 0 Timeout");
- 	else
--		printf(") = %d", ret);
-+		fprintf(trace->output, ") = %d", ret);
- 
--	putchar('\n');
-+	fputc('\n', trace->output);
- out:
- 	ttrace->entry_pending = false;
- 
-@@ -428,7 +432,7 @@ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evs
-         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
- 	double runtime_ms = (double)runtime / NSEC_PER_MSEC;
- 	struct thread *thread = machine__findnew_thread(&trace->host, sample->tid);
--	struct thread_trace *ttrace = thread__trace(thread);
-+	struct thread_trace *ttrace = thread__trace(thread, trace->output);
- 
- 	if (ttrace == NULL)
- 		goto out_dump;
-@@ -438,7 +442,7 @@ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evs
- 	return 0;
- 
- out_dump:
--	printf("%s: comm=%s,pid=%u,runtime=%" PRIu64 ",vruntime=%" PRIu64 ")\n",
-+	fprintf(trace->output, "%s: comm=%s,pid=%u,runtime=%" PRIu64 ",vruntime=%" PRIu64 ")\n",
- 	       evsel->name,
- 	       perf_evsel__strval(evsel, sample, "comm"),
- 	       (pid_t)perf_evsel__intval(evsel, sample, "pid"),
-@@ -456,32 +460,32 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	const bool forks = argc > 0;
- 
- 	if (evlist == NULL) {
--		printf("Not enough memory to run!\n");
-+		fprintf(trace->output, "Not enough memory to run!\n");
- 		goto out;
- 	}
- 
- 	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
- 	    perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit)) {
--		printf("Couldn't read the raw_syscalls tracepoints information!\n");
-+		fprintf(trace->output, "Couldn't read the raw_syscalls tracepoints information!\n");
- 		goto out_delete_evlist;
- 	}
- 
- 	if (trace->sched &&
- 	    perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
- 				   trace__sched_stat_runtime)) {
--		printf("Couldn't read the sched_stat_runtime tracepoint information!\n");
-+		fprintf(trace->output, "Couldn't read the sched_stat_runtime tracepoint information!\n");
- 		goto out_delete_evlist;
- 	}
- 
- 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
- 	if (err < 0) {
--		printf("Problems parsing the target to trace, check your options!\n");
-+		fprintf(trace->output, "Problems parsing the target to trace, check your options!\n");
- 		goto out_delete_evlist;
- 	}
- 
- 	err = trace__symbols_init(trace, evlist);
- 	if (err < 0) {
--		printf("Problems initializing symbol libraries!\n");
-+		fprintf(trace->output, "Problems initializing symbol libraries!\n");
- 		goto out_delete_maps;
- 	}
- 
-@@ -494,20 +498,20 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 		err = perf_evlist__prepare_workload(evlist, &trace->opts.target,
- 						    argv, false, false);
- 		if (err < 0) {
--			printf("Couldn't run the workload!\n");
-+			fprintf(trace->output, "Couldn't run the workload!\n");
- 			goto out_delete_maps;
- 		}
- 	}
- 
- 	err = perf_evlist__open(evlist);
- 	if (err < 0) {
--		printf("Couldn't create the events: %s\n", strerror(errno));
-+		fprintf(trace->output, "Couldn't create the events: %s\n", strerror(errno));
- 		goto out_delete_maps;
- 	}
- 
- 	err = perf_evlist__mmap(evlist, UINT_MAX, false);
- 	if (err < 0) {
--		printf("Couldn't mmap the events: %s\n", strerror(errno));
-+		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
- 		goto out_close_evlist;
- 	}
- 
-@@ -532,7 +536,7 @@ again:
- 
- 			err = perf_evlist__parse_sample(evlist, event, &sample);
- 			if (err) {
--				printf("Can't parse sample, err = %d, skipping...\n", err);
-+				fprintf(trace->output, "Can't parse sample, err = %d, skipping...\n", err);
- 				continue;
- 			}
- 
-@@ -540,18 +544,18 @@ again:
- 				trace->base_time = sample.time;
- 
- 			if (type != PERF_RECORD_SAMPLE) {
--				trace__process_event(&trace->host, event);
-+				trace__process_event(trace, &trace->host, event);
- 				continue;
- 			}
- 
- 			evsel = perf_evlist__id2evsel(evlist, sample.id);
- 			if (evsel == NULL) {
--				printf("Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
-+				fprintf(trace->output, "Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
- 				continue;
- 			}
- 
- 			if (sample.raw_data == NULL) {
--				printf("%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
-+				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
- 				       perf_evsel__name(evsel), sample.tid,
- 				       sample.cpu, sample.raw_size);
- 				continue;
-@@ -640,6 +644,23 @@ static int trace__set_duration(const struct option *opt, const char *str,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 4514e7e..574feb7 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1031,11 +1031,27 @@ out_problem:
  	return 0;
  }
  
-+static int trace__open_output(struct trace *trace, const char *filename)
++static void machine__remove_thread(struct machine *machine, struct thread *th)
 +{
-+	struct stat st;
-+
-+	if (!stat(filename, &st) && st.st_size) {
-+		char oldname[PATH_MAX];
-+
-+		scnprintf(oldname, sizeof(oldname), "%s.old", filename);
-+		unlink(oldname);
-+		rename(filename, oldname);
-+	}
-+
-+	trace->output = fopen(filename, "w");
-+
-+	return trace->output == NULL ? -errno : 0;
++	machine->last_match = NULL;
++	rb_erase(&th->rb_node, &machine->threads);
++	/*
++	 * We may have references to this thread, for instance in some hist_entry
++	 * instances, so just move them to a separate list.
++	 */
++	list_add_tail(&th->node, &machine->dead_threads);
 +}
 +
- int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ int machine__process_fork_event(struct machine *machine, union perf_event *event)
  {
- 	const char * const trace_usage[] = {
-@@ -662,11 +683,14 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.no_delay      = true,
- 			.mmap_pages    = 1024,
- 		},
-+		.output = stdout,
- 	};
-+	const char *output_name = NULL;
- 	const char *ev_qualifier_str = NULL;
- 	const struct option trace_options[] = {
- 	OPT_STRING('e', "expr", &ev_qualifier_str, "expr",
- 		    "list of events to trace"),
-+	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_STRING('p', "pid", &trace.opts.target.pid, "pid",
- 		    "trace events on existing process id"),
- 	OPT_STRING(0, "tid", &trace.opts.target.tid, "tid",
-@@ -692,26 +716,36 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
  
- 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
- 
-+	if (output_name != NULL) {
-+		err = trace__open_output(&trace, output_name);
-+		if (err < 0) {
-+			perror("failed to create output file");
-+			goto out;
-+		}
-+	}
++	/* if a thread currently exists for the thread id remove it */
++	if (thread != NULL)
++		machine__remove_thread(machine, thread);
 +
- 	if (ev_qualifier_str != NULL) {
- 		trace.ev_qualifier = strlist__new(true, ev_qualifier_str);
- 		if (trace.ev_qualifier == NULL) {
--			puts("Not enough memory to parse event qualifier");
--			return -ENOMEM;
-+			fputs("Not enough memory to parse event qualifier",
-+			      trace.output);
-+			err = -ENOMEM;
-+			goto out_close;
- 		}
- 	}
++	thread = machine__findnew_thread(machine, event->fork.tid);
+ 	if (dump_trace)
+ 		perf_event__fprintf_task(event, stdout);
  
- 	err = perf_target__validate(&trace.opts.target);
- 	if (err) {
- 		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
--		printf("%s", bf);
--		return err;
-+		fprintf(trace.output, "%s", bf);
-+		goto out_close;
- 	}
- 
- 	err = perf_target__parse_uid(&trace.opts.target);
- 	if (err) {
- 		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
--		printf("%s", bf);
--		return err;
-+		fprintf(trace.output, "%s", bf);
-+		goto out_close;
- 	}
- 
- 	if (!argc && perf_target__none(&trace.opts.target))
-@@ -720,7 +754,11 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	err = trace__run(&trace, argc, argv);
- 
- 	if (trace.sched && !err)
--		trace__fprintf_thread_summary(&trace, stdout);
-+		trace__fprintf_thread_summary(&trace, trace.output);
- 
-+out_close:
-+	if (output_name != NULL)
-+		fclose(trace.output);
-+out:
- 	return err;
+@@ -1048,18 +1064,8 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
  }
+ 
+-static void machine__remove_thread(struct machine *machine, struct thread *th)
+-{
+-	machine->last_match = NULL;
+-	rb_erase(&th->rb_node, &machine->threads);
+-	/*
+-	 * We may have references to this thread, for instance in some hist_entry
+-	 * instances, so just move them to a separate list.
+-	 */
+-	list_add_tail(&th->node, &machine->dead_threads);
+-}
+-
+-int machine__process_exit_event(struct machine *machine, union perf_event *event)
++int machine__process_exit_event(struct machine *machine __maybe_unused,
++				union perf_event *event)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 
+@@ -1067,7 +1073,7 @@ int machine__process_exit_event(struct machine *machine, union perf_event *event
+ 		perf_event__fprintf_task(event, stdout);
+ 
+ 	if (thread != NULL)
+-		machine__remove_thread(machine, thread);
++		thread__exited(thread);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 13c62c9..32d0601 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -16,6 +16,7 @@ struct thread {
+ 	pid_t			ppid;
+ 	char			shortname[3];
+ 	bool			comm_set;
++	bool			dead; /* if set thread has exited */
+ 	char			*comm;
+ 	int			comm_len;
+ 
+@@ -26,6 +27,10 @@ struct machine;
+ 
+ struct thread *thread__new(pid_t tid);
+ void thread__delete(struct thread *self);
++static inline void thread__exited(struct thread *thread)
++{
++	thread->dead = true;
++}
+ 
+ int thread__set_comm(struct thread *self, const char *comm);
+ int thread__comm_len(struct thread *self);
