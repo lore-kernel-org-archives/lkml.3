@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3H2Rxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:53:38 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60885 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab3H2Rxh (ORCPT
+	id S1756031Ab3H2Rxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:53:42 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64364 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab3H2Rxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:53:37 -0400
+	Thu, 29 Aug 2013 13:53:40 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Michal Simek <michal.simek@xilinx.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -14,72 +14,89 @@ To: Michal Simek <michal.simek@xilinx.com>,
         John Stultz <john.stultz@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 0/3] clocksource/cadence_ttc: Handle frequency changes
-Date: Thu, 29 Aug 2013 10:53:07 -0700
-Message-Id: <1377798790-28927-1-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH RFC 1/3] clocksource/cadence_ttc: Remove clocksource clock notifier
+Date: Thu, 29 Aug 2013 10:53:08 -0700
+Message-Id: <1377798790-28927-2-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377798790-28927-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1377798790-28927-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove the clocksource related clock notifier which tries to update the
+clocksource frequency in case the timer's input frequency changes.
+The notifier's approach - unregistering and re-registering the clocksource
+with the new frequency - is destined to fail, if the TTC is the only
+available HR clocksource.
 
-I've asked Thomas and John before, what to do about a clocksource with
-variable input frequency. It looks like the easiest and probably also
-best solution is to just not use a timer with a variable frequency - as
-John suggested.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/clocksource/cadence_ttc_timer.c | 44 ---------------------------------
+ 1 file changed, 44 deletions(-)
 
-I thought another option to get around removing this feature might be
-to use clock notifiers and updating the timer's prescaler on the fly.
-But that seems to become messy really fast and causes more problems in
-cases multiple clocksources are available, since the clock notifier
-might impose the driver's restrictions on the input clock, although it
-is not even the currently used clocksource.
-
-I have sketched out both approaches in two series.
-
-The first one, which should directly follow this email, is to introduce
-a new flag in the driver's DT bindings, which marks the input clock as
-'unstable'. In case this flag is present, the timer does not register
-itself as clocksource (and not as sched_clock either, of course).
-The clockevent feature is not affected.
-
-The second approach uses clock and PM notifiers to adjust the timer's
-pre-scaler on frequency changes. As mentioned above, I didn't see a way
-to find out whether the timer is the current clock source to not enforce
-restrictions in case it is not.
-
-I'm actually not fully convinced of either approach. So, please let me
-know of better solutions, or how to make either approach acceptable.
-If everything works well, I send out the second series as reply to this
-cover letter. I have both series listed below. Both are based on
-tip/timers/core.
-
-	Thanks,
-	Sören
-
-
-Approach 1, don't register as clocksource:
-Soren Brinkmann (3):
-  clocksource/cadence_ttc: Remove clocksource clock notifier
-  clocksource/cadence_ttc: Make clocksource optional
-  arm: dt: zynq: Mark TTC input clock as unstable
-
- .../bindings/timer/cadence,ttc-timer.txt           |  4 ++
- arch/arm/boot/dts/zynq-7000.dtsi                   |  2 +
- drivers/clocksource/cadence_ttc_timer.c            | 47 +---------------------
- 3 files changed, 8 insertions(+), 45 deletions(-)
-
-Approach 2, use notifiers to adjust:
-Soren Brinkmann (1):
-  clocksource/cadence_ttc: Overhaul clocksource frequency adjustment
-
- drivers/clocksource/cadence_ttc_timer.c | 141 +++++++++++++++++++++++++++-----
- 1 file changed, 121 insertions(+), 20 deletions(-)
-
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index b2bb3a4b..99ec898 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -219,43 +219,6 @@ static void ttc_set_mode(enum clock_event_mode mode,
+ 	}
+ }
+ 
+-static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+-		unsigned long event, void *data)
+-{
+-	struct clk_notifier_data *ndata = data;
+-	struct ttc_timer *ttc = to_ttc_timer(nb);
+-	struct ttc_timer_clocksource *ttccs = container_of(ttc,
+-			struct ttc_timer_clocksource, ttc);
+-
+-	switch (event) {
+-	case POST_RATE_CHANGE:
+-		/*
+-		 * Do whatever is necessary to maintain a proper time base
+-		 *
+-		 * I cannot find a way to adjust the currently used clocksource
+-		 * to the new frequency. __clocksource_updatefreq_hz() sounds
+-		 * good, but does not work. Not sure what's that missing.
+-		 *
+-		 * This approach works, but triggers two clocksource switches.
+-		 * The first after unregister to clocksource jiffies. And
+-		 * another one after the register to the newly registered timer.
+-		 *
+-		 * Alternatively we could 'waste' another HW timer to ping pong
+-		 * between clock sources. That would also use one register and
+-		 * one unregister call, but only trigger one clocksource switch
+-		 * for the cost of another HW timer used by the OS.
+-		 */
+-		clocksource_unregister(&ttccs->cs);
+-		clocksource_register_hz(&ttccs->cs,
+-				ndata->new_rate / PRESCALE);
+-		/* fall through */
+-	case PRE_RATE_CHANGE:
+-	case ABORT_RATE_CHANGE:
+-	default:
+-		return NOTIFY_DONE;
+-	}
+-}
+-
+ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ {
+ 	struct ttc_timer_clocksource *ttccs;
+@@ -273,13 +236,6 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 		return;
+ 	}
+ 
+-	ttccs->ttc.clk_rate_change_nb.notifier_call =
+-		ttc_rate_change_clocksource_cb;
+-	ttccs->ttc.clk_rate_change_nb.next = NULL;
+-	if (clk_notifier_register(ttccs->ttc.clk,
+-				&ttccs->ttc.clk_rate_change_nb))
+-		pr_warn("Unable to register clock notifier.\n");
+-
+ 	ttccs->ttc.base_addr = base;
+ 	ttccs->cs.name = "ttc_clocksource";
+ 	ttccs->cs.rating = 200;
 -- 
 1.8.4
 
