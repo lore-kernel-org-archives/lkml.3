@@ -1,177 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab3H2B0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:26:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41653 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752696Ab3H2B0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:26:09 -0400
-Message-ID: <1377739568.1928.64.camel@joe-AO722>
-Subject: Re: [PATCH net-next 1/1] net: neighbour: Simplify ifdefs around
- neigh_app_ns()
-From: Joe Perches <joe@perches.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Date: Wed, 28 Aug 2013 18:26:08 -0700
-In-Reply-To: <521E4AE6.7080703@canonical.com>
-References: <1377714286-51816-1-git-send-email-tim.gardner@canonical.com>
-	 <1377715873.1928.47.camel@joe-AO722> <521E4AE6.7080703@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753786Ab3H2BcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:32:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61369 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752414Ab3H2BcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 21:32:16 -0400
+X-IronPort-AV: E=Sophos;i="4.89,979,1367942400"; 
+   d="scan'208";a="8337870"
+Message-ID: <521EA44E.1020205@cn.fujitsu.com>
+Date: Thu, 29 Aug 2013 09:30:54 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com> <20130828151909.GE9295@htj.dyndns.org>
+In-Reply-To: <20130828151909.GE9295@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 09:30:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 09:30:14,
+	Serialize complete at 2013/08/29 09:30:14
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-28 at 13:09 -0600, Tim Gardner wrote:
-> On 08/28/2013 12:51 PM, Joe Perches wrote:
-> > On Wed, 2013-08-28 at 12:24 -0600, Tim Gardner wrote:
-> >> Drop a couple of ifdef/endif pairs by moving the ifdef
-> >> surrounding neigh_app_ns() to the interior of neigh_app_ns().
-> > []
-> >> This is an admittedly trivial change. I stumbled on it while trying to figure
-> >> out why Ubuntu doesn't have CONFIG_ARPD enabled.
+On 08/28/2013 11:19 PM, Tejun Heo wrote:
+......
+> Doesn't apply to -master, -next or tip.  Again, can you please include
+> which tree and git commit the patches are against in the patch
+> description?  How is one supposed to know on top of which tree you're
+> working?  It is in your benefit to make things easier for the prosepct
+> reviewers.  Trying to guess and apply the patches to different devel
+> branches and failing isn't productive and frustates your prospect
+> reviewers who would of course have negative pre-perception going into
+> the review and this isn't the first time this issue was raised either.
+>
 
-> > I'd be more inclined to make neigh_app_ns static inline
-> > in the .h file and remove the EXPORT_SYMBOL
+Hi tj,
 
-> I thought about that as well, but then you'd have to extern
-> __neigh_notify(), which is currently a static function and large enough
-> to not really be suitable for inlining. Seems like unnecessary churn to me.
+Sorry for the trouble. Please refer to the following branch:
 
-Hi Tim.
+https://github.com/imtangchen/linux.git  movablenode-boot-option
 
-As is, this makes the call to neight_app_ns
-impossible to optimize away.
-
-Perhaps this:
-
-(this does add a possibly unused neigh_notify as a global symbol)
-
-Rename __neigh_notify to neigh_notify and make public
-Add static inline neigh_app_ns
-Remove #ifdefs around use of neigh_app_ns
-
----
-
-Compile tested only
-
- include/net/neighbour.h | 10 +++++++++-
- net/core/neighbour.c    | 15 +++------------
- net/ipv4/arp.c          |  2 --
- net/ipv6/ndisc.c        |  2 --
- 4 files changed, 12 insertions(+), 17 deletions(-)
-
-diff --git a/include/net/neighbour.h b/include/net/neighbour.h
-index 536501a..a08b0a7 100644
---- a/include/net/neighbour.h
-+++ b/include/net/neighbour.h
-@@ -249,7 +249,15 @@ static inline struct net *pneigh_net(const struct pneigh_entry *pneigh)
- 	return read_pnet(&pneigh->net);
- }
- 
--void neigh_app_ns(struct neighbour *n);
-+void neigh_notify(struct neighbour *n, int type, int flags);
-+
-+static inline void neigh_app_ns(struct neighbour *n)
-+{
-+#ifdef CONFIG_ARPD
-+	neigh_notify(n, RTM_GETNEIGH, NLM_F_REQUEST);
-+#endif
-+}
-+
- void neigh_for_each(struct neigh_table *tbl,
- 		    void (*cb)(struct neighbour *, void *), void *cookie);
- void __neigh_for_each_release(struct neigh_table *tbl,
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 60533db..6ec5f86 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -50,7 +50,6 @@ do {						\
- #define PNEIGH_HASHMASK		0xF
- 
- static void neigh_timer_handler(unsigned long arg);
--static void __neigh_notify(struct neighbour *n, int type, int flags);
- static void neigh_update_notify(struct neighbour *neigh);
- static int pneigh_ifdown(struct neigh_table *tbl, struct net_device *dev);
- 
-@@ -103,7 +102,7 @@ static void neigh_cleanup_and_release(struct neighbour *neigh)
- 	if (neigh->parms->neigh_cleanup)
- 		neigh->parms->neigh_cleanup(neigh);
- 
--	__neigh_notify(neigh, RTM_DELNEIGH, 0);
-+	neigh_notify(neigh, RTM_DELNEIGH, 0);
- 	neigh_release(neigh);
- }
- 
-@@ -2215,7 +2214,7 @@ nla_put_failure:
- static void neigh_update_notify(struct neighbour *neigh)
- {
- 	call_netevent_notifiers(NETEVENT_NEIGH_UPDATE, neigh);
--	__neigh_notify(neigh, RTM_NEWNEIGH, 0);
-+	neigh_notify(neigh, RTM_NEWNEIGH, 0);
- }
- 
- static int neigh_dump_table(struct neigh_table *tbl, struct sk_buff *skb,
-@@ -2735,7 +2734,7 @@ static inline size_t neigh_nlmsg_size(void)
- 	       + nla_total_size(4); /* NDA_PROBES */
- }
- 
--static void __neigh_notify(struct neighbour *n, int type, int flags)
-+void neigh_notify(struct neighbour *n, int type, int flags)
- {
- 	struct net *net = dev_net(n->dev);
- 	struct sk_buff *skb;
-@@ -2759,14 +2758,6 @@ errout:
- 		rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
- }
- 
--#ifdef CONFIG_ARPD
--void neigh_app_ns(struct neighbour *n)
--{
--	__neigh_notify(n, RTM_GETNEIGH, NLM_F_REQUEST);
--}
--EXPORT_SYMBOL(neigh_app_ns);
--#endif /* CONFIG_ARPD */
--
- #ifdef CONFIG_SYSCTL
- static int zero;
- static int int_max = INT_MAX;
-diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-index 4429b01..7808093 100644
---- a/net/ipv4/arp.c
-+++ b/net/ipv4/arp.c
-@@ -368,9 +368,7 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
- 	} else {
- 		probes -= neigh->parms->app_probes;
- 		if (probes < 0) {
--#ifdef CONFIG_ARPD
- 			neigh_app_ns(neigh);
--#endif
- 			return;
- 		}
- 	}
-diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-index 04d31c2..d5693ad 100644
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -663,9 +663,7 @@ static void ndisc_solicit(struct neighbour *neigh, struct sk_buff *skb)
- 		}
- 		ndisc_send_ns(dev, neigh, target, target, saddr);
- 	} else if ((probes -= neigh->parms->app_probes) < 0) {
--#ifdef CONFIG_ARPD
- 		neigh_app_ns(neigh);
--#endif
- 	} else {
- 		addrconf_addr_solict_mult(target, &mcaddr);
- 		ndisc_send_ns(dev, NULL, target, &mcaddr, saddr);
-
+Thanks.
 
