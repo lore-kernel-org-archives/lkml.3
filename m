@@ -1,112 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab3H2KBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:01:50 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:61582 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab3H2KBs (ORCPT
+	id S1756046Ab3H2KEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:04:38 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:47699 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755644Ab3H2KEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:01:48 -0400
-Date: Thu, 29 Aug 2013 12:01:43 +0200
+	Thu, 29 Aug 2013 06:04:36 -0400
+Date: Thu, 29 Aug 2013 12:04:31 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [gcv v3 06/35] scheduler: Replace __get_cpu_var uses
-Message-ID: <20130829100143.GA29672@gmail.com>
-References: <20130828193457.140443630@linux.com>
- <00000140c67817eb-b582280a-f059-499f-a24c-a11f3d59b86e-000000@email.amazonses.com>
- <20130829075818.GW10002@twins.programming.kicks-ass.net>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20130829100431.GB29672@gmail.com>
+References: <1377701977-2085-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130829075818.GW10002@twins.programming.kicks-ass.net>
+In-Reply-To: <1377701977-2085-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> On Wed, Aug 28, 2013 at 07:48:14PM +0000, Christoph Lameter wrote:
-> > Transformations done to __get_cpu_var()
-> > 
-> > 
-> > 1. Determine the address of the percpu instance of the current processor.
-> > 
-> > 	DEFINE_PER_CPU(int, y);
-> > 	int *x = &__get_cpu_var(y);
-> > 
-> >     Converts to
-> > 
-> > 	int *x = this_cpu_ptr(&y);
-> > 
-> > 
-> > 2. Same as #1 but this time an array structure is involved.
-> > 
-> > 	DEFINE_PER_CPU(int, y[20]);
-> > 	int *x = __get_cpu_var(y);
-> > 
-> >     Converts to
-> > 
-> > 	int *x = this_cpu_ptr(y);
-> > 
-> > 
-> > 3. Retrieve the content of the current processors instance of a per cpu variable.
-> > 
-> > 	DEFINE_PER_CPU(int, u);
-> > 	int x = __get_cpu_var(y)
-> > 
-> >    Converts to
-> > 
-> > 	int x = __this_cpu_read(y);
-> > 
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 > 
-> This looses a preemption debug check, so NAK
+> Hi Ingo,
 > 
-> > 4. Retrieve the content of a percpu struct
-> > 
-> > 	DEFINE_PER_CPU(struct mystruct, y);
-> > 	struct mystruct x = __get_cpu_var(y);
-> > 
-> >    Converts to
-> > 
-> > 	memcpy(this_cpu_ptr(&x), y, sizeof(x));
-> > 
-> > 5. Assignment to a per cpu variable
-> > 
-> > 	DEFINE_PER_CPU(int, y)
-> > 	__get_cpu_var(y) = x;
-> > 
-> >    Converts to
-> > 
-> > 	this_cpu_write(y, x);
-> > 
+> 	Please consider pulling, another batch, more to come soon,
 > 
-> This too looses a preemption debug check, NAK
+> - Arnaldo
 > 
-> > 6. Increment/Decrement etc of a per cpu variable
-> > 
-> > 	DEFINE_PER_CPU(int, y);
-> > 	__get_cpu_var(y)++
-> > 
-> >    Converts to
-> > 
-> > 	this_cpu_inc(y)
-> > 
+> The following changes since commit 5ec4c599a52362896c3e7c6a31ba6145dca9c6f5:
 > 
-> Lo and behold.. no preemption checks again.
+>   perf: Do not compute time values unnecessarily (2013-08-16 17:55:52 +0200)
 > 
+> are available in the git repository at:
 > 
-> Seriously first fix the debug and validation bits of the *this_cpu* 
-> stuff.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 456da532a5fb04f8a79622df7dd49e84e04f31a8:
+> 
+>   tools lib traceevent: Fixup jobserver setup (2013-08-27 11:05:55 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Don't install scripting files files when perl/python support is disabled.
+> 
+> . Support ! in -e expressions in 'perf trace', to filter a list of syscalls.
+> 
+> . Add --verbose and -o/--output options to 'perf trace'.
+> 
+> . Introduce better formatting of syscall arguments in 'perf trace',
+>   including so far beautifiers for mmap, madvise, syscall return
+>   values.
+> 
+> . Fixup jobserver setup in libtraceevent makefile.
+> 
+> . Debug improvements from Adrian Hunter.
+> 
+> . Try to increase the file descriptor limits on EMFILE, from Andi Kleen.
+> 
+> . Remove unused force option in 'perf kvm', from David Ahern.
+> 
+> . Make 'perf trace' command line arguments consistent with 'perf record',
+>   from David Ahern.
+> 
+> . Fix correlation of samples coming after PERF_RECORD_EXIT event, from
+>   David Ahern.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (3):
+>       perf tools: Re-implement debug print function for linking python/perf.so
+>       perf tools: Add debug prints
+>       perf tools: Add pid to struct thread
+> 
+> Andi Kleen (1):
+>       perf tools: Try to increase the file descriptor limits on EMFILE
+> 
+> Arnaldo Carvalho de Melo (14):
+>       perf trace: Implement -o/--output filename
+>       perf tools: Don't install scripting files files when disabled
+>       perf trace: Support ! in -e expressions
+>       perf trace: Add --verbose option
+>       perf trace: Hide sys_exit messages about syscall id = -1
+>       perf trace: Introduce syscall arg formatters
+>       perf trace: Simplify sys_exit return printing
+>       perf trace: Allow printing syscall return values in hex
+>       perf trace: Add aliases to remaining syscalls of the sys_enter_newfoo
+>       perf trace: Allow overiding the formatting of syscall fields
+>       perf trace: Add beautifier for mmap prot parm
+>       perf trace: Add beautifier for mmap flags parm
+>       perf trace: Add beautifier for madvise behaviour/advice parm
+>       tools lib traceevent: Fixup jobserver setup
+> 
+> David Ahern (3):
+>       perf kvm: Remove force option to cmd_record
+>       perf trace: Make command line arguments consistent with perf-record
+>       perf tools: Sample after exit loses thread correlation
+> 
+>  tools/lib/traceevent/Makefile           |   2 +-
+>  tools/perf/Documentation/perf-trace.txt |  16 ++
+>  tools/perf/Makefile                     |   6 +-
+>  tools/perf/builtin-kvm.c                |   1 -
+>  tools/perf/builtin-trace.c              | 379 ++++++++++++++++++++++++++------
+>  tools/perf/util/evlist.c                |   3 +
+>  tools/perf/util/evsel.c                 |  93 ++++++++
+>  tools/perf/util/machine.c               |  50 +++--
+>  tools/perf/util/python.c                |  20 ++
+>  tools/perf/util/thread.c                |   3 +-
+>  tools/perf/util/thread.h                |   8 +-
+>  11 files changed, 488 insertions(+), 93 deletions(-)
 
-Note that most of the other 'gcv' patches have these problems as well, so 
-it's a NAK from me as well for most of the other patches as well ...
-
-Thanks,
+Pulled, thanks a lot Arnaldo!
 
 	Ingo
