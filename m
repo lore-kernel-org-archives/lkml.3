@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab3H2Juq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:50:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23585 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab3H2Juo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:50:44 -0400
-Message-ID: <521F196E.2010102@oracle.com>
-Date: Thu, 29 Aug 2013 17:50:38 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756181Ab3H2Jv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:51:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296Ab3H2Jv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 05:51:28 -0400
+Date: Thu, 29 Aug 2013 12:51:20 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130829095120.GD22899@redhat.com>
+References: <20130828092001.GQ22899@redhat.com>
+ <521DC3FD.1020507@linux.vnet.ibm.com>
+ <20130828094630.GR22899@redhat.com>
+ <521DCD57.7000401@linux.vnet.ibm.com>
+ <20130828104938.GT22899@redhat.com>
+ <521DE9E8.2040908@linux.vnet.ibm.com>
+ <20130828133635.GU22899@redhat.com>
+ <521EEF4B.4040107@linux.vnet.ibm.com>
+ <20130829090833.GA22899@redhat.com>
+ <521F14FE.3070900@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3 v3] Refactor MSI restore call-chain to
- drop unnecessary argument
-References: <521EB76B.8090903@oracle.com> <521F12FC02000078000EF503@nat28.tlf.novell.com>
-In-Reply-To: <521F12FC02000078000EF503@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521F14FE.3070900@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 29, 2013 at 05:31:42PM +0800, Xiao Guangrong wrote:
+> > As Documentation/RCU/whatisRCU.txt says:
+> > 
+> >         As with rcu_assign_pointer(), an important function of
+> >         rcu_dereference() is to document which pointers are protected by
+> >         RCU, in particular, flagging a pointer that is subject to changing
+> >         at any time, including immediately after the rcu_dereference().
+> >         And, again like rcu_assign_pointer(), rcu_dereference() is
+> >         typically used indirectly, via the _rcu list-manipulation
+> >         primitives, such as list_for_each_entry_rcu().
+> > 
+> > The documentation aspect of rcu_assign_pointer()/rcu_dereference() is
+> > important. The code is complicated, so self documentation will not hurt.
+> > I want to see what is actually protected by rcu here. Freeing shadow
+> > pages with call_rcu() further complicates matters: does it mean that
+> > shadow pages are also protected by rcu? 
+> 
+> Yes, it stops shadow page to be freed when we do write-protection on
+> it.
+> 
+Yeah, I got the trick, what I am saying that we have a data structure
+here protected by RCU, but we do not use RCU functions to access it...
+BTW why not allocate sp->spt from SLAB_DESTROY_BY_RCU cache too? We may
+switch write protection on a random spt occasionally if page is deleted
+and reused for another spt though. For last level spt it should not be a
+problem and for non last level we have is_last_spte() check in
+__rmap_write_protect_lockless(). Can it work?
 
-On 2013-08-29 15:23, Jan Beulich wrote:
->>>> On 29.08.13 at 04:52, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
->> But in initial domain (aka priviliged guest), it's different.
->> Driver init call graph under initial domain:
->> driver_init->
->>      msix_capability_init->
->>          msix_program_entries->
->>              msix_mask_irq->
->>                  entry->masked = 1
->>      request_irq->
->>          __setup_irq->
->>              irq_startup->
->>                  __startup_pirq->
->>                      EVTCHNOP_bind_pirq hypercall    (trap into Xen)
->> [Xen:]
->> pirq_guest_bind->
->>      startup_msi_irq->
->>          unmask_msi_irq->
->>              msi_set_mask_bit->
->>                  entry->msi_attrib.masked = 0
->>
->> So entry->msi_attrib.masked in xen side always has newest value. entry->masked
->> in initial domain is untouched and is 1 after msix_capability_init.
-> And as said several times before - Linux shouldn't be touching
-> the MSI-X table at all during initial setup or resume (it should in
-> particular not rely on such accesses to not fault, as being a
-> privilege violation); all it needs to do is update its software state.
-My patch just remove access to msix mask register in dom0. Anything 
-wrong with that?
->
-> Hence fiddling with default_restore_msi_irqs() seems the wrong
-> approach towards solving the problem.
-dom0 uses xen_initdom_restore_msi_irqs, default_restore_msi_irqs is for 
-baremetal.
-
-zduan
+--
+			Gleb.
