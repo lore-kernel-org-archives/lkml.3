@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3H2BIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:08:45 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:42552 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab3H2BIn (ORCPT
+	id S1754596Ab3H2BKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:10:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:38347 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab3H2BKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:08:43 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@chromium.org>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening\@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
-	<871u5gqtw3.fsf@xmission.com>
-	<20130826172054.GE27005@ZenIV.linux.org.uk>
-	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
-	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-	<20130828211116.GA22184@dztty> <87sixt735b.fsf@xmission.com>
-	<CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
-Date: Wed, 28 Aug 2013 18:08:34 -0700
-In-Reply-To: <CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
-	(Kees Cook's message of "Wed, 28 Aug 2013 17:30:25 -0700")
-Message-ID: <87li3l5mnh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 28 Aug 2013 21:10:11 -0400
+Message-ID: <521E9F42.6090604@atmel.com>
+Date: Thu, 29 Aug 2013 09:09:22 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/fqfC0cN9AXd5z810MsOnoVbGWSnvbkIk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3575]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Kees Cook <keescook@chromium.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Olof Johansson <olof@lixom.net>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        <arm@kernel.org>, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: soc update for 3.12 #1
+References: <1377532543-349-1-git-send-email-nicolas.ferre@atmel.com> <20130828235855.GM8607@quad.lixom.net>
+In-Reply-To: <20130828235855.GM8607@quad.lixom.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
+Hi Olof,
 
-> On Wed, Aug 28, 2013 at 5:26 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Can someome please state what they are worried about in simple language
->> step by step?
->> [...]
->> The closest I saw in the thread was people were worried about ASLR being
->> defeated.  All I see are kernel addresses and we don't have much if any
->> runtime or even load time randomization of where code is located in the
->> kernel address map on x86_64.  So I don't understand the concern.
+On 08/29/2013 07:58 AM, Olof Johansson wrote:
+> On Mon, Aug 26, 2013 at 05:55:43PM +0200, Nicolas Ferre wrote:
+>> Arnd, Olof, Kevin,
+>>
+>> Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
+>> this topic and it is based on 3.11-rc5 like your next/soc branch.
+>>
+>> Thanks, best regards,
+>>
+>> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+>>
+>>    Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+>>
+>> are available in the git repository at:
+>>
+>>    git://github.com/at91linux/linux-at91.git tags/at91-soc
+>>
+>> for you to fetch changes up to 99eb3b40ec42e7fce1fc58429bf9b26c17973c12:
+>>
+>>    ARM: at91: at91_dt_defconfig: enable rm9200 support (2013-08-26 09:58:29 +0200)
+>>
+>> ----------------------------------------------------------------
+>> AT91 SoC update for 3.12 take 1
+>> - enable kernel uncompress information output for
+>>    SoC where it was missing: at91sam9n12 and sama5d3
+>> - addition of at91rm9200 to the generic at91_dt_defconfig
+>>
+>> ----------------------------------------------------------------
+>> Jean-Christophe PLAGNIOL-VILLARD (1):
+>>        ARM: at91: at91_dt_defconfig: enable rm9200 support
+>>
+>> voice (4):
+>>        ARM: at91: sama5d3: add definition for usart base address
+>>        ARM: at91: include sama5d3.h into hardware.h
+>>        ARM: at91: sama5: enable kernel uncompress info output
+>>        ARM: at91: sam9n12: enable kernel uncompress info output
 >
-> I showed the output of "syscall", since that contains user-space
-> addresses and shows a leak of ASLR from a privileged process to an
-> unprivileged process.
+> That doesn't look right. Author should probably be "Bo Shen
+> <voice.shen@atmel.com>" instead. Can you fixup and respin, please?
+
+I don't know why on the patchwork it show my name as voice.
+So, if get patch from patchwork and apply it will show my name as voice.
+So, would it be possible to show the name as Bo Shen on patchwork?
+
 >
-> The flaw as I see it is that an unprivileged process opens
-> /proc/$priv_pid/syscall and passes it to a setuid process which is
-> able to read it, and provides those contents to the unprivileged
-> process.
+> -Olof
 >
-> The unprivileged process should not be able to the open the file in
-> the first place.
 
-I see so the complaint is that we don't give read permission but we do
-give open permission.    Which is a variant of: the permissions used to
-open are not the permission used to access the file.
+Best Regards,
+Bo Shen
 
-This does seem to be a legitimate concern.
-
-I think there are several discussions that have been going on lately
-with respect to this class of problems in proc files.
-
-Given the existence of suid exec we can not in general prevent this
-class of bugs with a check at open time.
-
-I believe the solution needs to be to enhance the ptrace_may_access
-checks to verify that both the creds of the current task and the creds
-of the opening process would have allowed the access.
-
-We may want to put this check in permission so open fails quickly but
-we absolutely need to put this check in at the time we call
-ptrace_may_access.
-
-Eric
