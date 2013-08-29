@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3H2J6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:58:14 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3211 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab3H2J6J (ORCPT
+	id S1756229Ab3H2J6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:58:33 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19410 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab3H2J6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:58:09 -0400
+	Thu, 29 Aug 2013 05:58:12 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 29 Aug 2013 02:55:35 -0700
+	by hqnvupgp07.nvidia.com on Thu, 29 Aug 2013 02:58:12 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -17,9 +17,9 @@ CC: <gnurou@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 4/5] ARM: tegra: set CPU reset handler with firmware op
-Date: Thu, 29 Aug 2013 18:57:47 +0900
-Message-ID: <1377770268-14014-5-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v4 5/5] ARM: tegra: support Trusted Foundations by default
+Date: Thu, 29 Aug 2013 18:57:48 +0900
+Message-ID: <1377770268-14014-6-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1377770268-14014-1-git-send-email-acourbot@nvidia.com>
 References: <1377770268-14014-1-git-send-email-acourbot@nvidia.com>
@@ -30,59 +30,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a firmware operation to set the CPU reset handler and only resort to
-doing it ourselves if there is none defined.
-
-This supports the booting of secondary CPUs on devices using a TrustZone
-secure monitor.
+Support for Trusted Foundations is light and allows the kernel to run on
+a wider range of devices, so enable it by default.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- arch/arm/mach-tegra/reset.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ arch/arm/configs/tegra_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index 6964117..fc9cf03 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include <asm/firmware.h>
- 
- #include "iomap.h"
- #include "irammap.h"
-@@ -65,6 +66,7 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
- 	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
- 						tegra_cpu_reset_handler_offset;
-+	int err;
- 
- 	BUG_ON(is_enabled);
- 	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-@@ -72,9 +74,18 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
- 			tegra_cpu_reset_handler_size);
- 
--	tegra_cpu_reset_handler_set(reset_address);
--
--	is_enabled = true;
-+	err = call_firmware_op(set_cpu_boot_addr, 0, reset_address);
-+	switch (err) {
-+	case -ENOSYS:
-+		tegra_cpu_reset_handler_set(reset_address);
-+		/* pass-through */
-+	case 0:
-+		is_enabled = true;
-+		break;
-+	default:
-+		pr_crit("Cannot set CPU reset handler: %d\n", err);
-+		BUG();
-+	}
- }
- 
- void __init tegra_cpu_reset_handler_init(void)
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 1effb43..90c90d9 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -28,6 +28,7 @@ CONFIG_ARCH_TEGRA_3x_SOC=y
+ CONFIG_ARCH_TEGRA_114_SOC=y
+ CONFIG_TEGRA_PCI=y
+ CONFIG_TEGRA_EMC_SCALING_ENABLE=y
++CONFIG_TRUSTED_FOUNDATIONS=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
 -- 
 1.8.4
 
