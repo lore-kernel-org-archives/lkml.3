@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3H2PBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39454 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab3H2PBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:01:53 -0400
-Date: Thu, 29 Aug 2013 11:01:46 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        keescook@chromium.org
-Subject: Re: [PATCH V2 01/10] Add secure_modules() call
-Message-ID: <20130829150146.GR20828@hansolo.jdub.homelinux.org>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
- <1376933171-9854-2-git-send-email-matthew.garrett@nebula.com>
+	id S1756094Ab3H2PCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:02:20 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:60543 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3H2PCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 11:02:18 -0400
+From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+To: Chris Rodley <chris@snapithd.com>
+Cc: kernel@savoirfairelinux.com, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: sht15 kernel driver
+References: <521E7CA7.5060407@snapithd.com> <87fvtt4dmt.fsf@jerows.sfl>
+	<521EBD9F.7070502@snapithd.com>
+Date: Thu, 29 Aug 2013 11:02:16 -0400
+In-Reply-To: <521EBD9F.7070502@snapithd.com> (Chris Rodley's message of "Thu,
+	29 Aug 2013 15:18:55 +1200")
+Message-ID: <87ppswh75z.fsf@jerows.sfl>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376933171-9854-2-git-send-email-matthew.garrett@nebula.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 01:26:02PM -0400, Matthew Garrett wrote:
-> Provide a single call to allow kernel code to determine whether the system
-> has been configured to either disable module loading entirely or to load
-> only modules signed with a trusted key.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  include/linux/module.h | 7 +++++++
->  kernel/module.c        | 9 +++++++++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 46f1ea0..0c266b2 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -509,6 +509,8 @@ int unregister_module_notifier(struct notifier_block * nb);
->  
->  extern void print_modules(void);
->  
-> +extern bool secure_modules(void);
-> +
->  #else /* !CONFIG_MODULES... */
->  
->  /* Given an address, look for it in the exception tables. */
-> @@ -619,6 +621,11 @@ static inline int unregister_module_notifier(struct notifier_block * nb)
->  static inline void print_modules(void)
->  {
->  }
-> +
-> +static inline bool secure_modules(void)
-> +{
-> +	return false;
-> +}
->  #endif /* CONFIG_MODULES */
->  
->  #ifdef CONFIG_SYSFS
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 2069158..801021e 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -3852,3 +3852,12 @@ void module_layout(struct module *mod,
->  }
->  EXPORT_SYMBOL(module_layout);
->  #endif
-> +
-> +bool secure_modules(void)
-> +{
-> +#ifdef CONFIG_MODULE_SIG
-> +	return (sig_enforce || modules_disabled);
-> +#else
-> +	return modules_disabled;
-> +#endif
-> +}
+Chris Rodley <chris@snapithd.com> writes:
 
-Needs an EXPORT_SYMBOL/EXPORT_SYMBOL_GPL here, or the patches to drivers
-later in the series will fail to link.
+> Thanks Jerome!
+>
+> That was just what I needed to know.
+> The device is now set up and is working well - I will have a go at
+> back porting now.
+>
+> Many thanks again for your help!
+> Chris
 
-josh
+Good to know Chris!
+
+Note, we noticed that the sht15 driver may be sensible to noisy lines,
+we suspect a race condition around the interrupt handling code.
+
+If your sensor is populated on the board you shouldn't have problems
+though.
+
+Jerome
