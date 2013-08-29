@@ -1,265 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3H2Blw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:41:52 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:51477 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657Ab3H2Blu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:41:50 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Neil Zhang <zhangwm@marvell.com>,
-        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jon Medhurst <tixy@linaro.org>, Sivaram Nair <sivaramn@nvidia.com>
-Subject: [PATCH v2] cpuidle: coupled: abort idle if pokes are pending
-Date: Wed, 28 Aug 2013 18:41:47 -0700
-Message-Id: <1377740508-22134-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.4
+	id S1755224Ab3H2Bnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:43:40 -0400
+Received: from tundra.namei.org ([65.99.196.166]:33445 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754248Ab3H2Bnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 21:43:39 -0400
+Date: Thu, 29 Aug 2013 11:44:32 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: simo@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Expand keyring capacity and provide support for
+ libkrb5
+In-Reply-To: <11520.1377735648@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.02.1308291144090.431@tundra.namei.org>
+References: <11520.1377735648@warthog.procyon.org.uk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joseph Lo <josephl@nvidia.com> reported a lockup on Tegra20 caused
-by a race condition in coupled cpuidle.  When two or more cpus
-enter idle at the same time, the first cpus to arrive may go to the
-ready loop without processing pending pokes from the last cpu to
-arrive.
+On Thu, 29 Aug 2013, David Howells wrote:
 
-This patch adds a check for pending pokes once all cpus have been
-synchronized in the ready loop and resets the coupled state and
-retries if any cpus failed to handle their pending poke.
+> 
+> Hi James,
+> 
+> Could you pull these patches into the security tree?
 
-Retrying on all cpus may trigger the same issue again, so this patch
-also adds a check to ensure that each cpu has received at least one
-poke between when it enters the waiting loop and when it moves on to
-the ready loop.
+944 files changed, 17114 insertions(+), 9157 deletions(-)
 
-Reported-by: Joseph Lo <josephl@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Tested-by: Joseph Lo <josephl@nvidia.com>
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/cpuidle/coupled.c | 107 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 82 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index 73497da..c72b3bc 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -106,6 +106,7 @@ struct cpuidle_coupled {
- 	cpumask_t coupled_cpus;
- 	int requested_state[NR_CPUS];
- 	atomic_t ready_waiting_counts;
-+	atomic_t abort_barrier;
- 	int online_count;
- 	int refcnt;
- 	int prevent;
-@@ -122,12 +123,19 @@ static DEFINE_MUTEX(cpuidle_coupled_lock);
- static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
- 
- /*
-- * The cpuidle_coupled_poked_mask mask is used to avoid calling
-+ * The cpuidle_coupled_poke_pending mask is used to avoid calling
-  * __smp_call_function_single with the per cpu call_single_data struct already
-  * in use.  This prevents a deadlock where two cpus are waiting for each others
-  * call_single_data struct to be available
-  */
--static cpumask_t cpuidle_coupled_poked_mask;
-+static cpumask_t cpuidle_coupled_poke_pending;
-+
-+/*
-+ * The cpuidle_coupled_poked mask is used to ensure that each cpu has been poked
-+ * once to minimize entering the ready loop with a poke pending, which would
-+ * require aborting and retrying.
-+ */
-+static cpumask_t cpuidle_coupled_poked;
- 
- /**
-  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
-@@ -291,10 +299,11 @@ static inline int cpuidle_coupled_get_state(struct cpuidle_device *dev,
- 	return state;
- }
- 
--static void cpuidle_coupled_poked(void *info)
-+static void cpuidle_coupled_handle_poke(void *info)
- {
- 	int cpu = (unsigned long)info;
--	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
-+	cpumask_set_cpu(cpu, &cpuidle_coupled_poked);
-+	cpumask_clear_cpu(cpu, &cpuidle_coupled_poke_pending);
- }
- 
- /**
-@@ -313,7 +322,7 @@ static void cpuidle_coupled_poke(int cpu)
- {
- 	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
- 
--	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		__smp_call_function_single(cpu, csd, 0);
- }
- 
-@@ -340,30 +349,19 @@ static void cpuidle_coupled_poke_others(int this_cpu,
-  * @coupled: the struct coupled that contains the current cpu
-  * @next_state: the index in drv->states of the requested state for this cpu
-  *
-- * Updates the requested idle state for the specified cpuidle device,
-- * poking all coupled cpus out of idle if necessary to let them see the new
-- * state.
-+ * Updates the requested idle state for the specified cpuidle device.
-+ * Returns the number of waiting cpus.
-  */
--static void cpuidle_coupled_set_waiting(int cpu,
-+static int cpuidle_coupled_set_waiting(int cpu,
- 		struct cpuidle_coupled *coupled, int next_state)
- {
--	int w;
--
- 	coupled->requested_state[cpu] = next_state;
- 
- 	/*
--	 * If this is the last cpu to enter the waiting state, poke
--	 * all the other cpus out of their waiting state so they can
--	 * enter a deeper state.  This can race with one of the cpus
--	 * exiting the waiting state due to an interrupt and
--	 * decrementing waiting_count, see comment below.
--	 *
- 	 * The atomic_inc_return provides a write barrier to order the write
- 	 * to requested_state with the later write that increments ready_count.
- 	 */
--	w = atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
--	if (w == coupled->online_count)
--		cpuidle_coupled_poke_others(cpu, coupled);
-+	return atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
- }
- 
- /**
-@@ -418,13 +416,24 @@ static void cpuidle_coupled_set_done(int cpu, struct cpuidle_coupled *coupled)
- static int cpuidle_coupled_clear_pokes(int cpu)
- {
- 	local_irq_enable();
--	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
-+	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
- 		cpu_relax();
- 	local_irq_disable();
- 
- 	return need_resched() ? -EINTR : 0;
- }
- 
-+static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
-+{
-+	cpumask_t cpus;
-+	int ret;
-+
-+	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
-+	ret = cpumask_and(&cpus, &cpuidle_coupled_poke_pending, &cpus);
-+
-+	return ret;
-+}
-+
- /**
-  * cpuidle_enter_state_coupled - attempt to enter a state with coupled cpus
-  * @dev: struct cpuidle_device for the current cpu
-@@ -449,6 +458,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- {
- 	int entered_state = -1;
- 	struct cpuidle_coupled *coupled = dev->coupled;
-+	int w;
- 
- 	if (!coupled)
- 		return -EINVAL;
-@@ -466,14 +476,33 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- 	/* Read barrier ensures online_count is read after prevent is cleared */
- 	smp_rmb();
- 
--	cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+reset:
-+	cpumask_clear_cpu(dev->cpu, &cpuidle_coupled_poked);
-+
-+	w = cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
-+	/*
-+	 * If this is the last cpu to enter the waiting state, poke
-+	 * all the other cpus out of their waiting state so they can
-+	 * enter a deeper state.  This can race with one of the cpus
-+	 * exiting the waiting state due to an interrupt and
-+	 * decrementing waiting_count, see comment below.
-+	 */
-+	if (w == coupled->online_count) {
-+		cpumask_set_cpu(dev->cpu, &cpuidle_coupled_poked);
-+		cpuidle_coupled_poke_others(dev->cpu, coupled);
-+	}
- 
- retry:
- 	/*
- 	 * Wait for all coupled cpus to be idle, using the deepest state
--	 * allowed for a single cpu.
-+	 * allowed for a single cpu.  If this was not the poking cpu, wait
-+	 * for at least one poke before leaving to avoid a race where
-+	 * two cpus could arrive at the waiting loop at the same time,
-+	 * but the first of the two to arrive could skip the loop without
-+	 * processing the pokes from the last to arrive.
- 	 */
--	while (!cpuidle_coupled_cpus_waiting(coupled)) {
-+	while (!cpuidle_coupled_cpus_waiting(coupled) ||
-+			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
- 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
- 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
- 			goto out;
-@@ -495,6 +524,12 @@ retry:
- 	}
- 
- 	/*
-+	 * Make sure final poke status for this cpu is visible before setting
-+	 * cpu as ready.
-+	 */
-+	smp_wmb();
-+
-+	/*
- 	 * All coupled cpus are probably idle.  There is a small chance that
- 	 * one of the other cpus just became active.  Increment the ready count,
- 	 * and spin until all coupled cpus have incremented the counter. Once a
-@@ -513,6 +548,28 @@ retry:
- 		cpu_relax();
- 	}
- 
-+	/*
-+	 * Make sure read of all cpus ready is done before reading pending pokes
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * There is a small chance that a cpu left and reentered idle after this
-+	 * cpu saw that all cpus were waiting.  The cpu that reentered idle will
-+	 * have sent this cpu a poke, which will still be pending after the
-+	 * ready loop.  The pending interrupt may be lost by the interrupt
-+	 * controller when entering the deep idle state.  It's not possible to
-+	 * clear a pending interrupt without turning interrupts on and handling
-+	 * it, and it's too late to turn on interrupts here, so reset the
-+	 * coupled idle state of all cpus and retry.
-+	 */
-+	if (cpuidle_coupled_any_pokes_pending(coupled)) {
-+		cpuidle_coupled_set_done(dev->cpu, coupled);
-+		/* Wait for all cpus to see the pending pokes */
-+		cpuidle_coupled_parallel_barrier(dev, &coupled->abort_barrier);
-+		goto reset;
-+	}
-+
- 	/* all cpus have acked the coupled state */
- 	next_state = cpuidle_coupled_get_state(dev, coupled);
- 
-@@ -598,7 +655,7 @@ have_coupled:
- 	coupled->refcnt++;
- 
- 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
--	csd->func = cpuidle_coupled_poked;
-+	csd->func = cpuidle_coupled_handle_poke;
- 	csd->info = (void *)(unsigned long)dev->cpu;
- 
- 	return 0;
+How about no?  :)
+
+
+
+> 
+> The patches can be viewed as three sets:
+> 
+>  (1) KEYS: Skip key state checks when checking for possession
+> 
+>      This is a fix for determining the possessed status of keys that have been
+>      invalidated or revoked or that have expired.  If nothing else, can you
+>      please pick this and pass it upstream.
+> 
+>  (2) KEYS: Expand the capacity of a keyring
+>      Add a generic associative array implementation
+>      KEYS: Drop the permissions argument from __keyring_search_one()
+>      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+>      KEYS: Search for auth-key by name rather than target key ID
+>      KEYS: Introduce a search context structure
+>      KEYS: Consolidate the concept of an 'index key' for key access
+>      KEYS: key_is_dead() should take a const key pointer argument
+>      KEYS: Use bool in make_key_ref() and is_key_possessed()
+> 
+>      Patches to to expand the capacity of a keyring by using an associative
+>      array rather than a flat list and patches to do some preparatory cleanups
+>      for those.
+> 
+>  (3) KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+>      KEYS: Implement a big key type that can save to tmpfs
+> 
+>      Patches to add better support for libkrb5 to save its tokens in a kernel
+>      keyring rather than in files.  It already has this ability to some
+>      extent, but that has two problems: your tokens get deleted when you log
+>      out (so your cron jobs can't use them) and the capacity of a user type
+>      key is not sufficient for some of the huge Kerberos tickets one can get.
+>      These patches address that.
+> 
+> If you need the patches basing on your tree instead, that can be done.
+> 
+> David
+> ---
+> The following changes since commit f1d6e17f540af37bb1891480143669ba7636c4cf:
+> 
+>   Merge branch 'akpm' (patches from Andrew Morton) (2013-08-14 10:04:43 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-krb-support
+> 
+> for you to fetch changes up to 0f8d966ebc86d7ab9fb7fd074ae589c2d81de08f:
+> 
+>   KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches (2013-08-28 18:56:14 +0100)
+> 
+> ----------------------------------------------------------------
+> (from the branch description for keys-devel local branch)
+> 
+> clone of "master"
+> Kerberos ticket persistence support
+> 
+> ----------------------------------------------------------------
+> David Howells (12):
+>       KEYS: Skip key state checks when checking for possession
+>       KEYS: Use bool in make_key_ref() and is_key_possessed()
+>       KEYS: key_is_dead() should take a const key pointer argument
+>       KEYS: Consolidate the concept of an 'index key' for key access
+>       KEYS: Introduce a search context structure
+>       KEYS: Search for auth-key by name rather than target key ID
+>       KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+>       KEYS: Drop the permissions argument from __keyring_search_one()
+>       Add a generic associative array implementation.
+>       KEYS: Expand the capacity of a keyring
+>       KEYS: Implement a big key type that can save to tmpfs
+>       KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+> 
+>  Documentation/assoc_array.txt    |  574 +++++++++++++
+>  Documentation/security/keys.txt  |   20 +-
+>  include/keys/big_key-type.h      |   25 +
+>  include/keys/keyring-type.h      |   17 +-
+>  include/linux/assoc_array.h      |   92 ++
+>  include/linux/assoc_array_priv.h |  182 ++++
+>  include/linux/key-type.h         |    5 +
+>  include/linux/key.h              |   49 +-
+>  include/linux/user_namespace.h   |    6 +
+>  include/uapi/linux/keyctl.h      |    1 +
+>  kernel/user.c                    |    4 +
+>  kernel/user_namespace.c          |    4 +
+>  lib/Kconfig                      |   14 +
+>  lib/Makefile                     |    1 +
+>  lib/assoc_array.c                | 1745 ++++++++++++++++++++++++++++++++++++++
+>  security/keys/Kconfig            |   29 +
+>  security/keys/Makefile           |    2 +
+>  security/keys/big_key.c          |  204 +++++
+>  security/keys/compat.c           |    3 +
+>  security/keys/gc.c               |   33 +-
+>  security/keys/internal.h         |   74 +-
+>  security/keys/key.c              |   91 +-
+>  security/keys/keyctl.c           |    3 +
+>  security/keys/keyring.c          | 1481 ++++++++++++++++----------------
+>  security/keys/persistent.c       |  169 ++++
+>  security/keys/proc.c             |   17 +-
+>  security/keys/process_keys.c     |  131 +--
+>  security/keys/request_key.c      |   56 +-
+>  security/keys/request_key_auth.c |   31 +-
+>  security/keys/sysctl.c           |   11 +
+>  security/keys/user_defined.c     |   18 +-
+>  31 files changed, 4124 insertions(+), 968 deletions(-)
+>  create mode 100644 Documentation/assoc_array.txt
+>  create mode 100644 include/keys/big_key-type.h
+>  create mode 100644 include/linux/assoc_array.h
+>  create mode 100644 include/linux/assoc_array_priv.h
+>  create mode 100644 lib/assoc_array.c
+>  create mode 100644 security/keys/big_key.c
+>  create mode 100644 security/keys/persistent.c
+> 
+
 -- 
-1.8.4
-
+James Morris
+<jmorris@namei.org>
