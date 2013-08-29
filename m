@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab3H2CEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:04:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57099 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab3H2CEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:04:53 -0400
-Date: Wed, 28 Aug 2013 19:07:14 -0700
-From: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jingoo Han <jg1.han@samsung.com>,
-        "'David Woodhouse'" <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Mark Brown'" <broonie@kernel.org>
-Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
-Message-ID: <20130829020714.GA26347@kroah.com>
-References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
- <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
- <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
- <20130813090039.GA5604@mwanda>
- <20130828015834.GH10506@lizard>
- <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
- <20130828083630.GF19256@mwanda>
- <20130829011848.GA16891@teo>
+	id S1755548Ab3H2CFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:05:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18184 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755278Ab3H2CFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 22:05:04 -0400
+X-IronPort-AV: E=Sophos;i="4.89,979,1367942400"; 
+   d="scan'208";a="8338258"
+Message-ID: <521EAB47.4060101@cn.fujitsu.com>
+Date: Thu, 29 Aug 2013 10:00:39 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130829011848.GA16891@teo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] driver core / ACPI: Avoid device removal locking
+ problems
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan> <20130828122422.GA18348@mtj.dyndns.org> <1592448.YZbpON5n7n@vostro.rjw.lan> <26495758.n1zOCiG3iV@vostro.rjw.lan>
+In-Reply-To: <26495758.n1zOCiG3iV@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 10:02:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 10:03:01,
+	Serialize complete at 2013/08/29 10:03:01
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 06:18:49PM -0700, Anton Vorontsov wrote:
-> On Wed, Aug 28, 2013 at 11:36:30AM +0300, Dan Carpenter wrote:
-> > He doesn't want to take the patch.  He's the maintainer so it's his
-> > choice.  That's the end of the story.
+Hi Rafael,
+
+On 08/28/2013 09:45 PM, Rafael J. Wysocki wrote:
+
+> Hi All,
 > 
-> Just to clarify: I don't want to take the patch for a reason, not just
-> because of my mood today. Once the patch comes in combination with another
-> patch (or a plan) that actually makes use of the wrapper function, then
-> I'd happily apply/ack it.
+> The following two patches are to address possible deadlocks related to
+> device removal and device sysfs attribute access.  In short, some device
+> sysfs attribute callbacks need to acquire locks that are also held around
+> device removal and that may lead to deadlocks with s_active draining in
+> sysfs_deactivate().
 > 
-> This is the same story as global checkpatch.pl fixes: they are more harm
-> than good, and without the actual use of the dev_get_platdata(), the patch
-> falls into "global checkpatch.pl fixes" category.
+> [1/2] Avoid possible device removal deadlocks related to device_hotplug_lock.
+> [2/2] Rework the handling of containers by ACPI hotplug (which makes a possible
+>       device removal deadlock related to acpi_scan_lock go away).
+> 
 
-If you view this as a checkpatch.pl fixup, I'll be glad to take it
-through my tree instead, to ease the patch burden on you :)
+This version is concise and friendly. It works well on latest kernel tree, and all
+the splat goes away.:)
 
-thanks,
+Best regards,
+Gu
 
-greg k-h
+> On top of linux-next, for v3.12.
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
+
