@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3H2QeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 12:34:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48971 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3H2QeT (ORCPT
+	id S1755554Ab3H2QfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 12:35:11 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:44342 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753613Ab3H2QfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 12:34:19 -0400
-Date: Thu, 29 Aug 2013 09:34:16 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Illia Smyrnov <illia.smyrnov@globallogic.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v3 0/3] Input: omap-keypad: Wakeup capability and w/a for
- i689 errata.
-Message-ID: <20130829163416.GD1576@core.coreip.homeip.net>
-References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
- <521C7A85.6000504@ti.com>
+	Thu, 29 Aug 2013 12:35:09 -0400
+Date: Thu, 29 Aug 2013 16:35:07 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-arch@vger.kernel.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [guv v2 08/31] tracing: Replace __get_cpu_var uses
+In-Reply-To: <20130828154804.20f4dde6@gandalf.local.home>
+Message-ID: <00000140caeda84d-60e4dd5d-f119-4c9f-8d2e-d0d316e241b9-000000@email.amazonses.com>
+References: <20130826204351.725357339@linux.com> <00000140bc5f00c2-8e9ffffa-de46-4329-aef3-317c258828bd-000000@email.amazonses.com> <20130828154804.20f4dde6@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521C7A85.6000504@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.29-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Illia,
-On Tue, Aug 27, 2013 at 01:08:05PM +0300, Illia Smyrnov wrote:
-> Hello Dmitry,
-> 
-> could you take reviewed patches from this patchset?
-> 
-> Reviewed patches:
-> [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for keypad.
-> [PATCH v3 3/3] Input: omap-keypad: Setup irq type from DT
-> are not depend on
-> [PATCH v3 2/3] Input: omap-keypad: errata i689: Correct debounce time
-> 
-> Thanks.
+On Wed, 28 Aug 2013, Steven Rostedt wrote:
 
-Yes, they have been applied.
+> You should limit the width of the change log to 76 characters.
+>
+> I fixed it for now.
 
-Thanks.
+Ok. I have to do that to all patches though. Next rollup.
 
--- 
-Dmitry
+
