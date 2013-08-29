@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3H2WW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 18:22:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57688 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab3H2WWZ (ORCPT
+	id S1756938Ab3H2WWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 18:22:45 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:61056 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755410Ab3H2WWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 18:22:25 -0400
-Date: Thu, 29 Aug 2013 23:22:19 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
-Message-ID: <20130829222219.GA24221@srcf.ucam.org>
-References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
- <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
- <20130801134632.GY9916@kw.sim.vm.gnt>
- <CACRpkdZcEPM-u19pc+v_cRqUSfJBFZ49rJYiewQ1sWWSU5YxEg@mail.gmail.com>
- <20130829125754.GA8813@srcf.ucam.org>
- <521F4F95.5080103@roeck-us.net>
- <20130829153738.GA16306@srcf.ucam.org>
- <20130829160830.GB25021@roeck-us.net>
- <20130829162551.GA17411@srcf.ucam.org>
- <20130829222053.GE13942@kw.sim.vm.gnt>
+	Thu, 29 Aug 2013 18:22:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130829222053.GE13942@kw.sim.vm.gnt>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAE9FiQX9gU-S9X_eeB=JwqS8130CONKgrv+mGj1cEgShmxgS-Q@mail.gmail.com>
+References: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
+ <CAE9FiQX9gU-S9X_eeB=JwqS8130CONKgrv+mGj1cEgShmxgS-Q@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 29 Aug 2013 16:22:22 -0600
+Message-ID: <CAErSpo4qEPQq==rmzy+8a2FHgaKmWbG7BvopKqbBZC551kgdcg@mail.gmail.com>
+Subject: Re: [PATCH v8 6/6] PCI: update device mps when doing pci hotplug
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Yijing Wang <wangyijing@huawei.com>, Jon Mason <jdmason@kudzu.us>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Jin Feng <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 12:20:54AM +0200, Simon Guinot wrote:
+On Thu, Aug 29, 2013 at 3:47 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Aug 29, 2013 at 2:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> [+cc linux-kernel, since more folks might be interested]
+>
+>> I don't know what the BIOS "auto" setting means, but it must mean
+>> something in case 3, because that's the only case where OS support is
+>> required.  But if the OS is smart enough to manage MPS for hot-added
+>> devices, why can't the OS also program MPS for the whole system at
+>> boot-time?
+>>
+>> That's why I don't understand what BIOS wants to do.  It sounds like
+>> they want the performance benefit of larger MPS for devices present in
+>> hot-plug slots at boot-time, even if the OS doesn't actively manage
+>> MPS and things blow up if that device is replaced with one that
+>> supports a smaller MPS.  That choice doesn't make sense.
+>>
+>> In case 3, with a non-MPS-aware OS, you get better performance for a
+>> while, but blow up if a card is replaced.  And with an MPS-aware OS,
+>> there should be no advantage to case 3: the OS should be able to get
+>> good performance by programming MPS itself, even without help from the
+>> BIOS.
+>
+> With OS default setting on case 3, other two OS are ok with hotplug,
+> but Linux does not.
 
-> Almost all the LaCie NASes are running a Linux based OS. I can assure
-> you that LaCie really takes care of Linux. Now, the main reason why the
-> Super-I/O ACPI support is missing on this boards is a lack of knowledge.
-> Thanks to this discussion, I am now aware of that. Then, for the next
-> products, I will do my best to get AMLs or at least ACPI IDs.
+I'm not disputing that.  I said plainly that in case 3, things blow up
+if the OS doesn't actively manage MPS.  By default Linux doesn't touch
+MPS, so it blows up if a card is replaced.
 
-Awesome! Let me know if you need any advice on this.
+I am suggesting that it doesn't make any sense for a BIOS to use case
+3.  Please make an argument for why it *does* make sense to use case
+3.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Note that I think Linux *should* eventually actively manage MPS, and
+when it does, case 3 should "just work".  I just don't understand what
+the point of the BIOS using case 3 is.
+
+I suppose other OSes must get better performance in this "auto" mode?
+(What exactly is that mode, anyway?)  That means the other OS must be
+smart enough to deal with hotplug device replacement, but not smart
+enough to configure MPS all by itself starting from scratch.  I don't
+know what rules would tell us "this MPS must be configured by the BIOS
+and the OS should leave it alone" and "the OS must configure MPS on
+this device for hotplug."  How can we make sense out of that?
+
+Bjorn
