@@ -1,580 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3H2Uzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:55:55 -0400
-Received: from vm1.sequanux.org ([188.165.36.56]:39983 "EHLO vm1.sequanux.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354Ab3H2Uzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:55:53 -0400
-From: Simon Guinot <simon.guinot@sequanux.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org
-Subject: [PATCH v4] gpio: add GPIO support for F71882FG and F71889F
-Date: Thu, 29 Aug 2013 22:56:56 +0200
-Message-Id: <1377809816-22477-1-git-send-email-simon.guinot@sequanux.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757359Ab3H2U5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:57:37 -0400
+Received: from mail-de.keymile.com ([195.8.104.250]:53340 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756136Ab3H2U5g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 16:57:36 -0400
+From: "Falauto, Gerlando" <Gerlando.Falauto@keymile.com>
+To: "Falauto, Gerlando" <Gerlando.Falauto@keymile.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>
+CC: "Brunck, Holger" <Holger.Brunck@keymile.com>,
+        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
+        "Bigler, Stefan" <Stefan.Bigler@keymile.com>
+Date: Thu, 29 Aug 2013 22:56:50 +0200
+Subject: kernel deadlock
+Thread-Topic: kernel deadlock
+Thread-Index: AQHOpPpIvso+e1NOskuHH261kV92Dw==
+Message-ID: <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net>
+References: <521F6D06.1040107@keymile.com>
+In-Reply-To: <521F6D06.1040107@keymile.com>
+Accept-Language: en-US, de-DE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 29 Aug 2013 20:57:29.0118 (UTC) FILETIME=[5F7DC3E0:01CEA4FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the GPIOs found on the Fintek super-I/O
-chips F71882FG and F71889F.
+Hi everyone,
 
-A super-I/O is a legacy I/O controller embedded on x86 motherboards. It
-is used to connect the low-bandwidth devices. Among others functions the
-F71882FG/F71889F provides: a parallel port, two serial ports, a keyboard
-controller, an hardware monitoring controller and some GPIO pins.
+I ran into the deadlock situation reported at the bottom.
+Actually, on my latest 3.10 kernel for some reason I don't get the
+report (the kernel just hangs for some reason), so it took me quite some
+time to track it down.
 
-Note that this super-I/Os are embedded on some Atom-based LaCie NASes.
-The GPIOs are used to control the LEDs and the hard drive power.
+Once I figured the trigger to the machine hanging was adjtimex(), I
+reverted everything (between 3.9 to 3.10) that was touching
+kernel/time/timekeeping/timekeeping.c and kernel/time/ntp.c, I double
+checked that indeed the problem was not happening anymore, and finally
+started bisecting, landing on the following offending commit.
+THEN, and ONLY THEN, did I get the &%""ç+"% deadlock report.
 
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
----
-Linus,
+Do you guys have any ideas what could be wrong and how to fix it?
 
-Here is a v4 for the driver gpio-f7188x. It fixes an issue noticed by
-Guenter: the driver needs to use request_muxed_region in order to
-synchronize with the hwmon and watchdog drivers for the same chip.
+Thank you,
+Gerlando
 
-I should have sent this update earlier but I was waiting for more
-changes (ACPI support)... All my apologies for the inconvenience.
+commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
+Author: John Stultz <john.stultz@linaro.org>
+Date:   Fri Mar 22 11:37:28 2013 -0700
 
-Please drop the v3 and apply this one.
+     timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
 
-Thanks,
+     In moving the NTP state to be protected by the timekeeping locks,
+     be sure to acquire the timekeeping locks prior to calling
+     ntp functions.
 
-Simon
+     Cc: Thomas Gleixner <tglx@linutronix.de>
+     Cc: Richard Cochran <richardcochran@gmail.com>
+     Cc: Prarit Bhargava <prarit@redhat.com>
+     Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Changes since v3:
-- Use request_muxed_region to protect the I/O ports against concurrent
-  accesses.
+=================================
+[ INFO: inconsistent lock state ]
+3.10.0-04864-g346ecc9-dirty #16 Not tainted
+---------------------------------
+inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+SAKEY/738 [HC0[0]:SC0[0]:HE1:SE1] takes:
+  (timekeeper_lock){?.-...}, at: [<c004a3e4>] do_adjtimex+0x64/0xbc
+{IN-HARDIRQ-W} state was registered at:
+   [<c0055138>] __lock_acquire+0xabc/0x1bb8
+   [<c0056838>] lock_acquire+0xa8/0x15c
+   [<c04c14ec>] _raw_spin_lock_irqsave+0x50/0x64
+   [<c00497a4>] do_timer+0x2c/0xa54
+   [<c004e7f4>] tick_periodic+0x74/0x9c
+   [<c004e834>] tick_handle_periodic+0x18/0x7c
+   [<c001349c>] orion_timer_interrupt+0x24/0x34
+   [<c0069c2c>] handle_irq_event_percpu+0x5c/0x300
+   [<c0069f0c>] handle_irq_event+0x3c/0x5c
+   [<c006c194>] handle_level_irq+0x8c/0xe8
+   [<c0069574>] generic_handle_irq+0x30/0x4c
+   [<c000951c>] handle_IRQ+0x30/0x84
+   [<c04c2178>] __irq_svc+0x38/0xa0
+   [<c06cf15c>] calibrate_delay+0x350/0x4e4
+   [<c06986e0>] start_kernel+0x23c/0x2c4
+   [<0000803c>] 0x803c
+irq event stamp: 32358
+hardirqs last  enabled at (32357): [<c0008c64>] ret_fast_syscall+0x24/0x44
+hardirqs last disabled at (32358): [<c04c14bc>]
+_raw_spin_lock_irqsave+0x20/0x64
+softirqs last  enabled at (32160): [<c001e234>] __do_softirq+0x1b8/0x308
+softirqs last disabled at (32137): [<c001e77c>] irq_exit+0xa0/0xd8
 
-Changes since v2:
-- Remove useless NULL setters for driver data.
+other info that might help us debug this:
+  Possible unsafe locking scenario:
 
-Changes since v1:
-- Enhance the commit message by describing what is a Super-I/O.
-- Use self-explanatory names for the GPIO register macros.
-- Add a comment to explain the platform device and driver registration.
-- Fix gpio_get when GPIO is configured in input mode. I only had
-  the hardware to check this mode recently...
+        CPU0
+        ----
+   lock(timekeeper_lock);
+   <Interrupt>
+     lock(timekeeper_lock);
 
- drivers/gpio/Kconfig       |   10 +
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-f7188x.c |  469 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 480 insertions(+)
- create mode 100644 drivers/gpio/gpio-f7188x.c
+  *** DEADLOCK ***
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index b2450ba..c5ae0ac 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -146,6 +146,16 @@ config GPIO_MM_LANTIQ
- 	  (EBU) found on Lantiq SoCs. The gpios are output only as they are
- 	  created by attaching a 16bit latch to the bus.
- 
-+config GPIO_F7188X
-+	tristate "F71882FG and F71889F GPIO support"
-+	depends on X86
-+	help
-+	  This option enables support for GPIOs found on Fintek Super-I/O
-+	  chips F71882FG and F71889F.
-+
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called f7188x-gpio.
-+
- config GPIO_MPC5200
- 	def_bool y
- 	depends on PPC_MPC52xx
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index ef3e983..bc7a677 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -24,6 +24,7 @@ obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
- obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
-+obj-$(CONFIG_GPIO_F7188X)	+= gpio-f7188x.o
- obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
- obj-$(CONFIG_GPIO_GRGPIO)	+= gpio-grgpio.o
- obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
-diff --git a/drivers/gpio/gpio-f7188x.c b/drivers/gpio/gpio-f7188x.c
-new file mode 100644
-index 0000000..9cb8320
---- /dev/null
-+++ b/drivers/gpio/gpio-f7188x.c
-@@ -0,0 +1,469 @@
-+/*
-+ * GPIO driver for Fintek Super-I/O F71882 and F71889
-+ *
-+ * Copyright (C) 2010-2013 LaCie
-+ *
-+ * Author: Simon Guinot <simon.guinot@sequanux.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+
-+#define DRVNAME "gpio-f7188x"
-+
-+/*
-+ * Super-I/O registers
-+ */
-+#define SIO_LDSEL		0x07	/* Logical device select */
-+#define SIO_DEVID		0x20	/* Device ID (2 bytes) */
-+#define SIO_DEVREV		0x22	/* Device revision */
-+#define SIO_MANID		0x23	/* Fintek ID (2 bytes) */
-+
-+#define SIO_LD_GPIO		0x06	/* GPIO logical device */
-+#define SIO_UNLOCK_KEY		0x87	/* Key to enable Super-I/O */
-+#define SIO_LOCK_KEY		0xAA	/* Key to disable Super-I/O */
-+
-+#define SIO_FINTEK_ID		0x1934	/* Manufacturer ID */
-+#define SIO_F71882_ID		0x0541	/* F71882 chipset ID */
-+#define SIO_F71889_ID		0x0909	/* F71889 chipset ID */
-+
-+enum chips { f71882fg, f71889f };
-+
-+static const char * const f7188x_names[] = {
-+	"f71882fg",
-+	"f71889f",
-+};
-+
-+struct f7188x_sio {
-+	int addr;
-+	enum chips type;
-+};
-+
-+struct f7188x_gpio_bank {
-+	struct gpio_chip chip;
-+	unsigned int regbase;
-+	struct f7188x_gpio_data *data;
-+};
-+
-+struct f7188x_gpio_data {
-+	struct f7188x_sio *sio;
-+	int nr_bank;
-+	struct f7188x_gpio_bank *bank;
-+};
-+
-+/*
-+ * Super-I/O functions.
-+ */
-+
-+static inline int superio_inb(int base, int reg)
-+{
-+	outb(reg, base);
-+	return inb(base + 1);
-+}
-+
-+static int superio_inw(int base, int reg)
-+{
-+	int val;
-+
-+	outb(reg++, base);
-+	val = inb(base + 1) << 8;
-+	outb(reg, base);
-+	val |= inb(base + 1);
-+
-+	return val;
-+}
-+
-+static inline void superio_outb(int base, int reg, int val)
-+{
-+	outb(reg, base);
-+	outb(val, base + 1);
-+}
-+
-+static inline int superio_enter(int base)
-+{
-+	/* Don't step on other drivers' I/O space by accident. */
-+	if (!request_muxed_region(base, 2, DRVNAME)) {
-+		pr_err(DRVNAME "I/O address 0x%04x already in use\n", base);
-+		return -EBUSY;
-+	}
-+
-+	/* According to the datasheet the key must be send twice. */
-+	outb(SIO_UNLOCK_KEY, base);
-+	outb(SIO_UNLOCK_KEY, base);
-+
-+	return 0;
-+}
-+
-+static inline void superio_select(int base, int ld)
-+{
-+	outb(SIO_LDSEL, base);
-+	outb(ld, base + 1);
-+}
-+
-+static inline void superio_exit(int base)
-+{
-+	outb(SIO_LOCK_KEY, base);
-+	release_region(base, 2);
-+}
-+
-+/*
-+ * GPIO chip.
-+ */
-+
-+static int f7188x_gpio_direction_in(struct gpio_chip *chip, unsigned offset);
-+static int f7188x_gpio_get(struct gpio_chip *chip, unsigned offset);
-+static int f7188x_gpio_direction_out(struct gpio_chip *chip,
-+				     unsigned offset, int value);
-+static void f7188x_gpio_set(struct gpio_chip *chip, unsigned offset, int value);
-+
-+#define F7188X_GPIO_BANK(_base, _ngpio, _regbase)			\
-+	{								\
-+		.chip = {						\
-+			.label            = DRVNAME,			\
-+			.owner            = THIS_MODULE,		\
-+			.direction_input  = f7188x_gpio_direction_in,	\
-+			.get              = f7188x_gpio_get,		\
-+			.direction_output = f7188x_gpio_direction_out,	\
-+			.set              = f7188x_gpio_set,		\
-+			.base             = _base,			\
-+			.ngpio            = _ngpio,			\
-+		},							\
-+		.regbase = _regbase,					\
-+	}
-+
-+#define gpio_dir(base) (base + 0)
-+#define gpio_data_out(base) (base + 1)
-+#define gpio_data_in(base) (base + 2)
-+/* Output mode register (0:open drain 1:push-pull). */
-+#define gpio_out_mode(base) (base + 3)
-+
-+static struct f7188x_gpio_bank f71882_gpio_bank[] = {
-+	F7188X_GPIO_BANK(0 , 8, 0xF0),
-+	F7188X_GPIO_BANK(10, 8, 0xE0),
-+	F7188X_GPIO_BANK(20, 8, 0xD0),
-+	F7188X_GPIO_BANK(30, 4, 0xC0),
-+	F7188X_GPIO_BANK(40, 4, 0xB0),
-+};
-+
-+static struct f7188x_gpio_bank f71889_gpio_bank[] = {
-+	F7188X_GPIO_BANK(0 , 7, 0xF0),
-+	F7188X_GPIO_BANK(10, 7, 0xE0),
-+	F7188X_GPIO_BANK(20, 8, 0xD0),
-+	F7188X_GPIO_BANK(30, 8, 0xC0),
-+	F7188X_GPIO_BANK(40, 8, 0xB0),
-+	F7188X_GPIO_BANK(50, 5, 0xA0),
-+	F7188X_GPIO_BANK(60, 8, 0x90),
-+	F7188X_GPIO_BANK(70, 8, 0x80),
-+};
-+
-+static int f7188x_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
-+{
-+	int err;
-+	struct f7188x_gpio_bank *bank =
-+		container_of(chip, struct f7188x_gpio_bank, chip);
-+	struct f7188x_sio *sio = bank->data->sio;
-+	u8 dir;
-+
-+	err = superio_enter(sio->addr);
-+	if (err)
-+		return err;
-+	superio_select(sio->addr, SIO_LD_GPIO);
-+
-+	dir = superio_inb(sio->addr, gpio_dir(bank->regbase));
-+	dir &= ~(1 << offset);
-+	superio_outb(sio->addr, gpio_dir(bank->regbase), dir);
-+
-+	superio_exit(sio->addr);
-+
-+	return 0;
-+}
-+
-+static int f7188x_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	int err;
-+	struct f7188x_gpio_bank *bank =
-+		container_of(chip, struct f7188x_gpio_bank, chip);
-+	struct f7188x_sio *sio = bank->data->sio;
-+	u8 dir, data;
-+
-+	err = superio_enter(sio->addr);
-+	if (err)
-+		return err;
-+	superio_select(sio->addr, SIO_LD_GPIO);
-+
-+	dir = superio_inb(sio->addr, gpio_dir(bank->regbase));
-+	dir = !!(dir & (1 << offset));
-+	if (dir)
-+		data = superio_inb(sio->addr, gpio_data_out(bank->regbase));
-+	else
-+		data = superio_inb(sio->addr, gpio_data_in(bank->regbase));
-+
-+	superio_exit(sio->addr);
-+
-+	return !!(data & 1 << offset);
-+}
-+
-+static int f7188x_gpio_direction_out(struct gpio_chip *chip,
-+				     unsigned offset, int value)
-+{
-+	int err;
-+	struct f7188x_gpio_bank *bank =
-+		container_of(chip, struct f7188x_gpio_bank, chip);
-+	struct f7188x_sio *sio = bank->data->sio;
-+	u8 dir, data_out;
-+
-+	err = superio_enter(sio->addr);
-+	if (err)
-+		return err;
-+	superio_select(sio->addr, SIO_LD_GPIO);
-+
-+	data_out = superio_inb(sio->addr, gpio_data_out(bank->regbase));
-+	if (value)
-+		data_out |= (1 << offset);
-+	else
-+		data_out &= ~(1 << offset);
-+	superio_outb(sio->addr, gpio_data_out(bank->regbase), data_out);
-+
-+	dir = superio_inb(sio->addr, gpio_dir(bank->regbase));
-+	dir |= (1 << offset);
-+	superio_outb(sio->addr, gpio_dir(bank->regbase), dir);
-+
-+	superio_exit(sio->addr);
-+
-+	return 0;
-+}
-+
-+static void f7188x_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	int err;
-+	struct f7188x_gpio_bank *bank =
-+		container_of(chip, struct f7188x_gpio_bank, chip);
-+	struct f7188x_sio *sio = bank->data->sio;
-+	u8 data_out;
-+
-+	err = superio_enter(sio->addr);
-+	if (err)
-+		return;
-+	superio_select(sio->addr, SIO_LD_GPIO);
-+
-+	data_out = superio_inb(sio->addr, gpio_data_out(bank->regbase));
-+	if (value)
-+		data_out |= (1 << offset);
-+	else
-+		data_out &= ~(1 << offset);
-+	superio_outb(sio->addr, gpio_data_out(bank->regbase), data_out);
-+
-+	superio_exit(sio->addr);
-+}
-+
-+/*
-+ * Platform device and driver.
-+ */
-+
-+static int f7188x_gpio_probe(struct platform_device *pdev)
-+{
-+	int err;
-+	int i;
-+	struct f7188x_sio *sio = pdev->dev.platform_data;
-+	struct f7188x_gpio_data *data;
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	switch (sio->type) {
-+	case f71882fg:
-+		data->nr_bank = ARRAY_SIZE(f71882_gpio_bank);
-+		data->bank = f71882_gpio_bank;
-+		break;
-+	case f71889f:
-+		data->nr_bank = ARRAY_SIZE(f71889_gpio_bank);
-+		data->bank = f71889_gpio_bank;
-+		break;
-+	default:
-+		return -ENODEV;
-+	}
-+	data->sio = sio;
-+
-+	platform_set_drvdata(pdev, data);
-+
-+	/* For each GPIO bank, register a GPIO chip. */
-+	for (i = 0; i < data->nr_bank; i++) {
-+		struct f7188x_gpio_bank *bank = &data->bank[i];
-+
-+		bank->chip.dev = &pdev->dev;
-+		bank->data = data;
-+
-+		err = gpiochip_add(&bank->chip);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"Failed to register gpiochip %d: %d\n",
-+				i, err);
-+			goto err_gpiochip;
-+		}
-+	}
-+
-+	return 0;
-+
-+err_gpiochip:
-+	for (i = i - 1; i >= 0; i--) {
-+		struct f7188x_gpio_bank *bank = &data->bank[i];
-+		int tmp;
-+
-+		tmp = gpiochip_remove(&bank->chip);
-+		if (tmp < 0)
-+			dev_err(&pdev->dev,
-+				"Failed to remove gpiochip %d: %d\n",
-+				i, tmp);
-+	}
-+
-+	return err;
-+}
-+
-+static int f7188x_gpio_remove(struct platform_device *pdev)
-+{
-+	int err;
-+	int i;
-+	struct f7188x_gpio_data *data = platform_get_drvdata(pdev);
-+
-+	for (i = 0; i < data->nr_bank; i++) {
-+		struct f7188x_gpio_bank *bank = &data->bank[i];
-+
-+		err = gpiochip_remove(&bank->chip);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"Failed to remove GPIO gpiochip %d: %d\n",
-+				i, err);
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init f7188x_find(int addr, struct f7188x_sio *sio)
-+{
-+	int err;
-+	u16 devid;
-+
-+	err = superio_enter(addr);
-+	if (err)
-+		return err;
-+
-+	err = -ENODEV;
-+	devid = superio_inw(addr, SIO_MANID);
-+	if (devid != SIO_FINTEK_ID) {
-+		pr_debug(DRVNAME ": Not a Fintek device at 0x%08x\n", addr);
-+		goto err;
-+	}
-+
-+	devid = superio_inw(addr, SIO_DEVID);
-+	switch (devid) {
-+	case SIO_F71882_ID:
-+		sio->type = f71882fg;
-+		break;
-+	case SIO_F71889_ID:
-+		sio->type = f71889f;
-+		break;
-+	default:
-+		pr_info(DRVNAME ": Unsupported Fintek device 0x%04x\n", devid);
-+		goto err;
-+	}
-+	sio->addr = addr;
-+	err = 0;
-+
-+	pr_info(DRVNAME ": Found %s at %#x, revision %d\n",
-+		f7188x_names[sio->type],
-+		(unsigned int) addr,
-+		(int) superio_inb(addr, SIO_DEVREV));
-+
-+err:
-+	superio_exit(addr);
-+	return err;
-+}
-+
-+static struct platform_device *f7188x_gpio_pdev;
-+
-+static int __init
-+f7188x_gpio_device_add(const struct f7188x_sio *sio)
-+{
-+	int err;
-+
-+	f7188x_gpio_pdev = platform_device_alloc(DRVNAME, -1);
-+	if (!f7188x_gpio_pdev)
-+		return -ENOMEM;
-+
-+	err = platform_device_add_data(f7188x_gpio_pdev,
-+				       sio, sizeof(*sio));
-+	if (err) {
-+		pr_err(DRVNAME "Platform data allocation failed\n");
-+		goto err;
-+	}
-+
-+	err = platform_device_add(f7188x_gpio_pdev);
-+	if (err) {
-+		pr_err(DRVNAME "Device addition failed\n");
-+		goto err;
-+	}
-+
-+	return 0;
-+
-+err:
-+	platform_device_put(f7188x_gpio_pdev);
-+
-+	return err;
-+}
-+
-+/*
-+ * Try to match a supported Fintech device by reading the (hard-wired)
-+ * configuration I/O ports. If available, then register both the platform
-+ * device and driver to support the GPIOs.
-+ */
-+
-+static struct platform_driver f7188x_gpio_driver = {
-+	.driver = {
-+		.owner	= THIS_MODULE,
-+		.name	= DRVNAME,
-+	},
-+	.probe		= f7188x_gpio_probe,
-+	.remove		= f7188x_gpio_remove,
-+};
-+
-+static int __init f7188x_gpio_init(void)
-+{
-+	int err;
-+	struct f7188x_sio sio;
-+
-+	if (f7188x_find(0x2e, &sio) &&
-+	    f7188x_find(0x4e, &sio))
-+		return -ENODEV;
-+
-+	err = platform_driver_register(&f7188x_gpio_driver);
-+	if (!err) {
-+		err = f7188x_gpio_device_add(&sio);
-+		if (err)
-+			platform_driver_unregister(&f7188x_gpio_driver);
-+	}
-+
-+	return err;
-+}
-+subsys_initcall(f7188x_gpio_init);
-+
-+static void __exit f7188x_gpio_exit(void)
-+{
-+	platform_device_unregister(f7188x_gpio_pdev);
-+	platform_driver_unregister(&f7188x_gpio_driver);
-+}
-+module_exit(f7188x_gpio_exit);
-+
-+MODULE_DESCRIPTION("GPIO driver for Super-I/O chips F71882FG and F71889F");
-+MODULE_AUTHOR("Simon Guinot <simon.guinot@sequanux.org>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.10.4
+1 lock held by SAKEY/738:
+  #0:  (timekeeper_lock){?.-...}, at: [<c004a3e4>] do_adjtimex+0x64/0xbc
+
+stack backtrace:
+CPU: 0 PID: 738 Comm: SAKEY Not tainted 3.10.0-04864-g346ecc9-dirty #16
+[<c000d67c>] (unwind_backtrace+0x0/0xf0) from [<c000b530>]
+(show_stack+0x10/0x14)
+[<c000b530>] (show_stack+0x10/0x14) from [<c04ba07c>]
+(print_usage_bug.part.27+0x218/0x280)
+[<c04ba07c>] (print_usage_bug.part.27+0x218/0x280) from [<c0053058>]
+(mark_lock+0x538/0x6bc)
+[<c0053058>] (mark_lock+0x538/0x6bc) from [<c005326c>]
+(mark_held_locks+0x90/0x124)
+[<c005326c>] (mark_held_locks+0x90/0x124) from [<c00533a8>]
+(trace_hardirqs_on_caller+0xa8/0x23c)
+[<c00533a8>] (trace_hardirqs_on_caller+0xa8/0x23c) from [<c04c1c60>]
+(_raw_spin_unlock_irq+0x24/0x5c)
+[<c04c1c60>] (_raw_spin_unlock_irq+0x24/0x5c) from [<c004ac8c>]
+(__do_adjtimex+0x17c/0x65c)
+[<c004ac8c>] (__do_adjtimex+0x17c/0x65c) from [<c004a404>]
+(do_adjtimex+0x84/0xbc)
+[<c004a404>] (do_adjtimex+0x84/0xbc) from [<c001d62c>]
+(SyS_adjtimex+0x50/0xa8)
+[<c001d62c>] (SyS_adjtimex+0x50/0xa8) from [<c0008c40>]
+(ret_fast_syscall+0x0/0x44)
 
