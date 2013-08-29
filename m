@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3H2Sa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:30:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14477 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab3H2Sa4 (ORCPT
+	id S1756773Ab3H2SbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:31:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43437 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844Ab3H2SbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:30:56 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=LpxhMNE_n7QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qNUMAmISgnoA:10 a=NufY4J3AAAAA:8 a=_P2Xt4MCIiuXImbTLIEA:9 a=CjuIK1q_8ugA:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 29 Aug 2013 14:30:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Ingo Molnar <mingo@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [gcv v3 06/35] scheduler: Replace __get_cpu_var uses
-Message-ID: <20130829143053.3fc2caa8@gandalf.local.home>
-In-Reply-To: <00000140cb49bdde-1279ffb0-5c49-400d-970c-a481d527e98a-000000@email.amazonses.com>
-References: <20130828193457.140443630@linux.com>
-	<00000140c67817eb-b582280a-f059-499f-a24c-a11f3d59b86e-000000@email.amazonses.com>
-	<20130829075818.GW10002@twins.programming.kicks-ass.net>
-	<20130829100143.GA29672@gmail.com>
-	<00000140cb02576f-e106763c-d382-4b66-bb85-d7a9cb266b81-000000@email.amazonses.com>
-	<20130829173256.GB6276@home.goodmis.org>
-	<00000140cb49bdde-1279ffb0-5c49-400d-970c-a481d527e98a-000000@email.amazonses.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Aug 2013 14:31:19 -0400
+Date: Thu, 29 Aug 2013 20:31:14 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <fabio.estevam@freescale.com>, airlied@redhat.com,
+        gregkh@linuxfoundation.org, festevam@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] imx-drm: Fix probe failure
+Message-ID: <20130829183114.GY30088@pengutronix.de>
+References: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
+ <20130829152130.GD5606@phenom.ffwll.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130829152130.GD5606@phenom.ffwll.local>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:21:19 up 5 days,  3:52, 38 users,  load average: 0.00, 0.01, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Aug 2013 18:15:43 +0000
-Christoph Lameter <cl@linux.com> wrote:
-
-> On Thu, 29 Aug 2013, Steven Rostedt wrote:
+On Thu, Aug 29, 2013 at 05:21:30PM +0200, Daniel Vetter wrote:
+> On Thu, Aug 29, 2013 at 10:59:22AM -0300, Fabio Estevam wrote:
+> > Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
+> > failure is seen:
+> > 
+> > [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> > [drm] No driver support for vblank timestamp query.
+> > [drm] Initialized imx-drm 1.0.0 20120507 on minor 0
+> > imx-ldb ldb.10: adding encoder failed with -16
+> > imx-ldb: probe of ldb.10 failed with error -16
+> > imx-ipuv3 2400000.ipu: IPUv3H probed
+> > imx-ipuv3 2800000.ipu: IPUv3H probed
+> > imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
+> > imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
+> > imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
+> > imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
+> > imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
+> > imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
+> > imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
+> > imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
+> > 
+> > The reason for the probe failure is that now 'imxdrm->references' is incremented
+> > early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
+> > and imx_drm_add_encoder():
+> > 
+> > 	if (imxdrm->references) {
+> > 		ret = -EBUSY;
+> > 		goto err_busy;
+> > 	}
+> > 
+> > ,will always fail.
+> > 
+> > Let the drm core handle the references instead of doing this manually in 
+> > imx-drm. In imx-drm-core the open and close callbacks map to drm_open and 
+> > drm_close, which handle the references via open_count.
+> > 
+> > After this patch, lvds panel is functional on a mx6qsabrelite board.
+> > 
+> > Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> Its not really an atomic operation in the classic sense.
-
-It doesn't need to be atomic, it could mean it is used within atomic
-locations. Basically, "can't be interrupted here". I just said
-"something like", it didn't even need to be that.
-
+> Yeah, just ripping out the imxdrm->references stuff will restore imx, but
+> of course all the funny races are still fundamentally there. So we still
+> rely on userspace being really careful to obey the right module loading
+> sequence and not start any drm client before that has all completed. So
 > 
-> this_cpu_no_preempt_check_read ?
-
-I would make it much shorter. You could use "raw_this_cpu_read()",
-which usually means "no checks here". Or, "this_cpu_read_nopreempt()".
-
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 > 
-> The problem that I have is also that a kernel with preemption is not
-> something that see anywhere these days. Looks more like an academic
-> exercise? Does this really matter? All the distro I see use
-
-Um, my paycheck depends on PREEMPT_RT working. And there's a lot of
-interest in real PREEMPT by audio folks. It's no more an
-academic exercise than people wanting really low kernel latency.
-
-> PREEMPT_VOLUNTARY. Performance degradation is significant if massive
-> amounts of checks and preempt disable/enable points are added to the
-> kernel.
-
-They are usually disabled for production systems. But we run a bunch of
-tests with the debug checks enabled, which catch bugs before we ship a
-kernel for a production system.
-
+> Greg, when you slurp this in can you pls also add the imx todo entry from
+> the other thread?
 > 
-> Do we agree that it is necessary and useful to add another variant of
-> this_cpu ops for this? The concern of having too many variants is no
-> longer there? Adding another variant is not that difficult just code
-> intensive.
+> http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg43698.html
 
-How many places use the this_cpu_*() without preemption disabled? I
-wouldn't think there's many. I never complained about another variant,
-so you need to ask those that have. The tough question for me is what
-that variant name should be ;-)
 
--- Steve
+You said there:
+
+> +- Fix up the driver load sequence to make sure all submodules for encoders/crtcs
+> +  are fully loaded before the drm driver is registered.
+
+We can't know when all submodules are registered and really I think this
+is not necessary. The driver will use the components available during
+open time. When being opened no components will be registered/deregistered.
+So a user will always get a functional drm device with the components he
+actually loaded.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
