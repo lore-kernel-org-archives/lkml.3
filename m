@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3H2RX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:23:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60455 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab3H2RX0 (ORCPT
+	id S1755932Ab3H2RYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:24:13 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:60455 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab3H2RYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:23:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH RFC v2 11/16] ARM: socfpga: remove call to of_clk_init
-Date: Thu, 29 Aug 2013 19:23:12 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-12-git-send-email-sebastian.hesselbarth@gmail.com> <1377790696.26261.3.camel@linux-builds1>
-In-Reply-To: <1377790696.26261.3.camel@linux-builds1>
+	Thu, 29 Aug 2013 13:24:12 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308291923.13151.arnd@arndb.de>
-X-Provags-ID: V02:K0:CkObaUUXvjxz1JDmyIibk+WAM15i577R1hApgZSlanZ
- 36C1qQbwiUBSDYupb8e0rCkr47iJ9KUyB9Hdr/lczeTDUK06WP
- yZklQ9bKR0phgk2esmBX2nxTsHIfsqpA9m6doQ6zY6eCB8EVA3
- C1tssg+a0NgIqcck7N8FCxLewc3Y9MVtBtzRnLqKrxlO/iWnmF
- s06jalM2pWG18z1mBF3rYK7ziJk2QJsAu6USSa1w44PxPHSSfK
- GD42VCgPl6nKxt3qNfJoBHWM46aBI/jkX6A6TuWrLXFKBkZoHx
- Lt3dL9F6hXTGRQlnm3rm1ZERUQmAWIkrYZdkuT7K4zruT2fA+Q
- anKpycmI5sNeZOzTWTAw=
+In-Reply-To: <521F5684.3090703@ti.com>
+References: <1377599455-9379-1-git-send-email-george.cherian@ti.com>
+	<CACRpkdbME_M8_X=5OttSFKDknqVEKSZc+7u=VLM-T-g3c_uv6Q@mail.gmail.com>
+	<521F5684.3090703@ti.com>
+Date: Thu, 29 Aug 2013 19:24:11 +0200
+Message-ID: <CACRpkdYqHmw13t0Qj19Ko9qvus80eykjt25iXT0GP1aKETP+gQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pcf857x: cleanup irq_demux_work and use threaded irq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: George Cherian <george.cherian@ti.com>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Nikolay Balandin <n.a.balandin@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 August 2013, Dinh Nguyen wrote:
-> On Tue, 2013-08-27 at 23:28 +0200, Sebastian Hesselbarth wrote:
+On Thu, Aug 29, 2013 at 4:11 PM, George Cherian <george.cherian@ti.com> wrote:
+> On 8/29/2013 6:27 PM, Linus Walleij wrote:
 
-> > @@ -107,7 +106,6 @@ static void __init socfpga_cyclone5_init(void)
-> >  {
-> >  	l2x0_of_init(0, ~0UL);
-> >  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> > -	of_clk_init(NULL);
-> >  	socfpga_init_clocks();
-> >  }
-> >  
-> 
-> Acked-by: Dinh Nguyen <dinguyen@altera.com>
+>>>          int                     irq;            /* real irq number */
+>>> +       int                     irq_mapped;     /* mapped gpio irqs  */
+>>
+>> This seems like an u32 or atleast unsigned, and state that its one
+>> bit flag per IRQ. How many GPIO lines are there?
+>
+> pcf857x driver supports expanders with 8 and 16 gpio lines.
 
-I saw that your socfpga_init_clocks() function only has these contents:
+OK should be an u16 then?
 
-void __init socfpga_init_clocks(void)
-{
-        struct clk *clk;
-        int ret;
+>>>   static int pcf857x_irq_domain_map(struct irq_domain *domain, unsigned
+>>> int virq,
+>>>                                   irq_hw_number_t hw)
+>>>   {
+>>> +       struct pcf857x  *gpio = domain->host_data;
+>>>          irq_set_chip_and_handler(virq,
+>>>                                   &dummy_irq_chip,
+>>>                                   handle_level_irq);
+>>> +       set_irq_flags(virq, IRQF_VALID);
+>>> +       gpio->irq_mapped |= (1 << hw);
+>>
+>> I'm a bit uneasy about this. It feels like its the irqdomain's
+>> responsibility to keep track of whether an IRQ is mapped
+>> or not.
+>
+> Mainly these expanders dont have an ier sort of registers and if at all the
+> initial value is not set proper
+> then it gives bad irq prints only once per changed bit for which there is no
+> handler.
+> Should I drop this in v2?
 
-        clk = clk_register_fixed_factor(NULL, "smp_twd", "mpuclk", 0, 1, 4);
-        ret = clk_register_clkdev(clk, NULL, "smp_twd");
-        if (ret)
-                pr_err("smp_twd alias not registered\n");
-}
+I don't know, I mean if it's causing a problem or filling the console
+with error prints it is really annoying, and if there is nothing to do
+about the condition then there is not much more we can do I guess.
 
+But please take a second look.
 
-I think that can easily be expressed with DT syntax now (correct me if I'm wrong), so
-you should be able to kill this off as well. Once somebody gets around to automate
-the l2x0 setup, the entire socfpga_cyclone5_init() function can go away too.
-
-	Arnd
+Yours,
+Linus Walleij
