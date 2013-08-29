@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3H2Xza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:55:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43272 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755Ab3H2Xz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:55:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, benh@kernel.crashing.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, bp@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH 0/4] Unify CPU hotplug lock interface
-Date: Fri, 30 Aug 2013 02:06:09 +0200
-Message-ID: <21553065.6VHCMzStpF@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1377796510.10300.868.camel@misato.fc.hp.com>
-References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com> <1449558.tneKXFMIWE@vostro.rjw.lan> <1377796510.10300.868.camel@misato.fc.hp.com>
+	id S1756624Ab3H2Xzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:55:46 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:60763 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756546Ab3H2Xzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:55:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>
+References: <87ob8gys0d.fsf@xmission.com>
+Date: Thu, 29 Aug 2013 16:55:35 -0700
+In-Reply-To: <87ob8gys0d.fsf@xmission.com> (Eric W. Biederman's message of
+	"Thu, 29 Aug 2013 16:52:18 -0700")
+Message-ID: <8761uoyruw.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18OI0+fljzR/Q69MwearwFVZwsOSYo+ojI=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0009]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [REVIEW][PATCH 4/5] capabilities: allow nice if we are privileged
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 29, 2013 11:15:10 AM Toshi Kani wrote:
-> On Sun, 2013-08-18 at 03:02 +0200, Rafael J. Wysocki wrote:
-> > On Saturday, August 17, 2013 01:46:55 PM Toshi Kani wrote:
-> > > lock_device_hotplug() was recently introduced to serialize CPU & Memory
-> > > online/offline and hotplug operations, along with sysfs online interface
-> > > restructure (commit 4f3549d7).  With this new locking scheme,
-> > > cpu_hotplug_driver_lock() is redundant and is no longer necessary.
-> > > 
-> > > This patchset makes sure that lock_device_hotplug() covers all CPU online/
-> > > offline interfaces, and then removes cpu_hotplug_driver_lock().
-> > > 
-> > > The patchset is based on Linus's tree, 3.11.0-rc5.
-> > 
-> > Nice series, thanks a lot for taking care of this!
-> 
-> Hi Rafael,
-> 
-> Per the recent your changes in lock_device_hotplug(), do you think it
-> makes sense to integrate this patchset into your tree?  I am also
-> considering to add one more patch to use lock_device_hotplug_sysfs() in
-> cpu_probe_store().  I will rebase to your tree and send them today if it
-> makes sense to you.
 
-Yes, it does to me.
+We allow task A to change B's nice level if it has a supserset of
+B's privileges, or of it has CAP_SYS_NICE.  Also allow it if A has
+CAP_SYS_NICE with respect to B - meaning it is root in the same
+namespace, or it created B's namespace.
 
-Thanks,
-Rafael
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ security/commoncap.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-
-> > > ---
-> > > Toshi Kani (4):
-> > >   hotplug, x86: Fix online state in cpu0 debug interface
-> > >   hotplug, x86: Add hotplug lock to missing places
-> > >   hotplug, x86: Disable ARCH_CPU_PROBE_RELEASE on x86
-> > >   hotplug, powerpc, x86: Remove cpu_hotplug_driver_lock()
-> > > 
-> > > ---
-> > >  arch/powerpc/kernel/smp.c              | 12 ----------
-> > >  arch/powerpc/platforms/pseries/dlpar.c | 40 +++++++++++++---------------------
-> > >  arch/x86/Kconfig                       |  4 ----
-> > >  arch/x86/kernel/smpboot.c              | 21 ------------------
-> > >  arch/x86/kernel/topology.c             | 11 ++++++----
-> > >  drivers/base/cpu.c                     | 26 ++++++++++++----------
-> > >  include/linux/cpu.h                    | 13 -----------
-> > >  7 files changed, 37 insertions(+), 90 deletions(-)
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 9fccf71..b9d613e 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -768,16 +768,16 @@ int cap_task_fix_setuid(struct cred *new, const struct cred *old, int flags)
+  */
+ static int cap_safe_nice(struct task_struct *p)
+ {
+-	int is_subset;
++	int is_subset, ret = 0;
+ 
+ 	rcu_read_lock();
+ 	is_subset = cap_issubset(__task_cred(p)->cap_permitted,
+ 				 current_cred()->cap_permitted);
++	if (!is_subset && !ns_capable(__task_cred(p)->user_ns, CAP_SYS_NICE))
++		ret = -EPERM;
+ 	rcu_read_unlock();
+ 
+-	if (!is_subset && !capable(CAP_SYS_NICE))
+-		return -EPERM;
+-	return 0;
++	return ret;
+ }
+ 
+ /**
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.5.4
+
