@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3H2SNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:13:38 -0400
-Received: from mout.gmx.net ([212.227.17.22]:60227 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756456Ab3H2SNg convert rfc822-to-8bit (ORCPT
+	id S1756620Ab3H2SOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:14:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53823 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab3H2SOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:13:36 -0400
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
-To: llvmlinux@lists.linuxfoundation.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, pageexec@freemail.hu, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [llvmlinux] [PATCH] [RFC] [X86] Fix a compilation issue with clang.
-Date: Thu, 29 Aug 2013 20:11:59 +0200
-Message-ID: <3804425.88935NyK6A@aragorn.auenland.lan>
-User-Agent: KMail/4.11 (Linux/3.7.10-1.16-default; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <521F8ED4.2080009@zytor.com>
-References: <1377796428-12719-1-git-send-email-dl9pf@gmx.de> <6320951.e8eKRZ5b9s@aragorn.auenland.lan> <521F8ED4.2080009@zytor.com>
+	Thu, 29 Aug 2013 14:14:21 -0400
+Date: Thu, 29 Aug 2013 20:14:12 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: airlied@redhat.com, daniel.vetter@ffwll.ch, gregkh@linuxfoundation.org,
+        festevam@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] imx-drm: Fix probe failure
+Message-ID: <20130829181412.GX30088@pengutronix.de>
+References: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V03:K0:e/+YWm7vYHgw3W9BIg+MHHUZpeo1bZHuqW05FYFnM4PBvmMR9Bn
- b+8AnFUMuXToJIKvH+xp6GFCVOtdgK0snjznNvzKE+j6xqhKfPykmQ2EXvVIXa322bSGVsl
- bL34HyFEwlywP3+s8WqcqPu8Hn1ZK25+kQBltOamLfZGeWpIUDs2zPPS9lHq/CZH188FgbE
- SaqF6Ct73KBfS7Zjx+pAg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:09:23 up 5 days,  3:40, 29 users,  load average: 0.05, 0.03, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 August 2013 11:11:32 H. Peter Anvin wrote:
-> On 08/29/2013 11:00 AM, Jan-Simon Möller wrote:
-> >> You just changed the sematics of the _ASM_* macros... that doesn't seem
-> >> like a great idea.  It's probably okay for the registers, but still...
-> > 
-> > Well, we followed your idea for the _ASM_DX macros as you mentioned them
-> > earlier.
+On Thu, Aug 29, 2013 at 10:59:22AM -0300, Fabio Estevam wrote:
+> Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
+> failure is seen:
 > 
-> We can probably do this, because register names are usually not assumed
-> to have spaces around them... so it's probably okay.  Definitely a lot
-> less ugly than the rest.  That being said, if we're going to fix these
-> macros, we should also fix another piece of drain bramage:
+> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [drm] No driver support for vblank timestamp query.
+> [drm] Initialized imx-drm 1.0.0 20120507 on minor 0
+> imx-ldb ldb.10: adding encoder failed with -16
+> imx-ldb: probe of ldb.10 failed with error -16
+> imx-ipuv3 2400000.ipu: IPUv3H probed
+> imx-ipuv3 2800000.ipu: IPUv3H probed
+> imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
 > 
-> ALL instances of these have a % prepended.  The % should be part of the
-> macro.
+> The reason for the probe failure is that now 'imxdrm->references' is incremented
+> early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
+> and imx_drm_add_encoder():
+> 
+> 	if (imxdrm->references) {
+> 		ret = -EBUSY;
+> 		goto err_busy;
+> 	}
+> 
+> ,will always fail.
+> 
+> Let the drm core handle the references instead of doing this manually in 
+> imx-drm. In imx-drm-core the open and close callbacks map to drm_open and 
+> drm_close, which handle the references via open_count.
+> 
+> After this patch, lvds panel is functional on a mx6qsabrelite board.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+> Changes since v1:
+> - Improved commit log by providing an explanation to the probe failure
+> - Cc'ed Dave/Daniel
+> 
+> @@ -485,11 +480,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
+>  
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
 
-Ok, I can make a follow-up patch for the above change. Give me a bit to cook 
-it up.
+As I told in v1: Simply removing the code is not an option. We agreed
+that we use the drm core reference counting, so you must actually test
+for it here...
 
-Best,
-JS
+> @@ -564,11 +553,6 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
+>  
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
 
+...here...
 
+>  	mutex_lock(&imxdrm->mutex);
+>  
+> -	if (imxdrm->references) {
+> -		ret = -EBUSY;
+> -		goto err_busy;
+> -	}
+
+...and here.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
