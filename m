@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3H2Lck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 07:32:40 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:53934 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab3H2Lcj (ORCPT
+	id S1756372Ab3H2Ld6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:33:58 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58025 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab3H2Ld5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 07:32:39 -0400
-Message-ID: <521F3151.1030704@gmail.com>
-Date: Thu, 29 Aug 2013 13:32:33 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2 08/16] ARM: mxs: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-9-git-send-email-sebastian.hesselbarth@gmail.com> <20130829110849.GB18729@S2101-09.ap.freescale.net>
-In-Reply-To: <20130829110849.GB18729@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 29 Aug 2013 07:33:57 -0400
+Message-ID: <521F319B.9000006@linux.vnet.ibm.com>
+Date: Thu, 29 Aug 2013 19:33:47 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130828092001.GQ22899@redhat.com> <521DC3FD.1020507@linux.vnet.ibm.com> <20130828094630.GR22899@redhat.com> <521DCD57.7000401@linux.vnet.ibm.com> <20130828104938.GT22899@redhat.com> <521DE9E8.2040908@linux.vnet.ibm.com> <20130828133635.GU22899@redhat.com> <521EEF4B.4040107@linux.vnet.ibm.com> <20130829093141.GC22899@redhat.com>
+In-Reply-To: <20130829093141.GC22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082911-2674-0000-0000-00000A6F3370
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/13 13:08, Shawn Guo wrote:
-> On Tue, Aug 27, 2013 at 11:28:02PM +0200, Sebastian Hesselbarth wrote:
->> @@ -100,19 +101,17 @@ static enum imx23_clk clks_init_on[] __initdata = {
->>   	cpu, hbus, xbus, emi, uart,
->>   };
+On 08/29/2013 05:31 PM, Gleb Natapov wrote:
+> On Thu, Aug 29, 2013 at 02:50:51PM +0800, Xiao Guangrong wrote:
+>> After more thinking, I still think rcu_assign_pointer() is unneeded when a entry
+>> is removed. The remove-API does not care the order between unlink the entry and
+>> the changes to its fields. It is the caller's responsibility:
+>> - in the case of rcuhlist, the caller uses call_rcu()/synchronize_rcu(), etc to
+>>   enforce all lookups exit and the later change on that entry is invisible to the
+>>   lookups.
 >>
->> -int __init mx23_clocks_init(void)
->> +static void __init mx23_clocks_init(struct device_node *np)
->>   {
->> -	struct device_node *np;
->>   	u32 i;
+>> - In the case of rculist_nulls, it seems refcounter is used to guarantee the order
+>>   (see the example from Documentation/RCU/rculist_nulls.txt).
 >>
->> +	clkctrl = of_iomap(np, 0);
->> +	WARN_ON(!clkctrl);
->> +
->>   	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-digctl");
->>   	digctrl = of_iomap(np, 0);
->>   	WARN_ON(!digctrl);
+>> - In our case, we allow the lookup to see the deleted desc even if it is in slab cache
+>>   or its is initialized or it is re-added.
 >>
->> -	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-clkctrl");
->> -	clkctrl = of_iomap(np, 0);
->> -	WARN_ON(!clkctrl);
->> -
->
-> With the changes, 'np' becomes a pointer to digctl node instead of
-> clkctrl as the original.  This will cause problem for
-> of_clk_add_provider(np, ...) later in this function.
->
-> Same problem with mx28_clocks_init() changes.
+> BTW is it a good idea? We can access deleted desc while it is allocated
+> and initialized to zero by kmem_cache_zalloc(), are we sure we cannot
+> see partially initialized desc->sptes[] entry? On related note what about
+> 32 bit systems, they do not have atomic access to desc->sptes[].
 
-Ok, will take care of it. I assume you are fine with having an extra
-struct device_node pointer for the sake of readability instead of
-reusing the same pointer.
+Good eyes. This is a bug here.
 
-Sebastian
+It seems we do not have a good to fix this. How disable this optimization on
+32 bit host, small changes:
+
+ static inline void kvm_mmu_rcu_free_page_begin(struct kvm *kvm)
+ {
++#ifdef CONFIG_X86_64
+        rcu_read_lock();
+
+        kvm->arch.rcu_free_shadow_page = true;
+        /* Set the indicator before access shadow page. */
+        smp_mb();
++#else
++       spin_lock(kvm->mmu_lock);
++#endif
+ }
+
+ static inline void kvm_mmu_rcu_free_page_end(struct kvm *kvm)
+ {
++#ifdef CONFIG_X86_64
+        /* Make sure that access shadow page has finished. */
+        smp_mb();
+        kvm->arch.rcu_free_shadow_page = false;
+
+        rcu_read_unlock();
++#else
++       spin_unlock(kvm->mmu_lock);
++#endif
+ }
+
 
