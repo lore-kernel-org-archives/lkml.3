@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab3H2VLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:11:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45936 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3H2VLW (ORCPT
+	id S1755463Ab3H2VVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:21:16 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:60144 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab3H2VVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:11:22 -0400
-Date: Thu, 29 Aug 2013 16:11:14 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] Make sure to wake reaper
-Message-ID: <20130829211114.GA20726@sergelap>
+	Thu, 29 Aug 2013 17:21:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 29 Aug 2013 23:21:09 +0200
+X-Google-Sender-Auth: aKfCTyDovMFK7NMMvqVb--EScSk
+Message-ID: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
+Subject: [-next] openvswitch BUILD_BUG_ON failed
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andy Zhou <azhou@nicira.com>, Jesse Gross <jesse@nicira.com>
+Cc: dev@openvswitch.org, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On m68k, where the alignment of 32-bit words is 2 bytes:
 
-Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
-possible to get into a situation where a pidns reaper is
-<defunct>, reparented to host pid 1, but never reaped.  How to
-reproduce this is documented at
+net/openvswitch/flow.c:1984:2: error: call to
+'__compiletime_assert_1984' declared with attribute error:
+BUILD_BUG_ON failed: sizeof(struct sw_flow_key) % sizeof(long)
 
-https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
-(and see
-https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
-In short, run repeated starts of a container whose init is
+(http://kisskb.ellerman.id.au/kisskb/buildresult/9422860/)
 
-Process.exit(0);
+This was introduced by commit 5828cd9a68873df1340b420371c02c47647878fb
+Author: Andy Zhou <azhou@nicira.com>
+Date:   Tue Aug 27 13:02:21 2013 -0700
 
-sysrq-t when such a task is playing zombie shows:
+    openvswitch: optimize flow compare and mask functions
 
-[  131.132978] init            x ffff88011fc14580     0  2084   2039 0x00000000
-[  131.132978]  ffff880116e89ea8 0000000000000002 ffff880116e89fd8 0000000000014580
-[  131.132978]  ffff880116e89fd8 0000000000014580 ffff8801172a0000 ffff8801172a0000
-[  131.132978]  ffff8801172a0630 ffff88011729fff0 ffff880116e14650 ffff88011729fff0
-[  131.132978] Call Trace:
-[  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
-[  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
-[  131.132978]  [<ffffffff81071eae>] ? signal_wake_up_state+0x1e/0x30
-[  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
-[  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
-[  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
+    Make sure the sw_flow_key structure and valid mask boundaries are always
+    machine word aligned. Optimize the flow compare and mask operations
+    using machine word size operations. This patch improves throughput on
+    average by 15% when CPU is the bottleneck of forwarding packets.
 
-Further debugging showed that every time this happened, zap_pid_ns_processes()
-started with nr_hashed being 3, while we were expecting it to drop to 2.
-Any time it didn't happen, nr_hashed was 1 or 2.  So the reaper was
-waiting for nr_hashed to become 2, but free_pid() only wakes the reaper
-if nr_hashed hits 1.  This patch makes free_pid() wake the reaper any
-time the reaper is PF_EXITING, to force it to re-test the
-pidns->nr_hashed = init_pids test.  Note that this is more like what
-__unhash_process() used to do before
-af4b8a83add95ef40716401395b44a1b579965f4.
+    This patch is inspired by ideas and code from a patch submitted by Peter
+    Klausler titled "replace memcmp() with specialized comparator".
+    However, The original patch only optimizes for architectures
+    support unaligned machine word access. This patch optimizes for all
+    architectures.
 
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
----
- kernel/pid.c | 4 ++++
- 1 file changed, 4 insertions(+)
+A quick fix to satisfy the build check is to make the padding explicit
+(gmail-whitespace-damaged diff):
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 0db3e79..6b312c4 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -274,6 +274,10 @@ void free_pid(struct pid *pid)
- 		case 0:
- 			schedule_work(&ns->proc_work);
- 			break;
-+		default:
-+			if (ns->child_reaper->flags & PF_EXITING)
-+				wake_up_process(ns->child_reaper);
-+			break;
- 		}
- 	}
- 	spin_unlock_irqrestore(&pidmap_lock, flags);
--- 
-1.8.3.2
+diff --git a/net/openvswitch/flow.h b/net/openvswitch/flow.h
+index b65f885..15f08d9 100644
+--- a/net/openvswitch/flow.h
++++ b/net/openvswitch/flow.h
+@@ -78,6 +78,7 @@ struct sw_flow_key {
+                u32     priority;       /* Packet QoS priority. */
+                u32     skb_mark;       /* SKB mark. */
+                u16     in_port;        /* Input switch port (or DP_MAX_PORTS).
++               u16     pad;
+        } phy;
+        struct {
+                u8     src[ETH_ALEN];   /* Ethernet source address. */
 
+However, I have some doubts about other alignment "enforcements":
+
+"__aligned(__alignof__(long))" makes the whole struct aligned to the
+alignment rule for "long":
+   1. This is only 2 bytes on m68k, i.e. != sizeof(long).
+   2. This is 4 bytes on many 32-bit platforms, which may be less than the
+      default alignment for "__be64" (cfr. some members of struct
+      ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
+I guess you want (at least) 4 byte alignment on 32-bit, and prefer 8 byte
+alignment on 64-bit?
+Not specifying any alignment constraint will give you most of that (except
+on 64-bit platforms where 64-bit words must be only 4-byte aligned).
+
+There's another build check "BUILD_BUG_ON(sizeof(long) % sizeof(u32))".
+Isn't this always true on Linux, as "long" is never smaller than 4 bytes?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
