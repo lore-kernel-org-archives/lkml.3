@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3H2MIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 08:08:30 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52328 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab3H2MI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 08:08:28 -0400
-From: Chenggang Qin <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf core: Fix a bug that lead to mmap() & munmap() mismatch
-Date: Thu, 29 Aug 2013 20:08:01 +0800
-Message-Id: <1377778081-7115-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755802Ab3H2MLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 08:11:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53749 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab3H2MLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 08:11:00 -0400
+Date: Thu, 29 Aug 2013 13:10:55 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+Message-ID: <20130829121055.GE22421@suse.de>
+References: <20120307180852.GE17697@suse.de>
+ <20130823130332.GY31370@twins.programming.kicks-ass.net>
+ <20130823181546.GA31370@twins.programming.kicks-ass.net>
+ <20130829092828.GB22421@suse.de>
+ <20130829094342.GX10002@twins.programming.kicks-ass.net>
+ <20130829105656.GD22421@suse.de>
+ <20130829111419.GA10002@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130829111419.GA10002@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
+On Thu, Aug 29, 2013 at 01:14:19PM +0200, Peter Zijlstra wrote:
+> > I intended to say nr_node_ids, the same size as buffers such as the
+> > task_numa_buffers. If we ever return a nid > nr_node_ids here then
+> > task_numa_fault would corrupt memory. However, it should be possible for
+> > node_weight to exceed nr_node_ids except maybe during node hot-remove so
+> > it's not the problem.
+> 
+> The nodemask situation seems somewhat more confused than the cpumask
+> case; how would we ever return a nid > nr_node_ids? Corrupt nodemask?
+> 
 
-In function filename__read_debuglink(), after the elf_begin() mmapped the dso file,
-the execution stream may goto "out_close". So, the elf_end() is skipped, and the
-munmap() cannot be executed.
+ARGH. I meant impossible. The exact bloody opposite of what I wrote.
 
-While perf is executed for a long time, the files that are not munmapped will cost
-a large memory.
-
-This patch fixed this bug.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
----
- tools/perf/util/symbol-elf.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..b4df870 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -471,27 +471,27 @@ int filename__read_debuglink(const char *filename, char *debuglink,
- 
- 	ek = elf_kind(elf);
- 	if (ek != ELF_K_ELF)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	if (gelf_getehdr(elf, &ehdr) == NULL) {
- 		pr_err("%s: cannot get elf header.\n", __func__);
--		goto out_close;
-+		goto out_elf_end;
- 	}
- 
- 	sec = elf_section_by_name(elf, &ehdr, &shdr,
- 				  ".gnu_debuglink", NULL);
- 	if (sec == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	data = elf_getdata(sec, NULL);
- 	if (data == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	/* the start of this section is a zero-terminated string */
- 	strncpy(debuglink, data->d_buf, size);
- 
-+out_elf_end:
- 	elf_end(elf);
--
- out_close:
- 	close(fd);
- out:
 -- 
-1.7.8.rc2.5.g815b
-
+Mel Gorman
+SUSE Labs
