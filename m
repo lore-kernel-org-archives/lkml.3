@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab3H2Uje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:39:34 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:62577 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab3H2Ujc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:39:32 -0400
-Date: Thu, 29 Aug 2013 22:39:42 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 3/6] i915_gem: Convert kmem_cache_alloc(...GFP_ZERO) to
- kmem_cache_zalloc
-Message-ID: <20130829203942.GB32184@phenom.ffwll.local>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-References: <cover.1377806578.git.joe@perches.com>
- <d846a338b419b2f3b8f2ac61db01e3faa5b2f832.1377806578.git.joe@perches.com>
+	id S1757164Ab3H2Ulm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:41:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42705 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab3H2Ull (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 16:41:41 -0400
+Date: Thu, 29 Aug 2013 22:41:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Added support for KonePureOptical
+In-Reply-To: <1377786628.2404.1.camel@neuromancer.tessier-ashpool>
+Message-ID: <alpine.LNX.2.00.1308292241150.23267@pobox.suse.cz>
+References: <1377786628.2404.1.camel@neuromancer.tessier-ashpool>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d846a338b419b2f3b8f2ac61db01e3faa5b2f832.1377806578.git.joe@perches.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 01:11:07PM -0700, Joe Perches wrote:
-> The helper exists, might as well use it instead of __GFP_ZERO.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Thu, 29 Aug 2013, Stefan Achatz wrote:
 
-Queued for -next, thanks for the patch.
--Daniel
+> KonePureOptical is a KonePure with different sensor.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-ids.h             |    1 +
+>  drivers/hid/hid-roccat-konepure.c |    3 ++-
+>  2 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index ffe4c7a..ef18cd9 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -716,6 +716,7 @@
+>  #define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
+>  #define USB_DEVICE_ID_ROCCAT_KONEPLUS	0x2d51
+>  #define USB_DEVICE_ID_ROCCAT_KONEPURE	0x2dbe
+> +#define USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL	0x2db4
+>  #define USB_DEVICE_ID_ROCCAT_KONEXTD	0x2e22
+>  #define USB_DEVICE_ID_ROCCAT_KOVAPLUS	0x2d50
+>  #define USB_DEVICE_ID_ROCCAT_LUA	0x2c2e
+> diff --git a/drivers/hid/hid-roccat-konepure.c b/drivers/hid/hid-roccat-konepure.c
+> index c79d0b0..5850959 100644
+> --- a/drivers/hid/hid-roccat-konepure.c
+> +++ b/drivers/hid/hid-roccat-konepure.c
+> @@ -262,6 +262,7 @@ static int konepure_raw_event(struct hid_device *hdev,
+>  
+>  static const struct hid_device_id konepure_devices[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPURE_OPTICAL) },
+>  	{ }
+>  };
+
+I believe you are missing hid_have_special_driver[] entry.
+
+>  
+> @@ -300,5 +301,5 @@ module_init(konepure_init);
+>  module_exit(konepure_exit);
+>  
+>  MODULE_AUTHOR("Stefan Achatz");
+> -MODULE_DESCRIPTION("USB Roccat KonePure driver");
+> +MODULE_DESCRIPTION("USB Roccat KonePure/Optical driver");
+>  MODULE_LICENSE("GPL v2");
+> -- 
+> 1.7.3.4
+> 
+> 
+> 
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Jiri Kosina
+SUSE Labs
