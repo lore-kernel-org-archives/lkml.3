@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab3H2UFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:05:40 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:10725 "EHLO
+	id S1757089Ab3H2UFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:05:47 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:10772 "EHLO
 	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756638Ab3H2UFj (ORCPT
+	with ESMTP id S1757064Ab3H2UFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:05:39 -0400
+	Thu, 29 Aug 2013 16:05:45 -0400
 From: Jason Low <jason.low2@hp.com>
 To: mingo@redhat.com, peterz@infradead.org, jason.low2@hp.com
 Cc: linux-kernel@vger.kernel.org, efault@gmx.de, pjt@google.com,
         preeti@linux.vnet.ibm.com, akpm@linux-foundation.org, mgorman@suse.de,
         riel@redhat.com, aswin@hp.com, scott.norton@hp.com,
         srikar@linux.vnet.ibm.com
-Subject: [PATCH v4 0/3] sched: Limiting idle balance
-Date: Thu, 29 Aug 2013 13:05:33 -0700
-Message-Id: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+Subject: [PATCH v4 1/3] sched: Reduce overestimating rq->avg_idle
+Date: Thu, 29 Aug 2013 13:05:34 -0700
+Message-Id: <1377806736-3752-2-git-send-email-jason.low2@hp.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches modify and add to the way we limit idle balancing. The first
-patch reduces the chance we overestimate the avg_idle guestimator. The second
-patch makes idle balance compare the avg_idle with the max cost we ever spend
-on a new idle load balance per sched domain to limit idle balance. 
+When updating avg_idle, if the delta exceeds some max value, then avg_idle
+gets set to the max, regardless of what the previous avg was. This can cause
+avg_idle to often be overestimated.
 
-The third is an RFC patch which periodically decays each domain's max
-newidle balance costs and compares avg_idle sd with max newidle balance +
-sched_migration_cost to determine if we should skip balancing.
+This patch modifies the way we update avg_idle by always updating it with the
+function call to update_avg() first. Then, if avg_idle exceeds the max, we set
+it to the max.
 
-These changes further reduce the chance we attempt idle balancing when the time
-a CPU remains idle is short and is not more than the cost to do the balancing.
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/core.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-The first 2 patches provide good performance boosts of many AIM7 workloads on an
-8 socket (80 core) machine. The table below compares the average jobs per minute
-at 10-100, 200-1000, and 1100-2000 users between the vanilla 3.11-rc7 kernel and
-the 3.11-rc7 kernel with the first 2 patches with Hyperthreading enabled.
-
-----------------------------------------------------------------
-workload     | % improvement   | % improvement  | % improvement
-             | with patch      | with patch     | with patch
-             | 1100-2000 users | 200-1000 users | 10-100 users
-----------------------------------------------------------------
-alltests     | +12.2%          |  +7.5%         |  +1.0%
-----------------------------------------------------------------
-compute      |  -0.6%          |  -0.8%         |  +0.1%
-----------------------------------------------------------------
-custom       | +24.0%          | +25.03         | +16.4%
-----------------------------------------------------------------
-disk         | +11.6%          | +21.3%         |  +0.1%
-----------------------------------------------------------------
-fserver      | +74.7%          | +34.7%         |  -2.7%
-----------------------------------------------------------------
-high_systime | +21.2%          | +10.5%         |  +0.6%
-----------------------------------------------------------------
-new_fserver  | +59.8%          | +23.7%         |  -1.2%
-----------------------------------------------------------------
-shared       |  +9.0%          | +13.0%         |  +6.5%
-----------------------------------------------------------------
-
-Jason Low (3):
-  sched: Reduce overestimating rq->avg_idle
-  sched: Consider max cost of idle balance per sched domain
-  sched: Periodically decay max cost of idle balance
-
- arch/metag/include/asm/topology.h |    2 +
- include/linux/sched.h             |    4 +++
- include/linux/topology.h          |    6 ++++
- kernel/sched/core.c               |   10 ++++---
- kernel/sched/fair.c               |   48 ++++++++++++++++++++++++++++++++++++-
- kernel/sched/sched.h              |    3 ++
- 6 files changed, 68 insertions(+), 5 deletions(-)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 05c39f0..93b18ef 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1347,10 +1347,11 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 		u64 delta = rq_clock(rq) - rq->idle_stamp;
+ 		u64 max = 2*sysctl_sched_migration_cost;
+ 
+-		if (delta > max)
++		update_avg(&rq->avg_idle, delta);
++
++		if (rq->avg_idle > max)
+ 			rq->avg_idle = max;
+-		else
+-			update_avg(&rq->avg_idle, delta);
++
+ 		rq->idle_stamp = 0;
+ 	}
+ #endif
+-- 
+1.7.1
 
