@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3H2WWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 18:22:01 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:45323 "EHLO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3H2WWA (ORCPT
+	id S1756899Ab3H2WW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 18:22:27 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57688 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756292Ab3H2WWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 18:22:00 -0400
-Message-ID: <521FC971.7060206@gmail.com>
-Date: Fri, 30 Aug 2013 00:21:37 +0200
-From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+	Thu, 29 Aug 2013 18:22:25 -0400
+Date: Thu, 29 Aug 2013 23:22:19 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
+Message-ID: <20130829222219.GA24221@srcf.ucam.org>
+References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
+ <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
+ <20130801134632.GY9916@kw.sim.vm.gnt>
+ <CACRpkdZcEPM-u19pc+v_cRqUSfJBFZ49rJYiewQ1sWWSU5YxEg@mail.gmail.com>
+ <20130829125754.GA8813@srcf.ucam.org>
+ <521F4F95.5080103@roeck-us.net>
+ <20130829153738.GA16306@srcf.ucam.org>
+ <20130829160830.GB25021@roeck-us.net>
+ <20130829162551.GA17411@srcf.ucam.org>
+ <20130829222053.GE13942@kw.sim.vm.gnt>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10.9: Oops at elf_core_dump()
-References: <521FC12A.9060302@gmail.com> <20130829220550.GA4486@kroah.com>
-In-Reply-To: <20130829220550.GA4486@kroah.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130829222053.GE13942@kw.sim.vm.gnt>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got it for the first time. Actually, am doing something really unusual
-(http://bugs.python.org/issue18843).
+On Fri, Aug 30, 2013 at 12:20:54AM +0200, Simon Guinot wrote:
 
-Am looking for an answer why I suffer memory corruption in python applicatuons.
-So I installed DUMA from http://duma.sourceforge.net and tried to recompile&reinstall
-failing python. In previous attempt it exited and per README instructions
-I increased the vm.max_map_count value.
+> Almost all the LaCie NASes are running a Linux based OS. I can assure
+> you that LaCie really takes care of Linux. Now, the main reason why the
+> Super-I/O ACPI support is missing on this boards is a lack of knowledge.
+> Thanks to this discussion, I am now aware of that. Then, for the next
+> products, I will do my best to get AMLs or at least ACPI IDs.
 
-
-# export LD_PRELOAD=/usr/lib64/libduma.so.0.0.0
-# sysctl -w vm.max_map_count=1000000
-# emerge dev-lang/python:2.7 
-DUMA 2.5.15 (shared library, NO_LEAKDETECTION)
-Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
-
-
- * IMPORTANT: 11 news items need reading for repository 'gentoo'.
- * Use eselect news to read news items.
-
-
- * IMPORTANT: config file '5 (shared library, NO_LEAKDETECTION)
-Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
-
-' needs updating.
- * See the CONFIGURATION FILES section of the emerge
- * man page to learn how to update config files.
-Calculating dependencies |
-DUMA Aborting: mprotect() failed: Cannot allocate memory.
-Check README section 'MEMORY USAGE AND EXECUTION SPEED'
-  if your (Linux) system may limit the number of different page mappings per process
-
-
-[and it crashed, no ctrl+c working]
-
-
-
-Sorry do not know what to say more. I just crashed teh kernel but except
-the Ooops it works so far. The core filesize is zero.
-Martin
-
-
-Greg KH wrote:
-> On Thu, Aug 29, 2013 at 11:46:18PM +0200, Martin MOKREJŠ wrote:
->> Hi,
->>   I just got this stacktrace. Not sure whom to send it, poking throu MAINTAINERS
->> file and looking for ELF gave me nothing. ;-)
->>
->> [105670.434336] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> [105670.434366] IP: [<ffffffff812f7b42>] strlen+0x2/0x20
->> [105670.434385] PGD 18c8e5067 PUD 2b547e067 PMD 0 
->> [105670.434401] Oops: 0000 [#1] SMP 
->> [105670.434413] Modules linked in: iwldvm iwlwifi
->> [105670.434432] CPU: 0 PID: 7497 Comm: emerge Not tainted 3.10.9-default-pciehp #8
-> 
-> Is this reproducable?
-> 
-> thanks,
-> 
-> greg k-h
-> 
+Awesome! Let me know if you need any advice on this.
 
 -- 
-Martin Mokrejs, Ph.D.
-Bioinformatics
-Donovalska 1658
-149 00 Prague
-Czech Republic
-http://www.iresite.org
-http://www.iresite.org/~mmokrejs
+Matthew Garrett | mjg59@srcf.ucam.org
