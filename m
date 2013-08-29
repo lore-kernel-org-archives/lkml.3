@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3H2CyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:54:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35215 "EHLO bear.ext.ti.com"
+	id S1755556Ab3H2Cyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:54:37 -0400
+Received: from m12-16.163.com ([220.181.12.16]:39330 "EHLO m12-16.163.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab3H2Cx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:53:58 -0400
-Message-ID: <521EB7A8.3000603@ti.com>
-Date: Thu, 29 Aug 2013 08:23:28 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752656Ab3H2Cyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 22:54:35 -0400
+X-Coremail-DSSMTP: 111.177.42.155
+From: "jacky" <producehormones@163.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: linux-kernel,produce hormones and steroids
+Date: Thu, 29 Aug 2013 10:54:38 +0800
+X-Mailer: SquirrelMail (version 0.5)
+Reply-To: <producehormones@163.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <grant.likely@linaro.org>,
-        <rob@landley.net>, <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>,
-        <davidb@codeaurora.org>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <popcornmix@gmail.com>
-Subject: Re: [PATCH v3 3/3] ARM: dts: dra7-evm: Add extcon nodes for USB ID
- pin detection
-References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-4-git-send-email-george.cherian@ti.com> <521E394C.3040402@cogentembedded.com>
-In-Reply-To: <521E394C.3040402@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=GB2312
+X-CM-TRANSID: EMCowEB5lVDntx5Sjhi3Ag--.433S2
+X-Coremail-Antispam: 1Uf129KBjvdXoWrurykGFW5trW5XrW5Gr4xXrb_yoWxuFg_WF
+	98JF1qgw1DJr1IqF1DKr15AF15XFW0qr10qr98Ww47JryxXF15XrsFvr43WFyUWrWxJr1U
+	Jwn0qr1Fq3Wj9jkaLaAFLSUrUUUUMb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUeQ6pPUUUUU==
+Message-Id: <521EB7E7.7105D5.03298@m12-16.163.com>
+X-CM-SenderInfo: xsurv3pfhk025prqv2i6rwjhhfrp/xtbBlweIh1D+dnrGCAAAsz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7T2sesZ011524
 
-On 8/28/2013 11:24 PM, Sergei Shtylyov wrote:
-> On 08/28/2013 09:33 PM, George Cherian wrote:
->
->> Add
->>     -extcon nodes for USB ID pin detection.
->>     -i2c nodes.
->>     -pcf nodes to which USB ID pin is connected.
->
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   arch/arm/boot/dts/dra7-evm.dts | 50 
->> +++++++++++++++++++++++++++++++++++++++++-
->>   1 file changed, 49 insertions(+), 1 deletion(-)
->
->> diff --git a/arch/arm/boot/dts/dra7-evm.dts 
->> b/arch/arm/boot/dts/dra7-evm.dts
->> index acd3c09..8b0738a 100644
->> --- a/arch/arm/boot/dts/dra7-evm.dts
->> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> [...]
->> @@ -33,10 +44,47 @@
->>           };
->>   };
->>
->> +&i2c1 {
->> +    clock-frequency = <400000>;
->> +
->> +    gpio20: pcf8575@20 {
->
->     ePAPR was talking about the node naming, not about labelling. Back 
-> to the drawing board. ;-)
->
-ha..... :-/
->> +        compatible = "ti,pcf8575";
->> +        reg = <0x20>;
->> +        n_latch = <0x4000>;
->> +        gpio-controller;
->> +        #gpio-cells = <2>;
->> +        interrupt-parent = <&gpio6>;
->> +        interrupts = <11 2>;
->> +        interrupt-controller;
->> +        #interrupt-cells = <2>;
->> +    };
->> +
->> +    gpio21: pcf8575@21 {
->> +        compatible = "ti,pcf8575";
->> +        reg = <0x21>;
->> +        n_latch = <0x1408>;
->> +        gpio-controller;
->> +        #gpio-cells = <2>;
->> +        interrupt-parent = <&pcf_20>;
->> +        interrupts = <14 2>;
->> +        interrupt-controller;
->> +        #interrupt-cells = <2>;
->> +    };
->> +
->> +};
->> +
->
-> WBR, Sergei
->
+Dear director,
+ 
+We produce Steroids and intermediates ingredients.
+ 
+Products:
+APIs 
+DHEA Series 
+Nandrolone Series 
+Testosterone Series 
+Altrenogest 
+Intermediates 
+4-Androstenedione 
+1,4-Androstadienedione 
+Altrenogest Intermediate 
+Spirolactone Intermediate 
+Customs Synthesis 
+
+If you are interested, please contact us for more information.
+
+ 
+Regards,
+
+Jacky
 
 
--- 
--George
+--------------------------------------------------------------------------------
+ 
 
+Goto pharmaceuticals Co.,Ltd
+Tel: +86 710 3423122, Fax: +86 710 3423124
+Email:products@gotopharm.com
+Msn:zhisheng211@hotmail.com
+Add: 7-1602 New City of Century, 47th Changhong Road,
+Xiangyang, Hubei, China, 441002
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
