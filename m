@@ -1,99 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3H2CsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:48:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51647 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3H2CsX (ORCPT
+	id S1755151Ab3H2Cwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:52:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20390 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3H2Cwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:48:23 -0400
-Date: Thu, 29 Aug 2013 12:48:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Vladimir Barinov <vladimir.barinov@cogentembedded.com>
-Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Message-Id: <20130829124814.2c2547a15b5e8927a4a805a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF"
+	Wed, 28 Aug 2013 22:52:30 -0400
+Message-ID: <521EB76B.8090903@oracle.com>
+Date: Thu, 29 Aug 2013 10:52:27 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: [PATCH 2/3 v3] Refactor MSI restore call-chain to drop unnecessary
+ argument
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Driver init call graph under baremetal:
+driver_init->
+    msix_capability_init->
+        msix_program_entries->
+            msix_mask_irq->
+                entry->masked = 1
+    request_irq->
+        __setup_irq->
+            irq_startup->
+                unmask_msi_irq->
+                    msix_mask_irq->
+                        entry->masked = 0
 
-Hi Mauro,
+So entry->masked is always updated with newest value and its value could be used
+to restore to mask register in device.
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-arch/arm/mach-shmobile/board-bockw.c between commit fa3e0cee12fb ("ARM:
-shmobile: BOCK-W: fix SDHI0 PFC settings") from Linus' tree and commit
-9c43952d0f1e ("[media] ARM: shmobile: BOCK-W: add VIN and ML86V7667
-support") from the v4l-dvb tree.
+But in initial domain (aka priviliged guest), it's different.
+Driver init call graph under initial domain:
+driver_init->
+    msix_capability_init->
+        msix_program_entries->
+            msix_mask_irq->
+                entry->masked = 1
+    request_irq->
+        __setup_irq->
+            irq_startup->
+                __startup_pirq->
+                    EVTCHNOP_bind_pirq hypercall    (trap into Xen)
+[Xen:]
+pirq_guest_bind->
+    startup_msi_irq->
+        unmask_msi_irq->
+            msi_set_mask_bit->
+                entry->msi_attrib.masked = 0
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+So entry->msi_attrib.masked in xen side always has newest value. entry->masked
+in initial domain is untouched and is 1 after msix_capability_init.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Based on above, it's Xen's duty to restore entry->msi_attrib.masked to device,
+but with current code, entry->masked is used and MSI-x interrupt is masked.
 
-diff --cc arch/arm/mach-shmobile/board-bockw.c
-index 3354a85,7d44f66..0000000
---- a/arch/arm/mach-shmobile/board-bockw.c
-+++ b/arch/arm/mach-shmobile/board-bockw.c
-@@@ -167,13 -188,17 +188,23 @@@ static const struct pinctrl_map bockw_p
-  				  "usb1", "usb1"),
-  	/* SDHI0 */
-  	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
- -				  "sdhi0", "sdhi0"),
- +				  "sdhi0_data4", "sdhi0"),
- +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
- +				  "sdhi0_ctrl", "sdhi0"),
- +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
- +				  "sdhi0_cd", "sdhi0"),
- +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
- +				  "sdhi0_wp", "sdhi0"),
-+ 	/* VIN0 */
-+ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.0", "pfc-r8a7778",
-+ 				  "vin0_clk", "vin0"),
-+ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.0", "pfc-r8a7778",
-+ 				  "vin0_data8", "vin0"),
-+ 	/* VIN1 */
-+ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.1", "pfc-r8a7778",
-+ 				  "vin1_clk", "vin1"),
-+ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.1", "pfc-r8a7778",
-+ 				  "vin1_data8", "vin1"),
-  };
- =20
-  #define FPGA	0x18200000
+Before patch, restore call graph under initial domain:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                xen_initdom_restore_msi_irqs->
+                    PHYSDEVOP_restore_msi hypercall (first mask restore)
+            msix_mask_irq(entry, entry->masked)     (second mask restore)
 
---Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF
-Content-Type: application/pgp-signature
+So msix_mask_irq call in initial domain call graph needs to be removed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Based on this we can move the restore of the mask in default_restore_msi_irqs
+which would avoid restoring the invalid mask under Xen. Furthermore this
+simplifies the API by making everything related to restoring an MSI be in the
+platform specific APIs instead of just parts of it.
 
-iQIcBAEBCAAGBQJSHrZyAAoJEECxmPOUX5FEJPAP/AvSxPYfrEoa6qyzT6BoCyHK
-/CAYBc1TRi6hsioZISuy+VPMihzVyOLm5B4LceQCw5MuTo1FlexzGQbygJ233Efy
-R+QEHLos+tBpNFIKCgxsw7EkTMGCFc+m7vvooy1VdSMCMZYORsLs/Lpk2Pwux0zQ
-tvl4aTSQMaN5HtDbLluzFFigCW4UPbrROuoLdgzjSeudxMXcWqrLvod8A2qJjoif
-0jBKxkR/Wr7Lv2ZYM4cnRxu6lJTrdyT/eXMWXFLGAh0aSiwh4XcoEShgCYaFbqft
-M9DGKdleWfSgkxgih2knc34G0q9LfUa9BqnpNbe7/CIQq22l75DO+XpmaVBFm02r
-kqKTpeJ+Ysun0wcCPIYcBZ/5TQEdVhWLdN+ssdVigT7z9nTYl4vcFLwstZJpGo7y
-ciRxGf5qWoAEeRnqr1XJqDJ5UIjjAbDHaLAgBBIHvQDi5rtaoQTG4mxS+OH9Mn9M
-/PzrEC2IAQN6uxnEVA9qAJnDGSSvxR3mQi/sZj9jwXcSOzhWEO3NfniOPtnQa5Sw
-h3kKbfh/ikXx7gjITcGLpBC/QgJyiWb+HRQLRnMmlZ7Wi4wUC3/C3fkBRZos2tuq
-9ViDqZwpNdBQ5h7A5/U1jn2NfBNtcPXCURdopnYypDji0C0A6g0peBmrm5Ddthfw
-qxpfo4akvAIVoYHUYfVR
-=Oj5N
------END PGP SIGNATURE-----
+After patch, restore call graph under initial domain:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                xen_initdom_restore_msi_irqs->
+                    PHYSDEVOP_restore_msi hypercall (first mask restore)
 
---Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF--
+Logic for baremetal is not changed.
+Before patch, restore call graph under baremetal:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                default_restore_msi_irqs->
+            msix_mask_irq(entry, entry->masked)     (first mask restore)
+
+After patch, restore call graph under baremetal:
+pci_reset_function->
+    pci_restore_state->
+        __pci_restore_msix_state->
+            arch_restore_msi_irqs->
+                default_restore_msi_irqs->
+                    msix_mask_irq(entry, entry->masked) (first mask restore)
+
+The process for MSI code is similiar.
+
+-v3: Update patch description per Konrad suggestion, thanks.
+
+Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+---
+ drivers/pci/msi.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 87223ae..922fb49 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
+ #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
+ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ {
++	int pos;
++	u16 control;
+ 	struct msi_desc *entry;
+ 
+ 	entry = NULL;
+@@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ 		entry = irq_get_msi_desc(irq);
+ 	}
+ 
+-	if (entry)
++	if (entry) {
+ 		write_msi_msg(irq, &entry->msg);
++		if (dev->msix_enabled) {
++			msix_mask_irq(entry, entry->masked);
++			readl(entry->mask_base);
++		} else {
++			pos = entry->msi_attrib.pos;
++			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
++					     &control);
++			msi_mask_irq(entry, msi_capable_mask(control),
++				     entry->masked);
++		}
++	}
+ }
+ #endif
+ 
+@@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+ 	arch_restore_msi_irqs(dev, dev->irq);
+ 
+ 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+-	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+ 	control &= ~PCI_MSI_FLAGS_QSIZE;
+ 	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+ 	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+@@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+ 
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+ 		arch_restore_msi_irqs(dev, entry->irq);
+-		msix_mask_irq(entry, entry->masked);
+ 	}
+ 
+ 	control &= ~PCI_MSIX_FLAGS_MASKALL;
+-- 
+1.7.3
+
