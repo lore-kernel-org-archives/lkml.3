@@ -1,161 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3H2Nah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:30:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57398 "EHLO mx2.suse.de"
+	id S1754038Ab3H2Nam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:30:42 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:29549 "EHLO mx12.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab3H2Nae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:30:34 -0400
-Date: Thu, 29 Aug 2013 15:30:32 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, memcg: store memcg name for oom kill log consistency
-Message-ID: <20130829133032.GB12077@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1308282302450.14291@chino.kir.corp.google.com>
+	id S1753786Ab3H2Nak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 09:30:40 -0400
+X-IronPort-AV: E=Sophos;i="4.89,983,1367996400"; 
+   d="scan'208";a="84994121"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull one NFS client bugfix
+Thread-Topic: [GIT PULL] Please pull one NFS client bugfix
+Thread-Index: AQHOpLvxWgAlMHkhR0yEUAgTpXGqww==
+Date: Thu, 29 Aug 2013 13:30:35 +0000
+Message-ID: <1377783035.3202.1.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <485CCB43495E7945840AA9D928CB3B14@hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308282302450.14291@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7TDUucF014835
 
-On Wed 28-08-13 23:03:54, David Rientjes wrote:
-> A shared buffer is currently used for the name of the oom memcg and the
-> memcg of the killed process.  There is no serialization of memcg oom
-> kills, so this buffer can easily be overwritten if there is a concurrent
-> oom kill in another memcg.
+Hi Linus,
 
-Right.
+The following changes since commit fa8218def1b1a16f0a410e2c1c767b4738cc81fa:
 
-> This patch stores the names of the memcgs directly in struct mem_cgroup.
+  Merge tag 'regmap-v3.11-rc7' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap (2013-08-27 10:10:30 -0700)
 
-I do not like to make every mem_cgroup larger even if it never sees an
-OOM.
+are available in the git repository at:
 
-Wouldn't it be much easier to add a new lock (memcg_oom_info_lock) inside
-mem_cgroup_print_oom_info instead? This would have a nice side effect
-that parallel memcg oom kill messages wouldn't interleave.
 
-> This allows it to be printed anytime during the oom kill without fearing
-> that it will change or become corrupted.  It also ensures that the name
-> of the memcg that is oom and the memcg of the killed process are the same
-> even if renamed at the same time.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/memcontrol.c | 49 +++++++++++++++++++++++--------------------------
->  1 file changed, 23 insertions(+), 26 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -83,6 +83,8 @@ static int really_do_swap_account __initdata = 0;
->  #define do_swap_account		0
->  #endif
->  
-> +/* First 128 bytes of memcg name should be unique */
-> +#define MEM_CGROUP_STORE_NAME_LEN	128
->  
->  static const char * const mem_cgroup_stat_names[] = {
->  	"cache",
-> @@ -247,6 +249,9 @@ struct mem_cgroup {
->  	/* OOM-Killer disable */
->  	int		oom_kill_disable;
->  
-> +	/* name of memcg for display purposes only */
-> +	char		name[MEM_CGROUP_STORE_NAME_LEN];
-> +
->  	/* set when res.limit == memsw.limit */
->  	bool		memsw_is_minimum;
->  
-> @@ -1538,27 +1543,22 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
->   */
->  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  {
-> +	struct mem_cgroup *task_memcg;
-> +	struct mem_cgroup *iter;
->  	struct cgroup *task_cgrp;
->  	struct cgroup *mem_cgrp;
-> -	/*
-> -	 * Need a buffer in BSS, can't rely on allocations. The code relies
-> -	 * on the assumption that OOM is serialized for memory controller.
-> -	 * If this assumption is broken, revisit this code.
-> -	 */
-> -	static char memcg_name[PATH_MAX];
->  	int ret;
-> -	struct mem_cgroup *iter;
->  	unsigned int i;
->  
->  	if (!p)
->  		return;
->  
->  	rcu_read_lock();
-> -
-> -	mem_cgrp = memcg->css.cgroup;
-> +	task_memcg = mem_cgroup_from_task(p);
->  	task_cgrp = task_cgroup(p, mem_cgroup_subsys_id);
-> +	mem_cgrp = memcg->css.cgroup;
->  
-> -	ret = cgroup_path(task_cgrp, memcg_name, PATH_MAX);
-> +	ret = cgroup_path(task_cgrp, task_memcg->name, MEM_CGROUP_STORE_NAME_LEN);
->  	if (ret < 0) {
->  		/*
->  		 * Unfortunately, we are unable to convert to a useful name
-> @@ -1567,24 +1567,20 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  		rcu_read_unlock();
->  		goto done;
->  	}
-> -	rcu_read_unlock();
->  
-> -	pr_info("Task in %s killed", memcg_name);
-> +	if (task_memcg != memcg) {
-> +		ret = cgroup_path(mem_cgrp, memcg->name, MEM_CGROUP_STORE_NAME_LEN);
-> +		if (ret < 0) {
-> +			rcu_read_unlock();
-> +			goto done;
-> +		}
-> +	} else
-> +		strncpy(memcg->name, task_memcg->name, MEM_CGROUP_STORE_NAME_LEN);
->  
-> -	rcu_read_lock();
-> -	ret = cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
-> -	if (ret < 0) {
-> -		rcu_read_unlock();
-> -		goto done;
-> -	}
-> +	pr_info("Task in %s killed as a result of limit of %s\n",
-> +		task_memcg->name, memcg->name);
->  	rcu_read_unlock();
-> -
-> -	/*
-> -	 * Continues from above, so we don't need an KERN_ level
-> -	 */
-> -	pr_cont(" as a result of limit of %s\n", memcg_name);
->  done:
-> -
->  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
->  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
->  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
-> @@ -1602,9 +1598,10 @@ done:
->  		pr_info("Memory cgroup stats");
->  
->  		rcu_read_lock();
-> -		ret = cgroup_path(iter->css.cgroup, memcg_name, PATH_MAX);
-> +		ret = cgroup_path(iter->css.cgroup, iter->name,
-> +				  MEM_CGROUP_STORE_NAME_LEN);
->  		if (!ret)
-> -			pr_cont(" for %s", memcg_name);
-> +			pr_cont(" for %s", iter->name);
->  		rcu_read_unlock();
->  		pr_cont(":");
->  
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.11-5
+
+for you to fetch changes up to 347e2233b7667e336d9f671f1a52dfa3f0416e2c:
+
+  SUNRPC: Fix memory corruption issue on 32-bit highmem systems (2013-08-28 15:43:43 -0400)
+
+----------------------------------------------------------------
+NFS client bugfix for 3.11
+
+- Stable patch to fix a highmem-related data corruption issue on 32-bit
+  ARM platforms
+
+----------------------------------------------------------------
+Trond Myklebust (1):
+      SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+
+ net/sunrpc/xdr.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
