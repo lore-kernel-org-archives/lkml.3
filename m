@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3H2MoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 08:44:08 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:60206 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab3H2MoG (ORCPT
+	id S1753337Ab3H2MzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 08:55:21 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:48956
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752210Ab3H2MzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 08:44:06 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: xen-devel@lists.xensource.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: julien.grall@linaro.org, Rob Herring <rob.herring@calxeda.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3] ARM: xen: only set pm function ptrs for Xen guests
-Date: Thu, 29 Aug 2013 07:43:52 -0500
-Message-Id: <1377780232-13545-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 29 Aug 2013 08:55:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 29 Aug 2013 20:55:19 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, <gregkh@linuxfoundation.org>,
+        <devicetree@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <fabio.estevam@freescale.com>,
+        <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/2] serial: fsl-imx-uart: Cleanup duplicate device tree
+ binding
+Message-ID: <20130829125517.GJ18729@S2101-09.ap.freescale.net>
+References: <1377716903-19699-1-git-send-email-galak@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1377716903-19699-1-git-send-email-galak@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Wed, Aug 28, 2013 at 02:08:22PM -0500, Kumar Gala wrote:
+> We had two bindings for the same serial device, it looks like the one in
+> tty/serial/fsl-imx-uart.txt is the more up to date one so go with it and
+> merge a few things about the use/need for aliases in from
+> serial/fsl-imx-uart.txt.
+> 
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
 
-xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
-function pointers. This breaks multi-platform kernels. Make this
-conditional on running as a Xen guest and make it a late_initcall to
-ensure it is setup after platform code for Dom0.
-
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- arch/arm/xen/enlighten.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 8a6295c..7071fca 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -273,12 +273,15 @@ core_initcall(xen_guest_init);
- 
- static int __init xen_pm_init(void)
- {
-+	if (!xen_domain())
-+		return -ENODEV;
-+
- 	pm_power_off = xen_power_off;
- 	arm_pm_restart = xen_restart;
- 
- 	return 0;
- }
--subsys_initcall(xen_pm_init);
-+late_initcall(xen_pm_init);
- 
- static irqreturn_t xen_arm_callback(int irq, void *arg)
- {
--- 
-1.8.1.2
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
