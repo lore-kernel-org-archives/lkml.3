@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3H2SLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:11:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab3H2SLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:11:01 -0400
-Date: Thu, 29 Aug 2013 14:10:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        jwboyer@redhat.com, keescook@chromium.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: [PATCH V2 08/10] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Message-ID: <20130829181052.GA8697@redhat.com>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
- <1376933171-9854-9-git-send-email-matthew.garrett@nebula.com>
+	id S1756458Ab3H2SLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:11:52 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35087 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab3H2SLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:11:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376933171-9854-9-git-send-email-matthew.garrett@nebula.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377679131-32082-2-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1377679131-32082-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<1377679131-32082-2-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Thu, 29 Aug 2013 20:11:49 +0200
+Message-ID: <CACRpkdbRWH+ZyFiGH-7C+UKJQLJtQjnhoojznuwoCKqjVfssHw@mail.gmail.com>
+Subject: Re: [PATCH V3 2/2] of: add vendor prefix for Microchip Technology Inc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 01:26:09PM -0400, Matthew Garrett wrote:
-> kexec permits the loading and execution of arbitrary code in ring 0, which
-> is something that module signing enforcement is meant to prevent. It makes
-> sense to disable kexec in this situation.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  kernel/kexec.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 59f7b55..1a7690f 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -32,6 +32,7 @@
->  #include <linux/vmalloc.h>
->  #include <linux/swap.h>
->  #include <linux/syscore_ops.h>
-> +#include <linux/module.h>
->  
->  #include <asm/page.h>
->  #include <asm/uaccess.h>
-> @@ -1645,6 +1646,9 @@ int kernel_kexec(void)
->  		goto Unlock;
->  	}
->  
-> +	if (secure_modules())
-> +		return -EPERM;
-> +
+On Wed, Aug 28, 2013 at 10:38 AM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
 
-Hi Matthew, 
+> From: Lars Poeschel <poeschel@lemonage.de>
+>
+> Trivial patch to add Microchip Technology Inc. to the list
+> of devicetree vendor prefixes.
+>
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 
-Why do disallow this at run time. To me denying this at kexec_load() time
-sounds better. Otherwise a user will think that I loaded crash kernel
-successfully and when crash actually happens, we never capture the
-crash dump.
+Applied this as well. Tell me if it sneaked in someplace else.
 
-Thanks
-Vivek
+Yours,
+Linus Walleij
