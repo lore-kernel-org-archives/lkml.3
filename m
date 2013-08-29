@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3H2Rzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:55:45 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:16076 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab3H2Rzn (ORCPT
+	id S1756221Ab3H2R4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:56:36 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:45455 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab3H2R4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:55:43 -0400
-Date: Thu, 29 Aug 2013 19:55:42 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: "Yang, Fei" <fei.yang@intel.com>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: Can anyone suggest a better fix? Not sure if I understand the
-	problem, but the patch fixed it
-Message-ID: <20130829175542.GB23620@merkur.ravnborg.org>
-References: <02E7334B1630744CBDC55DA85862258348E431C1@ORSMSX102.amr.corp.intel.com> <20130826201035.GA21141@merkur.ravnborg.org> <02E7334B1630744CBDC55DA85862258348E458D8@ORSMSX102.amr.corp.intel.com> <521E1232.6010501@suse.cz> <02E7334B1630744CBDC55DA85862258348E4792D@ORSMSX102.amr.corp.intel.com>
+	Thu, 29 Aug 2013 13:56:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <02E7334B1630744CBDC55DA85862258348E4792D@ORSMSX102.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1377679131-32082-1-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1377679131-32082-1-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Thu, 29 Aug 2013 19:56:33 +0200
+Message-ID: <CACRpkdZ9=Wd=WZ4BEQ9qiKSMTyR8gNOYVcaEB_Y_ftufKeafkQ@mail.gmail.com>
+Subject: Re: [PATCH V3 1/2] gpio: mcp23s08: rename the device tree property
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Nothing fancy except the kernel build is triggered by Android build system. And the driver is being built into the kernel with obj-(CONFIG_MY_DRIVER) += my-driver.o, so it's not even a loadable module.
-> I thought fixdep is about finding module dependency, and it isn't needed for built-in drivers. Please correct me if I'm wrong. I want to understand if the .d file had never been generated or had been generated but deleted by the time fixdep tries to open it.
-> 
-Please teach yourself to punch new-line now and then.
+On Wed, Aug 28, 2013 at 10:38 AM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
 
-	Sam
+> From: Lars Poeschel <poeschel@lemonage.de>
+>
+> The device tree property should be more descriptive.
+> microchip seems more reasonable than mcp. The old mcp
+> prefix is still supported but marked as deprecated.
+> Users of mcp have to switch to the microchip prefix.
+>
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+
+Patch applied.
+
+Yours,
+Linus Walleij
