@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab3H2AtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:49:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab3H2AtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:49:03 -0400
-Date: Wed, 28 Aug 2013 20:49:00 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
-        rgb@redhat.com
-Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
-Message-ID: <20130828204900.4dc02876@redhat.com>
-In-Reply-To: <20130828160813.e448eee90886310d6640b87d@linux-foundation.org>
-References: <20130828182114.6b67ea90@redhat.com>
-	<20130828153345.55631b3b3f6f8940ef1b7614@linux-foundation.org>
-	<20130828185436.279bc6dd@redhat.com>
-	<20130828160813.e448eee90886310d6640b87d@linux-foundation.org>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754223Ab3H2BIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:08:45 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:42552 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab3H2BIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 21:08:43 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening\@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
+	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	<20130828211116.GA22184@dztty> <87sixt735b.fsf@xmission.com>
+	<CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
+Date: Wed, 28 Aug 2013 18:08:34 -0700
+In-Reply-To: <CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
+	(Kees Cook's message of "Wed, 28 Aug 2013 17:30:25 -0700")
+Message-ID: <87li3l5mnh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/fqfC0cN9AXd5z810MsOnoVbGWSnvbkIk=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3575]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Aug 2013 16:08:13 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Kees Cook <keescook@chromium.org> writes:
 
-> On Wed, 28 Aug 2013 18:54:36 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> 
-> > > Are you really sure that kauditd is stuck in schedule() and doesn't
-> > > come out?
-> > 
-> > No, that's a guess. Inferred from:
-> > 
-> > 1. I tried calling wake_up_interruptible(&kauditd_wait); right
-> >    before wait_for_auditd(). Nothing changes
-> > 
-> > 2. I added this debug printks:
-> > 
-> >   diff --git a/kernel/audit.c b/kernel/audit.c
-> >   index 91e53d0..27448ad 100644
-> >   --- a/kernel/audit.c
-> >   +++ b/kernel/audit.c
-> >   @@ -458,11 +458,14 @@ static int kauditd_thread(void *dummy)
-> >    		set_current_state(TASK_INTERRUPTIBLE);
-> >    		add_wait_queue(&kauditd_wait, &wait);
-> >    
-> >   +		pr_emerg_ratelimited("*** sleeping\n");
-> >   +
-> >    		if (!skb_queue_len(&audit_skb_queue)) {
-> >    			try_to_freeze();
-> >    			schedule();
-> >    		}
-> >    
-> >   +		pr_emerg_ratelimited("*** waking up\n");
-> >    		__set_current_state(TASK_RUNNING);
-> >    		remove_wait_queue(&kauditd_wait, &wait);
-> >    	}
-> > 
-> >  I get several pairs of sleeping/waking up strings right before the
-> >  system begins to shut down. Then it stops (even though we do
-> >  have SKBs queued)
-> 
-> Well.  I assume "*** sleeping" the last thing kauditd prints?  If the
-> last print is "waking up" then obviously kauditd is stuck somewhere
-> else, which makes more sense.  A sysrq-T (or echo t >
-> /proc/sysrq-trigger) should provide clues.
+> On Wed, Aug 28, 2013 at 5:26 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Can someome please state what they are worried about in simple language
+>> step by step?
+>> [...]
+>> The closest I saw in the thread was people were worried about ASLR being
+>> defeated.  All I see are kernel addresses and we don't have much if any
+>> runtime or even load time randomization of where code is located in the
+>> kernel address map on x86_64.  So I don't understand the concern.
+>
+> I showed the output of "syscall", since that contains user-space
+> addresses and shows a leak of ASLR from a privileged process to an
+> unprivileged process.
+>
+> The flaw as I see it is that an unprivileged process opens
+> /proc/$priv_pid/syscall and passes it to a setuid process which is
+> able to read it, and provides those contents to the unprivileged
+> process.
+>
+> The unprivileged process should not be able to the open the file in
+> the first place.
 
-Yes, "*** sleeping" is the last one.
+I see so the complaint is that we don't give read permission but we do
+give open permission.    Which is a variant of: the permissions used to
+open are not the permission used to access the file.
 
-> I'd remove the "_ratelimited" - you don't want your debug messages to be
-> ratelimited (ie: omitted).
+This does seem to be a legitimate concern.
 
-I'll try that.
+I think there are several discussions that have been going on lately
+with respect to this class of problems in proc files.
 
-Another interesting info is that the process that triggers the hang
-is killall5 and by the time the hang happens auditd is not running
-anymore.
+Given the existence of suid exec we can not in general prevent this
+class of bugs with a check at open time.
+
+I believe the solution needs to be to enhance the ptrace_may_access
+checks to verify that both the creds of the current task and the creds
+of the opening process would have allowed the access.
+
+We may want to put this check in permission so open fails quickly but
+we absolutely need to put this check in at the time we call
+ptrace_may_access.
+
+Eric
