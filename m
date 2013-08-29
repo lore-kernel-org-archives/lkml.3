@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3H2EJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 00:09:38 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:58176 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab3H2EJ0 (ORCPT
+	id S1755517Ab3H2EK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 00:10:27 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33290 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab3H2EKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 00:09:26 -0400
-X-Spam-Score: -101.0
-Message-ID: <521EC935.90200@asianux.com>
-Date: Thu, 29 Aug 2013 12:08:21 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 29 Aug 2013 00:10:25 -0400
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] h8300: kernel: ptrace: remove redundancy default user_disable_single_step()
+In-Reply-To: <521eb73e.e3bf420a.2ad0.09c2SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
+	<CAE9FiQVy2uqLm2XyStYmzxSmsw7TzrB0XDhCRLymnf+L3NPxrA@mail.gmail.com>
+	<52142ffe.84c0440a.57e5.02acSMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQW1c3-d+iMebRK6JyHCpMt8mjga-TnsfTuVsC1bQZqsYA@mail.gmail.com>
+	<52146c58.a3e2440a.0f5a.ffffed8dSMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQVWVzO93RM_QT-Qp+5jJUEiw=5OOD_454fCjgQ5p9-b3g@mail.gmail.com>
+	<521600cc.22ab440a.2703.53f1SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQXrpZU8DCFoF6NuaOoqwGFGcQfnHV7vdWWPfyAymCCGnQ@mail.gmail.com>
+	<CAE9FiQU34RC+4uLpeza4PAAK-1CWu82WQ=rhaM_NNj_TVv0EMg@mail.gmail.com>
+	<CAE9FiQVPmjxCzOCPQWz4=6JwzB-Vn5YMtOEd-G97SvEgoY3RQg@mail.gmail.com>
+	<521eb73e.e3bf420a.2ad0.09c2SMTPIN_ADDED_BROKEN@mx.google.com>
+Date: Wed, 28 Aug 2013 21:10:25 -0700
+X-Google-Sender-Auth: 2cpVyxKc1HAqKwvsbssKoBIqHvU
+Message-ID: <CAE9FiQWV2m6MvRXFAXMYr-D0RSEj9vXiKBQhp5LmzpJFEizyww@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For platform h8300h and h8s, user_disable_single_step() is already
-defined, it is conflict with the default one in h8300.
+On Wed, Aug 28, 2013 at 7:51 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+> Hi Yinghai,
+>>> looks like that is what is your first version did.
+>>>
+>>> I updated it a little bit. please check it.
+>>>
+>>
+>>removed more lines.
+>
+> Thanks for your great work!
+>
+> The fixed patch looks good to me. If this is the last fix and I can
+> ignore http://marc.info/?l=linux-mm&m=137774271220239&w=2?
 
-The public header already defined the default implementation, so in
-h8300, need not define the default one.
+Yes, you can ignore that.
 
-The related error (defconfig for h8300h):
-
-    LD      vmlinux.o
-  arch/h8300/platform/h8300h/built-in.o: In function `user_disable_single_step':
-  arch/h8300/platform/h8300h/ptrace_h8300h.c:65: multiple definition of `user_disable_single_step'
-  arch/h8300/kernel/built-in.o: arch/h8300/kernel/ptrace.c:39: first defined here
-  /usr/local/bin/h8300-gchen-elf-ld: Warning: size of symbol `_user_disable_single_step' changed from 2 in arch/h8300/kernel/built-in.o to 30 in arch/h8300/platform/h8300h/built-in.o
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/include/asm/ptrace.h |    2 ++
- arch/h8300/kernel/ptrace.c      |    5 -----
- 2 files changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/arch/h8300/include/asm/ptrace.h b/arch/h8300/include/asm/ptrace.h
-index c1826b9..dd887e9 100644
---- a/arch/h8300/include/asm/ptrace.h
-+++ b/arch/h8300/include/asm/ptrace.h
-@@ -20,7 +20,9 @@
- /* Find the stack offset for a register, relative to thread.esp0. */
- #define PT_REG(reg)	((long)&((struct pt_regs *)0)->reg)
- 
-+#if defined(__H8300H__) || defined(__H8300S__)
- #define arch_has_single_step()	(1)
-+#endif
- 
- #define user_mode(regs) (!((regs)->ccr & PS_S))
- #define instruction_pointer(regs) ((regs)->pc)
-diff --git a/arch/h8300/kernel/ptrace.c b/arch/h8300/kernel/ptrace.c
-index 748cf65..82ec3b6 100644
---- a/arch/h8300/kernel/ptrace.c
-+++ b/arch/h8300/kernel/ptrace.c
-@@ -34,11 +34,6 @@
- extern long h8300_get_reg(struct task_struct *task, int regno);
- extern int  h8300_put_reg(struct task_struct *task, int regno, unsigned long data);
- 
--
--void user_disable_single_step(struct task_struct *child)
--{
--}
--
- /*
-  * does not yet catch signals sent when the child dies.
-  * in exit.c or in signal.c.
--- 
-1.7.7.6
+Yinghai
