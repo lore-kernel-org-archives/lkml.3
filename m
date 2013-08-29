@@ -1,57 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3H2PIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:08:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40515 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab3H2PIp (ORCPT
+	id S1756237Ab3H2PJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:09:27 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38930 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab3H2PJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:08:45 -0400
-Message-ID: <521F63E4.80809@infradead.org>
-Date: Thu, 29 Aug 2013 08:08:20 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 29 Aug 2013 11:09:11 -0400
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'Raviv Shvili'" <rshvili@codeaurora.org>, <linux-scsi@vger.kernel.org>
+Cc: <linux-arm-msm@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1377788409-5628-1-git-send-email-rshvili@codeaurora.org> <00ce01cea4c9$81c13df0$8543b9d0$@codeaurora.org>
+In-Reply-To: <00ce01cea4c9$81c13df0$8543b9d0$@codeaurora.org>
+Subject: RE: [RFC/PATCH 3/3] scsi: ufs: Logical Unit (LU) command queue depth
+Date: Thu, 29 Aug 2013 18:09:06 +0300
+Message-ID: <00d401cea4c9$b58e80c0$20ab8240$@codeaurora.org>
 MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@inai.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: fixdep ought to be compiled with -D_FILE_OFFSET_BITS
-References: <alpine.LSU.2.10.9.1308291200240.15586@nerf07.vanv.qr>
-In-Reply-To: <alpine.LSU.2.10.9.1308291200240.15586@nerf07.vanv.qr>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQCWuxqTDPYJGbZ1IGq9P6oQSBuwWALBp6o7nAYP8pA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-adding linux-kbuild list...
+Tested-by: Yaniv Gardi <ygardi@codeaurora.org>
+
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
 
-On 08/29/13 03:04, Jan Engelhardt wrote:
-> 
-> Because fixdep is compiled without -D_FILE_OFFSET_BITS=64,
-> a 32-bit fixdep (in a chroot build root, for example) may fail to run
-> on a 64-bit host system if any file has an inode larger than 2^32,
-> which can easily happen (in my case, on xfs):
-> 
-> 
-> [ares07:~/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj]
-> $ make silentoldconfig -C $PWD/../linux-3.10 O=$PWD V=1
-> 
-> make: Entering directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
-> make -C /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj \
-> KBUILD_SRC=/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10 \
-> KBUILD_EXTMOD="" -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/Makefile \
-> silentoldconfig
-> make -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/Makefile.build obj=scripts/basic
->   gcc -Wp,-MD,scripts/basic/.fixdep.d -Iscripts/basic -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -o scripts/basic/fixdep /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/basic/fixdep.c  
-> fixdep: error fstat'ing depfile: scripts/basic/.fixdep.d: Value too large for defined data type
-> make[2]: *** [scripts/basic/fixdep] Error 2
-> make[1]: *** [scripts_basic] Error 2
-> make: *** [sub-make] Error 2
-> make: Leaving directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
-> --
+= > -----Original Message-----
+= > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+= > owner@vger.kernel.org] On Behalf Of Yaniv Gardi
+= > Sent: Thursday, August 29, 2013 6:08 PM
+= > To: 'Raviv Shvili'; linux-scsi@vger.kernel.org
+= > Cc: linux-arm-msm@vger.kernel.org; 'open list'
+= > Subject: RE: [RFC/PATCH 3/3] scsi: ufs: Logical Unit (LU) command queue
+= > depth
+= > 
+= > Looks good to me.
+= > Reviewed-by: Yaniv Gardi <ygardi@codeaurora.org>
+= > 
+= > QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a
+= > member of Code Aurora Forum, hosted by The Linux Foundation
+= > 
+= > 
+= > = > -----Original Message-----
+= > = > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi- = >
+= > owner@vger.kernel.org] On Behalf Of Raviv Shvili = > Sent: Thursday,
+= > August 29, 2013 6:00 PM = > To: linux-scsi@vger.kernel.org = > Cc:
+linux-
+= > arm-msm@vger.kernel.org; Raviv Shvili; open list = > Subject: [RFC/PATCH
+= > 3/3] scsi: ufs: Logical Unit (LU) command queue = > depth = > = > Some
+of
+= > the UFS devices may support different number of commands that = > can
+= > be queued per LU. At the current implementation, SW configure each = >
+of
+= > the UFS devices LU's according to the controller capability.
+= > = >
+= > = > In this patch we read the queue depth available per LU and update
+the
+= > LU's = > SW structure.
+= > = >
+= > = > Signed-off-by: Raviv Shvili <rshvili@codeaurora.org> = > = > diff
+--git
+= > a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h index = >
+= > 202e15d..d42f424 100644 = > --- a/drivers/scsi/ufs/ufs.h = > +++
+= > b/drivers/scsi/ufs/ufs.h = > @@ -132,6 +132,27 @@ enum desc_idn {
+= > = >  	QUERY_DESC_IDN_RFU_2		= 0x9,
+= > = >  };
+= > = >
+= > = > +#define UNIT_DESC_MAX_SIZE       0x22
+= > = > +/* Unit descriptor parameters offsets in bytes*/ enum
+= > unit_desc_param {
+= > = > +	UNIT_DESC_PARAM_LEN			= 0x0,
+= > = > +	UNIT_DESC_PARAM_TYPE			= 0x1,
+= > = > +	UNIT_DESC_PARAM_UNIT_INDEX		= 0x2,
+= > = > +	UNIT_DESC_PARAM_LU_ENABLE		= 0x3,
+= > = > +	UNIT_DESC_PARAM_BOOT_LUN_ID		= 0x4,
+= > = > +	UNIT_DESC_PARAM_LU_WR_PROTECT		= 0x5,
+= > = > +	UNIT_DESC_PARAM_LU_Q_DEPTH		= 0x6,
+= > = > +	UNIT_DESC_PARAM_MEM_TYPE		= 0x8,
+= > = > +	UNIT_DESC_PARAM_DATA_RELIABILITY	= 0x9,
+= > = > +	UNIT_DESC_PARAM_LOGICAL_BLK_SIZE	= 0xA,
+= > = > +	UNIT_DESC_PARAM_LOGICAL_BLK_COUNT	= 0xB,
+= > = > +	UNIT_DESC_PARAM_ERASE_BLK_SIZE		= 0x13,
+= > = > +	UNIT_DESC_PARAM_PROVISIONING_TYPE	= 0x17,
+= > = > +	UNIT_DESC_PARAM_PHY_MEM_RSRC_CNT	= 0x18,
+= > = > +	UNIT_DESC_PARAM_CTX_CAPABILITIES	= 0x20,
+= > = > +	UNIT_DESC_PARAM_LARGE_UNIT_SIZE_M1	= 0x22,
+= > = > +};
+= > = > +
+= > = >  /* Exception event mask values */
+= > = >  enum {
+= > = >  	MASK_EE_STATUS		= 0xFFFF,
+= > = > diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index =
+= > > d0cad34..9b0d769 100644 = > --- a/drivers/scsi/ufs/ufshcd.c = > +++
+= > b/drivers/scsi/ufs/ufshcd.c = > @@ -111,6 +111,8 @@ static void
+= > ufshcd_tmc_handler(struct ufs_hba = > *hba);  static void
+= > ufshcd_async_scan(void *data, async_cookie_t cookie); = > static int
+= > ufshcd_reset_and_restore(struct ufs_hba *hba);  static int = >
+= > ufshcd_clear_tm_cmd(struct ufs_hba *hba, int tag); = > +static int
+= > ufshcd_read_sdev_qdepth(struct ufs_hba *hba,
+= > = > +					struct scsi_device *sdev);
+= > = >
+= > = >  /*
+= > = >   * ufshcd_wait_for_register - wait for register value to change @@
+-
+= > = > 1767,6 +1769,7 @@ static int ufshcd_verify_dev_init(struct ufs_hba
+= > *hba) = > static int ufshcd_slave_alloc(struct scsi_device *sdev)  {
+= > = >  	struct ufs_hba *hba;
+= > = > +	int lun_qdepth;
+= > = >
+= > = >  	hba = shost_priv(sdev->host);
+= > = >  	sdev->tagged_supported = 1;
+= > = > @@ -1777,6 +1780,14 @@ static int ufshcd_slave_alloc(struct
+= > scsi_device = > *sdev) = >
+= > = >  	/* allow SCSI layer to restart the device in case of errors
+*/
+= > = >  	sdev->allow_restart = 1;
+= > = > +	lun_qdepth = ufshcd_read_sdev_qdepth(hba, sdev);
+= > = > +	if (lun_qdepth == 0 || lun_qdepth > hba->nutrs) {
+= > = > +		dev_info(hba->dev, "%s, lun %d queue depth is %d\n",
+= > = > __func__,
+= > = > +				sdev->lun, lun_qdepth);
+= > = > +		lun_qdepth = hba->nutrs;
+= > = > +	} else if (lun_qdepth < 0) {
+= > = > +		lun_qdepth = 1;
+= > = > +	}
+= > = >
+= > = >  	/*
+= > = >  	 * Inform SCSI Midlayer that the LUN queue depth is same as
+the
+= > = > @@ -1785,7 +1796,7 @@ static int ufshcd_slave_alloc(struct
+= > scsi_device = > *sdev)
+= > = >  	 * SAM_STAT_TASK_SET_FULL, the LUN queue depth will be
+= > = > adjusted
+= > = >  	 * with scsi_adjust_queue_depth.
+= > = >  	 */
+= > = > -	scsi_activate_tcq(sdev, hba->nutrs);
+= > = > +	scsi_activate_tcq(sdev, lun_qdepth);
+= > = >  	return 0;
+= > = >  }
+= > = >
+= > = > @@ -2862,6 +2873,38 @@ static int
+= > ufshcd_eh_host_reset_handler(struct
+= > = > scsi_cmnd *cmd)  }
+= > = >
+= > = >  /**
+= > = > + * ufshcd_read_sdev_qdepth - read the lun command queue depth = >
+= > + * @hba: Pointer to adapter instance = > + * @sdev: pointer to SCSI
+= > device = > + * = > + * Return in case of success the lun's queue depth
+else
+= > error.
+= > = > + */
+= > = > +static int ufshcd_read_sdev_qdepth(struct ufs_hba *hba,
+= > = > +				struct scsi_device *sdev)
+= > = > +{
+= > = > +	int ret;
+= > = > +	int buff_len = UNIT_DESC_MAX_SIZE;
+= > = > +	u8 desc_buf[UNIT_DESC_MAX_SIZE];
+= > = > +
+= > = > +	ret = ufshcd_query_descriptor(hba,
+= > = > UPIU_QUERY_OPCODE_READ_DESC,
+= > = > +			QUERY_DESC_IDN_UNIT, sdev->lun, 0, desc_buf,
+= > = > &buff_len);
+= > = > +
+= > = > +	if (ret || (buff_len < UNIT_DESC_PARAM_LU_Q_DEPTH)) {
+= > = > +		dev_err(hba->dev,
+= > = > +			"%s:Failed reading unit descriptor. len = %d
+ret =
+= > = > %d"
+= > = > +			, __func__, buff_len, ret);
+= > = > +		if (!ret)
+= > = > +			ret = -EINVAL;
+= > = > +
+= > = > +		goto out;
+= > = > +	}
+= > = > +
+= > = > +	ret = desc_buf[UNIT_DESC_PARAM_LU_Q_DEPTH] & 0xFF;
+= > = > +out:
+= > = > +	return ret;
+= > = > +}
+= > = > +
+= > = > +/**
+= > = >   * ufshcd_async_scan - asynchronous execution for link startup
+= > = >   * @data: data pointer to pass to this function
+= > = >   * @cookie: cookie data
+= > = > --
+= > = > QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc.
+= > = > is a member of Code Aurora Forum, hosted by The Linux Foundation = >
+= > = > -- = > To unsubscribe from this list: send the line "unsubscribe
+linux-scsi"
+= > in the = > body of a message to majordomo@vger.kernel.org More
+= > majordomo info = > at  http://vger.kernel.org/majordomo-info.html
+= > 
+= > --
+= > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+the
+= > body of a message to majordomo@vger.kernel.org More majordomo info
+= > at  http://vger.kernel.org/majordomo-info.html
 
-
--- 
-~Randy
