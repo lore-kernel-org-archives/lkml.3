@@ -1,146 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab3H2RPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:15:04 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:41003 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab3H2RPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:15:01 -0400
+	id S1755752Ab3H2RPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:15:36 -0400
+Received: from mout.gmx.net ([212.227.15.18]:58481 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755686Ab3H2RPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 13:15:35 -0400
+From: dl9pf@gmx.de
+To: linux-kernel@vger.kernel.org
+Cc: dl9pf@gmx.de, x86@kernel.org, hpa@zytor.com, pageexec@freemail.hu,
+        llvmlinux@lists.linuxfoundation.org, behanw@converseincode.com
+Subject: [PATCH] [RFC] [X86] Fix a compilation issue with clang.
+Date: Thu, 29 Aug 2013 19:13:48 +0200
+Message-Id: <1377796428-12719-1-git-send-email-dl9pf@gmx.de>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-In-Reply-To: <20130829135216.GA1032@krava.brq.redhat.com>
-References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
-	<CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
-	<521CCFD8.90201@gmail.com>
-	<20130829135216.GA1032@krava.brq.redhat.com>
-Date: Thu, 29 Aug 2013 19:15:00 +0200
-Message-ID: <CAFrcx1=U8SapYd=Hw8YaAnKNggJMuY4r03zYeevc0Ttq5hFr7Q@mail.gmail.com>
-Subject: Re: Fwd: perf: callchain feature on ARM - question about libunwind API
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:U2dTw71IbwQjLXSc8QMsDNKfqKYBlQSODiVwFq8TYz7QSCH7zgm
+ sD1gM6qyK8mRxMu5cBpUTGvsuwXdvOcZKVWGjhLjzom7p6vz4NlPt3BDa1t4l+kumj9i/VP
+ NZI1B8N9LRECs4tzuf2qYc2NX6uRPu+9apNgUWjSA8WI2+nc2bmjpCKrv8Mpid5fLBC4b02
+ 2rCp2+bx8STvAbOawZ5KQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-On 29 August 2013 15:52, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Tue, Aug 27, 2013 at 10:12:08AM -0600, David Ahern wrote:
->> [Added Jiri who added the feature to perf]
->>
->> On 8/27/13 5:58 AM, Jean Pihet wrote:
->> >Hi!
->> >
->> >I am looking for info and help on the libunwind API.
->> >
->> >What I am trying to achieve is to allow the callchain feature on perf
->> >for ARM (v7 to start with, then ARMv8), from the DWARF info found in
->> >the .debug_frame section.
->> >
->> > From the source code in tools/perf I have added the call to
->> >dwarf_find_debug_frame to load and parse the debug info from
->> >.debug_frame. This works correctly, all IP ranges are found from the
->> >debug code (test program and libraries). Then at some point I get an
->> >assertion: 'perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
->> >`c->pi.unwind_info' failed.' At that point c->pi is NULL. Cf. below
->> >for more info.
->
-> I checked the patch and it looks ok, thought I've never touched
-> the .debug_frames code paths which are separated to some extend
-> in the libunwind code..
->
->> >
->> >It looks like I am not using the libunwind API as it should, so that
->> >the perf code apparently builds a list of IP ranges to resolve but
->> >cannot use it later on to gather statistics on the runtime info.
->> >
->> >Any idea on how to progress? I am also looking at the *_proc_info API
->> >of libunwind.
->
-> keep digging ;-) also I dont have that assert exactly
-Indeed!
+Clang does not support the "shortcut" we're taking here for gcc (see below).
+The patch extends and uses the macro _ASM_DX to do the job.
 
-I found the right implementation ;-p In fact I have to call the
-following in order:
-- check if the .debug_frame section exists for the binary,
-- call dwarf_find_debug_frame to load the debug info,
-- call dwarf_search_unwind_table to lookup the called function from the IP.
+>From arch/x86/include/asm/uaccess.h:
+/*
+ * Careful: we have to cast the result to the type of the pointer
+ * for sign reasons.
+ *
+ * The use of %edx as the register specifier is a bit of a
+ * simplification, as gcc only cares about it as the starting point
+ * and not size: for a 64-bit value it will use %ecx:%edx on 32 bits
+ * (%ecx being the next register in gcc's x86 register sequence), and
+ * %rdx on 64 bits.
+ */
 
-The patches are coming asap.
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+CC: pageexec@freemail.hu
+CC: llvmlinux@lists.linuxfoundation.org
+CC: behanw@converseincode.com
+---
+ arch/x86/include/asm/asm.h     | 6 +++++-
+ arch/x86/include/asm/uaccess.h | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-It works great now!
-Here is an excerpt of the output below:
+diff --git a/arch/x86/include/asm/asm.h b/arch/x86/include/asm/asm.h
+index 1c2d247..4582e8e 100644
+--- a/arch/x86/include/asm/asm.h
++++ b/arch/x86/include/asm/asm.h
+@@ -3,21 +3,25 @@
+ 
+ #ifdef __ASSEMBLY__
+ # define __ASM_FORM(x)	x
++# define __ASM_FORM_RAW(x)     x
+ # define __ASM_FORM_COMMA(x) x,
+ #else
+ # define __ASM_FORM(x)	" " #x " "
++# define __ASM_FORM_RAW(x)     #x
+ # define __ASM_FORM_COMMA(x) " " #x ","
+ #endif
+ 
+ #ifdef CONFIG_X86_32
+ # define __ASM_SEL(a,b) __ASM_FORM(a)
++# define __ASM_SEL_RAW(a,b) __ASM_FORM_RAW(a)
+ #else
+ # define __ASM_SEL(a,b) __ASM_FORM(b)
++# define __ASM_SEL_RAW(a,b) __ASM_FORM_RAW(b)
+ #endif
+ 
+ #define __ASM_SIZE(inst, ...)	__ASM_SEL(inst##l##__VA_ARGS__, \
+ 					  inst##q##__VA_ARGS__)
+-#define __ASM_REG(reg)		__ASM_SEL(e##reg, r##reg)
++#define __ASM_REG(reg)         __ASM_SEL_RAW(e##reg, r##reg)
+ 
+ #define _ASM_PTR	__ASM_SEL(.long, .quad)
+ #define _ASM_ALIGN	__ASM_SEL(.balign 4, .balign 8)
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 8fa3bd6..32432d1 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -163,7 +163,7 @@ __typeof__(__builtin_choose_expr(sizeof(x) > sizeof(0UL), 0ULL, 0UL))
+ #define get_user(x, ptr)						\
+ ({									\
+ 	int __ret_gu;							\
+-	register __inttype(*(ptr)) __val_gu asm("%edx");		\
++	register __inttype(*(ptr)) __val_gu asm("%"_ASM_DX);		\
+ 	__chk_user_ptr(ptr);						\
+ 	might_fault();							\
+ 	asm volatile("call __get_user_%P3"				\
+-- 
+1.8.1.4
 
-$ ./tools/perf/perf record -g dwarf -- ../../perf-libunwind/test_app/stress_bt
-Total count: 3472419716
-[ perf record: Woken up 226 times to write data ]
-[ perf record: Captured and wrote 56.488 MB perf.data (~2467981 samples) ]
-$ ./tools/perf/perf report --sort symbol --call-graph --stdio
-...
-# Samples: 7K of event 'cpu-clock'
-# Event count (approx.): 1764500000
-#
-# Overhead                              Symbol
-# ........  ..................................
-#
-    0.00%  [.] foo_128
-            |
-            |--98.29%-- foo_127
-            |          |
-            |          |--99.29%-- foo_126
-            |          |          |
-            |          |          |--99.12%-- foo_125
-            |          |          |          |
-            |          |          |          |--99.40%-- foo_124
-            |          |          |          |          |
-            |          |          |          |          |--99.13%-- foo_123
-            |          |          |          |          |          |
-            |          |          |          |          |
-|--99.24%-- foo_122
-...
-            |          |          |           --0.60%-- bar
-            |          |          |                     doit
-            |          |          |                     main
-            |          |          |                     __libc_start_main
-            |          |          |
-            |          |           --0.88%-- bar
-            |          |                     doit
-            |          |                     main
-            |          |                     __libc_start_main
-            |          |
-            |           --0.71%-- bar
-            |                     doit
-            |                     main
-            |                     __libc_start_main
-            |
-            |--0.86%-- bar
-            |          doit
-            |          main
-            |          __libc_start_main
-             --0.86%-- [...]
-
-
-The problem is that it is slow as hell (couple of minutes to report
-the callchain from a simple test app ;-|). I will look at the sampling
-rate and the caching next.
-
-> at dwarf/Gparser.c:459 so maybe try latest code
-> git://git.sv.gnu.org/libunwind.git
-I am using the version with commit ID 3b8254d3 ('2013-05-19 Matt
-Fischer Fix unwind info freeing code in DWARF parser'), which is very
-recent.
-
->
-> sorry not to help help you much, you might try to ask
-> Arun Sharma <asharma@fb.com> who helped me before.
-Ok!
-
-Thanks for your reply and your help!
-
->
-> jirka
-
-Cheers,
-Jean
