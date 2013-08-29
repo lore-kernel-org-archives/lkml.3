@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3H2TV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 15:21:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50242 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556Ab3H2TVZ (ORCPT
+	id S1756093Ab3H2TZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 15:25:15 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:46885 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab3H2TZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 15:21:25 -0400
-Message-ID: <521F9F2F.1060307@wwwdotorg.org>
-Date: Thu, 29 Aug 2013 13:21:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 29 Aug 2013 15:25:12 -0400
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, bcousson@baylibre.com,
-        davidb@codeaurora.org, arnd@arndb.de, swarren@nvidia.com,
-        popcornmix@gmail.com
-Subject: Re: [PATCH v3 3/3] ARM: dts: dra7-evm: Add extcon nodes for USB ID
- pin detection
-References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-4-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1377711185-31238-4-git-send-email-george.cherian@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+Date: Thu, 29 Aug 2013 12:25:11 -0700
+X-Google-Sender-Auth: o_zc_oKncYzMJ_0yd1MbBAZqROY
+Message-ID: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 11:33 AM, George Cherian wrote:
-> Add
-> 	-extcon nodes for USB ID pin detection.
-> 	-i2c nodes.
-> 	-pcf nodes to which USB ID pin is connected.
+On Thu, Aug 29, 2013 at 9:43 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> We'll see. The real problem is that I'm not sure if I can even see the
+> scalability issue on any machine I actually personally want to use
+> (read: silent). On my current  system I can only get up to 15%
+> _raw_spin_lock by just stat'ing the same file over and over and over
+> again from lots of threads.
 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+Hmm. I can see it, but it turns out that for normal pathname walking,
+one of the main stumbling blocks is the RCU case of complete_walk(),
+which cannot be done with the lockless lockref model.
 
->  &dwc3_1 {
-> -	dr_mode = "otg";
-> +	dr_mode = "host";
->  };
+Why? It needs to check the sequence count too and cannot touch the
+refcount unless it matches under the spinlock. We could use
+lockref_get_non_zero(), but for the final path component (which this
+is) the zero refcount is actually a common case.
 
-I wonder why one cares about ID/VBUS detection if the port doesn't
-operate in OTG mode?
+Waiman worked around this by having some rather complex code to retry
+and wait for the dentry lock to be released in his lockref code. But
+that has a lot of tuning implications, and I wanted to see what it is
+*without* that kind of tuning. And that's when you hit the "lockless
+case fails all the time because the lock is actually held" case.
 
->  &dwc3_2 {
->  	dr_mode = "host";
->  };
-> +
-> +&usb1 {
-> +	extcon = <&extcon1>;
-> +};
-> +
-> +&usb2 {
-> +	extcon = <&extcon2>;
-> +};
+I'm going to play around with changing the semantics of
+"lockref_get_non_zero()" to match the "lockless_put_or_lock()":
+instead of failing when the count it zero, it gets the lock. That
+won't generally get any contention, because if the count is zero,
+there generally isn't anybody else playing with that dentry.
 
-I assume the "extcon" property is already fully documented in the
-binding for the USB controller? For some reason, "extcon" looks like an
-odd property name; I would have expected something more HW-oriented that
-Linux-subsystem-oriented, such as "connector", or "usb-connector".
-
+            Linus
