@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab3H2Nuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:50:46 -0400
-Received: from smtp-pa1a.enomia.com ([64.128.160.11]:12177 "EHLO
-	smtp2.enomia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab3H2Nuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:50:44 -0400
-Message-ID: <521F51D1.3030907@uplogix.com>
-Date: Thu, 29 Aug 2013 08:51:13 -0500
-From: David Barksdale <dbarksdale@uplogix.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754282Ab3H2NwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:52:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59015 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753584Ab3H2NwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 09:52:20 -0400
+Date: Thu, 29 Aug 2013 15:52:16 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: perf: callchain feature on ARM - question about libunwind
+ API
+Message-ID: <20130829135216.GA1032@krava.brq.redhat.com>
+References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
+ <CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
+ <521CCFD8.90201@gmail.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: [PATCH RESEND] HID: New hid-cp2112 driver.
-References: <1377615715-25699-1-git-send-email-dbarksdale@uplogix.com> <alpine.LNX.2.00.1308281455350.4557@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1308281455350.4557@pobox.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [209.163.150.140]
-X-OriginalArrivalTime: 29 Aug 2013 13:50:43.0532 (UTC) FILETIME=[C15F68C0:01CEA4BE]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521CCFD8.90201@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 07:57 AM, Jiri Kosina wrote:
->
-> [ adding Benjamin to CC ]
->
-> On Tue, 27 Aug 2013, David Barksdale wrote:
->
->> This patch adds support for the Silicon Labs CP2112
->> "Single-Chip HID USB to SMBus Master Bridge."
->>
->> I wrote this to support a USB temperature and humidity
->> sensor I've been working on. It's been tested by using
->> SMBus byte-read, byte-data-read/write, and word-data-read
->> transfer modes to talk to an I2C sensor. The other
->> transfer modes have not been tested.
->>
->> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
->>
->> ---
->>   drivers/hid/Kconfig      |   6 +
->>   drivers/hid/Makefile     |   1 +
->>   drivers/hid/hid-core.c   |   3 +
->>   drivers/hid/hid-cp2112.c | 504 +++++++++++++++++++++++++++++++++++++++++++++++
->>   4 files changed, 514 insertions(+)
->>
->> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
->> index 14ef6ab..1833948 100644
->> --- a/drivers/hid/Kconfig
->> +++ b/drivers/hid/Kconfig
->> @@ -175,6 +175,12 @@ config HID_PRODIKEYS
->>   	  multimedia keyboard, but will lack support for the musical keyboard
->>   	  and some additional multimedia keys.
->>
->> +config HID_CP2112
->> +	tristate "Silicon Labs CP2112 HID USB-to-SMBus Bridge support"
->> +	depends on USB_HID
->> +	---help---
->> +	Support for Silicon Labs CP2112 HID USB to SMBus Master Bridge.
->> +
->
-> Hi David,
->
-> this is rather difficult to get by quickly looking at the code, so I'd
-> like to have a slightly better overview of what the device really is.
->
-> Is it talking HID protocol on the SMBus? (if so, there is a hid-i2c
-> transport driver for it already).
-> But I guess this is not really the case, as you seem to be using the USB
-> HID functionality as well.
->
-> Thanks in advance for some more background.
->
+On Tue, Aug 27, 2013 at 10:12:08AM -0600, David Ahern wrote:
+> [Added Jiri who added the feature to perf]
+> 
+> On 8/27/13 5:58 AM, Jean Pihet wrote:
+> >Hi!
+> >
+> >I am looking for info and help on the libunwind API.
+> >
+> >What I am trying to achieve is to allow the callchain feature on perf
+> >for ARM (v7 to start with, then ARMv8), from the DWARF info found in
+> >the .debug_frame section.
+> >
+> > From the source code in tools/perf I have added the call to
+> >dwarf_find_debug_frame to load and parse the debug info from
+> >.debug_frame. This works correctly, all IP ranges are found from the
+> >debug code (test program and libraries). Then at some point I get an
+> >assertion: 'perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
+> >`c->pi.unwind_info' failed.' At that point c->pi is NULL. Cf. below
+> >for more info.
 
-The CP2112 is a USB HID device that provides an SMBus controller.
-The datasheet can be found here: 
-http://www.silabs.com/Support%20Documents/TechnicalDocs/CP2112.pdf
-The interface specification here: 
-http://www.silabs.com/Support%20Documents/TechnicalDocs/AN495.pdf
-The host communicates with the CP2112 via HID reports. Device 
-configuration uses feature reports and data transfer uses output and 
-event reports.
-I prototyped this in userspace using the /dev/hidraw interface and then 
-wrote this driver to provide a real i2c adapter device.
+I checked the patch and it looks ok, thought I've never touched
+the .debug_frames code paths which are separated to some extend
+in the libunwind code..
+
+> >
+> >It looks like I am not using the libunwind API as it should, so that
+> >the perf code apparently builds a list of IP ranges to resolve but
+> >cannot use it later on to gather statistics on the runtime info.
+> >
+> >Any idea on how to progress? I am also looking at the *_proc_info API
+> >of libunwind.
+
+keep digging ;-) also I dont have that assert exactly
+at dwarf/Gparser.c:459 so maybe try latest code
+git://git.sv.gnu.org/libunwind.git
+
+sorry not to help help you much, you might try to ask
+Arun Sharma <asharma@fb.com> who helped me before.
+
+jirka
