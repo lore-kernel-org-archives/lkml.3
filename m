@@ -1,423 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3H2KhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:37:23 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35923 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3H2KhT (ORCPT
+	id S1756160Ab3H2KlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:41:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54062 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab3H2KlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:37:19 -0400
-X-AuditID: cbfee68e-b7f756d000004512-e8-521f245dcb49
-Message-id: <521F245E.8050506@samsung.com>
-Date: Thu, 29 Aug 2013 19:37:18 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: George Cherian <george.cherian@ti.com>
-Cc: balbi@ti.com, myungjoo.ham@samsung.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, rob@landley.net, ian.campbell@citrix.com,
-        swarren@wwwdotorg.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, bcousson@baylibre.com,
-        davidb@codeaurora.org, arnd@arndb.de, swarren@nvidia.com,
-        popcornmix@gmail.com
-Subject: Re: [PATCH v3 1/3] extcon: extcon-gpio-usbvid: Generic USB VBUS/ID
- detection via GPIO
-References: <1377711185-31238-1-git-send-email-george.cherian@ti.com>
- <1377711185-31238-2-git-send-email-george.cherian@ti.com>
- <521EA563.4060305@samsung.com> <521EB018.3000301@ti.com>
- <521EE8FC.80802@samsung.com> <521EF88F.4070402@ti.com>
-In-reply-to: <521EF88F.4070402@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsWyRsSkUDdWRT7I4NtOVYu/k46xWxy8X29x
-	Z/5fVovHy/+xWcw/co7V4tTB5awWB/7sYLR409vBYrGwbQmLxeVdc9gsZi/pZ7FYtKyV2WLp
-	9YtMFrcbV7BZTJi+lsWi67W8xeEVB5gs1r2czmJxY3oLq8Wrg20sDiIea+atYfT4/WsSo8f7
-	G63sHgs+X2H3eD15AqPH5b5eJo+ds+6ye7xaPZPV4861PWwevc3v2Dz6tqxi9Dh+YzuTx+dN
-	ch4b54YG8EVx2aSk5mSWpRbp2yVwZbR072EvOFxf0X13KmMD467kLkZODgkBE4ndd2eyQdhi
-	EhfurQeyuTiEBJYySjxrm8wGU/S99SILRGIRo8Tjnxugql4xSnQs+s8EUsUroCVx7P9VdhCb
-	RUBV4khzFyuIzQYU3//iBtgkUYEwiZXTr7BA1AtK/Jh8D8wWAarpv9TNBDKUWeAYs8TaqTuZ
-	QRLCAgkSn+d8h1r9lVHi76sbYFM5BdQk1jZsYASxmQV0JPa3TmODsOUlNq95ywzSICHwgUPi
-	4przLBAnCUh8m3wIyOYASshKbDrADPGbpMTBFTdYJjCKzUJy1CwkY2chGbuAkXkVo2hqQXJB
-	cVJ6kZFecWJucWleul5yfu4mRmBKOf3vWd8OxpsHrA8xJgOtnMgsJZqcD0xJeSXxhsZmRham
-	JqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpgNLAvaHtReqvlNveH
-	m/u85ibfdGRuLuUrm8z6MEDMPpk7a8/88n6Jig+PTn4O3Hie3/4L18HKXRuSDvvZq7ZHutZP
-	r/vZcX7zpnlKmzm+F+pdWFrIWFu84UKJk2vWnx3r5ZdoenpYrr+guljCLUfFiLn5M9c67xcK
-	lw5FPaqsvC1285bOb/U3SizFGYmGWsxFxYkA9oA71j8DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkk+LIzCtJLcpLzFFi42I5/e+xgG6sinyQwZ7ZEhZ/Jx1jtzh4v97i
-	zvy/rBaPl/9js5h/5ByrxamDy1ktDvzZwWjxpreDxWJh2xIWi8u75rBZzF7Sz2KxaFkrs8XS
-	6xeZLG43rmCzmDB9LYtF12t5i8MrDjBZrHs5ncXixvQWVotXB9tYHEQ81sxbw+jx+9ckRo/3
-	N1rZPRZ8vsLu8XryBEaPy329TB47Z91l93i1eiarx51re9g8epvfsXn0bVnF6HH8xnYmj8+b
-	5Dw2zg0N4ItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQ
-	dcvMAXpZSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jR0r2HveBwfUX3
-	3amMDYy7krsYOTkkBEwkvrdeZIGwxSQu3FvP1sXIxSEksIhR4vHPDVDOK0aJjkX/mUCqeAW0
-	JI79v8oOYrMIqEocae5iBbHZgOL7X9xgA7FFBcIkVk6/wgJRLyjxY/I9MFsEqKb/UjcTyFBm
-	gWPMEmun7mQGSQgLJEh8nvOdBWLbV0aJv69ugE3lFFCTWNuwgRHEZhbQkdjfOo0NwpaX2Lzm
-	LfMERoFZSJbMQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBCeuZ9A7GVQ0W
-	hxgFOBiVeHgjfssGCbEmlhVX5h5ilOBgVhLhfcspHyTEm5JYWZValB9fVJqTWnyIMRkYBhOZ
-	pUST84HJNK8k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGD2j
-	7WL/PLvNcfFdwO7dzxdFpggte7jpX4vR/FetK95vD2DX45zSeOrjvSspV06sjfDVT2F6XS61
-	utf2dn/i1HCW+5IdBdoSe/13mPRpL6qtkjpp6sF+YTPLp0wFMQarg9wrtjw8xJLY+3Nqa+ch
-	zgveydWBu6Tu7ldaMf2hsVFa/L3ZZdulLyuxFGckGmoxFxUnAgAC4SbdnAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 29 Aug 2013 06:41:12 -0400
+Date: Thu, 29 Aug 2013 11:41:02 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Message-ID: <20130829104102.GS10783@sirena.org.uk>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
+ <20130813090039.GA5604@mwanda>
+ <20130828015834.GH10506@lizard>
+ <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
+ <20130828083630.GF19256@mwanda>
+ <20130829011848.GA16891@teo>
+ <20130829020714.GA26347@kroah.com>
+ <20130829030715.GA20317@teo>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7lT8fFUc+KaZWT5W"
+Content-Disposition: inline
+In-Reply-To: <20130829030715.GA20317@teo>
+X-Cookie: Snow Day -- stay home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 04:30 PM, George Cherian wrote:
-> Hi Chanwoo,
-> 
-> On 8/29/2013 11:53 AM, Chanwoo Choi wrote:
-> [snip]
->> You should keep following naming stlye. extcon-gpio-usbvid.c is wrong naming style.
->> - extcon-[device name].c
->> - extcon-gpio-usbvid.c -> extcon-dra7xx.c or etc.
->>> Actually dra7xx is the SoC name and the USB VBUS/ID detection is not specific to SoC.
->>> It uses gpios to detect the VBUS/ID change. So i thought it would be better to have generic
->>> gpio based VBUS/ID detection rather than making dra7xx specific. Stephen Warren had this opinion
->>> with patch v1.
->> Would you guarantee that this driver support all of extcon devices using gpio pin?
-> This driver would guarantee extcon devices using gpio pins for USB VBUS and ID detection.
-> Following is the basic assumption made, correct me if I am wrong.
-> ID pin ground means -> USB-HOST is true (this happens when a device is connected to USB port and we act as HOST )
-> ID pin Float means -> USB-HOST is false (this happens when nothing is connected or when we act as a peripheral under a HOST)
-> VBUS ON means -> USB is true (this happens when we are connected under a HOST as a peripheral)
-> VBUS OFF means -> USB is false ( this happens when we are either disconnected from a HOST or when we are in HOST mode).
-> 
-> So normally USB is in peripheral mode is enabled when ID pin is float and VBUS is ON.
-> and USB is in HOST mode when ID pin is ground and VBUS is OFF.
-> 
-> In all above cases VBUS is referred to the external VBUS supply from an external HOST.
-> 
->> I can't agree. This driver has specific dependency on dra7x SoC.
->>
->> First,
->> vbus_irq_handler() determine USB cable state according to "gpio_usbvid->vbus_gpio" state.
->> If "gpio_usbvid->vbus_gpio" value is VBUS_OFF(0), this patch set USB cable state as 'false'
->> But, it include potential problems. Other extcon device using gpio would set USB cable state
->> as 'true' when gpio state is 1. This way has dependency on specific SoC.
-> no this is not SoC specific. VBUS is referred to the external VBUS supply from an external HOST.
-> so if VBUS is zero means its definitely not in connected state.
 
-I tested various development board based on Samsung Exynos series SoC.
-Although some gpio of Exynos series SoC set high state(non zero, 1) as default value,
-this gpio state could mean off state, disconnected or un-powered state according to gpio.
-Of course, above explanation about specific gpio don't include all gpios.
-This is meaning that there is possibility.
+--7lT8fFUc+KaZWT5W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>
->> Second,
->> gpio_usbvid_set_initial_state() dertermine both "USB-HOST" and "USB" cable state at same time
->> in 'case ID_DETCT' according to 'gpio_usbvid->id_gpio'. But, I think that other extcon devices
->> would not control both "USB-HOST" and "USB" cable state at same time.
->>
->> Other extcon devices would support either "USB-HOST" or "USB" cable.
-> The driver has 2 configurations.
-> 1) supports implementations with both VBUS and ID pin are routed via gpio's for swicthing roles(compatible  gpio-usb-vid).
+On Wed, Aug 28, 2013 at 08:07:15PM -0700, Anton Vorontsov wrote:
 
-As you explained about case 1, it is only used on dra7x SoC.
-Other SoC could not wish to control both "USB-HOST" and "USB" cable at same time.
+> These changes not so much burden for me personally (it was actually easier
+> for me to just apply the patch without all the arguing), but for those who
+> actually do real bugfixes/features in the drivers: their local development
+> trees will produce conflicts. Solving the trivial conflicts not a problem
+> either, but irritating (especially realizing that you waste time resolving
+> conflicts because of the "just cosmetic" crap).
 
+> These days I don't code that much, but I was in that boat resolving
+> "cosmetic" conflicts, and I did not like it. So I'm trying to solve the
+> issue for drivers/power/ developers.
 
-> 2) supports implementations with only ID pin routed via gpio for swicthing roles(compatible gpio-usb-id).
-> So if you take type as VBUS_ID_DETECT then it is as what you meant.
+This sort of patche can be helpful when doing work over multiple drivers
+- making the code more consistent means that it's much easier to pattern
+match when looking over many different drivers.
 
-"2) case" don't support the detection of "USB-HOST" cable.
-Only detect "USB" cable according to "vbus_gpio" value.
+--7lT8fFUc+KaZWT5W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If user wish to detect only "USB-HOST" cable, should user enter "ID_DETECT" as "ti,gpio-usb-id" on DT file?
-But, id_irq_handler() control both "USB-HOST" and "USB" cable at same time. It may not prefer this method.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
->>
->> Third,
->> gpio_usbvid_probe() get both gpio_usbvid->id_irq and gpio_usbvid->vbus_irq by using DT helper function.
->> and gpio_usbvid_request_irq() register each interrupt handler(id_irq and vbus_irq) according to DT data.
->> In result,
->>     id_irq_handler() would control both "USB-HOST" and "USB" cable state.
-> only if type is ID_DETECT id_irq_handler control both USB-HOST and USB cable states
-> if type is VBUS_ID_DETECT then id_irq_handler only controls USB-HOST.
+iQIcBAEBAgAGBQJSHyU6AAoJELSic+t+oim9n2wQAIOqADqABMmvk3JM6as4zu6t
+tdntf/Ub8hs3iTlvdE5wJuROiHy+k2FLEu9Dbh8a3VKaodRHA7V1N0K1SpHFgC0O
+qW4OLVs2wMAFKgt9RpndqybkF9FgVJYolfLeF76bSMEBeFo10hm40Zr7LJ4UtPj8
+i7pQJcUoYYKo03EWywhoE/i2az+n7Qdew+iWQoj7uFeeh6OKzN6E3XrfdQtbZVWL
+KOKH/nYh3Mdz8AM6VM+rjkYyJFdpK7YGXefI7iS3qsM4awaVzcQeV0+wx5NsxeB6
+BGstRGyJkAMfFvJnWvvXpGBWbt3HQf9oj2DKAIkM4S7MpcZsjgBHwfXkbDO1ZI0x
+VtKjP3MR1RGY76THvDaGcfJiU40lGhsZZ6/rAbOEyxWlAktVqbHAHKhWcHD0fdj3
+zYTLY7NmY5FF7p2/LFngMKW3PeuPQrIKS5PVd8n25d7mz5ir58TQx1lXrsPDuTxR
+plLG6979etcfW1OF+d3b/XH2gKsRl6R6EdsGIAD9dmyF0/lUh/9IW2gVwE7V7mxD
+HLNWm4I6qW6VpWDlSwFGFtURSq1CNYymzAtvoZA3YHCEMiNM3AEIZtMegh6W2OCN
+3kROzsFmFUAcS2a01qNHVRoG3R48nIfpIUHJ2raauCXjBV5p/8g8AZSgV1q88G2f
+/EQAFSY42kEiW2kCF2FO
+=eqfr
+-----END PGP SIGNATURE-----
 
-I have some confusion. I need additional your explanation.
-Could this driver register only one interrupt handler either id_irq_handler() or vbus_irq_handler()?
-or
-Could this driver register two interrupt handler both id_irq_handler() or vbus_irq_handler()?
-
->>     vbus_irq_handler() would control only "USB" cable state.
->>
->> Two interrupt handler(id_irq_handler()/vbus_irq_handler()) would control "USB" cable state
->> according to each gpio state at same time. Also, It include critical problem.
-> No it depends on the configuration as explained above.
-> 
-> [snip]
-> 
->> +
->> +#define ID_GND        0
->> +#define ID_FLOAT    1
->> +#define VBUS_OFF    0
->> +#define VBUS_ON        1
->>>> I think you could only use two constant instead of four constant definition.
->>> you mean only ID_GND and VBUS_OFF?
->> you could only define two contant (0 and 1) to detect gpio state.
-> okay
->>
->>>>> +
->>>>> +
->>>> This blank line isn't necessary.
->>>>
->>>>> +static irqreturn_t id_irq_handler(int irq, void *data)
->>>>> +{
->>>>> +    struct gpio_usbvid *gpio_usbvid = (struct gpio_usbvid *) data;
->>>> You should delete blank between ')' and 'data' as follwong:
->>>>      - (struct gpio_usbvid *)data;
->>> okay
->>>>> +    int id_current;
->>>>> +
->>>>> +    id_current = gpio_get_value_cansleep(gpio_usbvid->id_gpio);
->>>>> +    if (id_current == ID_GND) {
->>>>> +        if (gpio_usbvid->type == ID_DETECT)
->>>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>>> +                            "USB", false);
->>>>> +        extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
->>>> As else statement, you should set "USB-HOST" cable state to improve readability.
->>>>
->>>>          extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
->>>>          if (gpio_usbvid->type == ID_DETECT)
->>>>              extcon_set_cable_state(&gpio_usbvid->edev,
->>>>                              "USB", false);
->>> Actually, USB-HOST state should be set in the id_irq handler. But in cases were only ID pin is routed to gpio
->>> and VBUS is not used we set the USB state too. The gpio_usbvid->type differentiates whether its an ID only or
->>> VBUS and ID.
->> I don't understand. Wht does not you change the order of function call as following?
->>
->>     Before:
->>             if (gpio_usbvid->type == ID_DETECT)
->>             extcon_set_cable_state(&gpio_usbvid->edev,
->>                                     "USB", false);
->>         extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
-> Basically these notifiers would go and change the UTMI modes which is s/w controlled.
-> so we want to gracefully exit Device mode first and then enter HOST mode.
-> this is only with type=ID_DETECT.
-
-Because id_irq_handler() control both "USB-HOST" and "USB" cable at same time,
-you need this setting order between "USB-HOST" and "USB" cable.
-
-Did you think that SoC should always connect either "USB-HOST" cable or "USB" cable?
-I don't know this case except for dra7x SoC. So, I think it has dependency on specific SoC.
-and can't agree as generic extcon gpio driver.
-
->>     After:
->>         extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
->>         if (gpio_usbvid->type == ID_DETECT)
->>             extcon_set_cable_state(&gpio_usbvid->edev,
->>                     "USB", false);
->>
->> id_irq_handler() determine the state of "USB-HOST" cable according to 'id_current' value.
->> And this function dermine the state of "USB" cable accordign to "gpio_usbvid->type" value.
->>
->>>>> +    } else {
->>>>> +        extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", false);
->>>>> +        if (gpio_usbvid->type == ID_DETECT)
->>>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>>> +                            "USB", true);
->>>>> +    }
->>>> Add blank line.
->>> okay
->>>>> +    return IRQ_HANDLED;
->>>>> +}
->>>>> +
->>>>> +static irqreturn_t vbus_irq_handler(int irq, void *data)
->>>>> +{
->>>>> +    struct gpio_usbvid *gpio_usbvid = (struct gpio_usbvid *) data;
->>>> ditto.
->>> okay
->>>>> +    int vbus_current;
->>>>> +
->>>>> +    vbus_current = gpio_get_value_cansleep(gpio_usbvid->vbus_gpio);
->>>>> +    if (vbus_current == VBUS_OFF)
->>>>> +        extcon_set_cable_state(&gpio_usbvid->edev, "USB", false);
->>>>> +    else
->>>>> +        extcon_set_cable_state(&gpio_usbvid->edev, "USB", true);
->> First,
->> vbus_irq_handler() determine USB cable state according to "gpio_usbvid->vbus_gpio" state.
->> If "gpio_usbvid->vbus_gpio" value is VBUS_OFF(0), this patch set USB cable state as 'false'
->> But, it include potential problems. Other extcon device using gpio would set USB cable state
->> as 'true' when gpio state is 1. This way has dependency on specific SoC.
-> see above
-> [snip]
->>>> +
->>>> +    switch (gpio_usbvid->type) {
->>>> +    case ID_DETECT:
->>>> +        id_current = gpio_get_value_cansleep(gpio_usbvid->id_gpio);
->>>> +        if (!!id_current == ID_FLOAT) {
->>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>> +                            "USB-HOST", false);
->>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>> +                            "USB", true);
->>>> +        } else {
->>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>> +                            "USB", false);
->>>> +            extcon_set_cable_state(&gpio_usbvid->edev,
->>>> +                            "USB-HOST", true);
->>>> +        }
->> Second,
->> gpio_usbvid_set_initial_state() dertermine both "USB-HOST" and "USB" cable state at same time
->> in 'case ID_DETCT' according to 'gpio_usbvid->id_gpio'. But, I think that other extcon devices
->> would not control both "USB-HOST" and "USB" cable state at same time.
->>
->> Other extcon devices would support either "USB-HOST" or "USB" cable.
-> see above
-> [snip]
->> Why do you use the same interrupt name both gpio_usbvid->id_irq and gpio_usbvid->vbus_irq?
->> You should use characteristic interrupt name.
->>> if I use dev_name it gives me 2 same name interrupts associated with a single extcon device.
->>> Where as if i use characteristic (for eg: VBUS or ID) names then I will get multiple with same name
->>> since there will be 2 instances of extcon being used as of now.
->> I can't agree. Single extcon driver can have various interrupt.
->> If you use same interrupt name about different two interrupt,
->> can we know the kind of interrupt which is happened on /proc/interrupts?
->> We cannot count the number of each interrupt occurrences.
-> ya so i will use something like "extcon_devname + VBUS/ID"
-> otherwise if i have 3 instance of extcon device in type VBUS_ID_DETECT then i will have
-> 2 entries named VBUS and 2 named ID.
-> I will change it.
-> [snip]
->> +
->> +    platform_set_drvdata(pdev, gpio_usbvid);
->> +
->> +    gpio_usbvid->edev.name = dev_name(&pdev->dev);
->>>> I add as follwong comment about your v1 patchset
->>>>
->>>>      "If edev name is equal with device name, this line is unnecessary.
->>>>      Because extcon_dev_register() use dev_name(&pdev->dev) as edev name
->>>>      in extcon-class.c"
->>>>
->>>> Why did not apply for my comment to v3 patchset?
->>>> Plesae pay attention for previous comment.
->>> I removed it but it gave me a  NULL pointer dereference  in extcon_get_extcon_dev (strcmp the sd->name was NULL).
->>> I am based on v3.11-rc3, did you have any fix for this in later rc's? probably I would rebase to your latest and check.
->> Always, you have to develop patch based on extcon-next or extcon-linux branch according to patch content.
->>
->> This feature related to your NULL pointer issue will include v3.12.
->> - http://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/commit/?h=char-misc-next&id=6eee5b3b493824731ed34ade0299241f91f04096
-> guilty as charged i will rebase.
->>>>> +    gpio_usbvid->edev.supported_cable = dra7xx_extcon_cable;
->>>>> +    gpio_usbvid->edev.mutually_exclusive = mutually_exclusive;
->>>>> +
->>>>> +    if (of_device_is_compatible(node, "ti,gpio-usb-id"))
->>>>> +        gpio_usbvid->type = ID_DETECT;
->>>>> +
->>>>> +    gpio = of_get_gpio(node, 0);
->>>>> +    if (gpio_is_valid(gpio)) {
->>>>> +        gpio_usbvid->id_gpio = gpio;
->>>>> +        ret = devm_gpio_request(&pdev->dev, gpio_usbvid->id_gpio,
->>>>> +                    "id_gpio");
->>>>> +        if (ret)
->>>>> +            return ret;
->>>> Add blank line.
->>>>
->>>>> +        gpio_usbvid->id_irq = gpio_to_irq(gpio_usbvid->id_gpio);
->>>>> +    } else {
->>>>> +        dev_err(&pdev->dev, "failed to get id gpio\n");
->>>>> +        return -ENODEV;
->>>>> +    }
->>>>> +
->>>>> +    if (of_device_is_compatible(node, "ti,gpio-usb-vid")) {
->>>>> +        gpio_usbvid->type = VBUS_ID_DETECT;
->>>>> +        gpio = of_get_gpio(node, 1);
->>>>> +        if (gpio_is_valid(gpio)) {
->>>>> +            gpio_usbvid->vbus_gpio = gpio;
->>>>> +            ret = devm_gpio_request(&pdev->dev,
->>>>> +                        gpio_usbvid->vbus_gpio,
->>>>> +                        "vbus_gpio");
->>>>> +            if (ret)
->>>>> +                return ret;
->>>> Add blank line.
->>>>
->>>>> +            gpio_usbvid->vbus_irq =
->>>>> +                    gpio_to_irq(gpio_usbvid->vbus_gpio);
->>>>> +        } else {
->>>>> +            dev_err(&pdev->dev, "failed to get vbus gpio\n");
->>>>> +            return -ENODEV;
->>>>> +        }
->>>>> +    }
->>>>> +
->>>>> +    ret = extcon_dev_register(&gpio_usbvid->edev, gpio_usbvid->dev);
->>>>> +    if (ret) {
->>>>> +        dev_err(&pdev->dev, "failed to register extcon device\n");
->>>>> +        return ret;
->>>>> +    }
->>>>> +
->>>>> +    gpio_usbvid_set_initial_state(gpio_usbvid);
->>>>> +    ret = gpio_usbvid_request_irq(gpio_usbvid);
->> Third,
->> gpio_usbvid_probe() get both gpio_usbvid->id_irq and gpio_usbvid->vbus_irq by using DT helper function.
->> and gpio_usbvid_request_irq() register each interrupt handler(id_irq and vbus_irq) according to DT data.
->> In result,
->> id_irq_handler() would control both "USB-HOST" and "USB" cable state.
->> vbus_irq_handler() would control only "USB" cable state.
->>
->> Two interrupt handler(id_irq_handler()/vbus_irq_handler()) would control "USB" cable state
->> according to each gpio state at same time. Also, It include critical problem.
-> see above
->>>> You should move gpio_usbvid_request_irq() call before extcon_dev_register().
->>>>
->>>>> +    if (ret)
->>>>> +        goto err0;
->>>> ? As following previous comment about v1 patchset:
->>>>      I need correct meaning name as err_thread or etc ...
->>> okay
->>>>> +
->>>>> +    return 0;
->>>>> +
->>>>> +err0:
->>>> ditto.
->>> okay
->>>>> +    extcon_dev_unregister(&gpio_usbvid->edev);
->>>>> +
->>>>> +    return ret;
->>>>> +}
->>>>> +
->>>>> +static int gpio_usbvid_remove(struct platform_device *pdev)
->>>>> +{
->>>>> +    struct gpio_usbvid *gpio_usbvid = platform_get_drvdata(pdev);
->>>>> +
->>>>> +    extcon_dev_unregister(&gpio_usbvid->edev);
->>>>> +    return 0;
->>>>> +}
->>>>> +
->>>>> +static struct of_device_id of_gpio_usbvid_match_tbl[] = {
->>>>> +    { .compatible = "ti,gpio-usb-vid", },
->>>>> +    { .compatible = "ti,gpio-usb-id", },
->>>>> +    { /* end */ }
->>>>> +};
->>>>> +
->>>>> +static struct platform_driver gpio_usbvid_driver = {
->>>>> +    .probe = gpio_usbvid_probe,
->>>>> +    .remove = gpio_usbvid_remove,
->>>>> +    .driver = {
->>>>> +        .name = "gpio-usbvid",
->>>>> +        .of_match_table = of_gpio_usbvid_match_tbl,
->>>>> +        .owner = THIS_MODULE,
->>>>> +    },
->>>>> +};
->>>>> +
->>>>> +module_platform_driver(gpio_usbvid_driver);
->>>>> +
->>>>> +MODULE_ALIAS("platform:gpio-usbvid");
->>>>> +MODULE_AUTHOR("George Cherian <george.cherian@ti.com>");
->>>>> +MODULE_DESCRIPTION("GPIO based USB Connector driver");
->>>>> +MODULE_LICENSE("GPL");
->>>>> +MODULE_DEVICE_TABLE(of, of_gpio_usbvid_match_tbl);
->>>>>
->>>> Cheers,
->>>> Chanwoo Choi
->>>
->> Thanks,
->> Chanwoo Choi
->>
-> 
-
+--7lT8fFUc+KaZWT5W--
