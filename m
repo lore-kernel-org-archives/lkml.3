@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3H2SzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:55:21 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36880 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3H2SzT (ORCPT
+	id S1756715Ab3H2TAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 15:00:35 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39983 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755419Ab3H2TAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:55:19 -0400
-Date: Thu, 29 Aug 2013 14:55:13 -0400 (EDT)
-Message-Id: <20130829.145513.179529840926907721.davem@davemloft.net>
-To: maxime.ripard@free-electrons.com
-Cc: jszhang@marvell.com, emilio@elopez.com.ar, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mdio-sun4i: Convert to devm_* api
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130828093508.GQ2695@lukather>
-References: <1377522717-5784-1-git-send-email-jszhang@marvell.com>
-	<20130828093508.GQ2695@lukather>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 29 Aug 2013 11:55:18 -0700 (PDT)
+	Thu, 29 Aug 2013 15:00:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <5217BD74.5030801@wwwdotorg.org>
+References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<1507189.CRWvzVJqTV@flatron>
+	<521548E3.6010703@wwwdotorg.org>
+	<CACRpkdYUeyVZcN1-jOzg0zo4eSJK1S+M5fJ0FcMsgwaPKW4Obw@mail.gmail.com>
+	<52167E5D.6060802@wwwdotorg.org>
+	<CACRpkdZgFMH07_W2eUWsgsUMXAJA1paEimAds=-XeViZaYySLA@mail.gmail.com>
+	<5217BD74.5030801@wwwdotorg.org>
+Date: Thu, 29 Aug 2013 21:00:32 +0200
+Message-ID: <CACRpkdYz7Kn-y8LHpNBV3YyYFhyaU6N592BJE1newUZJpUMNfA@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-Date: Wed, 28 Aug 2013 11:35:08 +0200
+On Fri, Aug 23, 2013 at 9:52 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/23/2013 12:45 PM, Linus Walleij wrote:
 
-> Hi Jisheng,
-> 
-> On Mon, Aug 26, 2013 at 09:11:57PM +0800, Jisheng Zhang wrote:
->> Use devm_ioremap_resource instead of of_iomap() and devm_kzalloc()
->> instead of kmalloc() to make cleanup paths simpler. This patch also
->> fixes the resource leak caused by missing corresponding iounamp()
->> of the of_iomap().
->> 
->> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> 
-> It looks fine for me.
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> This is a perfectly OK thing to do as long as it is done like
+>> this:
+>>
+>> request_gpio(gpio);
+>> gpio_direction_input(gpio);
+>> request_irq(gpio_to_irq(gpio));
+>
+> But I'm not aware that there's a rule saying it's illegal to:
+>
+> request_irq(gpio_to_irq(gpio));
+> request_gpio(gpio);
+> gpio_direction_input(gpio);
 
-Applied to net-next, thanks.
+No but I think there should be one ... maybe I'm an oddball
+but it seems natural to request a GPIO before tying
+IRQs to fire off it.
+
+Besides, the bug that this is trying to solve is due to the
+fact that the OMAP driver require exactly the former order
+for the IRQs to work. I think if the sequence matters it is
+likely to be the first form, but it's a rough guess.
+
+>> Pass only the GPIO in the device tree and this works just fine.
+>
+> And I wouldn't be surprised if there were DTs that had separate GPIO and
+> interrupt entries for the same pin.
+
+That is the situation we want to catch.
+
+Don't you agree that it has some bit of ambiguity around it, like
+the tree makes an assumtion that whether you ask for the GPIO
+line or IRQ first does not matter, and leave it up to the driver to
+"do something" if the order suddenly turns out the other way around,
+but is important to the hardware?
+
+I think we can't get away from the ambition to define this
+semantic for all DT systems.
+
+> In fact, it's arguably technically
+> more correct to do that than just list the GPIO, and then hope the OS
+> will be able to convert it to the correct IRQ. Then, drivers wouldn't
+> have any reason to believe they needed a specific IRQ-vs-GPIO request
+> ordering.
+
+If that is more technically correct (hm I wonder what measure is
+used for "correctness" here) I think we are back at the GPIO input
+hogs to achive what OMAP needs. Using such hogs they can
+let the gpiochip node hog a few pins and set them as input rather
+than each and every driver having to do so.
+
+Yours,
+Linus Walleij
