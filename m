@@ -1,76 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3H2OVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:21:41 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:45172
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752788Ab3H2OVk (ORCPT
+	id S1755028Ab3H2OYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:24:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59592 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab3H2OYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:21:40 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(z551bizbb2dI98dI9371I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh19b6n1155h192ch)
-Date: Thu, 29 Aug 2013 16:21:28 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 29 Aug 2013 10:24:17 -0400
+Date: Thu, 29 Aug 2013 09:23:02 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: <balbi@ti.com>, Greg KH <greg@kroah.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "khilman@linaro.org" <khilman@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+Message-ID: <20130829142302.GJ9325@radagast>
+Reply-To: <balbi@ti.com>
+References: <521CAF59.1090203@linutronix.de>
+ <521CB046.9070408@baylibre.com>
+ <521CB18B.4080000@linutronix.de>
+ <521CB239.6050409@baylibre.com>
+ <521CB403.8010307@linutronix.de>
+ <20130827173732.GC21564@kroah.com>
+ <20130827183732.GP3005@radagast>
+ <20130827193021.GA30113@kroah.com>
+ <20130827195652.GE3005@radagast>
+ <521F1D28.7070003@baylibre.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 16/16] ARM: zynq: Don't call of_clk_init()
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-17-git-send-email-sebastian.hesselbarth@gmail.com> <201308291537.54608.arnd@arndb.de>
-In-Reply-To: <201308291537.54608.arnd@arndb.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <89b68978-7eeb-43e1-a456-d864ed313da5@DB8EHSMHS026.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1BdFSKqAqVdu8k/"
+Content-Disposition: inline
+In-Reply-To: <521F1D28.7070003@baylibre.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 03:37 PM, Arnd Bergmann wrote:
-> On Tuesday 27 August 2013, Sebastian Hesselbarth wrote:
->> @@ -58,10 +57,10 @@ static void __init zynq_init_machine(void)
->>         of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
->>  }
->>  
->> -static void __init zynq_timer_init(void)
->> +static void __init zynq_init_irq(void)
->>  {
->> +       irqchip_init();
->>         zynq_slcr_init();
->> -       clocksource_of_init();
->>  }
->>  
->>  static struct map_desc zynq_cortex_a9_scu_map __initdata = {
->> @@ -104,8 +103,8 @@ static const char * const zynq_dt_match[] = {
->>  DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
->>         .smp            = smp_ops(zynq_smp_ops),
->>         .map_io         = zynq_map_io,
->> +       .init_irq       = zynq_init_irq,
->>         .init_machine   = zynq_init_machine,
->> -       .init_time      = zynq_timer_init,
->>         .dt_compat      = zynq_dt_match,
->>         .restart        = zynq_system_reset,
->>  MACHINE_END
-> 
-> It looks like we are not getting any closer to removing all callbacks here,
-> since you add one in order to remove another, and after the patch we do
-> more things "early", which we try to avoid. I think we're better off without
-> this particular patch.
+--k1BdFSKqAqVdu8k/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is there any plan to remove all of them?
-I expect that on almost all platforms it is a need to have at least one
-early hook to be able to setup things.
+On Thu, Aug 29, 2013 at 12:06:32PM +0200, Benoit Cousson wrote:
+> Hi Felipe
+>=20
+> On 27/08/2013 21:56, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Tue, Aug 27, 2013 at 12:30:21PM -0700, Greg KH wrote:
+> >>On Tue, Aug 27, 2013 at 01:37:32PM -0500, Felipe Balbi wrote:
+> >>>Hi,
+> >>>
+> >>>On Tue, Aug 27, 2013 at 10:37:32AM -0700, Greg KH wrote:
+> >>>>On Tue, Aug 27, 2013 at 04:13:23PM +0200, Sebastian Andrzej Siewior w=
+rote:
+> >>>>>On 08/27/2013 04:05 PM, Benoit Cousson wrote:
+> >>>>>>On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
+> >>>>>>>On 08/27/2013 03:57 PM, Benoit Cousson wrote:
+> >>>>>>>>+ Kevin,
+> >>>>>>>>
+> >>>>>>>>On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
+> >>>>>>>>>What do we do now?
+> >>>>>>>>
+> >>>>>>>>Cannot you just merge the stable arm-soc/dt branch into your bran=
+ch
+> >>>>>>>>before applying your patches?
+> >>>>>>>
+> >>>>>>>That is up to Greg. This changes sat in his usb-next tree for a wh=
+ile
+> >>>>>>>now. And before they hit Greg they were in Felipe's tree for a whi=
+le.
+> >>>>>>>
+> >>>>>>>To be exact, last .dts change via USB was:
+> >>>>>>>
+> >>>>>>>Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> >>>>>>>AuthorDate: Thu Jun 20 12:13:04 2013 +0200
+> >>>>>>>Commit:     Felipe Balbi <balbi@ti.com>
+> >>>>>>>CommitDate: Fri Aug 9 17:40:16 2013 +0300
+> >>>>>>>
+> >>>>>>>     usb: musb dma: add cppi41 dma driver
+> >>>>>>
+> >>>>>>Mmm, if that branch is supposed to be stable, I'm not sure it will =
+be
+> >>>>>>doable...
+> >>>>>>
+> >>>>>>Maybe we should do the other way around? And merge usb-next into
+> >>>>>>arm-soc/dt.
+> >>>>>>
+> >>>>>>Kevin, Olof?
+> >>>>>
+> >>>>>Please be aware that I have no response so far regarding [0] from Gr=
+eg.
+> >>>>>
+> >>>>>[0] http://www.spinics.net/lists/linux-usb/msg92595.html
+> >>>>
+> >>>>Nor will you, given that I am not the one to take these patches, Feli=
+pe
+> >>>>is.  I noticed now that you said "please route around Felipe", but
+> >>>>sorry, no, I'm not going to do that unless there's a really good reas=
+on.
+> >>>>Felipe seems to be around at the moment, please work with him on this.
+> >>>
+> >>>If you will still take a 'part2' pull request from me, I can send you
+> >>>urgent bugfixes by friday. If I have some time left, I can even try to
+> >>>get that sorted out by tomorrow.
+> >>
+> >>For 3.12 stuff, like "fixes", sure, I can take them this week, that
+> >>should give us a week or so for linux-next testing, right?
+> >
+> >that's correct. I have most of them already queued up, let me just go
+> >over my linux-usb maildir again and make sure I got all the important
+> >stuff in.
+> >
+> >cheers, thanks for opening this 'window'.
+>=20
+> There are two patches in my DTS tree that conflict with the usb-next.
+>=20
+> I will remove that one (ARM: dts: AM33XX: don't redefine OCP bus and
+> device nodes) , as suggested by Olof, since it is the biggest source
+> of conflict from my tree.
+>=20
+> The second one is easily fixable, and Stephen already did it, but it
+> will be even better it you could take it in your tree.
+> This is the patch you did that I just slightly renamed (ARM: OMAP5:
+> dts: fix reg property size).
 
-Thanks,
-Michal
+I'm done with Pull requests for Greg. If the conflict is easy to solve,
+what's the problem in having the conflict to start with ?
 
+--=20
+balbi
 
+--k1BdFSKqAqVdu8k/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSH1lGAAoJEIaOsuA1yqRE4FIP/RwAntjf7UJ/LIno/lYM8+hJ
+7jepbhZZD9Dd7yK3y/UCaaiUUjqBBeSYuUJ3UaOUFslCEQcd7C7eEBvbA/ntnpBe
+jyKx1J6Yo0ky29GQw4dbjETIIt7xI2jYZKyXw9dSlzgLhZUvuUvhP8LNgAdJb2uX
+Pab74Let8XJRan/OisYp1V24/AHndfHm8sk48jdONwC/uT3rwzjqlJKL+geLAnhc
+AG8VoWrethLkmMvM96z97RfJR6zwgESq0Oo2hlQBC06hxexWYSdaXM1+sjiVXTQ8
+l5kCEj0At07mNw9NfcPmBl9+65fQNrjzcw1XxyWjbao+Aatc4oVJYxOYbhbTX2Ie
+SyNbsf4wYIiSgr7qbDlp6rdpc8esXtWilSCLNIwZUP7BTu8eeVyog/fOfVLlHMAb
+DF2duSE0mbllx1oivdg+P8q/EAJgZYLq969HznwR/CPdiFkmXwku2m4aoVARF2Es
+YKOvzXSp50HySYx7gVZcd2BU9RAz9mEmDEc3yqQRy/kFomfl16ZSHyhmQTGEuPDf
+6nfpJlcfomXcQsgHFoFuwAluZgd3QgZOl5gXA5b5OQfF0nWZZTZiVoBBZne2PJzS
+AzF22hYyujj7SJqQXT5iDv35abfPQlA2qhCaCwWiRptP/YQGd54tm1J9NXuMlTbu
++4ACjjhy/KhFDMgyYXSd
+=JzaK
+-----END PGP SIGNATURE-----
+
+--k1BdFSKqAqVdu8k/--
