@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab3H2Wlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 18:41:40 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:56012 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3H2Wlh (ORCPT
+	id S1756281Ab3H2WqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 18:46:13 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:35928 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab3H2WqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 18:41:37 -0400
-Date: Fri, 30 Aug 2013 01:41:28 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Eric Miao <eric.y.miao@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, linux-cris-kernel@axis.com,
-        linux-sh@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        sparclinux@vger.kernel.org, Miao Steven <realmz6@gmail.com>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [Query] CPUFreq: Does these machines have separate clock domains
- for CPUs?
-Message-ID: <20130829224127.GA15841@blackmetal.musicnaut.iki.fi>
-References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
+	Thu, 29 Aug 2013 18:46:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo4qEPQq==rmzy+8a2FHgaKmWbG7BvopKqbBZC551kgdcg@mail.gmail.com>
+References: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
+	<CAE9FiQX9gU-S9X_eeB=JwqS8130CONKgrv+mGj1cEgShmxgS-Q@mail.gmail.com>
+	<CAErSpo4qEPQq==rmzy+8a2FHgaKmWbG7BvopKqbBZC551kgdcg@mail.gmail.com>
+Date: Thu, 29 Aug 2013 15:46:10 -0700
+X-Google-Sender-Auth: bhGh-V3Ou4rvmHw8SsNo0hEvL2E
+Message-ID: <CAE9FiQVXri56BzLviVjSPnqQvo25Q36AA26V_28kfy_=9EunjA@mail.gmail.com>
+Subject: Re: [PATCH v8 6/6] PCI: update device mps when doing pci hotplug
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yijing Wang <wangyijing@huawei.com>, Jon Mason <jdmason@kudzu.us>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Jin Feng <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Aug 29, 2013 at 3:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> Note that I think Linux *should* eventually actively manage MPS, and
+> when it does, case 3 should "just work".  I just don't understand what
+> the point of the BIOS using case 3 is.
+>
+> I suppose other OSes must get better performance in this "auto" mode?
 
-On Thu, Aug 29, 2013 at 03:45:58PM +0530, Viresh Kumar wrote:
-> I have been doing some CPUFreq cleanup work and
-> wanted to know if the below mentioned machines have separate
-> clock domains for their CPUs or all share the same domain?
-[...]
-> drivers/cpufreq/loongson2_cpufreq.c
+Yes.
 
-Loongson2 is UP only.
+> (What exactly is that mode, anyway?)  That means the other OS must be
+> smart enough to deal with hotplug device replacement, but not smart
+> enough to configure MPS all by itself starting from scratch.  I don't
+> know what rules would tell us "this MPS must be configured by the BIOS
+> and the OS should leave it alone" and "the OS must configure MPS on
+> this device for hotplug."  How can we make sense out of that?
 
-A.
+So my suggestion:
+We scan mps of in the bridges to find out if any is set to other than 128.
+if there is any bridge that mps is not 128 and it is hotplug slot.
+We change to PCI_BUS_TUNE_PERF for that system.
+
+Yinghai
