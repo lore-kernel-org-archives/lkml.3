@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3H2Cyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:54:37 -0400
-Received: from m12-16.163.com ([220.181.12.16]:39330 "EHLO m12-16.163.com"
+	id S1755583Ab3H2Cyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:54:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65391 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab3H2Cyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:54:35 -0400
-X-Coremail-DSSMTP: 111.177.42.155
-From: "jacky" <producehormones@163.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: linux-kernel,produce hormones and steroids
-Date: Thu, 29 Aug 2013 10:54:38 +0800
-X-Mailer: SquirrelMail (version 0.5)
-Reply-To: <producehormones@163.com>
-MIME-Version: 1.0
-Content-type: text/plain; charset=GB2312
-X-CM-TRANSID: EMCowEB5lVDntx5Sjhi3Ag--.433S2
-X-Coremail-Antispam: 1Uf129KBjvdXoWrurykGFW5trW5XrW5Gr4xXrb_yoWxuFg_WF
-	98JF1qgw1DJr1IqF1DKr15AF15XFW0qr10qr98Ww47JryxXF15XrsFvr43WFyUWrWxJr1U
-	Jwn0qr1Fq3Wj9jkaLaAFLSUrUUUUMb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUeQ6pPUUUUU==
-Message-Id: <521EB7E7.7105D5.03298@m12-16.163.com>
-X-CM-SenderInfo: xsurv3pfhk025prqv2i6rwjhhfrp/xtbBlweIh1D+dnrGCAAAsz
+	id S1755492Ab3H2Cyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 22:54:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,980,1367996400"; 
+   d="scan'208";a="370150173"
+Message-ID: <1377744875.1643.80.camel@empanada>
+Subject: Re: [PATCH v7 00/10] tracing: trace event triggers (repost)
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
+Date: Wed, 28 Aug 2013 21:54:35 -0500
+In-Reply-To: <20130828155127.5ca1975a@gandalf.local.home>
+References: <cover.1377631572.git.tom.zanussi@linux.intel.com>
+	 <20130828155127.5ca1975a@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7T2sesZ011524
 
-Dear director,
- 
-We produce Steroids and intermediates ingredients.
- 
-Products:
-APIs 
-DHEA Series 
-Nandrolone Series 
-Testosterone Series 
-Altrenogest 
-Intermediates 
-4-Androstenedione 
-1,4-Androstadienedione 
-Altrenogest Intermediate 
-Spirolactone Intermediate 
-Customs Synthesis 
+On Wed, 2013-08-28 at 15:51 -0400, Steven Rostedt wrote:
+> On Tue, 27 Aug 2013 14:40:12 -0500
+> Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+>  
+> > Tom Zanussi (10):
+> >   tracing: Add support for SOFT_DISABLE to syscall events
+> >   tracing: add basic event trigger framework
+> >   tracing: add 'traceon' and 'traceoff' event trigger commands
+> >   tracing: add 'snapshot' event trigger command
+> >   tracing: add 'stacktrace' event trigger command
+> >   tracing: add 'enable_event' and 'disable_event' event trigger
+> >     commands
+> >   tracing: add and use generic set_trigger_filter() implementation
+> >   tracing: update event filters for multibuffer
+> >   tracing: add documentation for trace event triggers
+> >   tracing: make register/unregister_ftrace_command __init
+> 
+> In your next series, can you please fix the subjects. The lines should
+> start with a capital letter. You did it correctly on your first patch,
+> but failed to do it for the others.
+> 
+> Thanks!
+> 
 
-If you are interested, please contact us for more information.
+Yeah, will do, and thanks for the review..
 
- 
-Regards,
+Tom
 
-Jacky
+> -- Steve
+> 
 
 
---------------------------------------------------------------------------------
- 
-
-Goto pharmaceuticals Co.,Ltd
-Tel: +86 710 3423122, Fax: +86 710 3423124
-Email:products@gotopharm.com
-Msn:zhisheng211@hotmail.com
-Add: 7-1602 New City of Century, 47th Changhong Road,
-Xiangyang, Hubei, China, 441002
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
