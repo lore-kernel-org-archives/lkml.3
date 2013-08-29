@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab3H2VJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:09:59 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:50208 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630Ab3H2VJ4 (ORCPT
+	id S1756723Ab3H2VLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:11:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45936 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3H2VLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:09:56 -0400
+	Thu, 29 Aug 2013 17:11:22 -0400
+Date: Thu, 29 Aug 2013 16:11:14 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] Make sure to wake reaper
+Message-ID: <20130829211114.GA20726@sergelap>
 MIME-Version: 1.0
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 29 Aug 2013 15:09:35 -0600
-Message-ID: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
-Subject: Re: [PATCH v8 6/6] PCI: update device mps when doing pci hotplug
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Yijing Wang <wangyijing@huawei.com>, Jon Mason <jdmason@kudzu.us>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Jin Feng <joe.jin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-kernel, since more folks might be interested]
 
-On Mon, Aug 26, 2013 at 6:39 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Aug 26, 2013 at 2:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> The current Linux default is PCIE_BUS_TUNE_OFF, and given that I don't
->> want to touch any MPS settings in that mode, I don't see a way to
->> safely fix https://bugzilla.kernel.org/show_bug.cgi?id=60671 (the
->> problem with hot-added devices not working because MPS is incorrect).
->> In the long term, I hope we can fix it by making the default
->> PCIE_BUS_SAFE, but that doesn't help right now.
->>
->> That leaves us with only the workaround of booting the Huawei rh5885
->> box with "pci=pcie_bus_safe".
->>
->> I'm willing to accept that because I think we can argue that this is
->> really a BIOS defect.  The BIOS *can* program MPS to values that will
->> be safe for hotplug even if the OS does nothing, i.e., it can set
->> MPS=128 in all paths that lead to a hotpluggable slot.  I think that's
->> probably what this BIOS *should* do, since it has no way of knowing
->> whether the OS will support hotplug or whether the OS will reprogram
->> any MPS values.
->
-> BIOS should have several settings for MPS:
-> 1. 128
-> 2. auto or performance.
->
-> When it set to Auto, Linux will have problem with hot-add.
->
-> Default one was 128 before, that is ok,
-> as from sndbrige and ivbridge, chipset could support more than 128.
->
-> BIOS want to set it auto.
-> BIOS guys is claiming that other OSes are ok with Auto, but only Linux
-> has problem.
+Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
+possible to get into a situation where a pidns reaper is
+<defunct>, reparented to host pid 1, but never reaped.  How to
+reproduce this is documented at
 
-I don't understand the argument the BIOS guys are making.
+https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
+(and see
+https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
+In short, run repeated starts of a container whose init is
 
-1.  If the BIOS sets MPS=128 for all devices all the time, everything
-should always work.  Performance won't be optimal, but it should
-always work.
+Process.exit(0);
 
-This requires no OS support at all, so the current Linux default of
-doing nothing is fine.
+sysrq-t when such a task is playing zombie shows:
 
-2.  If the BIOS sets MPS to something larger than 128 for hardwired
-devices only (where no hotplug is possible), the BIOS either knows
-that the root complex will split peer-to-peer packets as required (sec
-1.3.1), or it assumes there will be no peer-to-peer traffic between
-hierarchies.
+[  131.132978] init            x ffff88011fc14580     0  2084   2039 0x00000000
+[  131.132978]  ffff880116e89ea8 0000000000000002 ffff880116e89fd8 0000000000014580
+[  131.132978]  ffff880116e89fd8 0000000000014580 ffff8801172a0000 ffff8801172a0000
+[  131.132978]  ffff8801172a0630 ffff88011729fff0 ffff880116e14650 ffff88011729fff0
+[  131.132978] Call Trace:
+[  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
+[  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
+[  131.132978]  [<ffffffff81071eae>] ? signal_wake_up_state+0x1e/0x30
+[  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
+[  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
+[  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
 
-This should also work fine with no OS support, unless we do
-peer-to-peer traffic and the root complex doesn't split packets.
+Further debugging showed that every time this happened, zap_pid_ns_processes()
+started with nr_hashed being 3, while we were expecting it to drop to 2.
+Any time it didn't happen, nr_hashed was 1 or 2.  So the reaper was
+waiting for nr_hashed to become 2, but free_pid() only wakes the reaper
+if nr_hashed hits 1.  This patch makes free_pid() wake the reaper any
+time the reaper is PF_EXITING, to force it to re-test the
+pidns->nr_hashed = init_pids test.  Note that this is more like what
+__unhash_process() used to do before
+af4b8a83add95ef40716401395b44a1b579965f4.
 
-3.  If the BIOS sets MPS to something larger than 128 in a path that
-leads to a hotplug slot, the BIOS assumes the OS actively manages MPS
-for hotplug.
+Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ kernel/pid.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-This requires OS support because if we hot-add a device that only
-supports MPS=128, the OS must reprogram the upstream path before using
-the device.
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 0db3e79..6b312c4 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -274,6 +274,10 @@ void free_pid(struct pid *pid)
+ 		case 0:
+ 			schedule_work(&ns->proc_work);
+ 			break;
++		default:
++			if (ns->child_reaper->flags & PF_EXITING)
++				wake_up_process(ns->child_reaper);
++			break;
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&pidmap_lock, flags);
+-- 
+1.8.3.2
 
-I don't know what the BIOS "auto" setting means, but it must mean
-something in case 3, because that's the only case where OS support is
-required.  But if the OS is smart enough to manage MPS for hot-added
-devices, why can't the OS also program MPS for the whole system at
-boot-time?
-
-That's why I don't understand what BIOS wants to do.  It sounds like
-they want the performance benefit of larger MPS for devices present in
-hot-plug slots at boot-time, even if the OS doesn't actively manage
-MPS and things blow up if that device is replaced with one that
-supports a smaller MPS.  That choice doesn't make sense.
-
-In case 3, with a non-MPS-aware OS, you get better performance for a
-while, but blow up if a card is replaced.  And with an MPS-aware OS,
-there should be no advantage to case 3: the OS should be able to get
-good performance by programming MPS itself, even without help from the
-BIOS.
-
-Bjorn
