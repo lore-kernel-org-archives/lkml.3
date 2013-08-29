@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3H2LZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 07:25:18 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45067 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756379Ab3H2LZO (ORCPT
+	id S1756449Ab3H2L0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:26:51 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47477 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab3H2L0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 07:25:14 -0400
-Date: Thu, 29 Aug 2013 12:24:21 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v5 2/5] ARM: arch_timer: add support to configure and
- enable event stream
-Message-ID: <20130829112421.GF13704@arm.com>
-References: <1377686689-30828-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1377686689-30828-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	Thu, 29 Aug 2013 07:26:50 -0400
+Message-ID: <521F2FF0.9060105@linux.vnet.ibm.com>
+Date: Thu, 29 Aug 2013 19:26:40 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377686689-30828-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+References: <20130828092001.GQ22899@redhat.com> <521DC3FD.1020507@linux.vnet.ibm.com> <20130828094630.GR22899@redhat.com> <521DCD57.7000401@linux.vnet.ibm.com> <20130828104938.GT22899@redhat.com> <521DE9E8.2040908@linux.vnet.ibm.com> <20130828133635.GU22899@redhat.com> <521EEF4B.4040107@linux.vnet.ibm.com> <20130829090833.GA22899@redhat.com> <521F14FE.3070900@linux.vnet.ibm.com> <20130829095120.GD22899@redhat.com>
+In-Reply-To: <20130829095120.GD22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082911-1618-0000-0000-000004894B3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 11:44:46AM +0100, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> This patch adds support for configuring the event stream frequency
-> and enabling it.
-> 
-> It also adds the hwcaps definitions to the user to detect this event
-> stream feature.
-> 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> ---
->  arch/arm/include/asm/arch_timer.h | 33 ++++++++++++++++++++++++++++-----
->  arch/arm/include/uapi/asm/hwcap.h |  1 +
->  arch/arm/kernel/setup.c           |  1 +
->  3 files changed, 30 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-> index 1a3e967..4e38609 100644
-> --- a/arch/arm/include/asm/arch_timer.h
-> +++ b/arch/arm/include/asm/arch_timer.h
-> @@ -89,22 +89,45 @@ static inline u64 arch_counter_get_cntvct(void)
->  	return cval;
->  }
->  
-> -static inline void arch_counter_set_user_access(void)
-> +static inline u32 arch_timer_get_cntkctl(void)
->  {
->  	u32 cntkctl;
-> -
->  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-> +	return cntkctl;
-> +}
-> +
-> +static inline void arch_timer_set_cntkctl(u32 cntkctl)
-> +{
-> +	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-> +}
-> +
-> +static inline void arch_counter_set_user_access(void)
-> +{
-> +	u32 cntkctl = arch_timer_get_cntkctl();
->  
->  	/* Disable user access to both physical/virtual counters/timers */
-> -	/* Also disable virtual event stream */
->  	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
->  			| ARCH_TIMER_USR_VT_ACCESS_EN
-> -			| ARCH_TIMER_VIRT_EVT_EN
->  			| ARCH_TIMER_USR_VCT_ACCESS_EN
->  			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-> +	arch_timer_set_cntkctl(cntkctl);
-> +}
+On 08/29/2013 05:51 PM, Gleb Natapov wrote:
+> On Thu, Aug 29, 2013 at 05:31:42PM +0800, Xiao Guangrong wrote:
+>>> As Documentation/RCU/whatisRCU.txt says:
+>>>
+>>>         As with rcu_assign_pointer(), an important function of
+>>>         rcu_dereference() is to document which pointers are protected by
+>>>         RCU, in particular, flagging a pointer that is subject to changing
+>>>         at any time, including immediately after the rcu_dereference().
+>>>         And, again like rcu_assign_pointer(), rcu_dereference() is
+>>>         typically used indirectly, via the _rcu list-manipulation
+>>>         primitives, such as list_for_each_entry_rcu().
+>>>
+>>> The documentation aspect of rcu_assign_pointer()/rcu_dereference() is
+>>> important. The code is complicated, so self documentation will not hurt.
+>>> I want to see what is actually protected by rcu here. Freeing shadow
+>>> pages with call_rcu() further complicates matters: does it mean that
+>>> shadow pages are also protected by rcu? 
+>>
+>> Yes, it stops shadow page to be freed when we do write-protection on
+>> it.
+>>
+> Yeah, I got the trick, what I am saying that we have a data structure
+> here protected by RCU, but we do not use RCU functions to access it...
 
-You can keep the ARCH_TIMER_VIRT_EVT_EN clearing here, especially if we
-drop the bool enable argument to arch_timer_evtstrm_config(). You can
-add the same clearing to arm64 in one of the latter patches.
+Yes, they are not used when insert a spte into rmap and get the rmap from
+the entry... but do we need to use these functions to guarantee the order?
 
--- 
-Catalin
+The worst case is, we fetch the spte from the desc but the spte is not
+updated yet, we can happily skip this spte since it will set the
+dirty-bitmap later, this is guaranteed by the barrier between mmu_spte_update()
+and mark_page_dirty(), the code is:
+
+set_spte():
+
+	if (mmu_spte_update(sptep, spte))
+		kvm_flush_remote_tlbs(vcpu->kvm);
+
+	if (!remap) {
+		if (rmap_add(vcpu, sptep, gfn) > RMAP_RECYCLE_THRESHOLD)
+			rmap_recycle(vcpu, sptep, gfn);
+
+		if (level > PT_PAGE_TABLE_LEVEL)
+			++vcpu->kvm->stat.lpages;
+	}
+
+	smp_wmb();
+
+	if (pte_access & ACC_WRITE_MASK)
+		mark_page_dirty(vcpu->kvm, gfn);
+
+So, i guess if we can guaranteed the order by ourself, we do not need
+to call the rcu functions explicitly...
+
+But, the memory barres in the rcu functions are really light on x86 (store
+can not be reordered with store), so i do not mind to explicitly use them
+if you think this way is more safe. :)
+
+> BTW why not allocate sp->spt from SLAB_DESTROY_BY_RCU cache too? We may
+> switch write protection on a random spt occasionally if page is deleted
+> and reused for another spt though. For last level spt it should not be a
+> problem and for non last level we have is_last_spte() check in
+> __rmap_write_protect_lockless(). Can it work?
+
+Yes, i also considered this way. It can work if we handle is_last_spte()
+properly. Since the sp->spte can be reused, we can not get the mapping
+level from sp. We need to encode the mapping level into spte so that
+cmpxhg can understand if the page table has been moved to another mapping
+level. Could you allow me to make this optimization separately after this
+patchset be merged?
+
+
+
+
