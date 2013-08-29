@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab3H2Umw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:42:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42280 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab3H2Umu (ORCPT
+	id S1757324Ab3H2UoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:44:19 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:60724 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756905Ab3H2UoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:42:50 -0400
-Date: Thu, 29 Aug 2013 13:42:35 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-f69fa9a91f60fff6f2d8b658b7d84d235d9d89b7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dl9pf@gmx.de, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dl9pf@gmx.de, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1377803585-5913-3-git-send-email-dl9pf@gmx.de>
-References: <1377803585-5913-3-git-send-email-dl9pf@gmx.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, doc:
-  Update uaccess.h comment to reflect clang changes
-Git-Commit-ID: f69fa9a91f60fff6f2d8b658b7d84d235d9d89b7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 29 Aug 2013 16:44:18 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 13:42:42 -0700 (PDT)
+In-Reply-To: <521faf12.9JwU9Jt+2QNWkPCZ%akpm@linux-foundation.org>
+References: <521faf12.9JwU9Jt+2QNWkPCZ%akpm@linux-foundation.org>
+Date: Thu, 29 Aug 2013 13:44:18 -0700
+X-Google-Sender-Auth: GF0t8w8MfeC5iEMVcpsvhsO9eXo
+Message-ID: <CAE9FiQWHeip7XWF+-mCt3gXsESpr52Fb71fbrJbRSJyeHCAMeQ@mail.gmail.com>
+Subject: Re: + mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch added
+ to -mm tree
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f69fa9a91f60fff6f2d8b658b7d84d235d9d89b7
-Gitweb:     http://git.kernel.org/tip/f69fa9a91f60fff6f2d8b658b7d84d235d9d89b7
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 29 Aug 2013 13:34:50 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 29 Aug 2013 13:34:50 -0700
+On Thu, Aug 29, 2013 at 1:29 PM,  <akpm@linux-foundation.org> wrote:
+> Subject: + mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch added to -mm tree
+> To: liwanp@linux.vnet.ibm.com,yinghai@kernel.org
+> From: akpm@linux-foundation.org
+> Date: Thu, 29 Aug 2013 13:29:06 -0700
+>
+>
+> The patch titled
+>      Subject: mm/sparse: introduce alloc_usemap_and_memmap fix-2
+> has been added to the -mm tree.  Its filename is
+>      mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
+>
+> This patch should soon appear at
+>     http://ozlabs.org/~akpm/mmots/broken-out/mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
+> and later at
+>     http://ozlabs.org/~akpm/mmotm/broken-out/mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
+>
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+>
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+>
+> ------------------------------------------------------
+> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Subject: mm/sparse: introduce alloc_usemap_and_memmap fix-2
+>
+> Pass function pointer to alloc_usemap_and_memmap() instead of true/false.
+>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  mm/sparse.c |   41 +++++++++++++++--------------------------
+>  1 file changed, 15 insertions(+), 26 deletions(-)
+>
+> diff -puN mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2 mm/sparse.c
+> --- a/mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2
+> +++ a/mm/sparse.c
+> @@ -339,13 +339,14 @@ static void __init check_usemap_section_
+>  }
+>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+>
+> -static void __init sparse_early_usemaps_alloc_node(unsigned long**usemap_map,
+> +static void __init sparse_early_usemaps_alloc_node(void **data,
+>                                  unsigned long pnum_begin,
+>                                  unsigned long pnum_end,
+>                                  unsigned long usemap_count, int nodeid)
+>  {
+>         void *usemap;
+>         unsigned long pnum;
+> +       unsigned long **usemap_map = (unsigned long **)data;
 
-x86, doc: Update uaccess.h comment to reflect clang changes
+Can you check if (void *data) will work?
 
-Update comment in uaccess.h to reflect the changes for clang support:
-gcc only cares about the base register (most architectures don't
-encode the size of the operation in the operands like x86 does, and so
-it is treated effectively like a register number), whereas clang tries
-to enforce the size -- but not for register pairs.
+void ** looks strange.
 
-Link: http://lkml.kernel.org/r/1377803585-5913-3-git-send-email-dl9pf@gmx.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jan-Simon Möller <dl9pf@gmx.de>
----
- arch/x86/include/asm/uaccess.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index f715fee..5838fa9 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -153,11 +153,14 @@ __typeof__(__builtin_choose_expr(sizeof(x) > sizeof(0UL), 0ULL, 0UL))
-  * Careful: we have to cast the result to the type of the pointer
-  * for sign reasons.
-  *
-- * The use of %edx as the register specifier is a bit of a
-+ * The use of _ASM_DX as the register specifier is a bit of a
-  * simplification, as gcc only cares about it as the starting point
-  * and not size: for a 64-bit value it will use %ecx:%edx on 32 bits
-  * (%ecx being the next register in gcc's x86 register sequence), and
-  * %rdx on 64 bits.
-+ *
-+ * Clang/LLVM cares about the size of the register, but still wants
-+ * the base register for something that ends up being a pair.
-  */
- #define get_user(x, ptr)						\
- ({									\
+Yinghai
