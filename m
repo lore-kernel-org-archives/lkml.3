@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab3H2Nq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:46:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56316 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3H2NqY (ORCPT
+	id S1753786Ab3H2Nuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:50:46 -0400
+Received: from smtp-pa1a.enomia.com ([64.128.160.11]:12177 "EHLO
+	smtp2.enomia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab3H2Nuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:46:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH RFC v2 01/16] ARM: call clk_of_init from time_init
-Date: Thu, 29 Aug 2013 15:45:37 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        kernel@stlinux.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <3837b119-baad-4e68-8805-2bc52c0135f9@DB9EHSMHS031.ehs.local> <521D2F1F.1070103@gmail.com>
-In-Reply-To: <521D2F1F.1070103@gmail.com>
+	Thu, 29 Aug 2013 09:50:44 -0400
+Message-ID: <521F51D1.3030907@uplogix.com>
+Date: Thu, 29 Aug 2013 08:51:13 -0500
+From: David Barksdale <dbarksdale@uplogix.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH RESEND] HID: New hid-cp2112 driver.
+References: <1377615715-25699-1-git-send-email-dbarksdale@uplogix.com> <alpine.LNX.2.00.1308281455350.4557@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1308281455350.4557@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308291545.37520.arnd@arndb.de>
-X-Provags-ID: V02:K0:ghALSztcDJHwtMlUyPp2bE9osZ60qnc9je6leC3fEbH
- PAeU85eTU6sTypyvHWKxbIAaBWgi8IL3qqoyFFC/d1j4Wi+/qz
- knSoaRak2xd1/9Uskc0aCfJvAhaAATlBwfeYwIzAMjPtTPnAvn
- GJGE429YDDfINyz93UHmCN3Z7M87F8/vVoKwNDs8682OJzhiUR
- uHGEZfGYginnNzsVMQKaevDAYKmtnjLkBTemmqxEEu9rrbv3Kf
- oNQcYOvzf7k6tToa4cxto4fJkClQqs1H0Ka9Zg47HqPbKbDdpi
- UvveG9moDFAs49MzBBVK0BvWNscs8M98MNzSxkYvy66+TTsPWb
- wkKeLMcrg6krtyEDELck=
+X-Originating-IP: [209.163.150.140]
+X-OriginalArrivalTime: 29 Aug 2013 13:50:43.0532 (UTC) FILETIME=[C15F68C0:01CEA4BE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 August 2013, Sebastian Hesselbarth wrote:
-> >
-> > This forces zynq to move some initialization our clock code relies on to
-> > init_irq(). Also, the current code already takes an approach of
-> > doing either common init or machine specific init.
-> 
-> Soeren,
-> 
-> you know that patch 16/16 takes care of zynq's clock init?
-> 
-> It's your own patch you provided from the last RFC. Looking at it, it
-> moves  zynq_sclr_init() to .init_irq and removes the call to
-> of_clk_init() from zynq_clock_init() which is called by
-> zynq_sclr_init().
-> 
-> Isn't that solving the above issues for mach-zynq?
+On 08/28/2013 07:57 AM, Jiri Kosina wrote:
+>
+> [ adding Benjamin to CC ]
+>
+> On Tue, 27 Aug 2013, David Barksdale wrote:
+>
+>> This patch adds support for the Silicon Labs CP2112
+>> "Single-Chip HID USB to SMBus Master Bridge."
+>>
+>> I wrote this to support a USB temperature and humidity
+>> sensor I've been working on. It's been tested by using
+>> SMBus byte-read, byte-data-read/write, and word-data-read
+>> transfer modes to talk to an I2C sensor. The other
+>> transfer modes have not been tested.
+>>
+>> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+>>
+>> ---
+>>   drivers/hid/Kconfig      |   6 +
+>>   drivers/hid/Makefile     |   1 +
+>>   drivers/hid/hid-core.c   |   3 +
+>>   drivers/hid/hid-cp2112.c | 504 +++++++++++++++++++++++++++++++++++++++++++++++
+>>   4 files changed, 514 insertions(+)
+>>
+>> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+>> index 14ef6ab..1833948 100644
+>> --- a/drivers/hid/Kconfig
+>> +++ b/drivers/hid/Kconfig
+>> @@ -175,6 +175,12 @@ config HID_PRODIKEYS
+>>   	  multimedia keyboard, but will lack support for the musical keyboard
+>>   	  and some additional multimedia keys.
+>>
+>> +config HID_CP2112
+>> +	tristate "Silicon Labs CP2112 HID USB-to-SMBus Bridge support"
+>> +	depends on USB_HID
+>> +	---help---
+>> +	Support for Silicon Labs CP2112 HID USB to SMBus Master Bridge.
+>> +
+>
+> Hi David,
+>
+> this is rather difficult to get by quickly looking at the code, so I'd
+> like to have a slightly better overview of what the device really is.
+>
+> Is it talking HID protocol on the SMBus? (if so, there is a hid-i2c
+> transport driver for it already).
+> But I guess this is not really the case, as you seem to be using the USB
+> HID functionality as well.
+>
+> Thanks in advance for some more background.
+>
 
-Please be careful with the patch ordering here. The patch series should
-be bisectable, i.e. no patch should ever knowingly break any of the
-platforms, with the fix getting added in a later patch.
-
-You should be able to do that by cleaning up all platforms to not
-rely on ordering first, then add this patch, and finally remove
-the other calls.
-
-	Arnd
+The CP2112 is a USB HID device that provides an SMBus controller.
+The datasheet can be found here: 
+http://www.silabs.com/Support%20Documents/TechnicalDocs/CP2112.pdf
+The interface specification here: 
+http://www.silabs.com/Support%20Documents/TechnicalDocs/AN495.pdf
+The host communicates with the CP2112 via HID reports. Device 
+configuration uses feature reports and data transfer uses output and 
+event reports.
+I prototyped this in userspace using the /dev/hidraw interface and then 
+wrote this driver to provide a real i2c adapter device.
