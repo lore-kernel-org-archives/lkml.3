@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab3H2Nid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:38:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53897 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab3H2Nic (ORCPT
+	id S1754225Ab3H2NlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:41:12 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:39773 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3H2NlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:38:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH RFC v2 16/16] ARM: zynq: Don't call of_clk_init()
-Date: Thu, 29 Aug 2013 15:37:54 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-17-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1377638890-371-17-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 29 Aug 2013 09:41:11 -0400
+Date: Thu, 29 Aug 2013 09:41:07 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jamie Liu <jamieliu@google.com>
+Subject: [GIT PULL] workqueue fixes for v3.11-rc7
+Message-ID: <20130829134107.GA3985@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308291537.54608.arnd@arndb.de>
-X-Provags-ID: V02:K0:SXU1CfkuAz7+7dpGwKe3ZXmQdh4kYonVepqp8hbvKYr
- e7oJnZFXwhLJV7uInT+DDpSq8D2K3f5cDBFXc1krGrpkIRVrnu
- EQtpMSilrtnGn+2LJtIY5hDPo6cfJcSpbSLa7GzatWIM8vwAk7
- Kw4xbSsxRbGXTyYy+VA4msdaJrrE7YIRZTMICJq8sItrumwTlM
- OlxOezUlW+kLUL7mG+pNhvJ45H+yX/raXRy6nj1RCXa/lrtHIx
- SsLXwS7NvS2tlwu0RxNHBYzULHpMUQFeT5sKO+4J64rujyq5Hy
- uEWuOkt0vxCXpbPtw6F5EoBUO/HHJGfQZhcn0bfyulNcflcnE0
- yaoqJ/nkL73L6LskBu0M=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 August 2013, Sebastian Hesselbarth wrote:
-> @@ -58,10 +57,10 @@ static void __init zynq_init_machine(void)
->         of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
->  }
->  
-> -static void __init zynq_timer_init(void)
-> +static void __init zynq_init_irq(void)
->  {
-> +       irqchip_init();
->         zynq_slcr_init();
-> -       clocksource_of_init();
->  }
->  
->  static struct map_desc zynq_cortex_a9_scu_map __initdata = {
-> @@ -104,8 +103,8 @@ static const char * const zynq_dt_match[] = {
->  DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
->         .smp            = smp_ops(zynq_smp_ops),
->         .map_io         = zynq_map_io,
-> +       .init_irq       = zynq_init_irq,
->         .init_machine   = zynq_init_machine,
-> -       .init_time      = zynq_timer_init,
->         .dt_compat      = zynq_dt_match,
->         .restart        = zynq_system_reset,
->  MACHINE_END
+Hello, Linus.
 
-It looks like we are not getting any closer to removing all callbacks here,
-since you add one in order to remove another, and after the patch we do
-more things "early", which we try to avoid. I think we're better off without
-this particular patch.
+This pull request contains one fix which could lead to system-wide
+lockup on !PREEMPT kernels.  It's very late in the cycle but this
+definitely is a -stable material.
 
-	Arnd
+The problem is that workqueue worker tasks may process unlimited
+number of work items back-to-back without every yielding inbetween.
+This usually isn't noticeable but a work item which re-queues itself
+waiting for someone else to do something can deadlock with
+stop_machine.  stop_machine will ensure nothing else happens on all
+other cpus and the requeueing work item will reqeueue itself
+indefinitely without ever yielding and thus preventing the CPU from
+entering stop_machine.
+
+Kudos to Jamie Liu for spotting and diagnosing the problem.  This can
+be trivially fixed by adding cond_resched() after processing each work
+item.
+
+Thanks.
+
+The following changes since commit c95389b4cd6a4b52af78bea706a274453e886251:
+
+  Merge branch 'akpm' (patches from Andrew Morton) (2013-08-28 19:31:33 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.11-fixes
+
+for you to fetch changes up to b22ce2785d97423846206cceec4efee0c4afd980:
+
+  workqueue: cond_resched() after processing each work item (2013-08-29 09:19:28 -0400)
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      workqueue: cond_resched() after processing each work item
+
+ kernel/workqueue.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 7f5d4be..e93f7b9 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2201,6 +2201,15 @@ __acquires(&pool->lock)
+ 		dump_stack();
+ 	}
+ 
++	/*
++	 * The following prevents a kworker from hogging CPU on !PREEMPT
++	 * kernels, where a requeueing work item waiting for something to
++	 * happen could deadlock with stop_machine as such work item could
++	 * indefinitely requeue itself while all other CPUs are trapped in
++	 * stop_machine.
++	 */
++	cond_resched();
++
+ 	spin_lock_irq(&pool->lock);
+ 
+ 	/* clear cpu intensive status */
