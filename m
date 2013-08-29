@@ -1,204 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3H2CrW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:47:22 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:52874 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753228Ab3H2CrU (ORCPT
+	id S1755415Ab3H2CsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:48:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51647 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3H2CsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:47:20 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
-Message-ID: <521EB623.5040301@freescale.com>
-Date: Thu, 29 Aug 2013 10:46:59 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "djbw@fb.com" <djbw@fb.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 2/3] DMA: Freescale: Add new 8-channel DMA engine device
- tree nodes
-References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com> <1377600123-5746-3-git-send-email-hongbo.zhang@freescale.com> <20130827113534.GI19893@e106331-lin.cambridge.arm.com> <521D9E89.7040700@freescale.com> <20130828125153.GC10250@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130828125153.GC10250@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 28 Aug 2013 22:48:23 -0400
+Date: Thu, 29 Aug 2013 12:48:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20130829124814.2c2547a15b5e8927a4a805a1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 08:51 PM, Mark Rutland wrote:
-> On Wed, Aug 28, 2013 at 07:54:01AM +0100, Hongbo Zhang wrote:
->> On 08/27/2013 07:35 PM, Mark Rutland wrote:
->>> On Tue, Aug 27, 2013 at 11:42:02AM +0100, hongbo.zhang@freescale.com wrote:
->>>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>>>
->>>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
->>>> the device tree nodes for them.
->>>>
->>>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->>>> ---
->>>>    .../devicetree/bindings/powerpc/fsl/dma.txt        |   66 ++++++++++++++++
->>>>    arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
->>>>    arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++++++++
->>>>    arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++++++++
->>>>    arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
->>>>    5 files changed, 232 insertions(+), 4 deletions(-)
->>>>    create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->>>>    create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
->>>> index ddf17af..10fd031 100644
->>>> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
->>>> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
->>>> @@ -126,6 +126,72 @@ Example:
->>>>                   };
->>>>           };
->>>>
->>>> +** Freescale Elo3 DMA Controller
->>>> +   This is EloPlus controller with 8 channels, used in Freescale Txxx and Bxxx
->>>> +   series chips, such as t1040, t4240, b4860.
->>>> +
->>>> +Required properties:
->>>> +
->>>> +- compatible        : must include "fsl,elo3-dma"
->>>> +- reg               : <registers specifier for DMA general status reg>
->>>> +- ranges            : describes the mapping between the address space of the
->>>> +                      DMA channels and the address space of the DMA controller
->>>> +
->>>> +- DMA channel nodes:
->>>> +        - compatible        : must include "fsl,eloplus-dma-channel"
->>>> +        - reg               : <registers specifier for channel>
->>>> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
->>>> +        - interrupt-parent  : optional, if needed for interrupt mapping
->>>> +
->>>> +Example:
->>>> +dma@100300 {
->>>> +       #address-cells = <1>;
->>>> +       #size-cells = <1>;
->>>> +       compatible = "fsl,elo3-dma";
->>>> +       reg = <0x100300 0x4 0x100600 0x4>;
->>> Is that one reg entry where #size-cells=2 and #address-cells=2?
->>>
->>> That's what the binding implies (given it only describes a single reg
->>> entry).
->>>
->>> if it's two entries, we should make that explicit (both in the binding
->>> and example):
->>>
->>> 	reg = <0x100300 0x4>,
->>> 	      <0x100600 0x4>;
->> Yes they are two entries, I will change it this way.
-> Ok. Could you make sure you document what the two reg entries correspond
-> to? That's not clear from "<registers specifier for channel>".
-Yes I am sure, we have reg for DMA controller and also reg for each DMA 
-channel.
-these two reg entries are "registers specifier for DMA general status 
-reg", not "registers specifier for channel"
-because this is an 8-channel DMA controller, we have two general status 
-registers (vs. one status register for 4-chanel DMA controller previously )
->>>> +       ranges = <0x0 0x100100 0x500>;
->>> If it is one reg entry then the example ranges property isn't big enough
->>> to contain the parent-bus-address.
->> They are two reg entries, so the range is big enough.
-> Ok.
->
->>>> +       dma-channel@0 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x0 0x80>;
->>>> +               interrupts = <28 2 0 0>;
->>>> +       };
->>>> +       dma-channel@80 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x80 0x80>;
->>>> +               interrupts = <29 2 0 0>;
->>>> +       };
->>>> +       dma-channel@100 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x100 0x80>;
->>>> +               interrupts = <30 2 0 0>;
->>>> +       };
->>>> +       dma-channel@180 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x180 0x80>;
->>>> +               interrupts = <31 2 0 0>;
->>>> +       };
->>>> +       dma-channel@300 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x300 0x80>;
->>>> +               interrupts = <76 2 0 0>;
->>>> +       };
->>>> +       dma-channel@380 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x380 0x80>;
->>>> +               interrupts = <77 2 0 0>;
->>>> +       };
->>>> +       dma-channel@400 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x400 0x80>;
->>>> +               interrupts = <78 2 0 0>;
->>>> +       };
->>>> +       dma-channel@480 {
->>>> +               compatible = "fsl,eloplus-dma-channel";
->>>> +               reg = <0x480 0x80>;
->>>> +               interrupts = <79 2 0 0>;
->>>> +       };
->>>> +};
->>>> +
->>>>    Note on DMA channel compatible properties: The compatible property must say
->>>>    "fsl,elo-dma-channel" or "fsl,eloplus-dma-channel" to be used by the Elo DMA
->>>>    driver (fsldma).  Any DMA channel used by fsldma cannot be used by another
->>>> diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
->>>> index 7399154..ea53ea1 100644
->>>> --- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
->>>> +++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
->>>> @@ -223,13 +223,13 @@
->>>>                   reg = <0xe2000 0x1000>;
->>>>           };
->>>>
->>>> -/include/ "qoriq-dma-0.dtsi"
->>>> +/include/ "elo3-dma-0.dtsi"
->>>>           dma@100300 {
->>>>                   fsl,iommu-parent = <&pamu0>;
->>>>                   fsl,liodn-reg = <&guts 0x580>; /* DMA1LIODNR */
->>>>           };
->>>>
->>>> -/include/ "qoriq-dma-1.dtsi"
->>>> +/include/ "elo3-dma-1.dtsi"
->>>>           dma@101300 {
->>>>                   fsl,iommu-parent = <&pamu0>;
->>>>                   fsl,liodn-reg = <&guts 0x584>; /* DMA2LIODNR */
->>>> diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->>>> new file mode 100644
->>>> index 0000000..69a3277
->>>> --- /dev/null
->>>> +++ b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->>>> @@ -0,0 +1,81 @@
->>>> +/*
->>>> + * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
->>> Copy-pasted?
->>>
->>> Presumably should be "Elo3 DMA devicetree stub", or similar?
->>>
->>> Similarly for elo3-dma-1.dtsi.
->> Yes copy-pasted, but QorIQ isn't wrong, it is name of Freescale series
->> chips.
->> To be more specific, I'd like to use "QorIQ Elo3 DMA devicetree stub"
-> That sounds good to me.
->
-> Cheers,
-> Mark.
->
+--Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Mauro,
 
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+arch/arm/mach-shmobile/board-bockw.c between commit fa3e0cee12fb ("ARM:
+shmobile: BOCK-W: fix SDHI0 PFC settings") from Linus' tree and commit
+9c43952d0f1e ("[media] ARM: shmobile: BOCK-W: add VIN and ML86V7667
+support") from the v4l-dvb tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-shmobile/board-bockw.c
+index 3354a85,7d44f66..0000000
+--- a/arch/arm/mach-shmobile/board-bockw.c
++++ b/arch/arm/mach-shmobile/board-bockw.c
+@@@ -167,13 -188,17 +188,23 @@@ static const struct pinctrl_map bockw_p
+  				  "usb1", "usb1"),
+  	/* SDHI0 */
+  	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
+ -				  "sdhi0", "sdhi0"),
+ +				  "sdhi0_data4", "sdhi0"),
+ +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
+ +				  "sdhi0_ctrl", "sdhi0"),
+ +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
+ +				  "sdhi0_cd", "sdhi0"),
+ +	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.0", "pfc-r8a7778",
+ +				  "sdhi0_wp", "sdhi0"),
++ 	/* VIN0 */
++ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.0", "pfc-r8a7778",
++ 				  "vin0_clk", "vin0"),
++ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.0", "pfc-r8a7778",
++ 				  "vin0_data8", "vin0"),
++ 	/* VIN1 */
++ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.1", "pfc-r8a7778",
++ 				  "vin1_clk", "vin1"),
++ 	PIN_MAP_MUX_GROUP_DEFAULT("r8a7778-vin.1", "pfc-r8a7778",
++ 				  "vin1_data8", "vin1"),
+  };
+ =20
+  #define FPGA	0x18200000
+
+--Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHrZyAAoJEECxmPOUX5FEJPAP/AvSxPYfrEoa6qyzT6BoCyHK
+/CAYBc1TRi6hsioZISuy+VPMihzVyOLm5B4LceQCw5MuTo1FlexzGQbygJ233Efy
+R+QEHLos+tBpNFIKCgxsw7EkTMGCFc+m7vvooy1VdSMCMZYORsLs/Lpk2Pwux0zQ
+tvl4aTSQMaN5HtDbLluzFFigCW4UPbrROuoLdgzjSeudxMXcWqrLvod8A2qJjoif
+0jBKxkR/Wr7Lv2ZYM4cnRxu6lJTrdyT/eXMWXFLGAh0aSiwh4XcoEShgCYaFbqft
+M9DGKdleWfSgkxgih2knc34G0q9LfUa9BqnpNbe7/CIQq22l75DO+XpmaVBFm02r
+kqKTpeJ+Ysun0wcCPIYcBZ/5TQEdVhWLdN+ssdVigT7z9nTYl4vcFLwstZJpGo7y
+ciRxGf5qWoAEeRnqr1XJqDJ5UIjjAbDHaLAgBBIHvQDi5rtaoQTG4mxS+OH9Mn9M
+/PzrEC2IAQN6uxnEVA9qAJnDGSSvxR3mQi/sZj9jwXcSOzhWEO3NfniOPtnQa5Sw
+h3kKbfh/ikXx7gjITcGLpBC/QgJyiWb+HRQLRnMmlZ7Wi4wUC3/C3fkBRZos2tuq
+9ViDqZwpNdBQ5h7A5/U1jn2NfBNtcPXCURdopnYypDji0C0A6g0peBmrm5Ddthfw
+qxpfo4akvAIVoYHUYfVR
+=Oj5N
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Aug_2013_12_48_14_+1000_oeDwcYh/VejLl4GF--
