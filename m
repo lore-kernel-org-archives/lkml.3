@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3H2StS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:49:18 -0400
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:3286
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755070Ab3H2StR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:49:17 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Subject: Re: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Topic: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Index: AQHOnPa6Tah/7plIa0O2SRc9QXB0Upmsj38AgAAG5Z2AAACXgA==
-Date: Thu, 29 Aug 2013 18:49:13 +0000
-Message-ID: <1377802153.27493.18.camel@x230>
-References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
-	 <1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
-	 <521F9162.9060405@zytor.com> <1377801331.27493.17.camel@x230>
-	 <521F9708.6040902@zytor.com>
-In-Reply-To: <521F9708.6040902@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:51f:6613:ec7a:9b2f]
-x-forefront-prvs: 09538D3531
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(479174003)(199002)(189002)(377454003)(51704005)(377424004)(47976001)(81542001)(50986001)(4396001)(47736001)(49866001)(33716001)(46102001)(33646001)(81342001)(80022001)(65816001)(69226001)(19580395003)(77982001)(59766001)(83072001)(80976001)(83322001)(19580405001)(51856001)(74876001)(74706001)(56816003)(77096001)(79102001)(54356001)(53806001)(56776001)(74366001)(54316002)(63696002)(81686001)(81816001)(76482001)(76786001)(74662001)(47446002)(76796001)(74502001)(31966008)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:51f:6613:ec7a:9b2f;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <868D5DF701FCC142A37BC7CEB63BBC8F@namprd05.prod.outlook.com>
+	id S1756713Ab3H2Svm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:51:42 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41062 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039Ab3H2Svk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:51:40 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+In-Reply-To: <5217BCE1.4080101@wwwdotorg.org>
+References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<1507189.CRWvzVJqTV@flatron>
+	<521548E3.6010703@wwwdotorg.org>
+	<CACRpkdbVYfBS5L+0ejfbTBwPbD9HFB1kV8qnS7DdSydRccxDmg@mail.gmail.com>
+	<52167A35.2010109@wwwdotorg.org>
+	<CACRpkdYAjKhKC+Aaa4iQBXsJ46mgOta_SVztVyB=HZCGJD-b2g@mail.gmail.com>
+	<5217BCE1.4080101@wwwdotorg.org>
+Date: Thu, 29 Aug 2013 20:51:39 +0200
+Message-ID: <CACRpkdYiV4e76j1N=m7YiK8ZvUAO69-=JkX6-su5T_DetwRK1Q@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7TInPTk017567
 
-On Thu, 2013-08-29 at 11:46 -0700, H. Peter Anvin wrote:
-> On 08/29/2013 11:35 AM, Matthew Garrett wrote:
-> > On Thu, 2013-08-29 at 11:22 -0700, H. Peter Anvin wrote:
-> >> On 08/19/2013 09:10 AM, Matthew Garrett wrote:
-> >>> +	if (!capable(CAP_COMPROMISE_KERNEL))
-> >>> +		return -EPERM;
-> >>> +
-> >>
-> >> Stale bits?
-> > 
-> > Yeah. Did I manage to send out the old copy of that again? I'm sorry,
-> > spending a few months concentrating on cloud stuff seems to have
-> > entirely destroyed my ability to deal with git :(
-> > 
-> 
-> No, you mixed and matched in a single patch...
+On Fri, Aug 23, 2013 at 9:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/23/2013 12:38 PM, Linus Walleij wrote:
 
-Right, but I'd fixed that in V2 (which I see I *did* send correctly, and
-you're just replying to the old one :))
+>> It can't be stopped but I consider it a bug if they do, as the proper
+>> way to handle such GPIO lines is the sequence:
+>>
+>> request_gpio(gpio);
+>> request_irq(gpio_to_irq(gpio));
+>
+> Back in the old days of ARM board files, there were many boards that
+> didn't do this. I guess that doesn't make it any less of a bug, but it
+> certainly implies to me that solving this in a way that caters to that
+> bug being present will be a lot more useful.
 
-> I still believe that CAP_RAWIO should be forbidden in this case.
+I was more thinking along the lines of trying to avoid the
+unpleasant lack of control when doing this with platform
+data and hard-coded GPIO numbers by restricting the way
+it can be done in the device tree.
 
-Seems fair.
+Hoping that there were no offenders in there already ...
+I guess it has to hit linux-next before we know that.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yours,
+Linus Walleij
