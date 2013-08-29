@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab3H2Sg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:36:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61545 "EHLO mga09.intel.com"
+	id S1757020Ab3H2Sgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:36:51 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:8808 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756971Ab3H2SgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:36:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
-   d="scan'208";a="395528762"
-Message-ID: <521F949A.2020908@intel.com>
-Date: Thu, 29 Aug 2013 11:36:10 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756557Ab3H2Scz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:32:55 -0400
+X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
+   d="scan'208";a="48860312"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>
+Subject: [PATCH v5 04/13] arm64: do not initialize arm64_swiotlb if dma_ops is already set
+Date: Thu, 29 Aug 2013 19:32:25 +0100
+Message-ID: <1377801154-29215-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <dchinner@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Avoid useless inodes and dentries reclamation
-References: <1377726732.3625.31.camel@schen9-DESK>  <20130829110741.GA23571@dastard> <1377799676.3625.69.camel@schen9-DESK>
-In-Reply-To: <1377799676.3625.69.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new shrinker infrastructure in mmotm looks like it will make this
-problem worse.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: will.deacon@arm.com
+---
+ arch/arm64/mm/dma-mapping.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-old code:
-shrink_slab()
-	for_each_shrinker {
-		do_shrinker_shrink(); // one per batch
-			prune_super()
-				grab_super_passive()
-	}
-}
-
-Which means we've got at _most_ one grab_super_passive() per batch.  The
-new code is something like this:
-
-shrink_slab()
-{
-	list_for_each_entry(shrinker, &shrinker_list, list) {
-                for_each_node_mask(... shrinkctl->nodes_to_scan) {
-			shrink_slab_node()
-		}
-	}
-}
-
-shrink_slab_node()
-{
-        max_pass = shrinker->count_objects(shrinker, shrinkctl);
-	// ^^ does grab_super_passive()
-	...
-	while (total_scan >= batch_size) {
-		ret = shrinker->scan_objects(shrinker, shrinkctl);
-		// ^^ does grab_super_passive()
-	}
-}
-
-We've got an extra grab_super_passive()s in the case where we are
-actually doing a scan, plus we've got the extra for_each_node_mask()
-loop.  That means even more lock acquisitions in the multi-node NUMA
-case, which is exactly where we want to get rid of global lock acquisitions.
+diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+index 4bd7579..a006e84 100644
+--- a/arch/arm64/mm/dma-mapping.c
++++ b/arch/arm64/mm/dma-mapping.c
+@@ -63,6 +63,8 @@ static struct dma_map_ops arm64_swiotlb_dma_ops = {
+ 
+ void __init arm64_swiotlb_init(void)
+ {
++	if (dma_ops != NULL)
++		return;
+ 	dma_ops = &arm64_swiotlb_dma_ops;
+ 	swiotlb_init(1);
+ }
+-- 
+1.7.2.5
 
