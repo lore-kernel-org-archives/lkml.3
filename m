@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3H2Rb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:31:59 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:36042 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab3H2Rb5 (ORCPT
+	id S1756016Ab3H2RcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:32:14 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61231 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab3H2RcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:31:57 -0400
-Date: Thu, 29 Aug 2013 10:31:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.11-rc7
-Message-ID: <20130829173153.GA1623@core.coreip.homeip.net>
+	Thu, 29 Aug 2013 13:32:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130829160830.GB25021@roeck-us.net>
+References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
+	<CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
+	<20130801134632.GY9916@kw.sim.vm.gnt>
+	<CACRpkdZcEPM-u19pc+v_cRqUSfJBFZ49rJYiewQ1sWWSU5YxEg@mail.gmail.com>
+	<20130829125754.GA8813@srcf.ucam.org>
+	<521F4F95.5080103@roeck-us.net>
+	<20130829153738.GA16306@srcf.ucam.org>
+	<20130829160830.GB25021@roeck-us.net>
+Date: Thu, 29 Aug 2013 19:32:10 +0200
+Message-ID: <CACRpkdZN8tV0pazo9jbc+nMSt0ye4qbYJyfBGMPcNoekfeqP9g@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 29, 2013 at 6:08 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Thu, Aug 29, 2013 at 04:37:38PM +0100, Matthew Garrett wrote:
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> The majority of board vendors clearly don't expect the OS to drive the
+>> hwmon chips - they're there for the benefit of ACPI and SMM code. That
+>> doesn't mean that there's no benefit in having drivers for them, just
+>> that the board vendors don't care about that use case and so won't do
+>> anything to make it easier.
+>>
+> Actually, not entirely true. Some vendors even provide software running on
+> Windows to access those chips (including access to fans controlled through
+> GPIO pins) and to provide information to the user. It might be more accurate
+> to say that some board vendors don't care about Linux (or about providing
+> access through ACPI, for that matter).
+>
+> Question here is what the Linux kernel community's policy is going to be
+> to handle such cases. Pragmatic or dogmatic ?
 
-Hi Linus,
+The GPIO maintainer is going to be pragmatic, because it's cool to
+be able to control HWMON things on one's workstation.
 
-Please pull from:
+The kernel is a funnier place with these drivers, so I'm applying the
+patch.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem. Just a couple of new IDs in
-Wacom and xpad drivers, i8042 is now disabled on ARC, and data checks
-in Elantech driver that were overly relaxed by the previous patch are
-now tightened.
-
-Changelog:
----------
-
-Mag (1):
-      Input: xpad - add signature for Razer Onza Classic Edition
-
-Matteo Delfino (1):
-      Input: elantech - fix packet check for v3 and v4 hardware
-
-Mischa Jonker (1):
-      Input: i8042 - disable the driver on ARC platforms
-
-Ping Cheng (1):
-      Input: wacom - add support for 0x300 and 0x301
-
-
-Diffstat:
---------
-
- drivers/input/joystick/xpad.c    |  1 +
- drivers/input/mouse/elantech.c   | 44 ++++++++++++++++++++++++++++++++++++=
-----
- drivers/input/mouse/elantech.h   |  1 +
- drivers/input/serio/Kconfig      |  3 ++-
- drivers/input/tablet/wacom_wac.c | 10 ++++++++-
- 5 files changed, 53 insertions(+), 6 deletions(-)
-
---=20
-Dmitry
-
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSH4WJAAoJEH70+W8r6ZYqPmMQAI6a3jlPtt5O42u/YR1hkIRo
-vmRiLnvEFB8MvxWbgv5IwqdgMfKO/ccYeD8ALE6ygyR5AcqXmYD7fe1nmepgTexH
-8a1nFtGuHoHtIA1Y9txRl84lwCuMNDA1zwpfPY/OvggWRtfA7FE1V0DRoQJmjOeT
-oOXnXrE3novtbuL/cKuuMrHkhZu21Rb7aG15w73ee9LGDkHS7clKsfZZLzVjVehQ
-NjZKIHXZDFAKw5lzh4PM4A9cBovOaspJSn9lIm58UIBpo6RmFLybywfIUfSwkJXt
-a0RqlcnE97VEjNW0X7Dy0B9dkXe3Ioz11vUMp2cGPseFZ1ersZMJk2HUdDglNS+B
-rMezOspYUFWnwWR/HcMBDzgXjibLiyLXo/0Lao6h0PgBAUuOIDgA4GY2BEoj6qn7
-puooX2H25eTsXF4mp8ENljGWglbNufqXNxQnjpDs4pxnUAh7lh+t0lyq6mpfaziC
-K3jgp7yTOlP2khaxpquw5V1ymMyOEsDz2Q5WfqitW0shyK2GpxiG95z/wKYjIPPV
-/yaMzQyXzCveGTMlXDoaKXJDnENHxahvoa02UBddvdJ8Iqkp4Ls1XiH30yoOtMm2
-zR7VSaddloKtJ7LfGvLb4mfcu+BG30jDgNOTW376fH75v9EGQIpekTPy8IYUyMMr
-FaD8A0rcpFR2p6RqnIdD
-=YS7B
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+Yours,
+Linus Walleij
