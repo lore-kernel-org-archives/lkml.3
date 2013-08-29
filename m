@@ -1,161 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab3H2XjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:39:22 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:56549 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab3H2XjU (ORCPT
+	id S1755150Ab3H2XlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:41:00 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:44875 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab3H2Xk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:39:20 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Joe Perches <joe@perches.com>, Veaceslav Falico <vfalico@redhat.com>
-References: <8761upbd6h.fsf@xmission.com>
-	<1377779927-28500-1-git-send-email-tim.gardner@canonical.com>
-Date: Thu, 29 Aug 2013 16:39:04 -0700
-In-Reply-To: <1377779927-28500-1-git-send-email-tim.gardner@canonical.com>
-	(Tim Gardner's message of "Thu, 29 Aug 2013 06:38:47 -0600")
-Message-ID: <87wqn4ysmf.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 29 Aug 2013 19:40:57 -0400
+Date: Thu, 29 Aug 2013 17:40:52 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v4] ACPI: Fix osc flag setup ordering to allow pcie
+ hotplug use when available
+Message-ID: <20130829234052.GA22252@google.com>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+ <1377807425-27423-1-git-send-email-nhorman@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1//DahZQWi+rMBzXLAtzV9HLjJ62A9KQvE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4982]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.2 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Tim Gardner <tim.gardner@canonical.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH net-next v2] net: neighbour: Remove CONFIG_ARPD
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377807425-27423-1-git-send-email-nhorman@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tim Gardner <tim.gardner@canonical.com> writes:
+On Thu, Aug 29, 2013 at 04:17:05PM -0400, Neil Horman wrote:
+> This is a fix for:
+> https://bugzilla.kernel.org/show_bug.cgi?id=60736
+> 
+> During the 3.8 devel cycle:
+> 
+> commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6
+> Author: Taku Izumi <izumi.taku@jp.fujitsu.com>
+> Date:   Tue Oct 30 15:27:13 2012 +0900
+> 
+>     PCI/ACPI: Request _OSC control before scanning PCI root bus
+> 
+> went in to allow us to query the pcie hotplug flags during the acpi bus scan.
+> It however caused problems with the disabling of pcie aspm, and so:
+> commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Mon Apr 1 15:47:39 2013 -0600
+> 
+>     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
+> 
+> Backed it out.  This of course brought back the problem in which acpi took over
+> hotplug ports that were meant to be controlled by pcie.
+> 
+> This patch gives us both items.  It lets us request _OSC control before scanning
+> the pci root bus, but defers any disabling of aspm until after the scan is
+> complete, allowing us to properly handle old pcie 1.1 devices aspm settings
+> properly, as b8178f130e documents.
+> 
+> Tested successfully by myself.
+> 
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Len Brown <lenb@kernel.org>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> CC: linux-acpi@vger.kernel.org
+> CC: linux-pci@vger.kernel.org
 
-> This config option is superfluous in that it only guards a call
-> to neigh_app_ns(). Enabling CONFIG_ARPD by default has no
-> change in behavior. There will now be call to __neigh_notify()
-> for each ARP resolution, which has no impact unless there is a
-> user space daemon waiting to receive the notification, i.e.,
-> the case for which CONFIG_ARPD was designed anyways.
+I added Yinghai's ack and a stable tag and put this in pci/misc
+for v3.12.  Thanks!
 
-This looks good to me, and much less magic to maintain.
+I reworked the changelog because I think the actual cause of the
+regression was 3b63aaa70e, not the _OSC commits you mentioned:
 
-Eric
+8c33f51df4 ("PCI/ACPI: Request _OSC control before scanning PCI root bus")
+appeared in v3.8 and broke ASPM but not acpiphp.
 
+b8178f130e ('Revert "PCI/ACPI: Request _OSC control before scanning PCI
+root bus"') appeared in v3.9 and fixed ASPM, leaving acpiphp working.
 
-> Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+3b63aaa70e ("PCI: acpiphp: Do not use ACPI PCI subdriver mechanism")
+appeared in v3.10, and I believe this is what actually broke acpiphp
+because it moved the acpiphp initialization earlier, into the bus scan.
 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Gao feng <gaofeng@cn.fujitsu.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Veaceslav Falico <vfalico@redhat.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+in v3.8:
+    acpi_pci_root_add
+      acpi_pci_osc_control_set          # request OS control
+      pci_acpi_scan_root                # scan bus
+    acpi_pci_root_start
+      add_bridge                        # acpi_pci_driver .add method
+        ...
+          device_is_managed_by_native_pciehp	# OK
+
+in v3.9:
+    acpi_pci_root_add
+      pci_acpi_scan_root                # scan bus
+      acpi_pci_osc_control_set          # request OS control
+      add_bridge                        # acpi_pci_driver .add method
+        ...
+          device_is_managed_by_native_pciehp	# OK
+
+in v3.10:
+    acpi_pci_root_add
+      pci_acpi_scan_root                # scan bus
+        ...
+          acpiphp_enumerate_slots
+            ...
+              device_is_managed_by_native_pciehp	# PROBLEM
+      acpi_pci_osc_control_set          # request OS control
+
+So I added a stable tag for v3.10+ only.  I'll ask Linus to merge it
+directly during the merge window for v3.12, and hopefully it will be
+backported to the v3.10 and v3.11 stable trees soon after that.
+
+Bjorn
+
 > ---
->
-> Eric's suggestion to simply remove the config option makes sense
-> to me. If acceptable then I'll submit a patch series that also removes
-> CONFIG_ARPD from the various arch defconfigs.
->
->  net/core/neighbour.c |    2 --
->  net/ipv4/Kconfig     |   16 ----------------
->  net/ipv4/arp.c       |    2 --
->  net/ipv6/ndisc.c     |    2 --
->  4 files changed, 22 deletions(-)
->
-> diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-> index 60533db..6072610 100644
-> --- a/net/core/neighbour.c
-> +++ b/net/core/neighbour.c
-> @@ -2759,13 +2759,11 @@ errout:
->  		rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
->  }
+>  drivers/acpi/pci_root.c | 62 ++++++++++++++++++++++++++++++-------------------
+>  1 file changed, 38 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 5917839..6110fd2 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  	struct acpi_pci_root *root;
+>  	u32 flags, base_flags;
+>  	acpi_handle handle = device->handle;
+> +	bool no_aspm = false, clear_aspm = false;
 >  
-> -#ifdef CONFIG_ARPD
->  void neigh_app_ns(struct neighbour *n)
->  {
->  	__neigh_notify(n, RTM_GETNEIGH, NLM_F_REQUEST);
->  }
->  EXPORT_SYMBOL(neigh_app_ns);
-> -#endif /* CONFIG_ARPD */
+>  	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+>  	if (!root)
+> @@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+>  	acpi_pci_osc_support(root, flags);
 >  
->  #ifdef CONFIG_SYSCTL
->  static int zero;
-> diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-> index 37cf1a6..05c57f0 100644
-> --- a/net/ipv4/Kconfig
-> +++ b/net/ipv4/Kconfig
-> @@ -259,22 +259,6 @@ config IP_PIMSM_V2
->  	  gated-5). This routing protocol is not used widely, so say N unless
->  	  you want to play with it.
->  
-> -config ARPD
-> -	bool "IP: ARP daemon support"
-> -	---help---
-> -	  The kernel maintains an internal cache which maps IP addresses to
-> -	  hardware addresses on the local network, so that Ethernet
-> -	  frames are sent to the proper address on the physical networking
-> -	  layer. Normally, kernel uses the ARP protocol to resolve these
-> -	  mappings.
+> -	/*
+> -	 * TBD: Need PCI interface for enumeration/configuration of roots.
+> -	 */
 > -
-> -	  Saying Y here adds support to have an user space daemon to do this
-> -	  resolution instead. This is useful for implementing an alternate
-> -	  address resolution protocol (e.g. NHRP on mGRE tunnels) and also for
-> -	  testing purposes.
+> -	/*
+> -	 * Scan the Root Bridge
+> -	 * --------------------
+> -	 * Must do this prior to any attempt to bind the root device, as the
+> -	 * PCI namespace does not get created until this call is made (and
+> -	 * thus the root bridge's pci_dev does not exist).
+> -	 */
+> -	root->bus = pci_acpi_scan_root(root);
+> -	if (!root->bus) {
+> -		dev_err(&device->dev,
+> -			"Bus %04x:%02x not present in PCI namespace\n",
+> -			root->segment, (unsigned int)root->secondary.start);
+> -		result = -ENODEV;
+> -		goto end;
+> -	}
 > -
-> -	  If unsure, say N.
-> -
->  config SYN_COOKIES
->  	bool "IP: TCP syncookie support"
->  	---help---
-> diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-> index 4429b01..7808093 100644
-> --- a/net/ipv4/arp.c
-> +++ b/net/ipv4/arp.c
-> @@ -368,9 +368,7 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
->  	} else {
->  		probes -= neigh->parms->app_probes;
->  		if (probes < 0) {
-> -#ifdef CONFIG_ARPD
->  			neigh_app_ns(neigh);
-> -#endif
->  			return;
+> -	/* Indicate support for various _OSC capabilities. */
+>  	if (pci_ext_cfg_avail())
+>  		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+>  	if (pcie_aspm_support_enabled()) {
+> @@ -471,7 +451,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  		if (ACPI_FAILURE(status)) {
+>  			dev_info(&device->dev, "ACPI _OSC support "
+>  				"notification failed, disabling PCIe ASPM\n");
+> -			pcie_no_aspm();
+> +			no_aspm = true;
+>  			flags = base_flags;
 >  		}
 >  	}
-> diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-> index 04d31c2..d5693ad 100644
-> --- a/net/ipv6/ndisc.c
-> +++ b/net/ipv6/ndisc.c
-> @@ -663,9 +663,7 @@ static void ndisc_solicit(struct neighbour *neigh, struct sk_buff *skb)
+> @@ -503,7 +483,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  				 * We have ASPM control, but the FADT indicates
+>  				 * that it's unsupported. Clear it.
+>  				 */
+> -				pcie_clear_aspm(root->bus);
+> +				clear_aspm = true;
+>  			}
+>  		} else {
+>  			dev_info(&device->dev,
+> @@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  				acpi_format_exception(status), flags);
+>  			dev_info(&device->dev,
+>  				 "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
+> -			pcie_no_aspm();
+> +			/*
+> +			 * We want to disable aspm here, but aspm_disabled 
+> +			 * needs to remain in its state from boot so that we
+> +			 * properly handle pcie 1.1 devices.  So we set this
+> +			 * flag here, to defer the action until after the acpi
+> +			 * root scan
+> +			 */
+> +			no_aspm = true;
 >  		}
->  		ndisc_send_ns(dev, neigh, target, target, saddr);
->  	} else if ((probes -= neigh->parms->app_probes) < 0) {
-> -#ifdef CONFIG_ARPD
->  		neigh_app_ns(neigh);
-> -#endif
 >  	} else {
->  		addrconf_addr_solict_mult(target, &mcaddr);
->  		ndisc_send_ns(dev, NULL, target, &mcaddr, saddr);
+>  		dev_info(&device->dev,
+> @@ -520,6 +507,33 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  			 "(_OSC support mask: 0x%02x)\n", flags);
+>  	}
+>  
+> +	/*
+> +	 * TBD: Need PCI interface for enumeration/configuration of roots.
+> +	 */
+> +
+> +	/*
+> +	 * Scan the Root Bridge
+> +	 * --------------------
+> +	 * Must do this prior to any attempt to bind the root device, as the
+> +	 * PCI namespace does not get created until this call is made (and
+> +	 * thus the root bridge's pci_dev does not exist).
+> +	 */
+> +	root->bus = pci_acpi_scan_root(root);
+> +	if (!root->bus) {
+> +		dev_err(&device->dev,
+> +			"Bus %04x:%02x not present in PCI namespace\n",
+> +			root->segment, (unsigned int)root->secondary.start);
+> +		result = -ENODEV;
+> +		goto end;
+> +	}
+> +
+> +	if (clear_aspm) {
+> +		dev_info(&device->dev, "Disabling ASPM (FADT indicates it is unsupported)\n");
+> +		pcie_clear_aspm(root->bus);
+> +	}
+> +	if (no_aspm)
+> +		pcie_no_aspm();
+> +
+>  	pci_acpi_add_bus_pm_notifier(device, root->bus);
+>  	if (device->wakeup.flags.run_wake)
+>  		device_set_run_wake(root->bus->bridge, true);
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
