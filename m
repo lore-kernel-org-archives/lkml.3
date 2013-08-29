@@ -1,49 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab3H2Llo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 07:41:44 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:59537 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039Ab3H2Lln (ORCPT
+	id S1756115Ab3H2LrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:47:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36534 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3H2LrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 07:41:43 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, stable@vger.kernel.org,
-        Wladislav Wiebe <wladislav.kw@gmail.com>
-Subject: [PATCH] of: Fix missing memory initialization on FDT unflattening
-Date: Thu, 29 Aug 2013 12:41:34 +0100
-Message-Id: <1377776494-27040-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 29 Aug 2013 07:47:05 -0400
+Date: Thu, 29 Aug 2013 13:46:50 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        devel@openvz.org, xemul@parallels.com
+Subject: Re: [PATCH] fuse: fix race in fuse_writepages()
+Message-ID: <20130829114650.GA19636@tucsk.piliscsaba.szeredi.hu>
+References: <20130816115057.6492.39356.stgit@maximpc.sw.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816115057.6492.39356.stgit@maximpc.sw.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any calls to dt_alloc() need to be zeroed. This is a temporary fix, but
-the allocation function itself needs to zero memory before returning
-it. This is a follow up to patch 9e4012752, "of: fdt: fix memory
-initialization for expanded DT" which fixed one call site but missed
-another.
+On Fri, Aug 16, 2013 at 03:51:41PM +0400, Maxim Patlasov wrote:
+> The patch is for
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git writepages.v2
+> 
+> The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
+> 
+> 1) An user makes a page dirty via mmap-ed write.
+> 2) The user performs shrinking truncate(2) intended to purge the page.
+> 3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
+>    writeback. fuse_writepages_fill attaches a new page to FUSE_WRITE request,
+>    then releases the original page by end_page_writeback and unlock it.
+> 4) fuse_do_setattr completes and successfully returns. Since now, i_mutex
+>    is free.
+> 5) Ordinary write(2) extends i_size back to cover the page. Note that
+>    fuse_send_write_pages do wait for fuse writeback, but for another
+>    page->index.
+> 6) fuse_writepages_fill attaches more pages to the request (if any), then
+>    fuse_writepages_send is eventually called. It is supposed to crop
+>    inarg->size of the request, but it doesn't because i_size has already been
+>    extended back.
+> 
+> Moving end_page_writeback behind fuse_writepages_send guarantees that
+> __fuse_release_nowrite (called from fuse_do_setattr) will crop inarg->size
+> of the request before write(2) gets the chance to extend i_size.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: stable@vger.kernel.org
-Cc: Wladislav Wiebe <wladislav.kw@gmail.com>
----
- drivers/of/base.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks for the report.  Your analysis looks correct.
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5c54279..bf8432f 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1629,6 +1629,7 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
- 		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
- 		if (!ap)
- 			continue;
-+		memset(ap, 0, sizeof(*ap) + len + 1);
- 		ap->alias = start;
- 		of_alias_add(ap, np, id, start, len);
- 	}
--- 
-1.8.1.2
+Just one nit, why orig_pages? req->pages is already there, so why duplicate it?
 
+Note: you can do __fuse_get_request()/fuse_put_request() to prevent the req from
+going away after it's been sent.
+
+Thanks,
+Miklos
+
+
+> 
+> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |   17 ++++++++++++++++-
+>  1 files changed, 16 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 568e859..0ebcc79 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -1583,6 +1583,7 @@ struct fuse_fill_wb_data {
+>  	struct fuse_req *req;
+>  	struct fuse_file *ff;
+>  	struct inode *inode;
+> +	struct page **orig_pages;
+>  };
+>  
+>  static void fuse_writepages_send(struct fuse_fill_wb_data *data)
+> @@ -1591,12 +1592,17 @@ static void fuse_writepages_send(struct fuse_fill_wb_data *data)
+>  	struct inode *inode = data->inode;
+>  	struct fuse_conn *fc = get_fuse_conn(inode);
+>  	struct fuse_inode *fi = get_fuse_inode(inode);
+> +	int num_pages = req->num_pages;
+> +	int i;
+>  
+>  	req->ff = fuse_file_get(data->ff);
+>  	spin_lock(&fc->lock);
+>  	list_add_tail(&req->list, &fi->queued_writes);
+>  	fuse_flush_writepages(inode);
+>  	spin_unlock(&fc->lock);
+> +
+> +	for (i = 0; i < num_pages; i++)
+> +		end_page_writeback(data->orig_pages[i]);
+>  }
+>  
+>  static int fuse_writepages_fill(struct page *page,
+> @@ -1677,7 +1683,7 @@ static int fuse_writepages_fill(struct page *page,
+>  
+>  	inc_bdi_stat(page->mapping->backing_dev_info, BDI_WRITEBACK);
+>  	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+> -	end_page_writeback(page);
+> +	data->orig_pages[req->num_pages] = page;
+>  
+>  	/*
+>  	 * Protected by fc->lock against concurrent access by
+> @@ -1709,6 +1715,13 @@ static int fuse_writepages(struct address_space *mapping,
+>  	data.req = NULL;
+>  	data.ff = NULL;
+>  
+> +	err = -ENOMEM;
+> +	data.orig_pages = kzalloc(sizeof(struct page *) *
+> +				  FUSE_MAX_PAGES_PER_REQ,
+> +				  GFP_NOFS);
+> +	if (!data.orig_pages)
+> +		goto out;
+> +
+>  	err = write_cache_pages(mapping, wbc, fuse_writepages_fill, &data);
+>  	if (data.req) {
+>  		/* Ignore errors if we can write at least one page */
+> @@ -1718,6 +1731,8 @@ static int fuse_writepages(struct address_space *mapping,
+>  	}
+>  	if (data.ff)
+>  		fuse_file_put(data.ff, false);
+> +
+> +	kfree(data.orig_pages);
+>  out:
+>  	return err;
+>  }
+> 
