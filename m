@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab3H2Shl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:37:41 -0400
-Received: from mout.gmx.net ([212.227.15.18]:50553 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab3H2Shi convert rfc822-to-8bit (ORCPT
+	id S1756785Ab3H2Sje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:39:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57901 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab3H2Sjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:37:38 -0400
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
-To: llvmlinux@lists.linuxfoundation.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, pageexec@freemail.hu, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [llvmlinux] [PATCH] [RFC] [X86] Fix a compilation issue with clang.
-Date: Thu, 29 Aug 2013 20:36 +0200
-Message-ID: <1563930.LeGpPqNO9R@aragorn.auenland.lan>
-User-Agent: KMail/4.11 (Linux/3.7.10-1.16-default; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <521F9390.9030409@zytor.com>
-References: <1377796428-12719-1-git-send-email-dl9pf@gmx.de> <2571698.tomcdIIDB2@aragorn.auenland.lan> <521F9390.9030409@zytor.com>
+	Thu, 29 Aug 2013 14:39:32 -0400
+Date: Thu, 29 Aug 2013 19:39:13 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130829183913.GS10783@sirena.org.uk>
+References: <20130825155413.GA21566@raspi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V03:K0:l9qHA/0ZLDd8RTWRQPHEcz+Wt0YK8bKO6TofGFRRpeFWcSNgmM0
- qlWafUC0aQQ82CKPPETFs29AZudCSrrQ4b5naBAyN5KgjLHpbRafIiVcroA/LVUGz8ciRN6
- VQudYlRr3zZZdRQ5/M2bOu6aEOC37btTzeK0csnTOFiAh8gCuHy8h7/GW4b0CoJKse39p1R
- J664s9vrHZG3VsPJgnLGQ==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W8kijDWvHeraQFS8"
+Content-Disposition: inline
+In-Reply-To: <20130825155413.GA21566@raspi>
+X-Cookie: Snow Day -- stay home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Add devm_regulator_get_exclusive()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 August 2013 11:31:44 H. Peter Anvin wrote:
-> On 08/29/2013 11:23 AM, Jan-Simon Möller wrote:
-> >> Actually, it might be a bad idea.  In C embedded assembly we sometimes
-> >> need %% and sometimes %.
-> > 
-> > You speak of arch/x86/kvm/vmx.c, right ?
-> 
-> Well, in general.
 
-Ok, I see.  So back to the patch - can we merge it then ?
+--W8kijDWvHeraQFS8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best,
-JS
+On Sun, Aug 25, 2013 at 05:54:13PM +0200, Matthias Kaehlcke wrote:
+> Add a resource managed regulator_get_exclusive()
+>=20
+> Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+
+Applied, thanks.  Though I'm a bit suspicous of exclusive() usage...
+
+--W8kijDWvHeraQFS8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSH5VOAAoJELSic+t+oim9n34P/RwVogrTyBJPuPtREhOc19DB
+3A27dwyGgY77D4hPFGUvNpSnfd4sGbUjy/mEzjNBl5RQoo8w7vR1Q03pgwmHNokN
+c40HcF8R5pjmqbTNeJzXyscgszDxw9IYeyAB30Y5U23dlttyy+MV8O7YtDp6cMgL
+Yx8ZDhmKps4Lhy2ncFEgJhvQuZRs0GyJYdrstGjRcpI1H0z5sOuBVJ7sFPk1vozP
+RCG85cXJK1IIl2lP2G1wFOoqfkJrjYv/L/YDv96NpnY9vSKNTV9OXoFx9qOcmkcs
+rvUUr8CjHr71Kay2LaFlSoHkgzvDr3Yg+OnFgcOJ8H3A0i4BS5abwknBmrDC//M6
+xkdv4KRw463u1Nn+IaIKLwIgJZYcyNq41AdIx+M9qD/LlnnVNPpYFqyfluZ5k+YN
+Tej+OiAufPqFQzP4p48tZzjjNtMUszGhx5czkfNIwcfldgICzlfrcsUSuoX8czHr
+2NQCdkizdIxY8JgWjifyP8e6ENnbZ/sfNHzVKzL67vlfcCEpgzoIeFCughib4UX6
+/rMOVHmie5f7YpP76P2zMAUiWl/TGCJRwJytp1HvQUIJczpp/MDWyOVlBRmaQUB3
+n7ttIbI4ViTNm3KqSsqA1Xa+WNAlZYJlyLH38SMs2FcpYrPw8R1J9+9n54Na2+99
+aM9X9VuVdX3QInfOQpWy
+=ONhm
+-----END PGP SIGNATURE-----
+
+--W8kijDWvHeraQFS8--
