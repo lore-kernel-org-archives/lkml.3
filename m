@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3H2Q1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 12:27:14 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:61641 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab3H2Q1N (ORCPT
+	id S1755314Ab3H2Q1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 12:27:34 -0400
+Received: from relay.parallels.com ([195.214.232.42]:37429 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab3H2Q1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 12:27:13 -0400
+	Thu, 29 Aug 2013 12:27:33 -0400
+Message-ID: <521F7672.7050407@parallels.com>
+Date: Thu, 29 Aug 2013 20:27:30 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130812163906.10366.29310.stgit@maximpc.sw.ru>
-References: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
-	<20130812163906.10366.29310.stgit@maximpc.sw.ru>
-Date: Thu, 29 Aug 2013 18:27:11 +0200
-Message-ID: <CAJfpegvQVoc2x-2tr9vPQdj-eF9mcgCe8rQ=MFBi6ErMLgkEqA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] fuse: postpone end_page_writeback() in fuse_writepage_locked()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org,
-        Pavel Emelianov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: <fuse-devel@lists.sourceforge.net>, <bfoster@redhat.com>,
+        <xemul@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate()
+ -v2
+References: <20130812163935.10366.88320.stgit@maximpc.sw.ru> <20130816112854.5630.1907.stgit@maximpc.sw.ru> <20130829154110.GB19636@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130829154110.GB19636@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 6:39 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
-> The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
->
-> 1) An user makes a page dirty via mmap-ed write.
-> 2) The user performs shrinking truncate(2) intended to purge the page.
-> 3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
->    writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
->    the original page by end_page_writeback.
-> 4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
->    is free.
-> 5) Ordinary write(2) extends i_size back to cover the page. Note that
->    fuse_send_write_pages do wait for fuse writeback, but for another
->    page->index.
-> 6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
->    fuse_send_writepage is supposed to crop inarg->size of the request,
->    but it doesn't because i_size has already been extended back.
->
-> Moving end_page_writeback to the end of fuse_writepage_locked fixes the race
-> because now the fact that truncate_pagecache is successfully returned infers
-> that fuse_writepage_locked has already called end_page_writeback. And this,
-> in turn, infers that fuse_flush_writepages has already called
-> fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
-> could not extend it because of i_mutex held by ftruncate(2).
->
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+Hi,
 
+08/29/2013 07:41 PM, Miklos Szeredi пишет:
+> On Fri, Aug 16, 2013 at 03:30:27PM +0400, Maxim Patlasov wrote:
+>> The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
+>>
+>> 1) An user makes a page dirty via mmap-ed write.
+>> 2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
+>>     and <offset, size> covering the page.
+>> 3) Before truncate_pagecache_range call from fuse_file_fallocate,
+>>     the page goes to write-back. The page is fully processed by fuse_writepage
+>>     (including end_page_writeback on the page), but fuse_flush_writepages did
+>>     nothing because fi->writectr < 0.
+>> 4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
+>>     by calling fuse_release_nowrite. The latter triggers processing queued
+>>     write-back request which will write stale data to the hole soon.
+>>
+>> Changed in v2 (thanks to Brian for suggestion):
+>>   - Do not truncate page cache until FUSE_FALLOCATE succeeded. Otherwise,
+>>     we can end up in returning -ENOTSUPP while user data is already punched
+>>     from page cache. Use filemap_write_and_wait_range() instead.
+> The problem with fuse_wait_on_writeback() is starvation.  You could have the
+> page range continually being dirtied and written back and fallocate() livelocked
+> in fuse_wait_on_writeback() for ever AFAICS.
 
-Applied this, too.
+Yes, I agree. I thought being infinitely dirtied is impossible if 
+i_mutex is held, but now I understand it's not true for mmap-ed writes. 
+I need to think more about it (livelock avoidance).
+
+>
+> So having a barrier like FUSE_NOWRITE is good but then we need to take care of
+> throwing away the truncated part of the queue.  But that should be doable by
+> passing the truncated range explicitly to fuse_release_nowrite().
+
+Yes, I considered this approach, but splitting a fuse request into two 
+in fuse_send_writepage() made me sick. What if allocation fails?
 
 Thanks,
-Miklos
-
-> ---
->  fs/fuse/file.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 5c121fe..d1715b3 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1529,7 +1529,6 @@ static int fuse_writepage_locked(struct page *page)
->
->         inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
->         inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
-> -       end_page_writeback(page);
->
->         spin_lock(&fc->lock);
->         list_add(&req->writepages_entry, &fi->writepages);
-> @@ -1537,6 +1536,8 @@ static int fuse_writepage_locked(struct page *page)
->         fuse_flush_writepages(inode);
->         spin_unlock(&fc->lock);
->
-> +       end_page_writeback(page);
-> +
->         return 0;
->
->  err_free:
->
+Maxim
