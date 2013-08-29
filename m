@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3H2NBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:01:12 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57774 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3H2NBK (ORCPT
+	id S1753336Ab3H2NH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:07:27 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58821 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752272Ab3H2NHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:01:10 -0400
-Message-ID: <521F4612.9090708@parallels.com>
-Date: Thu, 29 Aug 2013 17:01:06 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 29 Aug 2013 09:07:25 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 29 Aug 2013 21:07:27 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/16] cpufreq: cpu0: use cpufreq_generic_get() routine
+Message-ID: <20130829130725.GL18729@S2101-09.ap.freescale.net>
+References: <cover.1377272740.git.viresh.kumar@linaro.org>
+ <6ae0de783646c5356717d761903502f354abfe84.1377272740.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <xemul@parallels.com>, <fuse-devel@lists.sourceforge.net>,
-        <bfoster@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <linux-fsdevel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH] fuse: hotfix truncate_pagecache() issue
-References: <20130828121920.23965.78383.stgit@maximpc.sw.ru> <20130829092533.GA18044@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130829092533.GA18044@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <6ae0de783646c5356717d761903502f354abfe84.1377272740.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 23, 2013 at 09:20:39PM +0530, Viresh Kumar wrote:
+> We have common infrastructure available with us for getting a CPUs clk rate.
+> Lets use it for this driver.
+> 
+> Cc: Shawn Guo <shawn.guo@linaro.org>
 
-08/29/2013 01:25 PM, Miklos Szeredi пишет:
-> On Wed, Aug 28, 2013 at 04:21:46PM +0400, Maxim Patlasov wrote:
->> The way how fuse calls truncate_pagecache() from fuse_change_attributes()
->> is completely wrong. Because, w/o i_mutex held, we never sure whether
->> 'oldsize' and 'attr->size' are valid by the time of execution of
->> truncate_pagecache(inode, oldsize, attr->size). In fact, as soon as we
->> released fc->lock in the middle of fuse_change_attributes(), we completely
->> loose control of actions which may happen with given inode until we reach
->> truncate_pagecache. The list of potentially dangerous actions includes mmap-ed
->> reads and writes, ftruncate(2) and write(2) extending file size.
->>
->> The typical outcome of doing truncate_pagecache() with outdated arguments is
->> data corruption from user point of view. This is (in some sense) acceptable
->> in cases when the issue is triggered by a change of the file on the server
->> (i.e. externally wrt fuse operation), but it is absolutely intolerable in
->> scenarios when a single fuse client modifies a file without any external
->> intervention. A real life case I discovered by fsx-linux looked like this:
->>
->> 1. Shrinking ftruncate(2) comes to fuse_do_setattr(). The latter sends
->> FUSE_SETATTR to the server synchronously, but before getting fc->lock ...
->> 2. fuse_dentry_revalidate() is asynchronously called. It sends FUSE_LOOKUP
->> to the server synchronously, then calls fuse_change_attributes(). The latter
->> updates i_size, releases fc->lock, but before comparing oldsize vs attr->size..
->> 3. fuse_do_setattr() from the first step proceeds by acquiring fc->lock and
->> updating attributes and i_size, but now oldsize is equal to outarg.attr.size
->> because i_size has just been updated (step 2). Hence, fuse_do_setattr()
->> returns w/o calling truncate_pagecache().
->> 4. As soon as ftruncate(2) completes, the user extends file size by write(2)
->> making a hole in the middle of file, then reads data from the hole either by
->> read(2) or mmap-ed read. The user expects to get zero data from the hole, but
->> gets stale data because truncate_pagecache() is not executed yet.
->>
->> The patch is a hotfix resolving the issue in a simplistic way: let's skip
->> dangerous i_size update and truncate_pagecache if an operation changing file
->> size is in progress. This simplistic approach looks correct for the cases
->> w/o external changes. And to handle them properly, more sophisticated and
->> intrusive techniques (e.g. NFS-like one) would be required. I'd like
->> to postpone it until the issue is well discussed on the mailing list(s).
-> Thanks for the analysis!
->
-> Okay, what about this even more simplistic approach?
->
-> Not tested, but I think it addresses the very crux of the issue: not truncating
-> the page cache even though we should.
+Both this and imx6q one,
 
-The patch looks fine, but it solves only one side of the problem 
-(exactly what you formulated above). Another side is opposite: 
-truncating page cache too late, when the state of inode changed 
-significantly. The beginning may be as in the scenario above: 
-fuse_dentry_revalidate() discovered that i_size changed (due to our own 
-fuse_do_setattr()) and is going to call truncate_pagecache() for some 
-'new_size' it believes valid right now. But by the time that particular 
-truncate_pagecache() is called, a lot of things may happen:
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-1) fuse_do_setattr() called truncate_pagecache() according to your patch
-2) the file was extended either by write(2) or ftruncate(2) or fallocate(2).
-3) mmap-ed write make a page in the extended region dirty
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq-cpu0.c | 8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index 7273bfc..62e52e3 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -29,11 +29,6 @@ static struct clk *cpu_clk;
+>  static struct regulator *cpu_reg;
+>  static struct cpufreq_frequency_table *freq_table;
+>  
+> -static unsigned int cpu0_get_speed(unsigned int cpu)
+> -{
+> -	return clk_get_rate(cpu_clk) / 1000;
+> -}
+> -
+>  static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+>  {
+>  	struct opp *opp;
+> @@ -99,6 +94,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
+>  
+>  static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
+>  {
+> +	policy->clk = cpu_clk;
+>  	return cpufreq_generic_init(policy, freq_table, transition_latency);
+>  }
+>  
+> @@ -106,7 +102,7 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+>  	.flags = CPUFREQ_STICKY,
+>  	.verify = cpufreq_generic_frequency_table_verify,
+>  	.target_index = cpu0_set_target,
+> -	.get = cpu0_get_speed,
+> +	.get = cpufreq_generic_get,
+>  	.init = cpu0_cpufreq_init,
+>  	.exit = cpufreq_generic_exit,
+>  	.name = "generic_cpu0",
+> -- 
+> 1.7.12.rc2.18.g61b472e
+> 
 
-The result will be the lost of data user wrote on the step '3)'. (my 
-patch solves the issue at least for all cases w/o external changes)
-
->
-> AFAICS there's no such issue with write(2) or fallocate(2).  But I haven't
-> thought about this very deeply.
-
-I added bits to the fuse_perform_write() to address that other side of 
-the issue. Fixing fallocate is also required, but I postponed it until 
-you include that another fix for fallocate (incorrect use of 
-fuse_set_nowrite()).
-
-Thanks,
-Maxim
