@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab3H2QyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 12:54:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54312 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754885Ab3H2QyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 12:54:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
-   d="scan'208";a="395482811"
-Date: Thu, 29 Aug 2013 09:54:01 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-Message-ID: <20130829165401.GA5538@xanatos>
-References: <CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
- <CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
- <521DD43D.7070605@samsung.com>
- <CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
- <521DD6BD.4030700@samsung.com>
- <20130828165938.GA26483@xanatos>
- <521E3259.6040201@samsung.com>
- <CA+icZUUj-gyqmEFo54N_62KCgByAu1n9n=dHgg3aTC53zA9TRQ@mail.gmail.com>
- <20130828211546.GH26483@xanatos>
- <CA+icZUWNVCtRn_aK0ndXxmqutM4Sc_PJN4ei0m5phu6-CwO_+g@mail.gmail.com>
+	id S1755562Ab3H2Q5r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 12:57:47 -0400
+Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:13241 "EHLO
+	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754951Ab3H2Q5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 12:57:44 -0400
+Date: Thu, 29 Aug 2013 16:57:43 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [gcv v3 06/35] scheduler: Replace __get_cpu_var uses
+In-Reply-To: <20130829100143.GA29672@gmail.com>
+Message-ID: <00000140cb02576f-e106763c-d382-4b66-bb85-d7a9cb266b81-000000@email.amazonses.com>
+References: <20130828193457.140443630@linux.com> <00000140c67817eb-b582280a-f059-499f-a24c-a11f3d59b86e-000000@email.amazonses.com> <20130829075818.GW10002@twins.programming.kicks-ass.net> <20130829100143.GA29672@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUWNVCtRn_aK0ndXxmqutM4Sc_PJN4ei0m5phu6-CwO_+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 10:02:13AM +0200, Sedat Dilek wrote:
-> P.S.: The forgotten patch is now in usb-next, but I don't see any
-> credits, coins, gold, platin...
+On Thu, 29 Aug 2013, Ingo Molnar wrote:
 
-Thank you for reporting this.  Your name was mentioned in the tag Greg
-pulled:
+>
+> >
+> >
+> > Seriously first fix the debug and validation bits of the *this_cpu*
+> > stuff.
+>
+> Note that most of the other 'gcv' patches have these problems as well, so
+> it's a NAK from me as well for most of the other patches as well ...
 
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=ff49896aa45de286f3cbfda800fc92665374546a
+Note that this only affects __this_cpu_read and __this_cpu_write not the
+this_cpu_ptr() operation.
 
-As for the non-credit tokens of appreciation, I don't have any gold bars
-handy, and I don't do bitcoins, sorry. :)
+The objection against having other variants of this_cpu operations before
+was that there were too many. If we want to reintroduce the preemption
+checks in the __ operations then we would need another variant for those
+places that do not need it.
 
-Sarah Sharp
+Right now we only have the regular ops which are interrupt safe and the
+unsafe variant that can be used anyplace.
+
+We could add a ____this_cpu variant that would be used in the cases we do
+not want preemption checks? There should not be too many but it will
+mean a whole lot of new definitions in percpu.h.
+
+
