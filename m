@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab3H2EQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 00:16:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49321 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab3H2EQI (ORCPT
+	id S1755545Ab3H2EU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 00:20:26 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43180 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3H2EUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 00:16:08 -0400
-X-Spam-Score: -101.0
-Message-ID: <521ECAC8.4050308@asianux.com>
-Date: Thu, 29 Aug 2013 12:15:04 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 29 Aug 2013 00:20:23 -0400
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/h8300/kernel/setup.c: implement default 'screen_info'
-References: <521EC935.90200@asianux.com>
-In-Reply-To: <521EC935.90200@asianux.com>
+In-Reply-To: <1377725085-16798-1-git-send-email-sboyd@codeaurora.org>
+References: <521E24CE.9090407@codeaurora.org>
+	<1377725085-16798-1-git-send-email-sboyd@codeaurora.org>
+Date: Thu, 29 Aug 2013 09:50:22 +0530
+Message-ID: <CAKohpo=VEiA11aaJPBi5NiAoq+GwTx2dkmpEa=DVE=zcuufGGA@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: Don't use smp_processor_id() in preemptible context
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need implement default 'screen_info' just like another architectures
-(tile, cris, score, sh), or can not pass compiling for defconfig:
+On 29 August 2013 02:54, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Workqueues are preemptible even if works are queued on them with
+> queue_work_on(). Let's use raw_smp_processor_id() here to silence
+> the warning.
+>
+> BUG: using smp_processor_id() in preemptible [00000000] code: kworker/3:2/674
+> caller is gov_queue_work+0x28/0xb0
+> CPU: 0 PID: 674 Comm: kworker/3:2 Tainted: G        W    3.10.0 #30
+> Workqueue: events od_dbs_timer
+> [<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
+> [<c0109dec>] (show_stack+0x10/0x14) from [<c03885a4>] (debug_smp_processor_id+0xbc/0xf0)
+> [<c03885a4>] (debug_smp_processor_id+0xbc/0xf0) from [<c0635864>] (gov_queue_work+0x28/0xb0)
+> [<c0635864>] (gov_queue_work+0x28/0xb0) from [<c0635618>] (od_dbs_timer+0x108/0x134)
+> [<c0635618>] (od_dbs_timer+0x108/0x134) from [<c01aa8f8>] (process_one_work+0x25c/0x444)
+> [<c01aa8f8>] (process_one_work+0x25c/0x444) from [<c01aaf88>] (worker_thread+0x200/0x344)
+> [<c01aaf88>] (worker_thread+0x200/0x344) from [<c01b03bc>] (kthread+0xa0/0xb0)
+> [<c01b03bc>] (kthread+0xa0/0xb0) from [<c01061b8>] (ret_from_fork+0x14/0x3c)
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/cpufreq/cpufreq_governor.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 
-The related error:
-
-  drivers/video/console/vgacon.c:820: undefined reference to `screen_info'
-  drivers/video/console/vgacon.c:840: undefined reference to `screen_info'
-  drivers/built-in.o: In function `vgacon_init':
-  drivers/video/console/vgacon.c:589: undefined reference to `screen_info'
-  drivers/built-in.o: In function `vgacon_startup':
-  drivers/video/console/vgacon.c:375: undefined reference to `screen_info'
-  drivers/video/console/vgacon.c:387: undefined reference to `screen_info'
-  drivers/built-in.o:/root/linux-next/drivers/video/console/vgacon.c:388: more undefined references to `screen_info' follow
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/kernel/setup.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/h8300/kernel/setup.c b/arch/h8300/kernel/setup.c
-index d0b1607..488b94c 100644
---- a/arch/h8300/kernel/setup.c
-+++ b/arch/h8300/kernel/setup.c
-@@ -31,6 +31,7 @@
- #include <linux/bootmem.h>
- #include <linux/seq_file.h>
- #include <linux/init.h>
-+#include <linux/screen_info.h>
- 
- #include <asm/setup.h>
- #include <asm/irq.h>
-@@ -49,6 +50,10 @@
- 
- #define STUBSIZE 0xc000
- 
-+#ifdef CONFIG_VT
-+struct screen_info screen_info;
-+#endif
-+
- unsigned long rom_length;
- unsigned long memory_start;
- unsigned long memory_end;
--- 
-1.7.7.6
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
