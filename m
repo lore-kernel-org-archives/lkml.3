@@ -1,42 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab3H2KdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:33:06 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:56642 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab3H2KdD (ORCPT
+	id S1756271Ab3H2Kgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:36:35 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30574 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab3H2Kge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:33:03 -0400
+	Thu, 29 Aug 2013 06:36:34 -0400
+X-Spam-Score: -100.9
+Message-ID: <521F23F1.30300@asianux.com>
+Date: Thu, 29 Aug 2013 18:35:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <521F2220.5030403@ti.com>
-References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-	<521F2112.5070501@ti.com>
-	<CAKohponHDZB37UsacYpmaJPb2-P3b_CJ51e7o=X+D3M68GcdEQ@mail.gmail.com>
-	<521F2220.5030403@ti.com>
-Date: Thu, 29 Aug 2013 16:03:02 +0530
-Message-ID: <CAKohpokbk17LVOC0J9GStE=Ueh55=1xrg12SFCGdy_SKQkZ7UA@mail.gmail.com>
-Subject: Re: [Query] CPUFreq: Does these machines have separate clock domains
- for CPUs?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Eric Miao <eric.y.miao@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, linux-cris-kernel@axis.com,
-        linux-sh@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
-        Paul Mundt <lethal@linux-sh.org>, sparclinux@vger.kernel.org,
-        Miao Steven <realmz6@gmail.com>, Dave Jones <davej@redhat.com>
+To: Yoshinori Sato <ysato@users.sourceforge.jp>, ak@linux.intel.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] h8300: Register: add prefix "H8_" to IER
+References: <521F22F1.3090604@asianux.com>
+In-Reply-To: <521F22F1.3090604@asianux.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 August 2013 15:57, Sekhar Nori <nsekhar@ti.com> wrote:
-> I get it now. All DaVinci devices are UP only.
 
-Thanks..
+All the other h8300 register macros also face the same risk, but not
+cause compiling error now (but may cause warning -- I did not check the
+related warnings).
+
+If suitable to change all of them with prefix "H8_", please let me know,
+I will send the related patch for it.
+
+Thanks.
+
+
+On 08/29/2013 06:31 PM, Chen Gang wrote:
+> IER is so common used (e.g. "include/media/saa7146.h", "drivers/isdn
+> /hisax/hisax.h"), need add prefix for it, or it may be overridden (can
+> not pass compiling with allmodconfig for h8300).
+> 
+> The related error:
+> 
+>     CC [M]  drivers/isdn/hisax/config.o
+>   In file included from arch/h8300/include/asm/io.h:9:0,
+>                    from drivers/isdn/hisax/hisax.h:12,
+>                    from drivers/isdn/hisax/config.c:21:
+>   arch/h8300/include/asm/regs306x.h:73:14: error: expected identifier or '(' before numeric constant
+>    #define IER  0xFEE015
+>                 ^
+>   drivers/isdn/hisax/hisax.h:574:9: note: in expansion of macro 'IER'
+>     u_char IER;
+>            ^
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/h8300/include/asm/irq.h      |    4 ++--
+>  arch/h8300/include/asm/regs267x.h |    2 +-
+>  arch/h8300/include/asm/regs306x.h |    2 +-
+>  arch/h8300/platform/h8300h/irq.c  |    4 ++--
+>  4 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/h8300/include/asm/irq.h b/arch/h8300/include/asm/irq.h
+> index 13d7c60..0964676 100644
+> --- a/arch/h8300/include/asm/irq.h
+> +++ b/arch/h8300/include/asm/irq.h
+> @@ -14,7 +14,7 @@
+>  #define EXT_IRQ6 18
+>  #define EXT_IRQ7 19
+>  #define EXT_IRQS 5
+> -#define IER_REGS *(volatile unsigned char *)IER
+> +#define IER_REGS *(volatile unsigned char *)H8_IER
+>  #endif
+>  #if defined(CONFIG_CPU_H8S)
+>  #define NR_IRQS 128
+> @@ -36,7 +36,7 @@
+>  #define EXT_IRQ15 31
+>  #define EXT_IRQS 15
+>  
+> -#define IER_REGS *(volatile unsigned short *)IER
+> +#define IER_REGS *(volatile unsigned short *)H8_IER
+>  #endif
+>  
+>  static __inline__ int irq_canonicalize(int irq)
+> diff --git a/arch/h8300/include/asm/regs267x.h b/arch/h8300/include/asm/regs267x.h
+> index 1bff731..0137ef0 100644
+> --- a/arch/h8300/include/asm/regs267x.h
+> +++ b/arch/h8300/include/asm/regs267x.h
+> @@ -131,7 +131,7 @@
+>  #define ISCRL 0xFFFE1C
+>  
+>  #define INTCR 0xFFFF31
+> -#define IER   0xFFFF32
+> +#define H8_IER   0xFFFF32
+>  #define IERH  0xFFFF32
+>  #define IERL  0xFFFF33
+>  #define ISR   0xFFFF34
+> diff --git a/arch/h8300/include/asm/regs306x.h b/arch/h8300/include/asm/regs306x.h
+> index 027dd63..046bb61 100644
+> --- a/arch/h8300/include/asm/regs306x.h
+> +++ b/arch/h8300/include/asm/regs306x.h
+> @@ -70,7 +70,7 @@
+>  #define DTCR1B  0xFFFF3F
+>  
+>  #define ISCR 0xFEE014
+> -#define IER  0xFEE015
+> +#define H8_IER  0xFEE015
+>  #define ISR  0xFEE016
+>  #define IPRA 0xFEE018
+>  #define IPRB 0xFEE019
+> diff --git a/arch/h8300/platform/h8300h/irq.c b/arch/h8300/platform/h8300h/irq.c
+> index 0a50353..ae1e01a 100644
+> --- a/arch/h8300/platform/h8300h/irq.c
+> +++ b/arch/h8300/platform/h8300h/irq.c
+> @@ -70,12 +70,12 @@ void h8300_disable_irq_pin(unsigned int irq)
+>  	case EXT_IRQ1:
+>  	case EXT_IRQ2:
+>  	case EXT_IRQ3:
+> -		*(volatile unsigned char *)IER &= ~bitmask;
+> +		*(volatile unsigned char *)H8_IER &= ~bitmask;
+>  		H8300_GPIO_FREE(H8300_GPIO_P8, bitmask);
+>  		break ;
+>  	case EXT_IRQ4:
+>  	case EXT_IRQ5:
+> -		*(volatile unsigned char *)IER &= ~bitmask;
+> +		*(volatile unsigned char *)H8_IER &= ~bitmask;
+>  		H8300_GPIO_FREE(H8300_GPIO_P9, bitmask);
+>  		break;
+>  	}
+> 
+
+
+-- 
+Chen Gang
