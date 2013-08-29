@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab3H2XGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:06:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50971 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab3H2XGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:06:38 -0400
+	id S1757144Ab3H2XHF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:07:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58602 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab3H2XGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:06:39 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
         Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
@@ -19,9 +20,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Koen Kooi <koen@dominion.thruhere.net>,
         Franklin Cooper <fcooper@ti.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v4 5/6] dma: edma: Leave linked to Null slot instead of DUMMY slot
-Date: Thu, 29 Aug 2013 18:05:44 -0500
-Message-ID: <1377817545-18015-6-git-send-email-joelf@ti.com>
+Subject: [PATCH v4 1/6] dma: edma: Setup parameters to DMA MAX_NR_SG at a time
+Date: Thu, 29 Aug 2013 18:05:40 -0500
+Message-ID: <1377817545-18015-2-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1377817545-18015-1-git-send-email-joelf@ti.com>
 References: <1377817545-18015-1-git-send-email-joelf@ti.com>
@@ -31,74 +32,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy slot has been used as a way for missed-events not to be
-reported as missing. This has been particularly troublesome for cases
-where we might want to temporarily pause all incoming events.
+Changes are made here for configuring existing parameters to support
+DMA'ing them out in batches as needed.
 
-For EDMA DMAC, there is no way to do any such pausing of events as
-the occurence of the "next" event is not software controlled.
-Using "edma_pause" in IRQ handlers doesn't help as by then the event
-in concern from the slave is already missed.
+Also allocate as many as slots as needed by the SG list, but not more
+than MAX_NR_SG. Then these slots will be reused accordingly.
+For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
+10 slots will be allocated to DMA the entire SG list of size 40.
 
-Linking a dummy slot, is seen to absorb these events which we didn't
-want to miss. So we don't link to dummy, but instead leave it linked
-to NULL set, allow an error condition and detect the channel that
-missed it.
-
-Signed-off-by: Joel Fernandes <joelf@ti.com>
-
-dma: edma: Link to dummy slot only for last SG list split
-
-Consider the case where we have a scatter-list like:
-SG1->SG2->SG3->SG4->SG5->SG6->Null
-
-For ex, for a MAX_NR_SG of 2, earlier we were splitting this as:
-SG1->SG2->Null
-SG3->SG4->Null
-SG5->SG6->Null
-
-Now we split it as
-SG1->SG2->Null
-SG3->SG4->Null
-SG5->SG6->Dummy
-
-This approach results in lesser unwanted interrupts that occur
-for the last list split. The Dummy slot has the property of not
-raising an error condition if events are missed unlike the Null
-slot. We are OK with this as we're done with processing the
-whole list once we reach Dummy.
+Also enable TC interrupts for slots that are a last in a current
+iteration, or that fall on a MAX_NR_SG boundary.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/dma/edma.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 0e77b57..25e47d4 100644
+index 5f3e532..e522ad5 100644
 --- a/drivers/dma/edma.c
 +++ b/drivers/dma/edma.c
-@@ -158,13 +158,18 @@ static void edma_execute(struct edma_chan *echan)
- 		/* Link to the previous slot if not the last set */
- 		if (i != (nslots - 1))
- 			edma_link(echan->slot[i], echan->slot[i+1]);
--		/* Final pset links to the dummy pset */
--		else
--			edma_link(echan->slot[i], echan->ecc->dummy_slot);
- 	}
+@@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 	enum dma_slave_buswidth dev_width;
+ 	u32 burst;
+ 	struct scatterlist *sg;
+-	int i;
+ 	int acnt, bcnt, ccnt, src, dst, cidx;
+ 	int src_bidx, dst_bidx, src_cidx, dst_cidx;
++	int i, nslots;
  
- 	edesc->processed += nslots;
+ 	if (unlikely(!echan || !sgl || !sg_len))
+ 		return NULL;
+@@ -262,8 +262,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
  
-+	/*
-+	 * If this is either the last set in a set of SG-list transactions
-+	 * then setup a link to the dummy slot, this results in all future
-+	 * events being absorbed and that's OK because we're done
-+	 */
-+	if (edesc->processed == edesc->pset_nr)
-+		edma_link(echan->slot[nslots-1], echan->ecc->dummy_slot);
+ 	edesc->pset_nr = sg_len;
+ 
+-	for_each_sg(sgl, sg, sg_len, i) {
+-		/* Allocate a PaRAM slot, if needed */
++	/* Allocate a PaRAM slot, if needed */
++	nslots = min_t(unsigned, MAX_NR_SG, sg_len);
 +
- 	edma_resume(echan->ch_num);
++	for (i = 0; i < nslots; i++) {
+ 		if (echan->slot[i] < 0) {
+ 			echan->slot[i] =
+ 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
+@@ -273,6 +275,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 				return NULL;
+ 			}
+ 		}
++	}
++
++	/* Configure PaRAM sets for each SG */
++	for_each_sg(sgl, sg, sg_len, i) {
  
- 	if (edesc->processed <= MAX_NR_SG) {
+ 		acnt = dev_width;
+ 
+@@ -330,6 +336,12 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 		/* Configure A or AB synchronized transfers */
+ 		if (edesc->absync)
+ 			edesc->pset[i].opt |= SYNCDIM;
++
++		/* If this is the last in a current SG set of transactions,
++		   enable interrupts so that next set is processed */
++		if (!((i+1) % MAX_NR_SG))
++			edesc->pset[i].opt |= TCINTEN;
++
+ 		/* If this is the last set, enable completion interrupt flag */
+ 		if (i == sg_len - 1)
+ 			edesc->pset[i].opt |= TCINTEN;
 -- 
 1.8.1.2
 
