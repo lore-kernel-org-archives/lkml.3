@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3H2Jge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:36:34 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48133 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab3H2Jgc (ORCPT
+	id S1756032Ab3H2Jgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:36:40 -0400
+Received: from 219-118-191-131.cust.bit-drive.ne.jp ([219.118.191.131]:50831
+	"EHLO mail.omesemicon.co.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753134Ab3H2Jgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:36:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdbN70wBQ2Euy5yFj4OhKh1ctDKgUVz7Um8WLzQ3acLbTA@mail.gmail.com>
-References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
-	<52150AD9.3040808@wwwdotorg.org>
-	<CAJxxZ0O77bgP8_rkRm-EgjAJ45SY2Pd3AGVSMhFxbsfNUmiqGg@mail.gmail.com>
-	<52167900.3040502@wwwdotorg.org>
-	<CACRpkdbN70wBQ2Euy5yFj4OhKh1ctDKgUVz7Um8WLzQ3acLbTA@mail.gmail.com>
-Date: Thu, 29 Aug 2013 17:36:32 +0800
-Message-ID: <CAJxxZ0O1dEVdJorb5kLJJQEgG8rqbx4_QxQ9U7r2h-_Auvhcxg@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO
- controller on bf54x and bf60x.
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Aug 2013 05:36:37 -0400
+From: Nguyen Viet Dung <nv-dung@jinso.co.jp>
+To: linux-i2c@vger.kernel.org, wsa@the-dreams.de
+Cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
+Subject: [PATCH v4 1/1] i2c: rcar: modify I2C driver
+Date: Thu, 29 Aug 2013 18:36:35 +0900
+Message-Id: <1377768995-13880-2-git-send-email-nv-dung@jinso.co.jp>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377768995-13880-1-git-send-email-nv-dung@jinso.co.jp>
+References: <1377768995-13880-1-git-send-email-nv-dung@jinso.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch modify I2C driver of rcar-H1 to usable on both rcar-H1 and rcar-H2.
 
-On Thu, Aug 29, 2013 at 4:19 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Aug 22, 2013 at 10:48 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/22/2013 01:07 AM, Sonic Zhang wrote:
->>>
->>> There are 6 to 9 GPIO HW blocks in one Blackfin SoC. Function
->>> pinmux_enable_setting() in current pinctrl framework assumes the
->>> function mux setting of one peripheral pin group is configured in one
->>> pinctrl device. But, the function mux setting of one blackfin
->>> peripheral may be done among different GPIO HW blocks. So, I have to
->>> separate the pinctrl driver from the GPIO block driver add the ranges
->>> of all GPIO blocks into one pinctrl device for Blackfin.
->>
->> I don't think you need separate device; the pin control mapping table
->> entries for a particular state simply needs to include entries for
->> multiple pin controllers.
->
-> So splitting each block into a separate pin control device is definately
-> one way to skin the cat.
->
-> The ux500 would then have 9 pin controller instances (after a
-> big fat refactoring, but whatever) instead of 9 GPIO instances
-> and one pinctrl instance referencing them. Also this solves
-> the problem of registering GPIO ranges from the wrong end
-> of the pin controller.
->
-> Hm, I should try this and see where it goes... What do you
-> think about this Sonic?
+Signed-off-by: Nguyen Viet Dung <nv-dung@jinso.co.jp>
+---
+ drivers/i2c/busses/i2c-rcar.c |   35 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 33 insertions(+), 2 deletions(-)
 
-As I discussed with Stephen:
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 0fc5858..32ec693 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -101,6 +101,11 @@ enum {
+ #define ID_ARBLOST	(1 << 3)
+ #define ID_NACK		(1 << 4)
+ 
++enum rcar_i2c_type {
++	I2C_RCAR_H1,
++	I2C_RCAR_H2,
++};
++
+ struct rcar_i2c_priv {
+ 	void __iomem *io;
+ 	struct i2c_adapter adap;
+@@ -113,6 +118,7 @@ struct rcar_i2c_priv {
+ 	int irq;
+ 	u32 icccr;
+ 	u32 flags;
++	enum rcar_i2c_type	devtype;
+ };
+ 
+ #define rcar_i2c_priv_to_dev(p)		((p)->adap.dev.parent)
+@@ -224,12 +230,25 @@ static int rcar_i2c_clock_calculate(struct rcar_i2c_priv *priv,
+ 	u32 scgd, cdf;
+ 	u32 round, ick;
+ 	u32 scl;
++	u32 cdf_width;
+ 
+ 	if (!clkp) {
+ 		dev_err(dev, "there is no peripheral_clk\n");
+ 		return -EIO;
+ 	}
+ 
++	switch (priv->devtype) {
++	case I2C_RCAR_H1:
++		cdf_width = 2;
++		break;
++	case I2C_RCAR_H2:
++		cdf_width = 3;
++		break;
++	default:
++		dev_err(dev, "device type error\n");
++		return -EIO;
++	}
++
+ 	/*
+ 	 * calculate SCL clock
+ 	 * see
+@@ -245,7 +264,7 @@ static int rcar_i2c_clock_calculate(struct rcar_i2c_priv *priv,
+ 	 * clkp : peripheral_clk
+ 	 * F[]  : integer up-valuation
+ 	 */
+-	for (cdf = 0; cdf < 4; cdf++) {
++	for (cdf = 0; cdf < (1 << cdf_width); cdf++) {
+ 		ick = clk_get_rate(clkp) / (1 + cdf);
+ 		if (ick < 20000000)
+ 			goto ick_find;
+@@ -287,7 +306,7 @@ scgd_find:
+ 	/*
+ 	 * keep icccr value
+ 	 */
+-	priv->icccr = (scgd << 2 | cdf);
++	priv->icccr = (scgd << (cdf_width) | cdf);
+ 
+ 	return 0;
+ }
+@@ -632,6 +651,9 @@ static int rcar_i2c_probe(struct platform_device *pdev)
+ 	bus_speed = 100000; /* default 100 kHz */
+ 	if (pdata && pdata->bus_speed)
+ 		bus_speed = pdata->bus_speed;
++
++	priv->devtype = platform_get_device_id(pdev)->driver_data;
++
+ 	ret = rcar_i2c_clock_calculate(priv, bus_speed, dev);
+ 	if (ret < 0)
+ 		return ret;
+@@ -686,6 +708,14 @@ static int rcar_i2c_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static struct platform_device_id rcar_i2c_id_table[] = {
++	{ "i2c-rcar",		I2C_RCAR_H1 },
++	{ "i2c-rcar_h1",	I2C_RCAR_H1 },
++	{ "i2c-rcar_h2",	I2C_RCAR_H2 },
++	{},
++};
++MODULE_DEVICE_TABLE(platform, rcar_i2c_id_table);
++
+ static struct platform_driver rcar_i2c_driver = {
+ 	.driver	= {
+ 		.name	= "i2c-rcar",
+@@ -693,6 +723,7 @@ static struct platform_driver rcar_i2c_driver = {
+ 	},
+ 	.probe		= rcar_i2c_probe,
+ 	.remove		= rcar_i2c_remove,
++	.id_table	= rcar_i2c_id_table,
+ };
+ 
+ module_platform_driver(rcar_i2c_driver);
+-- 
+1.7.9.5
 
-To separate the pinctrl_settings of one peripheral to multiple pinctrl
-devices, multiple pinctrl group arrays and function arrays should be
-defined in the soc data file. This change increases the code size of
-the soc data file a lot without get any real benefits.
-
-The pin controller device can be defined as a logic device to cover
-many gpio devices, which are mapped into the same pin id space without
-collision. All overhead in the soc data file can be removed in this
-way. GPIO devices with pin id region collision should be put into
-different pin controller devices.
-
-So, I think it is fine to either binding pinctrl device to gpio device
-or leave it as a logic device.
-
-Regards,
-
-Sonic
