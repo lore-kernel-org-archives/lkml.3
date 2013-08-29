@@ -1,193 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3H2PJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:09:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38926 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab3H2PJG (ORCPT
+	id S1755864Ab3H2PKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:10:44 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.146]:32235 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752097Ab3H2PKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:09:06 -0400
-From: "Yaniv Gardi" <ygardi@codeaurora.org>
-To: "'Raviv Shvili'" <rshvili@codeaurora.org>, <linux-scsi@vger.kernel.org>
-Cc: <linux-arm-msm@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1377788378-5494-1-git-send-email-rshvili@codeaurora.org> <00cc01cea4c9$78be9220$6a3bb660$@codeaurora.org>
-In-Reply-To: <00cc01cea4c9$78be9220$6a3bb660$@codeaurora.org>
-Subject: RE: [RFC/PATCH 2/3] scsi: ufs: device query status and size check
-Date: Thu, 29 Aug 2013 18:09:00 +0300
-Message-ID: <00d201cea4c9$b30564e0$19102ea0$@codeaurora.org>
+	Thu, 29 Aug 2013 11:10:43 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-7.tower-180.messagelabs.com!1377789037!17994195!2
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 29 Aug 2013 17:10:40 +0200
+Date: Thu, 29 Aug 2013 17:10:37 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Tim Bird <tbird20d@gmail.com>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Sam Ravnborg <sam@ravnborg.org>, <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] kconfig: Make diffconfig work with Python 3
+Message-ID: <20130829151037.GB32730@jtlinux>
+References: <20130809122655.GA7108@jtlinux>
+ <CA+bK7J4g04AumqDSznWbxeAUCrrV-ewMN=YenFSc=HQHNVae4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFiuay7OFyFOcseFGkhz+1FQ40F0AFRRrpwmnmVy1A=
-Content-Language: en-us
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CA+bK7J4g04AumqDSznWbxeAUCrrV-ewMN=YenFSc=HQHNVae4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 29 Aug 2013 15:10:37.0873 (UTC) FILETIME=[EB05CA10:01CEA4C9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested-by: Yaniv Gardi <ygardi@codeaurora.org>
+On Wed, Aug 28, 2013 at 07:29:53AM -0700, Tim Bird wrote:
+> On Fri, Aug 9, 2013 at 5:27 AM, Johannes Thumshirn
+> <johannes.thumshirn@men.de> wrote:
+> > Adjust diffconfig to run cleanly on Python 3 (Tested with 3.3.2) and
+> > Python 2 (2.7.5)
+> >
+> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > ---
+> >  scripts/diffconfig |   26 +++++++++++++-------------
+> >  1 file changed, 13 insertions(+), 13 deletions(-)
+> >
+> > diff --git a/scripts/diffconfig b/scripts/diffconfig
+> > index b91f3e3..dd0e75b 100755
+> > --- a/scripts/diffconfig
+> > +++ b/scripts/diffconfig
+> > @@ -10,7 +10,7 @@
+> >  import sys, os
+> >
+> >  def usage():
+> > -    print """Usage: diffconfig [-h] [-m] [<config1> <config2>]
+> > +    print ("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
+> >
+> >  Diffconfig is a simple utility for comparing two .config files.
+> >  Using standard diff to compare .config files often includes extraneous and
+> > @@ -33,7 +33,7 @@ Example usage:
+> >   EXT2_FS  y -> n
+> >   LOG_BUF_SHIFT  14 -> 16
+> >   PRINTK_TIME  n -> y
+> > -"""
+> > +""")
+> >      sys.exit(0)
+> >
+> >  # returns a dictionary of name/value pairs for config items in the file
+> > @@ -54,23 +54,23 @@ def print_config(op, config, value, new_value):
+> >      if merge_style:
+> >          if new_value:
+> >              if new_value=="n":
+> > -                print "# CONFIG_%s is not set" % config
+> > +                print("# CONFIG_%s is not set" % config)
+> >              else:
+> > -                print "CONFIG_%s=%s" % (config, new_value)
+> > +                print("CONFIG_%s=%s" % (config, new_value))
+> >      else:
+> >          if op=="-":
+> > -            print "-%s %s" % (config, value)
+> > +            print("-%s %s" % (config, value))
+> >          elif op=="+":
+> > -            print "+%s %s" % (config, new_value)
+> > +            print("+%s %s" % (config, new_value))
+> >          else:
+> > -            print " %s %s -> %s" % (config, value, new_value)
+> > +            print(" %s %s -> %s" % (config, value, new_value))
+> >
+> >  def main():
+> >      global merge_style
+> >
+> >      # parse command line args
+> >      if ("-h" in sys.argv or "--help" in sys.argv):
+> > -       usage()
+> > +        usage()
+> >
+> >      merge_style = 0
+> >      if "-m" in sys.argv:
+> > @@ -79,13 +79,13 @@ def main():
+> >
+> >      argc = len(sys.argv)
+> >      if not (argc==1 or argc == 3):
+> > -        print "Error: incorrect number of arguments or unrecognized option"
+> > +        print("Error: incorrect number of arguments or unrecognized option")
+> >          usage()
+> >
+> >      if argc == 1:
+> >          # if no filenames given, assume .config and .config.old
+> >          build_dir=""
+> > -        if os.environ.has_key("KBUILD_OUTPUT"):
+> > +        if 'KBUILD_OUTPUT' in os.environ:
+> >              build_dir = os.environ["KBUILD_OUTPUT"]+"/"
+> >
+> >          configa_filename = build_dir + ".config.old"
+> > @@ -94,8 +94,8 @@ def main():
+> >          configa_filename = sys.argv[1]
+> >          configb_filename = sys.argv[2]
+> >
+> > -    a = readconfig(file(configa_filename))
+> > -    b = readconfig(file(configb_filename))
+> > +    a = readconfig(open(configa_filename))
+> > +    b = readconfig(open(configb_filename))
+> >
+> >      # print items in a but not b (accumulate, sort and print)
+> >      old = []
+> > @@ -121,7 +121,7 @@ def main():
+> >
+> >      # now print items in b but not in a
+> >      # (items from b that were in a were removed above)
+> > -    new = b.keys()
+> > +    new = list(b.keys())
+> >      new.sort()
+> >      for config in new:
+> >          print_config("+", config, None, b[config])
+> > --
+> > 1.7.9.5
+>
+> Sorry I missed this earlier.  My new e-mail is tim.bird@sonymobile.com, and
+> my old am.sony.com address doesn't work any more.
+>
+> Thanks - this looks great.
+>
+> Acked-by Tim Bird <tim.bird@sonymobile.com>
+>
+>  -- Tim Bird
+> Senior Software Engineer, Sony Mobile
+> Architecture Group Chair, CE Workgroup, Linux Foundation
 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
-
-
-= > -----Original Message-----
-= > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-= > owner@vger.kernel.org] On Behalf Of Yaniv Gardi
-= > Sent: Thursday, August 29, 2013 6:07 PM
-= > To: 'Raviv Shvili'; linux-scsi@vger.kernel.org
-= > Cc: linux-arm-msm@vger.kernel.org; 'open list'
-= > Subject: RE: [RFC/PATCH 2/3] scsi: ufs: device query status and size
-check
-= > 
-= > Looks good to me.
-= > Reviewed-by: Yaniv Gardi <ygardi@codeaurora.org>
-= > 
-= > QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a
-= > member of Code Aurora Forum, hosted by The Linux Foundation
-= > 
-= > 
-= > = > -----Original Message-----
-= > = > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi- = >
-= > owner@vger.kernel.org] On Behalf Of Raviv Shvili = > Sent: Thursday,
-= > August 29, 2013 6:00 PM = > To: linux-scsi@vger.kernel.org = > Cc:
-linux-
-= > arm-msm@vger.kernel.org; Raviv Shvili; open list = > Subject: [RFC/PATCH
-= > 2/3] scsi: ufs: device query status and size check = > = > Check query
-= > response status before copying the response.
-= > = > Add descriptor query response size check, before copying it to
-buffer.
-= > = >
-= > = > Signed-off-by: Raviv Shvili <rshvili@codeaurora.org> = > = > diff
---git
-= > a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c index = >
-= > 6da0d41..d0cad34 100644 = > --- a/drivers/scsi/ufs/ufshcd.c = > +++
-= > b/drivers/scsi/ufs/ufshcd.c = > @@ -440,31 +440,35 @@ static inline void
-= > ufshcd_query_to_be(struct = > utp_upiu_query *request)
-= > = >   * @lrb - pointer to local reference block
-= > = >   */
-= > = >  static
-= > = > -void ufshcd_copy_query_response(struct ufs_hba *hba, struct
-= > ufshcd_lrb = > *lrbp) = > +int ufshcd_copy_query_response(struct ufs_hba
-= > *hba, struct ufshcd_lrb = > +*lrbp) = >  {
-= > = >  	struct ufs_query_res *query_res = &hba-
-= > = > >dev_cmd.query.response;
-= > = >
-= > = > -	/* Get the UPIU response */
-= > = > -	query_res->response = ufshcd_get_rsp_upiu_result(lrbp-
-= > = > >ucd_rsp_ptr) >>
-= > = > -			UPIU_RSP_CODE_OFFSET;
-= > = > -
-= > = >  	memcpy(&query_res->upiu_res, &lrbp->ucd_rsp_ptr->qr,
-= > = > QUERY_OSF_SIZE);
-= > = >  	ufshcd_query_to_cpu(&query_res->upiu_res);
-= > = >
-= > = > -
-= > = >  	/* Get the descriptor */
-= > = >  	if (lrbp->ucd_rsp_ptr->qr.opcode ==
-= > = > UPIU_QUERY_OPCODE_READ_DESC) {
-= > = >  		u8 *descp = (u8 *)lrbp->ucd_rsp_ptr +
-= > = >  				GENERAL_UPIU_REQUEST_SIZE;
-= > = > -		u16 len;
-= > = > +		u16 resp_len;
-= > = > +		u16 buf_len;
-= > = >
-= > = >  		/* data segment length */
-= > = > -		len = be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2)
-&
-= > = > +		resp_len = be32_to_cpu(lrbp->ucd_rsp_ptr-
-= > = > >header.dword_2) &
-= > = >
-= > = > 	MASK_QUERY_DATA_SEG_LEN;
-= > = > -
-= > = > -		memcpy(hba->dev_cmd.query.descriptor, descp,
-= > = > -				min_t(u16, len,
-QUERY_DESC_MAX_SIZE));
-= > = > +		buf_len =
-hba->dev_cmd.query.request.upiu_req.length;
-= > = > +		if (likely(buf_len >= resp_len)) {
-= > = > +			memcpy(hba->dev_cmd.query.descriptor, descp,
-= > = > resp_len);
-= > = > +		} else {
-= > = > +			dev_warn(hba->dev,
-= > = > +				"%s: Response size is bigger than
-buffer",
-= > = > +				__func__);
-= > = > +			return -EINVAL;
-= > = > +		}
-= > = >  	}
-= > = > +
-= > = > +	return 0;
-= > = >  }
-= > = >
-= > = >  /**
-= > = > @@ -781,11 +785,9 @@ static void
-= > = > ufshcd_prepare_utp_query_req_upiu(struct ufs_hba *hba,
-= > = >  	ufshcd_query_to_be(&ucd_req_ptr->qr);
-= > = >
-= > = >  	/* Copy the Descriptor */
-= > = > -	if ((len > 0) && (query->request.upiu_req.opcode ==
-= > = > -
-= > = > 	UPIU_QUERY_OPCODE_WRITE_DESC)) {
-= > = > -		memcpy(descp, query->descriptor,
-= > = > -				min_t(u16, len,
-QUERY_DESC_MAX_SIZE));
-= > = > -	}
-= > = > +	if (query->request.upiu_req.opcode ==
-= > = > UPIU_QUERY_OPCODE_WRITE_DESC)
-= > = > +		memcpy(descp, query->descriptor, len);
-= > = > +
-= > = >  }
-= > = >
-= > = >  static inline void ufshcd_prepare_utp_nop_upiu(struct ufshcd_lrb
-= > *lrbp) = > @@ -964,6 +966,17 @@ ufshcd_clear_cmd(struct ufs_hba *hba,
-= > int tag)
-= > = >  	return err;
-= > = >  }
-= > = >
-= > = > +static int
-= > = > +ufshcd_check_query_response(struct ufs_hba *hba, struct ufshcd_lrb
-= > = > +*lrbp) {
-= > = > +	struct ufs_query_res *query_res = &hba-
-= > = > >dev_cmd.query.response;
-= > = > +
-= > = > +	/* Get the UPIU response */
-= > = > +	query_res->response = ufshcd_get_rsp_upiu_result(lrbp-
-= > = > >ucd_rsp_ptr) >>
-= > = > +				UPIU_RSP_CODE_OFFSET;
-= > = > +	return query_res->response;
-= > = > +}
-= > = > +
-= > = >  /**
-= > = >   * ufshcd_dev_cmd_completion() - handles device management
-= > command
-= > = > responses
-= > = >   * @hba: per adapter instance
-= > = > @@ -986,7 +999,9 @@ ufshcd_dev_cmd_completion(struct ufs_hba
-= > *hba, = > struct ufshcd_lrb *lrbp)
-= > = >  		}
-= > = >  		break;
-= > = >  	case UPIU_TRANSACTION_QUERY_RSP:
-= > = > -		ufshcd_copy_query_response(hba, lrbp);
-= > = > +		err = ufshcd_check_query_response(hba, lrbp);
-= > = > +		if (!err)
-= > = > +			err = ufshcd_copy_query_response(hba, lrbp);
-= > = >  		break;
-= > = >  	case UPIU_TRANSACTION_REJECT_UPIU:
-= > = >  		/* TODO: handle Reject UPIU Response */
-= > = > --
-= > = > QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc.
-= > = > is a member of Code Aurora Forum, hosted by The Linux Foundation = >
-= > = > -- = > To unsubscribe from this list: send the line "unsubscribe
-linux-scsi"
-= > in the = > body of a message to majordomo@vger.kernel.org More
-= > majordomo info = > at  http://vger.kernel.org/majordomo-info.html
-= > 
-= > --
-= > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the
-= > body of a message to majordomo@vger.kernel.org More majordomo info
-= > at  http://vger.kernel.org/majordomo-info.html
-
+Is there any comments from the kbuild maintainers?
