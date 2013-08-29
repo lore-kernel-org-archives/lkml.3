@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3H2FX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 01:23:56 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:63651 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab3H2FXy (ORCPT
+	id S1754741Ab3H2F4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 01:56:08 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:60246 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab3H2F4G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 01:23:54 -0400
-X-Spam-Score: -101.0
-Message-ID: <521EDAA9.5090306@asianux.com>
-Date: Thu, 29 Aug 2013 13:22:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 29 Aug 2013 01:56:06 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Mischa Jonker <Mischa.Jonker@synopsys.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Joern Rennecke" <joern.rennecke@embecosm.com>,
+        joe perches <joe@perches.com>
+Subject: Re: [PATCH] ARC: Fix __udelay parentheses
+Thread-Topic: [PATCH] ARC: Fix __udelay parentheses
+Thread-Index: AQHOpByfrbiZ1kbBskyi3sxdeiKfdQ==
+Date: Thu, 29 Aug 2013 05:55:11 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075140F26@IN01WEMBXA.internal.synopsys.com>
+References: <1377714588-2144-1-git-send-email-mjonker@synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Steffen Klassert <steffen.klassert@secunet.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/padata.c: share code between CPU_ONLINE and
- CPU_DOWN_FAILED, same to CPU_DOWN_PREPARE and CPU_UP_CANCELED
-References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com> <5215B319.3020908@asianux.com> <20130823104448.GI26773@secunet.com> <20130829044259.GB25208@gondor.apana.org.au>
-In-Reply-To: <20130829044259.GB25208@gondor.apana.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 12:42 PM, Herbert Xu wrote:
-> On Fri, Aug 23, 2013 at 12:44:48PM +0200, Steffen Klassert wrote:
->> On Thu, Aug 22, 2013 at 02:43:37PM +0800, Chen Gang wrote:
->>> Share code between CPU_ONLINE and CPU_DOWN_FAILED, same to
->>> CPU_DOWN_PREPARE and CPU_UP_CANCELED.
->>>
->>> It will fix 2 bugs:
->>>
->>>   "not check the return value of __padata_remove_cpu() and __padata_add_cpu()".
->>>   "need add 'break' between CPU_UP_CANCELED and CPU_DOWN_FAILED".
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>
->> This looks ok to me, Herbert can you take this one?
->>
->> Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-> 
-> Patch applied.  Thanks!
-> 
+On 08/29/2013 12:00 AM, Mischa Jonker wrote:
+> Make sure that usecs is casted to long long, to ensure that the
+> (usecs * 4295 * HZ) multiplication is 64 bit.
+>
+> Initially, the (usecs * 4295 * HZ) part was done as a 32 bit
+> multiplication, with the result casted to 64 bit. This led to some bits
+> falling off.
+>
+> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
+> ---
+>  arch/arc/include/asm/delay.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arc/include/asm/delay.h b/arch/arc/include/asm/delay.h
+> index 442ce5d..8d35fe1 100644
+> --- a/arch/arc/include/asm/delay.h
+> +++ b/arch/arc/include/asm/delay.h
+> @@ -56,8 +56,8 @@ static inline void __udelay(unsigned long usecs)
+>  	/* (long long) cast ensures 64 bit MPY - real or emulated
+>  	 * HZ * 4295 is pre-evaluated by gcc - hence only 2 mpy ops
+>  	 */
+> -	loops = ((long long)(usecs * 4295 * HZ) *
+> -		 (long long)(loops_per_jiffy)) >> 32;
+> +	loops = (((long long) usecs) * 4295 * HZ *
+> +		  (long long) loops_per_jiffy) >> 32;
+>  
+>  	__delay(loops);
+>  }
 
-Thank you too.
+The intent of writing orig code was to generate only 1 MPYHU insn (32*32 =
+high-part-64) for the whole math, at any optimization level whatsoever. If the
+first MPY is overflowing, u r likely spinning for > 10,000 usec (10ms) which is 1
+scheduling tick on ARC - not good - presumably for hardware debug. It would be
+better to use a tight loop there and throw it out later.
 
--- 
-Chen Gang
+The API abuse would only be caught for const @usecs case. Maybe we need to add a
+WARN_ON() there.
+
+OTOH, if we really want to fix this, it would be cleaner to rewrite this as
+    loops = ((u64)usecs * 4295 * HZ * loops_per_jiffy) >> 32;
+
+Since one factor is upcasted, all are promoted to 64 bit. And we leave the
+optimizations to whims of gcc.
+
+@Joern, I would assume that long long vs u64 (or unsigned long long) doesn't
+matter in this particular case.
+
+-Vineet
