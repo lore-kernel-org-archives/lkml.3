@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3H2Juc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:50:32 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40192 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab3H2Jua convert rfc822-to-8bit (ORCPT
+	id S1756167Ab3H2Juq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:50:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23585 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab3H2Juo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:50:30 -0400
-Date: Thu, 29 Aug 2013 10:50:23 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support
- other architectures
-Message-ID: <20130829095023.GB2878@e102568-lin.cambridge.arm.com>
-References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <2032060.4bgTKOdEX2@flatron>
- <1376777376.25016.11.camel@pasglop>
- <20130819101922.GI3719@e106331-lin.cambridge.arm.com>
- <5212177C.8000709@gmail.com>
- <521223FA.5050903@arm.com>
- <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
- <20130828194638.AB78E3E0A6F@localhost>
+	Thu, 29 Aug 2013 05:50:44 -0400
+Message-ID: <521F196E.2010102@oracle.com>
+Date: Thu, 29 Aug 2013 17:50:38 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130828194638.AB78E3E0A6F@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 29 Aug 2013 09:50:24.0478 (UTC) FILETIME=[2EF25FE0:01CEA49D]
-X-MC-Unique: 113082910502708401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Jan Beulich <JBeulich@suse.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        xen-devel <xen-devel@lists.xenproject.org>,
+        Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3 v3] Refactor MSI restore call-chain to
+ drop unnecessary argument
+References: <521EB76B.8090903@oracle.com> <521F12FC02000078000EF503@nat28.tlf.novell.com>
+In-Reply-To: <521F12FC02000078000EF503@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 08:46:38PM +0100, Grant Likely wrote:
-> On Thu, 22 Aug 2013 14:59:30 +0100, Mark Rutland <mark.rutland@arm.com> wrote:
-> > On Mon, Aug 19, 2013 at 02:56:10PM +0100, Sudeep KarkadaNagesha wrote:
-> > > On 19/08/13 14:02, Rob Herring wrote:
-> > > > On 08/19/2013 05:19 AM, Mark Rutland wrote:
-> > > >> On Sat, Aug 17, 2013 at 11:09:36PM +0100, Benjamin Herrenschmidt wrote:
-> > > >>> On Sat, 2013-08-17 at 12:50 +0200, Tomasz Figa wrote:
-> > > >>>> I wonder how would this handle uniprocessor ARM (pre-v7) cores, for
-> > > >>>> which 
-> > > >>>> the updated bindings[1] define #address-cells = <0> and so no reg 
-> > > >>>> property.
-> > > >>>>
-> > > >>>> [1] - http://thread.gmane.org/gmane.linux.ports.arm.kernel/260795
-> > > >>>
-> > > >>> Why did you do that in the binding ? That sounds like looking to create
-> > > >>> problems ... 
-> > > >>>
-> > > >>> Traditionally, UP setups just used "0" as the "reg" property on other
-> > > >>> architectures, why do differently ?
-> > > >>
-> > > >> The decision was taken because we defined our reg property to refer to
-> > > >> the MPIDR register's Aff{2,1,0} bitfields, and on UP cores before v7
-> > > >> there's no MPIDR register at all. Given there can only be a single CPU
-> > > >> in that case, describing a register that wasn't present didn't seem
-> > > >> necessary or helpful.
-> > > > 
-> > > > What exactly reg represents is up to the binding definition, but it
-> > > > still should be present IMO. I don't see any issue with it being
-> > > > different for pre-v7.
-> > > > 
-> > > Yes it's better to have 'reg' with value 0 than not having it.
-> > > Otherwise this generic of_get_cpu_node implementation would need some
-> > > _hack_ to handle that case.
-> > 
-> > I'm not sure that having some code to handle a difference in standard
-> > between two architectures is a hack. If anything, I'd argue encoding a
-> > reg of 0 that corresponds to a nonexistent MPIDR value (given that's
-> > what the reg property is defined to map to on ARM) is more of a hack ;)
-> > 
-> > I'm not averse to having a reg value of 0 for this case, but given that
-> > there are existing devicetrees without it, requiring a reg property will
-> > break compatibility with them.
-> 
-> Then special cases those device trees, but you changing existing
-> convention really needs to be avoided. The referenced documentation
-> change is brand new, so we're not stuck with it.
 
-I have no problem with changing the bindings and forcing:
+On 2013-08-29 15:23, Jan Beulich wrote:
+>>>> On 29.08.13 at 04:52, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
+>> But in initial domain (aka priviliged guest), it's different.
+>> Driver init call graph under initial domain:
+>> driver_init->
+>>      msix_capability_init->
+>>          msix_program_entries->
+>>              msix_mask_irq->
+>>                  entry->masked = 1
+>>      request_irq->
+>>          __setup_irq->
+>>              irq_startup->
+>>                  __startup_pirq->
+>>                      EVTCHNOP_bind_pirq hypercall    (trap into Xen)
+>> [Xen:]
+>> pirq_guest_bind->
+>>      startup_msi_irq->
+>>          unmask_msi_irq->
+>>              msi_set_mask_bit->
+>>                  entry->msi_attrib.masked = 0
+>>
+>> So entry->msi_attrib.masked in xen side always has newest value. entry->masked
+>> in initial domain is untouched and is 1 after msix_capability_init.
+> And as said several times before - Linux shouldn't be touching
+> the MSI-X table at all during initial setup or resume (it should in
+> particular not rely on such accesses to not fault, as being a
+> privilege violation); all it needs to do is update its software state.
+My patch just remove access to msix mask register in dom0. Anything 
+wrong with that?
+>
+> Hence fiddling with default_restore_msi_irqs() seems the wrong
+> approach towards solving the problem.
+dom0 uses xen_initdom_restore_msi_irqs, default_restore_msi_irqs is for 
+baremetal.
 
-#address-cells = <1>;
-reg = <0>;
-
-for UP predating v7, my big worry is related to in-kernel dts that we
-already patched to follow the #address-cells = <0> rule (and we had to
-do it since we got asked that question multiple times on the public
-lists).
-
-What do you mean by "special case those device trees" ? I have not
-planned to patch them again, unless we really consider that a necessary
-evil.
-
-Thanks,
-Lorenzo
-
+zduan
