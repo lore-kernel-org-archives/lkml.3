@@ -1,605 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab3H2SAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:00:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34924 "EHLO
+	id S1756327Ab3H2SAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:00:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262Ab3H2SAc (ORCPT
+	with ESMTP id S1756299Ab3H2SAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:00:32 -0400
-Date: Thu, 29 Aug 2013 11:02:55 -0700
+	Thu, 29 Aug 2013 14:00:52 -0400
+Date: Thu, 29 Aug 2013 11:03:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.60
-Message-ID: <20130829180255.GB32281@kroah.com>
-References: <20130829180247.GA32281@kroah.com>
+Subject: Linux 3.10.10
+Message-ID: <20130829180315.GA32335@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
 Content-Disposition: inline
-In-Reply-To: <20130829180247.GA32281@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index efa1453..0027fbe 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 59
-+SUBLEVEL = 60
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 017d48a..f8b0260 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -213,6 +213,17 @@ static void xen_align_and_add_e820_region(u64 start, u64 size, int type)
- 	e820_add_region(start, end - start, type);
- }
- 
-+void xen_ignore_unusable(struct e820entry *list, size_t map_size)
-+{
-+	struct e820entry *entry;
-+	unsigned int i;
-+
-+	for (i = 0, entry = list; i < map_size; i++, entry++) {
-+		if (entry->type == E820_UNUSABLE)
-+			entry->type = E820_RAM;
-+	}
-+}
-+
- /**
-  * machine_specific_memory_setup - Hook for machine specific memory setup.
-  **/
-@@ -251,6 +262,17 @@ char * __init xen_memory_setup(void)
- 	}
- 	BUG_ON(rc);
- 
-+	/*
-+	 * Xen won't allow a 1:1 mapping to be created to UNUSABLE
-+	 * regions, so if we're using the machine memory map leave the
-+	 * region as RAM as it is in the pseudo-physical map.
-+	 *
-+	 * UNUSABLE regions in domUs are not handled and will need
-+	 * a patch in the future.
-+	 */
-+	if (xen_initial_domain())
-+		xen_ignore_unusable(map, memmap.nr_entries);
-+
- 	/* Make sure the Xen-supplied memory map is well-ordered. */
- 	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
- 
-diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
-index f63a588..f5c35be 100644
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -289,24 +289,24 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
- 
- 	/* Disable sending Early R_OK.
- 	 * With "cached read" HDD testing and multiple ports busy on a SATA
--	 * host controller, 3726 PMP will very rarely drop a deferred
-+	 * host controller, 3x26 PMP will very rarely drop a deferred
- 	 * R_OK that was intended for the host. Symptom will be all
- 	 * 5 drives under test will timeout, get reset, and recover.
- 	 */
--	if (vendor == 0x1095 && devid == 0x3726) {
-+	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
- 		u32 reg;
- 
- 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
- 		if (err_mask) {
- 			rc = -EIO;
--			reason = "failed to read Sil3726 Private Register";
-+			reason = "failed to read Sil3x26 Private Register";
- 			goto fail;
- 		}
- 		reg &= ~0x1;
- 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
- 		if (err_mask) {
- 			rc = -EIO;
--			reason = "failed to write Sil3726 Private Register";
-+			reason = "failed to write Sil3x26 Private Register";
- 			goto fail;
- 		}
- 	}
-@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_port *ap)
- 	u16 devid = sata_pmp_gscr_devid(gscr);
- 	struct ata_link *link;
- 
--	if (vendor == 0x1095 && devid == 0x3726) {
--		/* sil3726 quirks */
-+	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
-+		/* sil3x26 quirks */
- 		ata_for_each_link(link, ap, EDGE) {
- 			/* link reports offline after LPM */
- 			link->flags |= ATA_LFLAG_NO_LPM;
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index dde62bf..d031932 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -502,6 +502,8 @@
- 					will not assert AGPBUSY# and will only
- 					be delivered when out of C3. */
- #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
-+#define   INSTPM_TLB_INVALIDATE	(1<<9)
-+#define   INSTPM_SYNC_FLUSH	(1<<5)
- #define ACTHD	        0x020c8
- #define FW_BLC		0x020d8
- #define FW_BLC2		0x020dc
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index c17325c..99a9df8 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -767,6 +767,18 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
- 
- 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
- 	POSTING_READ(mmio);
-+
-+	/* Flush the TLB for this page */
-+	if (INTEL_INFO(dev)->gen >= 6) {
-+		u32 reg = RING_INSTPM(ring->mmio_base);
-+		I915_WRITE(reg,
-+			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
-+					      INSTPM_SYNC_FLUSH));
-+		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
-+			     1000))
-+			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
-+				  ring->name);
-+	}
- }
- 
- static int
-diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
-index 18054d9..dbec2ff 100644
---- a/drivers/net/wireless/hostap/hostap_ioctl.c
-+++ b/drivers/net/wireless/hostap/hostap_ioctl.c
-@@ -522,9 +522,9 @@ static int prism2_ioctl_giwaplist(struct net_device *dev,
- 
- 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
- 
--	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
-+	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
- 	data->flags = 1; /* has quality information */
--	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
-+	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
- 	       sizeof(struct iw_quality) * data->length);
- 
- 	kfree(addr);
-diff --git a/drivers/net/wireless/zd1201.c b/drivers/net/wireless/zd1201.c
-index a66b93b..1662fcc 100644
---- a/drivers/net/wireless/zd1201.c
-+++ b/drivers/net/wireless/zd1201.c
-@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_device *dev, int apfw)
- 		goto exit;
- 
- 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
--	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
-+	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
- 	if (err < 0)
- 		goto exit;
- 
-+	memcpy(&ret, buf, sizeof(ret));
-+
- 	if (ret & 0x80) {
- 		err = -EIO;
- 		goto exit;
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 91a375f..17fad3b 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -390,6 +390,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
- 	mem = (unsigned long)
- 		dt_alloc(size + 4, __alignof__(struct device_node));
- 
-+	memset((void *)mem, 0, size);
-+
- 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
- 
- 	pr_debug("  unflattening %lx...\n", mem);
-diff --git a/drivers/s390/scsi/zfcp_erp.c b/drivers/s390/scsi/zfcp_erp.c
-index e1b4f80..5c87270 100644
---- a/drivers/s390/scsi/zfcp_erp.c
-+++ b/drivers/s390/scsi/zfcp_erp.c
-@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port(struct zfcp_port *port)
- 
- 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
- 		zfcp_erp_action_dismiss(&port->erp_action);
--	else
--		shost_for_each_device(sdev, port->adapter->scsi_host)
-+	else {
-+		spin_lock(port->adapter->scsi_host->host_lock);
-+		__shost_for_each_device(sdev, port->adapter->scsi_host)
- 			if (sdev_to_zfcp(sdev)->port == port)
- 				zfcp_erp_action_dismiss_lun(sdev);
-+		spin_unlock(port->adapter->scsi_host->host_lock);
-+	}
- }
- 
- static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
-@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(struct zfcp_port *port, int clear,
- {
- 	struct scsi_device *sdev;
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock(port->adapter->scsi_host->host_lock);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
-+	spin_unlock(port->adapter->scsi_host->host_lock);
- }
- 
- static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
-@@ -1435,8 +1440,10 @@ void zfcp_erp_set_adapter_status(struct zfcp_adapter *adapter, u32 mask)
- 		atomic_set_mask(common_mask, &port->status);
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
- 
--	shost_for_each_device(sdev, adapter->scsi_host)
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host)
- 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-@@ -1470,11 +1477,13 @@ void zfcp_erp_clear_adapter_status(struct zfcp_adapter *adapter, u32 mask)
- 	}
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
- 
--	shost_for_each_device(sdev, adapter->scsi_host) {
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host) {
- 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
- 		if (clear_counter)
- 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 	}
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-@@ -1488,16 +1497,19 @@ void zfcp_erp_set_port_status(struct zfcp_port *port, u32 mask)
- {
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
-+	unsigned long flags;
- 
- 	atomic_set_mask(mask, &port->status);
- 
- 	if (!common_mask)
- 		return;
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			atomic_set_mask(common_mask,
- 					&sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-@@ -1512,6 +1524,7 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
- 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
-+	unsigned long flags;
- 
- 	atomic_clear_mask(mask, &port->status);
- 
-@@ -1521,13 +1534,15 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	if (clear_counter)
- 		atomic_set(&port->erp_counter, 0);
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port) {
- 			atomic_clear_mask(common_mask,
- 					  &sdev_to_zfcp(sdev)->status);
- 			if (clear_counter)
- 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 		}
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-diff --git a/drivers/s390/scsi/zfcp_qdio.c b/drivers/s390/scsi/zfcp_qdio.c
-index e76d003..52c6b59 100644
---- a/drivers/s390/scsi/zfcp_qdio.c
-+++ b/drivers/s390/scsi/zfcp_qdio.c
-@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_qdio *qdio, struct zfcp_qdio_req *q_req,
- 
- static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
- {
--	spin_lock_irq(&qdio->req_q_lock);
- 	if (atomic_read(&qdio->req_q_free) ||
- 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return 1;
--	spin_unlock_irq(&qdio->req_q_lock);
- 	return 0;
- }
- 
-@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
- {
- 	long ret;
- 
--	spin_unlock_irq(&qdio->req_q_lock);
--	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
--			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
-+	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
-+		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
- 
- 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return -EIO;
-@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
- 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
- 	}
- 
--	spin_lock_irq(&qdio->req_q_lock);
- 	return -EIO;
- }
- 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 417c133..33dcad6 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -324,7 +324,7 @@ static void init_evtchn_cpu_bindings(void)
- 
- 	for_each_possible_cpu(i)
- 		memset(per_cpu(cpu_evtchn_mask, i),
--		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
-+		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
- }
- 
- static inline void clear_evtchn(int port)
-diff --git a/fs/nilfs2/segbuf.c b/fs/nilfs2/segbuf.c
-index dc9a913..2d8be51 100644
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct bio *bio, int err)
- 
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		bio_put(bio);
--		/* to be detected by submit_seg_bio() */
-+		/* to be detected by nilfs_segbuf_submit_bio() */
- 	}
- 
- 	if (!uptodate)
-@@ -377,12 +376,12 @@ static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
- 	bio->bi_private = segbuf;
- 	bio_get(bio);
- 	submit_bio(mode, bio);
-+	segbuf->sb_nbio++;
- 	if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
- 		bio_put(bio);
- 		err = -EOPNOTSUPP;
- 		goto failed;
- 	}
--	segbuf->sb_nbio++;
- 	bio_put(bio);
- 
- 	wi->bio = NULL;
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 6c6c20e..b305b31 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -530,6 +530,63 @@ do {									\
- 	 ? 0 : __wait_event_interruptible_locked(wq, condition, 1, 1))
- 
- 
-+#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
-+						    lock, ret)		\
-+do {									\
-+	DEFINE_WAIT(__wait);						\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (signal_pending(current)) {				\
-+			ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+		spin_unlock_irq(&lock);					\
-+		ret = schedule_timeout(ret);				\
-+		spin_lock_irq(&lock);					\
-+		if (!ret)						\
-+			break;						\
-+	}								\
-+	finish_wait(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
-+ *		The condition is checked under the lock. This is expected
-+ *		to be called with the lock taken.
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @lock: a locked spinlock_t, which will be released before schedule()
-+ *	  and reacquired afterwards.
-+ * @timeout: timeout, in jiffies
-+ *
-+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-+ * @condition evaluates to true or signal is received. The @condition is
-+ * checked each time the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * This is supposed to be called while holding the lock. The lock is
-+ * dropped before going to sleep and is reacquired afterwards.
-+ *
-+ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
-+ * was interrupted by a signal, and the remaining jiffies otherwise
-+ * if the condition evaluated to true before the timeout elapsed.
-+ */
-+#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
-+						  timeout)		\
-+({									\
-+	int __ret = timeout;						\
-+									\
-+	if (!(condition))						\
-+		__wait_event_interruptible_lock_irq_timeout(		\
-+					wq, condition, lock, __ret);	\
-+	__ret;								\
-+})
-+
- 
- #define __wait_event_killable(wq, condition, ret)			\
- do {									\
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a64b94e..575d092 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -128,6 +128,7 @@ struct worker {
- 	};
- 
- 	struct work_struct	*current_work;	/* L: work being processed */
-+	work_func_t		current_func;	/* L: current_work's fn */
- 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
- 	struct list_head	scheduled;	/* L: scheduled works */
- 	struct task_struct	*task;		/* I: worker task */
-@@ -838,7 +839,8 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
- 	struct hlist_node *tmp;
- 
- 	hlist_for_each_entry(worker, tmp, bwh, hentry)
--		if (worker->current_work == work)
-+		if (worker->current_work == work &&
-+		    worker->current_func == work->func)
- 			return worker;
- 	return NULL;
- }
-@@ -848,9 +850,27 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
-  * @gcwq: gcwq of interest
-  * @work: work to find worker for
-  *
-- * Find a worker which is executing @work on @gcwq.  This function is
-- * identical to __find_worker_executing_work() except that this
-- * function calculates @bwh itself.
-+ * Find a worker which is executing @work on @gcwq by searching
-+ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
-+ * to match, its current execution should match the address of @work and
-+ * its work function.  This is to avoid unwanted dependency between
-+ * unrelated work executions through a work item being recycled while still
-+ * being executed.
-+ *
-+ * This is a bit tricky.  A work item may be freed once its execution
-+ * starts and nothing prevents the freed area from being recycled for
-+ * another work item.  If the same work item address ends up being reused
-+ * before the original execution finishes, workqueue will identify the
-+ * recycled work item as currently executing and make it wait until the
-+ * current execution finishes, introducing an unwanted dependency.
-+ *
-+ * This function checks the work item address, work function and workqueue
-+ * to avoid false positives.  Note that this isn't complete as one may
-+ * construct a work function which can introduce dependency onto itself
-+ * through a recycled work item.  Well, if somebody wants to shoot oneself
-+ * in the foot that badly, there's only so much we can do, and if such
-+ * deadlock actually occurs, it should be easy to locate the culprit work
-+ * function.
-  *
-  * CONTEXT:
-  * spin_lock_irq(gcwq->lock).
-@@ -1721,10 +1741,9 @@ static void move_linked_works(struct work_struct *work, struct list_head *head,
- 		*nextp = n;
- }
- 
--static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+static void cwq_activate_delayed_work(struct work_struct *work)
- {
--	struct work_struct *work = list_first_entry(&cwq->delayed_works,
--						    struct work_struct, entry);
-+	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
- 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
- 
- 	trace_workqueue_activate_work(work);
-@@ -1733,6 +1752,14 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
- 	cwq->nr_active++;
- }
- 
-+static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+{
-+	struct work_struct *work = list_first_entry(&cwq->delayed_works,
-+						    struct work_struct, entry);
-+
-+	cwq_activate_delayed_work(work);
-+}
-+
- /**
-  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
-  * @cwq: cwq of interest
-@@ -1804,7 +1831,6 @@ __acquires(&gcwq->lock)
- 	struct global_cwq *gcwq = cwq->gcwq;
- 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
--	work_func_t f = work->func;
- 	int work_color;
- 	struct worker *collision;
- #ifdef CONFIG_LOCKDEP
-@@ -1833,6 +1859,7 @@ __acquires(&gcwq->lock)
- 	debug_work_deactivate(work);
- 	hlist_add_head(&worker->hentry, bwh);
- 	worker->current_work = work;
-+	worker->current_func = work->func;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
- 
-@@ -1870,7 +1897,7 @@ __acquires(&gcwq->lock)
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
--	f(work);
-+	worker->current_func(work);
- 	/*
- 	 * While we must be careful to not use "work" after this, the trace
- 	 * point will only record its address.
-@@ -1880,11 +1907,10 @@ __acquires(&gcwq->lock)
- 	lock_map_release(&cwq->wq->lockdep_map);
- 
- 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
--		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
--		       "%s/0x%08x/%d\n",
--		       current->comm, preempt_count(), task_pid_nr(current));
--		printk(KERN_ERR "    last function: ");
--		print_symbol("%s\n", (unsigned long)f);
-+		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
-+		       "     last function: %pf\n",
-+		       current->comm, preempt_count(), task_pid_nr(current),
-+		       worker->current_func);
- 		debug_show_held_locks(current);
- 		dump_stack();
- 	}
-@@ -1898,6 +1924,7 @@ __acquires(&gcwq->lock)
- 	/* we're done with it, release */
- 	hlist_del_init(&worker->hentry);
- 	worker->current_work = NULL;
-+	worker->current_func = NULL;
- 	worker->current_cwq = NULL;
- 	cwq_dec_nr_in_flight(cwq, work_color, false);
- }
-@@ -2625,6 +2652,18 @@ static int try_to_grab_pending(struct work_struct *work)
- 		smp_rmb();
- 		if (gcwq == get_work_gcwq(work)) {
- 			debug_work_deactivate(work);
-+
-+			/*
-+			 * A delayed work item cannot be grabbed directly
-+			 * because it might have linked NO_COLOR work items
-+			 * which, if left on the delayed_list, will confuse
-+			 * cwq->nr_active management later on and cause
-+			 * stall.  Make sure the work item is activated
-+			 * before grabbing.
-+			 */
-+			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
-+				cwq_activate_delayed_work(work);
-+
- 			list_del_init(&work->entry);
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
- 				get_work_color(work),
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.10 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                      |    2=20
+ arch/arc/include/asm/ptrace.h                 |    2=20
+ arch/arc/include/asm/syscall.h                |    5=20
+ arch/arc/kernel/entry.S                       |    4=20
+ arch/arc/lib/strchr-700.S                     |   10 +
+ arch/arm/boot/dts/at91sam9n12ek.dts           |    4=20
+ arch/arm/boot/dts/at91sam9x5.dtsi             |    2=20
+ arch/arm/mach-davinci/board-dm355-leopard.c   |    1=20
+ arch/arm/mach-davinci/board-dm644x-evm.c      |    1=20
+ arch/arm/mach-davinci/board-dm646x-evm.c      |    1=20
+ arch/arm/mach-davinci/board-neuros-osd2.c     |    1=20
+ arch/arm/mm/Kconfig                           |    9 -
+ arch/arm64/kernel/perf_event.c                |   10 +
+ arch/s390/kvm/kvm-s390.c                      |   21 +-
+ arch/x86/include/asm/bootparam_utils.h        |    4=20
+ arch/x86/kernel/sys_x86_64.c                  |    2=20
+ arch/x86/mm/mmap.c                            |    8 -
+ arch/x86/xen/setup.c                          |   22 ++
+ arch/x86/xen/smp.c                            |   11 +
+ drivers/acpi/glue.c                           |   95 ++++++++++--
+ drivers/ata/libata-pmp.c                      |   12 -
+ drivers/ata/sata_fsl.c                        |    5=20
+ drivers/gpu/drm/i915/i915_reg.h               |    2=20
+ drivers/gpu/drm/i915/intel_ringbuffer.c       |   12 +
+ drivers/gpu/drm/radeon/radeon.h               |    2=20
+ drivers/gpu/drm/radeon/radeon_uvd.c           |    8 +
+ drivers/gpu/drm/radeon/rv770.c                |   12 -
+ drivers/md/bcache/btree.c                     |   23 ++-
+ drivers/md/bcache/io.c                        |    2=20
+ drivers/md/bcache/journal.c                   |    2=20
+ drivers/md/bcache/request.c                   |   13 +
+ drivers/misc/mei/hw-me.c                      |   14 +
+ drivers/misc/mei/init.c                       |    3=20
+ drivers/net/wireless/hostap/hostap_ioctl.c    |    4=20
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c   |    5=20
+ drivers/net/wireless/iwlwifi/iwl-7000.c       |   12 -
+ drivers/net/wireless/iwlwifi/mvm/fw-api-d3.h  |    4=20
+ drivers/net/wireless/iwlwifi/mvm/fw-api-mac.h |    8 -
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c   |   11 -
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c   |    6=20
+ drivers/net/wireless/iwlwifi/mvm/mvm.h        |    1=20
+ drivers/net/wireless/iwlwifi/mvm/sta.c        |   11 -
+ drivers/net/wireless/iwlwifi/mvm/tx.c         |    6=20
+ drivers/net/wireless/iwlwifi/pcie/trans.c     |   10 -
+ drivers/net/wireless/zd1201.c                 |    4=20
+ drivers/of/fdt.c                              |    2=20
+ drivers/pci/pci-acpi.c                        |   15 +
+ drivers/platform/olpc/olpc-ec.c               |    2=20
+ drivers/s390/scsi/zfcp_erp.c                  |   29 ++-
+ drivers/s390/scsi/zfcp_qdio.c                 |    8 -
+ drivers/scsi/Kconfig                          |    1=20
+ drivers/staging/comedi/drivers.c              |    2=20
+ drivers/usb/phy/phy-fsl-usb.h                 |    2=20
+ drivers/usb/phy/phy-fsm-usb.c                 |    2=20
+ drivers/xen/events.c                          |   13 +
+ fs/bio.c                                      |   20 +-
+ fs/namespace.c                                |    2=20
+ fs/nilfs2/segbuf.c                            |    5=20
+ include/acpi/acpi_bus.h                       |    6=20
+ include/linux/ftrace_event.h                  |    2=20
+ include/linux/mm_types.h                      |    1=20
+ include/linux/sched.h                         |    1=20
+ include/linux/wait.h                          |   57 +++++++
+ kernel/trace/ftrace.c                         |   89 +++++++++--
+ kernel/trace/trace.c                          |  173 ++++++++++------------
+ kernel/trace/trace_events.c                   |  198 +++++++++++++++------=
+-----
+ kernel/trace/trace_events_filter.c            |   17 --
+ kernel/trace/trace_kprobe.c                   |   42 ++++-
+ kernel/trace/trace_uprobe.c                   |   51 ++++--
+ net/mac80211/mlme.c                           |   15 +
+ net/nfc/llcp.h                                |    1=20
+ net/nfc/llcp_sock.c                           |    8 -
+ 72 files changed, 810 insertions(+), 361 deletions(-)
+
+Alex Deucher (1):
+      drm/radeon/r7xx: fix copy paste typo in golden register setup
+
+Anatolij Gustschin (1):
+      usb: phy: fix build breakage
+
+Anthony Foiani (1):
+      sata_fsl: save irqs while coalescing
+
+Anton Blanchard (1):
+      SCSI: lpfc: Don't force CONFIG_GENERIC_CSUM on
+
+Chris Wilson (1):
+      drm/i915: Invalidate TLBs for the rings after a reset
+
+Christian K=C3=B6nig (1):
+      drm/radeon: fix UVD message buffer validation
+
+Chuck Anderson (1):
+      xen/smp: initialize IPI vectors before marking CPU online
+
+Dan Carpenter (2):
+      VFS: collect_mounts() should return an ERR_PTR
+      Hostap: copying wrong data prism2_ioctl_giwaplist()
+
+Daniel Drake (2):
+      x86: Don't clear olpc_ofw_header when sentinel is detected
+      drivers/platform/olpc/olpc-ec.c: initialise earlier
+
+David Vrabel (3):
+      xen/events: initialize local per-cpu mask for all possible events
+      xen/events: mask events when changing their VCPU binding
+      x86/xen: do not identity map UNUSABLE regions in the machine E820
+
+Dominik Dingel (1):
+      KVM: s390: move kvm_guest_enter,exit closer to sie
+
+Emmanuel Grumbach (7):
+      iwlwifi: mvm: correctly configure MCAST in AP mode
+      iwlwifi: mvm: fix MCAST in AP mode
+      iwlwifi: mvm: properly tell the fw that a STA is awake
+      iwlwifi: mvm: don't set the MCAST queue in STA's queue list
+      iwlwifi: mvm: take the seqno from packet if transmit failed
+      iwlwifi: mvm: unregister leds when registration failed
+      iwlwifi: pcie: disable L1 Active after pci_enable_device
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.10
+
+Ian Abbott (1):
+      staging: comedi: bug-fix NULL pointer dereference on failed attach
+
+Jeff Wu (1):
+      ACPI: add _STA evaluation at do_acpi_find_child()
+
+Joern Rennecke (1):
+      ARC: [lib] strchr breakage in Big-endian configuration
+
+Johannes Berg (3):
+      mac80211: don't wait for TX status forever
+      iwlwifi: bump required firmware API version for 3160/7260
+      iwlwifi: mvm: adjust firmware D3 configuration API
+
+Jussi Kivilinna (1):
+      zd1201: do not use stack as URB transfer_buffer
+
+Kent Overstreet (1):
+      bcache: FUA fixes
+
+Kumar Amit Mehta (1):
+      md: bcache: io.c: fix a potential NULL pointer dereference
+
+Linus Torvalds (1):
+      Revert "x86 get_unmapped_area(): use proper mmap base for bottom-up d=
+irection"
+
+Martin Peschke (2):
+      SCSI: zfcp: fix lock imbalance by reworking request queue locking
+      SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
+
+Masami Hiramatsu (1):
+      tracing/kprobe: Wait for disabling all running kprobe handlers
+
+Namhyung Kim (1):
+      tracing: Do not call kmem_cache_free() on allocation failure
+
+Nicolas Ferre (2):
+      ARM: at91: at91sam9x5 RTC is not compatible with at91rm9200 one
+      ARM: at91/DT: fix at91sam9n12ek memory node
+
+Nicolas Pitre (1):
+      ARM: 7816/1: CONFIG_KUSER_HELPERS: fix help text
+
+Oleg Nesterov (13):
+      tracing: Introduce trace_create_cpu_file() and tracing_get_cpu()
+      tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
+      tracing: Change tracing_buffers_fops to rely on tracing_get_cpu()
+      tracing: Change tracing_stats_fops to rely on tracing_get_cpu()
+      tracing: Change tracing_entries_fops to rely on tracing_get_cpu()
+      tracing: Change tracing_fops/snapshot_fops to rely on tracing_get_cpu=
+()
+      tracing: Turn event/id->i_private into call->event.type
+      tracing: Change event_enable/disable_read() to verify i_private !=3D =
+NULL
+      tracing: Change event_filter_read/write to verify i_private !=3D NULL
+      tracing: Change f_start() to take event_mutex and verify i_private !=
+=3D NULL
+      tracing: Introduce remove_event_file_dir()
+      tracing: Change remove_event_file_dir() to clear "d_subdirs"->i_priva=
+te
+      tracing: trace_remove_event_call() should fail if call/file is in use
+
+Radu Caragea (1):
+      x86 get_unmapped_area: Access mmap_legacy_base through mm_struct memb=
+er
+
+Rafael J. Wysocki (1):
+      ACPI: Try harder to resolve _ADR collisions for bridges
+
+Rafa=C5=82 Mi=C5=82ecki (1):
+      drm/radeon: fix WREG32_OR macro setting bits in a register
+
+Roland Dreier (1):
+      SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a s=
+ignal
+
+Samuel Ortiz (1):
+      NFC: llcp: Fix non blocking sockets connections
+
+Sekhar Nori (1):
+      ARM: davinci: nand: specify ecc strength
+
+Stanislaw Gruszka (1):
+      iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
+
+Steven Rostedt (Red Hat) (4):
+      ftrace: Add check for NULL regs if ops has SAVE_REGS set
+      tracing/kprobes: Fail to unregister if probe event files are in use
+      tracing/uprobes: Fail to unregister if probe event files are in use
+      ftrace: Check module functions being traced on reload
+
+Terry Suereth (1):
+      libata: apply behavioral quirks to sil3826 PMP
+
+Tomas Winkler (3):
+      mei: me: fix reset state machine
+      mei: don't have to clean the state on power up
+      mei: me: fix waiting for hw ready
+
+Vineet Gupta (2):
+      ARC: gdbserver breakage in Big-Endian configuration #1
+      ARC: gdbserver breakage in Big-Endian configuration #2
+
+Vyacheslav Dubeyko (2):
+      nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPN=
+OTSUPP error
+      nilfs2: fix issue with counting number of bio requests for BIO_EOPNOT=
+SUPP error detection
+
+Will Deacon (2):
+      arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
+      arm64: perf: fix event validation for software group leaders
+
+Wladislav Wiebe (1):
+      of: fdt: fix memory initialization for expanded DT
+
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSH4zjAAoJEDjbvchgkmk+AXUP/RfNUkYfP9/r6GioejnQnURh
+vm72nmBomeKlk5QwniWg5QG82R3aLGY+D5YCl5L2KhUBRsjSlmgzOXRyDfVvCoi0
+/QQL7qPBDHpw419mH7XRK8ZONgxTtdasIdWn0A3n2AGKMZe5nL4IsgjeSjfNIP97
+L3C8R2uAAjoLO9kMArUDrz7ltCzAt0rHtmLCBQdb3w5q64Y7ym6SsmwuTLKFvCR7
+x0tnrqhPyGPw8sDtUpSgFi+8Nx2GfjSpT/uW9Fer7/ziMob9oGyVC+fsm/vWaq5E
+dQc2UszArnBEvY6S7KTb9pcpipUq2IBJA0OB9dDCvkE+WzAjWIz4LJtd0UPc5rte
+1N/vanN4t6ddn2BbYAC4p4LToQ1aTD+7EaMQblJ26JKU6yJdxKPYseHfW6ZMCprl
+t0dtrjwz1G1iVY4yHltffr1uJsjggJIZAmKj4sHOQp9D2ambTkEsBvS3peehLM4u
+VYev1VW00hfR9qjo88A2Wi3jwe9daXsUNKsNDZigXttvPIuae9AD72+vJ7VjokO5
+Q3u3Oq56T1NOvZwpahehWgZyBlJ2LbLMnNnq1xy4OcKdQm0KV/1jc91x7Po/csLU
+D/o3BKNhOb86V7WktwcLl0p2cxh+zcYjeGFpjd6KPXPEKr0ak7Al/IO6m6YfK3eI
+s7JUSJFzrBjqaVu6/ukE
+=bvEf
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
