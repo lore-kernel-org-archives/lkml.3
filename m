@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab3H2Eao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 00:30:44 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:44877 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717Ab3H2EaE (ORCPT
+	id S1755383Ab3H2Eme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 00:42:34 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:38296 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752059Ab3H2Emc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 00:30:04 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/3] perf trace: Honor target pid / tid options when analyzing a file
-Date: Wed, 28 Aug 2013 22:29:53 -0600
-Message-Id: <1377750593-48046-4-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1377750593-48046-1-git-send-email-dsahern@gmail.com>
-References: <1377750593-48046-1-git-send-email-dsahern@gmail.com>
+	Thu, 29 Aug 2013 00:42:32 -0400
+Date: Thu, 29 Aug 2013 14:42:22 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 03/10] crypto: nx - fix limits to sg lists for AES-CBC
+Message-ID: <20130829044221.GA25208@gondor.apana.org.au>
+References: <1377288074-18998-1-git-send-email-mhcerri@linux.vnet.ibm.com>
+ <1377288074-18998-4-git-send-email-mhcerri@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377288074-18998-4-git-send-email-mhcerri@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows capture of raw_syscall events for all processes or threads in a task
-and then analyzing specific ones.
+On Fri, Aug 23, 2013 at 05:01:07PM -0300, Marcelo Cerri wrote:
+> This patch updates the nx-aes-cbc implementation to perform several
+> hyper calls if needed in order to always respect the length limits for
+> scatter/gather lists.
+> 
+> Two different limits are considered:
+> 
+>  - "ibm,max-sg-len": maximum number of bytes of each scatter/gather
+>    list.
+> 
+>  - "ibm,max-sync-cop":
+>     - The total number of bytes that a scatter/gather list can hold.
+>     - The maximum number of elements that a scatter/gather list can have.
+> 
+> Reviewed-by: Joy Latten <jmlatten@linux.vnet.ibm.com>
+> Signed-off-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-trace.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
+This patch does not apply against the current cryptodev tree.
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index a03c777..ec0c7b3 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -8,6 +8,7 @@
- #include "util/thread.h"
- #include "util/parse-options.h"
- #include "util/strlist.h"
-+#include "util/intlist.h"
- #include "util/thread_map.h"
- 
- #include <libaudit.h>
-@@ -259,6 +260,8 @@ struct trace {
- 	unsigned long		nr_events;
- 	struct strlist		*ev_qualifier;
- 	bool			not_ev_qualifier;
-+	struct intlist		*tid_list;
-+	struct intlist		*pid_list;
- 	bool			sched;
- 	bool			multiple_threads;
- 	double			duration_filter;
-@@ -649,6 +652,18 @@ out_dump:
- 	return 0;
- }
- 
-+static bool skip_sample(struct trace *trace, struct perf_sample *sample)
-+{
-+	if ((trace->pid_list && intlist__find(trace->pid_list, sample->pid)) ||
-+	    (trace->tid_list && intlist__find(trace->tid_list, sample->tid)))
-+		return false;
-+
-+	if (trace->pid_list || trace->tid_list)
-+		return true;
-+
-+	return false;
-+}
-+
- static int trace__process_sample(struct perf_tool *tool,
- 				 union perf_event *event __maybe_unused,
- 				 struct perf_sample *sample,
-@@ -660,6 +675,9 @@ static int trace__process_sample(struct perf_tool *tool,
- 
- 	tracepoint_handler handler = evsel->handler.func;
- 
-+	if (skip_sample(trace, sample))
-+		return 0;
-+
- 	if (trace->base_time == 0)
- 		trace->base_time = sample->time;
- 
-@@ -679,6 +697,27 @@ perf_session__has_tp(struct perf_session *session, const char *name)
- 	return evsel != NULL;
- }
- 
-+static int parse_target_str(struct trace *trace)
-+{
-+	if (trace->opts.target.pid) {
-+		trace->pid_list = intlist__new(trace->opts.target.pid);
-+		if (trace->pid_list == NULL) {
-+			pr_err("Error parsing process id string\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (trace->opts.target.tid) {
-+		trace->tid_list = intlist__new(trace->opts.target.tid);
-+		if (trace->tid_list == NULL) {
-+			pr_err("Error parsing thread id string\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int trace__run(struct trace *trace, int argc, const char **argv)
- {
- 	struct perf_evlist *evlist = perf_evlist__new();
-@@ -865,6 +904,10 @@ static int trace__replay(struct trace *trace)
- 		goto out;
- 	}
- 
-+	err = parse_target_str(trace);
-+	if (err != 0)
-+		goto out;
-+
- 	setup_pager();
- 
- 	err = perf_session__process_events(session, &trace->tool);
+Please regenerate your pathces.
+
+Thanks,
 -- 
-1.7.10.1
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
