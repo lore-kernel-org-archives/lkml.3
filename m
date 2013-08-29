@@ -1,127 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3H2Jaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:30:52 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:50622 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab3H2Jau (ORCPT
+	id S1756013Ab3H2JbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:31:14 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:35648 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3H2JbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:30:50 -0400
-Date: Thu, 29 Aug 2013 12:29:35 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] radeon kms: fix uninitialised hotplug work usage in
- r100_irq_process()
-Message-ID: <20130829092935.GB2235@swordfish>
-References: <alpine.SOC.1.00.1307310017380.19288@math.ut.ee>
- <alpine.SOC.1.00.1308191158220.19642@math.ut.ee>
- <alpine.SOC.1.00.1308291017030.2723@math.ut.ee>
+	Thu, 29 Aug 2013 05:31:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1308291017030.2723@math.ut.ee>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdYF4bD2ho=mLokdPfd0hKnNvGKbGRiiM5=UZv_e7+AY4g@mail.gmail.com>
+References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
+	<52150AD9.3040808@wwwdotorg.org>
+	<CAJxxZ0O77bgP8_rkRm-EgjAJ45SY2Pd3AGVSMhFxbsfNUmiqGg@mail.gmail.com>
+	<CACRpkdYF4bD2ho=mLokdPfd0hKnNvGKbGRiiM5=UZv_e7+AY4g@mail.gmail.com>
+Date: Thu, 29 Aug 2013 17:31:12 +0800
+Message-ID: <CAJxxZ0PmMCLWWRbXcOWgkkq3SjhBxc=3vu1UcM_DrmtpP3XHhw@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO
+ controller on bf54x and bf60x.
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
-flush uninitialized hotplug work) moved work initialisation phase to
-the last step of radeon_irq_kms_init(). Meelis Roos reported that this
-causes problems on his machine because drm_irq_install() uses hotplug
-work on r100.
+Hi Linus,
 
-hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
--- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
--- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
-   radeon_irq_kms_init()
+On Thu, Aug 29, 2013 at 4:12 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Aug 22, 2013 at 9:07 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+>
+>> There are 6 to 9 GPIO HW blocks in one Blackfin SoC. Function
+>> pinmux_enable_setting() in current pinctrl framework assumes the
+>> function mux setting of one peripheral pin group is configured in one
+>> pinctrl device. But, the function mux setting of one blackfin
+>> peripheral may be done among different GPIO HW blocks. So, I have to
+>> separate the pinctrl driver from the GPIO block driver add the ranges
+>> of all GPIO blocks into one pinctrl device for Blackfin.
+>
+> This is similar to the situation in the pinctrl-nomadik.c driver,
+> where the pinctrl portions wait for the GPIO devices to instantiate
+> before proceeding to probe "on top" of the GPIO blocks, using
+> the latter to get to the registers.
+>
+> I am not sure we have found the best way to sort out this
+> type of system, let's see what we can come up with.
 
-The latter one causes flush work on uninitialised hotplug work. Move
-work initialisation before drm_irq_install(), but keep existing agreement
-to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
-(successful radeon_irq_kms_init()) case.
+In the blackfin pinctrol-adi2 driver, I probe all gpio devices
+independently after all logic pinctrl devices. When one gpio device is
+probed, it can get its pinctrl device name from its platform data and
+add its gpio range into the pinctrl device via
+gpiochip_add_pin_range(). The gpio device don't need to know anything
+else about its pinctrl device.
 
-WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
-Call Trace:
-[<c12319b3>] ? dump_stack+0xa/0x13
-[<c1022600>] ? warn_slowpath_common+0x75/0x8a
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
-[<c1031010>] ? __queue_work+0x132/0x16d
-[<c103107b>] ? queue_work_on+0x30/0x40
-[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
-[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
-[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
-[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
-[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
-[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
-[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
-[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
-[<c118082e>] ? vga_client_register+0x39/0x40
-[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
-[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
-[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
-[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
-[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
-[<c112acf6>] ? pci_device_probe+0x4c/0x83
-[<c11846c7>] ? driver_probe_device+0x80/0x184
-[<c112a848>] ? pci_match_id+0x18/0x36
-[<c1184837>] ? __driver_attach+0x44/0x5f
-[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
-[<c118433e>] ? driver_attach+0x14/0x16
-[<c11847f3>] ? __device_attach+0x28/0x28
-[<c1184045>] ? bus_add_driver+0xd6/0x1bf
-[<c1184c22>] ? driver_register+0x78/0xcf
-[<f8ba8000>] ? 0xf8ba7fff
-[<c10003bf>] ? do_one_initcall+0x8b/0x121
-[<c101e668>] ? change_page_attr_clear+0x2e/0x33
-[<f8ba8000>] ? 0xf8ba7fff
-[<c101e689>] ? set_memory_ro+0x1c/0x20
-[<c104de94>] ? set_page_attributes+0x11/0x12
-[<c104f6e1>] ? load_module+0x12fa/0x17e8
-[<c107483b>] ? map_vm_area+0x22/0x31
-[<c104fc36>] ? SyS_init_module+0x67/0x7d
-[<c1234245>] ? sysenter_do_call+0x12/0x26
+Regards,
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Sonic
 
----
-
- drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index 081886b..cc9e848 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -275,17 +275,19 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
- 			dev_info(rdev->dev, "radeon: using MSI.\n");
- 		}
- 	}
-+
-+	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
-+	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
-+	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
-+
- 	rdev->irq.installed = true;
- 	r = drm_irq_install(rdev->ddev);
- 	if (r) {
- 		rdev->irq.installed = false;
-+		flush_work(&rdev->hotplug_work);
- 		return r;
- 	}
- 
--	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
--	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
--	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
--
- 	DRM_INFO("radeon: irq initialized.\n");
- 	return 0;
- }
-
+>
+> One way I was contemplating was to have just one fat node
+> in the device tree containing all the register ranges, and one
+> fat probe function, so all these ranges associated with a
+> single struct device, but that does not well work with
+> clocking and interrupts (the GPIO ranges needed one
+> clock and interrupt each) so I gave up on that idea.
+>
+> My latest idea was to to to break the subsystems apart a
+> bit by letting GPIO devices probe without the underlying
+> pin controller being in place, so I queued up the operations
+> until the pin controller arrived, but unfortunately this creates
+> other problems :-(
+>
+> Still this creates a fuzz when trying to refactor stuff so we
+> need to find a solution.
+>
+> Yours,
+> Linus Walleij
