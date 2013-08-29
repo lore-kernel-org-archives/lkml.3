@@ -1,94 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab3H2O5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:57:49 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54848 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab3H2O5s (ORCPT
+	id S1755916Ab3H2O72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:59:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38282 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab3H2O70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:57:48 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 1/5] mfd: asic3: Remove .set_pwr() callback
-Date: Thu, 29 Aug 2013 16:59:11 +0200
-Message-ID: <5649106.WzMa2Sr8sS@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAGa+x87xcVBxc7_AV8mmGq8DWuhgA3EL6jiwqQD33terH4XPBg@mail.gmail.com>
-References: <000301cea3b2$c06f2a20$414d7e60$%han@samsung.com> <81053150.gZpPo7ioCr@avalon> <CAGa+x87xcVBxc7_AV8mmGq8DWuhgA3EL6jiwqQD33terH4XPBg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 29 Aug 2013 10:59:26 -0400
+From: Raviv Shvili <rshvili@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Raviv Shvili <rshvili@codeaurora.org>,
+        Dolev Raviv <draviv@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC/PATCH 1/3] scsi: ufs: query descriptor API
+Date: Thu, 29 Aug 2013 17:59:13 +0300
+Message-Id: <1377788353-5423-1-git-send-email-rshvili@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Introduces the API for sending queries with descriptors.
+A descriptor is a block or page of parameters that describe the device.
+The descriptors are classified into types and can range in size
+from 2 bytes through 255 bytes.
+All descriptors have a length value as their first element, and a type
+identification element as their second byte.
+All descriptors are readable and some may be write once.
+They are accessed using their type, index and selector.
 
-On Thursday 29 August 2013 07:42:26 Kevin Hilman wrote:
-> On Wed, Aug 28, 2013 at 12:51 AM, Laurent Pinchart wrote:
-> > On Wednesday 28 August 2013 08:41:26 Lee Jones wrote:
-> >> > > Since 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() callback from
-> >> > > platform data", .set_pwr() callback is removed from platform data.
-> >> > > Thus, .set_pwr() is not used anymore. Also, this patch fixes
-> >> > > the following build error and warning.
-> >> > > 
-> >> > > drivers/mfd/asic3.c:724:2: error: unknown field 'set_pwr' specified
-> >> > > in initializer drivers/mfd/asic3.c:724:2: warning: initialization
-> >> > > makes integer from pointer without a cast [enabled by default]
-> >> > > drivers/mfd/asic3.c:724:2: warning: (near initialization for
-> >> > > 'asic3_mmc_data.capabilities' [enabled by default]
-> >> > 
-> >> > My bad, it looks like I've overlooked a few users of the .set_pwr()
-> >> > field
-> >> > 
-> >> > :-/ Sorry about that.
-> >> 
-> >> <snip>
-> >> 
-> >> > I don't think blindly removing the function is the right fix, as it
-> >> > seems to be needed. Looking at the whole series, I believe we should
-> >> > just revert 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() callback from
-> >> > platform data" instead.
-> >> 
-> >> No need to revert it, as it's not in Mainline yet. Just request for it
-> >> to be removed from Chris' tree.
-> > 
-> > I spupose it depends on whether Chris has provided a stable branch with
-> > the patch included. I'm fine with both, the commit just needs to be undone
-> > one way or another.
-> 
-> Any progress on this?  linux-next builds are still failing for the
-> following defconfigs because of this removal:
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+Signed-off-by: Raviv Shvili <rshvili@codeaurora.org>
 
-Chris, could you please drop 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() 
-callback from platform data" from your tree or revert it ?
-
-> Failed defconfigs:
->         arm-magician_defconfig
->         arm-eseries_pxa_defconfig
-> 
-> Errors:
-> 
->          arm-magician_defconfig
-> drivers/mfd/asic3.c:724:2: error: unknown field 'set_pwr' specified in
-> initializer
-> 
->         arm-eseries_pxa_defconfig
-> drivers/mfd/t7l66xb.c:146:2: error: unknown field 'set_pwr' specified
-> in initializer
-> drivers/mfd/tc6387xb.c:123:2: error: unknown field 'set_pwr' specified
-> in initializer
-> drivers/mfd/tc6393xb.c:381:2: error: unknown field 'set_pwr' specified
-> in initializer
-
+diff --git a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h
+index bce09a6..202e15d 100644
+--- a/drivers/scsi/ufs/ufs.h
++++ b/drivers/scsi/ufs/ufs.h
+@@ -41,7 +41,8 @@
+ 
+ #define MAX_CDB_SIZE	16
+ #define GENERAL_UPIU_REQUEST_SIZE 32
+-#define QUERY_DESC_MAX_SIZE       256
++#define QUERY_DESC_MAX_SIZE       255
++#define QUERY_DESC_MIN_SIZE       2
+ #define QUERY_OSF_SIZE            (GENERAL_UPIU_REQUEST_SIZE - \
+ 					(sizeof(struct utp_upiu_header)))
+ 
+@@ -117,6 +118,20 @@ enum attr_idn {
+ 	QUERY_ATTR_IDN_EE_STATUS	= 0x0E,
+ };
+ 
++/* Descriptor idn for Query requests */
++enum desc_idn {
++	QUERY_DESC_IDN_DEVICE		= 0x0,
++	QUERY_DESC_IDN_CONFIGURAION	= 0x1,
++	QUERY_DESC_IDN_UNIT		= 0x2,
++	QUERY_DESC_IDN_RFU_0		= 0x3,
++	QUERY_DESC_IDN_INTERCONNECT	= 0x4,
++	QUERY_DESC_IDN_STRING		= 0x5,
++	QUERY_DESC_IDN_RFU_1		= 0x6,
++	QUERY_DESC_IDN_GEOMETRY		= 0x7,
++	QUERY_DESC_IDN_POWER		= 0x8,
++	QUERY_DESC_IDN_RFU_2		= 0x9,
++};
++
+ /* Exception event mask values */
+ enum {
+ 	MASK_EE_STATUS		= 0xFFFF,
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index b7d74bf..6da0d41 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -1118,6 +1118,31 @@ out_put_tag:
+ }
+ 
+ /**
++ * ufshcd_init_query() - init the query response and request parameters
++ * @hba: per-adapter instance
++ * @request: address of the request pointer to be initialized
++ * @response: address of the response pointer to be initialized
++ * @opcode: operation to perform
++ * @idn: flag idn to access
++ * @index: LU number to access
++ * @selector: query/flag/descriptor further identification
++ */
++static inline void ufshcd_init_query(struct ufs_hba *hba,
++		struct ufs_query_req **request, struct ufs_query_res **response,
++		enum query_opcode opcode, enum attr_idn idn,
++		u8 index, u8 selector)
++{
++	*request = &hba->dev_cmd.query.request;
++	*response = &hba->dev_cmd.query.response;
++	memset(*request, 0, sizeof(struct ufs_query_req));
++	memset(*response, 0, sizeof(struct ufs_query_res));
++	(*request)->upiu_req.opcode = opcode;
++	(*request)->upiu_req.idn = idn;
++	(*request)->upiu_req.index = index;
++	(*request)->upiu_req.selector = selector;
++}
++
++/**
+  * ufshcd_query_flag() - API function for sending flag query requests
+  * hba: per-adapter instance
+  * query_opcode: flag query to perform
+@@ -1129,17 +1154,15 @@ out_put_tag:
+ static int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
+ 			enum flag_idn idn, bool *flag_res)
+ {
+-	struct ufs_query_req *request;
+-	struct ufs_query_res *response;
+-	int err;
++	struct ufs_query_req *request = NULL;
++	struct ufs_query_res *response = NULL;
++	int err, index = 0, selector = 0;
+ 
+ 	BUG_ON(!hba);
+ 
+ 	mutex_lock(&hba->dev_cmd.lock);
+-	request = &hba->dev_cmd.query.request;
+-	response = &hba->dev_cmd.query.response;
+-	memset(request, 0, sizeof(struct ufs_query_req));
+-	memset(response, 0, sizeof(struct ufs_query_res));
++	ufshcd_init_query(hba, &request, &response, opcode, idn, index,
++			selector);
+ 
+ 	switch (opcode) {
+ 	case UPIU_QUERY_OPCODE_SET_FLAG:
+@@ -1164,12 +1187,8 @@ static int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
+ 		err = -EINVAL;
+ 		goto out_unlock;
+ 	}
+-	request->upiu_req.opcode = opcode;
+-	request->upiu_req.idn = idn;
+ 
+-	/* Send query request */
+-	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY,
+-			QUERY_REQ_TIMEOUT);
++	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY, QUERY_REQ_TIMEOUT);
+ 
+ 	if (err) {
+ 		dev_err(hba->dev,
+@@ -1201,8 +1220,8 @@ out_unlock:
+ int ufshcd_query_attr(struct ufs_hba *hba, enum query_opcode opcode,
+ 			enum attr_idn idn, u8 index, u8 selector, u32 *attr_val)
+ {
+-	struct ufs_query_req *request;
+-	struct ufs_query_res *response;
++	struct ufs_query_req *request = NULL;
++	struct ufs_query_res *response = NULL;
+ 	int err;
+ 
+ 	BUG_ON(!hba);
+@@ -1215,10 +1234,8 @@ int ufshcd_query_attr(struct ufs_hba *hba, enum query_opcode opcode,
+ 	}
+ 
+ 	mutex_lock(&hba->dev_cmd.lock);
+-	request = &hba->dev_cmd.query.request;
+-	response = &hba->dev_cmd.query.response;
+-	memset(request, 0, sizeof(struct ufs_query_req));
+-	memset(response, 0, sizeof(struct ufs_query_res));
++	ufshcd_init_query(hba, &request, &response, opcode, idn, index,
++			selector);
+ 
+ 	switch (opcode) {
+ 	case UPIU_QUERY_OPCODE_WRITE_ATTR:
+@@ -1235,14 +1252,7 @@ int ufshcd_query_attr(struct ufs_hba *hba, enum query_opcode opcode,
+ 		goto out_unlock;
+ 	}
+ 
+-	request->upiu_req.opcode = opcode;
+-	request->upiu_req.idn = idn;
+-	request->upiu_req.index = index;
+-	request->upiu_req.selector = selector;
+-
+-	/* Send query request */
+-	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY,
+-						QUERY_REQ_TIMEOUT);
++	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY, QUERY_REQ_TIMEOUT);
+ 
+ 	if (err) {
+ 		dev_err(hba->dev, "%s: opcode 0x%.2x for idn %d failed, err = %d\n",
+@@ -1259,6 +1269,82 @@ out:
+ }
+ 
+ /**
++ * ufshcd_query_descriptor - API function for sending descriptor requests
++ * hba: per-adapter instance
++ * opcode: attribute opcode
++ * idn: attribute idn to access
++ * index: index field
++ * selector: selector field
++ * desc_buf: the buffer that contains the descriptor
++ * buf_len: length parameter passed to the device
++ *
++ * Returns 0 for success, non-zero in case of failure.
++ * The buf_len parameter will contain, on return, the length parameter
++ * received on the response.
++ */
++int ufshcd_query_descriptor(struct ufs_hba *hba,
++			enum query_opcode opcode, enum attr_idn idn, u8 index,
++			u8 selector, u8 *desc_buf, int *buf_len)
++{
++	struct ufs_query_req *request = NULL;
++	struct ufs_query_res *response = NULL;
++	int err;
++
++	BUG_ON(!hba);
++
++	if (!desc_buf) {
++		dev_err(hba->dev, "%s: descriptor buffer required for opcode 0x%x\n",
++				__func__, opcode);
++		err = -EINVAL;
++		goto out;
++	}
++
++	if (*buf_len <= QUERY_DESC_MIN_SIZE || *buf_len > QUERY_DESC_MAX_SIZE) {
++		dev_err(hba->dev, "%s: descriptor buffer size (%d) is out of range\n",
++				__func__, *buf_len);
++		err = -EINVAL;
++		goto out;
++	}
++
++	mutex_lock(&hba->dev_cmd.lock);
++	ufshcd_init_query(hba, &request, &response, opcode, idn, index,
++			selector);
++	hba->dev_cmd.query.descriptor = desc_buf;
++	request->upiu_req.length = *buf_len;
++
++	switch (opcode) {
++	case UPIU_QUERY_OPCODE_WRITE_DESC:
++		request->query_func = UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST;
++		break;
++	case UPIU_QUERY_OPCODE_READ_DESC:
++		request->query_func = UPIU_QUERY_FUNC_STANDARD_READ_REQUEST;
++		break;
++	default:
++		dev_err(hba->dev,
++				"%s: Expected query descriptor opcode but got = 0x%.2x\n",
++				__func__, opcode);
++		err = -EINVAL;
++		goto out_unlock;
++	}
++
++	err = ufshcd_exec_dev_cmd(hba, DEV_CMD_TYPE_QUERY, QUERY_REQ_TIMEOUT);
++
++	if (err) {
++		dev_err(hba->dev, "%s: opcode 0x%.2x for idn %d failed, err = %d\n",
++				__func__, opcode, idn, err);
++		goto out_unlock;
++	}
++
++	hba->dev_cmd.query.descriptor = NULL;
++	*buf_len = response->upiu_res.length;
++
++out_unlock:
++	mutex_unlock(&hba->dev_cmd.lock);
++out:
++	return err;
++}
++
++/**
+  * ufshcd_memory_alloc - allocate memory for host memory space data structures
+  * @hba: per adapter instance
+  *
 -- 
-Regards,
-
-Laurent Pinchart
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc.
+is a member of Code Aurora Forum, hosted by The Linux Foundation
 
