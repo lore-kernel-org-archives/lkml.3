@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab3H2Bfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:35:42 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:61118 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab3H2Bfj (ORCPT
+	id S1754336Ab3H2BkI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:40:08 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:45563 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab3H2BkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:35:39 -0400
-Message-ID: <521EA567.1070801@gmail.com>
-Date: Thu, 29 Aug 2013 10:35:35 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 21:40:06 -0400
 MIME-Version: 1.0
-To: dm-devel@redhat.com
-CC: gregkh@linuxfoundation.org, kernelnewbies@kernelnewbies.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] dm-lc: plan to go to staging
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+Date: Wed, 28 Aug 2013 18:40:04 -0700
+X-Google-Sender-Auth: zlOGFcXviUE5sJcukLeCotcl5vk
+Message-ID: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Just FYI: I've merged two preparatory patches in my tree for the whole
+lockref thing. Instead of applying your four patches as-is during the
+merge window, I ended up writing two patches that introduce the
+concept and use it in the dentry code *without* introducing any of the
+new semantics yet.
 
-I am happy to see that dm-lc is picked up by LWN.
-http://lwn.net/Articles/562938/
+Waiman, I attributed the patches to you, even if they don't actually
+look much like any of the patches you sent out. And because I was
+trying very hard to make sure that no actual semantics changed, my
+version doesn't have the dget_parent() lockless update code, for
+example. I literally just did a search-and-replace of "->d_count" with
+"->d_lockref.count" and then I fixed up a few things by hand (undid
+one replacement in a comment, and used the helper functions where they
+were semantically identical).
 
-Now I think I should consider the next step forward.
+ You don't have to rewrite your patches if you don't want to, I'm
+planning on cherry-picking the actual code changes during the merge
+window.
 
-
-As Joe Thornber said before, what I have to do next are
-1. Get some feedback from 3rd party users.
-2. Reviewed by Mike Snitzer.
-As in
-http://www.redhat.com/archives/dm-devel/2013-July/msg00137.html
-
-To achieve the first goal,
-I am thinking of going to staging tree
-for dm-lc to be widely available to people in community.
-
-dm-lc is now managed in Github repo as a kernel module
-however, getting available in the tree means a lot
-to get 3rd party users.
-
-Does this plan sound nice?
-
-If so, what is the next step to go to staging?
-I have a patch against 3.11-rc7 in linux-next locally.
-Sending the patch to Greg is the next step?
-And who and what should be included in CC?
-
-For your information,
-there is a precedent that DM target
-gets in staging tree. That is enhanceio, also a caching target.
-
-Any comments will be appreciated.
-
-Thanks,
-Akira
+                  Linus
