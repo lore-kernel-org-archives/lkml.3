@@ -1,130 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab3H2Udk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:33:40 -0400
-Received: from mail1.centrum-group.com ([194.12.254.133]:38598 "EHLO
-	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab3H2Udj (ORCPT
+	id S1756881Ab3H2Uje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:39:34 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62577 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab3H2Ujc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:33:39 -0400
-X-Antivirus-centrum-group.com-Mail-From: dangeorge122@outlook.es via mail1
-X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 225.097221 secs Process 24605)
-Message-ID: <27097.81.35.225.2.1377731924.squirrel@mail1.centrum-group.com>
-Date: Thu, 29 Aug 2013 02:18:44 +0300 (EEST)
-Subject: It is Utterly Privy
-From: "George Daniels" <dangeorge122@outlook.es>
-Reply-To: dangeorge122@outlook.es
-User-Agent: SquirrelMail/1.4.5
+	Thu, 29 Aug 2013 16:39:32 -0400
+Date: Thu, 29 Aug 2013 22:39:42 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 3/6] i915_gem: Convert kmem_cache_alloc(...GFP_ZERO) to
+ kmem_cache_zalloc
+Message-ID: <20130829203942.GB32184@phenom.ffwll.local>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+References: <cover.1377806578.git.joe@perches.com>
+ <d846a338b419b2f3b8f2ac61db01e3faa5b2f832.1377806578.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=WINDOWS-1251
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d846a338b419b2f3b8f2ac61db01e3faa5b2f832.1377806578.git.joe@perches.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is Private
-
-I am George Daniels, a Banker and credit system programmer (HSBC bank).
-I saw your email address while browsing through  the bank D.T.C Screen in
-my office yesterday so I decided to use this very chance to know you. I
-believe we should use every opportunity to know each other better.
-However, I am contacting you for obvious reason which you will understand.
-
-I am sending this mail just to know if this email address is OK,
-reply me back so that I will send  more details to you.
-I have a very important thing to discuss with you, I look forward to
-receiving your response at
-georgedaniels@postino.net. Have a pleasant day.
-
-George Daniels
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+On Thu, Aug 29, 2013 at 01:11:07PM -0700, Joe Perches wrote:
+> The helper exists, might as well use it instead of __GFP_ZERO.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Queued for -next, thanks for the patch.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
