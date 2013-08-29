@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3H2FIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 01:08:40 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33096 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753027Ab3H2FIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 01:08:39 -0400
-Message-ID: <1377752917.1928.87.camel@joe-AO722>
-Subject: Re: [PATCH 1/1 v1.1] arcmsr: Support Areca new SATA Raid Adapter
- ARC1214/1224/1264/1284 (Resend renew)
-From: Joe Perches <joe@perches.com>
-To: =?UTF-8?Q?=E9=BB=83=E6=B8=85=E9=9A=86?= <ching2048@areca.com.tw>
-Cc: jejb@kernel.org, Tomas Henzl <thenzl@redhat.com>, fengguang.wu@intel.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, jbottomley@parallels.com
-Date: Wed, 28 Aug 2013 22:08:37 -0700
-In-Reply-To: <CAKiknE_FJN7gRLMFHCfNOtjg73fLLCQ45yacHb+w1B46C5dJQA@mail.gmail.com>
-References: <CAKiknE_FJN7gRLMFHCfNOtjg73fLLCQ45yacHb+w1B46C5dJQA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754501Ab3H2FX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 01:23:56 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:63651 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab3H2FXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 01:23:54 -0400
+X-Spam-Score: -101.0
+Message-ID: <521EDAA9.5090306@asianux.com>
+Date: Thu, 29 Aug 2013 13:22:49 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Steffen Klassert <steffen.klassert@secunet.com>,
+        linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/padata.c: share code between CPU_ONLINE and
+ CPU_DOWN_FAILED, same to CPU_DOWN_PREPARE and CPU_UP_CANCELED
+References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com> <5215B319.3020908@asianux.com> <20130823104448.GI26773@secunet.com> <20130829044259.GB25208@gondor.apana.org.au>
+In-Reply-To: <20130829044259.GB25208@gondor.apana.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 12:55 +0800, 黃清隆 wrote:
-> Update the patch code.
+On 08/29/2013 12:42 PM, Herbert Xu wrote:
+> On Fri, Aug 23, 2013 at 12:44:48PM +0200, Steffen Klassert wrote:
+>> On Thu, Aug 22, 2013 at 02:43:37PM +0800, Chen Gang wrote:
+>>> Share code between CPU_ONLINE and CPU_DOWN_FAILED, same to
+>>> CPU_DOWN_PREPARE and CPU_UP_CANCELED.
+>>>
+>>> It will fix 2 bugs:
+>>>
+>>>   "not check the return value of __padata_remove_cpu() and __padata_add_cpu()".
+>>>   "need add 'break' between CPU_UP_CANCELED and CPU_DOWN_FAILED".
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>
+>> This looks ok to me, Herbert can you take this one?
+>>
+>> Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+> 
+> Patch applied.  Thanks!
+> 
 
-This patch is whitespace damaged.
+Thank you too.
 
-Please send the email to yourself and make sure it applies
-correctly before resending to the lists.
-
-If necessary, read Documentation/email-clients.txt
-
-cheers, Joe
-
+-- 
+Chen Gang
