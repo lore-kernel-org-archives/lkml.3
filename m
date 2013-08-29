@@ -1,70 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab3H2AIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:08:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52201 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab3H2AId convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:08:33 -0400
-Date: Wed, 28 Aug 2013 20:08:31 -0400 (EDT)
-Message-Id: <20130828.200831.289304393401193657.davem@davemloft.net>
-To: linus.luessing@web.de
-Cc: bridge@lists.linux-foundation.org, stephen@networkplumber.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, amwang@redhat.com,
-        linux@baker-net.org.uk
-Subject: Re: [PATCH] bridge: separate querier and query timer into
- IGMP/IPv4 and MLD/IPv6 ones
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1377511266-14530-1-git-send-email-linus.luessing@web.de>
-References: <1377511266-14530-1-git-send-email-linus.luessing@web.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 28 Aug 2013 17:08:32 -0700 (PDT)
+	id S1753117Ab3H2AVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:21:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752206Ab3H2AU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 20:20:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: jmorris@namei.org
+cc: dhowells@redhat.com, simo@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Expand keyring capacity and provide support for libkrb5
+Date: Thu, 29 Aug 2013 01:20:48 +0100
+Message-ID: <11520.1377735648@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
-Date: Mon, 26 Aug 2013 12:01:06 +0200
 
-> Currently we would still potentially suffer multicast packet loss if there
-> is just either an IGMP or an MLD querier: For the former case, we would
-> possibly drop IPv6 multicast packets, for the latter IPv4 ones. This is
-> because we are currently assuming that if either an IGMP or MLD querier
-> is present that the other one is present, too.
-> 
-> This patch makes the behaviour and fix added in
-> "bridge: disable snooping if there is no querier" (b00589af3b04)
-> to also work if there is either just an IGMP or an MLD querier on the
-> link: It refines the deactivation of the snooping to be protocol
-> specific by using separate timers for the snooped IGMP and MLD queries
-> as well as separate timers for our internal IGMP and MLD queriers.
-> 
-> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Hi James,
 
-I think the logic of the fix is fine, but theres a lot of duplication
-here.
+Could you pull these patches into the security tree?
 
-Why not make a:
+The patches can be viewed as three sets:
 
-struct bridge_mcast_timer {
-	struct	timer_list	timer;
-	u32			queries_sent;
-	u32			startup_queries_sent;
+ (1) KEYS: Skip key state checks when checking for possession
 
-};
+     This is a fix for determining the possessed status of keys that have been
+     invalidated or revoked or that have expired.  If nothing else, can you
+     please pick this and pass it upstream.
 
-Then in the port structure you have:
+ (2) KEYS: Expand the capacity of a keyring
+     Add a generic associative array implementation
+     KEYS: Drop the permissions argument from __keyring_search_one()
+     KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+     KEYS: Search for auth-key by name rather than target key ID
+     KEYS: Introduce a search context structure
+     KEYS: Consolidate the concept of an 'index key' for key access
+     KEYS: key_is_dead() should take a const key pointer argument
+     KEYS: Use bool in make_key_ref() and is_key_possessed()
 
-	struct bridge_mcast_timer	ip4;
-	struct bridge_mcast_timer	ip6;
+     Patches to to expand the capacity of a keyring by using an associative
+     array rather than a flat list and patches to do some preparatory cleanups
+     for those.
 
-And pass a reference to the right one into generic helper functions.
+ (3) KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+     KEYS: Implement a big key type that can save to tmpfs
 
-That sounds a lot better right?
+     Patches to add better support for libkrb5 to save its tokens in a kernel
+     keyring rather than in files.  It already has this ability to some
+     extent, but that has two problems: your tokens get deleted when you log
+     out (so your cron jobs can't use them) and the capacity of a user type
+     key is not sufficient for some of the huge Kerberos tickets one can get.
+     These patches address that.
 
-Please make this improvement and resubmit, thanks.
+If you need the patches basing on your tree instead, that can be done.
+
+David
+---
+The following changes since commit f1d6e17f540af37bb1891480143669ba7636c4cf:
+
+  Merge branch 'akpm' (patches from Andrew Morton) (2013-08-14 10:04:43 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-krb-support
+
+for you to fetch changes up to 0f8d966ebc86d7ab9fb7fd074ae589c2d81de08f:
+
+  KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches (2013-08-28 18:56:14 +0100)
+
+----------------------------------------------------------------
+(from the branch description for keys-devel local branch)
+
+clone of "master"
+Kerberos ticket persistence support
+
+----------------------------------------------------------------
+David Howells (12):
+      KEYS: Skip key state checks when checking for possession
+      KEYS: Use bool in make_key_ref() and is_key_possessed()
+      KEYS: key_is_dead() should take a const key pointer argument
+      KEYS: Consolidate the concept of an 'index key' for key access
+      KEYS: Introduce a search context structure
+      KEYS: Search for auth-key by name rather than target key ID
+      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+      KEYS: Drop the permissions argument from __keyring_search_one()
+      Add a generic associative array implementation.
+      KEYS: Expand the capacity of a keyring
+      KEYS: Implement a big key type that can save to tmpfs
+      KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+
+ Documentation/assoc_array.txt    |  574 +++++++++++++
+ Documentation/security/keys.txt  |   20 +-
+ include/keys/big_key-type.h      |   25 +
+ include/keys/keyring-type.h      |   17 +-
+ include/linux/assoc_array.h      |   92 ++
+ include/linux/assoc_array_priv.h |  182 ++++
+ include/linux/key-type.h         |    5 +
+ include/linux/key.h              |   49 +-
+ include/linux/user_namespace.h   |    6 +
+ include/uapi/linux/keyctl.h      |    1 +
+ kernel/user.c                    |    4 +
+ kernel/user_namespace.c          |    4 +
+ lib/Kconfig                      |   14 +
+ lib/Makefile                     |    1 +
+ lib/assoc_array.c                | 1745 ++++++++++++++++++++++++++++++++++++++
+ security/keys/Kconfig            |   29 +
+ security/keys/Makefile           |    2 +
+ security/keys/big_key.c          |  204 +++++
+ security/keys/compat.c           |    3 +
+ security/keys/gc.c               |   33 +-
+ security/keys/internal.h         |   74 +-
+ security/keys/key.c              |   91 +-
+ security/keys/keyctl.c           |    3 +
+ security/keys/keyring.c          | 1481 ++++++++++++++++----------------
+ security/keys/persistent.c       |  169 ++++
+ security/keys/proc.c             |   17 +-
+ security/keys/process_keys.c     |  131 +--
+ security/keys/request_key.c      |   56 +-
+ security/keys/request_key_auth.c |   31 +-
+ security/keys/sysctl.c           |   11 +
+ security/keys/user_defined.c     |   18 +-
+ 31 files changed, 4124 insertions(+), 968 deletions(-)
+ create mode 100644 Documentation/assoc_array.txt
+ create mode 100644 include/keys/big_key-type.h
+ create mode 100644 include/linux/assoc_array.h
+ create mode 100644 include/linux/assoc_array_priv.h
+ create mode 100644 lib/assoc_array.c
+ create mode 100644 security/keys/big_key.c
+ create mode 100644 security/keys/persistent.c
+
