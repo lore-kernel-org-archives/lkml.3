@@ -1,53 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3H2VIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:08:50 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62082 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab3H2VIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:08:48 -0400
-Date: Thu, 29 Aug 2013 14:08:09 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL v2] at91: soc update for 3.12 #1
-Message-ID: <20130829210809.GV18542@quad.lixom.net>
-References: <20130828235855.GM8607@quad.lixom.net>
- <1377765162-1659-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1756499Ab3H2VIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:08:15 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42999 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751702Ab3H2VIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 17:08:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: [PATCH 2/3] PM / hibernate: Create memory bitmaps after freezing user space
+Date: Thu, 29 Aug 2013 23:17:48 +0200
+Message-ID: <10303295.iNF2gTh50Q@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+References: <9589253.Co8jZpnWdd@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377765162-1659-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 10:32:42AM +0200, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
-> 
-> (respin of previous pull-request with author name fixed)
-> 
-> Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
-> this topic and it is based on 3.11-rc5 like your next/soc branch.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
-> 
->   Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-soc
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Thanks, pulled into late/all.
+The hibernation core uses special memory bitmaps during image
+creation and restoration and traditionally those bitmaps are
+allocated before freezing tasks, because in the past GFP_KERNEL
+allocations might not work after all tasks had been frozen.
 
+However, this is an anachronism, because hibernation_snapshot()
+now calls hibernate_preallocate_memory() which allocates memory
+for the image upfront anyway, so the memory bitmaps may be
+allocated after freezing user space safely.
 
--Olof
+For this reason, move all of the create_basic_memory_bitmaps()
+calls after freeze_processes() and all of the corresponding
+free_basic_memory_bitmaps() calls before thaw_processes().
+
+This will allow us to hold device_hotplug_lock around hibernation
+without the need to worry about freezing issues with user space
+processes attempting to acquire it via sysfs attributes after the
+creation of memory bitmaps and before the freezing of tasks.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ kernel/power/hibernate.c |   41 +++++++++++++++++++----------------------
+ kernel/power/user.c      |   22 ++++++++++++----------
+ 2 files changed, 31 insertions(+), 32 deletions(-)
+
+Index: linux-pm/kernel/power/hibernate.c
+===================================================================
+--- linux-pm.orig/kernel/power/hibernate.c
++++ linux-pm/kernel/power/hibernate.c
+@@ -644,22 +644,22 @@ int hibernate(void)
+ 	if (error)
+ 		goto Exit;
+ 
+-	/* Allocate memory management structures */
+-	error = create_basic_memory_bitmaps();
+-	if (error)
+-		goto Exit;
+-
+ 	printk(KERN_INFO "PM: Syncing filesystems ... ");
+ 	sys_sync();
+ 	printk("done.\n");
+ 
+ 	error = freeze_processes();
+ 	if (error)
+-		goto Free_bitmaps;
++		goto Exit;
++
++	/* Allocate memory management structures */
++	error = create_basic_memory_bitmaps();
++	if (error)
++		goto Thaw;
+ 
+ 	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+ 	if (error || freezer_test_done)
+-		goto Thaw;
++		goto Free_bitmaps;
+ 
+ 	if (in_suspend) {
+ 		unsigned int flags = 0;
+@@ -682,14 +682,13 @@ int hibernate(void)
+ 		pr_debug("PM: Image restored successfully.\n");
+ 	}
+ 
++ Free_bitmaps:
++	free_basic_memory_bitmaps();
+  Thaw:
+ 	thaw_processes();
+ 
+ 	/* Don't bother checking whether freezer_test_done is true */
+ 	freezer_test_done = false;
+-
+- Free_bitmaps:
+-	free_basic_memory_bitmaps();
+  Exit:
+ 	pm_notifier_call_chain(PM_POST_HIBERNATION);
+ 	pm_restore_console();
+@@ -806,21 +805,19 @@ static int software_resume(void)
+ 	pm_prepare_console();
+ 	error = pm_notifier_call_chain(PM_RESTORE_PREPARE);
+ 	if (error)
+-		goto close_finish;
+-
+-	error = create_basic_memory_bitmaps();
+-	if (error)
+-		goto close_finish;
++		goto Close_Finish;
+ 
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = freeze_processes();
+-	if (error) {
+-		swsusp_close(FMODE_READ);
+-		goto Done;
+-	}
++	if (error)
++		goto Close_Finish;
+ 
+ 	pr_debug("PM: Loading hibernation image.\n");
+ 
++	error = create_basic_memory_bitmaps();
++	if (error)
++		goto Thaw;
++
+ 	error = swsusp_read(&flags);
+ 	swsusp_close(FMODE_READ);
+ 	if (!error)
+@@ -828,9 +825,9 @@ static int software_resume(void)
+ 
+ 	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
+ 	swsusp_free();
+-	thaw_processes();
+- Done:
+ 	free_basic_memory_bitmaps();
++ Thaw:
++	thaw_processes();
+  Finish:
+ 	pm_notifier_call_chain(PM_POST_RESTORE);
+ 	pm_restore_console();
+@@ -840,7 +837,7 @@ static int software_resume(void)
+ 	mutex_unlock(&pm_mutex);
+ 	pr_debug("PM: Hibernation image not present or could not be loaded.\n");
+ 	return error;
+-close_finish:
++ Close_Finish:
+ 	swsusp_close(FMODE_READ);
+ 	goto Finish;
+ }
+Index: linux-pm/kernel/power/user.c
+===================================================================
+--- linux-pm.orig/kernel/power/user.c
++++ linux-pm/kernel/power/user.c
+@@ -60,11 +60,6 @@ static int snapshot_open(struct inode *i
+ 		error = -ENOSYS;
+ 		goto Unlock;
+ 	}
+-	if(create_basic_memory_bitmaps()) {
+-		atomic_inc(&snapshot_device_available);
+-		error = -ENOMEM;
+-		goto Unlock;
+-	}
+ 	nonseekable_open(inode, filp);
+ 	data = &snapshot_state;
+ 	filp->private_data = data;
+@@ -90,10 +85,9 @@ static int snapshot_open(struct inode *i
+ 		if (error)
+ 			pm_notifier_call_chain(PM_POST_RESTORE);
+ 	}
+-	if (error) {
+-		free_basic_memory_bitmaps();
++	if (error)
+ 		atomic_inc(&snapshot_device_available);
+-	}
++
+ 	data->frozen = 0;
+ 	data->ready = 0;
+ 	data->platform_support = 0;
+@@ -111,11 +105,11 @@ static int snapshot_release(struct inode
+ 	lock_system_sleep();
+ 
+ 	swsusp_free();
+-	free_basic_memory_bitmaps();
+ 	data = filp->private_data;
+ 	free_all_swap_pages(data->swap);
+ 	if (data->frozen) {
+ 		pm_restore_gfp_mask();
++		free_basic_memory_bitmaps();
+ 		thaw_processes();
+ 	}
+ 	pm_notifier_call_chain(data->mode == O_RDONLY ?
+@@ -220,14 +214,22 @@ static long snapshot_ioctl(struct file *
+ 		printk("done.\n");
+ 
+ 		error = freeze_processes();
+-		if (!error)
++		if (error)
++			break;
++
++		error = create_basic_memory_bitmaps();
++		if (error)
++			thaw_processes();
++		else
+ 			data->frozen = 1;
++
+ 		break;
+ 
+ 	case SNAPSHOT_UNFREEZE:
+ 		if (!data->frozen || data->ready)
+ 			break;
+ 		pm_restore_gfp_mask();
++		free_basic_memory_bitmaps();
+ 		thaw_processes();
+ 		data->frozen = 0;
+ 		break;
+
