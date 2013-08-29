@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3H2HMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 03:12:21 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:32983 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab3H2HMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 03:12:18 -0400
+	id S1753848Ab3H2HRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 03:17:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32844 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808Ab3H2HRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 03:17:12 -0400
+Date: Thu, 29 Aug 2013 10:16:06 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        mtosatti@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [RFC PATCH 00/12] KVM: MMU: locklessly wirte-protect
+Message-ID: <20130829071606.GY22899@redhat.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130803140943.3e09bbcda47693789df06315@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <521EEF26.80803@nvidia.com>
-References: <1377287112-12018-1-git-send-email-ccross@android.com>
-	<521EEF26.80803@nvidia.com>
-Date: Thu, 29 Aug 2013 00:12:17 -0700
-X-Google-Sender-Auth: Z7ELiw_5uLNR8QUam98awRbVd9M
-Message-ID: <CAMbhsRSTv9ivMY1=-4YPxPV0tCTcJnHwWOEvr_F5exg9A2Z1Mw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] cpuidle: coupled: disable interrupts after entering
- safe state
-From: Colin Cross <ccross@android.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Zhang <zhangwm@marvell.com>, Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130803140943.3e09bbcda47693789df06315@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 11:50 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
-> On Saturday 24 August 2013 01:15 AM, Colin Cross wrote:
->>
->> Calling cpuidle_enter_state is expected to return with interrupts
->> enabled, but interrupts must be disabled before starting the
->> ready loop synchronization stage.  Call local_irq_disable after
->> each call to cpuidle_enter_state for the safe state.
->>
->> CC: stable@vger.kernel.org
->> Signed-off-by: Colin Cross <ccross@android.com>
->> ---
->>   drivers/cpuidle/coupled.c | 2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
->> index 2a297f8..db92bcb 100644
->> --- a/drivers/cpuidle/coupled.c
->> +++ b/drivers/cpuidle/coupled.c
->> @@ -460,6 +460,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device
->> *dev,
->>                 }
->>                 entered_state = cpuidle_enter_state(dev, drv,
->>                         dev->safe_state_index);
->> +               local_irq_disable();
->
->
-> Colin,
->
-> There is still some window where irq remains enabled after exiting safe
-> state. It may introduce some corner case.
-> Instead of this can we pass a parameter to cpuidle_enter_state indicating
-> that irq has to be enabled or not after exit from idle state, which would be
-> false when entering safe state from coupled idle.
+On Sat, Aug 03, 2013 at 02:09:43PM +0900, Takuya Yoshikawa wrote:
+> On Tue, 30 Jul 2013 21:01:58 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> 
+> > Background
+> > ==========
+> > Currently, when mark memslot dirty logged or get dirty page, we need to
+> > write-protect large guest memory, it is the heavy work, especially, we need to
+> > hold mmu-lock which is also required by vcpu to fix its page table fault and
+> > mmu-notifier when host page is being changed. In the extreme cpu / memory used
+> > guest, it becomes a scalability issue.
+> > 
+> > This patchset introduces a way to locklessly write-protect guest memory.
+> 
+> Nice improvements!
+> 
+> If I read the patch set correctly, this work contains the following changes:
+> 
+> Cleanups:
+>         Patch 1 and patch 12.
+> 
+Yes, do not see the reason to not apply 1 straightaway. 12 depends on
+other patches though.
 
-It's fine for irqs to be enabled when exiting the safe state, in fact
-on further inspection this patch isn't strictly necessary at all - we
-always enable interrupts inside cpuidle_coupled_clear_pokes soon after
-cpuidle_enter_state returns, and then disable them again.  It's
-probably better to disable interrupts right after cpuidle_enter_state,
-it makes sure interrupts are consistently disabled when calling
-cpuidle_coupled_set_waiting, cpuidle_coupled_cpus_waiting and
-cpuidle_coupled_clear_pokes, although that doesn't matter in the
-current implementation.
+> Lazy large page dropping for dirty logging:
+>         Patch 2-3.
+>         Patch 2 is preparatory to patch 3.
+> 
+>         This does not look like an RFC if you address Marcelo's comment.
+>         Any reason to include this in an RFC patch set?
+Agree, you can post them separately for faster inclusion.
 
-Rafael, feel free to drop the stable annotation from this patch.
+> 
+> Making remote TLBs flushable outside of mmu_lock for dirty logging:
+>         Patch 6.
+> 
+>         This is nice.  I'm locally using a similar patch for my work, but yours
+>         is much cleaner and better.  I hope this will get merged soon.
+> 
+But without other patches this patch itself doesn't do much, no?
+
+> New Pte-list handling:
+>         Patch 7-9.
+> 
+>         Still reading the details.
+> 
+> RCU-based lockless write protection.
+>         Patch 10-11.
+> 
+>         If I understand RCU correctly, the current implementation has a problem:
+>         read-side critical sections can become too long.
+> 
+>         See the following LWN's article:
+>         "Sleepable RCU"
+>         https://lwn.net/Articles/202847/
+> 
+>         Especially, kvm_mmu_slot_remove_write_access() can take hundreds of
+>         milliseconds, or even a few seconds for guests using shadow paging.
+>         Is it possible to break the read-side critical section after protecting
+>         some pages? -- I guess so.
+> 
+> Anyway, I want to see the following non-RFC quality patches get merged first:
+>         - Lazy large page dropping for dirty logging:
+>         - Making remote TLBs flushable outside of mmu_lock for dirty logging
+> 
+> As you are doing in patch 11, the latter can eliminate the TLB flushes before
+> cond_resched_lock().  So this alone is an optimization, and since my work is
+> based on this TLB flush-less lock breaking, I would appriciate if you make this
+> change first in your clean way.
+> 
+> The remaining patches, pte-list refactoring and lock-less ones, also look
+> interesting, but I need to read more to understand them.
+> 
+> Thanks for the nice work!
+Indeed. FWIW I completed the review and am waiting for a new version.
+
+--
+			Gleb.
