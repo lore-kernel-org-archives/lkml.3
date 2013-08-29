@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab3H2XsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:48:22 -0400
-Received: from nm33-vm1.bullet.mail.bf1.yahoo.com ([72.30.239.201]:48429 "EHLO
-	nm33-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751755Ab3H2XsV (ORCPT
+	id S1754133Ab3H2Xuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:50:46 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57467 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3H2Xuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:48:21 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Aug 2013 19:48:21 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 651610.49852.bm@omp1032.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=U7ImyjvVAkZDwMzwx3tZbgrkU6YsJ6iQKvYWSWWPx/7INEz9zgyUolNiIu2Tpt7/QrEsAwonW64etPJGaqS4Cc2mI4RP299HKGMibVI3SdUTyATsaClMquHgtztc2qEWjQz3DNV7H+o72QyZsoAWI8gnhQAenyJ2BmxxacDjhlo=;
-X-YMail-OSG: pvwvALMVM1mlEkTZFFw0xEKUdeDXNLBZWELvWVsRC2XZslh
- YHQrRvRYGXiwC_KmxijJw
-X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQNCg0KDQpNeSBOYW1lIGlzIERyLiBDYWJpcnUgQmVsbG8gLkkgYW0gYSBiYW5rZXIgYnkgcHJvZmVzc2lvIC5JIGhhaWwgZnJvbSBPdWFnYWRvdWdvdSwgQnVya2luYSBGYXNvLCBXZXN0IEFmcmljYS5NeSByZWFzb24gZm9yIGNvbnRhY3RpbmcgeW91IGlzIHRvIHRyYW5zZmVyIGFuIGFiYW5kb25lZCAkMTAsIDMwMCwgMDAwLjAwIChUZW4gTWlsbGlvbiBUaHJlZSBIdW5kcmVkIFRob3VzYW5kIERvbGxhcnMpIHRvIHlvdXIgYWNjb3VudC4NCg0KVGhlIG93bmVyIG9mIHRoaXMgZnVuZCBkaWUBMAEBAQE-
-X-RocketYMMF: mamuda_bello20
-X-Mailer: YahooMailClassic/300 YahooMailWebService/0.8.156.576
-Message-ID: <1377819758.35759.YahooMailBasic@web142306.mail.bf1.yahoo.com>
-Date: Thu, 29 Aug 2013 16:42:38 -0700 (PDT)
-From: Cabiru Bello <cabirubello20@gmail.com>
-Reply-To: cabirubello20@gmail.com
-Subject: Dear Friend.
-To: undisclosed recipients:;
+	Thu, 29 Aug 2013 19:50:44 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Tomasz Figa <t.figa@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Archit Taneja <archit@ti.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
+Date: Fri, 30 Aug 2013 01:52:08 +0200
+Message-ID: <1992930.Xjyakli5Kt@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <35333449.0R3QP6op66@avalon>
+References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CACRpkda=pZ6xQ2XJke=MBLiH_DAS8CXW+JOZ856ohGZi+fOCzA@mail.gmail.com> <35333449.0R3QP6op66@avalon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend
+On Friday 30 August 2013 01:44:50 Laurent Pinchart wrote:
+> On Thursday 29 August 2013 20:24:32 Linus Walleij wrote:
+> > On Wed, Aug 28, 2013 at 1:58 PM, Laurent Pinchart wrote:
+> > > On Tuesday 27 August 2013 19:18:55 Wolfram Sang wrote:
+> > >> > The driver should support the same chip models reardless of whether
+> > >> > it's used with or without DT. If an entry in the OF table has no
+> > >> > corresponding entry in the I2C table I would consider that as a
+> > >> > driver
+> > >> > bug.
+> > >> 
+> > >> Linus Walleij posted a patch to support DT only probing, but too many
+> > >> side-effects showed up. Some were fixable (probe regressions) and some
+> > >> need more work, if feasible at all. Most prominent is that runtime
+> > >> instantiation of i2c slaves currently needs an entry in the i2c table.
+> > > 
+> > > Linus, I'd like to get this in v3.12 if it's not too late. Could you
+> > > please provide your input ?
+> > 
+> > Provided some input on the v4 version,
+> 
+> Do you mean v4 of this patch ? I can't find your reply.
 
+Scratch that, I've found it. Sorry for the noise.
 
-My Name is Dr. Cabiru Bello .I am a banker by professio .I hail from Ouagadougou, Burkina Faso, West Africa.My reason for contacting you is to transfer an abandoned $10, 300, 000.00 (Ten Million Three Hundred Thousand Dollars) to your account.
+> > due to being a bit overloaded my patch queue is overloaded...
+> 
+> No worries. We can delay this one until v3.13.
+-- 
+Regards,
 
-The owner of this fund died since 2003 with his Next Of Kin. I want to present you to the bank as the Next of Kin/beneficiary of this fund.
+Laurent Pinchart
 
-Further details of the transaction shall be forwarded to you as soon as I receive your return mail indicating your interest.You can contact me at this private email address:
-cabirubello20@gmail.com
-
-Best regards,
-Dr. Cabiru Bello
