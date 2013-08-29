@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3H2PZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:25:12 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:15591 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3H2PZL (ORCPT
+	id S1753848Ab3H2PYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:24:21 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4462 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab3H2PYT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:25:11 -0400
-Message-ID: <521F67C9.4080805@hp.com>
-Date: Thu, 29 Aug 2013 11:24:57 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 29 Aug 2013 11:24:19 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Sherman Yin" <syin@broadcom.com>
+To: "Linus Walleij" <linus.walleij@linaro.org>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>
+cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
+        "Linus Walleij" <linus.walleij@stericsson.com>
+Subject: RE: linux-next: manual merge of the pinctrl tree with Linus'
+ tree
+Thread-Topic: linux-next: manual merge of the pinctrl tree with Linus'
+ tree
+Thread-Index: AQHOpIfO0LcMrhICDk6Ru2O3DTz0DJmsQ90AgAAJiWA=
+Date: Thu, 29 Aug 2013 15:24:10 +0000
+Message-ID: <051069C10411E24D9749790C498526FA1BDE034D@SJEXCHMB12.corp.ad.broadcom.com>
+References: <20130829171704.7a7630dd19d19ccdb9aaf384@canb.auug.org.au>
+ <CACRpkdbHtjvY_VypnCQZNU2N1YqWtUv_grTK30A+tgEP3a0uwQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbHtjvY_VypnCQZNU2N1YqWtUv_grTK30A+tgEP3a0uwQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-To: Alexander Fyodorov <halcy@yandex.ru>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <15321377012704@web8h.yandex.ru> <52142D6C.6000400@hp.com> <336901377100289@web16f.yandex.ru> <5215638E.5020702@hp.com> <169431377178121@web21f.yandex.ru> <521BB71F.6080300@hp.com> <66111377605355@web12m.yandex.ru>
-In-Reply-To: <66111377605355@web12m.yandex.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 7E01B93B0UO1853059-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 08:09 AM, Alexander Fyodorov wrote:
->> I also thought that the x86 spinlock unlock path was an atomic add. It
->> just comes to my realization recently that this is not the case. The
->> UNLOCK_LOCK_PREFIX will be mapped to "" except for some old 32-bit x86
->> processors.
-> Hmm, I didn't know that. Looking through Google found these rules for x86 memory ordering:
->    * Loads are not reordered with other loads.
->    * Stores are not reordered with other stores.
->    * Stores are not reordered with older loads.
-> So x86 memory model is rather strict and memory barrier is really not needed in the unlock path - xadd is a store and thus behaves like a memory barrier, and since only lock's owner modifies "ticket.head" the "add" instruction need not be atomic.
->
-> But this is true only for x86, other architectures have more relaxed memory ordering. Maybe we should allow arch code to redefine queue_spin_unlock()? And define a version without smp_mb() for x86?
+>I made a bit different fix, I just lock the spinlock around the entire
+>loop, as this is not doing any delays or anything like that and
+>just hammer a few registers with the settings, it makes sense to
+>have that inside a single lock:
 
-What I have been thinking is to set a flag in an architecture specific 
-header file to tell if the architecture need a memory barrier. The 
-generic code will then either do a smp_mb() or barrier() depending on 
-the presence or absence of the flag. I would prefer to do more in the 
-generic code, if possible.
+Hmm, I fixed this the first time I ported over to LinusW's devel tree,
+but when I rebased on Sunday, the spin lock commit seemed to be
+reverted or gone.  
+
+Note the following return in between the locking and unlocking -
+need an unlock there?
+
+> +              case PIN_CONFIG_DRIVE_STRENGTH:
+> +                      strength = pinconf_to_config_argument(configs[i]);
+> +                      if (strength > 40)
+> +                              return -EINVAL;
+> +                      /*
+> +                       * We convert from mA to what the register expects:
+> +                       *   0: 10mA
+> +                       *   1: 20mA
+> +                       *   2: 30mA
+> +                       *   3: 40mA
+> +                       */
 
 Regards,
-Longman
+Sherman
+
