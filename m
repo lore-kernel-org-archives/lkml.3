@@ -1,482 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab3H2CVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:21:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33405 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314Ab3H2CVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:21:39 -0400
-Message-ID: <521EB018.3000301@ti.com>
-Date: Thu, 29 Aug 2013 07:51:12 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753587Ab3H2Cer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:34:47 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:60836 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3H2Ceq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 22:34:46 -0400
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <grant.likely@linaro.org>, <rob@landley.net>,
-        <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>,
-        <davidb@codeaurora.org>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <popcornmix@gmail.com>
-Subject: Re: [PATCH v3 1/3] extcon: extcon-gpio-usbvid: Generic USB VBUS/ID
- detection via GPIO
-References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-2-git-send-email-george.cherian@ti.com> <521EA563.4060305@samsung.com>
-In-Reply-To: <521EA563.4060305@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQXrpZU8DCFoF6NuaOoqwGFGcQfnHV7vdWWPfyAymCCGnQ@mail.gmail.com>
+References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
+	<20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
+	<CAE9FiQVy2uqLm2XyStYmzxSmsw7TzrB0XDhCRLymnf+L3NPxrA@mail.gmail.com>
+	<52142ffe.84c0440a.57e5.02acSMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQW1c3-d+iMebRK6JyHCpMt8mjga-TnsfTuVsC1bQZqsYA@mail.gmail.com>
+	<52146c58.a3e2440a.0f5a.ffffed8dSMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQVWVzO93RM_QT-Qp+5jJUEiw=5OOD_454fCjgQ5p9-b3g@mail.gmail.com>
+	<521600cc.22ab440a.2703.53f1SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAE9FiQXrpZU8DCFoF6NuaOoqwGFGcQfnHV7vdWWPfyAymCCGnQ@mail.gmail.com>
+Date: Wed, 28 Aug 2013 19:34:45 -0700
+X-Google-Sender-Auth: WBqD6SdG39VD4EKuMnilsH1CeJQ
+Message-ID: <CAE9FiQU34RC+4uLpeza4PAAK-1CWu82WQ=rhaM_NNj_TVv0EMg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=e89a8ff1ceb6008a8904e50cf311
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+--e89a8ff1ceb6008a8904e50cf311
+Content-Type: text/plain; charset=ISO-8859-1
 
-Thanks for the review and sorry for all the trivial mistakes.
+On Wed, Aug 28, 2013 at 7:18 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> please change to function pointer to
+> void  (*alloc_func)(void *data,
+>                                  unsigned long pnum_begin,
+>                                  unsigned long pnum_end,
+>                                  unsigned long map_count, int nodeid)
+>
+> pnum_begin, pnum_end, map_coun, nodeid, should not be in the struct.
 
-On 8/29/2013 7:05 AM, Chanwoo Choi wrote:
-> Hi George,
->
-> You didn't modify this patchset about my comment on v1 patchset.
-> Please pay attention to comment.
->
-> On 08/29/2013 02:33 AM, George Cherian wrote:
->> Add a generic USB VBUS/ID detection EXTCON driver. This driver expects
->> the ID/VBUS pin are connected via GPIOs. This driver is tested on
->> DRA7x board were the ID pin is routed via GPIOs. The driver supports
->> both VBUS and ID pin configuration and ID pin only configuration.
->>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   .../bindings/extcon/extcon-gpio-usbvid.txt         |  20 ++
->>   drivers/extcon/Kconfig                             |   6 +
->>   drivers/extcon/Makefile                            |   1 +
->>   drivers/extcon/extcon-gpio-usbvid.c                | 286 +++++++++++++++++++++
-> You should keep following naming stlye. extcon-gpio-usbvid.c is wrong naming style.
-> - extcon-[device name].c
-> - extcon-gpio-usbvid.c -> extcon-dra7xx.c or etc.
-Actually dra7xx is the SoC name and the USB VBUS/ID detection is not 
-specific to SoC.
-It uses gpios to detect the VBUS/ID change. So i thought it would be 
-better to have generic
-gpio based VBUS/ID detection rather than making dra7xx specific. Stephen 
-Warren had this opinion
-with patch v1.
->
-> Also, you should change the file name of extcon-gpio-usbvid.txt.
->
-> Finally, You used 'gpio_usbvid' prefix in extcon-gpio-usbvid.c.
-> It has caused the confusion that user would think extcon-gpio-usbvid.c driver
-> support all of extcon driver using gpio irq pin. So I'd like you to use
-> proper prefix including device name.
-I meant to support all of extcon driver using gpio for USB VBUS/ID 
-detection.
->
->>   4 files changed, 313 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio-usbvid.txt
->>   create mode 100644 drivers/extcon/extcon-gpio-usbvid.c
-[snip]
->> index f1d54a3..8097398 100644
->> --- a/drivers/extcon/Kconfig
->> +++ b/drivers/extcon/Kconfig
->> @@ -64,4 +64,10 @@ config EXTCON_PALMAS
->>   	  Say Y here to enable support for USB peripheral and USB host
->>   	  detection by palmas usb.
->>   
->> +config EXTCON_GPIO_USBVID
->> +	tristate "Generic USB VBUS/ID detection using GPIO EXTCON support"
->> +	help
->> +	  Say Y here to enable support for USB VBUS/ID deetction by GPIO.
->> +
->> +
-> Remove blank line.
-okay
->>   endif # MULTISTATE_SWITCH
-[snip]
->> diff --git a/drivers/extcon/extcon-gpio-usbvid.c b/drivers/extcon/extcon-gpio-usbvid.c
->> new file mode 100644
->> index 0000000..e9bc2a97
->> --- /dev/null
->> +++ b/drivers/extcon/extcon-gpio-usbvid.c
->> @@ -0,0 +1,286 @@
->> +/*
->> + * Generic  USB VBUS-ID pin detection driver
->> + *
->> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + *
->> + * Author: George Cherian <george.cherian@ti.com>
->> + *
->> + * Based on extcon-palmas.c
->> + *
->> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/kthread.h>
->> +#include <linux/freezer.h>
-> kthead.h, freezer.h headerfile is used in this file?
-okay
->> +#include <linux/platform_device.h>
->> +#include <linux/extcon.h>
->> +#include <linux/err.h>
->> +#include <linux/of.h>
->> +#include <linux/gpio.h>
->> +#include <linux/of_gpio.h>
->> +#include <linux/of_platform.h>
-> Order headerfile alphabetically.
-okay
->
->> +
->> +struct gpio_usbvid {
->> +	struct device *dev;
->> +
->> +	struct extcon_dev edev;
->> +
->> +	/*GPIO pin */
-> I commented previous your patch about this wrong coding style.
-> Why did not you fix this coding style?
-okay
->> +	int id_gpio;
->> +	int vbus_gpio;
->> +
->> +	int id_irq;
->> +	int vbus_irq;
->> +	int type;
->> +};
->> +
->> +static const char *dra7xx_extcon_cable[] = {
->> +	[0] = "USB",
->> +	[1] = "USB-HOST",
->> +	NULL,
->> +};
->> +
->> +static const int mutually_exclusive[] = {0x3, 0x0};
->> +
->> +/* Two types of support are provided.
->> + * Systems which has
->> + *	1) VBUS and ID pin connected via GPIO
->> + *	2)  only ID pin connected via GPIO
-> Remove blank between '2)' and 'only'.
-okay
->> + *  For Case 1 both the gpios should be provided via DT
->> + *  Always the first GPIO in dt is considered ID pin GPIO
->> + */
->> +
->> +enum {
->> +	UNKNOWN = 0,
->> +	ID_DETECT,
->> +	VBUS_ID_DETECT,
->> +};
->> +
->> +#define ID_GND		0
->> +#define ID_FLOAT	1
->> +#define VBUS_OFF	0
->> +#define VBUS_ON		1
-> I think you could only use two constant instead of four constant definition.
-you mean only ID_GND and VBUS_OFF?
->> +
->> +
-> This blank line isn't necessary.
->
->> +static irqreturn_t id_irq_handler(int irq, void *data)
->> +{
->> +	struct gpio_usbvid *gpio_usbvid = (struct gpio_usbvid *) data;
-> You should delete blank between ')' and 'data' as follwong:
-> 	- (struct gpio_usbvid *)data;
-okay
->
->> +	int id_current;
->> +
->> +	id_current = gpio_get_value_cansleep(gpio_usbvid->id_gpio);
->> +	if (id_current == ID_GND) {
->> +		if (gpio_usbvid->type == ID_DETECT)
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", false);
->> +		extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
-> As else statement, you should set "USB-HOST" cable state to improve readability.
->
-> 		extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", true);
-> 		if (gpio_usbvid->type == ID_DETECT)
-> 			extcon_set_cable_state(&gpio_usbvid->edev,
-> 							"USB", false);
-Actually, USB-HOST state should be set in the id_irq handler. But in 
-cases were only ID pin is routed to gpio
-and VBUS is not used we set the USB state too. The gpio_usbvid->type 
-differentiates whether its an ID only or
-VBUS and ID.
->> +	} else {
->> +		extcon_set_cable_state(&gpio_usbvid->edev, "USB-HOST", false);
->> +		if (gpio_usbvid->type == ID_DETECT)
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", true);
->> +	}
-> Add blank line.
-okay
->> +	return IRQ_HANDLED;
->> +}
->> +
->> +static irqreturn_t vbus_irq_handler(int irq, void *data)
->> +{
->> +	struct gpio_usbvid *gpio_usbvid = (struct gpio_usbvid *) data;
-> ditto.
-okay
->> +	int vbus_current;
->> +
->> +	vbus_current = gpio_get_value_cansleep(gpio_usbvid->vbus_gpio);
->> +	if (vbus_current == VBUS_OFF)
->> +		extcon_set_cable_state(&gpio_usbvid->edev, "USB", false);
->> +	else
->> +		extcon_set_cable_state(&gpio_usbvid->edev, "USB", true);
->> +
->> +	return IRQ_HANDLED;
->> +}
->> +
->> +
-> This blank line isn't necessary.
-> I commented unnecessary blank line on previous review.
-okay
->> +static void gpio_usbvid_set_initial_state(struct gpio_usbvid *gpio_usbvid)
->> +{
->> +	int id_current;
->> +	int vbus_current;
-> Define loacal variable on one line as following:
-> 	int id_current, vbus_current;
-okay
->> +
->> +	switch (gpio_usbvid->type) {
->> +	case ID_DETECT:
->> +		id_current = gpio_get_value_cansleep(gpio_usbvid->id_gpio);
->> +		if (!!id_current == ID_FLOAT) {
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB-HOST", false);
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", true);
->> +		} else {
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", false);
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB-HOST", true);
->> +		}
->> +		break;
->> +
->> +	case VBUS_ID_DETECT:
->> +		id_current = gpio_get_value_cansleep(gpio_usbvid->id_gpio);
->> +		if (!!id_current == ID_FLOAT)
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB-HOST", false);
->> +		else
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB-HOST", true);
->> +
->> +		vbus_current = gpio_get_value_cansleep(gpio_usbvid->vbus_gpio);
->> +		if (!!vbus_current == VBUS_ON)
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", true);
->> +		else
->> +			extcon_set_cable_state(&gpio_usbvid->edev,
->> +							"USB", false);
->> +		break;
->> +
->> +	default:
->> +		dev_err(gpio_usbvid->dev, "Unknown VBUS-ID type\n");
->> +	}
->> +}
->> +
->> +static int gpio_usbvid_request_irq(struct gpio_usbvid *gpio_usbvid)
->> +{
->> +	int ret;
-> Add blank line.
-okay
->> +	ret = devm_request_threaded_irq(gpio_usbvid->dev, gpio_usbvid->id_irq,
->> +					NULL, id_irq_handler,
->> +					IRQF_ONESHOT | IRQF_TRIGGER_FALLING,
->> +					dev_name(gpio_usbvid->dev),
->> +					(void *) gpio_usbvid);
->> +	if (ret) {
->> +		dev_err(gpio_usbvid->dev, "failed to request id irq #%d\n",
->> +					gpio_usbvid->id_irq);
->> +		return ret;
->> +	}
->> +	if (gpio_usbvid->type == VBUS_ID_DETECT) {
->> +		ret = devm_request_threaded_irq(gpio_usbvid->dev,
->> +					gpio_usbvid->vbus_irq, NULL,
->> +					vbus_irq_handler,
->> +					IRQF_ONESHOT | IRQF_TRIGGER_FALLING,
->> +					dev_name(gpio_usbvid->dev),
-> Why do you use the same interrupt name both gpio_usbvid->id_irq and gpio_usbvid->vbus_irq?
-> You should use characteristic interrupt name.
-if I use dev_name it gives me 2 same name interrupts associated with a 
-single extcon device.
-Where as if i use characteristic (for eg: VBUS or ID) names then I will 
-get multiple with same name
-since there will be 2 instances of extcon being used as of now.
->> +					(void *) gpio_usbvid);
->> +		if (ret)
->> +			dev_err(gpio_usbvid->dev, "failed to request vbus irq #%d\n",
->> +						gpio_usbvid->vbus_irq);
->> +	}
-> Add blank line.
-okay
->> +	return ret;
->> +}
->> +
->> +static int gpio_usbvid_probe(struct platform_device *pdev)
->> +{
->> +	struct device_node *node = pdev->dev.of_node;
->> +	struct gpio_usbvid *gpio_usbvid;
->> +	int ret;
->> +	int gpio;
-> Define loacal variable on one line as following:
-> 	int ret, gpio;
->
->> +
->> +	gpio_usbvid = devm_kzalloc(&pdev->dev, sizeof(*gpio_usbvid),
->> +								GFP_KERNEL);
-> If this statement over 80 line, you have to keep proper indentation as following:
-> 	gpio_usbvid = devm_kzalloc(&pdev->dev, sizeof(*gpio_usbvid),
-> 				  GFP_KERNEL);
-okay
->
->> +	if (!gpio_usbvid)
->> +		return -ENOMEM;
->> +
->> +
-> Remove blank line.
-okay
->> +	gpio_usbvid->dev	 = &pdev->dev;
-> Use space instead of tab.
-okay
->> +
->> +	platform_set_drvdata(pdev, gpio_usbvid);
->> +
->> +	gpio_usbvid->edev.name = dev_name(&pdev->dev);
-> I add as follwong comment about your v1 patchset
->
-> 	"If edev name is equal with device name, this line is unnecessary.
-> 	Because extcon_dev_register() use dev_name(&pdev->dev) as edev name
-> 	in extcon-class.c"
->
-> Why did not apply for my comment to v3 patchset?
-> Plesae pay attention for previous comment.
-I removed it but it gave me a  NULL pointer dereference  in 
-extcon_get_extcon_dev (strcmp the sd->name was NULL).
-I am based on v3.11-rc3, did you have any fix for this in later rc's? 
-probably I would rebase to your latest and check.
->> +	gpio_usbvid->edev.supported_cable = dra7xx_extcon_cable;
->> +	gpio_usbvid->edev.mutually_exclusive = mutually_exclusive;
->> +
->> +	if (of_device_is_compatible(node, "ti,gpio-usb-id"))
->> +		gpio_usbvid->type = ID_DETECT;
->> +
->> +	gpio = of_get_gpio(node, 0);
->> +	if (gpio_is_valid(gpio)) {
->> +		gpio_usbvid->id_gpio = gpio;
->> +		ret = devm_gpio_request(&pdev->dev, gpio_usbvid->id_gpio,
->> +					"id_gpio");
->> +		if (ret)
->> +			return ret;
-> Add blank line.
->
->> +		gpio_usbvid->id_irq = gpio_to_irq(gpio_usbvid->id_gpio);
->> +	} else {
->> +		dev_err(&pdev->dev, "failed to get id gpio\n");
->> +		return -ENODEV;
->> +	}
->> +
->> +	if (of_device_is_compatible(node, "ti,gpio-usb-vid")) {
->> +		gpio_usbvid->type = VBUS_ID_DETECT;
->> +		gpio = of_get_gpio(node, 1);
->> +		if (gpio_is_valid(gpio)) {
->> +			gpio_usbvid->vbus_gpio = gpio;
->> +			ret = devm_gpio_request(&pdev->dev,
->> +						gpio_usbvid->vbus_gpio,
->> +						"vbus_gpio");
->> +			if (ret)
->> +				return ret;
-> Add blank line.
->
->> +			gpio_usbvid->vbus_irq =
->> +					gpio_to_irq(gpio_usbvid->vbus_gpio);
->> +		} else {
->> +			dev_err(&pdev->dev, "failed to get vbus gpio\n");
->> +			return -ENODEV;
->> +		}
->> +	}
->> +
->> +	ret = extcon_dev_register(&gpio_usbvid->edev, gpio_usbvid->dev);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "failed to register extcon device\n");
->> +		return ret;
->> +	}
->> +
->> +	gpio_usbvid_set_initial_state(gpio_usbvid);
->> +	ret = gpio_usbvid_request_irq(gpio_usbvid);
-> You should move gpio_usbvid_request_irq() call before extcon_dev_register().
->
->> +	if (ret)
->> +		goto err0;
-> ? As following previous comment about v1 patchset:
-> 	I need correct meaning name as err_thread or etc ...
-okay
->
->> +
->> +	return 0;
->> +
->> +err0:
-> ditto.
-okay
->> +	extcon_dev_unregister(&gpio_usbvid->edev);
->> +
->> +	return ret;
->> +}
->> +
->> +static int gpio_usbvid_remove(struct platform_device *pdev)
->> +{
->> +	struct gpio_usbvid *gpio_usbvid = platform_get_drvdata(pdev);
->> +
->> +	extcon_dev_unregister(&gpio_usbvid->edev);
->> +	return 0;
->> +}
->> +
->> +static struct of_device_id of_gpio_usbvid_match_tbl[] = {
->> +	{ .compatible = "ti,gpio-usb-vid", },
->> +	{ .compatible = "ti,gpio-usb-id", },
->> +	{ /* end */ }
->> +};
->> +
->> +static struct platform_driver gpio_usbvid_driver = {
->> +	.probe = gpio_usbvid_probe,
->> +	.remove = gpio_usbvid_remove,
->> +	.driver = {
->> +		.name = "gpio-usbvid",
->> +		.of_match_table = of_gpio_usbvid_match_tbl,
->> +		.owner = THIS_MODULE,
->> +	},
->> +};
->> +
->> +module_platform_driver(gpio_usbvid_driver);
->> +
->> +MODULE_ALIAS("platform:gpio-usbvid");
->> +MODULE_AUTHOR("George Cherian <george.cherian@ti.com>");
->> +MODULE_DESCRIPTION("GPIO based USB Connector driver");
->> +MODULE_LICENSE("GPL");
->> +MODULE_DEVICE_TABLE(of, of_gpio_usbvid_match_tbl);
->>
-> Cheers,
-> Chanwoo Choi
+looks like that is what is your first version did.
 
+I updated it a little bit. please check it.
 
--- 
--George
+Thanks
 
+Yinghai
+
+--e89a8ff1ceb6008a8904e50cf311
+Content-Type: application/octet-stream; name="0001-sparse_v2.patch"
+Content-Disposition: attachment; filename="0001-sparse_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hkxd0k530
+
+RnJvbSBhNzhlMTJhOWZmMzFmMmE3M2I4NzE0NWNlN2FkOTQzYTBmNzEyNzA4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogV2FucGVuZyBMaSA8bGl3YW5wQGxpbnV4LnZuZXQuaWJtLmNv
+bT4NCkRhdGU6IFdlZCwgMjEgQXVnIDIwMTMgMTU6MjM6MDggKzA4MDANClN1YmplY3Q6IFtQQVRD
+SF0gbW0vc3BhcnNlOiBpbnRyb2R1Y2UgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAgZml4IA0KDQpQ
+YXNzIGZ1bmN0aW9uIHBvaW50ZXIgdG8gYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAoKSBpbnN0ZWFk
+IG9mIHRydWUvZmFsc2UuIA0KDQpTaWduZWQtb2ZmLWJ5OiBXYW5wZW5nIExpIDxsaXdhbnBAbGlu
+dXgudm5ldC5pYm0uY29tPg0KLS0tDQogbW0vc3BhcnNlLmMgfCAgIDU0ICsrKysrKysrKysrKysr
+KysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KIDEgZmlsZXMgY2hhbmdl
+ZCwgMjUgaW5zZXJ0aW9ucygrKSwgMjkgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9tbS9z
+cGFyc2UuYyBiL21tL3NwYXJzZS5jDQppbmRleCA1NWU1NzUyLi4wNmFkZjNjIDEwMDY0NA0KLS0t
+IGEvbW0vc3BhcnNlLmMNCisrKyBiL21tL3NwYXJzZS5jDQpAQCAtMzM5LDE0ICszMzksMTYgQEAg
+c3RhdGljIHZvaWQgX19pbml0IGNoZWNrX3VzZW1hcF9zZWN0aW9uX25yKGludCBuaWQsIHVuc2ln
+bmVkIGxvbmcgKnVzZW1hcCkNCiB9DQogI2VuZGlmIC8qIENPTkZJR19NRU1PUllfSE9UUkVNT1ZF
+ICovDQogDQotc3RhdGljIHZvaWQgX19pbml0IHNwYXJzZV9lYXJseV91c2VtYXBzX2FsbG9jX25v
+ZGUodW5zaWduZWQgbG9uZyoqdXNlbWFwX21hcCwNCitzdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNl
+X2Vhcmx5X3VzZW1hcHNfYWxsb2Nfbm9kZSh2b2lkICoqdXNlbWFwX21hcCwNCiAJCQkJIHVuc2ln
+bmVkIGxvbmcgcG51bV9iZWdpbiwNCiAJCQkJIHVuc2lnbmVkIGxvbmcgcG51bV9lbmQsDQogCQkJ
+CSB1bnNpZ25lZCBsb25nIHVzZW1hcF9jb3VudCwgaW50IG5vZGVpZCkNCiB7DQogCXZvaWQgKnVz
+ZW1hcDsNCiAJdW5zaWduZWQgbG9uZyBwbnVtOw0KKwl1bnNpZ25lZCBsb25nICoqbWFwOw0KIAlp
+bnQgc2l6ZSA9IHVzZW1hcF9zaXplKCk7DQorCW1hcCA9ICh1bnNpZ25lZCBsb25nICoqKSB1c2Vt
+YXBfbWFwOw0KIA0KIAl1c2VtYXAgPSBzcGFyc2VfZWFybHlfdXNlbWFwc19hbGxvY19wZ2RhdF9z
+ZWN0aW9uKE5PREVfREFUQShub2RlaWQpLA0KIAkJCQkJCQkgIHNpemUgKiB1c2VtYXBfY291bnQp
+Ow0KQEAgLTM1OCw5ICszNjAsOSBAQCBzdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNlX2Vhcmx5X3Vz
+ZW1hcHNfYWxsb2Nfbm9kZSh1bnNpZ25lZCBsb25nKip1c2VtYXBfbWFwLA0KIAlmb3IgKHBudW0g
+PSBwbnVtX2JlZ2luOyBwbnVtIDwgcG51bV9lbmQ7IHBudW0rKykgew0KIAkJaWYgKCFwcmVzZW50
+X3NlY3Rpb25fbnIocG51bSkpDQogCQkJY29udGludWU7DQotCQl1c2VtYXBfbWFwW3BudW1dID0g
+dXNlbWFwOw0KKwkJbWFwW3BudW1dID0gdXNlbWFwOw0KIAkJdXNlbWFwICs9IHNpemU7DQotCQlj
+aGVja191c2VtYXBfc2VjdGlvbl9ucihub2RlaWQsIHVzZW1hcF9tYXBbcG51bV0pOw0KKwkJY2hl
+Y2tfdXNlbWFwX3NlY3Rpb25fbnIobm9kZWlkLCBtYXBbcG51bV0pOw0KIAl9DQogfQ0KIA0KQEAg
+LTQzMCwyMyArNDMyLDE2IEBAIHZvaWQgX19pbml0IHNwYXJzZV9tZW1fbWFwc19wb3B1bGF0ZV9u
+b2RlKHN0cnVjdCBwYWdlICoqbWFwX21hcCwNCiAjZW5kaWYgLyogIUNPTkZJR19TUEFSU0VNRU1f
+Vk1FTU1BUCAqLw0KIA0KICNpZmRlZiBDT05GSUdfU1BBUlNFTUVNX0FMTE9DX01FTV9NQVBfVE9H
+RVRIRVINCi1zdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNlX2Vhcmx5X21lbV9tYXBzX2FsbG9jX25v
+ZGUoc3RydWN0IHBhZ2UgKiptYXBfbWFwLA0KK3N0YXRpYyB2b2lkIF9faW5pdCBzcGFyc2VfZWFy
+bHlfbWVtX21hcHNfYWxsb2Nfbm9kZSh2b2lkICoqbWFwX21hcCwNCiAJCQkJIHVuc2lnbmVkIGxv
+bmcgcG51bV9iZWdpbiwNCiAJCQkJIHVuc2lnbmVkIGxvbmcgcG51bV9lbmQsDQogCQkJCSB1bnNp
+Z25lZCBsb25nIG1hcF9jb3VudCwgaW50IG5vZGVpZCkNCiB7DQotCXNwYXJzZV9tZW1fbWFwc19w
+b3B1bGF0ZV9ub2RlKG1hcF9tYXAsIHBudW1fYmVnaW4sIHBudW1fZW5kLA0KKwlzdHJ1Y3QgcGFn
+ZSAqKm1hcCA9IChzdHJ1Y3QgcGFnZSAqKiltYXBfbWFwOw0KKwlzcGFyc2VfbWVtX21hcHNfcG9w
+dWxhdGVfbm9kZShtYXAsIHBudW1fYmVnaW4sIHBudW1fZW5kLA0KIAkJCQkJIG1hcF9jb3VudCwg
+bm9kZWlkKTsNCiB9DQogI2Vsc2UNCi0NCi1zdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNlX2Vhcmx5
+X21lbV9tYXBzX2FsbG9jX25vZGUoc3RydWN0IHBhZ2UgKiptYXBfbWFwLA0KLQkJCQl1bnNpZ25l
+ZCBsb25nIHBudW1fYmVnaW4sDQotCQkJCXVuc2lnbmVkIGxvbmcgcG51bV9lbmQsDQotCQkJCXVu
+c2lnbmVkIGxvbmcgbWFwX2NvdW50LCBpbnQgbm9kZWlkKQ0KLXsNCi19DQotDQogc3RhdGljIHN0
+cnVjdCBwYWdlIF9faW5pdCAqc3BhcnNlX2Vhcmx5X21lbV9tYXBfYWxsb2ModW5zaWduZWQgbG9u
+ZyBwbnVtKQ0KIHsNCiAJc3RydWN0IHBhZ2UgKm1hcDsNCkBAIC00NzEsOSArNDY2LDEwIEBAIHZv
+aWQgX19hdHRyaWJ1dGVfXygod2VhaykpIF9fbWVtaW5pdCB2bWVtbWFwX3BvcHVsYXRlX3ByaW50
+X2xhc3Qodm9pZCkNCiAvKioNCiAgKiAgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAgLSBtZW1vcnkg
+YWxsb2N0aW9uIGZvciBwYWdlYmxvY2sgZmxhZ3MgYW5kIHZtZW1tYXANCiAgKiAgQG1hcDogdXNl
+bWFwX21hcCBmb3IgcGFnZWJsb2NrIGZsYWdzIG9yIG1tYXBfbWFwIGZvciB2bWVtbWFwDQotICog
+IEB1c2VfbWFwOiB0cnVlIGlmIG1lbW9yeSBhbGxvY2F0ZWQgZm9yIHBhZ2VibG9jayBmbGFncywg
+b3RoZXJ3aXNlIGZhbHNlDQogICovDQotc3RhdGljIHZvaWQgYWxsb2NfdXNlbWFwX2FuZF9tZW1t
+YXAodW5zaWduZWQgbG9uZyAqKm1hcCwgYm9vbCB1c2VfbWFwKQ0KK3N0YXRpYyB2b2lkIGFsbG9j
+X3VzZW1hcF9hbmRfbWVtbWFwKHZvaWQgKCphbGxvY19mdW5jKQ0KKwkJCQkodm9pZCAqKiwgdW5z
+aWduZWQgbG9uZywgdW5zaWduZWQgbG9uZywNCisJCQkJdW5zaWduZWQgbG9uZywgaW50KSwgdm9p
+ZCAqKm1hcCkNCiB7DQogCXVuc2lnbmVkIGxvbmcgcG51bTsNCiAJdW5zaWduZWQgbG9uZyBtYXBf
+Y291bnQ7DQpAQCAtNTA0LDI0ICs1MDAsMTYgQEAgc3RhdGljIHZvaWQgYWxsb2NfdXNlbWFwX2Fu
+ZF9tZW1tYXAodW5zaWduZWQgbG9uZyAqKm1hcCwgYm9vbCB1c2VfbWFwKQ0KIAkJCWNvbnRpbnVl
+Ow0KIAkJfQ0KIAkJLyogb2ssIHdlIG5lZWQgdG8gdGFrZSBjYWtlIG9mIGZyb20gcG51bV9iZWdp
+biB0byBwbnVtIC0gMSovDQotCQlpZiAodXNlX21hcCkNCi0JCQlzcGFyc2VfZWFybHlfdXNlbWFw
+c19hbGxvY19ub2RlKG1hcCwgcG51bV9iZWdpbiwgcG51bSwNCi0JCQkJCQkgbWFwX2NvdW50LCBu
+b2RlaWRfYmVnaW4pOw0KLQkJZWxzZQ0KLQkJCXNwYXJzZV9lYXJseV9tZW1fbWFwc19hbGxvY19u
+b2RlKChzdHJ1Y3QgcGFnZSAqKiltYXAsDQotCQkJCXBudW1fYmVnaW4sIHBudW0sIG1hcF9jb3Vu
+dCwgbm9kZWlkX2JlZ2luKTsNCisJCWFsbG9jX2Z1bmMobWFwLCBwbnVtX2JlZ2luLCBwbnVtLA0K
+KwkJCQkJbWFwX2NvdW50LCBub2RlaWRfYmVnaW4pOw0KIAkJLyogbmV3IHN0YXJ0LCB1cGRhdGUg
+Y291bnQgZXRjKi8NCiAJCW5vZGVpZF9iZWdpbiA9IG5vZGVpZDsNCiAJCXBudW1fYmVnaW4gPSBw
+bnVtOw0KIAkJbWFwX2NvdW50ID0gMTsNCiAJfQ0KIAkvKiBvaywgbGFzdCBjaHVuayAqLw0KLQlp
+ZiAodXNlX21hcCkNCi0JCXNwYXJzZV9lYXJseV91c2VtYXBzX2FsbG9jX25vZGUobWFwLCBwbnVt
+X2JlZ2luLA0KLQkJCQlOUl9NRU1fU0VDVElPTlMsIG1hcF9jb3VudCwgbm9kZWlkX2JlZ2luKTsN
+Ci0JZWxzZQ0KLQkJc3BhcnNlX2Vhcmx5X21lbV9tYXBzX2FsbG9jX25vZGUoKHN0cnVjdCBwYWdl
+ICoqKW1hcCwNCi0JCQlwbnVtX2JlZ2luLCBOUl9NRU1fU0VDVElPTlMsIG1hcF9jb3VudCwgbm9k
+ZWlkX2JlZ2luKTsNCisJYWxsb2NfZnVuYyhtYXAsIHBudW1fYmVnaW4sIE5SX01FTV9TRUNUSU9O
+UywNCisJCQkJCW1hcF9jb3VudCwgbm9kZWlkX2JlZ2luKTsNCiB9DQogDQogLyoNCkBAIC01NjEs
+MTQgKzU1MywxNiBAQCB2b2lkIF9faW5pdCBzcGFyc2VfaW5pdCh2b2lkKQ0KIAl1c2VtYXBfbWFw
+ID0gYWxsb2NfYm9vdG1lbShzaXplKTsNCiAJaWYgKCF1c2VtYXBfbWFwKQ0KIAkJcGFuaWMoImNh
+biBub3QgYWxsb2NhdGUgdXNlbWFwX21hcFxuIik7DQotCWFsbG9jX3VzZW1hcF9hbmRfbWVtbWFw
+KHVzZW1hcF9tYXAsIHRydWUpOw0KKwlhbGxvY191c2VtYXBfYW5kX21lbW1hcChzcGFyc2VfZWFy
+bHlfdXNlbWFwc19hbGxvY19ub2RlLA0KKwkJCQkJCSh2b2lkICoqKXVzZW1hcF9tYXApOw0KIA0K
+ICNpZmRlZiBDT05GSUdfU1BBUlNFTUVNX0FMTE9DX01FTV9NQVBfVE9HRVRIRVINCiAJc2l6ZTIg
+PSBzaXplb2Yoc3RydWN0IHBhZ2UgKikgKiBOUl9NRU1fU0VDVElPTlM7DQogCW1hcF9tYXAgPSBh
+bGxvY19ib290bWVtKHNpemUyKTsNCiAJaWYgKCFtYXBfbWFwKQ0KIAkJcGFuaWMoImNhbiBub3Qg
+YWxsb2NhdGUgbWFwX21hcFxuIik7DQotCWFsbG9jX3VzZW1hcF9hbmRfbWVtbWFwKCh1bnNpZ25l
+ZCBsb25nICoqKW1hcF9tYXAsIGZhbHNlKTsNCisJYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAoc3Bh
+cnNlX2Vhcmx5X21lbV9tYXBzX2FsbG9jX25vZGUsDQorCQkJCQkJKHZvaWQgKiopbWFwX21hcCk7
+DQogI2VuZGlmDQogDQogCWZvciAocG51bSA9IDA7IHBudW0gPCBOUl9NRU1fU0VDVElPTlM7IHBu
+dW0rKykgew0KLS0gDQoxLjcuNy42DQoNCg==
+--e89a8ff1ceb6008a8904e50cf311--
