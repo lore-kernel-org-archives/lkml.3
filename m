@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab3H2BKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:10:12 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:38347 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab3H2BKL (ORCPT
+	id S1752844Ab3H2BSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:18:54 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:58879 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3H2BSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:10:11 -0400
-Message-ID: <521E9F42.6090604@atmel.com>
-Date: Thu, 29 Aug 2013 09:09:22 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 28 Aug 2013 21:18:53 -0400
+Date: Wed, 28 Aug 2013 18:18:49 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Mark Brown'" <broonie@kernel.org>
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Message-ID: <20130829011848.GA16891@teo>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
+ <20130813090039.GA5604@mwanda>
+ <20130828015834.GH10506@lizard>
+ <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
+ <20130828083630.GF19256@mwanda>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        <arm@kernel.org>, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: soc update for 3.12 #1
-References: <1377532543-349-1-git-send-email-nicolas.ferre@atmel.com> <20130828235855.GM8607@quad.lixom.net>
-In-Reply-To: <20130828235855.GM8607@quad.lixom.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130828083630.GF19256@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+On Wed, Aug 28, 2013 at 11:36:30AM +0300, Dan Carpenter wrote:
+> He doesn't want to take the patch.  He's the maintainer so it's his
+> choice.  That's the end of the story.
 
-On 08/29/2013 07:58 AM, Olof Johansson wrote:
-> On Mon, Aug 26, 2013 at 05:55:43PM +0200, Nicolas Ferre wrote:
->> Arnd, Olof, Kevin,
->>
->> Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
->> this topic and it is based on 3.11-rc5 like your next/soc branch.
->>
->> Thanks, best regards,
->>
->> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
->>
->>    Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
->>
->> are available in the git repository at:
->>
->>    git://github.com/at91linux/linux-at91.git tags/at91-soc
->>
->> for you to fetch changes up to 99eb3b40ec42e7fce1fc58429bf9b26c17973c12:
->>
->>    ARM: at91: at91_dt_defconfig: enable rm9200 support (2013-08-26 09:58:29 +0200)
->>
->> ----------------------------------------------------------------
->> AT91 SoC update for 3.12 take 1
->> - enable kernel uncompress information output for
->>    SoC where it was missing: at91sam9n12 and sama5d3
->> - addition of at91rm9200 to the generic at91_dt_defconfig
->>
->> ----------------------------------------------------------------
->> Jean-Christophe PLAGNIOL-VILLARD (1):
->>        ARM: at91: at91_dt_defconfig: enable rm9200 support
->>
->> voice (4):
->>        ARM: at91: sama5d3: add definition for usart base address
->>        ARM: at91: include sama5d3.h into hardware.h
->>        ARM: at91: sama5: enable kernel uncompress info output
->>        ARM: at91: sam9n12: enable kernel uncompress info output
->
-> That doesn't look right. Author should probably be "Bo Shen
-> <voice.shen@atmel.com>" instead. Can you fixup and respin, please?
+Just to clarify: I don't want to take the patch for a reason, not just
+because of my mood today. Once the patch comes in combination with another
+patch (or a plan) that actually makes use of the wrapper function, then
+I'd happily apply/ack it.
 
-I don't know why on the patchwork it show my name as voice.
-So, if get patch from patchwork and apply it will show my name as voice.
-So, would it be possible to show the name as Bo Shen on patchwork?
+This is the same story as global checkpatch.pl fixes: they are more harm
+than good, and without the actual use of the dev_get_platdata(), the patch
+falls into "global checkpatch.pl fixes" category.
 
->
-> -Olof
->
+Thanks,
 
-Best Regards,
-Bo Shen
-
+Anton
