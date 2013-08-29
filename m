@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3H2SXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:23:18 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52460 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab3H2SXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:23:16 -0400
-Date: Thu, 29 Aug 2013 20:23:15 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Colin Cross <ccross@android.com>
-Cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv3] drivers: power: Detect device suspend/resume
- lockup and log event in pstore.
-Message-ID: <20130829182315.GA23346@amd.pavel.ucw.cz>
-References: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org>
- <3196266.rMZQj4Yosc@vostro.rjw.lan>
- <CAME+o4n8HqvGtAGX0wO+Zs_pdanKuhai6T3jg2V1Q4nWzxKk9A@mail.gmail.com>
- <1761440.cq52yMKNRv@vostro.rjw.lan>
- <521E7B8A.6060203@linaro.org>
- <CAMbhsRSqSC1Ni4QsZ_0sTrvaW3_feXFyGawZbWc34wuhA2BNeg@mail.gmail.com>
+	id S1756340Ab3H2SYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:24:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39615 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557Ab3H2SYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:24:16 -0400
+Message-ID: <521F91B0.6030204@ti.com>
+Date: Thu, 29 Aug 2013 14:23:44 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRSqSC1Ni4QsZ_0sTrvaW3_feXFyGawZbWc34wuhA2BNeg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Stephen Boyd <sboyd@codeaurora.org>, Tero Kristo <t-kristo@ti.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Matt Sealey <neko@bakuhatsu.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 0/5] clk: dt: bindings for mux, divider & gate clocks
+References: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-08-28 15:43:42, Colin Cross wrote:
-> On Wed, Aug 28, 2013 at 3:36 PM, John Stultz <john.stultz@linaro.org> wrote:
-> > On 08/28/2013 01:52 PM, Rafael J. Wysocki wrote:
-> >> On Wednesday, August 28, 2013 10:45:45 AM Zoran Markovic wrote:
-> >>> Hi Rafael,
-> >>>> It doesn't look too bad from a quick look, but there's a couple of things
-> >>>> I don't like in it still (relatively minor).
-> >>> If there are things you would like changed in this patch, please let
-> >>> me know. It would be nice to catch the 3.12 merge window.
-> >> Well, it's not in my queue to be honest.
-> >>
-> >> Is there any practical reason why it should go into the next release?
-> >
-> > I wouldn't say its critical for the next release, but I feel like this
-> > was the same response last cycle. Zoran's since investigated the various
-> > alternative approaches you've suggested, and continues to be interested
-> > in resolving your remaining objections.
-> >
-> > Its a useful feature the Android devs use, which could also help
-> > non-android developers debug suspend issues on their systems.
-> >
-> > If you really just feel its something best left out of tree, that's hard
-> > to argue against. Its just a debug tool and the android guys don't have
-> > an issue carrying their own tree, after all. But the cost of leaving it
-> > out is just the potential of others having to re-implement similar hacks
-> > on their own instead of collaborating on shared infrastructure.
-> 
-> And the benefit is that you are more likely to get bugreports that
-> have a stack trace of the offending suspend callback instead of "my
-> laptop doesn't suspend any more".
+Mike,
 
-Laptops do not have persistent store for dmesg. So... are you sure?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On Thursday 22 August 2013 01:53 AM, Mike Turquette wrote:
+> This series introduces binding definitions for common register-mapped
+> clock multiplexer, divider and gate IP blocks along with the
+> corresponding setup functions for matching DT data.  The bindings are
+> similar to the struct definitions but please don't hold that against the
+> binding: the struct definitions closely model the hardware register
+> layout.
+> 
+> The delta from v3 is very small and only consists of cosmetic changes
+> and one functional change for better error handling.
+> 
+> Changes since v3:
+> * added Tested-by & Reviewed-by from Heiko
+> * replaced underscores with dashes in DT property names
+> * bail from of clock setup function early if of_iomap fails
+> * removed unecessary explict cast
+> 
+> Mike Turquette (5):
+>   clk: divider: replace bitfield width with mask
+>   clk: of: helper for determining number of parent clocks
+>   clk: dt: binding for basic multiplexer clock
+>   clk: dt: binding for basic divider clock
+>   clk: dt: binding for basic gate clock
+> 
+I have used $subject series as the base for the Keystone
+ccf support and tested these patches on Keystone EVM. Will
+post those patches soon on the lists.
+
+For the series if you need more tested-by tags, feel free to
+add,
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+
