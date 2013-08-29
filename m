@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3H2Ohh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:37:37 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:35419 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab3H2Ohb (ORCPT
+	id S1755512Ab3H2Oh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:37:26 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:40797 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab3H2OhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:37:31 -0400
+	Thu, 29 Aug 2013 10:37:19 -0400
 From: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
 To: herbert@gondor.hengli.com.au
 Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
         Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
-Subject: [PATCH v2 10/10] crypto: nx - fix SHA-2 for chunks bigger than block size
-Date: Thu, 29 Aug 2013 11:36:40 -0300
-Message-Id: <1377787000-4966-11-git-send-email-mhcerri@linux.vnet.ibm.com>
+Subject: [PATCH v2 03/10] crypto: nx - fix limits to sg lists for AES-CBC
+Date: Thu, 29 Aug 2013 11:36:33 -0300
+Message-Id: <1377787000-4966-4-git-send-email-mhcerri@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1377787000-4966-1-git-send-email-mhcerri@linux.vnet.ibm.com>
 References: <1377787000-4966-1-git-send-email-mhcerri@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082914-1524-0000-0000-0000072C1278
+x-cbid: 13082914-2194-0000-0000-00000666839B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each call to the co-processor, with exception of the last call, needs to
-send data that is multiple of block size. As consequence, any remaining
-data is kept in the internal NX context.
+This patch updates the nx-aes-cbc implementation to perform several
+hyper calls if needed in order to always respect the length limits for
+scatter/gather lists.
 
-This patch fixes a bug in the driver that causes it to save incorrect
-data into the context when data is bigger than the block size.
+Two different limits are considered:
+
+ - "ibm,max-sg-len": maximum number of bytes of each scatter/gather
+   list.
+
+ - "ibm,max-sync-cop":
+    - The total number of bytes that a scatter/gather list can hold.
+    - The maximum number of elements that a scatter/gather list can have.
 
 Reviewed-by: Joy Latten <jmlatten@linux.vnet.ibm.com>
 Signed-off-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
 ---
- drivers/crypto/nx/nx-sha256.c | 2 +-
- drivers/crypto/nx/nx-sha512.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/crypto/nx/nx-aes-cbc.c | 50 +++++++++++++++++++++++++-----------------
+ 1 file changed, 30 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
-index 6547a71..da0b24a 100644
---- a/drivers/crypto/nx/nx-sha256.c
-+++ b/drivers/crypto/nx/nx-sha256.c
-@@ -129,7 +129,7 @@ static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
+diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
+index a9e76c6..cc00b52 100644
+--- a/drivers/crypto/nx/nx-aes-cbc.c
++++ b/drivers/crypto/nx/nx-aes-cbc.c
+@@ -71,39 +71,49 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
+ 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	unsigned long irq_flags;
++	unsigned int processed = 0, to_process;
++	u32 max_sg_len;
+ 	int rc;
  
- 		total -= to_process;
--		data += to_process;
-+		data += to_process - sctx->count;
- 		sctx->count = 0;
- 		in_sg = nx_ctx->in_sg;
- 	} while (leftover >= SHA256_BLOCK_SIZE);
-diff --git a/drivers/crypto/nx/nx-sha512.c b/drivers/crypto/nx/nx-sha512.c
-index 236e6af..4ae5b0f 100644
---- a/drivers/crypto/nx/nx-sha512.c
-+++ b/drivers/crypto/nx/nx-sha512.c
-@@ -131,7 +131,7 @@ static int nx_sha512_update(struct shash_desc *desc, const u8 *data,
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
+ 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
  
- 		total -= to_process;
--		data += to_process;
-+		data += to_process - sctx->count[0];
- 		sctx->count[0] = 0;
- 		in_sg = nx_ctx->in_sg;
- 	} while (leftover >= SHA512_BLOCK_SIZE);
+-	if (nbytes > nx_ctx->ap->databytelen) {
+-		rc = -EINVAL;
+-		goto out;
+-	}
++	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
++			   nx_ctx->ap->sglen);
+ 
+ 	if (enc)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+ 	else
+ 		NX_CPB_FDM(csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
+ 
+-	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes, 0,
+-			       csbcpb->cpb.aes_cbc.iv);
+-	if (rc)
+-		goto out;
++	do {
++		to_process = min_t(u64, nbytes - processed,
++				   nx_ctx->ap->databytelen);
++		to_process = min_t(u64, to_process,
++				   NX_PAGE_SIZE * (max_sg_len - 1));
++		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
+ 
+-	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
+-		rc = -EINVAL;
+-		goto out;
+-	}
++		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, to_process,
++				       processed, csbcpb->cpb.aes_cbc.iv);
++		if (rc)
++			goto out;
+ 
+-	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
+-			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
+-	if (rc)
+-		goto out;
++		if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
++			rc = -EINVAL;
++			goto out;
++		}
+ 
+-	memcpy(desc->info, csbcpb->cpb.aes_cbc.cv, AES_BLOCK_SIZE);
+-	atomic_inc(&(nx_ctx->stats->aes_ops));
+-	atomic64_add(csbcpb->csb.processed_byte_count,
+-		     &(nx_ctx->stats->aes_bytes));
++		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++				   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
++		if (rc)
++			goto out;
++
++		memcpy(desc->info, csbcpb->cpb.aes_cbc.cv, AES_BLOCK_SIZE);
++		atomic_inc(&(nx_ctx->stats->aes_ops));
++		atomic64_add(csbcpb->csb.processed_byte_count,
++			     &(nx_ctx->stats->aes_bytes));
++
++		processed += to_process;
++	} while (processed < nbytes);
+ out:
+ 	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
 -- 
 1.7.12
 
