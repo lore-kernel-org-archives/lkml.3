@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab3H2KHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:07:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34976 "EHLO
+	id S1756279Ab3H2KIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:08:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35004 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3H2KHt (ORCPT
+	with ESMTP id S1756112Ab3H2KIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:07:49 -0400
-Date: Thu, 29 Aug 2013 03:07:32 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-bec196720431db2fd6a9b03cbd77eb336e6f52de@git.kernel.org>
+	Thu, 29 Aug 2013 06:08:23 -0400
+Date: Thu, 29 Aug 2013 03:08:10 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-ac9be8ee4ecdeae73c78d84ebfe37009e11cf99d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, ak@linux.intel.com, tglx@linutronix.de
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1375670486-15480-1-git-send-email-andi@firstfloor.org>
-References: <1375670486-15480-1-git-send-email-andi@firstfloor.org>
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1377018945-21940-1-git-send-email-dsahern@gmail.com>
+References: <1377018945-21940-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Try to increase the file descriptor limits on EMFILE
-Git-Commit-ID: bec196720431db2fd6a9b03cbd77eb336e6f52de
+Subject: [tip:perf/core] perf trace:
+  Make command line arguments consistent with perf-record
+Git-Commit-ID: ac9be8ee4ecdeae73c78d84ebfe37009e11cf99d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,111 +28,95 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:07:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:08:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bec196720431db2fd6a9b03cbd77eb336e6f52de
-Gitweb:     http://git.kernel.org/tip/bec196720431db2fd6a9b03cbd77eb336e6f52de
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Sun, 4 Aug 2013 19:41:26 -0700
+Commit-ID:  ac9be8ee4ecdeae73c78d84ebfe37009e11cf99d
+Gitweb:     http://git.kernel.org/tip/ac9be8ee4ecdeae73c78d84ebfe37009e11cf99d
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 20 Aug 2013 11:15:45 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 16 Aug 2013 17:17:57 -0300
+CommitDate: Mon, 26 Aug 2013 17:25:35 -0300
 
-perf tools: Try to increase the file descriptor limits on EMFILE
+perf trace: Make command line arguments consistent with perf-record
 
-perf stat -a needs 10 open file descriptors per logical CPU
-perf stat -a -dddd needs 20 open fds for each.
+Common arguments like thread id, CPU list, mmap pages, etc should be
+consistent across perf commands.
 
-This implies that stat -a doesn't work on any system with the default
-ulimit -n 1024 which has more than ~100 CPUs and stat -a -dddd doesn't
-work on anything with more than 46 CPUs.
+v3: Updated man page
+v2: rebased to latest core branch
 
-Longer term there needs to be probably some way to lower the file
-descriptor requirements. This would need some changes in the kernel/user
-interface.
-
-But short term this patch just tries to increase the file descriptor
-limit in perf itself, when it runs into a EMFILE.
-
-It first sets it to the hard limit, and then tries to increase the hard
-limit.
-
-On Fedora systems the default seems to be soft limit 1024 and hard limit
-4*1024. So even non root can support 409 or 186 CPUs respectively. root
-can go far higher.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1375670486-15480-1-git-send-email-andi@firstfloor.org
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1377018945-21940-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ tools/perf/Documentation/perf-trace.txt |  6 ++++++
+ tools/perf/builtin-trace.c              | 12 ++++++------
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 960394e..a29c8d0 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -13,6 +13,7 @@
- #include <traceevent/event-parse.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/perf_event.h>
-+#include <sys/resource.h>
- #include "asm/bug.h"
- #include "evsel.h"
- #include "evlist.h"
-@@ -867,6 +868,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	int cpu, thread;
- 	unsigned long flags = 0;
- 	int pid = -1, err;
-+	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 2794efc..cb3371e 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -23,6 +23,7 @@ analysis phases.
+ OPTIONS
+ -------
  
- 	if (evsel->fd == NULL &&
- 	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
-@@ -894,6 +896,7 @@ retry_sample_id:
++-a::
+ --all-cpus::
+         System-wide collection from all CPUs.
  
- 			group_fd = get_group_fd(evsel, cpu, thread);
+@@ -38,18 +39,23 @@ OPTIONS
+ --pid=::
+ 	Record events on existing process ID (comma separated list).
  
-+retry_open:
- 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
- 								     pid,
- 								     cpus->map[cpu],
-@@ -902,12 +905,37 @@ retry_sample_id:
- 				err = -errno;
- 				goto try_fallback;
- 			}
-+			set_rlimit = NO_CHANGE;
- 		}
- 	}
++-t::
+ --tid=::
+         Record events on existing thread ID (comma separated list).
  
- 	return 0;
++-u::
+ --uid=::
+         Record events in threads owned by uid. Name or number.
  
- try_fallback:
-+	/*
-+	 * perf stat needs between 5 and 22 fds per CPU. When we run out
-+	 * of them try to increase the limits.
-+	 */
-+	if (err == -EMFILE && set_rlimit < INCREASED_MAX) {
-+		struct rlimit l;
-+		int old_errno = errno;
-+
-+		if (getrlimit(RLIMIT_NOFILE, &l) == 0) {
-+			if (set_rlimit == NO_CHANGE)
-+				l.rlim_cur = l.rlim_max;
-+			else {
-+				l.rlim_cur = l.rlim_max + 1000;
-+				l.rlim_max = l.rlim_cur;
-+			}
-+			if (setrlimit(RLIMIT_NOFILE, &l) == 0) {
-+				set_rlimit++;
-+				errno = old_errno;
-+				goto retry_open;
-+			}
-+		}
-+		errno = old_errno;
-+	}
-+
- 	if (err != -EINVAL || cpu > 0 || thread > 0)
- 		goto out_close;
++-i::
+ --no-inherit::
+ 	Child tasks do not inherit counters.
  
++-m::
+ --mmap-pages=::
+ 	Number of mmap data pages. Must be a power of two.
+ 
++-C::
+ --cpu::
+ Collect samples only on the list of CPUs provided. Multiple CPUs can be provided as a
+ comma-separated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2.
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 4235316..9891d8c 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -693,17 +693,17 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 	OPT_STRING('p', "pid", &trace.opts.target.pid, "pid",
+ 		    "trace events on existing process id"),
+-	OPT_STRING(0, "tid", &trace.opts.target.tid, "tid",
++	OPT_STRING('t', "tid", &trace.opts.target.tid, "tid",
+ 		    "trace events on existing thread id"),
+-	OPT_BOOLEAN(0, "all-cpus", &trace.opts.target.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &trace.opts.target.system_wide,
+ 		    "system-wide collection from all CPUs"),
+-	OPT_STRING(0, "cpu", &trace.opts.target.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &trace.opts.target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+-	OPT_BOOLEAN(0, "no-inherit", &trace.opts.no_inherit,
++	OPT_BOOLEAN('i', "no-inherit", &trace.opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_UINTEGER(0, "mmap-pages", &trace.opts.mmap_pages,
++	OPT_UINTEGER('m', "mmap-pages", &trace.opts.mmap_pages,
+ 		     "number of mmap data pages"),
+-	OPT_STRING(0, "uid", &trace.opts.target.uid_str, "user",
++	OPT_STRING('u', "uid", &trace.opts.target.uid_str, "user",
+ 		   "user to profile"),
+ 	OPT_CALLBACK(0, "duration", &trace, "float",
+ 		     "show only events with duration > N.M ms",
