@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab3H2ICm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 04:02:42 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:64027 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab3H2ICj (ORCPT
+	id S1756054Ab3H2ID1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 04:03:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46397 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753191Ab3H2IDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 04:02:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
-References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
-Date: Thu, 29 Aug 2013 10:02:38 +0200
-Message-ID: <CACRpkdZpHk31zPPn9OeXp3=EH=H6p3BKmikN=7TwLhsR+c1aiA@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO
- controller on bf54x and bf60x.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Aug 2013 04:03:24 -0400
+Date: Thu, 29 Aug 2013 10:03:20 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
+        Will Deacon <will.deacon@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
+Message-ID: <20130829100320.0b86e1f9@skate>
+In-Reply-To: <20130828123352.b9beff5237dfde2571a5779e@linux-foundation.org>
+References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
+	<20130827133709.64b4743950b911d6dfe7fab8@linux-foundation.org>
+	<20130828102422.GA2348@localhost>
+	<20130828123352.b9beff5237dfde2571a5779e@linux-foundation.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 8:30 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+Dear Andrew Morton,
 
-> From: Sonic Zhang <sonic.zhang@analog.com>
->
-> The new ADI GPIO2 controller was introduced since the BF548 and BF60x
-> processors. It differs a lot from the old one on BF5xx processors. So,
-> create a pinctrl driver under the pinctrl framework.
-(...)
+On Wed, 28 Aug 2013 12:33:52 -0700, Andrew Morton wrote:
 
-The v3 is a huge improvement! Keep going.
+> > > It only works if both subsystems agree to use atomic_io_modify().  And
+> > > if they're both capable of doing that, they are both capable of
+> > > implementing an agreed-upon internal locking scheme, so why bother?
+> > > 
+> > 
+> > One of the scenarios where this could be helpful and an agreed-upon
+> > lock seemed difficult to design is this: a watchdog driver that shares
+> > some control register with *two* different clocksource drivers.
+> > 
+> > So, one first solution is to have a function in the two clocksource
+> > drivers (with matching prototype) and have the watchdog access
+> > the register through it.
+> > 
+> > However, because of multiplatform builds, both these clocksource drivers
+> > could be built at the same time. Therefore we would have a symbol
+> > collision, doubly-defined, in each driver.
+> > 
+> > How would that work? What other internal locking scheme could we
+> > implement?
+> 
+> I guess the locking would need to be in a standalone module which the
+> various driver modules would then depend upon.  I'm not really
+> advocating doing this - I'm just making noise.
 
-I will not repeat any of Stephens review comments, I just
-saw this:
+I think the idea of this "atomic MMIO modify" function was precisely to
+solve the situations where one or two "misc" registers need to be
+accessed by various unrelated drivers, and having a separate standalone
+module to control those one or two "misc" registers would be a bit too
+annoying.
 
-> +static const unsigned uart1_pins[] = {
-> +       GPIO_PH0, GPIO_PH1,
-> +#ifdef CONFIG_BFIN_UART1_CTSRTS
-> +       GPIO_PE9, GPIO_PE10,
-> +#endif
-(...)
-> +static const unsigned atapi_pins[] = {
-> +       GPIO_PH2, GPIO_PJ3, GPIO_PJ4, GPIO_PJ5, GPIO_PJ6,
-> +       GPIO_PJ7, GPIO_PJ8, GPIO_PJ9, GPIO_PJ10,
-> +       GPIO_PG5, GPIO_PG6, GPIO_PG7,
-> +#ifdef CONFIG_BF548_ATAPI_ALTERNATIVE_PORT
-> +       GPIO_PF0, GPIO_PF1, GPIO_PF2, GPIO_PF3, GPIO_PF4, GPIO_PF5, GPIO_PF6,
-> +       GPIO_PF7, GPIO_PF8, GPIO_PF9, GPIO_PF10, GPIO_PF11, GPIO_PF12,
-> +       GPIO_PF13, GPIO_PF14, GPIO_PF15, GPIO_PG2, GPIO_PG3, GPIO_PG4,
-> +#endif
+This is a situation that we have fairly often at least in some ARM
+SoCs: the registers of the various IP blocks are generally nicely
+organized in "regions", where all the registers for each UART are
+grouped together, for each I2C controller, each SPI controller and so
+on. But there are always a bunch of misc, system control registers that
+do not really belong to any particular IP block, but some of the device
+drivers sometimes need to set/clear a bit in such registers. Of course,
+when those "system control" registers control a clock, or pin muxing,
+or something well-known, we have existing frameworks in the kernel to
+support that. But there is always this bizarre "system control"
+feature, that does not fit into an existing kernel framework, and for
+which writing an entirely separate driver is really overkill.
 
-(...)
-> +static const struct adi_pin_group adi_pin_groups[] = {
-(...)
-> +       ADI_PIN_GROUP("uart1grp", uart1_pins),
-(...)
-> +       ADI_PIN_GROUP("atapigrp", atapi_pins),
-> +};
+The case highlighted by the patches 3/4 and 4/4 of Ezequiel are I
+believe a good example. While each timer and the watchdog each have
+their own "region" of registers to be controlled, there is also one
+single global register to enable/disable the different timers and
+watchdog (with one bit per timer or watchdog). So this register needs
+to be accessed by both the timer (clocksource) and watchdog drivers,
+even though they are otherwise completely unrelated. Writing a separate
+driver just to control this register, that is accessed infrequently
+(i.e only when the kernel boots essentially), would require a lot of
+code for no real benefit.
 
-This is not how we do it. Do not use Kconfig to spefify how the SoC
-is utilized. This shall be done at runtime.
+Does that clarify the intended usage?
 
-What you want to do for UART0 is specify one group for the TX/RX
-pair and another group for the CTS/RTS pair like this:
+Thanks for your feedback,
 
-static const unsigned uart1_rxtx_pins[] = {
-       GPIO_PH0, GPIO_PH1,
-};
-
-static const unsigned uart1_rtscts_pins[] = {
-       GPIO_PE9, GPIO_PE10,
-};
-
-static const struct adi_pin_group adi_pin_groups[] = {
-(...)
-        ADI_PIN_GROUP("uart1txrxgrp", uart1_rxtx_pins),
-        ADI_PIN_GROUP("uart1rtsctsgrp", uart1_ctsrts_pins),
-       (...)
-};
-
-(And vice versa for the atapi pins, create two groups.)
-
-If you want to use all four pins on UART1 in a system, you
-specify this in you map (in platform data or DTS), so that
-e.g. the state "default" will be activate *both* uart1txrxgrp
-and uart1rtscts groups.
-
-This is typically done with two entries in the map.
-
-Yours,
-Linus Walleij
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
