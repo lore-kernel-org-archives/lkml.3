@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3H2KKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:10:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35183 "EHLO
+	id S1756571Ab3H2KKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:10:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35193 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3H2KKT (ORCPT
+	with ESMTP id S1756064Ab3H2KK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:10:19 -0400
-Date: Thu, 29 Aug 2013 03:09:37 -0700
+	Thu, 29 Aug 2013 06:10:28 -0400
+Date: Thu, 29 Aug 2013 03:09:47 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-8nxaole8mb7zyopk47tdellj@git.kernel.org>
+Message-ID: <tip-mm864hvhrpt39muxmmbtjasz@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, fweisbec@gmail.com, adrian.hunter@intel.com,
@@ -20,8 +20,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf trace:
-  Add aliases to remaining syscalls of the sys_enter_newfoo
-Git-Commit-ID: e5959683adb6b15cc2aebfbed5aa1315e24a53db
+  Allow overiding the formatting of syscall fields
+Git-Commit-ID: beccb2b54a39ca5e49a7aa2912faa33617a45cc1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,27 +30,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:09:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 29 Aug 2013 03:09:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5959683adb6b15cc2aebfbed5aa1315e24a53db
-Gitweb:     http://git.kernel.org/tip/e5959683adb6b15cc2aebfbed5aa1315e24a53db
+Commit-ID:  beccb2b54a39ca5e49a7aa2912faa33617a45cc1
+Gitweb:     http://git.kernel.org/tip/beccb2b54a39ca5e49a7aa2912faa33617a45cc1
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 26 Aug 2013 12:21:41 -0300
+AuthorDate: Mon, 26 Aug 2013 12:29:38 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 26 Aug 2013 17:25:54 -0300
+CommitDate: Mon, 26 Aug 2013 17:25:57 -0300
 
-perf trace: Add aliases to remaining syscalls of the sys_enter_newfoo
+perf trace: Allow overiding the formatting of syscall fields
 
-Before:
+The mmap syscalls, for instance, don't have the FORMAT_IS_POINTER for
+its pointer arguments, override it.
 
-  2392.918 ( 0.008 ms): 21581 lstat(arg0: 140734915488448, arg1: 140734915488240, arg2: 140734915488240, arg3: 3, arg4: 24426352, arg5: 98) = 0
-
-After:
-
-  7408.087 ( 0.013 ms): 21969 lstat(filename: 0x7fff44b4bf20, statbuf: 0x7fff44b4be50               ) = 0
+This also paves the way for more specialized argument beautifiers, like
+for mmap's prot and flags arguments.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -59,34 +57,62 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8nxaole8mb7zyopk47tdellj@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mm864hvhrpt39muxmmbtjasz@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ tools/perf/builtin-trace.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index b2038fd..2d759f5 100644
+index 2d759f5..60ee811 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -32,16 +32,20 @@ static struct syscall_fmt {
+@@ -17,24 +17,35 @@ static size_t syscall_arg__scnprintf_hex(char *bf, size_t size, unsigned long ar
+ 	return scnprintf(bf, size, "%#lx", arg);
+ }
+ 
++#define SCA_HEX syscall_arg__scnprintf_hex
++
+ static struct syscall_fmt {
+ 	const char *name;
+ 	const char *alias;
++	size_t	   (*arg_scnprintf[6])(char *bf, size_t size, unsigned long arg);
+ 	bool	   errmsg;
+ 	bool	   timeout;
+ 	bool	   hexret;
+ } syscall_fmts[] = {
+ 	{ .name	    = "access",	    .errmsg = true, },
+ 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
+-	{ .name	    = "brk",	    .hexret = true, },
++	{ .name	    = "brk",	    .hexret = true,
++	  .arg_scnprintf = { [0] = SCA_HEX, /* brk */ }, },
+ 	{ .name	    = "mmap",	    .hexret = true, },
+ 	{ .name	    = "connect",    .errmsg = true, },
  	{ .name	    = "fstat",	    .errmsg = true, .alias = "newfstat", },
  	{ .name	    = "fstatat",    .errmsg = true, .alias = "newfstatat", },
  	{ .name	    = "futex",	    .errmsg = true, },
-+	{ .name	    = "lstat",	    .errmsg = true, .alias = "newlstat", },
- 	{ .name	    = "mmap",	    .hexret = true, },
++	{ .name	    = "ioctl",	    .errmsg = true,
++	  .arg_scnprintf = { [2] = SCA_HEX, /* arg */ }, },
+ 	{ .name	    = "lstat",	    .errmsg = true, .alias = "newlstat", },
+-	{ .name	    = "mmap",	    .hexret = true, },
++	{ .name	    = "mmap",	    .hexret = true,
++	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
++	{ .name	    = "mprotect",   .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
  	{ .name	    = "mremap",	    .hexret = true, },
++	{ .name	    = "munmap",	    .errmsg = true,
++	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
  	{ .name	    = "open",	    .errmsg = true, },
  	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
  	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
-+	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
-+	{ .name	    = "pwrite",	    .errmsg = true, .alias = "pwrite64", },
- 	{ .name	    = "read",	    .errmsg = true, },
- 	{ .name	    = "recvfrom",   .errmsg = true, },
- 	{ .name	    = "select",	    .errmsg = true, .timeout = true, },
- 	{ .name	    = "socket",	    .errmsg = true, },
- 	{ .name	    = "stat",	    .errmsg = true, .alias = "newstat", },
-+	{ .name	    = "uname",	    .errmsg = true, .alias = "newuname", },
- };
+@@ -232,7 +243,9 @@ static int syscall__set_arg_fmts(struct syscall *sc)
+ 		return -1;
  
- static int syscall_fmt__cmp(const void *name, const void *fmtp)
+ 	for (field = sc->tp_format->format.fields->next; field; field = field->next) {
+-		if (field->flags & FIELD_IS_POINTER)
++		if (sc->fmt && sc->fmt->arg_scnprintf[idx])
++			sc->arg_scnprintf[idx] = sc->fmt->arg_scnprintf[idx];
++		else if (field->flags & FIELD_IS_POINTER)
+ 			sc->arg_scnprintf[idx] = syscall_arg__scnprintf_hex;
+ 		++idx;
+ 	}
