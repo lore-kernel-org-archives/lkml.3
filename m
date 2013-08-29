@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3H2VIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:08:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53233 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757166Ab3H2VIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:08:21 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] hvc_xen: Remove unnecessary __GFP_ZERO from kzalloc
-Date: Thu, 29 Aug 2013 14:08:18 -0700
-Message-Id: <3cf4280498661e3099cf53ef408581fb2de9c006.1377810330.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	id S1756998Ab3H2VIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:08:16 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43005 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab3H2VIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 17:08:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: [PATCH 1/3] ACPI / scan: Change ordering of locks for device hotplug
+Date: Thu, 29 Aug 2013 23:15:56 +0200
+Message-ID: <1752041.76DW3TEE1A@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+References: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kzalloc already adds this __GFP_ZERO.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Change the ordering of device hotplug locks in scan.c so that
+acpi_scan_lock is always acquired after device_hotplug_lock.
+
+This will make it possible to use device_hotplug_lock around some
+code paths that acquire acpi_scan_lock safely (most importantly
+system suspend and hibernation).  Apart from that, acpi_scan_lock
+is platform-specific and device_hotplug_lock is general, so the
+new ordering appears to be more appropriate from the overall
+design viewpoint.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/tty/hvc/hvc_xen.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/scan.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 682210d..e61c36c 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -208,7 +208,7 @@ static int xen_hvm_console_init(void)
- 
- 	info = vtermno_to_xencons(HVC_COOKIE);
- 	if (!info) {
--		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
- 		if (!info)
- 			return -ENOMEM;
- 	} else if (info->intf != NULL) {
-@@ -257,7 +257,7 @@ static int xen_pv_console_init(void)
- 
- 	info = vtermno_to_xencons(HVC_COOKIE);
- 	if (!info) {
--		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
- 		if (!info)
- 			return -ENOMEM;
- 	} else if (info->intf != NULL) {
-@@ -284,7 +284,7 @@ static int xen_initial_domain_console_init(void)
- 
- 	info = vtermno_to_xencons(HVC_COOKIE);
- 	if (!info) {
--		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
- 		if (!info)
- 			return -ENOMEM;
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -204,8 +204,6 @@ static int acpi_scan_hot_remove(struct a
+ 		return -EINVAL;
  	}
--- 
-1.8.1.2.459.gbcd45b4.dirty
+ 
+-	lock_device_hotplug();
+-
+ 	/*
+ 	 * Carry out two passes here and ignore errors in the first pass,
+ 	 * because if the devices in question are memory blocks and
+@@ -236,9 +234,6 @@ static int acpi_scan_hot_remove(struct a
+ 					    ACPI_UINT32_MAX,
+ 					    acpi_bus_online_companions, NULL,
+ 					    NULL, NULL);
+-
+-			unlock_device_hotplug();
+-
+ 			put_device(&device->dev);
+ 			return -EBUSY;
+ 		}
+@@ -249,8 +244,6 @@ static int acpi_scan_hot_remove(struct a
+ 
+ 	acpi_bus_trim(device);
+ 
+-	unlock_device_hotplug();
+-
+ 	/* Device node has been unregistered. */
+ 	put_device(&device->dev);
+ 	device = NULL;
+@@ -289,6 +282,7 @@ static void acpi_bus_device_eject(void *
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+ 	int error;
+ 
++	lock_device_hotplug();
+ 	mutex_lock(&acpi_scan_lock);
+ 
+ 	acpi_bus_get_device(handle, &device);
+@@ -312,6 +306,7 @@ static void acpi_bus_device_eject(void *
+ 
+  out:
+ 	mutex_unlock(&acpi_scan_lock);
++	unlock_device_hotplug();
+ 	return;
+ 
+  err_out:
+@@ -326,8 +321,8 @@ static void acpi_scan_bus_device_check(a
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+ 	int error;
+ 
+-	mutex_lock(&acpi_scan_lock);
+ 	lock_device_hotplug();
++	mutex_lock(&acpi_scan_lock);
+ 
+ 	if (ost_source != ACPI_NOTIFY_BUS_CHECK) {
+ 		acpi_bus_get_device(handle, &device);
+@@ -353,9 +348,9 @@ static void acpi_scan_bus_device_check(a
+ 		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+ 
+  out:
+-	unlock_device_hotplug();
+ 	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
+ 	mutex_unlock(&acpi_scan_lock);
++	unlock_device_hotplug();
+ }
+ 
+ static void acpi_scan_bus_check(void *context)
+@@ -446,6 +441,7 @@ void acpi_bus_hot_remove_device(void *co
+ 	acpi_handle handle = device->handle;
+ 	int error;
+ 
++	lock_device_hotplug();
+ 	mutex_lock(&acpi_scan_lock);
+ 
+ 	error = acpi_scan_hot_remove(device);
+@@ -455,6 +451,7 @@ void acpi_bus_hot_remove_device(void *co
+ 					  NULL);
+ 
+ 	mutex_unlock(&acpi_scan_lock);
++	unlock_device_hotplug();
+ 	kfree(context);
+ }
+ EXPORT_SYMBOL(acpi_bus_hot_remove_device);
 
