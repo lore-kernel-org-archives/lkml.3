@@ -1,167 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab3H2SdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:33:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8684 "EHLO mx1.redhat.com"
+	id S1756858Ab3H2Sdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:33:44 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46253 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754315Ab3H2SdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:33:18 -0400
-Date: Thu, 29 Aug 2013 14:33:10 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, seiji.aguchi@hds.com,
-        majianpeng@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] elevator: Fix a race in elevator switching and md device
- initialization
-Message-ID: <20130829183310.GB6171@redhat.com>
-References: <20130826134515.2298.55571.stgit@outback>
+	id S1753544Ab3H2Sc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:32:57 -0400
+X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
+   d="scan'208";a="48860330"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v5 09/13] xen/arm,arm64: enable SWIOTLB_XEN
+Date: Thu, 29 Aug 2013 19:32:30 +0100
+Message-ID: <1377801154-29215-9-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130826134515.2298.55571.stgit@outback>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 09:45:15AM -0400, Tomoki Sekiyama wrote:
-> The soft lockup below happes at the boot time of the system using dm
-> multipath and automated elevator switching udev rules.
-> 
-> [  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
-> [  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>] lock_timer_base.isra.35+0x1d/0x50
-> ...
-> [  356.127001] Call Trace:
-> [  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
-> [  356.127001]  [<ffffffff8118b08a>] ? kmem_cache_alloc_node_trace+0x20a/0x230
-> [  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
-> [  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
-> [  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
-> [  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
-> [  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
-> [  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
-> [  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
-> [  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
-> [  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
-> [  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
-> 
+Xen on arm and arm64 needs SWIOTLB_XEN: when running on Xen we need to
+program the hardware with mfns rather than pfns for dma addresses.
+Remove SWIOTLB_XEN dependency on X86 and PCI and make XEN select
+SWIOTLB_XEN on arm and arm64.
 
-Tokomi, 
+At the moment always rely on swiotlb-xen, but when Xen starts supporting
+hardware IOMMUs we'll be able to avoid it conditionally on the presence
+of an IOMMU on the platform.
 
-As you noticed, there is a fedora bug open with similar signature. May
-be this patch will fix that issue also.
+Implement xen_create_contiguous_region on arm and arm64 by using
+XENMEM_exchange_and_pin.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=902012
+Initialize the xen-swiotlb from xen_early_init (before the native
+dma_ops are initialized), set dma_ops to &xen_swiotlb_dma_ops if we are
+running on Xen.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
-> This is caused by a race between md device initialization and sysfs knob
-> to switch the scheduler.
-> 
-> * multipathd:
->  SyS_ioctl -> do_vfs_ioctl -> dm_ctl_ioctl -> ctl_ioctl ->  table_load
->   -> dm_setup_md_queue -> blk_init_allocated_queue -> elevator_init:
-> 
->     q->elevator = elevator_alloc(q, e); // not yet initialized
-> 
-> * sh -c 'echo deadline > /sys/$DEVPATH/queue/scheduler'
->  SyS_write -> vfs_write -> sysfs_write_file -> queue_attr_store
->      ( mutex_lock(&q->sysfs_lock) here. )
->   -> elv_iosched_store -> elevator_change:
-> 
->   elevator_exit(old); // try to de-init uninitialized elevator and hang up
-> 
-> This patch adds acquisition of q->sysfs_lock in blk_init_allocated_queue().
-> This also adds the lock into elevator_change() to ensure locking from the
-> other path, as it is exposed function (and queue_attr_store will uses
-> __elevator_change() now, the non-locking version of elevator_change()).
+Changes in v4:
+- remove redefinition of DMA_ERROR_CODE;
+- update the code to use XENMEM_exchange_and_pin and XENMEM_unpin;
+- add a note about hardware IOMMU in the commit message.
 
-I think introducing __elevator_change() is orthogonal to this problem.
-May be keep that in a separate patch.
+Changes in v3:
+- code style changes;
+- warn on XENMEM_put_dma_buf failures.
+---
+ arch/arm/Kconfig                |    1 +
+ arch/arm/include/asm/xen/page.h |    2 +
+ arch/arm/xen/Makefile           |    2 +-
+ arch/arm/xen/enlighten.c        |    3 +
+ arch/arm/xen/mm.c               |  117 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/Kconfig              |    1 +
+ arch/arm64/xen/Makefile         |    2 +-
+ drivers/xen/Kconfig             |    1 -
+ drivers/xen/swiotlb-xen.c       |   16 +++++
+ 9 files changed, 142 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/xen/mm.c
 
->  block/blk-core.c |    6 +++++-
->  block/elevator.c |   16 ++++++++++++++--
->  2 files changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 93a18d1..2323ec3 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -739,9 +739,13 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
->  
->  	q->sg_reserved_size = INT_MAX;
->  
-> +	/* Protect q->elevator from elevator_change */
-> +	mutex_lock(&q->sysfs_lock);
->  	/* init elevator */
->  	if (elevator_init(q, NULL))
-> -		return NULL;
-> +		q = NULL;
-> +	mutex_unlock(&q->sysfs_lock);
-> +
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c0bfb33..2c9d112 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1848,6 +1848,7 @@ config XEN
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
+ 	select ARM_PSCI
++	select SWIOTLB_XEN
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index 359a7b5..b0f7150 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -6,12 +6,14 @@
+ 
+ #include <linux/pfn.h>
+ #include <linux/types.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <xen/interface/grant_table.h>
+ 
+ #define pfn_to_mfn(pfn)			(pfn)
+ #define phys_to_machine_mapping_valid(pfn) (1)
+ #define mfn_to_pfn(mfn)			(mfn)
++#define mfn_to_local_pfn(m)             (mfn_to_pfn(m))
+ #define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
+ 
+ #define pte_mfn	    pte_pfn
+diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+index 4384103..66fc35d 100644
+--- a/arch/arm/xen/Makefile
++++ b/arch/arm/xen/Makefile
+@@ -1 +1 @@
+-obj-y		:= enlighten.o hypercall.o grant-table.o
++obj-y		:= enlighten.o hypercall.o grant-table.o mm.o
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 14d17ab..06a6953 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -195,6 +195,7 @@ static void xen_power_off(void)
+  * documentation of the Xen Device Tree format.
+  */
+ #define GRANT_TABLE_PHYSADDR 0
++extern int xen_mm_init(void);
+ void __init xen_early_init(void)
+ {
+ 	struct resource res;
+@@ -230,6 +231,8 @@ void __init xen_early_init(void)
+ 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+ 	else
+ 		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
++
++	xen_mm_init();
+ }
+ 
+ static int __init xen_guest_init(void)
+diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+new file mode 100644
+index 0000000..916deb2
+--- /dev/null
++++ b/arch/arm/xen/mm.c
+@@ -0,0 +1,117 @@
++#include <linux/bootmem.h>
++#include <linux/gfp.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/dma-mapping.h>
++#include <linux/vmalloc.h>
++#include <linux/swiotlb.h>
++
++#include <xen/xen.h>
++#include <xen/interface/memory.h>
++#include <xen/swiotlb-xen.h>
++
++#include <asm/cacheflush.h>
++#include <asm/xen/page.h>
++#include <asm/xen/hypercall.h>
++#include <asm/xen/interface.h>
++
++static int xen_exchange_memory(xen_ulong_t extents_in,
++			       unsigned int order_in,
++			       xen_pfn_t *pfns_in,
++			       xen_ulong_t extents_out,
++			       unsigned int order_out,
++			       xen_pfn_t *mfns_out,
++			       unsigned int address_bits)
++{
++	long rc;
++	int success;
++
++	struct xen_memory_exchange exchange = {
++		.in = {
++			.nr_extents   = extents_in,
++			.extent_order = order_in,
++			.domid        = DOMID_SELF
++		},
++		.out = {
++			.nr_extents   = extents_out,
++			.extent_order = order_out,
++			.address_bits = address_bits,
++			.domid        = DOMID_SELF
++		}
++	};
++	set_xen_guest_handle(exchange.in.extent_start, pfns_in);
++	set_xen_guest_handle(exchange.out.extent_start, mfns_out);
++
++	BUG_ON(extents_in << order_in != extents_out << order_out);
++
++
++	rc = HYPERVISOR_memory_op(XENMEM_exchange_and_pin, &exchange);
++	success = (exchange.nr_exchanged == extents_in);
++
++	BUG_ON(!success && ((exchange.nr_exchanged != 0) || (rc == 0)));
++	BUG_ON(success && (rc != 0));
++
++	return success;
++}
++
++int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
++				 unsigned int address_bits,
++				 dma_addr_t *dma_handle)
++{
++	phys_addr_t pstart = __pa(vstart);
++	xen_pfn_t in_frame, out_frame;
++	int success;
++
++	/* Get a new contiguous memory extent. */
++	in_frame = out_frame = pstart >> PAGE_SHIFT;
++	success = xen_exchange_memory(1, order, &in_frame,
++				      1, order, &out_frame,
++				      address_bits);
++
++	if (!success)
++		return -ENOMEM;
++
++	*dma_handle = out_frame << PAGE_SHIFT;
++
++	return success ? 0 : -ENOMEM;
++}
++EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
++
++void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
++{
++	xen_pfn_t in_frame = __pa(vstart) >> PAGE_SHIFT;
++	struct xen_unpin unpin = {
++		.in = {
++			.nr_extents   = 1,
++			.extent_order = order,
++			.domid        = DOMID_SELF
++		},
++	};
++	set_xen_guest_handle(unpin.in.extent_start, &in_frame);
++
++	WARN_ON(HYPERVISOR_memory_op(XENMEM_unpin, &unpin));
++}
++EXPORT_SYMBOL_GPL(xen_destroy_contiguous_region);
++
++static struct dma_map_ops xen_swiotlb_dma_ops = {
++	.mapping_error = xen_swiotlb_dma_mapping_error,
++	.alloc = xen_swiotlb_alloc_coherent,
++	.free = xen_swiotlb_free_coherent,
++	.sync_single_for_cpu = xen_swiotlb_sync_single_for_cpu,
++	.sync_single_for_device = xen_swiotlb_sync_single_for_device,
++	.sync_sg_for_cpu = xen_swiotlb_sync_sg_for_cpu,
++	.sync_sg_for_device = xen_swiotlb_sync_sg_for_device,
++	.map_sg = xen_swiotlb_map_sg_attrs,
++	.unmap_sg = xen_swiotlb_unmap_sg_attrs,
++	.map_page = xen_swiotlb_map_page,
++	.unmap_page = xen_swiotlb_unmap_page,
++	.dma_supported = xen_swiotlb_dma_supported,
++};
++
++int __init xen_mm_init(void)
++{
++	xen_swiotlb_init(1, true);
++	dma_ops = &xen_swiotlb_dma_ops;
++	return 0;
++}
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 9737e97..aa1f6fb 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -209,6 +209,7 @@ config XEN_DOM0
+ config XEN
+ 	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
+ 	depends on ARM64 && OF
++	select SWIOTLB_XEN
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
+ 
+diff --git a/arch/arm64/xen/Makefile b/arch/arm64/xen/Makefile
+index be24040..0ef9637 100644
+--- a/arch/arm64/xen/Makefile
++++ b/arch/arm64/xen/Makefile
+@@ -1,2 +1,2 @@
+-xen-arm-y	+= $(addprefix ../../arm/xen/, enlighten.o grant-table.o)
++xen-arm-y	+= $(addprefix ../../arm/xen/, enlighten.o grant-table.o mm.o)
+ obj-y		:= xen-arm.o hypercall.o
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index 9e02d60..7e83688 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -140,7 +140,6 @@ config XEN_GRANT_DEV_ALLOC
+ 
+ config SWIOTLB_XEN
+ 	def_bool y
+-	depends on PCI && X86
+ 	select SWIOTLB
+ 
+ config XEN_TMEM
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 7bb99ae..b11a11f 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -45,6 +45,8 @@
+ #include <xen/xen-ops.h>
+ #include <xen/hvc-console.h>
+ #include <xen/features.h>
++#include <asm/dma-mapping.h>
++
+ /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+@@ -58,6 +60,20 @@ static unsigned long xen_io_tlb_nslabs;
+  * Quick lookup value of the bus address of the IOTLB.
+  */
+ 
++#ifndef CONFIG_X86
++static unsigned long dma_alloc_coherent_mask(struct device *dev,
++					    gfp_t gfp)
++{
++	unsigned long dma_mask = 0;
++
++	dma_mask = dev->coherent_dma_mask;
++	if (!dma_mask)
++		dma_mask = (gfp & GFP_DMA) ? DMA_BIT_MASK(24) : DMA_BIT_MASK(32);
++
++	return dma_mask;
++}
++#endif
++
+ struct xen_dma_info {
+ 	dma_addr_t dma_addr;
+ 	phys_addr_t phys_addr;
+-- 
+1.7.2.5
 
-So core of the problem is, what's the locking semantics to make sure
-that we are not trying to switch elevator while it is still initializing.
-IOW, should we allow multiple parallel calls of elevator_init_fn() on a
-queue and is it safe?
-
-I would argue that it is easier to read and maintain the code if we
-provide explicit locking around. So I like the idea of introducing
-some locking around elevator_init().
-
-Because we are racing against elevator switch path which takes
-q->sysfs_lock, it makes sense to provide mutual exlusion using 
-q->sysfs_lock.
-
-What I don't know is that can we take mutex in queue init path. Generally
-drivers call it and do they expect that they can call this function
-while holding a spin lock.
-
-I am CCing Tejun also to the thread. He also might have some ideas here.
-
-Thanks
-Vivek
-
->  	return q;
->  }
->  EXPORT_SYMBOL(blk_init_allocated_queue);
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 668394d..5232565 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -959,7 +959,7 @@ fail_init:
->  /*
->   * Switch this queue to the given IO scheduler.
->   */
-> -int elevator_change(struct request_queue *q, const char *name)
-> +static int __elevator_change(struct request_queue *q, const char *name)
->  {
->  	char elevator_name[ELV_NAME_MAX];
->  	struct elevator_type *e;
-> @@ -981,6 +981,18 @@ int elevator_change(struct request_queue *q, const char *name)
->  
->  	return elevator_switch(q, e);
->  }
-> +
-> +int elevator_change(struct request_queue *q, const char *name)
-> +{
-> +	int ret;
-> +
-> +	/* Protect q->elevator from blk_init_allocated_queue() */
-> +	mutex_lock(&q->sysfs_lock);
-> +	ret = __elevator_change(q, name);
-> +	mutex_unlock(&q->sysfs_lock);
-> +
-> +	return ret;
-> +}
->  EXPORT_SYMBOL(elevator_change);
->  
->  ssize_t elv_iosched_store(struct request_queue *q, const char *name,
-> @@ -991,7 +1003,7 @@ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
->  	if (!q->elevator)
->  		return count;
->  
-> -	ret = elevator_change(q, name);
-> +	ret = __elevator_change(q, name);
->  	if (!ret)
->  		return count;
->  
