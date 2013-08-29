@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3H2Sed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:34:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26260 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756798Ab3H2Sc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:32:56 -0400
-X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
-   d="scan'208";a="48860321"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 06/13] xen: introduce XENMEM_exchange_and_pin and XENMEM_unpin
-Date: Thu, 29 Aug 2013 19:32:27 +0100
-Message-ID: <1377801154-29215-6-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+	id S1756918Ab3H2SfC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:35:02 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51129 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab3H2SfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:35:00 -0400
+Date: Thu, 29 Aug 2013 19:34:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        devicetree@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Ian Campbell <ian.campbell@citrix.com>, liam.r.girdwood@intel.com
+Subject: Re: [PATCH 1/2] ARM: Dove: Add the audio devices in DT
+Message-ID: <20130829183432.GT6617@n2100.arm.linux.org.uk>
+References: <20130828113459.48ecbb34@armhf> <521DCD33.2070008@gmail.com> <20130828121943.1c8327ca@skate> <521DD057.4040208@gmail.com> <20130829161217.GK10783@sirena.org.uk> <20130829163358.GS6617@n2100.arm.linux.org.uk> <20130829171210.GM10783@sirena.org.uk> <521F8CB3.5060407@gmail.com> <20130829182010.GQ10783@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130829182010.GQ10783@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XENMEM_exchange can't be used by autotranslate guests because of two
-severe limitations:
+On Thu, Aug 29, 2013 at 07:20:11PM +0100, Mark Brown wrote:
+> On Thu, Aug 29, 2013 at 08:02:27PM +0200, Sebastian Hesselbarth wrote:
+> > 
+> > it is referring the same differences Russell already mentioned. But I
+> > already came to the conclusion, that we don't need the information in
+> > the binding. For example, if you use that controller on Dove and you
+> > hook it up for SPDIF-in (which it hasn't), than I consider this a
+> > DT bug. No need to double-check that in the driver. From that p-o-v,
+> > please just let the current binding as is.
+> 
+> OK, great - none of these devices have any differences which are visible
+> only within the controller, they're all extra external interfaces?
 
-- it does not copy back the mfns into the out field for autotranslate
-  guests;
+Dove Audio 0:
+	- I2S in
+	- I2S out
+	- No SPDIF
 
-- it does not guarantee that the hypervisor won't change the p2m
-  mappings for the exchanged pages while the guest is using them. Xen
-  never promises to keep the p2m mapping stable for autotranslate guests
-  in general.  In practice it won't happen unless one uses uncommon
-  features like memory sharing or paging.
+Dove Audio 1:
+	- I2S in
+	- I2S out
+	- SPDIF out only
 
-To overcome these problems I am introducing two new hypercalls.
+Both these variants occur on the same SoC.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Kirkwood:
+	- I2S in
+	- SPDIF in
+	- I2S out
+	- SPDIF out
 
-
-Changes in v5:
-- better comment for XENMEM_exchange_and_pin return codes;
-
-Changes in v4:
-- rename XENMEM_get_dma_buf to XENMEM_exchange_and_pin;
-- rename XENMEM_put_dma_buf to XENMEM_unpin;
-- improve the documentation of the new hypercalls;
-- add a note about out.address_bits for XENMEM_exchange.
----
- include/xen/interface/memory.h |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
-
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index 2ecfe4f..fb0c6aa 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -66,6 +66,7 @@ struct xen_memory_exchange {
-     /*
-      * [IN] Details of memory extents to be exchanged (GMFN bases).
-      * Note that @in.address_bits is ignored and unused.
-+     * @out.address_bits should contain the address mask for the new pages.
-      */
-     struct xen_memory_reservation in;
- 
-@@ -263,4 +264,40 @@ struct xen_remove_from_physmap {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
- 
-+#define XENMEM_exchange_and_pin             26
-+/*
-+ * This hypercall is similar to XENMEM_exchange: it takes the same
-+ * struct as an argument and it exchanges the pages passed in with a new
-+ * set of pages. The new pages are going to be "pinned": it's guaranteed
-+ * that their p2m mapping won't be changed until explicitly "unpinned".
-+ * The content of the exchanged pages is lost.
-+ * Only normal guest r/w memory can be pinned: no granted pages or
-+ * ballooned pages.
-+ * If return code is zero then @out.extent_list provides the DMA frame
-+ * numbers of the newly-allocated memory.
-+ * Returns zero on complete success, otherwise a negative error code:
-+ *   -ENOSYS if not implemented
-+ *   -EINVAL if the page is already pinned
-+ *   -EFAULT if an internal error occurs
-+ * On complete success then always @nr_exchanged == @in.nr_extents.  On
-+ * partial success @nr_exchanged indicates how much work was done and a
-+ * negative error code is returned.
-+ */
-+
-+#define XENMEM_unpin             27
-+/*
-+ * XENMEM_unpin unpins a set of pages, previously pinned by
-+ * XENMEM_exchange_and_pin. After this call the p2m mapping of the pages can
-+ * be transparently changed by the hypervisor, as usual. The pages are
-+ * still accessible from the guest.
-+ */
-+struct xen_unpin {
-+    /*
-+     * [IN] Details of memory extents to be unpinned (GMFN bases).
-+     * Note that @in.address_bits is ignored and unused.
-+     */
-+    struct xen_memory_reservation in;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_unpin);
-+
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
--- 
-1.7.2.5
-
+Preconditions:
+1. Only one input can be used at any one time.
+2. One output can be used or both if enabled simultaneously.
