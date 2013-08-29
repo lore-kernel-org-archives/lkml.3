@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3H2GtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 02:49:13 -0400
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:61540 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab3H2GtM convert rfc822-to-8bit (ORCPT
+	id S1755246Ab3H2Guh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 02:50:37 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15932 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab3H2Gug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 02:49:12 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Joe Perches <joe@perches.com>
-CC: Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joern Rennecke <joern.rennecke@embecosm.com>
-Subject: Re: [PATCH] ARC: Fix __udelay parentheses
-Thread-Topic: [PATCH] ARC: Fix __udelay parentheses
-Thread-Index: AQHOpByfrbiZ1kbBskyi3sxdeiKfdQ==
-Date: Thu, 29 Aug 2013 06:49:07 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075140F85@IN01WEMBXA.internal.synopsys.com>
-References: <1377714588-2144-1-git-send-email-mjonker@synopsys.com>
-	 <C2D7FE5348E1B147BCA15975FBA23075140F26@IN01WEMBXA.internal.synopsys.com>
-	 <1377756078.1928.89.camel@joe-AO722>
-	 <C2D7FE5348E1B147BCA15975FBA23075140F41@IN01WEMBXA.internal.synopsys.com>
- <1377758224.1928.91.camel@joe-AO722>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.237]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Aug 2013 02:50:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 28 Aug 2013 23:48:01 -0700
+Message-ID: <521EEF26.80803@nvidia.com>
+Date: Thu, 29 Aug 2013 12:20:14 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Zhang <zhangwm@marvell.com>, Joseph Lo <josephl@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 1/3] cpuidle: coupled: disable interrupts after entering
+ safe state
+References: <1377287112-12018-1-git-send-email-ccross@android.com>
+In-Reply-To: <1377287112-12018-1-git-send-email-ccross@android.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 12:07 PM, Joe Perches wrote:
->> On the topic of multiply vs. divide (which probably is not relevant to topic at
->> hand though), since ARCompact doesn't have native divide, we end up emulating it
->> using libgcc routines. That makes it slightly non-deterministic (not a big deal)
->> and also adds to boot time (which those delays sprinkled all over the place in
->> crazy device probes and such). Seriously we got hammered by a customer for that once.
-> That argues more for reducing the uses of hard delays
-> than making the hard delay count calculation simpler.
+On Saturday 24 August 2013 01:15 AM, Colin Cross wrote:
+> Calling cpuidle_enter_state is expected to return with interrupts
+> enabled, but interrupts must be disabled before starting the
+> ready loop synchronization stage.  Call local_irq_disable after
+> each call to cpuidle_enter_state for the safe state.
+>
+> CC: stable@vger.kernel.org
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>   drivers/cpuidle/coupled.c | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 2a297f8..db92bcb 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -460,6 +460,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+>   		}
+>   		entered_state = cpuidle_enter_state(dev, drv,
+>   			dev->safe_state_index);
+> +		local_irq_disable();
 
-Right, but most often the drivers are written/maintained by non arch people.
+Colin,
 
-I'm with you in terms of simplification and I think the following
+There is still some window where irq remains enabled after exiting safe 
+state. It may introduce some corner case.
+Instead of this can we pass a parameter to cpuidle_enter_state 
+indicating that irq has to be enabled or not after exit from idle state, 
+which would be false when entering safe state from coupled idle.
 
-loops = ((u64)usecs * 4295 * HZ * loops_per_jiffy) >> 32;
+>   	}
+>   
+>   	/* Read barrier ensures online_count is read after prevent is cleared */
+> @@ -485,6 +486,7 @@ retry:
+>   
+>   		entered_state = cpuidle_enter_state(dev, drv,
+>   			dev->safe_state_index);
+> +		local_irq_disable();
+>   	}
+>   
+>   	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
 
-is fairly simple, well commented, and optimal for ARC.
-
--Vineet
