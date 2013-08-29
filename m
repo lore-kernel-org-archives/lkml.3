@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3H2Rgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:36:41 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:60361 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab3H2Rgj (ORCPT
+	id S1756091Ab3H2Rhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:37:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51721 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab3H2Rho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:36:39 -0400
+	Thu, 29 Aug 2013 13:37:44 -0400
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'James Bottomley'" <James.Bottomley@HansenPartnership.com>,
+        "'Raviv Shvili'" <rshvili@codeaurora.org>
+Cc: <scsi-misc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        "'open list:SCSI SUBSYSTEM'" <linux-scsi@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>, <merez@codeaurora.org>
+References: <1377766493-5269-1-git-send-email-rshvili@codeaurora.org> <1377768462.2223.70.camel@dabdike>
+In-Reply-To: <1377768462.2223.70.camel@dabdike>
+Subject: RE: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
+Date: Thu, 29 Aug 2013 20:37:37 +0300
+Message-ID: <06be01cea4de$77b79ce0$6726d6a0$@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130829163611.GL10783@sirena.org.uk>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
-	<1376243970-6489-10-git-send-email-tomasz.figa@gmail.com>
-	<20130829163611.GL10783@sirena.org.uk>
-Date: Thu, 29 Aug 2013 19:36:38 +0200
-Message-ID: <CACRpkdavSeiraVhjdaitLxBg+RE8h+N33uvddaCQGRcoui7=5Q@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 09/18] ASoC: Samsung: Do not queue cyclic
- buffers multiple times
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@kernel.org>, Vinod Koul <vinod.koul@intel.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-spi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQDwtCRPd9E5dmx3WCoRIykJUVuPFwGvKPMUm1rZGMA=
+Content-language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 6:36 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Sun, Aug 11, 2013 at 07:59:21PM +0200, Tomasz Figa wrote:
->> The legacy S3C-DMA API required every period of a cyclic buffer to be
->> queued separately. After conversion of Samsung ASoC to Samsung DMA
->> wrappers somebody made an assumption that the same is needed for DMA
->> engine API, which is not true.
->
-> Applied, thanks.
+Hi James,
 
-OK Vinod can you take in patch 1 thru 8?
+See reply inline
 
-Yours,
-Linus Walleij
+Thanks,
+Yaniv
+
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of James Bottomley
+Sent: Thursday, August 29, 2013 12:28 PM
+To: Raviv Shvili
+Cc: scsi-misc@vger.kernel.org; linux-arm-msm@vger.kernel.org; open list:SCSI
+SUBSYSTEM; open list
+Subject: Re: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
+
+On Thu, 2013-08-29 at 11:54 +0300, Raviv Shvili wrote:
+> The patch solves the request completion report order. At the current 
+> implementation, when multiple requests end at the same interrupt call, 
+> the requests reported as completed according to a bitmap scan from the 
+> lowest tags to the highest, regardless the requests priority. That 
+> cause to a priority unfairness and starvation of requests with a high
+tags.
+
+It does?  Why?  What seems to happen is that you loop over all the pending
+requests and call done for them.  The way SCSI handles done commands is that
+it queues them to the softirq, so there doesn't look to be any real
+unfairness problem here.
+
+<yaniv> The unfairness is that currently the loop goes over the tags from 0
+to NUTRS(i.e 31), and calls done() at this order, regardless of the
+task_attribute they hold.
+Also, the benefit in performance is that instead of going over NUTRS (32)
+iteration, we simple call done() only for the exact of completed request
+(and according to their task_attribute priority). 
+
+Scenario: a new HEAD_OF_QUEUE request that is completed during the current
+loop, will be served only in the next interrupt (since the DOORBELL will be
+read again only in the next interrupt), and saying it is a high tag, it will
+be completed lastly. This patch will fix it, as I see that.
+
+
+
+> SCSI Architecture Model 5 defines 3 task-attributes that are part of 
+> each SCSI command, and integrated into each Command UPIU. The 
+> task-attribute is for the device usage, it determines the order in 
+> which the device prioritizes the requests.
+> The task-attributes according to their priority are (from high to low):
+> HEAD OF QUEUE, ORDERED and SIMPLE. There is a queue per task-attribute.
+> Each request is assigned to one of the above sw queues according to 
+> its task attribute field.
+> Requests which are not SCSI commands (native UFS) will be assigned to 
+> the lowest priority queue, since there is no much difference between 
+> completing it first or last..
+> 
+> When request is completed, we go over the queues (from the queue's 
+> highest priority to the lowest) and report the completion.
+> 
+> Requests are removed from the queue in case of command completion or 
+> when aborting pending command.
+
+Since we never use anything other than SIMPLE attributes, this rather looks
+like a solution in search of a problem.
+
+James
+
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+body of a message to majordomo@vger.kernel.org More majordomo info at
+http://vger.kernel.org/majordomo-info.html
+
