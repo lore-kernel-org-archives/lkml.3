@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab3H2OP3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:15:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332Ab3H2OOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:14:44 -0400
-From: Jan Kaluza <jkaluza@redhat.com>
-To: davem@davemloft.net
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        eparis@redhat.com, rgb@redhat.com, tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk, Jan Kaluza <jkaluza@redhat.com>
-Subject: [PATCH v2 0/3] Send audit/procinfo/cgroup data in socket-level control message
-Date: Thu, 29 Aug 2013 16:13:19 +0200
-Message-Id: <1377785602-10766-1-git-send-email-jkaluza@redhat.com>
-In-Reply-To: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+	id S1753859Ab3H2OS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:18:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56437 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753060Ab3H2OS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 10:18:56 -0400
+Message-ID: <1377785936.1928.97.camel@joe-AO722>
+Subject: Re: [PATCH v1.2 1/1] arcmsr: Support Areca new SATA Raid Adapter
+ ARC1214/1224/1264/1284
+From: Joe Perches <joe@perches.com>
+To: Ching <ching2048@areca.com.tw>
+Cc: jejb@kernel.com, thenzl@redhat.com, fengguang.wu@intel.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com
+Date: Thu, 29 Aug 2013 07:18:56 -0700
+In-Reply-To: <1377748071.4571.40.camel@CentOS6.4-64>
+References: <1377748071.4571.40.camel@CentOS6.4-64>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2013-08-29 at 11:47 +0800, Ching wrote:
+> From: Ching <ching2048@areca.com.tw>
+> 
+> Support Areca new SATA Raid Adapter ARC1214/1224/1264/1284
+> Modify maximum outstanding command number.
+> Notify command complete with auto request sense data.
+> Fix bug of updating adapter firmware through ioctl(ARCHTTP) interface.
+> Fix coding style warning.
+> Fix compiling warning.
+> Fix ARC188x hardware reset.
+> Fix indent coding.
 
-this patchset against net-next (applies also to linux-next) adds 3 new types
-of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
-This is needed by journald (logging daemon used as part of systemd ecosystem)
-to get additional context together with log messages received using UNIX socket.
+Hi again Ching.
 
-Changes in v2:
-- use PATH_MAX instead of PAGE_SIZE in SCM_CGROUP patch
-- describe each patch individually
+I think it would be better to separate the coding style
+warning and indent coding patches from the fixes and
+send each line entry above as an individual patch.
 
-Jan Kaluza (3):
-  Send loginuid and sessionid in SCM_AUDIT
-  Send comm and cmdline in SCM_PROCINFO
-  Send cgroup_path in SCM_CGROUP
+> Singed-off-by: Ching <ching2048@areca.com.tw>
 
- include/linux/socket.h |  9 ++++++
- include/net/af_unix.h  | 10 ++++++
- include/net/scm.h      | 67 ++++++++++++++++++++++++++++++++++++++--
- net/core/scm.c         | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++
- net/unix/af_unix.c     | 70 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 237 insertions(+), 2 deletions(-)
+Typo here
 
--- 
-1.8.3.1
+Signed-off-by:
+
 
