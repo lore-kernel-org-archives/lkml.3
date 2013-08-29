@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3H2Bnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:43:53 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59103 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755274Ab3H2Bnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:43:51 -0400
-Message-ID: <1377740630.1928.71.camel@joe-AO722>
-Subject: Re: [PATCH] ARC: Fix __udelay parentheses
-From: Joe Perches <joe@perches.com>
-To: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Cc: "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 28 Aug 2013 18:43:50 -0700
-In-Reply-To: <E6BF041E97966E4DB955F0DF883AD2D684F1F648@de02wembxa.internal.synopsys.com>
-References: <1377714588-2144-1-git-send-email-mjonker@synopsys.com>
-	 <1377715539.1928.45.camel@joe-AO722>
-	 <E6BF041E97966E4DB955F0DF883AD2D684F1F601@de02wembxa.internal.synopsys.com>
-	 <1377716507.1928.57.camel@joe-AO722>
-	 <E6BF041E97966E4DB955F0DF883AD2D684F1F648@de02wembxa.internal.synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754584Ab3H2By6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:54:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20489 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752981Ab3H2By4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 21:54:56 -0400
+X-IronPort-AV: E=Sophos;i="4.89,979,1367942400"; 
+   d="scan'208";a="8338101"
+Message-ID: <521EA99B.3010303@cn.fujitsu.com>
+Date: Thu, 29 Aug 2013 09:53:31 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com> <20130828151909.GE9295@htj.dyndns.org> <521EA44E.1020205@cn.fujitsu.com> <20130829013657.GA22599@hacker.(null)>
+In-Reply-To: <20130829013657.GA22599@hacker.(null)>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 09:52:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/29 09:52:54,
+	Serialize complete at 2013/08/29 09:52:54
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-28 at 19:12 +0000, Mischa Jonker wrote:
-> Hello Joe,
-> 
-> > I don't see the loops_per_jiffy initial shift << 32.
-> 
-> loops_per_jiffy * HZ = loops_per_second
-> loops_per_jiffy * HZ = 1,000,000 * loops_per_us
-> loops_per_jiffy * HZ * 4295 = 4,295,000 * loops_per_us
-> 
-> loops_per_jiffy * HZ * 4294.967296 = 2^32 * loops_per_us
-> 
-> > > > > -	loops = ((long long)(usecs * 4295 * HZ) *
-> > > > > -		 (long long)(loops_per_jiffy)) >> 32;
-> > > > > +	loops = (((long long) usecs) * 4295 * HZ *
-> > > > > +		  (long long) loops_per_jiffy) >> 32;
-> 
-> > 
-> > I know that.  It's the use of a signed long long vs the unsigned long long
-> > that I think wrong.
-> 
-> Yes that is wrong too.
-> 
-> > 
-> > Why cast a unsigned to a signed?
-> 
-> I don't know, this was in the original file. The issue that I was trying to solve, was that usleep didn't sleep long enough, and that is fixed by this patch. 
-> 
-> Wrt signed/unsigned: would you like me to update this patch or create a separate one?
+Hi Wanpeng,
 
-I think the whole thing is odd and it should simply be
+On 08/29/2013 09:36 AM, Wanpeng Li wrote:
+......
+>> Hi tj,
+>>
+>> Sorry for the trouble. Please refer to the following branch:
+>>
+>> https://github.com/imtangchen/linux.git  movablenode-boot-option
+>>
+>
+> Could you post your testcase? So I can test it on x86 and powerpc machines.
+>
 
-	loops = loops_per_jiffy * usecs_to_jiffies(usecs);
+Sure. Some simple testcases:
 
-and if it's really necessary to have a u64 delay
-then __delay should be rewritten to take an one
-as an argument and this calc should be:
-
-	u64 loops = (u64)loops_per_jiffy * usecs_to_jiffies(usecs);
-
+1. Boot the kernel without movablenode boot option, check if the memory 
+mapping
+    is initialized as before, high to low.
+2. Boot the kernel with movablenode boot option, check if the memory 
+mapping
+    is initialized as before, low to high.
+3. With movablenode, check if the memory allocation is from high to low 
+after
+    SRAT is parsed.
+4. Check if we can do acpi_initrd_override normally with and without 
+movablenode.
+    And the memory allocation is from low to high, near the end of 
+kernel image.
+5. with movablenode, check if crashkernel boot option works normally.
+    (This may consume a lot of memory, but should work normally.)
+6. With movablenode, check if relocate_initrd() works normally.
+    (This may consume a lot of memory, but should work normally.)
+7. With movablenode, check if kexec could locate the kernel to higher 
+memory.
+    (This may consume hotplug memory if higher memory is hotpluggable, 
+but should work normally.)
 
 
+Please do the above tests with and without the following config options:
+
+1. CONFIG_MOVABLE_NODE
+2. CONFIG_ACPI_INITRD_OVERRIDE
+
+
+Thanks for the testing.
