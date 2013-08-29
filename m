@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab3H2SgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:36:18 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26260 "EHLO SMTP.CITRIX.COM"
+	id S1756990Ab3H2Sg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:36:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61545 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756654Ab3H2Scz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:32:55 -0400
-X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
-   d="scan'208";a="48860308"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: [PATCH v5 01/13] arm: make SWIOTLB available
-Date: Thu, 29 Aug 2013 19:32:22 +0100
-Message-ID: <1377801154-29215-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+	id S1756971Ab3H2SgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:36:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
+   d="scan'208";a="395528762"
+Message-ID: <521F949A.2020908@intel.com>
+Date: Thu, 29 Aug 2013 11:36:10 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <dchinner@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Avoid useless inodes and dentries reclamation
+References: <1377726732.3625.31.camel@schen9-DESK>  <20130829110741.GA23571@dastard> <1377799676.3625.69.camel@schen9-DESK>
+In-Reply-To: <1377799676.3625.69.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
-provided by lib/iommu_helper.c.
+The new shrinker infrastructure in mmotm looks like it will make this
+problem worse.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: will.deacon@arm.com
-CC: linux@arm.linux.org.uk
+old code:
+shrink_slab()
+	for_each_shrinker {
+		do_shrinker_shrink(); // one per batch
+			prune_super()
+				grab_super_passive()
+	}
+}
 
+Which means we've got at _most_ one grab_super_passive() per batch.  The
+new code is something like this:
 
-Changes in v5:
-- implement dma_mark_clean using dmac_flush_range.
+shrink_slab()
+{
+	list_for_each_entry(shrinker, &shrinker_list, list) {
+                for_each_node_mask(... shrinkctl->nodes_to_scan) {
+			shrink_slab_node()
+		}
+	}
+}
 
-Changes in v3:
-- dma_capable: do not treat dma_mask as a limit;
-- remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
----
- arch/arm/Kconfig                   |    6 ++++++
- arch/arm/include/asm/dma-mapping.h |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+shrink_slab_node()
+{
+        max_pass = shrinker->count_objects(shrinker, shrinkctl);
+	// ^^ does grab_super_passive()
+	...
+	while (total_scan >= batch_size) {
+		ret = shrinker->scan_objects(shrinker, shrinkctl);
+		// ^^ does grab_super_passive()
+	}
+}
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ba412e0..c0bfb33 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1832,6 +1832,12 @@ config CC_STACKPROTECTOR
- 	  neutralized via a kernel panic.
- 	  This feature requires gcc version 4.2 or above.
- 
-+config SWIOTLB
-+	def_bool y
-+
-+config IOMMU_HELPER
-+	def_bool SWIOTLB
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 5b579b9..0982206 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -10,6 +10,7 @@
- 
- #include <asm-generic/dma-coherent.h>
- #include <asm/memory.h>
-+#include <asm/cacheflush.h>
- 
- #define DMA_ERROR_CODE	(~0)
- extern struct dma_map_ops arm_dma_ops;
-@@ -86,6 +87,37 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- }
- #endif
- 
-+static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	unsigned int offset = paddr & ~PAGE_MASK;
-+	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
-+}
-+
-+static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-+{
-+	unsigned int offset = dev_addr & ~PAGE_MASK;
-+	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;
-+}
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	u64 limit, mask = *dev->dma_mask;
-+
-+	limit = (mask + 1) & ~mask;
-+	if (limit && size > limit)
-+		return 0;
-+
-+	if ((addr | (addr + size - 1)) & ~mask)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static inline void dma_mark_clean(void *addr, size_t size)
-+{
-+	dmac_flush_range(addr, addr + size);
-+}
-+
- /*
-  * DMA errors are defined by all-bits-set in the DMA address.
-  */
--- 
-1.7.2.5
+We've got an extra grab_super_passive()s in the case where we are
+actually doing a scan, plus we've got the extra for_each_node_mask()
+loop.  That means even more lock acquisitions in the multi-node NUMA
+case, which is exactly where we want to get rid of global lock acquisitions.
 
