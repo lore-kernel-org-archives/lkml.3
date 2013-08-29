@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab3H2Epm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 00:45:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:42975 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3H2Epl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 00:45:41 -0400
-X-Spam-Score: -101.0
-Message-ID: <521ED1B5.5030507@asianux.com>
-Date: Thu, 29 Aug 2013 12:44:37 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, ak@linux.intel.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] h8300/kernel/timer/timer8.c: add the missing semicolon
-References: <521EC55A.9030905@asianux.com>
-In-Reply-To: <521EC55A.9030905@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755953Ab3H2EqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 00:46:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49700 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753261Ab3H2EqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 00:46:11 -0400
+Message-ID: <1377751465.4028.20.camel@pasglop>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Date: Thu, 29 Aug 2013 14:44:25 +1000
+In-Reply-To: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	 <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	 <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 11:51 AM, Chen Gang wrote:
-> Add the missing semicolon to fix the typo issue.
+On Wed, 2013-08-28 at 18:40 -0700, Linus Torvalds wrote:
+> Just FYI: I've merged two preparatory patches in my tree for the whole
+> lockref thing. Instead of applying your four patches as-is during the
+> merge window, I ended up writing two patches that introduce the
+> concept and use it in the dentry code *without* introducing any of the
+> new semantics yet.
 > 
-> The related error: (defconfig for H8S):
+> Waiman, I attributed the patches to you, even if they don't actually
+> look much like any of the patches you sent out. And because I was
+> trying very hard to make sure that no actual semantics changed, my
+> version doesn't have the dget_parent() lockless update code, for
+> example. I literally just did a search-and-replace of "->d_count" with
+> "->d_lockref.count" and then I fixed up a few things by hand (undid
+> one replacement in a comment, and used the helper functions where they
+> were semantically identical).
 > 
->   arch/h8300/kernel/timer/timer8.c: In function 'h8300_timer_setup':
->   arch/h8300/kernel/timer/timer8.c:98:2: error: expected ';' before 'ctrl_outw'
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/h8300/Makefile              |    2 +-
->  arch/h8300/kernel/timer/timer8.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
-> index a556447..d2ba710 100644
-> --- a/arch/h8300/Makefile
-> +++ b/arch/h8300/Makefile
-> @@ -25,7 +25,7 @@ model-$(CONFIG_RAMKERNEL)	:= ram
->  model-$(CONFIG_ROMKERNEL)	:= rom
->  MODEL := $(model-y)
->  
-> -cflags-$(CONFIG_CPU_H8300H)	:= -mh
-> +cflags-$(CONFIG_CPU_H8300H)	:= -mh -mcpu=h8300h
+>  You don't have to rewrite your patches if you don't want to, I'm
+> planning on cherry-picking the actual code changes during the merge
+> window.
 
-Oh, sorry, it contents some waste things, I should send patch v2.
+I've somewhat lost track of this, will I need some arch support for
+powerpc ?
 
-
->  ldflags-$(CONFIG_CPU_H8300H)	:= -mh8300helf
->  cflags-$(CONFIG_CPU_H8S)	:= -ms
->  ldflags-$(CONFIG_CPU_H8S)	:= -mh8300self
-> diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
-> index 505f341..8aac2a7 100644
-> --- a/arch/h8300/kernel/timer/timer8.c
-> +++ b/arch/h8300/kernel/timer/timer8.c
-> @@ -91,7 +91,7 @@ void __init h8300_timer_setup(void)
->  
->  #if defined(CONFIG_CPU_H8S)
->  	/* Timer module enable */
-> -	ctrl_bclr(0, MSTPCRL)
-> +	ctrl_bclr(0, MSTPCRL);
->  #endif
->  
->  	/* initialize timer */
-> 
+Cheers,
+Ben.
 
 
--- 
-Chen Gang
