@@ -1,135 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab3H2MjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 08:39:06 -0400
-Received: from mail.tpi.com ([74.45.170.26]:58358 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755649Ab3H2MjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 08:39:04 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Joe Perches <joe@perches.com>,
-        Veaceslav Falico <vfalico@redhat.com>
-Subject: [PATCH net-next v2] net: neighbour: Remove CONFIG_ARPD
-Date: Thu, 29 Aug 2013 06:38:47 -0600
-Message-Id: <1377779927-28500-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <8761upbd6h.fsf@xmission.com>
-References: <8761upbd6h.fsf@xmission.com>
+	id S1756450Ab3H2Mjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 08:39:35 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:52905 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419Ab3H2Mje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 08:39:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130801134632.GY9916@kw.sim.vm.gnt>
+References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
+	<CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
+	<20130801134632.GY9916@kw.sim.vm.gnt>
+Date: Thu, 29 Aug 2013 14:39:33 +0200
+Message-ID: <CACRpkdZcEPM-u19pc+v_cRqUSfJBFZ49rJYiewQ1sWWSU5YxEg@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Simon Guinot <simon.guinot@sequanux.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config option is superfluous in that it only guards a call
-to neigh_app_ns(). Enabling CONFIG_ARPD by default has no
-change in behavior. There will now be call to __neigh_notify()
-for each ARP resolution, which has no impact unless there is a
-user space daemon waiting to receive the notification, i.e.,
-the case for which CONFIG_ARPD was designed anyways.
+On Thu, Aug 1, 2013 at 3:46 PM, Simon Guinot <simon.guinot@sequanux.org> wrote:
+> On Mon, Jul 29, 2013 at 05:59:08PM +0200, Linus Walleij wrote:
 
-Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
+>> - So we should atleast support ACPI probing with the
+>>   port-based detection as a final fallback if all else fails.
+>>
+>> Why can I not get something like:
+>>
+>> #include <linux/acpi.h>
+>> (...)
+>> static const struct acpi_device_id gpio_acpi_match[] = {
+>>         { "FOOBAR", 0 },
+>
+> After some checks on my boards, it appears that there is no PNP ID
+> available for the Super-I/O GPIO functionality (or any others). Moreover
+> I think this IDs don't have been registered to Microsoft by Fintech
+> (the super-I/O manufacturer).
+>
+> How do you envisage the follow-up ?
 
-Eric's suggestion to simply remove the config option makes sense
-to me. If acceptable then I'll submit a patch series that also removes
-CONFIG_ARPD from the various arch defconfigs.
+Well shall we just apply this as-is then, with ISA-style port
+IO probing and all?
 
- net/core/neighbour.c |    2 --
- net/ipv4/Kconfig     |   16 ----------------
- net/ipv4/arp.c       |    2 --
- net/ipv6/ndisc.c     |    2 --
- 4 files changed, 22 deletions(-)
+I think Rafael said something about it being possible for us
+to register our own kernel ACPI PNP IDs (as if: there is no
+road here, but if someone starts to walk here, a road will
+soon become, and we take the first step then).
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 60533db..6072610 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -2759,13 +2759,11 @@ errout:
- 		rtnl_set_sk_err(net, RTNLGRP_NEIGH, err);
- }
- 
--#ifdef CONFIG_ARPD
- void neigh_app_ns(struct neighbour *n)
- {
- 	__neigh_notify(n, RTM_GETNEIGH, NLM_F_REQUEST);
- }
- EXPORT_SYMBOL(neigh_app_ns);
--#endif /* CONFIG_ARPD */
- 
- #ifdef CONFIG_SYSCTL
- static int zero;
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index 37cf1a6..05c57f0 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -259,22 +259,6 @@ config IP_PIMSM_V2
- 	  gated-5). This routing protocol is not used widely, so say N unless
- 	  you want to play with it.
- 
--config ARPD
--	bool "IP: ARP daemon support"
--	---help---
--	  The kernel maintains an internal cache which maps IP addresses to
--	  hardware addresses on the local network, so that Ethernet
--	  frames are sent to the proper address on the physical networking
--	  layer. Normally, kernel uses the ARP protocol to resolve these
--	  mappings.
--
--	  Saying Y here adds support to have an user space daemon to do this
--	  resolution instead. This is useful for implementing an alternate
--	  address resolution protocol (e.g. NHRP on mGRE tunnels) and also for
--	  testing purposes.
--
--	  If unsure, say N.
--
- config SYN_COOKIES
- 	bool "IP: TCP syncookie support"
- 	---help---
-diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-index 4429b01..7808093 100644
---- a/net/ipv4/arp.c
-+++ b/net/ipv4/arp.c
-@@ -368,9 +368,7 @@ static void arp_solicit(struct neighbour *neigh, struct sk_buff *skb)
- 	} else {
- 		probes -= neigh->parms->app_probes;
- 		if (probes < 0) {
--#ifdef CONFIG_ARPD
- 			neigh_app_ns(neigh);
--#endif
- 			return;
- 		}
- 	}
-diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
-index 04d31c2..d5693ad 100644
---- a/net/ipv6/ndisc.c
-+++ b/net/ipv6/ndisc.c
-@@ -663,9 +663,7 @@ static void ndisc_solicit(struct neighbour *neigh, struct sk_buff *skb)
- 		}
- 		ndisc_send_ns(dev, neigh, target, target, saddr);
- 	} else if ((probes -= neigh->parms->app_probes) < 0) {
--#ifdef CONFIG_ARPD
- 		neigh_app_ns(neigh);
--#endif
- 	} else {
- 		addrconf_addr_solict_mult(target, &mcaddr);
- 		ndisc_send_ns(dev, NULL, target, &mcaddr, saddr);
--- 
-1.7.9.5
+But overall I am a bit confused: I am hearing from one end
+of the x86 community that ACPI is the way to go for
+configuring platform devices on x86, yet stuff like this is
+popping up from independent vendors, and get integrated
+on boards with no ACPI tables in sight.
 
+Over at ksummit-discuss we have had a thread about
+whether device tree should be used in such cases, but
+that is not clear either.
+
+Basically I'm a bit confused because the x86 community
+is talking with so many voices and I'm not used to it,
+and I don't know if they actually have a common vision.
+
+So I'm cc:ing some of my x86 friends to see if they
+are OK with this port-probing approach before I merge
+the driver.... Rafael, HPA, Matthew?
+
+Yours,
+Linus Walleij
