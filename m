@@ -1,142 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3H2K5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:57:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50965 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab3H2K5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:57:02 -0400
-Date: Thu, 29 Aug 2013 11:56:57 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v3
-Message-ID: <20130829105656.GD22421@suse.de>
-References: <20120307180852.GE17697@suse.de>
- <20130823130332.GY31370@twins.programming.kicks-ass.net>
- <20130823181546.GA31370@twins.programming.kicks-ass.net>
- <20130829092828.GB22421@suse.de>
- <20130829094342.GX10002@twins.programming.kicks-ass.net>
+	id S1756243Ab3H2LAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:00:55 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:18331
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755989Ab3H2LAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 07:00:54 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z37d4l551biz98dI154dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 29 Aug 2013 19:00:48 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v2 05/16] ARM: imx: remove custom .init_time hook
+Message-ID: <20130829110045.GA18729@S2101-09.ap.freescale.net>
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1377638890-371-6-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20130829094342.GX10002@twins.programming.kicks-ass.net>
+In-Reply-To: <1377638890-371-6-git-send-email-sebastian.hesselbarth@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 11:43:42AM +0200, Peter Zijlstra wrote:
-> On Thu, Aug 29, 2013 at 10:28:29AM +0100, Mel Gorman wrote:
-> > On Fri, Aug 23, 2013 at 08:15:46PM +0200, Peter Zijlstra wrote:
-> > > On Fri, Aug 23, 2013 at 03:03:32PM +0200, Peter Zijlstra wrote:
-> > > > So I think this patch is broken (still).
-> > 
-> > I am assuming the lack of complaints is that it is not a heavily executed
-> > path. I expect that you (and Rik) are hitting this as part of automatic
-> > NUMA balancing. Still a bug, just slightly less urgent if NUMA balancing
-> > is the reproduction case.
+On Tue, Aug 27, 2013 at 11:27:59PM +0200, Sebastian Hesselbarth wrote:
+> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+> remove custom .init_time hooks.
 > 
-> I thought it was, we crashed somewhere suspiciously close, but no. You
-> need shared mpols for this to actually trigger and the NUMA stuff
-> doesn't use that.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Changelog:
+> v1->v2:
+> - added missing CLK_OF_DECLARE for imx51 and imx53 (Reported by Sascha Hauer)
+>   mx53_clocks_init can be converted as it is used DT only, mx51_clocks_init
+>   still is used by non-DT.
 > 
+> Cc: Sascha Hauer <kernel@pengutronix.de>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
 
-Ah, so this is a red herring?
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-> > > +	if (unlikely((unsigned)nid >= MAX_NUMNODES))
-> > > +		goto again;
-> > > +
-> > 
-> > MAX_NUMNODES is unrelated to anything except that it might prevent a crash
-> > and even then nr_online_nodes is probably what you wanted and even that
-> > assumes the NUMA node numbering is contiguous. 
-> 
-> I used whatever nodemask.h did to detect end-of-bitmap and they use
-> MAX_NUMNODES. See __next_node() and for_each_node() like.
-> 
-
-The check does prevent us going off the end of the bitmap but does not
-necessarily return an online node.
-
-> MAX_NUMNODES doesn't assume contiguous numbers since its the actual size
-> of the bitmap, nr_online_nodes would hoever.
-> 
-
-I intended to say nr_node_ids, the same size as buffers such as the
-task_numa_buffers. If we ever return a nid > nr_node_ids here then
-task_numa_fault would corrupt memory. However, it should be possible for
-node_weight to exceed nr_node_ids except maybe during node hot-remove so
-it's not the problem.
-
-> > The real concern is whether
-> > the updated mask is an allowed target for the updated memory policy. If
-> > it's not then "nid" can be pointing off the deep end somewhere.  With this
-> > conversion to a for loop there is race after you check nnodes where target
-> > gets set to 0 and then return a nid of -1 which I suppose will just blow
-> > up differently but it's fixable.
-> 
-> But but but, I did i <= target, which will match when target == 0 so
-> you'll get at least a single iteration and nid will be set.
-> 
-
-True.
-
-> > This? Untested. Fixes implicit types while it's there. Note the use of
-> > first node and (c < target) to guarantee nid gets set and that the first
-> > potential node is still used as an interleave target.
-> > 
-> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > index 7431001..ae880c3 100644
-> > --- a/mm/mempolicy.c
-> > +++ b/mm/mempolicy.c
-> > @@ -1755,22 +1755,24 @@ unsigned slab_node(void)
-> >  }
-> >  
-> >  /* Do static interleaving for a VMA with known offset. */
-> > -static unsigned offset_il_node(struct mempolicy *pol,
-> > +static unsigned int offset_il_node(struct mempolicy *pol,
-> >  		struct vm_area_struct *vma, unsigned long off)
-> >  {
-> > -	unsigned nnodes = nodes_weight(pol->v.nodes);
-> > -	unsigned target;
-> > -	int c;
-> > -	int nid = -1;
-> > +	unsigned int nr_nodes, target;
-> > +	int i, nid;
-> >  
-> > -	if (!nnodes)
-> > +again:
-> > +	nr_nodes = nodes_weight(pol->v.nodes);
-> > +	if (!nr_nodes)
-> >  		return numa_node_id();
-> > -	target = (unsigned int)off % nnodes;
-> > -	c = 0;
-> > -	do {
-> > +	target = (unsigned int)off % nr_nodes;
-> > +	for (i = 0, nid = first_node(pol->v.nodes); i < target; i++)
-> >  		nid = next_node(nid, pol->v.nodes);
-> > -		c++;
-> > -	} while (c <= target);
-> > +
-> > +	/* Policy nodemask can potentially update in parallel */
-> > +	if (unlikely(!node_isset(nid, pol->v.nodes)))
-> > +		goto again;
-> > +
-> >  	return nid;
-> >  }
-> 
-> So I explicitly didn't use the node_isset() test because that's more
-> likely to trigger than the nid >= MAX_NUMNODES test. Its fine to return
-> a node that isn't actually part of the mask anymore -- a race is a race
-> anyway.
-
-Yeah and as long as it's < nr_node_ids it should be ok within the task
-numa fault handling as well.
-
--- 
-Mel Gorman
-SUSE Labs
