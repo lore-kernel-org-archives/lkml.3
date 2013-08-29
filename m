@@ -1,138 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab3H2AVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:21:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab3H2AU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:20:59 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: jmorris@namei.org
-cc: dhowells@redhat.com, simo@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Expand keyring capacity and provide support for libkrb5
-Date: Thu, 29 Aug 2013 01:20:48 +0100
-Message-ID: <11520.1377735648@warthog.procyon.org.uk>
+	id S1754277Ab3H2AZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:25:48 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:51042 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102Ab3H2AZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 20:25:47 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-fb-521e9509977c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dan Carpenter'" <dan.carpenter@oracle.com>
+Cc: "'Anton Vorontsov'" <anton@enomsg.org>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com> <20130813090039.GA5604@mwanda>
+ <20130828015834.GH10506@lizard>
+ <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
+ <20130828083630.GF19256@mwanda>
+In-reply-to: <20130828083630.GF19256@mwanda>
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Date: Thu, 29 Aug 2013 09:25:44 +0900
+Message-id: <001a01cea44e$4d1e0360$e75a0a20$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6jydD4V4GuPt+oQKe/CjJRTkYZSgAgv59w
+Content-language: ko
+x-cr-hashedpuzzle: GBY1 LHi5 TIzw X0t5 dgKR d8lS eq9Q wyT3 0wuP ABpUpQ==
+ AEFkcA== AEsx6Q== AEtcIQ== AIq0Rg== AJNFQA==
+ AKL4Xw==;9;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAbgB0AG8AbgBAAGUAbgBvAG0AcwBnAC4AbwByAGcAOwBiAHIAbwBvAG4AaQBlAEAAawBlAHIAbgBlAGwALgBvAHIAZwA7AGQAYQBuAC4AYwBhAHIAcABlAG4AdABlAHIAQABvAHIAYQBjAGwAZQAuAGMAbwBtADsAZAB3AG0AdwAyAEAAaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGcAcgBlAGcAawBoAEAAbABpAG4AdQB4AGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAG8AZQBAAHAAZQByAGMAaABlAHMALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{270EA80C-0723-42D3-A818-4DB44030CB75};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
+ 29 Aug 2013 00:25:28
+ GMT;UgBlADoAIABbAFAAQQBUAEMASAAgADMAMwAvADMANQBdACAAcABvAHcAZQByADoAIAB1AHMAZQAgAGQAZQB2AF8AZwBlAHQAXwBwAGwAYQB0AGQAYQB0AGEAKAApAA==
+x-cr-puzzleid: {270EA80C-0723-42D3-A818-4DB44030CB75}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t8zY13OqXJBBhMOsVjMWb+GzeLgVk2L
+	qQ+fsFm8/jedxWLiysnMFs2L17NZXF54idVi9v3HLBaXd81hc+D0mND/idFj8wotj02rOtk8
+	Tsz4zeKxf+4ado+PT2+xeHxZdY3Zo2/LKkaPz5vkAjijuGxSUnMyy1KL9O0SuDL+XOUrWMZa
+	cajvN1MD4wyWLkZODgkBE4n5jzewQdhiEhfurQeyuTiEBJYxSnx7Pp0VpujPno+MEIlFjBIz
+	vuxmgnB+MUo8v/iDHaSKTUBN4suXw2C2iICexNTF+5lAbGaBg0wSG07qQDTsZ5L4/XEHI0iC
+	U0BHYsfFl2ArhAUsJNq7W8GaWQRUJfb9/wgW5xWwlXi0Zhs7hC0o8WPyPRaIoVoSm7c1sULY
+	8hKb17xl7mLkADpVXeLRX12IG4wk3nxYxQZRIiKx78U7RohvFrBLbDlTDWGbSpzZPwEqvpJD
+	YsZOTYgTBCS+TT7EAjFSVmLTAWaIEkmJgytusExglJqF5KBZSA6aheSgWUg2L2BkWcUomlqQ
+	XFCclF5kqlecmFtcmpeul5yfu4kRkiQm7mC8f8D6EGMy0PqJzFKiyfnAJJNXEm9obGZkYWpi
+	amxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkbnuRnLNk98f3KbJ/OU
+	lpk3pPhvNX3PPilyWnvVvpeLrGvX9qnMu/1Pe5pZ2ln/X3df5HA+fWIhlpu5J2jfHIk1iltP
+	d81kEfuxedOhxhsL/+XurIzSMer//PblkZqHRVq/18psWRotKbU7f6vJp+ldLW/Dt04TWBW+
+	aUXRCe6WBKGXPy0bdsz6oMRSnJFoqMVcVJwIANCqY4QoAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMKsWRmVeSWpSXmKPExsVy+t9jAV2OqXJBBis/2VjMWb+GzeLgVk2L
+	qQ+fsFm8/jedxWLiysnMFs2L17NZXF54idVi9v3HLBaXd81hc+D0mND/idFj8wotj02rOtk8
+	Tsz4zeKxf+4ado+PT2+xeHxZdY3Zo2/LKkaPz5vkAjijGhhtMlITU1KLFFLzkvNTMvPSbZW8
+	g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4BuVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
+	GKHrGxIE12NkgAYS1jFm/LnKV7CMteJQ32+mBsYZLF2MnBwSAiYSf/Z8ZISwxSQu3FvP1sXI
+	xSEksIhRYsaX3UwQzi9GiecXf7CDVLEJqEl8+XIYzBYR0JOYung/E4jNLHCQSWLDSR2Ihv1M
+	Er8/7gAbyymgI7Hj4ktWEFtYwEKivbsVrJlFQFVi3/+PYHFeAVuJR2u2sUPYghI/Jt9jgRiq
+	JbF5WxMrhC0vsXnNW+YuRg6gU9UlHv3VhbjBSOLNh1VsECUiEvtevIP6ZgG7xJYz1RC2qcSZ
+	/RMYJzCKzEKyYRaSDbOQbJiFZNQCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFJ6Jn0
+	DsZVDRaHGAU4GJV4eCN+ywYJsSaWFVfmHmKU4GBWEuGdkikXJMSbklhZlVqUH19UmpNafIgx
+	GRgAE5mlRJPzgQkyryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4
+	pRoY1/K9uaXJWHpa8Jn+i68zbwnmfTvS/SYt7biJ5o4A35JLtzTeNc93kXVZ2NeUu38Lc4H3
+	m+Oz9nXdlzt+dhtPzo6WuAkVF3xZJV8uOKYtsGeFdsz3cDOuPmvJxhRD3oLpgXZWDUIq8i4O
+	OS0OaavnB6uofqlWVlPwUvW98je5dalMSn/wrxNKLMUZiYZazEXFiQCpejx3hgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, August 28, 2013 5:37 PM, Dan Carpenter wrote:
+> 
+> He doesn't want to take the patch.  He's the maintainer so it's his
+> choice.  That's the end of the story.
+> 
 
-Hi James,
+I know that the maintainer's choice is important,
+because I am also a maintainer of other system or drivers.
 
-Could you pull these patches into the security tree?
+But, there is no reasonable reason to object my patch.
 
-The patches can be viewed as three sets:
+I sent all 35 patches that use dev_get_platdata().
+21 patches of 35 patches have been merged by each maintainer.
+The maintainers admitted that these patches make the code simpler
+and enhance the readability, even though these are cosmetic changes.
+Also, until now, there is no objection.
 
- (1) KEYS: Skip key state checks when checking for possession
-
-     This is a fix for determining the possessed status of keys that have been
-     invalidated or revoked or that have expired.  If nothing else, can you
-     please pick this and pass it upstream.
-
- (2) KEYS: Expand the capacity of a keyring
-     Add a generic associative array implementation
-     KEYS: Drop the permissions argument from __keyring_search_one()
-     KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
-     KEYS: Search for auth-key by name rather than target key ID
-     KEYS: Introduce a search context structure
-     KEYS: Consolidate the concept of an 'index key' for key access
-     KEYS: key_is_dead() should take a const key pointer argument
-     KEYS: Use bool in make_key_ref() and is_key_possessed()
-
-     Patches to to expand the capacity of a keyring by using an associative
-     array rather than a flat list and patches to do some preparatory cleanups
-     for those.
-
- (3) KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-     KEYS: Implement a big key type that can save to tmpfs
-
-     Patches to add better support for libkrb5 to save its tokens in a kernel
-     keyring rather than in files.  It already has this ability to some
-     extent, but that has two problems: your tokens get deleted when you log
-     out (so your cron jobs can't use them) and the capacity of a user type
-     key is not sufficient for some of the huge Kerberos tickets one can get.
-     These patches address that.
-
-If you need the patches basing on your tree instead, that can be done.
-
-David
----
-The following changes since commit f1d6e17f540af37bb1891480143669ba7636c4cf:
-
-  Merge branch 'akpm' (patches from Andrew Morton) (2013-08-14 10:04:43 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-krb-support
-
-for you to fetch changes up to 0f8d966ebc86d7ab9fb7fd074ae589c2d81de08f:
-
-  KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches (2013-08-28 18:56:14 +0100)
-
-----------------------------------------------------------------
-(from the branch description for keys-devel local branch)
-
-clone of "master"
-Kerberos ticket persistence support
-
-----------------------------------------------------------------
-David Howells (12):
-      KEYS: Skip key state checks when checking for possession
-      KEYS: Use bool in make_key_ref() and is_key_possessed()
-      KEYS: key_is_dead() should take a const key pointer argument
-      KEYS: Consolidate the concept of an 'index key' for key access
-      KEYS: Introduce a search context structure
-      KEYS: Search for auth-key by name rather than target key ID
-      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
-      KEYS: Drop the permissions argument from __keyring_search_one()
-      Add a generic associative array implementation.
-      KEYS: Expand the capacity of a keyring
-      KEYS: Implement a big key type that can save to tmpfs
-      KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-
- Documentation/assoc_array.txt    |  574 +++++++++++++
- Documentation/security/keys.txt  |   20 +-
- include/keys/big_key-type.h      |   25 +
- include/keys/keyring-type.h      |   17 +-
- include/linux/assoc_array.h      |   92 ++
- include/linux/assoc_array_priv.h |  182 ++++
- include/linux/key-type.h         |    5 +
- include/linux/key.h              |   49 +-
- include/linux/user_namespace.h   |    6 +
- include/uapi/linux/keyctl.h      |    1 +
- kernel/user.c                    |    4 +
- kernel/user_namespace.c          |    4 +
- lib/Kconfig                      |   14 +
- lib/Makefile                     |    1 +
- lib/assoc_array.c                | 1745 ++++++++++++++++++++++++++++++++++++++
- security/keys/Kconfig            |   29 +
- security/keys/Makefile           |    2 +
- security/keys/big_key.c          |  204 +++++
- security/keys/compat.c           |    3 +
- security/keys/gc.c               |   33 +-
- security/keys/internal.h         |   74 +-
- security/keys/key.c              |   91 +-
- security/keys/keyctl.c           |    3 +
- security/keys/keyring.c          | 1481 ++++++++++++++++----------------
- security/keys/persistent.c       |  169 ++++
- security/keys/proc.c             |   17 +-
- security/keys/process_keys.c     |  131 +--
- security/keys/request_key.c      |   56 +-
- security/keys/request_key_auth.c |   31 +-
- security/keys/sysctl.c           |   11 +
- security/keys/user_defined.c     |   18 +-
- 31 files changed, 4124 insertions(+), 968 deletions(-)
- create mode 100644 Documentation/assoc_array.txt
- create mode 100644 include/keys/big_key-type.h
- create mode 100644 include/linux/assoc_array.h
- create mode 100644 include/linux/assoc_array_priv.h
- create mode 100644 lib/assoc_array.c
- create mode 100644 security/keys/big_key.c
- create mode 100644 security/keys/persistent.c
+Best regards,
+Jingoo Han
 
