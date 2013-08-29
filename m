@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3H2A0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:26:30 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:32837 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3H2A02 (ORCPT
+	id S1754811Ab3H2A1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:27:08 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44175 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab3H2A1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:26:28 -0400
-Message-ID: <521E9531.904@tilera.com>
-Date: Wed, 28 Aug 2013 20:26:25 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 28 Aug 2013 20:27:07 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening\@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
+	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	<20130828211116.GA22184@dztty>
+Date: Wed, 28 Aug 2013 17:26:56 -0700
+In-Reply-To: <20130828211116.GA22184@dztty> (Djalal Harouni's message of "Wed,
+	28 Aug 2013 22:11:17 +0100")
+Message-ID: <87sixt735b.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH v2] tile: support KVM for tilegx
-References: <52091682.8020004@siemens.com> <201308122037.r7CKbo99011833@farm-0021.internal.tilera.com> <20130825113953.GN8218@redhat.com> <521AAED7.4080407@tilera.com> <20130826120445.GD8218@redhat.com>
-In-Reply-To: <20130826120445.GD8218@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19TL4BZBQdAfUXTIbJk1L/xyNzegu5XtOM=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0614]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Djalal Harouni <tixxdz@opendz.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/26/2013 8:04 AM, Gleb Natapov wrote:
-> On Sun, Aug 25, 2013 at 09:26:47PM -0400, Chris Metcalf wrote:
->> On 8/25/2013 7:39 AM, Gleb Natapov wrote:
->>> On Mon, Aug 12, 2013 at 04:24:11PM -0400, Chris Metcalf wrote:
->>>> This change provides the initial framework support for KVM on tilegx.
->>>> Basic virtual disk and networking is supported.
->>>>
->>> This needs to be broken down to more reviewable patches.
->> I already broke out one pre-requisite patch that wasn't strictly KVM-related:
->>
->> https://lkml.org/lkml/2013/8/12/339
->>
->> In addition, we've separately arranged to support booting our kernels in a way that is compatible with the Tilera booter running at the highest privilege level, which enables multiple kernel privilege levels:
->>
->> https://lkml.org/lkml/2013/5/2/468
->>
->> How would you recommend further breaking down this patch?  It's pretty much just the basic support for minimal KVM.  I suppose I could break out all the I/O related stuff into a separate patch, though it wouldn't amount to much; perhaps the console could also be broken out separately.  Any other suggestions?
->>
-> First of all please break out host and guest bits. Also I/O related stuff,
-> like you suggest (so that guest PV bits will be in separate patch) and
-> change to a common code (not much as far as I see) with explanation why
-> it is needed. (Why kvm_vcpu_kick() is not needed for instance?)
 
-I broke it down into three pieces in the end: the basic host support, the basic guest PV support, and the virtio/console support.  The first piece is still much the biggest.  I found that the generic kvm_vcpu_kick() is fine, so I removed the custom version (which predated the generic version in our internal tree).  Explanations are now in the git commit comments.
+I have take a moment and read this thread, and have been completely
+unenlightend.  People are upset but it is totally unclear why.
 
->>> Also can you
->>> describe the implementation a little bit? Does tile arch has vitalization
->>> extension this implementation uses, or is it trap and emulate approach?
->>> If later does it run unmodified guest kernels? What userspace are you
->>> using with this implementation?
->> We could do full virtualization via trap and emulate, but we've elected to do a para-virtualized approach.  Userspace runs at PL (privilege level) 0, the guest kernel runs at PL1, and the host runs at PL2.  We have available per-PL resources for various things, and take advantage of having two on-chip timers (for example) to handle timing for the host and guest kernels.  We run the same userspace with either the host or the guest.
->>
-> OK, thanks for explanation. Why have you decided to do PV over trap and
-> emulate?
+There is no explanation why it is ok to ignore the suid-exec case, as
+the posted patches do.  Which ultimately means the patches provide
+little to no security benefit, and that the posted patches as written
+are broken.
 
-Performance and simplicity; I added comments to the git commit to provide a rationale.
+There is no clear explanation of what people are worried about.
+References to other threads and other commits do not help.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Can someome please state what they are worried about in simple language
+step by step?
 
+I see absolutely nothing to overturn Al's analysis that these files
+simply don't need protection.
+
+
+
+The closest I saw in the thread was people were worried about ASLR being
+defeated.  All I see are kernel addresses and we don't have much if any
+runtime or even load time randomization of where code is located in the
+kernel address map on x86_64.  So I don't understand the concern.
+
+Certainly all of the clever applications and use of suid apps appear to
+be jumping around crazy hoops and to achieve what I can achieve with a
+simple cat of a file.
+
+Eric
