@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab3H2Enq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 00:43:46 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:51074 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755823Ab3H2Eno (ORCPT
+	id S1755943Ab3H2Epm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 00:45:42 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:42975 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3H2Epl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 00:43:44 -0400
-Date: Thu, 29 Aug 2013 14:43:08 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Richard Weinberger <richard@nod.at>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gang.chen@asianux.com
-Subject: Re: [PATCH] kernel/padata.c: Register hotcpu notifier after
- initialization
-Message-ID: <20130829044308.GC25208@gondor.apana.org.au>
-References: <1377256353-7979-1-git-send-email-richard@nod.at>
- <20130827093041.GD7660@secunet.com>
+	Thu, 29 Aug 2013 00:45:41 -0400
+X-Spam-Score: -101.0
+Message-ID: <521ED1B5.5030507@asianux.com>
+Date: Thu, 29 Aug 2013 12:44:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827093041.GD7660@secunet.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, ak@linux.intel.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] h8300/kernel/timer/timer8.c: add the missing semicolon
+References: <521EC55A.9030905@asianux.com>
+In-Reply-To: <521EC55A.9030905@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:30:41AM +0200, Steffen Klassert wrote:
-> On Fri, Aug 23, 2013 at 01:12:33PM +0200, Richard Weinberger wrote:
-> > padata_cpu_callback() takes pinst->lock, to avoid taking
-> > an uninitialized lock, register the notifier after it's
-> > initialization.
-> > 
-> > Signed-off-by: Richard Weinberger <richard@nod.at>
+On 08/29/2013 11:51 AM, Chen Gang wrote:
+> Add the missing semicolon to fix the typo issue.
 > 
-> Looks ok,
+> The related error: (defconfig for H8S):
 > 
-> Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+>   arch/h8300/kernel/timer/timer8.c: In function 'h8300_timer_setup':
+>   arch/h8300/kernel/timer/timer8.c:98:2: error: expected ';' before 'ctrl_outw'
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/h8300/Makefile              |    2 +-
+>  arch/h8300/kernel/timer/timer8.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
+> index a556447..d2ba710 100644
+> --- a/arch/h8300/Makefile
+> +++ b/arch/h8300/Makefile
+> @@ -25,7 +25,7 @@ model-$(CONFIG_RAMKERNEL)	:= ram
+>  model-$(CONFIG_ROMKERNEL)	:= rom
+>  MODEL := $(model-y)
+>  
+> -cflags-$(CONFIG_CPU_H8300H)	:= -mh
+> +cflags-$(CONFIG_CPU_H8300H)	:= -mh -mcpu=h8300h
 
-Also applied.
+Oh, sorry, it contents some waste things, I should send patch v2.
+
+
+>  ldflags-$(CONFIG_CPU_H8300H)	:= -mh8300helf
+>  cflags-$(CONFIG_CPU_H8S)	:= -ms
+>  ldflags-$(CONFIG_CPU_H8S)	:= -mh8300self
+> diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
+> index 505f341..8aac2a7 100644
+> --- a/arch/h8300/kernel/timer/timer8.c
+> +++ b/arch/h8300/kernel/timer/timer8.c
+> @@ -91,7 +91,7 @@ void __init h8300_timer_setup(void)
+>  
+>  #if defined(CONFIG_CPU_H8S)
+>  	/* Timer module enable */
+> -	ctrl_bclr(0, MSTPCRL)
+> +	ctrl_bclr(0, MSTPCRL);
+>  #endif
+>  
+>  	/* initialize timer */
+> 
+
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Chen Gang
