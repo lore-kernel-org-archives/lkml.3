@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3H2UMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:12:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33754 "EHLO
+	id S1757313Ab3H2UMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:12:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55481 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757112Ab3H2UMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:12:00 -0400
+	id S1756941Ab3H2UMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 16:12:09 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
-Subject: [PATCH 5/6] ceph: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
-Date: Thu, 29 Aug 2013 13:11:09 -0700
-Message-Id: <a67358bbb2f7d191cac51493a9207ba301439f4b.1377806578.git.joe@perches.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 6/6] f2fs: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
+Date: Thu, 29 Aug 2013 13:11:10 -0700
+Message-Id: <075e5f4b42ddc2d3192a59f8b31e52fd3f220804.1377806578.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1377806578.git.joe@perches.com>
 References: <cover.1377806578.git.joe@perches.com>
@@ -23,36 +24,22 @@ The helper exists, might as well use it instead of __GFP_ZERO.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/ceph/dir.c  | 2 +-
- fs/ceph/file.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/f2fs/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
-index 868b61d..c10bc70 100644
---- a/fs/ceph/dir.c
-+++ b/fs/ceph/dir.c
-@@ -40,7 +40,7 @@ int ceph_init_dentry(struct dentry *dentry)
- 	if (dentry->d_fsdata)
- 		return 0;
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 13d0a0f..d43709a 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -286,7 +286,7 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
+ {
+ 	struct f2fs_inode_info *fi;
  
--	di = kmem_cache_alloc(ceph_dentry_cachep, GFP_NOFS | __GFP_ZERO);
-+	di = kmem_cache_zalloc(ceph_dentry_cachep, GFP_NOFS);
- 	if (!di)
- 		return -ENOMEM;          /* oh well */
+-	fi = kmem_cache_alloc(f2fs_inode_cachep, GFP_NOFS | __GFP_ZERO);
++	fi = kmem_cache_zalloc(f2fs_inode_cachep, GFP_NOFS);
+ 	if (!fi)
+ 		return NULL;
  
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 20d0222..1b5f8ec 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -75,7 +75,7 @@ static int ceph_init_file(struct inode *inode, struct file *file, int fmode)
- 	case S_IFDIR:
- 		dout("init_file %p %p 0%o (regular)\n", inode, file,
- 		     inode->i_mode);
--		cf = kmem_cache_alloc(ceph_file_cachep, GFP_NOFS | __GFP_ZERO);
-+		cf = kmem_cache_zalloc(ceph_file_cachep, GFP_NOFS);
- 		if (cf == NULL) {
- 			ceph_put_fmode(ceph_inode(inode), fmode); /* clean up */
- 			return -ENOMEM;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
