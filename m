@@ -1,271 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab3H2Xhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:37:46 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50614 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab3H2Xho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:37:44 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] Input: add driver for Neonode zForce based touchscreens
-Date: Fri, 30 Aug 2013 01:37:39 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-References: <201308161359.40134.heiko@sntech.de> <20130829162903.GB1576@core.coreip.homeip.net>
-In-Reply-To: <20130829162903.GB1576@core.coreip.homeip.net>
+	id S1756857Ab3H2XiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:38:01 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:56233 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab3H2Xh7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:37:59 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, vgoyal@redhat.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, jingbai.ma@hp.com
+References: <20130829092458.5476.10277.stgit@localhost6.localdomain6>
+	<521F5297.4070906@linux.intel.com>
+Date: Thu, 29 Aug 2013 16:37:44 -0700
+In-Reply-To: <521F5297.4070906@linux.intel.com> (H. Peter Anvin's message of
+	"Thu, 29 Aug 2013 06:54:31 -0700")
+Message-ID: <8738ps131z.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201308300137.40020.heiko@sntech.de>
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+jeY2lC0W8FP3MJoU89ZdO9A1kDfJbgkI=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0134]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@linux.intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/2] x86, apic: Disable BSP if boot cpu is AP
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+"H. Peter Anvin" <hpa@linux.intel.com> writes:
 
-Am Donnerstag, 29. August 2013, 18:29:04 schrieb Dmitry Torokhov:
-> Hi Heiko,
-> 
-> On Fri, Aug 16, 2013 at 01:59:39PM +0200, Heiko Stübner wrote:
-> > This adds a driver for touchscreens using the zforce infrared
-> > technology from Neonode connected via i2c to the host system.
-> > 
-> > It supports multitouch with up to two fingers and tracking of the
-> > contacts in hardware.
-> 
-> Generally looks good, just a few comments...
-> 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > ---
-> > 
-> >  drivers/input/touchscreen/Kconfig     |   13 +
-> >  drivers/input/touchscreen/Makefile    |    1 +
-> >  drivers/input/touchscreen/zforce_ts.c |  837
-> >  +++++++++++++++++++++++++++++++++ include/linux/input/zforce_ts.h      
-> >  |   26 +
-> >  4 files changed, 877 insertions(+)
-> >  create mode 100644 drivers/input/touchscreen/zforce_ts.c
-> >  create mode 100644 include/linux/input/zforce_ts.h
-> > 
-> > diff --git a/drivers/input/touchscreen/Kconfig
-> > b/drivers/input/touchscreen/Kconfig index 3b9758b..ade11b7 100644
-> > --- a/drivers/input/touchscreen/Kconfig
-> > +++ b/drivers/input/touchscreen/Kconfig
-> > @@ -919,4 +919,17 @@ config TOUCHSCREEN_TPS6507X
-> > 
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called tps6507x_ts.
-> > 
-> > +config TOUCHSCREEN_ZFORCE
-> > +	tristate "Neonode zForce infrared touchscreens"
-> > +	depends on I2C
-> > +	depends on GPIOLIB
-> > +	help
-> > +	  Say Y here if you have a touchscreen using the zforce
-> > +	  infraread technology from Neonode.
-> > +
-> > +	  If unsure, say N.
-> > +
-> > +	  To compile this driver as a module, choose M here: the
-> > +	  module will be called zforce_ts.
-> > +
-> > 
-> >  endif
-> > 
-> > diff --git a/drivers/input/touchscreen/Makefile
-> > b/drivers/input/touchscreen/Makefile index f5216c1..7587883 100644
-> > --- a/drivers/input/touchscreen/Makefile
-> > +++ b/drivers/input/touchscreen/Makefile
-> > @@ -75,3 +75,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+=
-> > mainstone-wm97xx.o
-> > 
-> >  obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
-> >  obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
-> >  obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
-> > 
-> > +obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
-> > diff --git a/drivers/input/touchscreen/zforce_ts.c
-> > b/drivers/input/touchscreen/zforce_ts.c new file mode 100644
-> > index 0000000..92af632
-> > --- /dev/null
-> > +++ b/drivers/input/touchscreen/zforce_ts.c
-> > @@ -0,0 +1,837 @@
-> > +/*
-> > + * Copyright (C) 2012-2013 MundoReader S.L.
-> > + * Author: Heiko Stuebner <heiko@sntech.de>
-> > + *
-> > + * based in parts on Nook zforce driver
-> > + *
-> > + * Copyright (C) 2010 Barnes & Noble, Inc.
-> > + * Author: Pieter Truter<ptruter@intrinsyc.com>
-> > + *
-> > + * This software is licensed under the terms of the GNU General Public
-> > + * License version 2, as published by the Free Software Foundation, and
-> > + * may be copied, distributed, and modified under those terms.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/hrtimer.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/input.h>
-> > +#include <linux/interrupt.h>
-> > +#include <linux/i2c.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/gpio.h>
-> > +#include <linux/device.h>
-> > +#include <linux/sysfs.h>
-> > +#include <linux/input/zforce_ts.h>
-> > +#include <linux/input/mt.h>
-> > +
-> > +#define WAIT_TIMEOUT		msecs_to_jiffies(1000)
-> > +
-> > +#define FRAME_START		0xee
-> > +
-> > +/* Offsets of the different parts of the payload the controller sends */
-> > +#define PAYLOAD_HEADER		0
-> > +#define PAYLOAD_LENGTH		1
-> > +#define PAYLOAD_BODY		2
-> > +
-> > +/* Response offsets */
-> > +#define RESPONSE_ID		0
-> > +#define RESPONSE_DATA		1
-> > +
-> > +/* Commands */
-> > +#define COMMAND_DEACTIVATE	0x00
-> > +#define COMMAND_INITIALIZE	0x01
-> > +#define COMMAND_RESOLUTION	0x02
-> > +#define COMMAND_SETCONFIG	0x03
-> > +#define COMMAND_DATAREQUEST	0x04
-> > +#define COMMAND_SCANFREQ	0x08
-> > +#define COMMAND_STATUS		0X1e
-> > +
-> > +/*
-> > + * Responses the controller sends as a result of
-> > + * command requests
-> > + */
-> > +#define RESPONSE_DEACTIVATE	0x00
-> > +#define RESPONSE_INITIALIZE	0x01
-> > +#define RESPONSE_RESOLUTION	0x02
-> > +#define RESPONSE_SETCONFIG	0x03
-> > +#define RESPONSE_SCANFREQ	0x08
-> > +#define RESPONSE_STATUS		0X1e
-> > +
-> > +/*
-> > + * Notifications are send by the touch controller without
-> > + * being requested by the driver and include for example
-> > + * touch indications
-> > + */
-> > +#define NOTIFICATION_TOUCH		0x04
-> > +#define NOTIFICATION_BOOTCOMPLETE	0x07
-> > +#define NOTIFICATION_OVERRUN		0x25
-> > +#define NOTIFICATION_PROXIMITY		0x26
-> > +#define NOTIFICATION_INVALID_COMMAND	0xfe
-> > +
-> > +#define ZFORCE_REPORT_POINTS		2
-> > +#define ZFORCE_MAX_AREA			0xff
-> > +
-> > +#define STATE_DOWN			0
-> > +#define STATE_MOVE			1
-> > +#define STATE_UP			2
-> > +
-> > +#define SETCONFIG_DUALTOUCH		(1 << 0)
-> > +
-> > +struct zforce_point {
-> > +	int coord_x;
-> > +	int coord_y;
-> > +	int state;
-> > +	int id;
-> > +	int area_major;
-> > +	int area_minor;
-> > +	int orientation;
-> > +	int pressure;
-> > +	int prblty;
-> > +};
-> > +
-> > +/*
-> > + * @client		the i2c_client
-> > + * @input		the input device
-> > + * @suspending		in the process of going to suspend (don't emit 
-wakeup
-> > + *			events for commands executed to suspend the device)
-> > + * @suspended		device suspended
-> > + * @access_mutex	serialize i2c-access, to keep multipart reads together
-> > + * @command_done	completion to wait for the command result
-> > + * @command_mutex	serialize commands send to the ic
-> > + * @command_waiting	the id of the command that that is currently 
-waiting
-> > + *			for a result
-> > + * @command_result	returned result of the command
-> > + */
-> > +struct zforce_ts {
-> > +	struct i2c_client	*client;
-> > +	struct input_dev	*input;
-> > +	const struct zforce_ts_platdata *pdata;
-> > +	char			phys[32];
-> > +
-> > +	bool			suspending;
-> > +	bool			suspended;
-> > +	bool			boot_complete;
-> > +
-> > +	/* Firmware version information */
-> > +	u16			version_major;
-> > +	u16			version_minor;
-> > +	u16			version_build;
-> > +	u16			version_rev;
-> > +
-> > +	struct mutex		access_mutex;
-> > +
-> > +	struct completion	command_done;
-> > +	struct mutex		command_mutex;
-> > +	int			command_waiting;
-> > +	int			command_result;
-> > +};
-> > +
-> > +static int zforce_command(struct zforce_ts *ts, u8 cmd)
-> > +{
-> > +	struct i2c_client *client = ts->client;
-> > +	char buf[3];
-> > +	int ret;
-> > +
-> > +	dev_dbg(&client->dev, "%s: 0x%x\n", __func__, cmd);
-> > +
-> > +	buf[0] = FRAME_START;
-> > +	buf[1] = 1; /* data size, command only */
-> > +	buf[2] = cmd;
-> > +
-> > +	mutex_lock(&ts->access_mutex);
-> > +	ret = i2c_master_send(client, &buf[0], ARRAY_SIZE(buf));
-> > +	mutex_unlock(&ts->access_mutex);
-> 
-> I am unsure why you need this lock. Doesn't i2c core already ensure
-> necessary locking?
+> On 08/29/2013 02:27 AM, HATAYAMA Daisuke wrote:
+>> This is the patch series to address the issue that kdump 2nd kernel
+>> now fails to wake up multiple CPUs.
+>
+> Please explain the "now" in the above sentence.  Is this a regression?
+> If so, what is its fimpact?
 
-The access_lock is really only there to ensure the multi-reads stay together 
-and do not get split up. For individual reads the i2c core of course does all 
-the necessary things.
+This is not a regression.
 
+>  Is this something that needs to go into 3.11
+> as a post-rc7 change, which means it better be hyper-critical?
 
-> Also, it does not look like zforec_command() will reace with your
-> interrupt handler that does multi-reads...
+No.  This is something that does not need to go into 3.11.
 
-I'm unsure :-) ... what about the following scenario:
+This situation is people who run machines of unreasonable size really
+would like to use multiple cpus when generating crash dumps.  A
+practical problem with that desire is that sending a (startup? init? I
+forget which) IPI to a processor with the BSP flag sent triggers that
+processor to load code from 0xfffffff0 instead of the vector specified
+in the IPI.  At which point the processor which jumped to 0xfffffff0 and
+is running BIOS code does not call into the kernel so never comes up
+which is unfortunate, and worse almost always triggers a soft reset by
+writing hardware registers.
 
-- touch -> interrupt
-- isr reads first packet
-- user closes device -> stop command sent
-- isr reads payload
+Which means the practical way to avoid this sort of thing is not to send
+init/startup IPIs to processors with the BSP bit set.  Which MPtables
+and ACPI tables should denote as the boot processor.
 
+In a previous attack on this problem we explored if it was possible to
+clear the BSP bit and be able to use all processors but that does not
+work.  I think it was actually your suggestion that we just skip the
+BSP.
 
-I'll fix the rest of the issues in the next version too.
+Anyway this long simmering issue has raised it's head again and we have
+iron-clad evidence that the only thing people can do is avoid the
+problem so this is a patchset to allow people who wind up in a
+situtation where they are not booting on the bootstrap processor to to
+avoid problems, and use as many of their other processors as possible.
 
+Which should make people with boxes of unusual size happy.
 
-Thanks for the review
-Heiko
+Eric
