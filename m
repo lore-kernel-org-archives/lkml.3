@@ -1,306 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3H2Xmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:42:39 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:54921 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3H2Xmh (ORCPT
+	id S1755839Ab3H2Xn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:43:29 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57411 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab3H2Xn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:42:37 -0400
+	Thu, 29 Aug 2013 19:43:27 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Archit Taneja <archit@ti.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
+Date: Fri, 30 Aug 2013 01:44:50 +0200
+Message-ID: <35333449.0R3QP6op66@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CACRpkda=pZ6xQ2XJke=MBLiH_DAS8CXW+JOZ856ohGZi+fOCzA@mail.gmail.com>
+References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <7583101.2yAsZLOucV@avalon> <CACRpkda=pZ6xQ2XJke=MBLiH_DAS8CXW+JOZ856ohGZi+fOCzA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-Date: Thu, 29 Aug 2013 16:42:36 -0700
-X-Google-Sender-Auth: 88mtZXwgFsXCz6O6MQxdi06vUVY
-Message-ID: <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: multipart/mixed; boundary=089e0122f4802d2ac204e51ea9b5
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0122f4802d2ac204e51ea9b5
-Content-Type: text/plain; charset=UTF-8
+Hi Linus,
 
-On Thu, Aug 29, 2013 at 12:25 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Hmm. I can see it, but it turns out that for normal pathname walking,
-> one of the main stumbling blocks is the RCU case of complete_walk(),
-> which cannot be done with the lockless lockref model.
-> [... snip ...]
+On Thursday 29 August 2013 20:24:32 Linus Walleij wrote:
+> On Wed, Aug 28, 2013 at 1:58 PM, Laurent Pinchart wrote:
+> > On Tuesday 27 August 2013 19:18:55 Wolfram Sang wrote:
+> >> > The driver should support the same chip models reardless of whether
+> >> > it's used with or without DT. If an entry in the OF table has no
+> >> > corresponding entry in the I2C table I would consider that as a driver
+> >> > bug.
+> >> 
+> >> Linus Walleij posted a patch to support DT only probing, but too many
+> >> side-effects showed up. Some were fixable (probe regressions) and some
+> >> need more work, if feasible at all. Most prominent is that runtime
+> >> instantiation of i2c slaves currently needs an entry in the i2c table.
+> > 
+> > Linus, I'd like to get this in v3.12 if it's not too late. Could you
+> > please provide your input ?
+> 
+> Provided some input on the v4 version,
 
-Ok, here's a patch for people to try out if they want to. It's tested,
-and works for me, but it is - like the two preparatory patches I
-already applied - not really based on Waiman's patches except from a
-conceptual standpoint.
+Do you mean v4 of this patch ? I can't find your reply.
 
-For architecture people (ie Ben, if you want to try this on ppc64),
-the thing that it needs from an architecture:
+> due to being a bit overloaded my patch queue is overloaded...
 
- - the raw_spinlock_t and the "unsigned long" needs to fit in a u64.
+No worries. We can delay this one until v3.13.
 
-   This is normally true anyway, but if your architecture code has a
-big spinlock, you can't use it.
+-- 
+Regards,
 
- - the architecture needs to support "cmpxchg()" on that "u64" type
-(so x86-32 does *not* use this, although we could teach it to do so by
-teaching x86-32 to use "cmpxchg8b" for the 8-byte case)
+Laurent Pinchart
 
-   A 64-bit architecture needs to support cmpxchg() on an u64 anyway,
-so this is always true on 64-bit. It _can_ be true on 32-bit
-architectures too.
-
- - the architecture needs to implement a simple
-"arch_spin_value_unlocked()" macro, which takes a raw_spinlock_t value
-and says whether it is unlocked or not.
-
-   This is a new macro/function. It's generally a one-liner. For the
-x86 ticket locks, for example, the test is simply "lock.tickets.head
-== lock.tickets.tail".
-
- - the architecture code needs to let the generic code know that it
-supports all this by doing a "select ARCH_USE_CMPXCHG_LOCKREF"
-
-   Add it to your Kconfig file in the appropriate place. You do *not*
-need to worry about LOCKDEP etc, you only need to worry about your own
-architecture details above.
-
-That's it. If it does that, the lockref code will use the cmpxchg
-optimization when appropriate (ie spinlock debugging is not turned on
-etc etc).
-
-For Waiman: your patch had that adaptive waiting thing, and "wait for
-unlocked" code, and I threw all that away. I didn't like it, and the
-only reason for it existing was that the spinlock could be taken in a
-hot path, which I felt was against the whole point of this "lockref"
-thing.
-
-So I fixed the VFS layer instead. With dput() and friends using
-lockrefs, the only thing remaining in the hot RCU dentry lookup path
-was the nasty __d_rcu_to_refcount() thing in complete_walk(). I
-rewrote that to locklessly increment the refcount when it was nonzero,
-and get the lock if it was zero, and that all seems to work fine.
-
-And once the only case that is relevant for the fast-path is "d_lock
-is unlocked", all your games with waiting for the spinlock to be
-released are unnecessary. Making everything much simpler. If the
-spinlock isn't unlocked, we always kick out to the fallback case (with
-real locking).
-
-NOTE! My test-case was very small and simple, so it may not trigger
-other cases that might trigger d_lock in a hotpath. Anything that
-kicks us out of rcu mode (like a symlink, for example) will trigger
-"unlazy_walk()", and I didn't do the same thing there. So there's
-still details like that to sort out, but I very much think this whole
-"only an unlocked spinlock is a fastpath" is the right approach.
-
-My simple testing shows that this has about the same best-case
-performance, and the 15% _raw_spin_lock load I was able to trigger is
-totally gone. That doesn't make things *faster* for me (because the
-cost of the cmpxchg is pretty much comparable to the cost of the
-spinlocks), but the big difference is the contended behavior where we
-don't actually have to wait for the spinlock, we can just locklessly
-increment the counter.
-
-I can't trigger the CPU-eating contention case on my single-socket
-system, which is why I'm sending out this patch for testing (despite
-it not having that unlazy_walk() thing etc).
-
-Also note that this is one single patch, not split up. Again, that's
-because what I'm really hoping to get is just "does this fix the
-contention-case on the 80-core monster machine that I don't have
-access to?"
-
-Side note: the whole cmpxchg() loop is written to basically generate
-the perfect cmpxchg sequence on x86. The assembly results actually
-look pretty good. I can't take advantage of the eflag setting of the
-instruction, because gcc inline asms don't support that (even with
-"asm goto" - I'd need to have output values for that, and "asm goto"
-does now allow that). So there's one extra "cmpq" instruction, and gcc
-makes a mess of "add 1 to structure member in high bytes of a 64-bit
-stricture", but it's actually fairly readable and short assembly code,
-which was *not* true of the original patches.
-
-Waiman? Mind looking at this and testing?
-
-                          Linus
-
---089e0122f4802d2ac204e51ea9b5
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hkym8obu0
-
-IGFyY2gveDg2L0tjb25maWcgICAgICAgICAgICAgICAgfCAgIDEgKwogYXJjaC94ODYvaW5jbHVk
-ZS9hc20vc3BpbmxvY2suaCB8ICAgNSArKwogZnMvZGNhY2hlLmMgICAgICAgICAgICAgICAgICAg
-ICB8ICAxNSArKysrKwogZnMvbmFtZWkuYyAgICAgICAgICAgICAgICAgICAgICB8ICAxOCArKysr
-LS0KIGluY2x1ZGUvbGludXgvbG9ja3JlZi5oICAgICAgICAgfCAgNTkgKysrKy0tLS0tLS0tLS0t
-LS0tLQogbGliL0tjb25maWcgICAgICAgICAgICAgICAgICAgICB8ICAxMCArKysrCiBsaWIvTWFr
-ZWZpbGUgICAgICAgICAgICAgICAgICAgIHwgICAxICsKIGxpYi9sb2NrcmVmLmMgICAgICAgICAg
-ICAgICAgICAgfCAxMjcgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwog
-OCBmaWxlcyBjaGFuZ2VkLCAxODMgaW5zZXJ0aW9ucygrKSwgNTMgZGVsZXRpb25zKC0pCiBjcmVh
-dGUgbW9kZSAxMDA2NDQgbGliL2xvY2tyZWYuYwoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L0tjb25m
-aWcgYi9hcmNoL3g4Ni9LY29uZmlnCmluZGV4IGIzMmViZjkyYjBjZS4uNjdlMDA3NDA1MzFjIDEw
-MDY0NAotLS0gYS9hcmNoL3g4Ni9LY29uZmlnCisrKyBiL2FyY2gveDg2L0tjb25maWcKQEAgLTE2
-LDYgKzE2LDcgQEAgY29uZmlnIFg4Nl82NAogCWRlZl9ib29sIHkKIAlkZXBlbmRzIG9uIDY0QklU
-CiAJc2VsZWN0IFg4Nl9ERVZfRE1BX09QUworCXNlbGVjdCBBUkNIX1VTRV9DTVBYQ0hHX0xPQ0tS
-RUYKIAogIyMjIEFyY2ggc2V0dGluZ3MKIGNvbmZpZyBYODYKZGlmZiAtLWdpdCBhL2FyY2gveDg2
-L2luY2x1ZGUvYXNtL3NwaW5sb2NrLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9zcGlubG9jay5o
-CmluZGV4IGUzZGRkN2RiNzIzZi4uZTBlNjY4NDIyYzc1IDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9p
-bmNsdWRlL2FzbS9zcGlubG9jay5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3NwaW5sb2Nr
-LmgKQEAgLTM0LDYgKzM0LDExIEBACiAjIGRlZmluZSBVTkxPQ0tfTE9DS19QUkVGSVgKICNlbmRp
-ZgogCitzdGF0aWMgX19hbHdheXNfaW5saW5lIGludCBhcmNoX3NwaW5fdmFsdWVfdW5sb2NrZWQo
-YXJjaF9zcGlubG9ja190IGxvY2spCit7CisJcmV0dXJuIGxvY2sudGlja2V0cy5oZWFkID09IGxv
-Y2sudGlja2V0cy50YWlsOworfQorCiAvKgogICogVGlja2V0IGxvY2tzIGFyZSBjb25jZXB0dWFs
-bHkgdHdvIHBhcnRzLCBvbmUgaW5kaWNhdGluZyB0aGUgY3VycmVudCBoZWFkIG9mCiAgKiB0aGUg
-cXVldWUsIGFuZCB0aGUgb3RoZXIgaW5kaWNhdGluZyB0aGUgY3VycmVudCB0YWlsLiBUaGUgbG9j
-ayBpcyBhY3F1aXJlZApkaWZmIC0tZ2l0IGEvZnMvZGNhY2hlLmMgYi9mcy9kY2FjaGUuYwppbmRl
-eCBiOTQ5YWY4NTBjZDYuLjJkMjQ0MjI3OTk5ZCAxMDA2NDQKLS0tIGEvZnMvZGNhY2hlLmMKKysr
-IGIvZnMvZGNhY2hlLmMKQEAgLTYxMSw4ICs2MTEsMjMgQEAgc3RhdGljIGlubGluZSB2b2lkIF9f
-ZGdldChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCiAKIHN0cnVjdCBkZW50cnkgKmRnZXRfcGFyZW50
-KHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKIHsKKwlpbnQgZ290cmVmOwogCXN0cnVjdCBkZW50cnkg
-KnJldDsKIAorCS8qCisJICogRG8gb3B0aW1pc3RpYyBwYXJlbnQgbG9va3VwIHdpdGhvdXQgYW55
-CisJICogbG9ja2luZy4KKwkgKi8KKwlyY3VfcmVhZF9sb2NrKCk7CisJcmV0ID0gQUNDRVNTX09O
-Q0UoZGVudHJ5LT5kX3BhcmVudCk7CisJZ290cmVmID0gbG9ja3JlZl9nZXRfbm90X3plcm8oJnJl
-dC0+ZF9sb2NrcmVmKTsKKwlyY3VfcmVhZF91bmxvY2soKTsKKwlpZiAobGlrZWx5KGdvdHJlZikp
-IHsKKwkJaWYgKGxpa2VseShyZXQgPT0gQUNDRVNTX09OQ0UoZGVudHJ5LT5kX3BhcmVudCkpKQor
-CQkJcmV0dXJuIHJldDsKKwkJZHB1dChyZXQpOworCX0KKwogcmVwZWF0OgogCS8qCiAJICogRG9u
-J3QgbmVlZCByY3VfZGVyZWZlcmVuY2UgYmVjYXVzZSB3ZSByZS1jaGVjayBpdCB3YXMgY29ycmVj
-dCB1bmRlcgpkaWZmIC0tZ2l0IGEvZnMvbmFtZWkuYyBiL2ZzL25hbWVpLmMKaW5kZXggNzcyMGZi
-ZDUyNzdiLi4yZGZhMmUzMTM2YzAgMTAwNjQ0Ci0tLSBhL2ZzL25hbWVpLmMKKysrIGIvZnMvbmFt
-ZWkuYwpAQCAtNTgyLDE3ICs1ODIsMjUgQEAgc3RhdGljIGludCBjb21wbGV0ZV93YWxrKHN0cnVj
-dCBuYW1laWRhdGEgKm5kKQogCWludCBzdGF0dXM7CiAKIAlpZiAobmQtPmZsYWdzICYgTE9PS1VQ
-X1JDVSkgeworCQlpbnQgZ290cmVmOworCiAJCW5kLT5mbGFncyAmPSB+TE9PS1VQX1JDVTsKIAkJ
-aWYgKCEobmQtPmZsYWdzICYgTE9PS1VQX1JPT1QpKQogCQkJbmQtPnJvb3QubW50ID0gTlVMTDsK
-LQkJc3Bpbl9sb2NrKCZkZW50cnktPmRfbG9jayk7Ci0JCWlmICh1bmxpa2VseSghX19kX3JjdV90
-b19yZWZjb3VudChkZW50cnksIG5kLT5zZXEpKSkgewotCQkJc3Bpbl91bmxvY2soJmRlbnRyeS0+
-ZF9sb2NrKTsKKworCQlnb3RyZWYgPSBsb2NrcmVmX2dldF9vcl9sb2NrKCZkZW50cnktPmRfbG9j
-a3JlZik7CisJCWlmIChyZWFkX3NlcWNvdW50X3JldHJ5KCZkZW50cnktPmRfc2VxLCBuZC0+c2Vx
-KSkgeworCQkJaWYgKGdvdHJlZikKKwkJCQlkcHV0KGRlbnRyeSk7CisJCQllbHNlCisJCQkJc3Bp
-bl91bmxvY2soJmRlbnRyeS0+ZF9sb2NrKTsKIAkJCXVubG9ja19yY3Vfd2FsaygpOwogCQkJcmV0
-dXJuIC1FQ0hJTEQ7CiAJCX0KLQkJQlVHX09OKG5kLT5pbm9kZSAhPSBkZW50cnktPmRfaW5vZGUp
-OwotCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOworCQlpZiAoIWdvdHJlZikgeworCQkJ
-ZGVudHJ5LT5kX2xvY2tyZWYuY291bnQrKzsKKwkJCXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9j
-ayk7CisJCX0KIAkJbW50Z2V0KG5kLT5wYXRoLm1udCk7CiAJCXVubG9ja19yY3Vfd2FsaygpOwog
-CX0KZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvbG9ja3JlZi5oIGIvaW5jbHVkZS9saW51eC9s
-b2NrcmVmLmgKaW5kZXggMDEyMzNlMDE2MjdhLi41YmI2YzY3MDBkZDUgMTAwNjQ0Ci0tLSBhL2lu
-Y2x1ZGUvbGludXgvbG9ja3JlZi5oCisrKyBiL2luY2x1ZGUvbGludXgvbG9ja3JlZi5oCkBAIC0x
-Nyw1NSArMTcsMTggQEAKICNpbmNsdWRlIDxsaW51eC9zcGlubG9jay5oPgogCiBzdHJ1Y3QgbG9j
-a3JlZiB7Ci0Jc3BpbmxvY2tfdCBsb2NrOwotCXVuc2lnbmVkIGludCBjb3VudDsKKwl1bmlvbiB7
-CisJCWFsaWduZWRfdTY0IGxvY2tfY291bnQ7CisJCXN0cnVjdCB7CisJCQlzcGlubG9ja190IGxv
-Y2s7CisJCQl1bnNpZ25lZCBpbnQgY291bnQ7CisJCX07CisJfTsKIH07CiAKLS8qKgotICogbG9j
-a3JlZl9nZXQgLSBJbmNyZW1lbnRzIHJlZmVyZW5jZSBjb3VudCB1bmNvbmRpdGlvbmFsbHkKLSAq
-IEBsb2NrY250OiBwb2ludGVyIHRvIGxvY2tyZWYgc3RydWN0dXJlCi0gKgotICogVGhpcyBvcGVy
-YXRpb24gaXMgb25seSB2YWxpZCBpZiB5b3UgYWxyZWFkeSBob2xkIGEgcmVmZXJlbmNlCi0gKiB0
-byB0aGUgb2JqZWN0LCBzbyB5b3Uga25vdyB0aGUgY291bnQgY2Fubm90IGJlIHplcm8uCi0gKi8K
-LXN0YXRpYyBpbmxpbmUgdm9pZCBsb2NrcmVmX2dldChzdHJ1Y3QgbG9ja3JlZiAqbG9ja3JlZikK
-LXsKLQlzcGluX2xvY2soJmxvY2tyZWYtPmxvY2spOwotCWxvY2tyZWYtPmNvdW50Kys7Ci0Jc3Bp
-bl91bmxvY2soJmxvY2tyZWYtPmxvY2spOwotfQotCi0vKioKLSAqIGxvY2tyZWZfZ2V0X25vdF96
-ZXJvIC0gSW5jcmVtZW50cyBjb3VudCB1bmxlc3MgdGhlIGNvdW50IGlzIDAKLSAqIEBsb2NrY250
-OiBwb2ludGVyIHRvIGxvY2tyZWYgc3RydWN0dXJlCi0gKiBSZXR1cm46IDEgaWYgY291bnQgdXBk
-YXRlZCBzdWNjZXNzZnVsbHkgb3IgMCBpZiBjb3VudCBpcyAwCi0gKi8KLXN0YXRpYyBpbmxpbmUg
-aW50IGxvY2tyZWZfZ2V0X25vdF96ZXJvKHN0cnVjdCBsb2NrcmVmICpsb2NrcmVmKQotewotCWlu
-dCByZXR2YWwgPSAwOwotCi0Jc3Bpbl9sb2NrKCZsb2NrcmVmLT5sb2NrKTsKLQlpZiAobG9ja3Jl
-Zi0+Y291bnQpIHsKLQkJbG9ja3JlZi0+Y291bnQrKzsKLQkJcmV0dmFsID0gMTsKLQl9Ci0Jc3Bp
-bl91bmxvY2soJmxvY2tyZWYtPmxvY2spOwotCXJldHVybiByZXR2YWw7Ci19Ci0KLS8qKgotICog
-bG9ja3JlZl9wdXRfb3JfbG9jayAtIGRlY3JlbWVudHMgY291bnQgdW5sZXNzIGNvdW50IDw9IDEg
-YmVmb3JlIGRlY3JlbWVudAotICogQGxvY2tjbnQ6IHBvaW50ZXIgdG8gbG9ja3JlZiBzdHJ1Y3R1
-cmUKLSAqIFJldHVybjogMSBpZiBjb3VudCB1cGRhdGVkIHN1Y2Nlc3NmdWxseSBvciAwIGlmIGNv
-dW50IDw9IDEgYW5kIGxvY2sgdGFrZW4KLSAqLwotc3RhdGljIGlubGluZSBpbnQgbG9ja3JlZl9w
-dXRfb3JfbG9jayhzdHJ1Y3QgbG9ja3JlZiAqbG9ja3JlZikKLXsKLQlzcGluX2xvY2soJmxvY2ty
-ZWYtPmxvY2spOwotCWlmIChsb2NrcmVmLT5jb3VudCA8PSAxKQotCQlyZXR1cm4gMDsKLQlsb2Nr
-cmVmLT5jb3VudC0tOwotCXNwaW5fdW5sb2NrKCZsb2NrcmVmLT5sb2NrKTsKLQlyZXR1cm4gMTsK
-LX0KK2V4dGVybiB2b2lkIGxvY2tyZWZfZ2V0KHN0cnVjdCBsb2NrcmVmICopOworZXh0ZXJuIGlu
-dCBsb2NrcmVmX2dldF9ub3RfemVybyhzdHJ1Y3QgbG9ja3JlZiAqKTsKK2V4dGVybiBpbnQgbG9j
-a3JlZl9nZXRfb3JfbG9jayhzdHJ1Y3QgbG9ja3JlZiAqKTsKK2V4dGVybiBpbnQgbG9ja3JlZl9w
-dXRfb3JfbG9jayhzdHJ1Y3QgbG9ja3JlZiAqKTsKIAogI2VuZGlmIC8qIF9fTElOVVhfTE9DS1JF
-Rl9IICovCmRpZmYgLS1naXQgYS9saWIvS2NvbmZpZyBiL2xpYi9LY29uZmlnCmluZGV4IDcxZDlm
-ODFmNmVlZC4uNjU1NjE3MTZjMTZjIDEwMDY0NAotLS0gYS9saWIvS2NvbmZpZworKysgYi9saWIv
-S2NvbmZpZwpAQCAtNDgsNiArNDgsMTYgQEAgY29uZmlnIFNUTVBfREVWSUNFCiBjb25maWcgUEVS
-Q1BVX1JXU0VNCiAJYm9vbGVhbgogCitjb25maWcgQVJDSF9VU0VfQ01QWENIR19MT0NLUkVGCisJ
-Ym9vbAorCitjb25maWcgQ01QWENIR19MT0NLUkVGCisJZGVmX2Jvb2wgeSBpZiBBUkNIX1VTRV9D
-TVBYQ0hHX0xPQ0tSRUYKKwlkZXBlbmRzIG9uIFNNUAorCWRlcGVuZHMgb24gIUdFTkVSSUNfTE9D
-S0JSRUFLCisJZGVwZW5kcyBvbiAhREVCVUdfU1BJTkxPQ0sKKwlkZXBlbmRzIG9uICFERUJVR19M
-T0NLX0FMTE9DCisKIGNvbmZpZyBDUkNfQ0NJVFQKIAl0cmlzdGF0ZSAiQ1JDLUNDSVRUIGZ1bmN0
-aW9ucyIKIAloZWxwCmRpZmYgLS1naXQgYS9saWIvTWFrZWZpbGUgYi9saWIvTWFrZWZpbGUKaW5k
-ZXggN2JhY2NmZDhhNGU5Li5mMmNiMzA4MjY5N2MgMTAwNjQ0Ci0tLSBhL2xpYi9NYWtlZmlsZQor
-KysgYi9saWIvTWFrZWZpbGUKQEAgLTIwLDYgKzIwLDcgQEAgbGliLSQoQ09ORklHX01NVSkgKz0g
-aW9yZW1hcC5vCiBsaWItJChDT05GSUdfU01QKSArPSBjcHVtYXNrLm8KIAogbGliLXkJKz0ga29i
-amVjdC5vIGtsaXN0Lm8KK29iai15CSs9IGxvY2tyZWYubwogCiBvYmoteSArPSBiY2QubyBkaXY2
-NC5vIHNvcnQubyBwYXJzZXIubyBoYWxmbWQ0Lm8gZGVidWdfbG9ja3MubyByYW5kb20zMi5vIFwK
-IAkgYnVzdF9zcGlubG9ja3MubyBoZXhkdW1wLm8ga2FzcHJpbnRmLm8gYml0bWFwLm8gc2NhdHRl
-cmxpc3QubyBcCmRpZmYgLS1naXQgYS9saWIvbG9ja3JlZi5jIGIvbGliL2xvY2tyZWYuYwpuZXcg
-ZmlsZSBtb2RlIDEwMDY0NAppbmRleCAwMDAwMDAwMDAwMDAuLjc4MTljMmQxZDMxNQotLS0gL2Rl
-di9udWxsCisrKyBiL2xpYi9sb2NrcmVmLmMKQEAgLTAsMCArMSwxMjcgQEAKKyNpbmNsdWRlIDxs
-aW51eC9leHBvcnQuaD4KKyNpbmNsdWRlIDxsaW51eC9sb2NrcmVmLmg+CisKKyNpZmRlZiBDT05G
-SUdfQ01QWENIR19MT0NLUkVGCisKKy8qCisgKiBOb3RlIHRoYXQgdGhlICJjbXB4Y2hnKCkiIHJl
-bG9hZHMgdGhlICJvbGQiIHZhbHVlIGZvciB0aGUKKyAqIGZhaWx1cmUgY2FzZS4KKyAqLworI2Rl
-ZmluZSBDTVBYQ0hHX0xPT1AoQ09ERSwgU1VDQ0VTUykgZG8gewkJCQkJXAorCXN0cnVjdCBsb2Nr
-cmVmIG9sZDsJCQkJCQkJXAorCUJVSUxEX0JVR19PTihzaXplb2Yob2xkKSAhPSA4KTsJCQkJCQlc
-CisJb2xkLmxvY2tfY291bnQgPSBBQ0NFU1NfT05DRShsb2NrcmVmLT5sb2NrX2NvdW50KTsJCQlc
-CisJd2hpbGUgKGxpa2VseShhcmNoX3NwaW5fdmFsdWVfdW5sb2NrZWQob2xkLmxvY2sucmxvY2su
-cmF3X2xvY2spKSkgeyAgCVwKKwkJc3RydWN0IGxvY2tyZWYgbmV3ID0gb2xkLCBwcmV2ID0gb2xk
-OwkJCQlcCisJCUNPREUJCQkJCQkJCVwKKwkJb2xkLmxvY2tfY291bnQgPSBjbXB4Y2hnKCZsb2Nr
-cmVmLT5sb2NrX2NvdW50LAkJCVwKKwkJCQkJIG9sZC5sb2NrX2NvdW50LCBuZXcubG9ja19jb3Vu
-dCk7CVwKKwkJaWYgKGxpa2VseShvbGQubG9ja19jb3VudCA9PSBwcmV2LmxvY2tfY291bnQpKSB7
-CQlcCisJCQlTVUNDRVNTOwkJCQkJCVwKKwkJfQkJCQkJCQkJXAorCX0JCQkJCQkJCQlcCit9IHdo
-aWxlICgwKQorCisjZWxzZQorCisjZGVmaW5lIENNUFhDSEdfTE9PUChDT0RFLCBTVUNDRVNTKSBk
-byB7IH0gd2hpbGUgKDApCisKKyNlbmRpZgorCisvKioKKyAqIGxvY2tyZWZfZ2V0IC0gSW5jcmVt
-ZW50cyByZWZlcmVuY2UgY291bnQgdW5jb25kaXRpb25hbGx5CisgKiBAbG9ja2NudDogcG9pbnRl
-ciB0byBsb2NrcmVmIHN0cnVjdHVyZQorICoKKyAqIFRoaXMgb3BlcmF0aW9uIGlzIG9ubHkgdmFs
-aWQgaWYgeW91IGFscmVhZHkgaG9sZCBhIHJlZmVyZW5jZQorICogdG8gdGhlIG9iamVjdCwgc28g
-eW91IGtub3cgdGhlIGNvdW50IGNhbm5vdCBiZSB6ZXJvLgorICovCit2b2lkIGxvY2tyZWZfZ2V0
-KHN0cnVjdCBsb2NrcmVmICpsb2NrcmVmKQoreworCUNNUFhDSEdfTE9PUCgKKwkJbmV3LmNvdW50
-Kys7CisJLAorCQlyZXR1cm47CisJKTsKKworCXNwaW5fbG9jaygmbG9ja3JlZi0+bG9jayk7CisJ
-bG9ja3JlZi0+Y291bnQrKzsKKwlzcGluX3VubG9jaygmbG9ja3JlZi0+bG9jayk7Cit9CitFWFBP
-UlRfU1lNQk9MKGxvY2tyZWZfZ2V0KTsKKworLyoqCisgKiBsb2NrcmVmX2dldF9ub3RfemVybyAt
-IEluY3JlbWVudHMgY291bnQgdW5sZXNzIHRoZSBjb3VudCBpcyAwCisgKiBAbG9ja2NudDogcG9p
-bnRlciB0byBsb2NrcmVmIHN0cnVjdHVyZQorICogUmV0dXJuOiAxIGlmIGNvdW50IHVwZGF0ZWQg
-c3VjY2Vzc2Z1bGx5IG9yIDAgaWYgY291bnQgd2FzIHplcm8KKyAqLworaW50IGxvY2tyZWZfZ2V0
-X25vdF96ZXJvKHN0cnVjdCBsb2NrcmVmICpsb2NrcmVmKQoreworCWludCByZXR2YWw7CisKKwlD
-TVBYQ0hHX0xPT1AoCisJCW5ldy5jb3VudCsrOworCQlpZiAoIW9sZC5jb3VudCkKKwkJCXJldHVy
-biAwOworCSwKKwkJcmV0dXJuIDE7CisJKTsKKworCXNwaW5fbG9jaygmbG9ja3JlZi0+bG9jayk7
-CisJcmV0dmFsID0gMDsKKwlpZiAobG9ja3JlZi0+Y291bnQpIHsKKwkJbG9ja3JlZi0+Y291bnQr
-KzsKKwkJcmV0dmFsID0gMTsKKwl9CisJc3Bpbl91bmxvY2soJmxvY2tyZWYtPmxvY2spOworCXJl
-dHVybiByZXR2YWw7Cit9CitFWFBPUlRfU1lNQk9MKGxvY2tyZWZfZ2V0X25vdF96ZXJvKTsKKwor
-LyoqCisgKiBsb2NrcmVmX2dldF9vcl9sb2NrIC0gSW5jcmVtZW50cyBjb3VudCB1bmxlc3MgdGhl
-IGNvdW50IGlzIDAKKyAqIEBsb2NrY250OiBwb2ludGVyIHRvIGxvY2tyZWYgc3RydWN0dXJlCisg
-KiBSZXR1cm46IDEgaWYgY291bnQgdXBkYXRlZCBzdWNjZXNzZnVsbHkgb3IgMCBpZiBjb3VudCB3
-YXMgemVybworICogYW5kIHdlIGdvdCB0aGUgbG9jayBpbnN0ZWFkLgorICovCitpbnQgbG9ja3Jl
-Zl9nZXRfb3JfbG9jayhzdHJ1Y3QgbG9ja3JlZiAqbG9ja3JlZikKK3sKKwlDTVBYQ0hHX0xPT1Ao
-CisJCW5ldy5jb3VudCsrOworCQlpZiAoIW9sZC5jb3VudCkKKwkJCWJyZWFrOworCSwKKwkJcmV0
-dXJuIDE7CisJKTsKKworCXNwaW5fbG9jaygmbG9ja3JlZi0+bG9jayk7CisJaWYgKCFsb2NrcmVm
-LT5jb3VudCkKKwkJcmV0dXJuIDA7CisJbG9ja3JlZi0+Y291bnQrKzsKKwlzcGluX3VubG9jaygm
-bG9ja3JlZi0+bG9jayk7CisJcmV0dXJuIDE7Cit9CitFWFBPUlRfU1lNQk9MKGxvY2tyZWZfZ2V0
-X29yX2xvY2spOworCisvKioKKyAqIGxvY2tyZWZfcHV0X29yX2xvY2sgLSBkZWNyZW1lbnRzIGNv
-dW50IHVubGVzcyBjb3VudCA8PSAxIGJlZm9yZSBkZWNyZW1lbnQKKyAqIEBsb2NrY250OiBwb2lu
-dGVyIHRvIGxvY2tyZWYgc3RydWN0dXJlCisgKiBSZXR1cm46IDEgaWYgY291bnQgdXBkYXRlZCBz
-dWNjZXNzZnVsbHkgb3IgMCBpZiBjb3VudCA8PSAxIGFuZCBsb2NrIHRha2VuCisgKi8KK2ludCBs
-b2NrcmVmX3B1dF9vcl9sb2NrKHN0cnVjdCBsb2NrcmVmICpsb2NrcmVmKQoreworCUNNUFhDSEdf
-TE9PUCgKKwkJbmV3LmNvdW50LS07CisJCWlmIChvbGQuY291bnQgPD0gMSkKKwkJCWJyZWFrOwor
-CSwKKwkJcmV0dXJuIDE7CisJKTsKKworCXNwaW5fbG9jaygmbG9ja3JlZi0+bG9jayk7CisJaWYg
-KGxvY2tyZWYtPmNvdW50IDw9IDEpCisJCXJldHVybiAwOworCWxvY2tyZWYtPmNvdW50LS07CisJ
-c3Bpbl91bmxvY2soJmxvY2tyZWYtPmxvY2spOworCXJldHVybiAxOworfQorRVhQT1JUX1NZTUJP
-TChsb2NrcmVmX3B1dF9vcl9sb2NrKTsK
---089e0122f4802d2ac204e51ea9b5--
