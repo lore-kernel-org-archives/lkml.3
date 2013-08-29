@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3H2KrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:47:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56693 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3H2KrO convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 29 Aug 2013 06:47:14 -0400
-Message-Id: <521F42CD02000078000EF5D0@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 29 Aug 2013 11:47:09 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <zhenzhong.duan@oracle.com>
-Cc: "Bjorn Helgaas" <bhelgaas@google.com>,
-        "xen-devel" <xen-devel@lists.xenproject.org>,
-        "Feng Jin" <joe.jin@oracle.com>,
-        "Sucheta Chakraborty" <sucheta.chakraborty@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/3 v3] Refactor MSI restore call-chain
- to drop unnecessary argument
-References: <521EB76B.8090903@oracle.com>
- <521F12FC02000078000EF503@nat28.tlf.novell.com>
- <521F196E.2010102@oracle.com>
-In-Reply-To: <521F196E.2010102@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756086Ab3H2Kz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:55:26 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60861 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab3H2KzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 06:55:25 -0400
+Date: Thu, 29 Aug 2013 13:55:21 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+cc: Alex Deucher <alexander.deucher@amd.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] radeon kms: fix uninitialised hotplug work usage in
+ r100_irq_process()
+In-Reply-To: <20130829092935.GB2235@swordfish>
+Message-ID: <alpine.SOC.1.00.1308291250350.2723@math.ut.ee>
+References: <alpine.SOC.1.00.1307310017380.19288@math.ut.ee> <alpine.SOC.1.00.1308191158220.19642@math.ut.ee> <alpine.SOC.1.00.1308291017030.2723@math.ut.ee> <20130829092935.GB2235@swordfish>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 29.08.13 at 11:50, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
+> Reported-by: Meelis Roos <mroos@linux.ee>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-> On 2013-08-29 15:23, Jan Beulich wrote:
->>>>> On 29.08.13 at 04:52, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
->>> But in initial domain (aka priviliged guest), it's different.
->>> Driver init call graph under initial domain:
->>> driver_init->
->>>      msix_capability_init->
->>>          msix_program_entries->
->>>              msix_mask_irq->
->>>                  entry->masked = 1
->>>      request_irq->
->>>          __setup_irq->
->>>              irq_startup->
->>>                  __startup_pirq->
->>>                      EVTCHNOP_bind_pirq hypercall    (trap into Xen)
->>> [Xen:]
->>> pirq_guest_bind->
->>>      startup_msi_irq->
->>>          unmask_msi_irq->
->>>              msi_set_mask_bit->
->>>                  entry->msi_attrib.masked = 0
->>>
->>> So entry->msi_attrib.masked in xen side always has newest value. entry->masked
->>> in initial domain is untouched and is 1 after msix_capability_init.
->> And as said several times before - Linux shouldn't be touching
->> the MSI-X table at all during initial setup or resume (it should in
->> particular not rely on such accesses to not fault, as being a
->> privilege violation); all it needs to do is update its software state.
-> My patch just remove access to msix mask register in dom0. Anything 
-> wrong with that?
+It works, thank you for quick response!
 
-Oh, okay, I mis-read the change then - you're moving the mask
-bit changing from __pci_restore_msi{,x}_state() to
-default_restore_msi_irqs(). Which of course is fine if Xen (as you
-say) doesn't use the latter.
+Tested-by: Meelis Roos <mroos@linux.ee>
 
-Sorry for the noise then,
-Jan
+>  drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> index 081886b..cc9e848 100644
+> --- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> +++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> @@ -275,17 +275,19 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+>  			dev_info(rdev->dev, "radeon: using MSI.\n");
+>  		}
+>  	}
+> +
+> +	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+> +	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+> +	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+> +
+>  	rdev->irq.installed = true;
+>  	r = drm_irq_install(rdev->ddev);
+>  	if (r) {
+>  		rdev->irq.installed = false;
+> +		flush_work(&rdev->hotplug_work);
+>  		return r;
+>  	}
+>  
+> -	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+> -	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+> -	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+> -
+>  	DRM_INFO("radeon: irq initialized.\n");
+>  	return 0;
+>  }
+> 
 
+-- 
+Meelis Roos (mroos@linux.ee)
