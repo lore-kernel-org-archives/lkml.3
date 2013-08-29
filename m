@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3H2JX3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:23:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56454 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab3H2JX1 (ORCPT
+	id S1755924Ab3H2JZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:25:24 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43778 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753356Ab3H2JZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:23:27 -0400
-Date: Thu, 29 Aug 2013 19:23:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-Subject: linux-next: manual merge of the akpm tree with the selinux tree
-Message-Id: <20130829192318.94d3e9b1c8d4f6f05c385e24@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Aug_2013_19_23_18_+1000_+.wESdYhrRxZgeVa"
+	Thu, 29 Aug 2013 05:25:22 -0400
+Message-ID: <521F137A.7090208@linux.vnet.ibm.com>
+Date: Thu, 29 Aug 2013 17:25:14 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 10/12] KVM: MMU: allow locklessly access shadow page table
+ out of vcpu thread
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130829091020.GB22899@redhat.com>
+In-Reply-To: <20130829091020.GB22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082909-1396-0000-0000-00000378DDAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Aug_2013_19_23_18_+1000_+.wESdYhrRxZgeVa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/29/2013 05:10 PM, Gleb Natapov wrote:
+> On Tue, Jul 30, 2013 at 09:02:08PM +0800, Xiao Guangrong wrote:
+>> It is easy if the handler is in the vcpu context, in that case we can use
+>> walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() that
+>> disable interrupt to stop shadow page be freed. But we are on the ioctl context
+>> and the paths we are optimizing for have heavy workload, disabling interrupt is
+>> not good for the system performance
+>>
+>> We add a indicator into kvm struct (kvm->arch.rcu_free_shadow_page), then use
+>> call_rcu() to free the shadow page if that indicator is set. Set/Clear the
+>> indicator are protected by slot-lock, so it need not be atomic and does not
+>> hurt the performance and the scalability
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |  6 +++++-
+>>  arch/x86/kvm/mmu.c              | 23 +++++++++++++++++++++++
+>>  arch/x86/kvm/mmu.h              | 22 ++++++++++++++++++++++
+>>  3 files changed, 50 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 531f47c..dc842b6 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -226,7 +226,10 @@ struct kvm_mmu_page {
+>>  	/* The page is obsolete if mmu_valid_gen != kvm->arch.mmu_valid_gen.  */
+>>  	unsigned long mmu_valid_gen;
+>>  
+>> -	DECLARE_BITMAP(unsync_child_bitmap, 512);
+>> +	union {
+>> +		DECLARE_BITMAP(unsync_child_bitmap, 512);
+>> +		struct rcu_head rcu;
+>> +	};
+>>  
+>>  #ifdef CONFIG_X86_32
+>>  	/*
+>> @@ -545,6 +548,7 @@ struct kvm_arch {
+>>  	 */
+>>  	struct list_head active_mmu_pages;
+>>  	struct list_head zapped_obsolete_pages;
+>> +	bool rcu_free_shadow_page;
+>>  
+>>  	struct list_head assigned_dev_head;
+>>  	struct iommu_domain *iommu_domain;
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index f8fc0cc..7f3391f 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -2322,6 +2322,22 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>>  	return ret;
+>>  }
+>>  
+>> +static void free_pages_rcu(struct rcu_head *head)
+>> +{
+>> +	struct kvm_mmu_page *next, *sp;
+>> +
+>> +	sp = container_of(head, struct kvm_mmu_page, rcu);
+>> +	while (sp) {
+>> +		if (!list_empty(&sp->link))
+>> +			next = list_first_entry(&sp->link,
+>> +					      struct kvm_mmu_page, link);
+>> +		else
+>> +			next = NULL;
+>> +		kvm_mmu_free_page(sp);
+> So here we are calling kvm_mmu_free_page() without holding mmu lock, why
+> is it safe?
 
-Hi Andrew,
+Oops. :(
 
-I have dropped the patch "revert "SELinux: do not handle seclabel as a
-special flag"" from the akpm tree as the patch that it reverted was
-dropped form the selinux tree (along with everything else in that tree).
+I should move "hlist_del(&sp->hash_link);" from this function to
+kvm_mmu_prepare_zap_page(), after that kvm_mmu_free_page() will not
+touch global resource anymore.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__29_Aug_2013_19_23_18_+1000_+.wESdYhrRxZgeVa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSHxMKAAoJEECxmPOUX5FEx2MQAInH26bdyA33e/0QlkICdmnk
-xCZdhrZ66BeMp82o0sYYeJ8hYLQ6bmDJGRuSPF5RxRVC1mZtml4LiqhTPv172yFM
-1yHjPhCXJzUDfW+70HlR2GdHUVCpxrE+dke3PgcJhzjwtxgsTy14bFdiRIAsz1cp
-nopgQcz35Q2H64N4cPQU5D76VxRh7YIm19uwe68rC7WToQMNh6jPTvKRrh0rl4sj
-52hxUdJbxqgjBLUuTh+Si6WaCtpUE65tR2SbMfk/Pdrh6CWauNfSb6YTHb97KbL+
-LwkTw9PzHN0E08M9Lb2mIUa9O8JR4fSTQDTfovujqLUvA4RcBKEp7CP3E9zhRto3
-eVM2kj1Ukd0EeZc2lFeWDIkoZ0AMr6qDNl8twaU3wpbShJXw89HMZEj97js90tv0
-YIyZM5w++vxPU4Z5ofGo4t7/6HKYv5jm0uF+djlfKGSNl8KR1x2kjKCCB1ZmdvPZ
-n2Usvt6k9nvjeMMjq4qdv3Qrm8CwzzDsJ1/w7/B8vtDuEnzaQgY66iI3Qg8n/rmw
-I9aJdNf1cQKoIOLxgChl4qjbFXHWnJKUMNokoTHjUjqXl2o34oGJEdkM45b2Q6eI
-p6o8qaSuhAqn+n8933TDfEQNlO8+0yFLOWceXvjvZz0gKr/KUJubhBS3CwryUur9
-exjUJbAexKCTz7+QhqMU
-=xAOZ
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Aug_2013_19_23_18_+1000_+.wESdYhrRxZgeVa--
