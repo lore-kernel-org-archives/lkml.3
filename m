@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab3H2Jnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:43:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:21834 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114Ab3H2Jnk (ORCPT
+	id S1756042Ab3H2Jn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:43:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60087 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab3H2Jn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:43:40 -0400
-X-Spam-Score: -101.0
-Message-ID: <521F178B.7080407@asianux.com>
-Date: Thu, 29 Aug 2013 17:42:35 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 29 Aug 2013 05:43:56 -0400
+Date: Thu, 29 Aug 2013 11:43:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+Message-ID: <20130829094342.GX10002@twins.programming.kicks-ass.net>
+References: <20120307180852.GE17697@suse.de>
+ <20130823130332.GY31370@twins.programming.kicks-ass.net>
+ <20130823181546.GA31370@twins.programming.kicks-ass.net>
+ <20130829092828.GB22421@suse.de>
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Miller <davem@davemloft.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: [PATCH] drivers: ide: Kconfig: let IDE_H8300 depends on H8300H_AKI3068NET
- or H8300H_H8MAX
-References: <521EC55A.9030905@asianux.com> <521ED249.6080001@asianux.com>
-In-Reply-To: <521ED249.6080001@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130829092828.GB22421@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the code in "arch/h8300/Kbuild.ide", IDE_H8300 need depend
-on "H8300H_AKI3068NET || H8300H_H8MAX", or can not pass compiling with
-allmodconfig for h8300.
+On Thu, Aug 29, 2013 at 10:28:29AM +0100, Mel Gorman wrote:
+> On Fri, Aug 23, 2013 at 08:15:46PM +0200, Peter Zijlstra wrote:
+> > On Fri, Aug 23, 2013 at 03:03:32PM +0200, Peter Zijlstra wrote:
+> > > So I think this patch is broken (still).
+> 
+> I am assuming the lack of complaints is that it is not a heavily executed
+> path. I expect that you (and Rik) are hitting this as part of automatic
+> NUMA balancing. Still a bug, just slightly less urgent if NUMA balancing
+> is the reproduction case.
 
-The related error:
+I thought it was, we crashed somewhere suspiciously close, but no. You
+need shared mpols for this to actually trigger and the NUMA stuff
+doesn't use that.
 
-  drivers/ide/ide-h8300.c: In function 'hw_setup':
-  drivers/ide/ide-h8300.c:73:27: error: 'CONFIG_H8300_IDE_BASE' undeclared (first use in this function)
-  drivers/ide/ide-h8300.c:73:27: note: each undeclared identifier is reported only once for each function it appears in
-  drivers/ide/ide-h8300.c:74:26: error: 'CONFIG_H8300_IDE_ALT' undeclared (first use in this function)
-  drivers/ide/ide-h8300.c:75:23: error: 'CONFIG_H8300_IDE_IRQ' undeclared (first use in this function)
-  drivers/ide/ide-h8300.c: In function 'h8300_ide_init':
-  drivers/ide/ide-h8300.c:90:7: error: 'CONFIG_H8300_IDE_BASE' undeclared (first use in this function)
-  drivers/ide/ide-h8300.c:92:7: error: 'CONFIG_H8300_IDE_ALT' undeclared (first use in this function)
-  drivers/ide/ide-h8300.c: At top level:
-  drivers/ide/ide-h8300.c:109:16: error: expected declaration specifiers or '...' before string constant
+> > +	if (unlikely((unsigned)nid >= MAX_NUMNODES))
+> > +		goto again;
+> > +
+> 
+> MAX_NUMNODES is unrelated to anything except that it might prevent a crash
+> and even then nr_online_nodes is probably what you wanted and even that
+> assumes the NUMA node numbering is contiguous. 
 
+I used whatever nodemask.h did to detect end-of-bitmap and they use
+MAX_NUMNODES. See __next_node() and for_each_node() like.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/ide/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+MAX_NUMNODES doesn't assume contiguous numbers since its the actual size
+of the bitmap, nr_online_nodes would hoever.
 
-diff --git a/drivers/ide/Kconfig b/drivers/ide/Kconfig
-index 02906ca..f79b49f 100644
---- a/drivers/ide/Kconfig
-+++ b/drivers/ide/Kconfig
-@@ -724,7 +724,7 @@ config BLK_DEV_IDE_RAPIDE
- 
- config IDE_H8300
- 	tristate "H8300 IDE support"
--	depends on H8300
-+	depends on H8300H_AKI3068NET || H8300H_H8MAX
- 	default y
- 	help
- 	  Enables the H8300 IDE driver.
--- 
-1.7.7.6
+> The real concern is whether
+> the updated mask is an allowed target for the updated memory policy. If
+> it's not then "nid" can be pointing off the deep end somewhere.  With this
+> conversion to a for loop there is race after you check nnodes where target
+> gets set to 0 and then return a nid of -1 which I suppose will just blow
+> up differently but it's fixable.
+
+But but but, I did i <= target, which will match when target == 0 so
+you'll get at least a single iteration and nid will be set.
+
+> This? Untested. Fixes implicit types while it's there. Note the use of
+> first node and (c < target) to guarantee nid gets set and that the first
+> potential node is still used as an interleave target.
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 7431001..ae880c3 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1755,22 +1755,24 @@ unsigned slab_node(void)
+>  }
+>  
+>  /* Do static interleaving for a VMA with known offset. */
+> -static unsigned offset_il_node(struct mempolicy *pol,
+> +static unsigned int offset_il_node(struct mempolicy *pol,
+>  		struct vm_area_struct *vma, unsigned long off)
+>  {
+> -	unsigned nnodes = nodes_weight(pol->v.nodes);
+> -	unsigned target;
+> -	int c;
+> -	int nid = -1;
+> +	unsigned int nr_nodes, target;
+> +	int i, nid;
+>  
+> -	if (!nnodes)
+> +again:
+> +	nr_nodes = nodes_weight(pol->v.nodes);
+> +	if (!nr_nodes)
+>  		return numa_node_id();
+> -	target = (unsigned int)off % nnodes;
+> -	c = 0;
+> -	do {
+> +	target = (unsigned int)off % nr_nodes;
+> +	for (i = 0, nid = first_node(pol->v.nodes); i < target; i++)
+>  		nid = next_node(nid, pol->v.nodes);
+> -		c++;
+> -	} while (c <= target);
+> +
+> +	/* Policy nodemask can potentially update in parallel */
+> +	if (unlikely(!node_isset(nid, pol->v.nodes)))
+> +		goto again;
+> +
+>  	return nid;
+>  }
+
+So I explicitly didn't use the node_isset() test because that's more
+likely to trigger than the nid >= MAX_NUMNODES test. Its fine to return
+a node that isn't actually part of the mask anymore -- a race is a race
+anyway.
