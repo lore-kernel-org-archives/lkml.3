@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3H2DdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 23:33:23 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60217 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab3H2DdV (ORCPT
+	id S1754213Ab3H2Dng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 23:43:36 -0400
+Received: from server.geeky.co.nz ([103.6.28.146]:58591 "EHLO
+	server.geeky.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab3H2Dnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 23:33:21 -0400
+	Wed, 28 Aug 2013 23:43:35 -0400
+X-Greylist: delayed 1474 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 23:43:35 EDT
+Message-ID: <521EBD9F.7070502@snapithd.com>
+Date: Thu, 29 Aug 2013 15:18:55 +1200
+From: Chris Rodley <chris@snapithd.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <87li3l5mnh.fsf@xmission.com>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
-	<871u5gqtw3.fsf@xmission.com>
-	<20130826172054.GE27005@ZenIV.linux.org.uk>
-	<20130827172406.GA2664@dztty>
-	<20130828201141.GA21455@dztty>
-	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-	<20130828211116.GA22184@dztty>
-	<87sixt735b.fsf@xmission.com>
-	<CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
-	<87li3l5mnh.fsf@xmission.com>
-Date: Wed, 28 Aug 2013 20:33:20 -0700
-X-Google-Sender-Auth: -QbtbTuYM_QRqfju1PgU0E4P_Bo
-Message-ID: <CAGXu5j+axsd2DPA-QTLSLH32canH4V0FEnW4=wuCqZFa-niKGA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+CC: kernel@savoirfairelinux.com, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: sht15 kernel driver
+References: <521E7CA7.5060407@snapithd.com> <87fvtt4dmt.fsf@jerows.sfl>
+In-Reply-To: <87fvtt4dmt.fsf@jerows.sfl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 6:08 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->
->> On Wed, Aug 28, 2013 at 5:26 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Can someome please state what they are worried about in simple language
->>> step by step?
->>> [...]
->>> The closest I saw in the thread was people were worried about ASLR being
->>> defeated.  All I see are kernel addresses and we don't have much if any
->>> runtime or even load time randomization of where code is located in the
->>> kernel address map on x86_64.  So I don't understand the concern.
+Thanks Jerome!
+
+That was just what I needed to know.
+The device is now set up and is working well - I will have a go at back 
+porting now.
+
+Many thanks again for your help!
+Chris
+
+On 29/08/13 11:08, Jerome Oufella wrote:
+>> Hi,
 >>
->> I showed the output of "syscall", since that contains user-space
->> addresses and shows a leak of ASLR from a privileged process to an
->> unprivileged process.
+>> I am trying to get a sht75 humidity and temperature sensor working
+>> with the linux kernel module in 3.2.
+>> Is there a code example for application code that you have available?
 >>
->> The flaw as I see it is that an unprivileged process opens
->> /proc/$priv_pid/syscall and passes it to a setuid process which is
->> able to read it, and provides those contents to the unprivileged
->> process.
->>
->> The unprivileged process should not be able to the open the file in
->> the first place.
+>> Many thanks,
+> Hi Chris,
 >
-> I see so the complaint is that we don't give read permission but we do
-> give open permission.    Which is a variant of: the permissions used to
-> open are not the permission used to access the file.
+> There was much less support for the sht15 back in 3.2 compared to recent
+> kernel releases. You may want to backport features and/or fixes to suit
+> your needs.
 >
-> This does seem to be a legitimate concern.
+> You can find a usage example for 3.2 in arch/arm/mach-pxa/stargate2.c
+> around line 140:
 >
-> I think there are several discussions that have been going on lately
-> with respect to this class of problems in proc files.
+> First, create a platform data struct and specify which GPIO lines are
+> hooked to the data and sck lines of your sht-15:
+>   
+>   static struct sht15_platform_data platform_data_sht15 = {
+>          .gpio_data =  100,
+>          .gpio_sck  =  98,
+>   };
 >
-> Given the existence of suid exec we can not in general prevent this
-> class of bugs with a check at open time.
+> Then setup a platform device referencing those platform data, that you
+> will have to register on the platform bus using platform_add_devices()
+> or equivalent:
+>
+>   static struct platform_device sht15 = {
+>          .name = "sht15",
+>          .id = -1,
+>          .dev = {
+>                  .platform_data = &platform_data_sht15,
+>          },
+>   };
+>
+>   ...
+>
+>   platform_add_devices(...);
+>
+>
+>
+> Cheers,
 
-I'm not suggesting removing the read check -- that's certainly needed.
-
-> I believe the solution needs to be to enhance the ptrace_may_access
-> checks to verify that both the creds of the current task and the creds
-> of the opening process would have allowed the access.
-
-As in, DAC perms are insufficient?
-
-> We may want to put this check in permission so open fails quickly but
-> we absolutely need to put this check in at the time we call
-> ptrace_may_access.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
