@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab3H2KlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:41:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54062 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab3H2KlM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:41:12 -0400
-Date: Thu, 29 Aug 2013 11:41:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'David Woodhouse'" <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Message-ID: <20130829104102.GS10783@sirena.org.uk>
-References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
- <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
- <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
- <20130813090039.GA5604@mwanda>
- <20130828015834.GH10506@lizard>
- <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
- <20130828083630.GF19256@mwanda>
- <20130829011848.GA16891@teo>
- <20130829020714.GA26347@kroah.com>
- <20130829030715.GA20317@teo>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7lT8fFUc+KaZWT5W"
+	id S1756106Ab3H2KrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:47:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56693 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab3H2KrO convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 29 Aug 2013 06:47:14 -0400
+Message-Id: <521F42CD02000078000EF5D0@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 29 Aug 2013 11:47:09 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <zhenzhong.duan@oracle.com>
+Cc: "Bjorn Helgaas" <bhelgaas@google.com>,
+        "xen-devel" <xen-devel@lists.xenproject.org>,
+        "Feng Jin" <joe.jin@oracle.com>,
+        "Sucheta Chakraborty" <sucheta.chakraborty@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3 v3] Refactor MSI restore call-chain
+ to drop unnecessary argument
+References: <521EB76B.8090903@oracle.com>
+ <521F12FC02000078000EF503@nat28.tlf.novell.com>
+ <521F196E.2010102@oracle.com>
+In-Reply-To: <521F196E.2010102@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130829030715.GA20317@teo>
-X-Cookie: Snow Day -- stay home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 29.08.13 at 11:50, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
 
---7lT8fFUc+KaZWT5W
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 2013-08-29 15:23, Jan Beulich wrote:
+>>>>> On 29.08.13 at 04:52, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
+>>> But in initial domain (aka priviliged guest), it's different.
+>>> Driver init call graph under initial domain:
+>>> driver_init->
+>>>      msix_capability_init->
+>>>          msix_program_entries->
+>>>              msix_mask_irq->
+>>>                  entry->masked = 1
+>>>      request_irq->
+>>>          __setup_irq->
+>>>              irq_startup->
+>>>                  __startup_pirq->
+>>>                      EVTCHNOP_bind_pirq hypercall    (trap into Xen)
+>>> [Xen:]
+>>> pirq_guest_bind->
+>>>      startup_msi_irq->
+>>>          unmask_msi_irq->
+>>>              msi_set_mask_bit->
+>>>                  entry->msi_attrib.masked = 0
+>>>
+>>> So entry->msi_attrib.masked in xen side always has newest value. entry->masked
+>>> in initial domain is untouched and is 1 after msix_capability_init.
+>> And as said several times before - Linux shouldn't be touching
+>> the MSI-X table at all during initial setup or resume (it should in
+>> particular not rely on such accesses to not fault, as being a
+>> privilege violation); all it needs to do is update its software state.
+> My patch just remove access to msix mask register in dom0. Anything 
+> wrong with that?
 
-On Wed, Aug 28, 2013 at 08:07:15PM -0700, Anton Vorontsov wrote:
+Oh, okay, I mis-read the change then - you're moving the mask
+bit changing from __pci_restore_msi{,x}_state() to
+default_restore_msi_irqs(). Which of course is fine if Xen (as you
+say) doesn't use the latter.
 
-> These changes not so much burden for me personally (it was actually easier
-> for me to just apply the patch without all the arguing), but for those who
-> actually do real bugfixes/features in the drivers: their local development
-> trees will produce conflicts. Solving the trivial conflicts not a problem
-> either, but irritating (especially realizing that you waste time resolving
-> conflicts because of the "just cosmetic" crap).
+Sorry for the noise then,
+Jan
 
-> These days I don't code that much, but I was in that boat resolving
-> "cosmetic" conflicts, and I did not like it. So I'm trying to solve the
-> issue for drivers/power/ developers.
-
-This sort of patche can be helpful when doing work over multiple drivers
-- making the code more consistent means that it's much easier to pattern
-match when looking over many different drivers.
-
---7lT8fFUc+KaZWT5W
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSHyU6AAoJELSic+t+oim9n2wQAIOqADqABMmvk3JM6as4zu6t
-tdntf/Ub8hs3iTlvdE5wJuROiHy+k2FLEu9Dbh8a3VKaodRHA7V1N0K1SpHFgC0O
-qW4OLVs2wMAFKgt9RpndqybkF9FgVJYolfLeF76bSMEBeFo10hm40Zr7LJ4UtPj8
-i7pQJcUoYYKo03EWywhoE/i2az+n7Qdew+iWQoj7uFeeh6OKzN6E3XrfdQtbZVWL
-KOKH/nYh3Mdz8AM6VM+rjkYyJFdpK7YGXefI7iS3qsM4awaVzcQeV0+wx5NsxeB6
-BGstRGyJkAMfFvJnWvvXpGBWbt3HQf9oj2DKAIkM4S7MpcZsjgBHwfXkbDO1ZI0x
-VtKjP3MR1RGY76THvDaGcfJiU40lGhsZZ6/rAbOEyxWlAktVqbHAHKhWcHD0fdj3
-zYTLY7NmY5FF7p2/LFngMKW3PeuPQrIKS5PVd8n25d7mz5ir58TQx1lXrsPDuTxR
-plLG6979etcfW1OF+d3b/XH2gKsRl6R6EdsGIAD9dmyF0/lUh/9IW2gVwE7V7mxD
-HLNWm4I6qW6VpWDlSwFGFtURSq1CNYymzAtvoZA3YHCEMiNM3AEIZtMegh6W2OCN
-3kROzsFmFUAcS2a01qNHVRoG3R48nIfpIUHJ2raauCXjBV5p/8g8AZSgV1q88G2f
-/EQAFSY42kEiW2kCF2FO
-=eqfr
------END PGP SIGNATURE-----
-
---7lT8fFUc+KaZWT5W--
