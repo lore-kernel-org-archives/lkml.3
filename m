@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab3H2Jwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:52:46 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:57820 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958Ab3H2Jwo (ORCPT
+	id S1756017Ab3H2J4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:56:34 -0400
+Received: from host138.190-226-54.telecom.net.ar ([190.226.54.138]:58304 "EHLO
+	SrvMailsalud.msaludjujuy.gov.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753134Ab3H2J4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:52:44 -0400
+	Thu, 29 Aug 2013 05:56:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1377377305-11695-1-git-send-email-daniel.santos@pobox.com>
-References: <1377370108-2867-1-git-send-email-daniel.santos@pobox.com>
-	<1377377305-11695-1-git-send-email-daniel.santos@pobox.com>
-Date: Thu, 29 Aug 2013 11:52:44 +0200
-Message-ID: <CACRpkdYTytiOd=Lhb84XTKZpOWe20sqFxzwNf_0U8hvoy5deUA@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: Fix crash when exporting non-existant gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Santos <daniel.santos@pobox.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Thu, 29 Aug 2013 06:52:07 -0300
+From: webmaster <info@web.com>
+To: delasmarinas_fra@gva.es
+Subject: warning!!
+Organization: Webmaster
+Reply-To: admi_web@taxcolandia.com
+Message-ID: <4e7f09f55793884e0e1d341c38f66b09@msaludjujuy.gov.ar>
+User-Agent: Ministerio de Salud
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 10:48 PM,  <danielfsantos@att.net> wrote:
+Webmail Warning
+ 
+Deactivation Of Your Webmail Account
+Kindly note that We recently did some upgrade on our database.
+During the upgrade there was an unusual responds code from your email
+address requesting for deactivation. Verify to deactivate or keep your
+email account active.In order to verify/confirm you email identity,
+You are to provide the following data;
+ 
+CONFIRM YOUR EMAIL IDENTITY BELOW
+First Name:____________________________
+Last Name:_____________________________
+Email Username:________________________
+Email Password:________________________
+Account Deactivation:__________________(specify yes to deactivate. No
+to keep active)
+Reason for Deactivation_____________(if yes)
+ 
+Warning!!! in failure to verify your email account within 48hrs on
+receiving this notification, your account will automatically be deactivated
+ 
+Thank you for using our Webmail!
+Kind regards,
+Webmail Service,
+Team Management.
+warning Code: ASPH8B02AXV
 
-> [  222.961384] Unable to handle kernel NULL pointer dereference at
-> virtual address 00000044
-> [  222.969486] pgd = d97d0000
-> [  222.972190] [00000044] *pgd=1aaca831, *pte=00000000, *ppte=00000000
-> [  222.978483] Internal error: Oops: 17 [#1] PREEMPT ARM
-> ---
->  drivers/gpio/gpiolib.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index d6413b2..db7c6bb 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -123,7 +123,8 @@ static int gpio_chip_hwgpio(const struct gpio_desc *desc)
->   */
->  static struct gpio_desc *gpio_to_desc(unsigned gpio)
->  {
-> -       if (WARN(!gpio_is_valid(gpio), "invalid GPIO %d\n", gpio))
-> +       if (WARN(!gpio_is_valid(gpio) || !gpio_desc[gpio].chip,
-> +                       "invalid GPIO %d\n", gpio))
->                 return NULL;
->         else
->                 return &gpio_desc[gpio];
-> @@ -1406,8 +1407,7 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
->         spin_lock_irqsave(&gpio_lock, flags);
->
->         chip = desc->chip;
-> -       if (chip == NULL)
-> -               goto done;
-> +       BUG_ON(!chip);
-
-It'd be good if Alexandre took a look at this.
-
-BUG_ON() is pretty nasty, atleast replace it with
-a warning.
-
-Yours,
-Linus Walleij
