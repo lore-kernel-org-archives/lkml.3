@@ -1,154 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab3H2Bnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 21:43:40 -0400
-Received: from tundra.namei.org ([65.99.196.166]:33445 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754248Ab3H2Bnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 21:43:39 -0400
-Date: Thu, 29 Aug 2013 11:44:32 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: simo@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Expand keyring capacity and provide support for
- libkrb5
-In-Reply-To: <11520.1377735648@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.02.1308291144090.431@tundra.namei.org>
-References: <11520.1377735648@warthog.procyon.org.uk>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755382Ab3H2Bnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 21:43:53 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59103 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755274Ab3H2Bnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 21:43:51 -0400
+Message-ID: <1377740630.1928.71.camel@joe-AO722>
+Subject: Re: [PATCH] ARC: Fix __udelay parentheses
+From: Joe Perches <joe@perches.com>
+To: Mischa Jonker <Mischa.Jonker@synopsys.com>
+Cc: "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 28 Aug 2013 18:43:50 -0700
+In-Reply-To: <E6BF041E97966E4DB955F0DF883AD2D684F1F648@de02wembxa.internal.synopsys.com>
+References: <1377714588-2144-1-git-send-email-mjonker@synopsys.com>
+	 <1377715539.1928.45.camel@joe-AO722>
+	 <E6BF041E97966E4DB955F0DF883AD2D684F1F601@de02wembxa.internal.synopsys.com>
+	 <1377716507.1928.57.camel@joe-AO722>
+	 <E6BF041E97966E4DB955F0DF883AD2D684F1F648@de02wembxa.internal.synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Aug 2013, David Howells wrote:
+On Wed, 2013-08-28 at 19:12 +0000, Mischa Jonker wrote:
+> Hello Joe,
+> 
+> > I don't see the loops_per_jiffy initial shift << 32.
+> 
+> loops_per_jiffy * HZ = loops_per_second
+> loops_per_jiffy * HZ = 1,000,000 * loops_per_us
+> loops_per_jiffy * HZ * 4295 = 4,295,000 * loops_per_us
+> 
+> loops_per_jiffy * HZ * 4294.967296 = 2^32 * loops_per_us
+> 
+> > > > > -	loops = ((long long)(usecs * 4295 * HZ) *
+> > > > > -		 (long long)(loops_per_jiffy)) >> 32;
+> > > > > +	loops = (((long long) usecs) * 4295 * HZ *
+> > > > > +		  (long long) loops_per_jiffy) >> 32;
+> 
+> > 
+> > I know that.  It's the use of a signed long long vs the unsigned long long
+> > that I think wrong.
+> 
+> Yes that is wrong too.
+> 
+> > 
+> > Why cast a unsigned to a signed?
+> 
+> I don't know, this was in the original file. The issue that I was trying to solve, was that usleep didn't sleep long enough, and that is fixed by this patch. 
+> 
+> Wrt signed/unsigned: would you like me to update this patch or create a separate one?
 
-> 
-> Hi James,
-> 
-> Could you pull these patches into the security tree?
+I think the whole thing is odd and it should simply be
 
-944 files changed, 17114 insertions(+), 9157 deletions(-)
+	loops = loops_per_jiffy * usecs_to_jiffies(usecs);
+
+and if it's really necessary to have a u64 delay
+then __delay should be rewritten to take an one
+as an argument and this calc should be:
+
+	u64 loops = (u64)loops_per_jiffy * usecs_to_jiffies(usecs);
 
 
-How about no?  :)
 
-
-
-> 
-> The patches can be viewed as three sets:
-> 
->  (1) KEYS: Skip key state checks when checking for possession
-> 
->      This is a fix for determining the possessed status of keys that have been
->      invalidated or revoked or that have expired.  If nothing else, can you
->      please pick this and pass it upstream.
-> 
->  (2) KEYS: Expand the capacity of a keyring
->      Add a generic associative array implementation
->      KEYS: Drop the permissions argument from __keyring_search_one()
->      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
->      KEYS: Search for auth-key by name rather than target key ID
->      KEYS: Introduce a search context structure
->      KEYS: Consolidate the concept of an 'index key' for key access
->      KEYS: key_is_dead() should take a const key pointer argument
->      KEYS: Use bool in make_key_ref() and is_key_possessed()
-> 
->      Patches to to expand the capacity of a keyring by using an associative
->      array rather than a flat list and patches to do some preparatory cleanups
->      for those.
-> 
->  (3) KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
->      KEYS: Implement a big key type that can save to tmpfs
-> 
->      Patches to add better support for libkrb5 to save its tokens in a kernel
->      keyring rather than in files.  It already has this ability to some
->      extent, but that has two problems: your tokens get deleted when you log
->      out (so your cron jobs can't use them) and the capacity of a user type
->      key is not sufficient for some of the huge Kerberos tickets one can get.
->      These patches address that.
-> 
-> If you need the patches basing on your tree instead, that can be done.
-> 
-> David
-> ---
-> The following changes since commit f1d6e17f540af37bb1891480143669ba7636c4cf:
-> 
->   Merge branch 'akpm' (patches from Andrew Morton) (2013-08-14 10:04:43 -0700)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-krb-support
-> 
-> for you to fetch changes up to 0f8d966ebc86d7ab9fb7fd074ae589c2d81de08f:
-> 
->   KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches (2013-08-28 18:56:14 +0100)
-> 
-> ----------------------------------------------------------------
-> (from the branch description for keys-devel local branch)
-> 
-> clone of "master"
-> Kerberos ticket persistence support
-> 
-> ----------------------------------------------------------------
-> David Howells (12):
->       KEYS: Skip key state checks when checking for possession
->       KEYS: Use bool in make_key_ref() and is_key_possessed()
->       KEYS: key_is_dead() should take a const key pointer argument
->       KEYS: Consolidate the concept of an 'index key' for key access
->       KEYS: Introduce a search context structure
->       KEYS: Search for auth-key by name rather than target key ID
->       KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
->       KEYS: Drop the permissions argument from __keyring_search_one()
->       Add a generic associative array implementation.
->       KEYS: Expand the capacity of a keyring
->       KEYS: Implement a big key type that can save to tmpfs
->       KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-> 
->  Documentation/assoc_array.txt    |  574 +++++++++++++
->  Documentation/security/keys.txt  |   20 +-
->  include/keys/big_key-type.h      |   25 +
->  include/keys/keyring-type.h      |   17 +-
->  include/linux/assoc_array.h      |   92 ++
->  include/linux/assoc_array_priv.h |  182 ++++
->  include/linux/key-type.h         |    5 +
->  include/linux/key.h              |   49 +-
->  include/linux/user_namespace.h   |    6 +
->  include/uapi/linux/keyctl.h      |    1 +
->  kernel/user.c                    |    4 +
->  kernel/user_namespace.c          |    4 +
->  lib/Kconfig                      |   14 +
->  lib/Makefile                     |    1 +
->  lib/assoc_array.c                | 1745 ++++++++++++++++++++++++++++++++++++++
->  security/keys/Kconfig            |   29 +
->  security/keys/Makefile           |    2 +
->  security/keys/big_key.c          |  204 +++++
->  security/keys/compat.c           |    3 +
->  security/keys/gc.c               |   33 +-
->  security/keys/internal.h         |   74 +-
->  security/keys/key.c              |   91 +-
->  security/keys/keyctl.c           |    3 +
->  security/keys/keyring.c          | 1481 ++++++++++++++++----------------
->  security/keys/persistent.c       |  169 ++++
->  security/keys/proc.c             |   17 +-
->  security/keys/process_keys.c     |  131 +--
->  security/keys/request_key.c      |   56 +-
->  security/keys/request_key_auth.c |   31 +-
->  security/keys/sysctl.c           |   11 +
->  security/keys/user_defined.c     |   18 +-
->  31 files changed, 4124 insertions(+), 968 deletions(-)
->  create mode 100644 Documentation/assoc_array.txt
->  create mode 100644 include/keys/big_key-type.h
->  create mode 100644 include/linux/assoc_array.h
->  create mode 100644 include/linux/assoc_array_priv.h
->  create mode 100644 lib/assoc_array.c
->  create mode 100644 security/keys/big_key.c
->  create mode 100644 security/keys/persistent.c
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
