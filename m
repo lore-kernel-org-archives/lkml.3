@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3H2UGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:06:50 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:48100 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757208Ab3H2UGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:06:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130829200746.GA13366@kroah.com>
-References: <alpine.SOC.1.00.1307310017380.19288@math.ut.ee>
-	<alpine.SOC.1.00.1308191158220.19642@math.ut.ee>
-	<alpine.SOC.1.00.1308291017030.2723@math.ut.ee>
-	<20130829092935.GB2235@swordfish>
-	<alpine.SOC.1.00.1308291250350.2723@math.ut.ee>
-	<CADnq5_OPQD68o80ZGZODOxR3V2M7dU1xEYEhqjDKPcqgGwWYeQ@mail.gmail.com>
-	<20130829200746.GA13366@kroah.com>
-Date: Thu, 29 Aug 2013 16:06:48 -0400
-Message-ID: <CADnq5_PO18Vyphw_75EUxJHYpEcTjpo6BaYE6qt6_az-nWEoxA@mail.gmail.com>
-Subject: Re: [PATCH] radeon kms: fix uninitialised hotplug work usage in r100_irq_process()
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Meelis Roos <mroos@linux.ee>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756991Ab3H2ULR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:11:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57813 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755829Ab3H2ULP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 16:11:15 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        ceph-devel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        linux-mm@kvack.org
+Subject: [PATCH 0/6] treewide: kmem_cache_alloc GFP_ZERO cleanups
+Date: Thu, 29 Aug 2013 13:11:04 -0700
+Message-Id: <cover.1377806578.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 4:07 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Aug 29, 2013 at 02:27:52PM -0400, Alex Deucher wrote:
->> On Thu, Aug 29, 2013 at 6:55 AM, Meelis Roos <mroos@linux.ee> wrote:
->> >> Reported-by: Meelis Roos <mroos@linux.ee>
->> >> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->> >
->> > It works, thank you for quick response!
->> >
->> > Tested-by: Meelis Roos <mroos@linux.ee>
->>
->> Thanks.  I've added it to my patch queue.
->
-> Can you add a cc: stable mark if it also is going to affect the stable
-> kernels as well?
->
+Just a few cleanups to use zalloc style calls and reduce
+the uses of __GFP_ZERO for kmem_cache_alloc[_node] uses.
 
-Yes, already done.
+Use the more kernel normal zalloc style.
 
-Alex
+Joe Perches (6):
+  slab/block: Add and use kmem_cache_zalloc_node
+  block: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
+  i915_gem: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
+  aio: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
+  ceph: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
+  f2fs: Convert kmem_cache_alloc(...GFP_ZERO) to kmem_cache_zalloc
 
-> thanks,
->
-> greg k-h
+ block/blk-core.c                |  3 +--
+ block/blk-integrity.c           |  3 +--
+ block/blk-ioc.c                 |  6 ++----
+ block/cfq-iosched.c             | 10 ++++------
+ drivers/gpu/drm/i915/i915_gem.c |  2 +-
+ fs/aio.c                        |  2 +-
+ fs/ceph/dir.c                   |  2 +-
+ fs/ceph/file.c                  |  2 +-
+ fs/f2fs/super.c                 |  2 +-
+ include/linux/slab.h            |  5 +++++
+ 10 files changed, 18 insertions(+), 19 deletions(-)
+
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
