@@ -1,174 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3H2Asw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:48:52 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42317 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab3H2Asu (ORCPT
+	id S1755213Ab3H2AtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:49:07 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54128 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab3H2AtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:48:50 -0400
-From: Jin Xu <jinuxstyle@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jinuxstyle@gmail.com
-Subject: [PATCH] f2fs: optimize gc for better performance
-Date: Thu, 29 Aug 2013 08:48:43 +0800
-Message-Id: <1377737323-11803-1-git-send-email-jinuxstyle@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 28 Aug 2013 20:49:03 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: linux-kernel@vger.kernel.org
+Subject: Weirdness with EFI boot and partition tables...
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1377737341_1815P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 28 Aug 2013 20:49:01 -0400
+Message-ID: <75805.1377737341@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jin Xu <jinuxstyle@gmail.com>
+--==_Exmh_1377737341_1815P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <75773.1377737331.1@turing-police.cc.vt.edu>
 
-This patch improves the foreground gc efficiency by optimizing the
-victim selection policy. With this optimization, the random re-write
-performance could increase up to 20%.
+So I'm trying to debug a problem with my Dell Latitude booting in EFI
+mode, that looks like a "can't find the initrd", when I stumbled across this:
 
-For f2fs, foreground gc happens when disk is lack of free spaces,
-it selects dirty segments and moves valid blocks around for making
-more space available. The gc cost of a segment is determined by the
-valid blocks in the segment. The less the valid blocks, the higher
-the efficiency. The ideal victim segment is the one that has the
-most garbage blocks.
+<4>[    2.831325] VFS: Cannot open root device "mapper/turing--police-froot" or unknown-block(0,0): error -6
+<4>[    2.831329] Please append a correct "root=" boot option; here are the available partitions:
 
-Currently, it searches up to 20 dirty segments for a victim segment.
-The selected victim is not likely the best victim for gc when there
-are much more dirty segments. Why not searching more dirty segments
-for a better victim? The cost of searching dirty segments is
-negligible in comparison to moving blocks.
+<4>[    2.831338] 0800       488386584 sda  driver: sd
+<4>[    2.831344]   0801          305368 sda1 5288e82d-f5e3-4f57-a7f9-e29f87149240
+<4>[    2.831348]   0802         3150112 sda2 42eb87e8-1e6a-477e-8b66-2255ac98b27d
+<4>[    2.831351]   0803          512000 sda3 6c7a5919-61bc-498e-b26a-9c2aa27e65d1
+<4>[    2.831355]   0805       293795840 sda5 52e421a3-78df-48ac-877f-9362b50af20f
+<4>[    2.831358]   0806         4100096 sda6 ebaf21a2-a1aa-4685-8788-e962b6aad18c
+<4>[    2.831364] 0b00         1048575 sr0  driver: sr
 
-In this patch, it does not search a constant number of dirty segments
-anymore, instead it calculates the number based on the total segments,
-dirty segments and a threshold. Following is the pseudo formula.
-		,-- nr_dirty_segments, if total_segments < threshold
-(# of search) = |
-		`-- (nr_dirty_segments * threshold) / total_segments,
-                        Otherwise
+Note the entry for sda6.  Boot a Fedora kernel, and:
 
-The test case is simple. It creates as many files until the disk full.
-The size for each file is 32KB. Then it writes as many as 100000
-records of 4KB size to random offsets of random files in sync mode.
-The testing was done on a 2GB partition of a SDHC card. Let's see the
-test result of f2fs without and with the patch.
+# fdisk -l /dev/sda
+WARNING: fdisk GPT support is currently new, and therefore in an experimental phase. Use at your own discretion.
 
-----without the patch----
-created 52023 files of size 32768 bytes in 341 seconds
-finished 100000 loops in 4204 seconds
-(internally, 722 gc were done, 115939 garbage blocks were reclaimed)
+Disk /dev/sda: 500.1 GB, 500107862016 bytes, 976773168 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disk label type: gpt
 
-----with the patch----
-created 52023 files of size 32768 bytes in 326 seconds
-finished 100000 loops in 3067 seconds
-(internally, 1255 gc were done, 181101 garbage blocks were reclaimed)
 
-It's obvious that, with the patch, f2fs finishes the test in 20+% less
-time than without the patch.
+#         Start          End    Size  Type            Name
+ 1        16072       626807  298.2M  Linux filesyste Linux filesystem
+ 2       626808      6927031      3G  Microsoft basic Microsoft basic data
+ 3      6928384      7952383    500M  Linux filesyste Linux filesystem
+ 5      7954432    595546111  280.2G  Linux LVM       Linux LVM
+ 6    595546112    976773134  181.8G  Linux LVM       Linux LVM
 
-Since the performance improvement is related to gc, it might not be so
-obvious for other tests that do not trigger gc as often as this one (
-This is because f2fs selects dirty segments for SSR use most of the
-time when free space is in shortage). The well-known iozone test tool
-was not used for benchmarking the patch becuase it seems do not have
-a test case that performs random re-write on a full disk.
 
-Signed-off-by: Jin Xu <jinuxstyle@gmail.com>
----
- fs/f2fs/gc.c      |   27 ++++++++++++++++++++++++++-
- fs/f2fs/gc.h      |    4 +++-
- fs/f2fs/segment.h |    1 +
- 3 files changed, 30 insertions(+), 2 deletions(-)
+Any ideas why the size discrepancy?
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 35f9b1a..4e045e6 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -138,10 +138,12 @@ static void select_policy(struct f2fs_sb_info *sbi, int gc_type,
- 	if (p->alloc_mode == SSR) {
- 		p->gc_mode = GC_GREEDY;
- 		p->dirty_segmap = dirty_i->dirty_segmap[type];
-+		p->dirty_type = type;
- 		p->ofs_unit = 1;
- 	} else {
- 		p->gc_mode = select_gc_type(gc_type);
- 		p->dirty_segmap = dirty_i->dirty_segmap[DIRTY];
-+		p->dirty_type = DIRTY;
- 		p->ofs_unit = sbi->segs_per_sec;
- 	}
- 	p->offset = sbi->last_victim[p->gc_mode];
-@@ -243,6 +245,8 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 	struct victim_sel_policy p;
- 	unsigned int secno, max_cost;
- 	int nsearched = 0;
-+	unsigned int max_search = MAX_VICTIM_SEARCH;
-+	unsigned int nr_dirty;
- 
- 	p.alloc_mode = alloc_mode;
- 	select_policy(sbi, gc_type, type, &p);
-@@ -258,6 +262,27 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 			goto got_it;
- 	}
- 
-+	nr_dirty = dirty_i->nr_dirty[p.dirty_type];
-+	if (p.gc_mode == GC_GREEDY && p.alloc_mode != SSR) {
-+		if (TOTAL_SEGS(sbi) <= FULL_VICTIM_SEARCH_THRESH)
-+			max_search = nr_dirty; /* search all the dirty segs */
-+		else {
-+			/*
-+			 * With more dirty segments, garbage blocks are likely
-+			 * more scattered, thus search harder for better
-+			 * victim.
-+			 */
-+			max_search = div_u64 ((nr_dirty *
-+				FULL_VICTIM_SEARCH_THRESH), TOTAL_SEGS(sbi));
-+			if (max_search < MIN_VICTIM_SEARCH_GREEDY)
-+				max_search = MIN_VICTIM_SEARCH_GREEDY;
-+		}
-+	}
-+
-+	/* no more than the total dirty segments */
-+	if (max_search > nr_dirty)
-+		max_search = nr_dirty;
-+
- 	while (1) {
- 		unsigned long cost;
- 		unsigned int segno;
-@@ -290,7 +315,7 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 		if (cost == max_cost)
- 			continue;
- 
--		if (nsearched++ >= MAX_VICTIM_SEARCH) {
-+		if (nsearched++ >= max_search) {
- 			sbi->last_victim[p.gc_mode] = segno;
- 			break;
- 		}
-diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-index 2c6a6bd..2f525aa 100644
---- a/fs/f2fs/gc.h
-+++ b/fs/f2fs/gc.h
-@@ -20,7 +20,9 @@
- #define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
- 
- /* Search max. number of dirty segments to select a victim segment */
--#define MAX_VICTIM_SEARCH	20
-+#define MAX_VICTIM_SEARCH		20
-+#define MIN_VICTIM_SEARCH_GREEDY	20
-+#define FULL_VICTIM_SEARCH_THRESH	4096
- 
- struct f2fs_gc_kthread {
- 	struct task_struct *f2fs_gc_task;
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 062424a..cd33f96 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -142,6 +142,7 @@ struct victim_sel_policy {
- 	int alloc_mode;			/* LFS or SSR */
- 	int gc_mode;			/* GC_CB or GC_GREEDY */
- 	unsigned long *dirty_segmap;	/* dirty segment bitmap */
-+	int dirty_type;
- 	unsigned int offset;		/* last scanned bitmap offset */
- 	unsigned int ofs_unit;		/* bitmap search unit */
- 	unsigned int min_cost;		/* minimum cost */
--- 
-1.7.9.5
+(No, this probably not relevant to my original issue - my root is on the
+LVM on sda5, which is OK, and the problem is the initrd doesn't fire up at all)
 
+
+--==_Exmh_1377737341_1815P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUh6afQdmEQWDXROgAQJfKhAAqV5HvRo0aPWs/VBAqy/0chkzrNUidQKE
+vR9Pastv0tkQsMFt/IxxZgx2QVP8bq4e/oGXBkzq2xbli4WPaHMNtO+ECh6YaH2X
+zNEuJBpdw+dKTr0ljVzwcu9msTflXl1aZzY0LjmDFQ+E+I1vS6Kdivp1BIlk789q
+nkFbSsmDNsjgsqzE776DjVY2jwCmSWgsU5/CYhe6ecnMoSx3v56NJWUilN5ul1aL
+YGWsd8IyMlHymwZ4Nx2GbohkzkSSN/Q7cr3KaVOGDDC4yJ+/rNyCYr29xaDt6B0t
+7TRI2EyZjSXC+IOSIemx3PhT/Xt/n2HgguFVRwXjIpjGwdM4ee5SYZ/dQsYyyPa7
+qCMxiKfgtkptueHQ6AinF8oP08kOw3hYhbxGl/GAVck1Aj5UFrD7CFiMLuhns7/y
+TIYm9vSY+ipKUkRjH55EHF79epIfAo7gXkjOwtfvzEN9PkG9rmu1qiMltukWy3OY
+Mom9vYT+7szxzHnRKafJjBKHSODV1Rk1gIm4XIRJcgcVc4pbaxRrVA/kNqGoqFD6
+M6Dg0/W1GDsTiEfXaKKlanLAvqPNlMUAXaIOGvtyD2gzXmgwa/g4jOtGtcY+nkT0
+FJr5aGFd8cyqFdNhviozg5TneBYzuzOWz479q74Ao4OGX1vHcC7wGr9sJKQom8cV
+j/1xXHJ+hV4=
+=VAht
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1377737341_1815P--
