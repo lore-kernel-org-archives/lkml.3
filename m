@@ -1,275 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab3H2Smc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:42:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52145 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756231Ab3H2Sm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:42:29 -0400
-Date: Thu, 29 Aug 2013 20:42:28 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: [ANNOUNCE] 3.10.10-rt7
-Message-ID: <20130829184228.GD15360@linutronix.de>
+	id S1756944Ab3H2SnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:43:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756462Ab3H2SnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:43:10 -0400
+Date: Thu, 29 Aug 2013 14:43:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, seiji.aguchi@hds.com,
+        majianpeng@gmail.com, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] elevator: Fix a race in elevator switching and md device
+ initialization
+Message-ID: <20130829184304.GC6171@redhat.com>
+References: <20130826134515.2298.55571.stgit@outback>
+ <20130829183310.GB6171@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130829183310.GB6171@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT folks!
+On Thu, Aug 29, 2013 at 02:33:10PM -0400, Vivek Goyal wrote:
+> On Mon, Aug 26, 2013 at 09:45:15AM -0400, Tomoki Sekiyama wrote:
+> > The soft lockup below happes at the boot time of the system using dm
+> > multipath and automated elevator switching udev rules.
+> > 
+> > [  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
+> > [  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>] lock_timer_base.isra.35+0x1d/0x50
+> > ...
+> > [  356.127001] Call Trace:
+> > [  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
+> > [  356.127001]  [<ffffffff8118b08a>] ? kmem_cache_alloc_node_trace+0x20a/0x230
+> > [  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
+> > [  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
+> > [  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
+> > [  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
+> > [  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
+> > [  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
+> > [  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
+> > [  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
+> > [  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
+> > [  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
+> > 
+> 
+> Tokomi, 
+> 
+> As you noticed, there is a fedora bug open with similar signature. May
+> be this patch will fix that issue also.
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=902012
+> 
+> 
+> > This is caused by a race between md device initialization and sysfs knob
+> > to switch the scheduler.
+> > 
+> > * multipathd:
+> >  SyS_ioctl -> do_vfs_ioctl -> dm_ctl_ioctl -> ctl_ioctl ->  table_load
+> >   -> dm_setup_md_queue -> blk_init_allocated_queue -> elevator_init:
+> > 
+> >     q->elevator = elevator_alloc(q, e); // not yet initialized
+> > 
+> > * sh -c 'echo deadline > /sys/$DEVPATH/queue/scheduler'
+> >  SyS_write -> vfs_write -> sysfs_write_file -> queue_attr_store
+> >      ( mutex_lock(&q->sysfs_lock) here. )
+> >   -> elv_iosched_store -> elevator_change:
+> > 
+> >   elevator_exit(old); // try to de-init uninitialized elevator and hang up
+> > 
 
-I'm pleased to announce the v3.10.10-rt7 patch set.
+If problem in this case is that we are trying to exit() the elevator
+which has not been properly initialized, then we should not attach
+the elevator to the queue yet.
 
-Changes since v3.10.10-rt6
-- hwlat compiles on 32bit (again). Reported by Fernando Lopez-Lezcano.
-- bcache is disabled due to usage of anon semaphores. Anyone interrested
-  in using it?
-- "genirq affinity callback" are fixed. Reported by Joe Korty. There are
-  two nics using this feature.
-- Paul Gortmaker's swait rename patch has been included.
+In cfq_init_queue(), can we move following code towards the end of
+function.
 
-Known issues:
+        spin_lock_irq(q->queue_lock);
+        q->elevator = eq;
+        spin_unlock_irq(q->queue_lock);
 
-      - SLAB support not working
+So till elevator is initialized, we will not attach it to queue and 
+elevator_switch() will return as it will not find a valid elevator
+on the queue.
 
-      - The cpsw network driver shows some issues.
+elevator_change() {
+	        if (!q->elevator)
+                return -ENXIO;
+}
 
-      - bcache is disabled.
-
-      - an ancient race (since we got sleeping spinlocks) where the
-        TASK_TRACED state is temporary replaced while waiting on a rw
-        lock and the task can't be traced.
-
-The delta patch against v3.10.10-rt6 is appended below and can be found
-here:
-   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.10-rt6-rt7.patch.xz
-
-The RT patch against 3.10.10 can be found here:
-
-   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.10-rt7.patch.xz
-
-The split quilt queue is available at:
-
-   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patches-3.10.10-rt7.tar.xz
-
-Sebastian
-
-diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
-index f950c9d..5eb76dd 100644
---- a/drivers/md/bcache/Kconfig
-+++ b/drivers/md/bcache/Kconfig
-@@ -1,6 +1,7 @@
- 
- config BCACHE
- 	tristate "Block device as cache"
-+	depends on !PREEMPT_RT_FULL
- 	---help---
- 	Allows a block device to be used as cache for other devices; uses
- 	a btree for indexing and the layout is optimized for SSDs.
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 0bfa40d..6f61d5f 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -220,7 +220,7 @@ static struct sample *buffer_get_sample(struct sample *sample)
- #else
- #define time_type	u64
- #define time_get()	trace_clock_local()
--#define time_to_us(x)	((x) / 1000)
-+#define time_to_us(x)	div_u64(x, 1000)
- #define time_sub(a, b)	((a) - (b))
- #define init_time(a, b)	a = b
- #define time_u64(a)	a
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 11bdb1e..838d4bd 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -263,6 +263,7 @@ struct irq_affinity_notify {
- 	unsigned int irq;
- 	struct kref kref;
- 	struct work_struct work;
-+	struct list_head list;
- 	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
- 	void (*release)(struct kref *ref);
- };
-diff --git a/include/linux/wait-simple.h b/include/linux/wait-simple.h
-index 4efba4d..f86bca2 100644
---- a/include/linux/wait-simple.h
-+++ b/include/linux/wait-simple.h
-@@ -47,6 +47,14 @@ extern void swait_prepare(struct swait_head *head, struct swaiter *w, int state)
- extern void swait_finish_locked(struct swait_head *head, struct swaiter *w);
- extern void swait_finish(struct swait_head *head, struct swaiter *w);
- 
-+/* Check whether a head has waiters enqueued */
-+static inline bool swaitqueue_active(struct swait_head *h)
-+{
-+	/* Make sure the condition is visible before checking list_empty() */
-+	smp_mb();
-+	return !list_empty(&h->list);
-+}
-+
- /*
-  * Wakeup functions
-  */
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0e34a98..c5c19ec 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -164,6 +164,62 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return ret;
- }
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+static void _irq_affinity_notify(struct irq_affinity_notify *notify);
-+static struct task_struct *set_affinity_helper;
-+static LIST_HEAD(affinity_list);
-+static DEFINE_RAW_SPINLOCK(affinity_list_lock);
-+
-+static int set_affinity_thread(void *unused)
-+{
-+	while (1) {
-+		struct irq_affinity_notify *notify;
-+		int empty;
-+
-+		set_current_state(TASK_INTERRUPTIBLE);
-+
-+		raw_spin_lock_irq(&affinity_list_lock);
-+		empty = list_empty(&affinity_list);
-+		raw_spin_unlock_irq(&affinity_list_lock);
-+
-+		if (empty)
-+			schedule();
-+		if (kthread_should_stop())
-+			break;
-+		set_current_state(TASK_RUNNING);
-+try_next:
-+		notify = NULL;
-+
-+		raw_spin_lock_irq(&affinity_list_lock);
-+		if (!list_empty(&affinity_list)) {
-+			notify = list_first_entry(&affinity_list,
-+					struct irq_affinity_notify, list);
-+			list_del_init(&notify->list);
-+		}
-+		raw_spin_unlock_irq(&affinity_list_lock);
-+
-+		if (!notify)
-+			continue;
-+		_irq_affinity_notify(notify);
-+		goto try_next;
-+	}
-+	return 0;
-+}
-+
-+static void init_helper_thread(void)
-+{
-+	if (set_affinity_helper)
-+		return;
-+	set_affinity_helper = kthread_run(set_affinity_thread, NULL,
-+			"affinity-cb");
-+	WARN_ON(IS_ERR(set_affinity_helper));
-+}
-+#else
-+
-+static inline void init_helper_thread(void) { }
-+
-+#endif
-+
- int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
-@@ -182,7 +238,17 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 
- 	if (desc->affinity_notify) {
- 		kref_get(&desc->affinity_notify->kref);
-+
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		raw_spin_lock(&affinity_list_lock);
-+		if (list_empty(&desc->affinity_notify->list))
-+			list_add_tail(&affinity_list,
-+					&desc->affinity_notify->list);
-+		raw_spin_unlock(&affinity_list_lock);
-+		wake_up_process(set_affinity_helper);
-+#else
- 		schedule_work(&desc->affinity_notify->work);
-+#endif
- 	}
- 	irqd_set(data, IRQD_AFFINITY_SET);
- 
-@@ -223,10 +289,8 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
- }
- EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
- 
--static void irq_affinity_notify(struct work_struct *work)
-+static void _irq_affinity_notify(struct irq_affinity_notify *notify)
- {
--	struct irq_affinity_notify *notify =
--		container_of(work, struct irq_affinity_notify, work);
- 	struct irq_desc *desc = irq_to_desc(notify->irq);
- 	cpumask_var_t cpumask;
- 	unsigned long flags;
-@@ -248,6 +312,13 @@ static void irq_affinity_notify(struct work_struct *work)
- 	kref_put(&notify->kref, notify->release);
- }
- 
-+static void irq_affinity_notify(struct work_struct *work)
-+{
-+	struct irq_affinity_notify *notify =
-+		container_of(work, struct irq_affinity_notify, work);
-+	_irq_affinity_notify(notify);
-+}
-+
- /**
-  *	irq_set_affinity_notifier - control notification of IRQ affinity changes
-  *	@irq:		Interrupt for which to enable/disable notification
-@@ -277,6 +348,8 @@ irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
- 		notify->irq = irq;
- 		kref_init(&notify->kref);
- 		INIT_WORK(&notify->work, irq_affinity_notify);
-+		INIT_LIST_HEAD(&notify->list);
-+		init_helper_thread();
- 	}
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
-diff --git a/kernel/wait-simple.c b/kernel/wait-simple.c
-index 2c85626..7dfa86d 100644
---- a/kernel/wait-simple.c
-+++ b/kernel/wait-simple.c
-@@ -26,14 +26,6 @@ static inline void __swait_dequeue(struct swaiter *w)
- 	list_del_init(&w->node);
- }
- 
--/* Check whether a head has waiters enqueued */
--static inline bool swait_head_has_waiters(struct swait_head *h)
--{
--	/* Make sure the condition is visible before checking list_empty() */
--	smp_mb();
--	return !list_empty(&h->list);
--}
--
- void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
- {
- 	raw_spin_lock_init(&head->lock);
-@@ -112,7 +104,7 @@ __swait_wake(struct swait_head *head, unsigned int state, unsigned int num)
- 	unsigned long flags;
- 	int woken;
- 
--	if (!swait_head_has_waiters(head))
-+	if (!swaitqueue_active(head))
- 		return 0;
- 
- 	raw_spin_lock_irqsave(&head->lock, flags);
-diff --git a/localversion-rt b/localversion-rt
-index 8fc605d..0454789 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt6
-+-rt7
+Thanks
+Vivek
