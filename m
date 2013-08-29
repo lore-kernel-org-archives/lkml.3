@@ -1,97 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3H2HuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 03:50:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59862 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3H2HuP (ORCPT
+	id S1755981Ab3H2HwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 03:52:16 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61316 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab3H2HwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 03:50:15 -0400
-Date: Thu, 29 Aug 2013 17:50:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vladimir Barinov <vladimir.barinov@cogentembedded.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Simon Horman <horms@verge.net.au>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: linux-next: manual merge of the arm-soc tree with the v4l-dvb tree
-Message-Id: <20130829175012.2380fdebfa8a5f57695e5467@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Aug_2013_17_50_12_+1000_erlgXX7kkHDDeDFu"
+	Thu, 29 Aug 2013 03:52:15 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+	<CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
+	<1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
+	<CA+icZUXgOd=URJBH5MGAZKdvdkMpFt+5mRxtzuDzq_vFHpoc2A@mail.gmail.com>
+	<1372202983.1888.22.camel@buesod1.americas.hpqcorp.net>
+	<521DE5D7.4040305@synopsys.com>
+	<CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
+Date: Thu, 29 Aug 2013 09:52:13 +0200
+Message-ID: <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
+Subject: Re: ipc-msg broken again on 3.11-rc7? (was Re: linux-next: Tree for
+ Jun 21 [ BROKEN ipc/ipc-msg ])
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Aug_2013_17_50_12_+1000_erlgXX7kkHDDeDFu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 29, 2013 at 9:21 AM, Vineet Gupta
+<Vineet.Gupta1@synopsys.com> wrote:
+> On 08/29/2013 08:34 AM, Sedat Dilek wrote:
+>> On Wed, Aug 28, 2013 at 1:58 PM, Vineet Gupta
+>> <Vineet.Gupta1@synopsys.com> wrote:
+>>> Hi David,
+>>>
+>>> On 06/26/2013 04:59 AM, Davidlohr Bueso wrote:
+>>>> On Tue, 2013-06-25 at 23:41 +0200, Sedat Dilek wrote:
+>>>>> On Tue, Jun 25, 2013 at 10:33 PM, Davidlohr Bueso
+>>>>> <davidlohr.bueso@hp.com> wrote:
+>>>>>> On Tue, 2013-06-25 at 18:10 +0200, Sedat Dilek wrote:
+>>>>>> [...]
+>>>>>>
+>>>>>>> I did some more testing with Linux-Testing-Project (release:
+>>>>>>> ltp-full-20130503) and next-20130624 (Monday) which has still the
+>>>>>>> issue, here.
+>>>>>>>
+>>>>>>> If I revert the mentioned two commits from my local
+>>>>>>> revert-ipc-next20130624-5089fd1c6a6a-ab9efc2d0db5 GIT repo, everything
+>>>>>>> is fine.
+>>>>>>>
+>>>>>>> I have tested the LTP ***IPC*** and ***SYSCALLS*** testcases.
+>>>>>>>
+>>>>>>>    root# ./runltp -f ipc
+>>>>>>>
+>>>>>>>    root# ./runltp -f syscalls
+>>>>>> These are nice test cases!
+>>>>>>
+>>>>>> So I was able to reproduce the issue with LTP and manually running
+>>>>>> msgctl08. We seemed to be racing at find_msg(), so take to q_perm lock
+>>>>>> before calling it. The following changes fixes the issue and passes all
+>>>>>> 'runltp -f syscall' tests, could you give it a try?
+>>>>>>
+>>>>> Cool, that fixes the issues here.
+>>>>>
+>>>>> Building with fakeroot & make deb-pkg is now OK, again.
+>>>>>
+>>>>> The syscalls/msgctl08 test-case ran successfully!
+>>>> Andrew, could you pick this one up? I've made the patch on top of
+>>>> 3.10.0-rc7-next-20130625
+>>> LTP msgctl08 hangs on 3.11-rc7 (ARC port) with some of my local changes. I
+>>> bisected it, sigh... didn't look at this thread earlier :-( and landed into this.
+>>>
+>>> ------------->8------------------------------------
+>>> 3dd1f784ed6603d7ab1043e51e6371235edf2313 is the first bad commit
+>>> commit 3dd1f784ed6603d7ab1043e51e6371235edf2313
+>>> Author: Davidlohr Bueso <davidlohr.bueso@hp.com>
+>>> Date:   Mon Jul 8 16:01:17 2013 -0700
+>>>
+>>>     ipc,msg: shorten critical region in msgsnd
+>>>
+>>>     do_msgsnd() is another function that does too many things with the ipc
+>>>     object lock acquired.  Take it only when needed when actually updating
+>>>     msq.
+>>> ------------->8------------------------------------
+>>>
+>>> If I revert 3dd1f784ed66 and 9ad66ae "ipc: remove unused functions" - the test
+>>> passes. I can confirm that linux-next also has the issue (didn't try the revert
+>>> there though).
+>>>
+>>> 1. arc 3.11-rc7 config attached (UP + PREEMPT)
+>>> 2. dmesg prints "msgmni has been set to 479"
+>>> 3. LTP output (this is slightly dated source, so prints might vary)
+>>>
+>>> ------------->8------------------------------------
+>>> <<<test_start>>>
+>>> tag=msgctl08 stime=1377689180
+>>> cmdline="msgctl08"
+>>> contacts=""
+>>> analysis=exit
+>>> initiation_status="ok"
+>>> <<<test_output>>>
+>>> ------------->8-------- hung here ------------------
+>>>
+>>>
+>>> Let me know if you need more data/test help.
+>>>
+>> Cannot say much to your constellation as I had the issue on x86-64 and
+>> Linux-next.
+>> But I have just seen a post-v3.11-rc7 IPC-fix in [1].
+>>
+>> I have here a v3.11-rc7 kernel with drm-intel-nightly on top... did not run LTP.
+>
+> Not sure what you mean - I'd posted that Im seeing the issue on ARC Linux (an FPGA
+> board) 3.11-rc7 as well as linux-next of yesterday.
+>
 
-Hi all,
+I am not saying there is no issue, but I have no possibility to test
+for ARC arch.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-shmobile/include/mach/r8a7779.h between commit 4714a0255eee
-("[media] ARM: shmobile: r8a7779: add VIN support") from the v4l-dvb tree
-and commit fee529df76ff ("ARM: shmobile: r8a7779: cleanup registration of
-usb phy") from the arm-soc tree.
+>> Which LTP release do you use?
+>
+> The LTP build I generally use is from a 2007 based sources (lazy me). However I
+> knew this would come up so before posting, I'd built the latest from buildroot and
+> ran the msgctl08 from there standalone and it did the same thing.
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Try always latest LTP-stable (03-May-2013 is what I tried). AFAICS a
+new release is planned soon.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> Might be good to attach your kernel-config for followers?
+>
+> It was already there in my orig msg - you probably missed it.
+>
 
-diff --cc arch/arm/mach-shmobile/include/mach/r8a7779.h
-index 6d2b641,f08d6ec..0000000
---- a/arch/arm/mach-shmobile/include/mach/r8a7779.h
-+++ b/arch/arm/mach-shmobile/include/mach/r8a7779.h
-@@@ -4,8 -4,6 +4,7 @@@
-  #include <linux/sh_clk.h>
-  #include <linux/pm_domain.h>
-  #include <linux/sh_eth.h>
-- #include <linux/platform_data/usb-rcar-phy.h>
- +#include <linux/platform_data/camera-rcar.h>
- =20
-  struct platform_device;
- =20
-@@@ -35,9 -32,6 +33,8 @@@ extern void r8a7779_add_early_devices(v
-  extern void r8a7779_add_standard_devices(void);
-  extern void r8a7779_add_standard_devices_dt(void);
-  extern void r8a7779_add_ether_device(struct sh_eth_plat_data *pdata);
-- extern void r8a7779_add_usb_phy_device(struct rcar_phy_platform_data *pda=
-ta);
- +extern void r8a7779_add_vin_device(int idx,
- +				   struct rcar_vin_platform_data *pdata);
-  extern void r8a7779_init_late(void);
-  extern void r8a7779_clock_init(void);
-  extern void r8a7779_pinmux_init(void);
+I have got that response from you only :-).
 
---Signature=_Thu__29_Aug_2013_17_50_12_+1000_erlgXX7kkHDDeDFu
-Content-Type: application/pgp-signature
+>> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=368ae537e056acd3f751fa276f48423f06803922
+>
+> I tried linux-next of today, same deal - msgctl08 still hangs.
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+That above fix [1] in Linus-tree is also in next-20130828.
 
-iQIcBAEBCAAGBQJSHv00AAoJEECxmPOUX5FEvwUP/2WMUyeZlC0Y7jilA1uAwWtW
-g17TTB6LyhuwHzoEenqFi3XxfDyXLTW4e6z/y0C8aV/pCQ5ULU5fCtK7Zp8jDcXb
-9DIKBc0q9ogILMsyJyzaYoYFB76zl1xWom6kDWLZ30QE7MgWlhyYF341IZwHT7La
-alwgczaXiKAyaQsis2trFsKeWpFH7bEdaCfP8txXqC5J/Xp3B4nw9Js8jwck5uV2
-bqW+v0/GPMd0JrpKBX5dBeOt31llAWd8Qd5qv1eNASgjufQOnR7SgFl+YPmUajv4
-eEBEHObQQ3uBaufT9kJ2QUB45Figa3OcaKpvsyUT6DQ6h8Hjg7axKz4OQnp0olIR
-gB6uydVYEpYDRw0Ha0thSiVDh8E6pThujcBDjp3zRlu/lILEizYOHDuD621XQMxK
-n4nzJwdC+/2ZzHowwvqvjxwrB827W5rsTIjLZnArkLQn9Sw40gFVY2VOoJt3VBJu
-kiXT48c8jaxo8tDs224PMzP8eVRs++EpX4Is8oTfd0LYLXrLCfPWctTUbloGMS8s
-cjbwRmqorrGsPCevYXoUg8SMD2S9ZgWt8FuyO6plrlRzPxkuyeLjSzBxhRRrOfro
-KBWcMjBXEfZGJ8kpbVrGKxqsgaIoTKRlP6EphKIoRCSWo/RQr1Jf41jOuLvECIpE
-U+5TplkNtp+pJtsocjig
-=l1oJ
------END PGP SIGNATURE-----
+Hope Davidlohr and fellows can help you.
 
---Signature=_Thu__29_Aug_2013_17_50_12_+1000_erlgXX7kkHDDeDFu--
+- Sedat -
