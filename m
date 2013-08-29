@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3H2ICU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 04:02:20 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:65068 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755641Ab3H2ICP (ORCPT
+	id S1756051Ab3H2ICm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 04:02:42 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:64027 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755744Ab3H2ICj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 04:02:15 -0400
+	Thu, 29 Aug 2013 04:02:39 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130828211546.GH26483@xanatos>
-References: <CA+icZUUTBYMxLPBv2fq86h3dxyANhtpd6=Q4XGMscrntPNA9bQ@mail.gmail.com>
-	<CA+icZUW6JMa6VoRJ62AUZDpYm2_q_tzSM0Ryb56RNnCdEhwQyA@mail.gmail.com>
-	<CA+icZUVTzMxS4f3kZnauDkrpf4vwMbS3zd7ECOhE37S_FF83UA@mail.gmail.com>
-	<CA+icZUVsG-1J2oYF+AeHsxonG2ABW4d0464yijNwaq7R5k94SQ@mail.gmail.com>
-	<521DD43D.7070605@samsung.com>
-	<CA+icZUWQp0k8jMqY=_DYW2Ev1cEhpev=iQNnc=NbHNgHNbifTA@mail.gmail.com>
-	<521DD6BD.4030700@samsung.com>
-	<20130828165938.GA26483@xanatos>
-	<521E3259.6040201@samsung.com>
-	<CA+icZUUj-gyqmEFo54N_62KCgByAu1n9n=dHgg3aTC53zA9TRQ@mail.gmail.com>
-	<20130828211546.GH26483@xanatos>
-Date: Thu, 29 Aug 2013 10:02:13 +0200
-Message-ID: <CA+icZUWNVCtRn_aK0ndXxmqutM4Sc_PJN4ei0m5phu6-CwO_+g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 28 [ xhci build breakage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
+References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
+Date: Thu, 29 Aug 2013 10:02:38 +0200
+Message-ID: <CACRpkdZpHk31zPPn9OeXp3=EH=H6p3BKmikN=7TwLhsR+c1aiA@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO
+ controller on bf54x and bf60x.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 11:15 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Wed, Aug 28, 2013 at 07:39:14PM +0200, Sedat Dilek wrote:
->> On Wed, Aug 28, 2013 at 7:24 PM, Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->> Still noone answered me why "drivers/usb/host/xhci-ring.c" does NOT
->> include <linux/device.h> (dev_info_ratelimited() and other defines).
->> I am expecting that... even I see...
->>
->>           drivers/usb/host/.xhci-ring.o.cmd:715:  include/linux/device.h \
->>
->> ...where I don't know why this happens.
->>
->> ( For me this is a bit more important than """trimming""" my
->> responses, I keep the history... )
->>
->> - Sedat -
->>
->> P.S.: List of includes in xhci-ring.c
->>
->> $ grep ^'#include' -nr drivers/usb/host/xhci-ring.c
->> 67:#include <linux/scatterlist.h>
->> 68:#include <linux/slab.h>
->> 69:#include "xhci.h"
->> 70:#include "xhci-trace.h"
->
-> Because a header that xhci-ring.c uses includes device.h instead.
->
-> drivers/usb/host/xhci/xhci-ring.c includes
-> drivers/usb/host/xhci.h which includes
-> include/linux/usb.h which includes
-> include/linux/device.h
->
-> All USB host controllers depend on including usb.h, so I don't think
-> there's a need for the driver to explicitly include device.h.
->
+On Wed, Aug 21, 2013 at 8:30 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-Thanks for the explanations.
-On the one hand it is a fine thingie to place include-files at one
-single place - think of renamed or moved (uapi) include-files.
-Looking at xhci-ring.c means for me to dig through 3 or 4 files as
-someone not dealing everyday with USB stuff.
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> The new ADI GPIO2 controller was introduced since the BF548 and BF60x
+> processors. It differs a lot from the old one on BF5xx processors. So,
+> create a pinctrl driver under the pinctrl framework.
+(...)
 
-What is the effect of CONFIG_DYNAMIC_DEBUG=[y|n] in the affected code?
+The v3 is a huge improvement! Keep going.
 
-- Sedat -
+I will not repeat any of Stephens review comments, I just
+saw this:
 
-P.S.: The forgotten patch is now in usb-next, but I don't see any
-credits, coins, gold, platin...
+> +static const unsigned uart1_pins[] = {
+> +       GPIO_PH0, GPIO_PH1,
+> +#ifdef CONFIG_BFIN_UART1_CTSRTS
+> +       GPIO_PE9, GPIO_PE10,
+> +#endif
+(...)
+> +static const unsigned atapi_pins[] = {
+> +       GPIO_PH2, GPIO_PJ3, GPIO_PJ4, GPIO_PJ5, GPIO_PJ6,
+> +       GPIO_PJ7, GPIO_PJ8, GPIO_PJ9, GPIO_PJ10,
+> +       GPIO_PG5, GPIO_PG6, GPIO_PG7,
+> +#ifdef CONFIG_BF548_ATAPI_ALTERNATIVE_PORT
+> +       GPIO_PF0, GPIO_PF1, GPIO_PF2, GPIO_PF3, GPIO_PF4, GPIO_PF5, GPIO_PF6,
+> +       GPIO_PF7, GPIO_PF8, GPIO_PF9, GPIO_PF10, GPIO_PF11, GPIO_PF12,
+> +       GPIO_PF13, GPIO_PF14, GPIO_PF15, GPIO_PG2, GPIO_PG3, GPIO_PG4,
+> +#endif
+
+(...)
+> +static const struct adi_pin_group adi_pin_groups[] = {
+(...)
+> +       ADI_PIN_GROUP("uart1grp", uart1_pins),
+(...)
+> +       ADI_PIN_GROUP("atapigrp", atapi_pins),
+> +};
+
+This is not how we do it. Do not use Kconfig to spefify how the SoC
+is utilized. This shall be done at runtime.
+
+What you want to do for UART0 is specify one group for the TX/RX
+pair and another group for the CTS/RTS pair like this:
+
+static const unsigned uart1_rxtx_pins[] = {
+       GPIO_PH0, GPIO_PH1,
+};
+
+static const unsigned uart1_rtscts_pins[] = {
+       GPIO_PE9, GPIO_PE10,
+};
+
+static const struct adi_pin_group adi_pin_groups[] = {
+(...)
+        ADI_PIN_GROUP("uart1txrxgrp", uart1_rxtx_pins),
+        ADI_PIN_GROUP("uart1rtsctsgrp", uart1_ctsrts_pins),
+       (...)
+};
+
+(And vice versa for the atapi pins, create two groups.)
+
+If you want to use all four pins on UART1 in a system, you
+specify this in you map (in platform data or DTS), so that
+e.g. the state "default" will be activate *both* uart1txrxgrp
+and uart1rtscts groups.
+
+This is typically done with two entries in the map.
+
+Yours,
+Linus Walleij
