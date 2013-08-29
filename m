@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3H2PSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:18:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51145 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab3H2PSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:18:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
-   d="scan'208";a="393998091"
-Message-ID: <521F662F.4050003@intel.com>
-Date: Thu, 29 Aug 2013 08:18:07 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754661Ab3H2PUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:20:55 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:48879 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab3H2PUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 11:20:54 -0400
+Message-ID: <521F66C6.6060401@hp.com>
+Date: Thu, 29 Aug 2013 11:20:38 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
- ARC
-References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com> <1375758759-29629-2-git-send-email-Waiman.Long@hp.com> <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+In-Reply-To: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 01:31 AM, Vineet Gupta wrote:
-> Frame pointer on ARC doesn't serve the conventional purpose of stack
-> unwinding due to the typical way ABI designates it's usage.
-> Thus it's explicit usage on ARC is discouraged (gcc is free to use it,
-> for some tricky stack frames even if -fomit-frame-pointer)
-...
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 1501aa5..c971f3a 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -908,7 +908,7 @@ config LOCKDEP
->  	bool
->  	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
->  	select STACKTRACE
-> -	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE
-> +	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE && !ARC
->  	select KALLSYMS
->  	select KALLSYMS_ALL
+On 08/28/2013 09:40 PM, Linus Torvalds wrote:
+> Just FYI: I've merged two preparatory patches in my tree for the whole
+> lockref thing. Instead of applying your four patches as-is during the
+> merge window, I ended up writing two patches that introduce the
+> concept and use it in the dentry code *without* introducing any of the
+> new semantics yet.
+>
+> Waiman, I attributed the patches to you, even if they don't actually
+> look much like any of the patches you sent out. And because I was
+> trying very hard to make sure that no actual semantics changed, my
+> version doesn't have the dget_parent() lockless update code, for
+> example. I literally just did a search-and-replace of "->d_count" with
+> "->d_lockref.count" and then I fixed up a few things by hand (undid
+> one replacement in a comment, and used the helper functions where they
+> were semantically identical).
+>
+>   You don't have to rewrite your patches if you don't want to, I'm
+> planning on cherry-picking the actual code changes during the merge
+> window.
+>
+>                    Linus
 
-I assume you're sending this my way since getmaintainer.pl has me tagged
-I moved a bunch of code in there. :)
+Thanks for merging the 2 preparatory patches for me. I will rebase my 
+patches with the latest linux git tree. A new v8 patch set will be sent 
+out sometime next week. I am looking forward to the v3.12 merge window 
+which I think is coming soon.
 
-The Kconfig.debug stuff has no real maintainer.  It would probably be OK
-if you just stick this in your architecture's next git pull request.
-
-Although, it would be nice if someone, at some point, actually
-abstracted that out so that the individual architectures could take care
-of this without editing the main files:
-
-# Kconfig.debug:
-
-config ARCH_FRAME_POINTER_UNAVAILABLE
-	def_bool y
-...
-select FRAME_POINTER if !ARCH_FRAME_POINTER_UNAVAILABLE
-
-# arch/.../Kconfig
-
-select ARCH_FRAME_POINTER_UNAVAILABLE
-
-
+Cheer,
+Longman
