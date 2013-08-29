@@ -1,105 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757144Ab3H2XHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:07:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58602 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab3H2XGj (ORCPT
+	id S1757209Ab3H2XHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:07:15 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:60925 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154Ab3H2XHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:06:39 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sricharan R <r.sricharan@ti.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Franklin Cooper <fcooper@ti.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v4 1/6] dma: edma: Setup parameters to DMA MAX_NR_SG at a time
-Date: Thu, 29 Aug 2013 18:05:40 -0500
-Message-ID: <1377817545-18015-2-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377817545-18015-1-git-send-email-joelf@ti.com>
-References: <1377817545-18015-1-git-send-email-joelf@ti.com>
+	Thu, 29 Aug 2013 19:07:11 -0400
+Date: Fri, 30 Aug 2013 01:06:53 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: liujunliang_ljl@163.com
+Cc: davem@davemloft.net, horms@verge.net.au, joe@perches.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sunhecheng@vip.126.com
+Subject: Re: [PATCH] USB2NET : SR9700 : One Chip USB 1.1 USB2NET SR9700
+ Device Driver Support
+Message-ID: <20130829230653.GB12124@electric-eye.fr.zoreil.com>
+References: <1377746832-6201-1-git-send-email-liujunliang_ljl@163.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377746832-6201-1-git-send-email-liujunliang_ljl@163.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes are made here for configuring existing parameters to support
-DMA'ing them out in batches as needed.
+Keep it small though literate.
 
-Also allocate as many as slots as needed by the SG list, but not more
-than MAX_NR_SG. Then these slots will be reused accordingly.
-For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
-10 slots will be allocated to DMA the entire SG list of size 40.
-
-Also enable TC interrupts for slots that are a last in a current
-iteration, or that fall on a MAX_NR_SG boundary.
-
-Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/net/usb/sr9700.c | 30 ++++++++++++------------------
+ 1 file changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 5f3e532..e522ad5 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 	enum dma_slave_buswidth dev_width;
- 	u32 burst;
- 	struct scatterlist *sg;
--	int i;
- 	int acnt, bcnt, ccnt, src, dst, cidx;
- 	int src_bidx, dst_bidx, src_cidx, dst_cidx;
-+	int i, nslots;
+diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
+index f7f46e6..3f05b35 100644
+--- a/drivers/net/usb/sr9700.c
++++ b/drivers/net/usb/sr9700.c
+@@ -71,31 +71,25 @@ static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
  
- 	if (unlikely(!echan || !sgl || !sg_len))
- 		return NULL;
-@@ -262,8 +262,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
+ {
+-	int i, ret;
++	int i;
  
- 	edesc->pset_nr = sg_len;
+-	ret = 0;
+ 	for (i = 0; i < SR_SHARE_TIMEOUT; i++) {
+ 		u8 tmp = 0;
++		int ret;
  
--	for_each_sg(sgl, sg, sg_len, i) {
--		/* Allocate a PaRAM slot, if needed */
-+	/* Allocate a PaRAM slot, if needed */
-+	nslots = min_t(unsigned, MAX_NR_SG, sg_len);
-+
-+	for (i = 0; i < nslots; i++) {
- 		if (echan->slot[i] < 0) {
- 			echan->slot[i] =
- 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
-@@ -273,6 +275,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 				return NULL;
- 			}
- 		}
-+	}
-+
-+	/* Configure PaRAM sets for each SG */
-+	for_each_sg(sgl, sg, sg_len, i) {
+ 		udelay(1);
+ 		ret = sr_read_reg(dev, EPCR, &tmp);
+ 		if (ret < 0)
+-			goto out;
++			return ret;
  
- 		acnt = dev_width;
+ 		/* ready */
+-		if ((tmp & EPCR_ERRE) == 0)
+-			break;
++		if (!(tmp & EPCR_ERRE))
++			return 0;
+ 	}
  
-@@ -330,6 +336,12 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 		/* Configure A or AB synchronized transfers */
- 		if (edesc->absync)
- 			edesc->pset[i].opt |= SYNCDIM;
-+
-+		/* If this is the last in a current SG set of transactions,
-+		   enable interrupts so that next set is processed */
-+		if (!((i+1) % MAX_NR_SG))
-+			edesc->pset[i].opt |= TCINTEN;
-+
- 		/* If this is the last set, enable completion interrupt flag */
- 		if (i == sg_len - 1)
- 			edesc->pset[i].opt |= TCINTEN;
+-	if (i >= SR_SHARE_TIMEOUT) {
+-		netdev_err(dev->net, "%s write timed out!\n",
+-			   phy ? "phy" : "eeprom");
+-		ret = -EIO;
+-		goto out;
+-	}
++	netdev_err(dev->net, "%s write timed out!\n", phy ? "phy" : "eeprom");
+ 
+-out:
+-	return ret;
++	return -EIO;
+ }
+ 
+ static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
+@@ -110,7 +104,7 @@ static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
+ 
+ 	ret = wait_phy_eeprom_ready(dev, phy);
+ 	if (ret < 0)
+-		goto out;
++		goto out_unlock;
+ 
+ 	sr_write_reg(dev, EPCR, 0x0);
+ 	ret = sr_read(dev, EPDR, 2, value);
+@@ -118,7 +112,7 @@ static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
+ 	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
+ 		   phy, reg, *value, ret);
+ 
+-out:
++out_unlock:
+ 	mutex_unlock(&dev->phy_mutex);
+ 	return ret;
+ }
+@@ -132,18 +126,18 @@ static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg,
+ 
+ 	ret = sr_write(dev, EPDR, 2, &value);
+ 	if (ret < 0)
+-		goto out;
++		goto out_unlock;
+ 
+ 	sr_write_reg(dev, EPAR, phy ? (reg | 0x40) : reg);
+ 	sr_write_reg(dev, EPCR, phy ? 0x1a : 0x12);
+ 
+ 	ret = wait_phy_eeprom_ready(dev, phy);
+ 	if (ret < 0)
+-		goto out;
++		goto out_unlock;
+ 
+ 	sr_write_reg(dev, EPCR, 0x0);
+ 
+-out:
++out_unlock:
+ 	mutex_unlock(&dev->phy_mutex);
+ 	return ret;
+ }
 -- 
-1.8.1.2
+1.8.3.1
 
