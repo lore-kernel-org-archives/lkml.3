@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3H2Sgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:36:51 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:8808 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557Ab3H2Scz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:32:55 -0400
-X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
-   d="scan'208";a="48860312"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>
-Subject: [PATCH v5 04/13] arm64: do not initialize arm64_swiotlb if dma_ops is already set
-Date: Thu, 29 Aug 2013 19:32:25 +0100
-Message-ID: <1377801154-29215-4-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+	id S1757043Ab3H2ShF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:37:05 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47906 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756720Ab3H2ShC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:37:02 -0400
+Message-ID: <1377801416.13031.30.camel@dabdike>
+Subject: Re: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: "'Raviv Shvili'" <rshvili@codeaurora.org>, scsi-misc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "'open list:SCSI SUBSYSTEM'" <linux-scsi@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>, merez@codeaurora.org
+Date: Thu, 29 Aug 2013 22:36:56 +0400
+In-Reply-To: <06be01cea4de$77b79ce0$6726d6a0$@codeaurora.org>
+References: <1377766493-5269-1-git-send-email-rshvili@codeaurora.org>
+	 <1377768462.2223.70.camel@dabdike>
+	 <06be01cea4de$77b79ce0$6726d6a0$@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: will.deacon@arm.com
----
- arch/arm64/mm/dma-mapping.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+On Thu, 2013-08-29 at 20:37 +0300, Yaniv Gardi wrote:
+> Hi James,
+> 
+> See reply inline
+> 
+> Thanks,
+> Yaniv
+> 
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org
+> [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of James Bottomley
+> Sent: Thursday, August 29, 2013 12:28 PM
+> To: Raviv Shvili
+> Cc: scsi-misc@vger.kernel.org; linux-arm-msm@vger.kernel.org; open list:SCSI
+> SUBSYSTEM; open list
+> Subject: Re: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
+> 
+> On Thu, 2013-08-29 at 11:54 +0300, Raviv Shvili wrote:
+> > The patch solves the request completion report order. At the current 
+> > implementation, when multiple requests end at the same interrupt call, 
+> > the requests reported as completed according to a bitmap scan from the 
+> > lowest tags to the highest, regardless the requests priority. That 
+> > cause to a priority unfairness and starvation of requests with a high
+> tags.
+> 
+> It does?  Why?  What seems to happen is that you loop over all the pending
+> requests and call done for them.  The way SCSI handles done commands is that
+> it queues them to the softirq, so there doesn't look to be any real
+> unfairness problem here.
+> 
+> <yaniv> The unfairness is that currently the loop goes over the tags
+> from 0
+> to NUTRS(i.e 31), and calls done() at this order, regardless of the
+> task_attribute they hold.
+> Also, the benefit in performance is that instead of going over NUTRS
+> (32)
+> iteration, we simple call done() only for the exact of completed
+> request
+> (and according to their task_attribute priority). 
 
-diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-index 4bd7579..a006e84 100644
---- a/arch/arm64/mm/dma-mapping.c
-+++ b/arch/arm64/mm/dma-mapping.c
-@@ -63,6 +63,8 @@ static struct dma_map_ops arm64_swiotlb_dma_ops = {
- 
- void __init arm64_swiotlb_init(void)
- {
-+	if (dma_ops != NULL)
-+		return;
- 	dma_ops = &arm64_swiotlb_dma_ops;
- 	swiotlb_init(1);
- }
--- 
-1.7.2.5
+Yes, I know that.  But all done does is queue the completion to the
+softirq.  All you get with this is a reordering of that queue.  If you
+can actually measure the performance impact of that, I'd be very
+surprised.  We're talking under a microsecond in a round trip activity
+that takes tens to hundreds of miliseconds to issue and complete.
+
+> Scenario: a new HEAD_OF_QUEUE request that is completed during the
+> current
+> loop, will be served only in the next interrupt (since the DOORBELL
+> will be
+> read again only in the next interrupt), and saying it is a high tag,
+> it will
+> be completed lastly. This patch will fix it, as I see that.
+
+It fixes something that isn't a problem.  The softirq won't even be
+activated until all pending interrupts are serviced, so a command
+arriving in the middle of processing gets immediately serviced on the
+next interrupt before the softirq activates.
+
+James
+
+> > SCSI Architecture Model 5 defines 3 task-attributes that are part of 
+> > each SCSI command, and integrated into each Command UPIU. The 
+> > task-attribute is for the device usage, it determines the order in 
+> > which the device prioritizes the requests.
+> > The task-attributes according to their priority are (from high to low):
+> > HEAD OF QUEUE, ORDERED and SIMPLE. There is a queue per task-attribute.
+> > Each request is assigned to one of the above sw queues according to 
+> > its task attribute field.
+> > Requests which are not SCSI commands (native UFS) will be assigned to 
+> > the lowest priority queue, since there is no much difference between 
+> > completing it first or last..
+> > 
+> > When request is completed, we go over the queues (from the queue's 
+> > highest priority to the lowest) and report the completion.
+> > 
+> > Requests are removed from the queue in case of command completion or 
+> > when aborting pending command.
+> 
+> Since we never use anything other than SIMPLE attributes, this rather looks
+> like a solution in search of a problem.
+> 
+> James
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
