@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab3H2RQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:16:49 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:18673 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab3H2RQs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:16:48 -0400
-Message-ID: <1377796510.10300.868.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/4] Unify CPU hotplug lock interface
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, benh@kernel.crashing.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, bp@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Date: Thu, 29 Aug 2013 11:15:10 -0600
-In-Reply-To: <1449558.tneKXFMIWE@vostro.rjw.lan>
-References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com>
-	 <1449558.tneKXFMIWE@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755828Ab3H2RSy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:18:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51223 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995Ab3H2RSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 13:18:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
+   d="scan'208";a="370531606"
+Date: Thu, 29 Aug 2013 10:18:52 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
+        Josh Triplett <josh.triplett@intel.com>
+Subject: Re: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
+ platform xHCs
+Message-ID: <20130829171852.GB5538@xanatos>
+References: <20130821184042.GC3577@xanatos>
+ <CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
+ <20130822004514.GB19747@xanatos>
+ <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
+ <20130826191411.GG5112@xanatos>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
+ <20130828215142.GJ26483@xanatos>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DEE7A3@US01WEMBX2.internal.synopsys.com>
+ <CAODwPW_nPvS3Y9J2J9nU49uuDSB0kVirnKTF7HejfcYJEhgsUw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAODwPW_nPvS3Y9J2J9nU49uuDSB0kVirnKTF7HejfcYJEhgsUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-08-18 at 03:02 +0200, Rafael J. Wysocki wrote:
-> On Saturday, August 17, 2013 01:46:55 PM Toshi Kani wrote:
-> > lock_device_hotplug() was recently introduced to serialize CPU & Memory
-> > online/offline and hotplug operations, along with sysfs online interface
-> > restructure (commit 4f3549d7).  With this new locking scheme,
-> > cpu_hotplug_driver_lock() is redundant and is no longer necessary.
-> > 
-> > This patchset makes sure that lock_device_hotplug() covers all CPU online/
-> > offline interfaces, and then removes cpu_hotplug_driver_lock().
-> > 
-> > The patchset is based on Linus's tree, 3.11.0-rc5.
+On Wed, Aug 28, 2013 at 04:08:12PM -0700, Julius Werner wrote:
+> > So the 2.41a has BESL support, but may not set the BLC flag.  What
+> > happens if we use the HIRD encoding instead?  Will things break?  It
+> > seems like we would need to disable USB 2.0 LPM on that host all
+> > together, if it expects BESL encoding, but advertises HIRD encoding.
 > 
-> Nice series, thanks a lot for taking care of this!
+> Wait a second, just for clarity: are you saying that BESL-capable
+> controllers do not support the old HIRD mechanism and thus just break
+> on non-BESL aware OSes?
 
-Hi Rafael,
+Yes.
 
-Per the recent your changes in lock_device_hotplug(), do you think it
-makes sense to integrate this patchset into your tree?  I am also
-considering to add one more patch to use lock_device_hotplug_sysfs() in
-cpu_probe_store().  I will rebase to your tree and send them today if it
-makes sense to you.
+> I would've assumed that they somehow notice if software doesn't write
+> to the new register and automatically fall back to HIRD... it seems
+> like a weird decision to break hardware backwards compatibility like
+> that (after all, it would mean that Linux 3.10 and older would also
+> break on LynxPoint systems right now).
 
-Thanks,
--Toshi
+Let me dig this older state out of my brain.  ISTR yelling at the xHCI
+spec architect for breaking hosts for this very reason (originally the
+BLC flag was not in the spec at all)...
 
+If a host supports the HIRD encoding, it sets Hardware LMP Capability
+(HLC), bit 19, in the USB 2.0 port protocol register.  That bit is set
+whether the host supports HIRD or BESL encoding.  Bit 20 (BLC) is set if
+the host supports BESL.
 
-> 
-> Rafael
-> 
-> 
-> > ---
-> > Toshi Kani (4):
-> >   hotplug, x86: Fix online state in cpu0 debug interface
-> >   hotplug, x86: Add hotplug lock to missing places
-> >   hotplug, x86: Disable ARCH_CPU_PROBE_RELEASE on x86
-> >   hotplug, powerpc, x86: Remove cpu_hotplug_driver_lock()
-> > 
-> > ---
-> >  arch/powerpc/kernel/smp.c              | 12 ----------
-> >  arch/powerpc/platforms/pseries/dlpar.c | 40 +++++++++++++---------------------
-> >  arch/x86/Kconfig                       |  4 ----
-> >  arch/x86/kernel/smpboot.c              | 21 ------------------
-> >  arch/x86/kernel/topology.c             | 11 ++++++----
-> >  drivers/base/cpu.c                     | 26 ++++++++++++----------
-> >  include/linux/cpu.h                    | 13 -----------
-> >  7 files changed, 37 insertions(+), 90 deletions(-)
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+When the driver goes to write a value in the USB2 Port Hardware LPM
+Control Register, if the driver is only aware of the HIRD
+specifications, it will use the HIRD encodings in bits 13:10, regardless
+of whether the host has BESL support instead of HIRD support.  If the
+driver has support for BESL and the host has BESL support, it will use
+the BESL encodings in those bits instead.  If you take a look at Table
+13: BESL/HIRD Encoding from the xHCI spec version including errata to
+08/14/2012, you'll see the numbers written into bits 13:10 mean
+different timeouts, based on whether the host supports HIRD or BESL.
 
+So, basically, if the xHCI driver only supports HIRD and is loaded on a
+host that supports BESL, then the driver will write a timeout value in
+bits 13:10 that means something different than what the driver thinks it
+means.  This could lead to issues with USB 2.0 devices that support Link
+PM.
 
+Yes, this is broken.  Distros that want to run on hosts that have BESL
+support need to have the BESL patches from Mathias.
+
+Sarah Sharp
