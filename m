@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab3H2THa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 15:07:30 -0400
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:38266
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755096Ab3H2TH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 15:07:29 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Subject: Re: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Topic: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Index: AQHOnPa6Tah/7plIa0O2SRc9QXB0Upmsj38AgAAG5Z2AAAVHcYAAAGWA
-Date: Thu, 29 Aug 2013 19:07:26 +0000
-Message-ID: <1377803245.27493.19.camel@x230>
-References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
-	 <1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
-	 <521F9162.9060405@zytor.com> <1377801331.27493.17.camel@x230>
-	 <521F9708.6040902@zytor.com> <1377802153.27493.18.camel@x230>
-	 <521F9B8B.6090300@zytor.com>
-In-Reply-To: <521F9B8B.6090300@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:51f:6613:ec7a:9b2f]
-x-forefront-prvs: 09538D3531
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(189002)(199002)(51704005)(377454003)(479174003)(377424004)(63696002)(56776001)(83072001)(54316002)(81686001)(69226001)(51856001)(74876001)(74706001)(46102001)(33646001)(53806001)(77096001)(56816003)(54356001)(76482001)(79102001)(59766001)(33716001)(81816001)(77982001)(76786001)(76796001)(80976001)(65816001)(80022001)(19580395003)(19580405001)(83322001)(49866001)(50986001)(81342001)(47976001)(47736001)(81542001)(31966008)(47446002)(74662001)(74502001)(74366001)(4396001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:51f:6613:ec7a:9b2f;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1D4BF91FBB7B1A4DB8715F13A2B576CE@namprd05.prod.outlook.com>
+	id S1755672Ab3H2TLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 15:11:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35089 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab3H2TLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 15:11:11 -0400
+Message-ID: <521F9CC9.4010004@wwwdotorg.org>
+Date: Thu, 29 Aug 2013 13:11:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: George Cherian <george.cherian@ti.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>, balbi@ti.com,
+        myungjoo.ham@samsung.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, rob@landley.net, ian.campbell@citrix.com,
+        mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        bcousson@baylibre.com, davidb@codeaurora.org, arnd@arndb.de,
+        swarren@nvidia.com, popcornmix@gmail.com
+Subject: Re: [PATCH v3 1/3] extcon: extcon-gpio-usbvid: Generic USB VBUS/ID
+ detection via GPIO
+References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-2-git-send-email-george.cherian@ti.com> <521EA563.4060305@samsung.com> <521EB018.3000301@ti.com> <521EE8FC.80802@samsung.com> <521EF88F.4070402@ti.com> <521F245E.8050506@samsung.com> <521F3515.7040001@ti.com>
+In-Reply-To: <521F3515.7040001@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7TJ7YoS017636
 
-On Thu, 2013-08-29 at 12:05 -0700, H. Peter Anvin wrote:
-> On 08/29/2013 11:49 AM, Matthew Garrett wrote:
-> >>
-> >> No, you mixed and matched in a single patch...
-> > 
-> > Right, but I'd fixed that in V2 (which I see I *did* send correctly, and
-> > you're just replying to the old one :))
-> > 
+On 08/29/2013 05:48 AM, George Cherian wrote:
+> On 8/29/2013 4:07 PM, Chanwoo Choi wrote:
+...
+>> I tested various development board based on Samsung Exynos series SoC.
+>> Although some gpio of Exynos series SoC set high state(non zero, 1) as
+>> default value,
+>> this gpio state could mean off state, disconnected or un-powered state
+>> according to gpio.
+>> Of course, above explanation about specific gpio don't include all gpios.
+>> This is meaning that there is possibility.
+>
+> okay then how about adding a flag for inverted logic too.  something
+> like this
 > 
-> Well, I'm responding to the one that was sent 31 minutes ago.
+> if(of_property_read_bool(np,"inverted_gpio))
+>     gpio_usbvid->gpio_inv = 1;
+>
+> And always check on this before deciding?
 
-Really? It's datestamped the 19th.
-
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Don't do this. GPIO specifiers in DT typically include a "flags" cell
+that describes certain GPIO properties. One of those properties is
+signal inversion. You can use of_get_named_gpio_flags() to retrieve
+those flags.
