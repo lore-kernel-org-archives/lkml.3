@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3H2J5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:57:48 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:48708 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab3H2J5q convert rfc822-to-8bit (ORCPT
+	id S1756139Ab3H2J6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:58:01 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19389 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3H2J55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:57:46 -0400
+	Thu, 29 Aug 2013 05:57:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 29 Aug 2013 02:55:23 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>
+CC: <gnurou@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v4 0/5] ARM: tegra: support for Trusted Foundations
+Date: Thu, 29 Aug 2013 18:57:43 +0900
+Message-ID: <1377770268-14014-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.3.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <521E318C.7040401@gmx.de>
-References: <52075E01.7030506@gmx.de>
-	<20130812143640.GF4596@quack.suse.cz>
-	<20130813215313.GH17781@fieldses.org>
-	<20130827180655.GE14809@fieldses.org>
-	<521E318C.7040401@gmx.de>
-Date: Thu, 29 Aug 2013 11:57:45 +0200
-Message-ID: <CAFLxGvyK5+nB9TgW1uPho9KGwQrWQHx=wEpj+o-mZcN92bWAOg@mail.gmail.com>
-Subject: Re: [uml-devel] Issues with a rather unusual configured NFS server
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 7:21 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> On 08/27/2013 08:06 PM, J. Bruce Fields wrote:
->> On Tue, Aug 13, 2013 at 05:53:14PM -0400, bfields wrote:
->>> On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
->>>> On Sun 11-08-13 11:48:49, Toralf Förster wrote:
->>>>> so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
->>>>> - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
->>>>>
->>>>> It can re reproduced, if
->>>>>    - the NFS share is an EXT3 or EXT4 directory
->>>>>    - and it is created at file located at tempfs and mounted via loop device
->>>>>    - and the NFS server is forced to umount the NFS share
->>>>>    - and the server forced to restart the NSF service afterwards
->>>>>    - and trinity is used
->>>>>
->>>>> I could find a scenario for an automated bisect. 2 times it brought this commit
->>>>> commit 68a3396178e6688ad7367202cdf0af8ed03c8727
->>>>> Author: J. Bruce Fields <bfields@redhat.com>
->>>>> Date:   Thu Mar 21 11:21:50 2013 -0400
->>>>>
->>>>>     nfsd4: shut down more of delegation earlier
->>>
->>> Thanks for the report.  I think I see the problem--after this commit
->>> nfs4_set_delegation() failures result in nfs4_put_delegation being
->>> called, but nfs4_put_delegation doesn't free the nfs4_file that has
->>> already been set by alloc_init_deleg().
->>>
->>> Let me think about how to fix that....
->>
->> Sorry for the slow response--can you check whether this fixes the
->> problem?
->>
-> Yes.
->
-> With the attached patch the problem can't be reproduced any longer with
-> the prepared test case and current git kernels.
+New version revised according to comments received for v3. Hopefully
+it will be good enough to be merged.
 
-BTW: Is nobody else fuzz testing NFS?
-Or are these bugs just more likely to hit on UML?
-This is not the first NFS issue found by Toralf using UML and Trinity.
+Changes since v3:
+- Added of_register_trusted_foundations() function to avoid duplicate
+  device tree parsing code in arch files
+- Added ability to initialize Trusted Foundations through platform data
+- Changed TF version number to integers
+- Refactored Kconfig menu for more clarity
+
+A few requests could not reasonably be implemented:
+
+TF version probing at runtime (requested by Dave) seems impossible
+unfortunately. TF just does not provide an interface that allows such
+queries. In the downstream Tegra kernel the TF version is
+even hardcoded into the kernel.
+
+Use of a firmware_op instance for non-firmware behavior (requested by
+Stephen) would make it necessary to have a dedicated non-firmware
+registration function that takes implementations from various different
+files and would require these implementations to be exported. Checking
+the return code of call_firmware_op() at call sites seems to be easier
+to handle and is how current users of firmware_ops do.
+
+Alexandre Courbot (5):
+  ARM: add basic Trusted Foundations support
+  ARM: tegra: add support for Trusted Foundations
+  ARM: tegra: split setting of CPU reset handler
+  ARM: tegra: set CPU reset handler with firmware op
+  ARM: tegra: support Trusted Foundations by default
+
+ .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
+ Documentation/devicetree/bindings/arm/tegra.txt    |  5 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/Kconfig                                   |  2 +
+ arch/arm/Makefile                                  |  1 +
+ arch/arm/configs/tegra_defconfig                   |  1 +
+ arch/arm/firmware/Kconfig                          | 26 +++++++
+ arch/arm/firmware/Makefile                         |  1 +
+ arch/arm/firmware/trusted_foundations.c            | 83 ++++++++++++++++++++++
+ arch/arm/include/asm/trusted_foundations.h         | 48 +++++++++++++
+ arch/arm/mach-tegra/Kconfig                        |  1 +
+ arch/arm/mach-tegra/common.c                       |  2 +
+ arch/arm/mach-tegra/reset.c                        | 40 ++++++++---
+ 13 files changed, 217 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+ create mode 100644 arch/arm/firmware/Kconfig
+ create mode 100644 arch/arm/firmware/Makefile
+ create mode 100644 arch/arm/firmware/trusted_foundations.c
+ create mode 100644 arch/arm/include/asm/trusted_foundations.h
 
 -- 
-Thanks,
-//richard
+1.8.4
+
