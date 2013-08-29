@@ -1,102 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab3H2JtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:49:00 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49676 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab3H2Js6 (ORCPT
+	id S1756148Ab3H2Juc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:50:32 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40192 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab3H2Jua convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:48:58 -0400
+	Thu, 29 Aug 2013 05:50:30 -0400
+Date: Thu, 29 Aug 2013 10:50:23 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support
+ other architectures
+Message-ID: <20130829095023.GB2878@e102568-lin.cambridge.arm.com>
+References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <2032060.4bgTKOdEX2@flatron>
+ <1376777376.25016.11.camel@pasglop>
+ <20130819101922.GI3719@e106331-lin.cambridge.arm.com>
+ <5212177C.8000709@gmail.com>
+ <521223FA.5050903@arm.com>
+ <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
+ <20130828194638.AB78E3E0A6F@localhost>
 MIME-Version: 1.0
-X-Originating-IP: [95.21.192.235]
-In-Reply-To: <51E4EEEA.4000208@cypress.com>
-References: <1373838082-12372-1-git-send-email-javier@dowhile0.org>
-	<1373838082-12372-2-git-send-email-javier@dowhile0.org>
-	<51E4EEEA.4000208@cypress.com>
-Date: Thu, 29 Aug 2013 11:48:57 +0200
-Message-ID: <CABxcv=mOasXUvC301Dn3fGQqo2ipk_oYEaU8ht1VCJiz2bC8Sw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] MAINTAINERS: Change maintainer for cyttsp driver
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Ferruh Yigit <fery@cypress.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, ttdrivers@cypress.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130828194638.AB78E3E0A6F@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Aug 2013 09:50:24.0478 (UTC) FILETIME=[2EF25FE0:01CEA49D]
+X-MC-Unique: 113082910502708401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 8:57 AM, Ferruh Yigit <fery@cypress.com> wrote:
->
-> On 07/15/2013 12:41 AM, Javier Martinez Canillas wrote:
->>
->> I haven't had time to work on this driver for a long time and
->> Ferruh has been doing a great job making it more generic,
->> adding support for new hardware and providing bug fixes.
->
-> Thank you a lot for your work on cyttsp drivers,
-> we would like to see your support back whenever you have time again.
-> Your expertise/know-how on issue is valuable.
->
->
->>
->> So, let's make MAINTAINERS reflect reality and add him as the
->> cyttsp maintainer instead of me.
->>
->> Also, since Ferruh works for Cypress, we may change the driver
->> status from Maintained to Supported.
->>
->> Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
->> ---
->>
->> Ferruh, please send your ack if you are willing to take over
->> maintainance of this driver.
->
->
-> Acked-by: Ferruh Yigit <fery@cypress.com>
->
->
->>
->> Also, please confirm that you have been working on behalf of
->> Cypress instead of doing it on your free time. Otherwise we
->> should keep the driver status to maintained instead supported.
->
-> Right, I am a Cypress employee and working on TrueTouch drivers.
->
->>
->> Thanks a lot and best regards,
->> Javier
->>
->>   MAINTAINERS |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 9d771d9..4ba996c 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -2458,9 +2458,9 @@ S:        Maintained
->>   F:    drivers/media/common/cypress_firmware*
->>     CYTTSP TOUCHSCREEN DRIVER
->> -M:     Javier Martinez Canillas <javier@dowhile0.org>
->> +M:     Ferruh Yigit <fery@cypress.com>
->>   L:    linux-input@vger.kernel.org
->> -S:     Maintained
->> +S:     Supported
->>   F:    drivers/input/touchscreen/cyttsp*
->>   F:    include/linux/input/cyttsp.h
->>
->
->
->
-> --
->
-> Regards,
-> ferruh
->
+On Wed, Aug 28, 2013 at 08:46:38PM +0100, Grant Likely wrote:
+> On Thu, 22 Aug 2013 14:59:30 +0100, Mark Rutland <mark.rutland@arm.com> wrote:
+> > On Mon, Aug 19, 2013 at 02:56:10PM +0100, Sudeep KarkadaNagesha wrote:
+> > > On 19/08/13 14:02, Rob Herring wrote:
+> > > > On 08/19/2013 05:19 AM, Mark Rutland wrote:
+> > > >> On Sat, Aug 17, 2013 at 11:09:36PM +0100, Benjamin Herrenschmidt wrote:
+> > > >>> On Sat, 2013-08-17 at 12:50 +0200, Tomasz Figa wrote:
+> > > >>>> I wonder how would this handle uniprocessor ARM (pre-v7) cores, for
+> > > >>>> which 
+> > > >>>> the updated bindings[1] define #address-cells = <0> and so no reg 
+> > > >>>> property.
+> > > >>>>
+> > > >>>> [1] - http://thread.gmane.org/gmane.linux.ports.arm.kernel/260795
+> > > >>>
+> > > >>> Why did you do that in the binding ? That sounds like looking to create
+> > > >>> problems ... 
+> > > >>>
+> > > >>> Traditionally, UP setups just used "0" as the "reg" property on other
+> > > >>> architectures, why do differently ?
+> > > >>
+> > > >> The decision was taken because we defined our reg property to refer to
+> > > >> the MPIDR register's Aff{2,1,0} bitfields, and on UP cores before v7
+> > > >> there's no MPIDR register at all. Given there can only be a single CPU
+> > > >> in that case, describing a register that wasn't present didn't seem
+> > > >> necessary or helpful.
+> > > > 
+> > > > What exactly reg represents is up to the binding definition, but it
+> > > > still should be present IMO. I don't see any issue with it being
+> > > > different for pre-v7.
+> > > > 
+> > > Yes it's better to have 'reg' with value 0 than not having it.
+> > > Otherwise this generic of_get_cpu_node implementation would need some
+> > > _hack_ to handle that case.
+> > 
+> > I'm not sure that having some code to handle a difference in standard
+> > between two architectures is a hack. If anything, I'd argue encoding a
+> > reg of 0 that corresponds to a nonexistent MPIDR value (given that's
+> > what the reg property is defined to map to on ARM) is more of a hack ;)
+> > 
+> > I'm not averse to having a reg value of 0 for this case, but given that
+> > there are existing devicetrees without it, requiring a reg property will
+> > break compatibility with them.
+> 
+> Then special cases those device trees, but you changing existing
+> convention really needs to be avoided. The referenced documentation
+> change is brand new, so we're not stuck with it.
 
-Hi Dmitry and Henrik,
+I have no problem with changing the bindings and forcing:
 
-Any comments about this patch? It was sent a couple of months ago...
+#address-cells = <1>;
+reg = <0>;
 
-Thanks a lot and best regards,
-Javier
+for UP predating v7, my big worry is related to in-kernel dts that we
+already patched to follow the #address-cells = <0> rule (and we had to
+do it since we got asked that question multiple times on the public
+lists).
+
+What do you mean by "special case those device trees" ? I have not
+planned to patch them again, unless we really consider that a necessary
+evil.
+
+Thanks,
+Lorenzo
+
