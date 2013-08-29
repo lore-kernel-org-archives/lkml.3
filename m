@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3H2Cyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:54:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65391 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492Ab3H2Cyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:54:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,980,1367996400"; 
-   d="scan'208";a="370150173"
-Message-ID: <1377744875.1643.80.camel@empanada>
-Subject: Re: [PATCH v7 00/10] tracing: trace event triggers (repost)
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Date: Wed, 28 Aug 2013 21:54:35 -0500
-In-Reply-To: <20130828155127.5ca1975a@gandalf.local.home>
-References: <cover.1377631572.git.tom.zanussi@linux.intel.com>
-	 <20130828155127.5ca1975a@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+	id S1755656Ab3H2Czy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:55:54 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41617 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3H2Czx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 22:55:53 -0400
+Message-ID: <521EB7FB.6010004@huawei.com>
+Date: Thu, 29 Aug 2013 10:54:51 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <balbi@ti.com>, <stern@rowland.harvard.edu>,
+        USB <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] usb: r8a66597-hcd: use platform_{get,set}_drvdata()
+References: <521C5EEE.1080505@huawei.com> <20130828043607.GA21756@kroah.com>
+In-Reply-To: <20130828043607.GA21756@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-28 at 15:51 -0400, Steven Rostedt wrote:
-> On Tue, 27 Aug 2013 14:40:12 -0500
-> Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
->  
-> > Tom Zanussi (10):
-> >   tracing: Add support for SOFT_DISABLE to syscall events
-> >   tracing: add basic event trigger framework
-> >   tracing: add 'traceon' and 'traceoff' event trigger commands
-> >   tracing: add 'snapshot' event trigger command
-> >   tracing: add 'stacktrace' event trigger command
-> >   tracing: add 'enable_event' and 'disable_event' event trigger
-> >     commands
-> >   tracing: add and use generic set_trigger_filter() implementation
-> >   tracing: update event filters for multibuffer
-> >   tracing: add documentation for trace event triggers
-> >   tracing: make register/unregister_ftrace_command __init
+On 2013/8/28 12:36, Greg KH wrote:
+> On Tue, Aug 27, 2013 at 04:10:22PM +0800, Libo Chen wrote:
+>>
+>> Use the wrapper functions for getting and setting the driver data using
+>> platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+>> so we can directly pass a struct platform_device.
+>>
+>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+>> ---
+>>  drivers/usb/host/r8a66597-hcd.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> In your next series, can you please fix the subjects. The lines should
-> start with a capital letter. You did it correctly on your first patch,
-> but failed to do it for the others.
+> This patch doesn't apply to my tree :(
+
+Hi Greg,
+
+This patch based on mainline.
+Do you mean this patch got a conflicted in "git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git"
+
+I need to rebase on "usb.git"?
+
+
 > 
-> Thanks!
 > 
-
-Yeah, will do, and thanks for the review..
-
-Tom
-
-> -- Steve
 > 
 
 
