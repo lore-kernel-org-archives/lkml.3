@@ -1,134 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab3H2KEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:04:38 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:47699 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab3H2KEg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:04:36 -0400
-Date: Thu, 29 Aug 2013 12:04:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-Message-ID: <20130829100431.GB29672@gmail.com>
-References: <1377701977-2085-1-git-send-email-acme@infradead.org>
+	id S1756123Ab3H2KEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:04:48 -0400
+Received: from ares07.inai.de ([5.9.24.206]:39367 "EHLO ares07.inai.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756065Ab3H2KEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 06:04:46 -0400
+Date: Thu, 29 Aug 2013 12:04:43 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: fixdep ought to be compiled with -D_FILE_OFFSET_BITS
+Message-ID: <alpine.LSU.2.10.9.1308291200240.15586@nerf07.vanv.qr>
+User-Agent: Alpine 2.10.9 (LSU 9 2013-05-29)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377701977-2085-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Because fixdep is compiled without -D_FILE_OFFSET_BITS=64,
+a 32-bit fixdep (in a chroot build root, for example) may fail to run
+on a 64-bit host system if any file has an inode larger than 2^32,
+which can easily happen (in my case, on xfs):
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling, another batch, more to come soon,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 5ec4c599a52362896c3e7c6a31ba6145dca9c6f5:
-> 
->   perf: Do not compute time values unnecessarily (2013-08-16 17:55:52 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 456da532a5fb04f8a79622df7dd49e84e04f31a8:
-> 
->   tools lib traceevent: Fixup jobserver setup (2013-08-27 11:05:55 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Don't install scripting files files when perl/python support is disabled.
-> 
-> . Support ! in -e expressions in 'perf trace', to filter a list of syscalls.
-> 
-> . Add --verbose and -o/--output options to 'perf trace'.
-> 
-> . Introduce better formatting of syscall arguments in 'perf trace',
->   including so far beautifiers for mmap, madvise, syscall return
->   values.
-> 
-> . Fixup jobserver setup in libtraceevent makefile.
-> 
-> . Debug improvements from Adrian Hunter.
-> 
-> . Try to increase the file descriptor limits on EMFILE, from Andi Kleen.
-> 
-> . Remove unused force option in 'perf kvm', from David Ahern.
-> 
-> . Make 'perf trace' command line arguments consistent with 'perf record',
->   from David Ahern.
-> 
-> . Fix correlation of samples coming after PERF_RECORD_EXIT event, from
->   David Ahern.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (3):
->       perf tools: Re-implement debug print function for linking python/perf.so
->       perf tools: Add debug prints
->       perf tools: Add pid to struct thread
-> 
-> Andi Kleen (1):
->       perf tools: Try to increase the file descriptor limits on EMFILE
-> 
-> Arnaldo Carvalho de Melo (14):
->       perf trace: Implement -o/--output filename
->       perf tools: Don't install scripting files files when disabled
->       perf trace: Support ! in -e expressions
->       perf trace: Add --verbose option
->       perf trace: Hide sys_exit messages about syscall id = -1
->       perf trace: Introduce syscall arg formatters
->       perf trace: Simplify sys_exit return printing
->       perf trace: Allow printing syscall return values in hex
->       perf trace: Add aliases to remaining syscalls of the sys_enter_newfoo
->       perf trace: Allow overiding the formatting of syscall fields
->       perf trace: Add beautifier for mmap prot parm
->       perf trace: Add beautifier for mmap flags parm
->       perf trace: Add beautifier for madvise behaviour/advice parm
->       tools lib traceevent: Fixup jobserver setup
-> 
-> David Ahern (3):
->       perf kvm: Remove force option to cmd_record
->       perf trace: Make command line arguments consistent with perf-record
->       perf tools: Sample after exit loses thread correlation
-> 
->  tools/lib/traceevent/Makefile           |   2 +-
->  tools/perf/Documentation/perf-trace.txt |  16 ++
->  tools/perf/Makefile                     |   6 +-
->  tools/perf/builtin-kvm.c                |   1 -
->  tools/perf/builtin-trace.c              | 379 ++++++++++++++++++++++++++------
->  tools/perf/util/evlist.c                |   3 +
->  tools/perf/util/evsel.c                 |  93 ++++++++
->  tools/perf/util/machine.c               |  50 +++--
->  tools/perf/util/python.c                |  20 ++
->  tools/perf/util/thread.c                |   3 +-
->  tools/perf/util/thread.h                |   8 +-
->  11 files changed, 488 insertions(+), 93 deletions(-)
 
-Pulled, thanks a lot Arnaldo!
+[ares07:~/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj]
+$ make silentoldconfig -C $PWD/../linux-3.10 O=$PWD V=1
 
-	Ingo
+make: Entering directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
+make -C /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj \
+KBUILD_SRC=/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10 \
+KBUILD_EXTMOD="" -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/Makefile \
+silentoldconfig
+make -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/Makefile.build obj=scripts/basic
+  gcc -Wp,-MD,scripts/basic/.fixdep.d -Iscripts/basic -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -o scripts/basic/fixdep /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/basic/fixdep.c  
+fixdep: error fstat'ing depfile: scripts/basic/.fixdep.d: Value too large for defined data type
+make[2]: *** [scripts/basic/fixdep] Error 2
+make[1]: *** [scripts_basic] Error 2
+make: *** [sub-make] Error 2
+make: Leaving directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
