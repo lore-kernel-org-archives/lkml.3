@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab3H2IlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 04:41:15 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:35524 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab3H2IlN (ORCPT
+	id S1755766Ab3H2Iyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 04:54:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38280 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab3H2Iyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 04:41:13 -0400
-X-IronPort-AV: E=Sophos;i="4.89,981,1367971200"; 
-   d="scan'208";a="8215205"
-Message-ID: <1377765650.11455.7.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH v4 10/10] xen/arm,arm64: enable SWIOTLB_XEN
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>
-Date: Thu, 29 Aug 2013 09:40:50 +0100
-In-Reply-To: <alpine.DEB.2.02.1308282104000.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308151200580.4470@kaball.uk.xensource.com>
-	  <1376565054-24153-10-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1376600325.9273.223.camel@hastur.hellion.org.uk>
-	 <alpine.DEB.2.02.1308282104000.6397@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+	Thu, 29 Aug 2013 04:54:33 -0400
+From: Raviv Shvili <rshvili@codeaurora.org>
+To: scsi-misc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Raviv Shvili <rshvili@codeaurora.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RESEND/PATCH 1/2] scsi: ufs: fix the setting interrupt aggregation counter
+Date: Thu, 29 Aug 2013 11:54:11 +0300
+Message-Id: <1377766453-5188-1-git-send-email-rshvili@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-28 at 21:07 +0100, Stefano Stabellini wrote:
-> On Thu, 15 Aug 2013, Ian Campbell wrote:
-> > On Thu, 2013-08-15 at 12:10 +0100, Stefano Stabellini wrote:
-> > > At the moment always rely on swiotlb-xen, but when Xen starts supporting
-> > > hardware IOMMUs we'll be able to avoid it conditionally on the presence
-> > > of an IOMMU on the platform.
-> > 
-> > Do we have any idea how we are going to do this?
-> > 
-> > It's extra complicated if you consider that on some systems on some of
-> > the devices are behind an IOMMU :-/
-> > 
-> > I wonder if we can enumerate which devices have an IOMMU at boot time
-> > and force a ludicrous dma mask (such as 0) if one isn't present in order
-> > to force us to always take the exchange_and_pin path?
-> 
-> We don't need to worry about how to specify which devices need to go via
-> the swiotlb internally, because we have our own arm specific
-> dma_map_ops. At the moment they are just implemented using the
-> swiotlb-xen functions, but we could easily provide wrappers that check
-> our own internal whitelist/blacklist and go via swiotlb-xen only in
-> those cases.
+IACTH(Interrupt aggregation counter threshold) value is allowed
+up to 0x1F and current setting value is the maximum.
+This value is related with NUTRS(max:0x20) of HCI's capability.
+Considering HCI controller doesn't support the maximum, IACTH
+setting should be adjusted with possible value.
+For that, existing 'ufshcd_config_int_aggr' is split into two part
+[reset, configure].
 
-OK, but how do we decide which devices go on those lists? We need some
-sort of indication from the hypervisor, don't we? Only Xen knows if it
-has an iommu it can use because the iommu must necessarily be hidden
-from Linux.
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-Ian.
 
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index d552cb1..648ecb0 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -81,6 +81,19 @@
+ /* Expose the flag value from utp_upiu_query.value */
+ #define MASK_QUERY_UPIU_FLAG_LOC 0xFF
+ 
++#define ufshcd_toggle_vreg(_dev, _vreg, _on)				\
++	({                                                              \
++		int _ret;                                               \
++		if (_on)                                                \
++			_ret = ufshcd_enable_vreg(_dev, _vreg);         \
++		else                                                    \
++			_ret = ufshcd_disable_vreg(_dev, _vreg);        \
++		_ret;                                                   \
++	})
++
++/* Interrupt aggregation default timeout, unit: 40us */
++#define INT_AGGR_DEF_TO	0x02
++
+ enum {
+ 	UFSHCD_MAX_CHANNEL	= 0,
+ 	UFSHCD_MAX_ID		= 1,
+@@ -116,12 +129,6 @@ enum {
+ 	UFSHCD_INT_CLEAR,
+ };
+ 
+-/* Interrupt aggregation options */
+-enum {
+-	INT_AGGR_RESET,
+-	INT_AGGR_CONFIG,
+-};
+-
+ #define ufshcd_set_eh_in_progress(h) \
+ 	(h->eh_flags |= UFSHCD_EH_IN_PROGRESS)
+ #define ufshcd_eh_in_progress(h) \
+@@ -349,30 +356,30 @@ static inline bool ufshcd_is_exception_event(struct utp_upiu_rsp *ucd_rsp_ptr)
+ }
+ 
+ /**
+- * ufshcd_config_int_aggr - Configure interrupt aggregation values.
+- *		Currently there is no use case where we want to configure
+- *		interrupt aggregation dynamically. So to configure interrupt
+- *		aggregation, #define INT_AGGR_COUNTER_THRESHOLD_VALUE and
+- *		INT_AGGR_TIMEOUT_VALUE are used.
++ * ufshcd_reset_intr_aggr - Reset interrupt aggregation values.
+  * @hba: per adapter instance
+- * @option: Interrupt aggregation option
+  */
+ static inline void
+-ufshcd_config_int_aggr(struct ufs_hba *hba, int option)
++ufshcd_reset_intr_aggr(struct ufs_hba *hba)
+ {
+-	switch (option) {
+-	case INT_AGGR_RESET:
+-		ufshcd_writel(hba, INT_AGGR_ENABLE |
+-			      INT_AGGR_COUNTER_AND_TIMER_RESET,
+-			      REG_UTP_TRANSFER_REQ_INT_AGG_CONTROL);
+-		break;
+-	case INT_AGGR_CONFIG:
+-		ufshcd_writel(hba, INT_AGGR_ENABLE | INT_AGGR_PARAM_WRITE |
+-			      INT_AGGR_COUNTER_THRESHOLD_VALUE |
+-			      INT_AGGR_TIMEOUT_VALUE,
+-			      REG_UTP_TRANSFER_REQ_INT_AGG_CONTROL);
+-		break;
+-	}
++	ufshcd_writel(hba, INT_AGGR_ENABLE |
++		      INT_AGGR_COUNTER_AND_TIMER_RESET,
++		      REG_UTP_TRANSFER_REQ_INT_AGG_CONTROL);
++}
++
++/**
++ * ufshcd_config_intr_aggr - Configure interrupt aggregation values.
++ * @hba: per adapter instance
++ * @cnt: Interrupt aggregation counter threshold
++ * @tmout: Interrupt aggregation timeout value
++ */
++static inline void
++ufshcd_config_intr_aggr(struct ufs_hba *hba, u8 cnt, u8 tmout)
++{
++	ufshcd_writel(hba, INT_AGGR_ENABLE | INT_AGGR_PARAM_WRITE |
++		      INT_AGGR_COUNTER_THLD_VAL(cnt) |
++		      INT_AGGR_TIMEOUT_VAL(tmout),
++		      REG_UTP_TRANSFER_REQ_INT_AGG_CONTROL);
+ }
+ 
+ /**
+@@ -1523,7 +1530,7 @@ static int ufshcd_make_hba_operational(struct ufs_hba *hba)
+ 	ufshcd_enable_intr(hba, UFSHCD_ENABLE_INTRS);
+ 
+ 	/* Configure interrupt aggregation */
+-	ufshcd_config_int_aggr(hba, INT_AGGR_CONFIG);
++	ufshcd_config_intr_aggr(hba, hba->nutrs - 1, INT_AGGR_DEF_TO);
+ 
+ 	/* Configure UTRL and UTMRL base address registers */
+ 	ufshcd_writel(hba, lower_32_bits(hba->utrdl_dma_addr),
+@@ -1971,7 +1978,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+ 	 * false interrupt if device completes another request after resetting
+ 	 * aggregation and before reading the DB.
+ 	 */
+-	ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
++	ufshcd_reset_intr_aggr(hba);
+ 
+ 	tr_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+ 	completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
+diff --git a/drivers/scsi/ufs/ufshci.h b/drivers/scsi/ufs/ufshci.h
+index f1e1b74..739ae3a 100644
+--- a/drivers/scsi/ufs/ufshci.h
++++ b/drivers/scsi/ufs/ufshci.h
+@@ -226,8 +226,8 @@ enum {
+ 
+ #define MASK_UIC_COMMAND_RESULT			0xFF
+ 
+-#define INT_AGGR_COUNTER_THRESHOLD_VALUE	(0x1F << 8)
+-#define INT_AGGR_TIMEOUT_VALUE			(0x02)
++#define INT_AGGR_COUNTER_THLD_VAL(c)	(((c) & 0x1F) << 8)
++#define INT_AGGR_TIMEOUT_VAL(t)		(((t) & 0xFF) << 0)
+ 
+ /* Interrupt disable masks */
+ enum {
+--
