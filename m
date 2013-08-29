@@ -1,121 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3H2VIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:08:13 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42995 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625Ab3H2VIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:08:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: [PATCH 3/3] PM / hibernate / memory hotplug: Rework mutual exclusion
-Date: Thu, 29 Aug 2013 23:18:49 +0200
-Message-ID: <1562298.ZjRvhqQzT7@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <9589253.Co8jZpnWdd@vostro.rjw.lan>
-References: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+	id S1757395Ab3H2VJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:09:42 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:59282 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3H2VJh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 17:09:37 -0400
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "majianpeng@gmail.com" <majianpeng@gmail.com>
+Subject: Re: [PATCH] elevator: Fix a race in elevator switching and md
+ device initialization
+Thread-Topic: [PATCH] elevator: Fix a race in elevator switching and md
+ device initialization
+Thread-Index: AQHOomKEe8NHX1i8QUyRMlMbtDjKDpms6y8A///IHYA=
+Date: Thu, 29 Aug 2013 21:09:24 +0000
+Message-ID: <CE452851.7662%Tomoki.Sekiyama@hds.com>
+In-Reply-To: <20130829202924.GD6171@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <5621B555F09B8843A41CE65194A931A7@hds.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-08-29_07:2013-08-29,2013-08-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1308290120
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 8/29/13 16:29 , "Vivek Goyal" <vgoyal@redhat.com> wrote:
 
-Since all of the memory hotplug operations have to be carried out
-under device_hotplug_lock, they won't need to acquire pm_mutex if
-device_hotplug_lock is held around hibernation.
+>On Mon, Aug 26, 2013 at 09:45:15AM -0400, Tomoki Sekiyama wrote:
+>> The soft lockup below happes at the boot time of the system using dm
+>> multipath and automated elevator switching udev rules.
+>> 
+>> [  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
+>> [  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>]
+>>lock_timer_base.isra.35+0x1d/0x50
+>> ...
+>> [  356.127001] Call Trace:
+>> [  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
+>> [  356.127001]  [<ffffffff8118b08a>] ?
+>>kmem_cache_alloc_node_trace+0x20a/0x230
+>> [  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
+>> [  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
+>> [  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
+>> [  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
+>> [  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
+>> [  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
+>> [  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
+>> [  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
+>> [  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
+>> [  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
+>> 
+>> This is caused by a race between md device initialization and sysfs knob
+>> to switch the scheduler.
+>
+>I think we can also improve changelog a bit. So IIUC, softlockup
+>happens because one thread called del_timer_sync() on a timer which
+>was not even initilized. Timer initialization should have happened
+>in cfq_init_queue() using init_timer(). But before init_timer()
+>could be called, elevator switch path called del_timer_sync().
+>
+>del_timer_sync() in turn calls lock_timer_base() which will loop
+>infinitely if timer->base == NULL. And because we have not called
+>init_timer() yet, I am assuming timer->base is null?
+>
+>Is this right analysis? If yes, then this patch should most likely
+>fix following bz.
+>
+>https://bugzilla.redhat.com/show_bug.cgi?id=902012
 
-For this reason, make the hibernation code acquire
-device_hotplug_lock after freezing user space processes and
-release it before thawing them.  At the same tim drop the
-lock_system_sleep() and unlock_system_sleep() calls from
-lock_memory_hotplug() and unlock_memory_hotplug(), respectively.
+I think your analysis is correct. If del_timer_sync() is called right after
+cfqd is allocated (with __GFP_ZERO), timer->base == NULL. Otherwise it may
+hit NULL pointer.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- kernel/power/hibernate.c |    4 ++++
- kernel/power/user.c      |    2 ++
- mm/memory_hotplug.c      |    4 ----
- 3 files changed, 6 insertions(+), 4 deletions(-)
+The other reason of NULL timer->base is that the timer is migrating in
+__mod_timer(), but then the it must be set to non-NULL in a short time.
 
-Index: linux-pm/kernel/power/hibernate.c
-===================================================================
---- linux-pm.orig/kernel/power/hibernate.c
-+++ linux-pm/kernel/power/hibernate.c
-@@ -652,6 +652,7 @@ int hibernate(void)
- 	if (error)
- 		goto Exit;
- 
-+	lock_device_hotplug();
- 	/* Allocate memory management structures */
- 	error = create_basic_memory_bitmaps();
- 	if (error)
-@@ -685,6 +686,7 @@ int hibernate(void)
-  Free_bitmaps:
- 	free_basic_memory_bitmaps();
-  Thaw:
-+	unlock_device_hotplug();
- 	thaw_processes();
- 
- 	/* Don't bother checking whether freezer_test_done is true */
-@@ -814,6 +816,7 @@ static int software_resume(void)
- 
- 	pr_debug("PM: Loading hibernation image.\n");
- 
-+	lock_device_hotplug();
- 	error = create_basic_memory_bitmaps();
- 	if (error)
- 		goto Thaw;
-@@ -827,6 +830,7 @@ static int software_resume(void)
- 	swsusp_free();
- 	free_basic_memory_bitmaps();
-  Thaw:
-+	unlock_device_hotplug();
- 	thaw_processes();
-  Finish:
- 	pm_notifier_call_chain(PM_POST_RESTORE);
-Index: linux-pm/kernel/power/user.c
-===================================================================
---- linux-pm.orig/kernel/power/user.c
-+++ linux-pm/kernel/power/user.c
-@@ -201,6 +201,7 @@ static long snapshot_ioctl(struct file *
- 	if (!mutex_trylock(&pm_mutex))
- 		return -EBUSY;
- 
-+	lock_device_hotplug();
- 	data = filp->private_data;
- 
- 	switch (cmd) {
-@@ -373,6 +374,7 @@ static long snapshot_ioctl(struct file *
- 
- 	}
- 
-+	unlock_device_hotplug();
- 	mutex_unlock(&pm_mutex);
- 
- 	return error;
-Index: linux-pm/mm/memory_hotplug.c
-===================================================================
---- linux-pm.orig/mm/memory_hotplug.c
-+++ linux-pm/mm/memory_hotplug.c
-@@ -51,14 +51,10 @@ DEFINE_MUTEX(mem_hotplug_mutex);
- void lock_memory_hotplug(void)
- {
- 	mutex_lock(&mem_hotplug_mutex);
--
--	/* for exclusive hibernation if CONFIG_HIBERNATION=y */
--	lock_system_sleep();
- }
- 
- void unlock_memory_hotplug(void)
- {
--	unlock_system_sleep();
- 	mutex_unlock(&mem_hotplug_mutex);
- }
- 
+Maybe __mod_timer should use some illegal pointer value (like LIST_POISON1)
+instead of NULL to represent the timer is migrating....
+Actually, when I changed __mod_timer to timer_set_base(timer, 0xdeadbeaf),
+made lock_timer_base wait while base == 0xdeadbeaf, and
+added BUG_ON(!timer->base) to lock_timer_base, my system hits the BUG.
+
+>I had concluded that some how timer->base is NULL but could not understand
+>how come timer base is NULL when we have called init_timer() on it.
+>
+>Thanks
+>Vivek
+
+Thanks,
+Tomoki
 
