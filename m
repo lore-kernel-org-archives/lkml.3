@@ -1,159 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab3H2J2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:28:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48080 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab3H2J2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:28:39 -0400
-Date: Thu, 29 Aug 2013 10:28:29 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v3
-Message-ID: <20130829092828.GB22421@suse.de>
-References: <20120307180852.GE17697@suse.de>
- <20130823130332.GY31370@twins.programming.kicks-ass.net>
- <20130823181546.GA31370@twins.programming.kicks-ass.net>
+	id S1755882Ab3H2Jaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:30:52 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:50622 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab3H2Jau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 05:30:50 -0400
+Date: Thu, 29 Aug 2013 12:29:35 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] radeon kms: fix uninitialised hotplug work usage in
+ r100_irq_process()
+Message-ID: <20130829092935.GB2235@swordfish>
+References: <alpine.SOC.1.00.1307310017380.19288@math.ut.ee>
+ <alpine.SOC.1.00.1308191158220.19642@math.ut.ee>
+ <alpine.SOC.1.00.1308291017030.2723@math.ut.ee>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130823181546.GA31370@twins.programming.kicks-ass.net>
+In-Reply-To: <alpine.SOC.1.00.1308291017030.2723@math.ut.ee>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 08:15:46PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 23, 2013 at 03:03:32PM +0200, Peter Zijlstra wrote:
-> > So I think this patch is broken (still).
+Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
+flush uninitialized hotplug work) moved work initialisation phase to
+the last step of radeon_irq_kms_init(). Meelis Roos reported that this
+causes problems on his machine because drm_irq_install() uses hotplug
+work on r100.
 
-I am assuming the lack of complaints is that it is not a heavily executed
-path. I expect that you (and Rik) are hitting this as part of automatic
-NUMA balancing. Still a bug, just slightly less urgent if NUMA balancing
-is the reproduction case.
+hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
+-- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
+-- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
+   radeon_irq_kms_init()
 
-> > Suppose we have an
-> > INTERLEAVE mempol like 0x3 and change it to 0xc.
-> > 
-> > Original:	0x3
-> > Rebind Step 1:	0xf /* set bits */
-> > Rebind Step 2:	0xc /* clear bits */
-> > 
-> > Now look at what can happen with offset_il_node() when its ran
-> > concurrently with step 2:
-> > 
-> >   nnodes = nodes_weight(pol->v.nodes); /* observes 0xf and returns 4 */
-> > 
-> >   /* now we clear the actual bits */
-> >   
-> >   target = (unsigned int)off % nnodes; /* assume target >= 2 */
-> >   c = 0;
-> >   do {
-> >   	nid = next_node(nid, pol->v.nodes);
-> > 	c++;
-> >   } while (c <= target);
-> > 
-> >   /* here nid := MAX_NUMNODES */
-> > 
-> > 
-> > This nid is then blindly inserted into node_zonelist() which does an
-> > NODE_DATA() array access out of bounds and off we go.
-> > 
-> > This would suggest we put the whole seqcount thing inside
-> > offset_il_node().
-> 
-> Oh bloody grrr. Its not directly related at all, the patch in question
-> fixes a cpuset task_struct::mems_allowed problem while the above is a
-> mempolicy issue and of course the cpuset and mempolicy code are
-> completely bloody different :/
-> 
-> So I guess the quick and ugly solution is something like the below. 
-> 
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1762,19 +1762,21 @@ unsigned slab_node(void)
->  static unsigned offset_il_node(struct mempolicy *pol,
->  		struct vm_area_struct *vma, unsigned long off)
->  {
-> -	unsigned nnodes = nodes_weight(pol->v.nodes);
-> -	unsigned target;
-> -	int c;
-> -	int nid = -1;
-> +	unsigned nnodes, target;
-> +	int c, nid;
->  
-> +again:
-> +	nnodes = nodes_weight(pol->v.nodes);
->  	if (!nnodes)
->  		return numa_node_id();
-> +
->  	target = (unsigned int)off % nnodes;
-> -	c = 0;
-> -	do {
-> +	for (c = 0, nid = -1; c <= target; c++)
->  		nid = next_node(nid, pol->v.nodes);
-> -		c++;
-> -	} while (c <= target);
-> +
-> +	if (unlikely((unsigned)nid >= MAX_NUMNODES))
-> +		goto again;
-> +
+The latter one causes flush work on uninitialised hotplug work. Move
+work initialisation before drm_irq_install(), but keep existing agreement
+to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
+(successful radeon_irq_kms_init()) case.
 
-MAX_NUMNODES is unrelated to anything except that it might prevent a crash
-and even then nr_online_nodes is probably what you wanted and even that
-assumes the NUMA node numbering is contiguous. The real concern is whether
-the updated mask is an allowed target for the updated memory policy. If
-it's not then "nid" can be pointing off the deep end somewhere.  With this
-conversion to a for loop there is race after you check nnodes where target
-gets set to 0 and then return a nid of -1 which I suppose will just blow
-up differently but it's fixable.
+WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
+Call Trace:
+[<c12319b3>] ? dump_stack+0xa/0x13
+[<c1022600>] ? warn_slowpath_common+0x75/0x8a
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c103107b>] ? queue_work_on+0x30/0x40
+[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
+[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
+[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
+[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
+[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
+[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
+[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
+[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
+[<c118082e>] ? vga_client_register+0x39/0x40
+[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
+[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
+[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
+[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
+[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
+[<c112acf6>] ? pci_device_probe+0x4c/0x83
+[<c11846c7>] ? driver_probe_device+0x80/0x184
+[<c112a848>] ? pci_match_id+0x18/0x36
+[<c1184837>] ? __driver_attach+0x44/0x5f
+[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
+[<c118433e>] ? driver_attach+0x14/0x16
+[<c11847f3>] ? __device_attach+0x28/0x28
+[<c1184045>] ? bus_add_driver+0xd6/0x1bf
+[<c1184c22>] ? driver_register+0x78/0xcf
+[<f8ba8000>] ? 0xf8ba7fff
+[<c10003bf>] ? do_one_initcall+0x8b/0x121
+[<c101e668>] ? change_page_attr_clear+0x2e/0x33
+[<f8ba8000>] ? 0xf8ba7fff
+[<c101e689>] ? set_memory_ro+0x1c/0x20
+[<c104de94>] ? set_page_attributes+0x11/0x12
+[<c104f6e1>] ? load_module+0x12fa/0x17e8
+[<c107483b>] ? map_vm_area+0x22/0x31
+[<c104fc36>] ? SyS_init_module+0x67/0x7d
+[<c1234245>] ? sysenter_do_call+0x12/0x26
 
-This? Untested. Fixes implicit types while it's there. Note the use of
-first node and (c < target) to guarantee nid gets set and that the first
-potential node is still used as an interleave target.
+Reported-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 7431001..ae880c3 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1755,22 +1755,24 @@ unsigned slab_node(void)
- }
- 
- /* Do static interleaving for a VMA with known offset. */
--static unsigned offset_il_node(struct mempolicy *pol,
-+static unsigned int offset_il_node(struct mempolicy *pol,
- 		struct vm_area_struct *vma, unsigned long off)
- {
--	unsigned nnodes = nodes_weight(pol->v.nodes);
--	unsigned target;
--	int c;
--	int nid = -1;
-+	unsigned int nr_nodes, target;
-+	int i, nid;
- 
--	if (!nnodes)
-+again:
-+	nr_nodes = nodes_weight(pol->v.nodes);
-+	if (!nr_nodes)
- 		return numa_node_id();
--	target = (unsigned int)off % nnodes;
--	c = 0;
--	do {
-+	target = (unsigned int)off % nr_nodes;
-+	for (i = 0, nid = first_node(pol->v.nodes); i < target; i++)
- 		nid = next_node(nid, pol->v.nodes);
--		c++;
--	} while (c <= target);
+---
+
+ drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index 081886b..cc9e848 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -275,17 +275,19 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+ 			dev_info(rdev->dev, "radeon: using MSI.\n");
+ 		}
+ 	}
 +
-+	/* Policy nodemask can potentially update in parallel */
-+	if (unlikely(!node_isset(nid, pol->v.nodes)))
-+		goto again;
++	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
++	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
++	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
 +
- 	return nid;
- }
+ 	rdev->irq.installed = true;
+ 	r = drm_irq_install(rdev->ddev);
+ 	if (r) {
+ 		rdev->irq.installed = false;
++		flush_work(&rdev->hotplug_work);
+ 		return r;
+ 	}
  
+-	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+-	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+-	INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+-
+ 	DRM_INFO("radeon: irq initialized.\n");
+ 	return 0;
+ }
 
