@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab3H2RUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:20:22 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:42030 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab3H2RUU (ORCPT
+	id S1755593Ab3H2RUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:20:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61263 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435Ab3H2RUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:20:20 -0400
+	Thu, 29 Aug 2013 13:20:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH RFC v2 16/16] ARM: zynq: Don't call of_clk_init()
+Date: Thu, 29 Aug 2013 19:20:13 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308291537.54608.arnd@arndb.de> <89b68978-7eeb-43e1-a456-d864ed313da5@DB8EHSMHS026.ehs.local>
+In-Reply-To: <89b68978-7eeb-43e1-a456-d864ed313da5@DB8EHSMHS026.ehs.local>
 MIME-Version: 1.0
-In-Reply-To: <051069C10411E24D9749790C498526FA1BDE034D@SJEXCHMB12.corp.ad.broadcom.com>
-References: <20130829171704.7a7630dd19d19ccdb9aaf384@canb.auug.org.au>
-	<CACRpkdbHtjvY_VypnCQZNU2N1YqWtUv_grTK30A+tgEP3a0uwQ@mail.gmail.com>
-	<051069C10411E24D9749790C498526FA1BDE034D@SJEXCHMB12.corp.ad.broadcom.com>
-Date: Thu, 29 Aug 2013 19:20:19 +0200
-Message-ID: <CACRpkdY-4+CJpCwGsbpb7mo0zRevEmpmoyirxeB9FbU0sS=GsQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the pinctrl tree with Linus' tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308291920.13983.arnd@arndb.de>
+X-Provags-ID: V02:K0:RBq1/wY5zWvkpH5uDRy/sCX1ZVQAzI/zn0qcwNH8o2s
+ e1fovo2BcyiyzsCcWSOPZ6iq5Or49qeFPwndTd+oa2axvXO8cU
+ +7DX954oXAsyamSE5jKPEwUkg1fd+0u5HuY6NehyDpyrhdXpI2
+ 4kJxokpSwMigZw1cjWmSlFEpWvHj2bIrudAJ3U+JGYElBAFlZ/
+ ZV8DJ4roa4LfRxOsI9u6HVdC4iIqr0QGq779S2JvUXkiFVnY2n
+ LmobXkXEbGw9ELPYlDobp6KCmKWG/S2IWOHf0zYLNpTLPHfUzj
+ koB0oUNzQsOcV/8wEGSPpOT/I9ICHgHQwx7CL/FNrVHlkAHysD
+ 1/aqXTQi6pW6Xaalky+c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 5:24 PM, Sherman Yin <syin@broadcom.com> wrote:
+On Thursday 29 August 2013, Michal Simek wrote:
+> Is there any plan to remove all of them?
+> I expect that on almost all platforms it is a need to have at least one
+> early hook to be able to setup things.
 
-> Hmm, I fixed this the first time I ported over to LinusW's devel tree,
-> but when I rebased on Sunday, the spin lock commit seemed to be
-> reverted or gone.
+In an ideal world, we wouldn't need any, and on arm64 we don't plan to
+introduce callbacks in the first place. We don't put a lot of effort
+into eliminating all the ones from existing platforms in the near future,
+but but I do hope to have a situation where we don't use any callbacks
+for newly introduced 32-bit platforms soon, and remove a lot of the
+existing callbacks over time when we have the chance (like now for the
+clk init).
 
-My pinctrl devel branch was branched off of v3.11-rc1, and the
-spinlock changes were in some later -rc and I didn't merge
-them in until now, because I thought they were orthogonal.
-
-How wrong I was. So merged in -rc7 now and pushed, please
-check the end result or linux-next.
-
-> Note the following return in between the locking and unlocking -
-> need an unlock there?
->
->> +              case PIN_CONFIG_DRIVE_STRENGTH:
->> +                      strength = pinconf_to_config_argument(configs[i]);
->> +                      if (strength > 40)
->> +                              return -EINVAL;
-
-Argh. Send a patch with your reported-by tag...
-
-Yours,
-Linus Walleij
+	Arnd
