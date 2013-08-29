@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab3H2See (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:34:34 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:8808 "EHLO SMTP.CITRIX.COM"
+	id S1756695Ab3H2Sed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:34:33 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:26260 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756704Ab3H2Sc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756798Ab3H2Sc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Aug 2013 14:32:56 -0400
 X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
-   d="scan'208";a="48860316"
+   d="scan'208";a="48860321"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization earlier
-Date: Thu, 29 Aug 2013 19:32:26 +0100
-Message-ID: <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v5 06/13] xen: introduce XENMEM_exchange_and_pin and XENMEM_unpin
+Date: Thu, 29 Aug 2013 19:32:27 +0100
+Message-ID: <1377801154-29215-6-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
@@ -27,142 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move Xen initialization earlier, before any DMA requests can be made.
+XENMEM_exchange can't be used by autotranslate guests because of two
+severe limitations:
+
+- it does not copy back the mfns into the out field for autotranslate
+  guests;
+
+- it does not guarantee that the hypervisor won't change the p2m
+  mappings for the exchanged pages while the guest is using them. Xen
+  never promises to keep the p2m mapping stable for autotranslate guests
+  in general.  In practice it won't happen unless one uses uncommon
+  features like memory sharing or paging.
+
+To overcome these problems I am introducing two new hypercalls.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
-Changes in v3:
-- add missing __init in xen_early_init declaration.
----
- arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
- arch/arm/kernel/setup.c               |    2 ++
- arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
- arch/arm64/kernel/setup.c             |    2 ++
- 4 files changed, 26 insertions(+), 7 deletions(-)
+Changes in v5:
+- better comment for XENMEM_exchange_and_pin return codes;
 
-diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
-index d7ab99a..2782591 100644
---- a/arch/arm/include/asm/xen/hypervisor.h
-+++ b/arch/arm/include/asm/xen/hypervisor.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_ARM_XEN_HYPERVISOR_H
- #define _ASM_ARM_XEN_HYPERVISOR_H
+Changes in v4:
+- rename XENMEM_get_dma_buf to XENMEM_exchange_and_pin;
+- rename XENMEM_put_dma_buf to XENMEM_unpin;
+- improve the documentation of the new hypercalls;
+- add a note about out.address_bits for XENMEM_exchange.
+---
+ include/xen/interface/memory.h |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
+
+diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+index 2ecfe4f..fb0c6aa 100644
+--- a/include/xen/interface/memory.h
++++ b/include/xen/interface/memory.h
+@@ -66,6 +66,7 @@ struct xen_memory_exchange {
+     /*
+      * [IN] Details of memory extents to be exchanged (GMFN bases).
+      * Note that @in.address_bits is ignored and unused.
++     * @out.address_bits should contain the address mask for the new pages.
+      */
+     struct xen_memory_reservation in;
  
-+#include <linux/init.h>
+@@ -263,4 +264,40 @@ struct xen_remove_from_physmap {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
+ 
++#define XENMEM_exchange_and_pin             26
++/*
++ * This hypercall is similar to XENMEM_exchange: it takes the same
++ * struct as an argument and it exchanges the pages passed in with a new
++ * set of pages. The new pages are going to be "pinned": it's guaranteed
++ * that their p2m mapping won't be changed until explicitly "unpinned".
++ * The content of the exchanged pages is lost.
++ * Only normal guest r/w memory can be pinned: no granted pages or
++ * ballooned pages.
++ * If return code is zero then @out.extent_list provides the DMA frame
++ * numbers of the newly-allocated memory.
++ * Returns zero on complete success, otherwise a negative error code:
++ *   -ENOSYS if not implemented
++ *   -EINVAL if the page is already pinned
++ *   -EFAULT if an internal error occurs
++ * On complete success then always @nr_exchanged == @in.nr_extents.  On
++ * partial success @nr_exchanged indicates how much work was done and a
++ * negative error code is returned.
++ */
 +
- extern struct shared_info *HYPERVISOR_shared_info;
- extern struct start_info *xen_start_info;
- 
-@@ -16,4 +18,10 @@ static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
- 	return PARAVIRT_LAZY_NONE;
- }
- 
-+#ifdef CONFIG_XEN
-+void __init xen_early_init(void);
-+#else
-+static inline void xen_early_init(void) { return; }
-+#endif
++#define XENMEM_unpin             27
++/*
++ * XENMEM_unpin unpins a set of pages, previously pinned by
++ * XENMEM_exchange_and_pin. After this call the p2m mapping of the pages can
++ * be transparently changed by the hypervisor, as usual. The pages are
++ * still accessible from the guest.
++ */
++struct xen_unpin {
++    /*
++     * [IN] Details of memory extents to be unpinned (GMFN bases).
++     * Note that @in.address_bits is ignored and unused.
++     */
++    struct xen_memory_reservation in;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_unpin);
 +
- #endif /* _ASM_ARM_XEN_HYPERVISOR_H */
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 63af9a7..cb7b8e2 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -45,6 +45,7 @@
- #include <asm/cacheflush.h>
- #include <asm/cachetype.h>
- #include <asm/tlbflush.h>
-+#include <asm/xen/hypervisor.h>
- 
- #include <asm/prom.h>
- #include <asm/mach/arch.h>
-@@ -889,6 +890,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	arm_dt_init_cpu_maps();
- 	psci_init();
-+	xen_early_init();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
- 		if (!mdesc->smp_init || !mdesc->smp_init()) {
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index c9770ba..14d17ab 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -195,21 +195,19 @@ static void xen_power_off(void)
-  * documentation of the Xen Device Tree format.
-  */
- #define GRANT_TABLE_PHYSADDR 0
--static int __init xen_guest_init(void)
-+void __init xen_early_init(void)
- {
--	struct xen_add_to_physmap xatp;
--	static struct shared_info *shared_info_page = 0;
-+	struct resource res;
- 	struct device_node *node;
- 	int len;
- 	const char *s = NULL;
- 	const char *version = NULL;
- 	const char *xen_prefix = "xen,xen-";
--	struct resource res;
- 
- 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
- 	if (!node) {
- 		pr_debug("No Xen support\n");
--		return 0;
-+		return;
- 	}
- 	s = of_get_property(node, "compatible", &len);
- 	if (strlen(xen_prefix) + 3  < len &&
-@@ -217,10 +215,10 @@ static int __init xen_guest_init(void)
- 		version = s + strlen(xen_prefix);
- 	if (version == NULL) {
- 		pr_debug("Xen version not found\n");
--		return 0;
-+		return;
- 	}
- 	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
--		return 0;
-+		return;
- 	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
- 	xen_events_irq = irq_of_parse_and_map(node, 0);
- 	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
-@@ -232,6 +230,15 @@ static int __init xen_guest_init(void)
- 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
- 	else
- 		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
-+}
-+
-+static int __init xen_guest_init(void)
-+{
-+	struct xen_add_to_physmap xatp;
-+	static struct shared_info *shared_info_page = 0;
-+
-+	if (!xen_domain())
-+		return 0;
- 
- 	if (!shared_info_page)
- 		shared_info_page = (struct shared_info *)
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index add6ea6..e0d438a 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -53,6 +53,7 @@
- #include <asm/traps.h>
- #include <asm/memblock.h>
- #include <asm/psci.h>
-+#include <asm/xen/hypervisor.h>
- 
- unsigned int processor_id;
- EXPORT_SYMBOL(processor_id);
-@@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
- 	unflatten_device_tree();
- 
- 	psci_init();
-+	xen_early_init();
- 
- 	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
- #ifdef CONFIG_SMP
+ #endif /* __XEN_PUBLIC_MEMORY_H__ */
 -- 
 1.7.2.5
 
