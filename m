@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab3H2SnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:43:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756462Ab3H2SnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:43:10 -0400
-Date: Thu, 29 Aug 2013 14:43:04 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, seiji.aguchi@hds.com,
-        majianpeng@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] elevator: Fix a race in elevator switching and md device
- initialization
-Message-ID: <20130829184304.GC6171@redhat.com>
-References: <20130826134515.2298.55571.stgit@outback>
- <20130829183310.GB6171@redhat.com>
+	id S1757225Ab3H2Sni (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:43:38 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54087 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab3H2Sng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:43:36 -0400
+Message-ID: <521F9655.60400@linaro.org>
+Date: Thu, 29 Aug 2013 11:43:33 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130829183310.GB6171@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavel Machek <pavel@ucw.cz>
+CC: Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCHv3] drivers: power: Detect device suspend/resume lockup
+ and log event in pstore.
+References: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org> <3196266.rMZQj4Yosc@vostro.rjw.lan> <CAME+o4n8HqvGtAGX0wO+Zs_pdanKuhai6T3jg2V1Q4nWzxKk9A@mail.gmail.com> <1761440.cq52yMKNRv@vostro.rjw.lan> <521E7B8A.6060203@linaro.org> <CAMbhsRSqSC1Ni4QsZ_0sTrvaW3_feXFyGawZbWc34wuhA2BNeg@mail.gmail.com> <20130829182315.GA23346@amd.pavel.ucw.cz>
+In-Reply-To: <20130829182315.GA23346@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 02:33:10PM -0400, Vivek Goyal wrote:
-> On Mon, Aug 26, 2013 at 09:45:15AM -0400, Tomoki Sekiyama wrote:
-> > The soft lockup below happes at the boot time of the system using dm
-> > multipath and automated elevator switching udev rules.
-> > 
-> > [  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
-> > [  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>] lock_timer_base.isra.35+0x1d/0x50
-> > ...
-> > [  356.127001] Call Trace:
-> > [  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
-> > [  356.127001]  [<ffffffff8118b08a>] ? kmem_cache_alloc_node_trace+0x20a/0x230
-> > [  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
-> > [  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
-> > [  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
-> > [  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
-> > [  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
-> > [  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
-> > [  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
-> > [  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
-> > [  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
-> > [  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
-> > 
-> 
-> Tokomi, 
-> 
-> As you noticed, there is a fedora bug open with similar signature. May
-> be this patch will fix that issue also.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=902012
-> 
-> 
-> > This is caused by a race between md device initialization and sysfs knob
-> > to switch the scheduler.
-> > 
-> > * multipathd:
-> >  SyS_ioctl -> do_vfs_ioctl -> dm_ctl_ioctl -> ctl_ioctl ->  table_load
-> >   -> dm_setup_md_queue -> blk_init_allocated_queue -> elevator_init:
-> > 
-> >     q->elevator = elevator_alloc(q, e); // not yet initialized
-> > 
-> > * sh -c 'echo deadline > /sys/$DEVPATH/queue/scheduler'
-> >  SyS_write -> vfs_write -> sysfs_write_file -> queue_attr_store
-> >      ( mutex_lock(&q->sysfs_lock) here. )
-> >   -> elv_iosched_store -> elevator_change:
-> > 
-> >   elevator_exit(old); // try to de-init uninitialized elevator and hang up
-> > 
+On 08/29/2013 11:23 AM, Pavel Machek wrote:
+> On Wed 2013-08-28 15:43:42, Colin Cross wrote:
+>> On Wed, Aug 28, 2013 at 3:36 PM, John Stultz <john.stultz@linaro.org> wrote:
+>>> On 08/28/2013 01:52 PM, Rafael J. Wysocki wrote:
+>>>> On Wednesday, August 28, 2013 10:45:45 AM Zoran Markovic wrote:
+>>>>> Hi Rafael,
+>>>>>> It doesn't look too bad from a quick look, but there's a couple of things
+>>>>>> I don't like in it still (relatively minor).
+>>>>> If there are things you would like changed in this patch, please let
+>>>>> me know. It would be nice to catch the 3.12 merge window.
+>>>> Well, it's not in my queue to be honest.
+>>>>
+>>>> Is there any practical reason why it should go into the next release?
+>>> I wouldn't say its critical for the next release, but I feel like this
+>>> was the same response last cycle. Zoran's since investigated the various
+>>> alternative approaches you've suggested, and continues to be interested
+>>> in resolving your remaining objections.
+>>>
+>>> Its a useful feature the Android devs use, which could also help
+>>> non-android developers debug suspend issues on their systems.
+>>>
+>>> If you really just feel its something best left out of tree, that's hard
+>>> to argue against. Its just a debug tool and the android guys don't have
+>>> an issue carrying their own tree, after all. But the cost of leaving it
+>>> out is just the potential of others having to re-implement similar hacks
+>>> on their own instead of collaborating on shared infrastructure.
+>> And the benefit is that you are more likely to get bugreports that
+>> have a stack trace of the offending suspend callback instead of "my
+>> laptop doesn't suspend any more".
+> Laptops do not have persistent store for dmesg. So... are you sure?
 
-If problem in this case is that we are trying to exit() the elevator
-which has not been properly initialized, then we should not attach
-the elevator to the queue yet.
+I pstore has support for EFI, so some laptops do.
 
-In cfq_init_queue(), can we move following code towards the end of
-function.
+thanks
+-john
 
-        spin_lock_irq(q->queue_lock);
-        q->elevator = eq;
-        spin_unlock_irq(q->queue_lock);
 
-So till elevator is initialized, we will not attach it to queue and 
-elevator_switch() will return as it will not find a valid elevator
-on the queue.
-
-elevator_change() {
-	        if (!q->elevator)
-                return -ENXIO;
-}
-
-Thanks
-Vivek
