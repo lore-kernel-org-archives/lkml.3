@@ -1,186 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3H2Xei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:34:38 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:45399 "EHLO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab3H2Xeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:34:36 -0400
-Message-ID: <521FDA75.4070506@gmail.com>
-Date: Fri, 30 Aug 2013 01:34:13 +0200
-From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+	id S1754750Ab3H2Xhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:37:46 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:50614 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab3H2Xho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:37:44 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] Input: add driver for Neonode zForce based touchscreens
+Date: Fri, 30 Aug 2013 01:37:39 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+References: <201308161359.40134.heiko@sntech.de> <20130829162903.GB1576@core.coreip.homeip.net>
+In-Reply-To: <20130829162903.GB1576@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10.9: Oops at elf_core_dump()
-References: <521FC12A.9060302@gmail.com> <20130829220550.GA4486@kroah.com> <521FC971.7060206@gmail.com>
-In-Reply-To: <521FC971.7060206@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8bit
+Message-Id: <201308300137.40020.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So it happened again:
+Hi Dmitry,
 
-$ export LD_PRELOAD=/usr/lib64/libduma.so.0.0.0
-$ python  memory-corruption-test.py
-DUMA 2.5.15 (shared library, NO_LEAKDETECTION)
-Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
+Am Donnerstag, 29. August 2013, 18:29:04 schrieb Dmitry Torokhov:
+> Hi Heiko,
+> 
+> On Fri, Aug 16, 2013 at 01:59:39PM +0200, Heiko St�bner wrote:
+> > This adds a driver for touchscreens using the zforce infrared
+> > technology from Neonode connected via i2c to the host system.
+> > 
+> > It supports multitouch with up to two fingers and tracking of the
+> > contacts in hardware.
+> 
+> Generally looks good, just a few comments...
+> 
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > ---
+> > 
+> >  drivers/input/touchscreen/Kconfig     |   13 +
+> >  drivers/input/touchscreen/Makefile    |    1 +
+> >  drivers/input/touchscreen/zforce_ts.c |  837
+> >  +++++++++++++++++++++++++++++++++ include/linux/input/zforce_ts.h      
+> >  |   26 +
+> >  4 files changed, 877 insertions(+)
+> >  create mode 100644 drivers/input/touchscreen/zforce_ts.c
+> >  create mode 100644 include/linux/input/zforce_ts.h
+> > 
+> > diff --git a/drivers/input/touchscreen/Kconfig
+> > b/drivers/input/touchscreen/Kconfig index 3b9758b..ade11b7 100644
+> > --- a/drivers/input/touchscreen/Kconfig
+> > +++ b/drivers/input/touchscreen/Kconfig
+> > @@ -919,4 +919,17 @@ config TOUCHSCREEN_TPS6507X
+> > 
+> >  	  To compile this driver as a module, choose M here: the
+> >  	  module will be called tps6507x_ts.
+> > 
+> > +config TOUCHSCREEN_ZFORCE
+> > +	tristate "Neonode zForce infrared touchscreens"
+> > +	depends on I2C
+> > +	depends on GPIOLIB
+> > +	help
+> > +	  Say Y here if you have a touchscreen using the zforce
+> > +	  infraread technology from Neonode.
+> > +
+> > +	  If unsure, say N.
+> > +
+> > +	  To compile this driver as a module, choose M here: the
+> > +	  module will be called zforce_ts.
+> > +
+> > 
+> >  endif
+> > 
+> > diff --git a/drivers/input/touchscreen/Makefile
+> > b/drivers/input/touchscreen/Makefile index f5216c1..7587883 100644
+> > --- a/drivers/input/touchscreen/Makefile
+> > +++ b/drivers/input/touchscreen/Makefile
+> > @@ -75,3 +75,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+=
+> > mainstone-wm97xx.o
+> > 
+> >  obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+> >  obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+> >  obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+> > 
+> > +obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
+> > diff --git a/drivers/input/touchscreen/zforce_ts.c
+> > b/drivers/input/touchscreen/zforce_ts.c new file mode 100644
+> > index 0000000..92af632
+> > --- /dev/null
+> > +++ b/drivers/input/touchscreen/zforce_ts.c
+> > @@ -0,0 +1,837 @@
+> > +/*
+> > + * Copyright (C) 2012-2013 MundoReader S.L.
+> > + * Author: Heiko Stuebner <heiko@sntech.de>
+> > + *
+> > + * based in parts on Nook zforce driver
+> > + *
+> > + * Copyright (C) 2010 Barnes & Noble, Inc.
+> > + * Author: Pieter Truter<ptruter@intrinsyc.com>
+> > + *
+> > + * This software is licensed under the terms of the GNU General Public
+> > + * License version 2, as published by the Free Software Foundation, and
+> > + * may be copied, distributed, and modified under those terms.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/hrtimer.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/input.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/gpio.h>
+> > +#include <linux/device.h>
+> > +#include <linux/sysfs.h>
+> > +#include <linux/input/zforce_ts.h>
+> > +#include <linux/input/mt.h>
+> > +
+> > +#define WAIT_TIMEOUT		msecs_to_jiffies(1000)
+> > +
+> > +#define FRAME_START		0xee
+> > +
+> > +/* Offsets of the different parts of the payload the controller sends */
+> > +#define PAYLOAD_HEADER		0
+> > +#define PAYLOAD_LENGTH		1
+> > +#define PAYLOAD_BODY		2
+> > +
+> > +/* Response offsets */
+> > +#define RESPONSE_ID		0
+> > +#define RESPONSE_DATA		1
+> > +
+> > +/* Commands */
+> > +#define COMMAND_DEACTIVATE	0x00
+> > +#define COMMAND_INITIALIZE	0x01
+> > +#define COMMAND_RESOLUTION	0x02
+> > +#define COMMAND_SETCONFIG	0x03
+> > +#define COMMAND_DATAREQUEST	0x04
+> > +#define COMMAND_SCANFREQ	0x08
+> > +#define COMMAND_STATUS		0X1e
+> > +
+> > +/*
+> > + * Responses the controller sends as a result of
+> > + * command requests
+> > + */
+> > +#define RESPONSE_DEACTIVATE	0x00
+> > +#define RESPONSE_INITIALIZE	0x01
+> > +#define RESPONSE_RESOLUTION	0x02
+> > +#define RESPONSE_SETCONFIG	0x03
+> > +#define RESPONSE_SCANFREQ	0x08
+> > +#define RESPONSE_STATUS		0X1e
+> > +
+> > +/*
+> > + * Notifications are send by the touch controller without
+> > + * being requested by the driver and include for example
+> > + * touch indications
+> > + */
+> > +#define NOTIFICATION_TOUCH		0x04
+> > +#define NOTIFICATION_BOOTCOMPLETE	0x07
+> > +#define NOTIFICATION_OVERRUN		0x25
+> > +#define NOTIFICATION_PROXIMITY		0x26
+> > +#define NOTIFICATION_INVALID_COMMAND	0xfe
+> > +
+> > +#define ZFORCE_REPORT_POINTS		2
+> > +#define ZFORCE_MAX_AREA			0xff
+> > +
+> > +#define STATE_DOWN			0
+> > +#define STATE_MOVE			1
+> > +#define STATE_UP			2
+> > +
+> > +#define SETCONFIG_DUALTOUCH		(1 << 0)
+> > +
+> > +struct zforce_point {
+> > +	int coord_x;
+> > +	int coord_y;
+> > +	int state;
+> > +	int id;
+> > +	int area_major;
+> > +	int area_minor;
+> > +	int orientation;
+> > +	int pressure;
+> > +	int prblty;
+> > +};
+> > +
+> > +/*
+> > + * @client		the i2c_client
+> > + * @input		the input device
+> > + * @suspending		in the process of going to suspend (don't emit 
+wakeup
+> > + *			events for commands executed to suspend the device)
+> > + * @suspended		device suspended
+> > + * @access_mutex	serialize i2c-access, to keep multipart reads together
+> > + * @command_done	completion to wait for the command result
+> > + * @command_mutex	serialize commands send to the ic
+> > + * @command_waiting	the id of the command that that is currently 
+waiting
+> > + *			for a result
+> > + * @command_result	returned result of the command
+> > + */
+> > +struct zforce_ts {
+> > +	struct i2c_client	*client;
+> > +	struct input_dev	*input;
+> > +	const struct zforce_ts_platdata *pdata;
+> > +	char			phys[32];
+> > +
+> > +	bool			suspending;
+> > +	bool			suspended;
+> > +	bool			boot_complete;
+> > +
+> > +	/* Firmware version information */
+> > +	u16			version_major;
+> > +	u16			version_minor;
+> > +	u16			version_build;
+> > +	u16			version_rev;
+> > +
+> > +	struct mutex		access_mutex;
+> > +
+> > +	struct completion	command_done;
+> > +	struct mutex		command_mutex;
+> > +	int			command_waiting;
+> > +	int			command_result;
+> > +};
+> > +
+> > +static int zforce_command(struct zforce_ts *ts, u8 cmd)
+> > +{
+> > +	struct i2c_client *client = ts->client;
+> > +	char buf[3];
+> > +	int ret;
+> > +
+> > +	dev_dbg(&client->dev, "%s: 0x%x\n", __func__, cmd);
+> > +
+> > +	buf[0] = FRAME_START;
+> > +	buf[1] = 1; /* data size, command only */
+> > +	buf[2] = cmd;
+> > +
+> > +	mutex_lock(&ts->access_mutex);
+> > +	ret = i2c_master_send(client, &buf[0], ARRAY_SIZE(buf));
+> > +	mutex_unlock(&ts->access_mutex);
+> 
+> I am unsure why you need this lock. Doesn't i2c core already ensure
+> necessary locking?
 
-DUMA 2.5.15 (shared library, NO_LEAKDETECTION)
-Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
-
-Finished one record
-Finished one record
-Finished one record
-Finished one record
-Finished one record
-[cut]
+The access_lock is really only there to ensure the multi-reads stay together 
+and do not get split up. For individual reads the i2c core of course does all 
+the necessary things.
 
 
-DUMA Aborting: mprotect() failed: Cannot allocate memory.
-Check README section 'MEMORY USAGE AND EXECUTION SPEED'
-  if your (Linux) system may limit the number of different page mappings per process
-Fatal Python error: Illegal instruction
+> Also, it does not look like zforec_command() will reace with your
+> interrupt handler that does multi-reads...
 
-Current thread 0x00007fc9c4803740:
-  File "/usr/lib64/python2.7/site-packages/Bio/Blast/NCBIXML.py", line 106 in endElement
-  File "/mnt/1TB/var/tmp/portage/dev-lang/python-2.7.5-r2/work/Python-2.7.5/Modules/pyexpat.c", line 618 in EndElement
-  File "/usr/lib64/python2.7/site-packages/Bio/Blast/NCBIXML.py", line 654 in parse
-  File "memory-corruption-test.py", line 55 in doparse
-  File "memory-corruption-test.py", line 104 in main
-  File "memory-corruption-test.py", line 109 in <module>
+I'm unsure :-) ... what about the following scenario:
+
+- touch -> interrupt
+- isr reads first packet
+- user closes device -> stop command sent
+- isr reads payload
 
 
-
-The stacktrace is little different but ... I think I need to find what resource to so that
-duma can keep running watching the python binary.
+I'll fix the rest of the issues in the next version too.
 
 
-[112567.987073] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[112567.987684] IP: [<ffffffff812f7b42>] strlen+0x2/0x20
-[112567.988282] PGD 28be2c067 PUD 3a7744067 PMD 0 
-[112567.988879] Oops: 0000 [#2] SMP 
-[112567.989468] Modules linked in: iwldvm iwlwifi
-[112567.990057] CPU: 0 PID: 8822 Comm: python2.7 Tainted: G      D      3.10.9-default-pciehp #8
-[112567.990655] Hardware name: Dell Inc. Vostro 3550/, BIOS A11 08/03/2012
-[112567.991249] task: ffff8803b5eb0fd0 ti: ffff8803b36d4000 task.ti: ffff8803b36d4000
-[112567.991845] RIP: 0010:[<ffffffff812f7b42>]  [<ffffffff812f7b42>] strlen+0x2/0x20
-[112567.992443] RSP: 0018:ffff8803b36d59f0  EFLAGS: 00010246
-[112567.993039] RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffff8803b5eb0fd0
-[112567.993643] RDX: 00000000016e3610 RSI: 0000000000000000 RDI: 0000000000000000
-[112567.994249] RBP: ffff8803b36d5a08 R08: 00000000fffffffa R09: 0000000000000000
-[112567.994854] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8803b36d5b00
-[112567.995459] R13: 00007ffffffff000 R14: 0000000000000004 R15: 0000000000000000
-[112567.996060] FS:  00007fc9c4803740(0000) GS:ffff88041d800000(0000) knlGS:0000000000000000
-[112567.996664] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[112567.997268] CR2: 0000000000000000 CR3: 00000003a3b84000 CR4: 00000000000407f0
-[112567.997884] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[112567.998495] DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
-[112567.999100] Stack:
-[112567.999698]  ffffffff811bb0a3 ffff8803b36d5e60 00000000000003d8 ffff8803b36d5c08
-[112568.000315]  ffffffff811bbcbd ffffffff811bb913 0000000000000002 0000000000000000
-[112568.000931]  ffff8803b5eb0fd0 ffff8803b36dffff 0000000000000246 000f424200000000
-[112568.001548] Call Trace:
-[112568.002156]  [<ffffffff811bb0a3>] ? notesize.isra.11+0x13/0x30
-[112568.002774]  [<ffffffff811bbcbd>] elf_core_dump+0xbfd/0x1570
-[112568.003392]  [<ffffffff811bb913>] ? elf_core_dump+0x853/0x1570
-[112568.004012]  [<ffffffff81097209>] ? unshare_files+0x29/0xa0
-[112568.004629]  [<ffffffff811c289c>] do_coredump+0xafc/0xff0
-[112568.005247]  [<ffffffff810a63c8>] ? __sigqueue_free+0x38/0x40
-[112568.005865]  [<ffffffff810a9961>] get_signal_to_deliver+0x1c1/0x5c0
-[112568.006488]  [<ffffffff810b5d90>] ? pid_vnr+0x30/0x30
-[112568.007108]  [<ffffffff81002303>] do_signal+0x53/0x8e0
-[112568.007725]  [<ffffffff81002bef>] do_notify_resume+0x5f/0x70
-[112568.008342]  [<ffffffff812fc71e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[112568.008965]  [<ffffffff817999e2>] int_signal+0x12/0x17
-[112568.009583] Code: 48 89 e5 f6 82 40 c6 84 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 40 c6 84 81 20 75 f0 5d c3 66 0f 1f 44 00 00 31 c0 <80> 3f 00 55 48 89 e5 74 11 48 89 f8 66 90 48 83 c0 01 80 38 00 
-[112568.011042] RIP  [<ffffffff812f7b42>] strlen+0x2/0x20
-[112568.011748]  RSP <ffff8803b36d59f0>
-[112568.012445] CR2: 0000000000000000
-[112568.013155] ---[ end trace 9d67aee555e92d76 ]---
-
-
-Martin MOKREJŠ wrote:
-> Got it for the first time. Actually, am doing something really unusual
-> (http://bugs.python.org/issue18843).
-> 
-> Am looking for an answer why I suffer memory corruption in python applicatuons.
-> So I installed DUMA from http://duma.sourceforge.net and tried to recompile&reinstall
-> failing python. In previous attempt it exited and per README instructions
-> I increased the vm.max_map_count value.
-> 
-> 
-> # export LD_PRELOAD=/usr/lib64/libduma.so.0.0.0
-> # sysctl -w vm.max_map_count=1000000
-> # emerge dev-lang/python:2.7 
-> DUMA 2.5.15 (shared library, NO_LEAKDETECTION)
-> Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-> Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-> Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
-> 
-> 
->  * IMPORTANT: 11 news items need reading for repository 'gentoo'.
->  * Use eselect news to read news items.
-> 
-> 
->  * IMPORTANT: config file '5 (shared library, NO_LEAKDETECTION)
-> Copyright (C) 2006 Michael Eddington <meddington@gmail.com>
-> Copyright (C) 2002-2008 Hayati Ayguen <h_ayguen@web.de>, Procitec GmbH
-> Copyright (C) 1987-1999 Bruce Perens <bruce@perens.com>
-> 
-> ' needs updating.
->  * See the CONFIGURATION FILES section of the emerge
->  * man page to learn how to update config files.
-> Calculating dependencies |
-> DUMA Aborting: mprotect() failed: Cannot allocate memory.
-> Check README section 'MEMORY USAGE AND EXECUTION SPEED'
->   if your (Linux) system may limit the number of different page mappings per process
-> 
-> 
-> [and it crashed, no ctrl+c working]
-> 
-> 
-> 
-> Sorry do not know what to say more. I just crashed teh kernel but except
-> the Ooops it works so far. The core filesize is zero.
-> Martin
-> 
-> 
-> Greg KH wrote:
->> On Thu, Aug 29, 2013 at 11:46:18PM +0200, Martin MOKREJŠ wrote:
->>> Hi,
->>>   I just got this stacktrace. Not sure whom to send it, poking throu MAINTAINERS
->>> file and looking for ELF gave me nothing. ;-)
->>>
->>> [105670.434336] BUG: unable to handle kernel NULL pointer dereference at           (null)
->>> [105670.434366] IP: [<ffffffff812f7b42>] strlen+0x2/0x20
->>> [105670.434385] PGD 18c8e5067 PUD 2b547e067 PMD 0 
->>> [105670.434401] Oops: 0000 [#1] SMP 
->>> [105670.434413] Modules linked in: iwldvm iwlwifi
->>> [105670.434432] CPU: 0 PID: 7497 Comm: emerge Not tainted 3.10.9-default-pciehp #8
->>
->> Is this reproducable?
->>
->> thanks,
->>
->> greg k-h
->>
-> 
-
--- 
-Martin Mokrejs, Ph.D.
-Bioinformatics
-Donovalska 1658
-149 00 Prague
-Czech Republic
-http://www.iresite.org
-http://www.iresite.org/~mmokrejs
+Thanks for the review
+Heiko
