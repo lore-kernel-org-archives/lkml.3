@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab3H2J65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:58:57 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:19395 "EHLO
+	id S1756244Ab3H2J6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:58:55 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19403 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab3H2J6A (ORCPT
+	with ESMTP id S1756152Ab3H2J6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:58:00 -0400
+	Thu, 29 Aug 2013 05:58:06 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 29 Aug 2013 02:58:00 -0700
+	by hqnvupgp07.nvidia.com on Thu, 29 Aug 2013 02:58:05 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -17,9 +17,9 @@ CC: <gnurou@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 1/5] ARM: add basic Trusted Foundations support
-Date: Thu, 29 Aug 2013 18:57:44 +0900
-Message-ID: <1377770268-14014-2-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v4 3/5] ARM: tegra: split setting of CPU reset handler
+Date: Thu, 29 Aug 2013 18:57:46 +0900
+Message-ID: <1377770268-14014-4-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1377770268-14014-1-git-send-email-acourbot@nvidia.com>
 References: <1377770268-14014-1-git-send-email-acourbot@nvidia.com>
@@ -30,271 +30,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trusted Foundations is a TrustZone-based secure monitor for ARM that
-can be invoked  using a consistent smc-based API on all supported
-platforms. This patch adds initial basic support for Trusted
-Foundations using the ARM firmware API. Current features are limited
-to the ability to boot secondary processors.
+Not all Tegra devices can set the CPU reset handler in the same way.
+In particular, devices using a TrustZone secure monitor cannot set the
+reset handler directly and need to do it through a firmware operation.
+
+This patch separates the act of setting the reset handler from its
+preparation, so the former can be implemented in a different way.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- arch/arm/Kconfig                                   |  2 +
- arch/arm/Makefile                                  |  1 +
- arch/arm/firmware/Kconfig                          | 26 +++++++
- arch/arm/firmware/Makefile                         |  1 +
- arch/arm/firmware/trusted_foundations.c            | 83 ++++++++++++++++++++++
- arch/arm/include/asm/trusted_foundations.h         | 48 +++++++++++++
- 8 files changed, 179 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
- create mode 100644 arch/arm/firmware/Kconfig
- create mode 100644 arch/arm/firmware/Makefile
- create mode 100644 arch/arm/firmware/trusted_foundations.c
- create mode 100644 arch/arm/include/asm/trusted_foundations.h
+ arch/arm/mach-tegra/reset.c | 27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
-new file mode 100644
-index 0000000..3954bbd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
-@@ -0,0 +1,17 @@
-+Trusted Foundations
-+
-+Boards that use the Trusted Foundations secure monitor can signal its
-+presence by declaring a node compatible with "tl,trusted-foundations"
-+under the root node.
-+
-+Required properties:
-+- compatible : "tl,trusted-foundations"
-+- version-major : major version number of Trusted Foundations firmware
-+- version-minor: minor version number of Trusted Foundations firmware
-+
-+Example:
-+	firmware {
-+		compatible = "tl,trusted-foundations";
-+		version-major = <2>;
-+		version-minor = <8>;
-+	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 366ce9b..20d61f3 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -63,6 +63,7 @@ ste	ST-Ericsson
- stericsson	ST-Ericsson
- toumaz	Toumaz
- ti	Texas Instruments
-+tl	Trusted Logic
- toshiba	Toshiba Corporation
- v3	V3 Semiconductor
- via	VIA Technologies, Inc.
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 43594d5..7fbe800 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1074,6 +1074,8 @@ config ARM_TIMER_SP804
- 	select CLKSRC_MMIO
- 	select CLKSRC_OF if OF
+diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
+index 1ac434e..6964117 100644
+--- a/arch/arm/mach-tegra/reset.c
++++ b/arch/arm/mach-tegra/reset.c
+@@ -33,26 +33,18 @@
  
-+source "arch/arm/firmware/Kconfig"
-+
- source arch/arm/mm/Kconfig
+ static bool is_enabled;
  
- config ARM_NR_BANKS
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 6fd2cea..a48de17 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -267,6 +267,7 @@ core-$(CONFIG_KVM_ARM_HOST) 	+= arch/arm/kvm/
- core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
- core-y				+= arch/arm/net/
- core-y				+= arch/arm/crypto/
-+core-y				+= arch/arm/firmware/
- core-y				+= $(machdirs) $(platdirs)
+-static void __init tegra_cpu_reset_handler_enable(void)
++static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
+ {
+-	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
+ 	void __iomem *evp_cpu_reset =
+ 		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
+ 	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
+ 	u32 reg;
  
- drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
-diff --git a/arch/arm/firmware/Kconfig b/arch/arm/firmware/Kconfig
-new file mode 100644
-index 0000000..fde21d0
---- /dev/null
-+++ b/arch/arm/firmware/Kconfig
-@@ -0,0 +1,26 @@
-+config ARCH_SUPPORTS_FIRMWARE
-+	bool
-+
-+config ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
-+	bool
-+	select ARCH_SUPPORTS_FIRMWARE
-+
-+menu "Firmware options"
-+	depends on ARCH_SUPPORTS_FIRMWARE
-+
-+config TRUSTED_FOUNDATIONS
-+	bool "Trusted Foundations secure monitor support"
-+	depends on ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
-+	help
-+	  Some devices are booted with the Trusted Foundations secure monitor
-+	  active, requiring some core operations to be performed by the secure
-+	  monitor instead of the kernel.
-+
-+	  This option allows the kernel to invoke the secure monitor whenever
-+	  required on devices using Trusted Foundations.
-+
-+	  Devices using Trusted Foundations should pass a device tree containing
-+	  a node compatible with "tl,trusted-foundations" to signal the presence
-+	  of the secure monitor.
-+
-+endmenu
-diff --git a/arch/arm/firmware/Makefile b/arch/arm/firmware/Makefile
-new file mode 100644
-index 0000000..a71f165
---- /dev/null
-+++ b/arch/arm/firmware/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_TRUSTED_FOUNDATIONS)	+= trusted_foundations.o
-diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
-new file mode 100644
-index 0000000..181f348
---- /dev/null
-+++ b/arch/arm/firmware/trusted_foundations.c
-@@ -0,0 +1,83 @@
-+/*
-+ * Trusted Foundations support for ARM CPUs
-+ *
-+ * Copyright (c) 2013, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <asm/firmware.h>
-+#include <asm/trusted_foundations.h>
-+
-+#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
-+
-+static void __naked tf_generic_smc(u32 type, u32 subtype, u32 arg)
-+{
-+	asm volatile(
-+		".arch_extension	sec\n\t"
-+		"stmfd	sp!, {r4 - r11, lr}\n\t"
-+		__asmeq("%0", "r0")
-+		__asmeq("%1", "r1")
-+		__asmeq("%2", "r2")
-+		"mov	r3, #0\n\t"
-+		"mov	r4, #0\n\t"
-+		"smc	#0\n\t"
-+		"ldmfd	sp!, {r4 - r11, pc}"
-+		:
-+		: "r" (type), "r" (subtype), "r" (arg)
-+		: "memory");
+-	BUG_ON(is_enabled);
+-	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
+-
+-	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
+-			tegra_cpu_reset_handler_size);
+-
+ 	/*
+ 	 * NOTE: This must be the one and only write to the EVP CPU reset
+ 	 *       vector in the entire system.
+ 	 */
+-	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
+-			evp_cpu_reset);
++	writel(reset_address, evp_cpu_reset);
+ 	wmb();
+ 	reg = readl(evp_cpu_reset);
+ 
+@@ -66,6 +58,21 @@ static void __init tegra_cpu_reset_handler_enable(void)
+ 		writel(reg, sb_ctrl);
+ 		wmb();
+ 	}
 +}
 +
-+static int tf_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
++static void __init tegra_cpu_reset_handler_enable(void)
 +{
-+	tf_generic_smc(TF_SET_CPU_BOOT_ADDR_SMC, boot_addr, 0);
++	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
++	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
++						tegra_cpu_reset_handler_offset;
 +
-+	return 0;
-+}
++	BUG_ON(is_enabled);
++	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
 +
-+static const struct firmware_ops trusted_foundations_ops = {
-+	.set_cpu_boot_addr = tf_set_cpu_boot_addr,
-+};
++	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
++			tegra_cpu_reset_handler_size);
 +
-+void register_trusted_foundations(struct trusted_foundations_platform_data *pd)
-+{
-+	/* we are not using version information for now since currently
-+	 * supported SMCs are compatible with all TF releases */
-+	register_firmware_ops(&trusted_foundations_ops);
-+}
-+
-+void of_register_trusted_foundations(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
-+	if (node) {
-+		struct trusted_foundations_platform_data pdata;
-+		int err;
-+
-+		err = of_property_read_u32(node, "version-major",
-+					   &pdata.version_major);
-+		if (err != 0) {
-+			pr_crit("Trusted Foundation: missing version-major\n");
-+			BUG();
-+		}
-+		err = of_property_read_u32(node, "version-minor",
-+					   &pdata.version_minor);
-+		if (err != 0) {
-+			pr_crit("Trusted Foundation: missing version-minor\n");
-+			BUG();
-+		}
-+		register_trusted_foundations(&pdata);
-+	}
-+}
-diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
-new file mode 100644
-index 0000000..77a4961
---- /dev/null
-+++ b/arch/arm/include/asm/trusted_foundations.h
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (c) 2013, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#ifndef __ASM_ARM_TRUSTED_FOUNDATIONS_H
-+#define __ASM_ARM_TRUSTED_FOUNDATIONS_H
-+
-+#include <linux/kconfig.h>
-+#include <linux/printk.h>
-+#include <asm/bug.h>
-+
-+struct trusted_foundations_platform_data {
-+	unsigned int version_major;
-+	unsigned int version_minor;
-+};
-+
-+#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
-+
-+void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
-+void of_register_trusted_foundations(void);
-+
-+#else
-+
-+static inline void register_trusted_foundations(
-+				   struct trusted_foundations_platform_data *pd)
-+{
-+	pr_crit("No support for Trusted Foundations, stopping...\n");
-+	BUG();
-+}
-+
-+static inline void of_register_trusted_foundations(void)
-+{
-+	register_trusted_foundations(NULL);
-+}
-+
-+#endif /* IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS) */
-+
-+#endif
++	tegra_cpu_reset_handler_set(reset_address);
+ 
+ 	is_enabled = true;
+ }
 -- 
 1.8.4
 
