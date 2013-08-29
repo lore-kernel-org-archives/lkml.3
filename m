@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3H2Oze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:55:34 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41356 "EHLO
+	id S1755379Ab3H2Ozb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:55:31 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41300 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab3H2Oza (ORCPT
+	with ESMTP id S1754480Ab3H2Oz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:55:30 -0400
+	Thu, 29 Aug 2013 10:55:29 -0400
 From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Sudeep.KarkadaNagesha@arm.com,
@@ -16,102 +16,100 @@ Cc: Sudeep.KarkadaNagesha@arm.com,
         Thomas Gleixner <tglx@linutronix.de>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v6 5/5] drivers: clocksource: add CPU PM notifier for ARM architected timer
-Date: Thu, 29 Aug 2013 15:55:42 +0100
-Message-Id: <1377788142-21388-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Subject: [PATCH v6 1/5] ARM/ARM64: arch_timer: add macros for bits in control register
+Date: Thu, 29 Aug 2013 15:55:38 +0100
+Message-Id: <1377788142-21388-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 29 Aug 2013 14:55:28.0103 (UTC) FILETIME=[CCC1E770:01CEA4C7]
-X-MC-Unique: 113082915552901401
+X-OriginalArrivalTime: 29 Aug 2013 14:55:25.0665 (UTC) FILETIME=[CB4DE510:01CEA4C7]
+X-MC-Unique: 113082915552704801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7TEtlUm015631
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7TEu1oQ015642
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Few control settings done in architected timer as part of initialisation
-can be lost when CPU enters deeper power states. They need to be
-restored when the CPU is (warm)reset again.
-
-This patch adds CPU PM notifiers to save the counter control register
-when entering low power modes and restore it when CPU exits low power.
+Add macros to describe the bitfields in the ARM architected timer
+control register to make code easy to understand.
 
 Cc: Catalin Marinas <catalin.marinas@arm.com>
 Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Reviewed-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 ---
- drivers/clocksource/arm_arch_timer.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+ arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
+ include/clocksource/arm_arch_timer.h |  8 ++++++++
+ 3 files changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 9777b36..611f9cb 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -13,6 +13,7 @@
- #include <linux/device.h>
- #include <linux/smp.h>
- #include <linux/cpu.h>
-+#include <linux/cpu_pm.h>
- #include <linux/clockchips.h>
- #include <linux/interrupt.h>
- #include <linux/of_irq.h>
-@@ -275,6 +276,33 @@ static struct notifier_block arch_timer_cpu_nb = {
- 	.notifier_call = arch_timer_cpu_notify,
- };
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index e406d57..1a3e967 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
  
-+#ifdef CONFIG_CPU_PM
-+static unsigned int saved_cntkctl;
-+static int arch_timer_cpu_pm_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	if (action == CPU_PM_ENTER)
-+		saved_cntkctl = arch_timer_get_cntkctl();
-+	else if (action == CPU_PM_ENTER_FAILED || action == CPU_PM_EXIT)
-+		arch_timer_set_cntkctl(saved_cntkctl);
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block arch_timer_cpu_pm_notifier = {
-+	.notifier_call = arch_timer_cpu_pm_notify,
-+};
-+
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return cpu_pm_register_notifier(&arch_timer_cpu_pm_notifier);
-+}
-+#else
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int __init arch_timer_register(void)
+ 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+ 
+-	/* disable user access to everything */
+-	cntkctl &= ~((3 << 8) | (7 << 0));
++	/* Disable user access to both physical/virtual counters/timers */
++	/* Also disable virtual event stream */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_VIRT_EVT_EN
++			| ARCH_TIMER_USR_VCT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+ 
+ 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+ }
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 98abd47..fa4af76 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
  {
- 	int err;
-@@ -324,11 +352,17 @@ static int __init arch_timer_register(void)
- 	if (err)
- 		goto out_free_irq;
+ 	u32 cntkctl;
  
-+	err = arch_timer_cpu_pm_init();
-+	if (err)
-+		goto out_unreg_notify;
+-	/* Disable user access to the timers and the physical counter. */
+ 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+-	cntkctl &= ~((3 << 8) | (1 << 0));
+ 
+-	/* Enable user access to the virtual counter and frequency. */
+-	cntkctl |= (1 << 1);
++	/* Disable user access to the timers and the physical counter */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
 +
- 	/* Immediately configure the timer on the boot CPU */
- 	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
++	/* Enable user access to the virtual counter */
++	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
++
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
  
- 	return 0;
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index c463ce9..551f7e9 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -29,6 +29,14 @@
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
  
-+out_unreg_notify:
-+	unregister_cpu_notifier(&arch_timer_cpu_nb);
- out_free_irq:
- 	if (arch_timer_use_virtual)
- 		free_percpu_irq(arch_timer_ppi[VIRT_PPI], arch_timer_evt);
++#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
++#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
++#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
++#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
++#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
++#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
++
+ #ifdef CONFIG_ARM_ARCH_TIMER
+ 
+ extern u32 arch_timer_get_rate(void);
 -- 
 1.8.1.2
 
