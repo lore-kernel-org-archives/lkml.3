@@ -1,129 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab3H2VIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:08:16 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43005 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab3H2VIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:08:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: [PATCH 1/3] ACPI / scan: Change ordering of locks for device hotplug
-Date: Thu, 29 Aug 2013 23:15:56 +0200
-Message-ID: <1752041.76DW3TEE1A@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <9589253.Co8jZpnWdd@vostro.rjw.lan>
-References: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+	id S1757351Ab3H2VIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:08:50 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:62082 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757293Ab3H2VIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 17:08:48 -0400
+Date: Thu, 29 Aug 2013 14:08:09 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Bo Shen <voice.shen@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL v2] at91: soc update for 3.12 #1
+Message-ID: <20130829210809.GV18542@quad.lixom.net>
+References: <20130828235855.GM8607@quad.lixom.net>
+ <1377765162-1659-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377765162-1659-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thu, Aug 29, 2013 at 10:32:42AM +0200, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> (respin of previous pull-request with author name fixed)
+> 
+> Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
+> this topic and it is based on 3.11-rc5 like your next/soc branch.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+> 
+>   Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-soc
 
-Change the ordering of device hotplug locks in scan.c so that
-acpi_scan_lock is always acquired after device_hotplug_lock.
+Thanks, pulled into late/all.
 
-This will make it possible to use device_hotplug_lock around some
-code paths that acquire acpi_scan_lock safely (most importantly
-system suspend and hibernation).  Apart from that, acpi_scan_lock
-is platform-specific and device_hotplug_lock is general, so the
-new ordering appears to be more appropriate from the overall
-design viewpoint.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -204,8 +204,6 @@ static int acpi_scan_hot_remove(struct a
- 		return -EINVAL;
- 	}
- 
--	lock_device_hotplug();
--
- 	/*
- 	 * Carry out two passes here and ignore errors in the first pass,
- 	 * because if the devices in question are memory blocks and
-@@ -236,9 +234,6 @@ static int acpi_scan_hot_remove(struct a
- 					    ACPI_UINT32_MAX,
- 					    acpi_bus_online_companions, NULL,
- 					    NULL, NULL);
--
--			unlock_device_hotplug();
--
- 			put_device(&device->dev);
- 			return -EBUSY;
- 		}
-@@ -249,8 +244,6 @@ static int acpi_scan_hot_remove(struct a
- 
- 	acpi_bus_trim(device);
- 
--	unlock_device_hotplug();
--
- 	/* Device node has been unregistered. */
- 	put_device(&device->dev);
- 	device = NULL;
-@@ -289,6 +282,7 @@ static void acpi_bus_device_eject(void *
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
- 	int error;
- 
-+	lock_device_hotplug();
- 	mutex_lock(&acpi_scan_lock);
- 
- 	acpi_bus_get_device(handle, &device);
-@@ -312,6 +306,7 @@ static void acpi_bus_device_eject(void *
- 
-  out:
- 	mutex_unlock(&acpi_scan_lock);
-+	unlock_device_hotplug();
- 	return;
- 
-  err_out:
-@@ -326,8 +321,8 @@ static void acpi_scan_bus_device_check(a
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
- 	int error;
- 
--	mutex_lock(&acpi_scan_lock);
- 	lock_device_hotplug();
-+	mutex_lock(&acpi_scan_lock);
- 
- 	if (ost_source != ACPI_NOTIFY_BUS_CHECK) {
- 		acpi_bus_get_device(handle, &device);
-@@ -353,9 +348,9 @@ static void acpi_scan_bus_device_check(a
- 		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
- 
-  out:
--	unlock_device_hotplug();
- 	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
- 	mutex_unlock(&acpi_scan_lock);
-+	unlock_device_hotplug();
- }
- 
- static void acpi_scan_bus_check(void *context)
-@@ -446,6 +441,7 @@ void acpi_bus_hot_remove_device(void *co
- 	acpi_handle handle = device->handle;
- 	int error;
- 
-+	lock_device_hotplug();
- 	mutex_lock(&acpi_scan_lock);
- 
- 	error = acpi_scan_hot_remove(device);
-@@ -455,6 +451,7 @@ void acpi_bus_hot_remove_device(void *co
- 					  NULL);
- 
- 	mutex_unlock(&acpi_scan_lock);
-+	unlock_device_hotplug();
- 	kfree(context);
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
-
+-Olof
