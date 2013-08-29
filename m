@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3H2DvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 23:51:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38852 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab3H2DvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 23:51:17 -0400
-Message-ID: <1377748272.9297.47.camel@tucsk.piliscsaba.szeredi.hu>
-Subject: Re: [PATCH 0/9] [RFC v2] safely drop directory dentry on failed
- revalidate
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Ian Kent <raven@themaw.net>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
-        rwheeler@redhat.com, avati@redhat.com, bfoster@redhat.com,
-        dhowells@redhat.com, eparis@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Date: Thu, 29 Aug 2013 05:51:12 +0200
-In-Reply-To: <20130821054055.GN27005@ZenIV.linux.org.uk>
-References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
-	 <20130821054055.GN27005@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
+	id S1755658Ab3H2DxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 23:53:04 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:40130 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab3H2DxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Aug 2013 23:53:01 -0400
+X-Spam-Score: -101.0
+Message-ID: <521EC55A.9030905@asianux.com>
+Date: Thu, 29 Aug 2013 11:51:54 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, ak@linux.intel.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] h8300/kernel/timer/timer8.c: add the missing semicolon
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian,
+Add the missing semicolon to fix the typo issue.
 
-I'm having problems fully understanding what autofs4 is trying to do
-with have_submounts().
+The related error: (defconfig for H8S):
 
+  arch/h8300/kernel/timer/timer8.c: In function 'h8300_timer_setup':
+  arch/h8300/kernel/timer/timer8.c:98:2: error: expected ';' before 'ctrl_outw'
 
-> On Wed, 2013-08-21 at 06:40 +0100, Al Viro wrote:
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/h8300/Makefile              |    2 +-
+ arch/h8300/kernel/timer/timer8.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> fs/autofs4/dev-ioctl.c:542:             err = have_submounts(path.dentry);
-
-This is an ioctl() asking whether we have anything mounted on the autofs
-mount.  Using have_submounts() and then a separate follow_down() looks
-racy.  have_submounts() could succeed and then follow_down() could fail.
-Or the other way round.  Shouldn't the two cases be handled separately
-here?  If the autofs is a just a simple trigger then use follow_down().
-If it's a multi-mount thing, then use have_submounts().
-
-What is the userspace automount daemon using this for?  Do we really
-need the recursive check for submounts?
-
-
-> fs/autofs4/root.c:381:                  if (have_submounts(dentry)) {
-
-Here it explicitly says it's for v5 and for rootless mutli-mount.  So
-for example:
-
-/mnt/auto/            root of an indirect mount
-/mnt/auto/foo         directory with DCACHE_NEED_AUTOMOUNT
-/mnt/auto/foo/bar     directory without DCACHE_NEED_AUTOMOUNT
-/mnt/auto/foo/bar/baz directory with an automount trigger mounted on it
-
-In this case when d_automount for "foo" is called we don't call the
-userspace daemon because things are mounted under foo.  If there was no
-trigger under baz, then we would try to handle "foo" as an indirect
-mount and call userspace.
-
-But it's pretty confusing.  Do we really *ever* need to call automount
-on "foo" if it was part of a multi-mount thing? 
-
-> fs/autofs4/waitq.c:338:         if (have_submounts(dentry))
-
-And here we re-validate the thing after taking another autofs4 lock.
-Why this double checking?
-
-Thanks,
-Miklos
-
+diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
+index a556447..d2ba710 100644
+--- a/arch/h8300/Makefile
++++ b/arch/h8300/Makefile
+@@ -25,7 +25,7 @@ model-$(CONFIG_RAMKERNEL)	:= ram
+ model-$(CONFIG_ROMKERNEL)	:= rom
+ MODEL := $(model-y)
+ 
+-cflags-$(CONFIG_CPU_H8300H)	:= -mh
++cflags-$(CONFIG_CPU_H8300H)	:= -mh -mcpu=h8300h
+ ldflags-$(CONFIG_CPU_H8300H)	:= -mh8300helf
+ cflags-$(CONFIG_CPU_H8S)	:= -ms
+ ldflags-$(CONFIG_CPU_H8S)	:= -mh8300self
+diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
+index 505f341..8aac2a7 100644
+--- a/arch/h8300/kernel/timer/timer8.c
++++ b/arch/h8300/kernel/timer/timer8.c
+@@ -91,7 +91,7 @@ void __init h8300_timer_setup(void)
+ 
+ #if defined(CONFIG_CPU_H8S)
+ 	/* Timer module enable */
+-	ctrl_bclr(0, MSTPCRL)
++	ctrl_bclr(0, MSTPCRL);
+ #endif
+ 
+ 	/* initialize timer */
+-- 
+1.7.7.6
