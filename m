@@ -1,192 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab3H2NcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:32:11 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19034 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3H2NcH convert rfc822-to-8bit (ORCPT
+	id S1753562Ab3H2NhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:37:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64657 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3H2NhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:32:07 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <521EB76B.8090903@oracle.com>
-References: <521EB76B.8090903@oracle.com>
+	Thu, 29 Aug 2013 09:37:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH RFC v2 14/16] ARM: vexpress: remove custom .init_time hook
+Date: Thu, 29 Aug 2013 15:35:52 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-15-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1377638890-371-15-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 2/3 v3] Refactor MSI restore call-chain to drop unnecessary argument
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 29 Aug 2013 09:31:55 -0400
-To: zhenzhong.duan@oracle.com, Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Message-ID: <e316cb7e-6f73-4aff-8533-c73539f4ae91@email.android.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308291535.53005.arnd@arndb.de>
+X-Provags-ID: V02:K0:ejA0XdJcXpoCwHRUBd9f+eIbXOdOnTbkWG/mUNF17pD
+ mxBLNt3qMgjc5gxWOh7j9LTTnN+6wGsCkde1kgJP/lSr6VGcjs
+ nr+V6Rc1D5HpK5ssYZyux4LYcJVFSq6xJyhtMA/5lWjRjkhmUx
+ /fHeAUXxnghsLL5e8hW/buV2mmk8NJVIKqo1PTZefULZp+arxG
+ daiW/jCcQujYZqUKdDb9KIw5vhRgwWVAOPtIWOCjjHA4qhhDrW
+ gDN8aI8EJFXqU70lgB1p8TWhXrWcWNXG/OjU46qXO9vZ5j54N+
+ x11/HUnrhRD2bMXvAeLlgS5zfuMpsb5OZrjrVoKj9qtc1964oY
+ Tz3ydKac/n7kmRxIQLL0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
->Driver init call graph under baremetal:
->driver_init->
->    msix_capability_init->
->        msix_program_entries->
->            msix_mask_irq->
->                entry->masked = 1
->    request_irq->
->        __setup_irq->
->            irq_startup->
->                unmask_msi_irq->
->                    msix_mask_irq->
->                        entry->masked = 0
->
->So entry->masked is always updated with newest value and its value
->could be used
->to restore to mask register in device.
->
->But in initial domain (aka priviliged guest), it's different.
->Driver init call graph under initial domain:
->driver_init->
->    msix_capability_init->
->        msix_program_entries->
->            msix_mask_irq->
->                entry->masked = 1
->    request_irq->
->        __setup_irq->
->            irq_startup->
->                __startup_pirq->
->                    EVTCHNOP_bind_pirq hypercall    (trap into Xen)
->[Xen:]
->pirq_guest_bind->
->    startup_msi_irq->
->        unmask_msi_irq->
->            msi_set_mask_bit->
->                entry->msi_attrib.masked = 0
->
->So entry->msi_attrib.masked in xen side always has newest value.
->entry->masked
->in initial domain is untouched and is 1 after msix_capability_init.
->
->Based on above, it's Xen's duty to restore entry->msi_attrib.masked to
->device,
->but with current code, entry->masked is used and MSI-x interrupt is
->masked.
->
->Before patch, restore call graph under initial domain:
->pci_reset_function->
->    pci_restore_state->
->        __pci_restore_msix_state->
->            arch_restore_msi_irqs->
->                xen_initdom_restore_msi_irqs->
->                   PHYSDEVOP_restore_msi hypercall (first mask restore)
->          msix_mask_irq(entry, entry->masked)     (second mask restore)
->
->So msix_mask_irq call in initial domain call graph needs to be removed.
->
->Based on this we can move the restore of the mask in
->default_restore_msi_irqs
->which would avoid restoring the invalid mask under Xen. Furthermore
->this
->simplifies the API by making everything related to restoring an MSI be
->in the
->platform specific APIs instead of just parts of it.
->
->After patch, restore call graph under initial domain:
->pci_reset_function->
->    pci_restore_state->
->        __pci_restore_msix_state->
->            arch_restore_msi_irqs->
->                xen_initdom_restore_msi_irqs->
->                   PHYSDEVOP_restore_msi hypercall (first mask restore)
->
->Logic for baremetal is not changed.
->Before patch, restore call graph under baremetal:
->pci_reset_function->
->    pci_restore_state->
->        __pci_restore_msix_state->
->            arch_restore_msi_irqs->
->                default_restore_msi_irqs->
->           msix_mask_irq(entry, entry->masked)     (first mask restore)
->
->After patch, restore call graph under baremetal:
->pci_reset_function->
->    pci_restore_state->
->        __pci_restore_msix_state->
->            arch_restore_msi_irqs->
->                default_restore_msi_irqs->
->               msix_mask_irq(entry, entry->masked) (first mask restore)
->
->The process for MSI code is similiar.
->
->-v3: Update patch description per Konrad suggestion, thanks.
->
->Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
->Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-
-Bjorn, 
-If this is not too late to add to your queue please add it with my Acked-By. 
-
-Thanks. 
-
->---
-> drivers/pci/msi.c |   17 ++++++++++++++---
-> 1 files changed, 14 insertions(+), 3 deletions(-)
->
->diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->index 87223ae..922fb49 100644
->--- a/drivers/pci/msi.c
->+++ b/drivers/pci/msi.c
->@@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
-> #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
-> void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-> {
->+	int pos;
->+	u16 control;
-> 	struct msi_desc *entry;
-> 
-> 	entry = NULL;
->@@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev,
->int irq)
-> 		entry = irq_get_msi_desc(irq);
-> 	}
-> 
->-	if (entry)
->+	if (entry) {
-> 		write_msi_msg(irq, &entry->msg);
->+		if (dev->msix_enabled) {
->+			msix_mask_irq(entry, entry->masked);
->+			readl(entry->mask_base);
->+		} else {
->+			pos = entry->msi_attrib.pos;
->+			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
->+					     &control);
->+			msi_mask_irq(entry, msi_capable_mask(control),
->+				     entry->masked);
->+		}
->+	}
-> }
-> #endif
-> 
->@@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev
->*dev)
-> 	arch_restore_msi_irqs(dev, dev->irq);
-> 
-> 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
->-	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-> 	control &= ~PCI_MSI_FLAGS_QSIZE;
-> 	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
-> 	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
->@@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev
->*dev)
-> 
-> 	list_for_each_entry(entry, &dev->msi_list, list) {
-> 		arch_restore_msi_irqs(dev, entry->irq);
->-		msix_mask_irq(entry, entry->masked);
-> 	}
-> 
-> 	control &= ~PCI_MSIX_FLAGS_MASKALL;
+On Tuesday 27 August 2013, Sebastian Hesselbarth wrote:
+> @@ -422,16 +419,8 @@ void __init v2m_dt_init_early(void)
+>                         pr_warning("vexpress: DT HBI (%x) is not matching "
+>                                         "hardware (%x)!\n", dt_hbi, hbi);
+>         }
+> -}
+> -
+> -static void __init v2m_dt_timer_init(void)
+> -{
+> -       of_clk_init(NULL);
+>  
+> -       clocksource_of_init();
+> -
+> -       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(),
+> -                               24000000);
+> +       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(), 24000000);
+>  }
 
 
+You are moving versatile_sched_clock_init() ahead of clocksource_of_init(), which I suspect
+won't work. Have you checked this?
+
+	Arnd
