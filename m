@@ -1,167 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3H2JIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:08:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21429 "EHLO mx1.redhat.com"
+	id S1754709Ab3H2JK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:10:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41727 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752150Ab3H2JIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:08:38 -0400
-Date: Thu, 29 Aug 2013 12:08:33 +0300
+	id S1753449Ab3H2JKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 05:10:25 -0400
+Date: Thu, 29 Aug 2013 12:10:20 +0300
 From: Gleb Natapov <gleb@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
-Message-ID: <20130829090833.GA22899@redhat.com>
+Subject: Re: [PATCH 10/12] KVM: MMU: allow locklessly access shadow page
+ table out of vcpu thread
+Message-ID: <20130829091020.GB22899@redhat.com>
 References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1375189330-24066-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130828092001.GQ22899@redhat.com>
- <521DC3FD.1020507@linux.vnet.ibm.com>
- <20130828094630.GR22899@redhat.com>
- <521DCD57.7000401@linux.vnet.ibm.com>
- <20130828104938.GT22899@redhat.com>
- <521DE9E8.2040908@linux.vnet.ibm.com>
- <20130828133635.GU22899@redhat.com>
- <521EEF4B.4040107@linux.vnet.ibm.com>
+ <1375189330-24066-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <521EEF4B.4040107@linux.vnet.ibm.com>
+In-Reply-To: <1375189330-24066-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 02:50:51PM +0800, Xiao Guangrong wrote:
-> >>> BTW I do not see
-> >>> rcu_assign_pointer()/rcu_dereference() in your patches which hints on
-> >>
-> >> IIUC, We can not directly use rcu_assign_pointer(), that is something like:
-> >> p = v to assign a pointer to a pointer. But in our case, we need:
-> >>    *pte_list = (unsigned long)desc | 1;
-> >>From Documentation/RCU/whatisRCU.txt:
-> > 
-> > The updater uses this function to assign a new value to an RCU-protected pointer.
-> > 
-> > This is what we do, no? (assuming slot->arch.rmap[] is what rcu protects here)
-> > The fact that the value is not correct pointer should not matter.
-> > 
+On Tue, Jul 30, 2013 at 09:02:08PM +0800, Xiao Guangrong wrote:
+> It is easy if the handler is in the vcpu context, in that case we can use
+> walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() that
+> disable interrupt to stop shadow page be freed. But we are on the ioctl context
+> and the paths we are optimizing for have heavy workload, disabling interrupt is
+> not good for the system performance
 > 
-> Okay. Will change that code to:
+> We add a indicator into kvm struct (kvm->arch.rcu_free_shadow_page), then use
+> call_rcu() to free the shadow page if that indicator is set. Set/Clear the
+> indicator are protected by slot-lock, so it need not be atomic and does not
+> hurt the performance and the scalability
 > 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |  6 +++++-
+>  arch/x86/kvm/mmu.c              | 23 +++++++++++++++++++++++
+>  arch/x86/kvm/mmu.h              | 22 ++++++++++++++++++++++
+>  3 files changed, 50 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 531f47c..dc842b6 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -226,7 +226,10 @@ struct kvm_mmu_page {
+>  	/* The page is obsolete if mmu_valid_gen != kvm->arch.mmu_valid_gen.  */
+>  	unsigned long mmu_valid_gen;
+>  
+> -	DECLARE_BITMAP(unsync_child_bitmap, 512);
+> +	union {
+> +		DECLARE_BITMAP(unsync_child_bitmap, 512);
+> +		struct rcu_head rcu;
+> +	};
+>  
+>  #ifdef CONFIG_X86_32
+>  	/*
+> @@ -545,6 +548,7 @@ struct kvm_arch {
+>  	 */
+>  	struct list_head active_mmu_pages;
+>  	struct list_head zapped_obsolete_pages;
+> +	bool rcu_free_shadow_page;
+>  
+>  	struct list_head assigned_dev_head;
+>  	struct iommu_domain *iommu_domain;
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index f8fc0cc..7f3391f 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2322,6 +2322,22 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>  	return ret;
+>  }
+>  
+> +static void free_pages_rcu(struct rcu_head *head)
+> +{
+> +	struct kvm_mmu_page *next, *sp;
 > +
-> +#define rcu_assign_head_desc(pte_list_p, value)        \
-> +       rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p), (unsigned long *)(value))
+> +	sp = container_of(head, struct kvm_mmu_page, rcu);
+> +	while (sp) {
+> +		if (!list_empty(&sp->link))
+> +			next = list_first_entry(&sp->link,
+> +					      struct kvm_mmu_page, link);
+> +		else
+> +			next = NULL;
+> +		kvm_mmu_free_page(sp);
+So here we are calling kvm_mmu_free_page() without holding mmu lock, why
+is it safe?
+
+> +		sp = next;
+> +	}
+> +}
 > +
->  /*
->   * Pte mapping structures:
->   *
-> @@ -1006,14 +1010,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
->                 desc->sptes[1] = spte;
->                 desc_mark_nulls(pte_list, desc);
-> 
-> -               /*
-> -                * Esure the old spte has been updated into desc, so
-> -                * that the another side can not get the desc from pte_list
-> -                * but miss the old spte.
-> -                */
-> -               smp_wmb();
-> -
-> -               *pte_list = (unsigned long)desc | 1;
-> +               rcu_assign_head_desc(pte_list, (unsigned long)desc | 1);
-> 
-> >>
-> >> So i add the smp_wmb() by myself:
-> >> 		/*
-> >> 		 * Esure the old spte has been updated into desc, so
-> >> 		 * that the another side can not get the desc from pte_list
-> >> 		 * but miss the old spte.
-> >> 		 */
-> >> 		smp_wmb();
-> >>
-> >> 		*pte_list = (unsigned long)desc | 1;
-> >>
-> >> But i missed it when inserting a empty desc, in that case, we need the barrier
-> >> too since we should make desc->more visible before assign it to pte_list to
-> >> avoid the lookup side seeing the invalid "nulls".
-> >>
-> >> I also use own code instead of rcu_dereference():
-> >> pte_list_walk_lockless():
-> >> 	pte_list_value = ACCESS_ONCE(*pte_list);
-> >> 	if (!pte_list_value)
-> >> 		return;
-> >>
-> >> 	if (!(pte_list_value & 1))
-> >> 		return fn((u64 *)pte_list_value);
-> >>
-> >> 	/*
-> >> 	 * fetch pte_list before read sptes in the desc, see the comments
-> >> 	 * in pte_list_add().
-> >> 	 *
-> >> 	 * There is the data dependence since the desc is got from pte_list.
-> >> 	 */
-> >> 	smp_read_barrier_depends();
-> >>
-> >> That part can be replaced by rcu_dereference().
-> >>
-> > Yes please, also see commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 for
-> > kind of scary bugs we can get here.
-> 
-> Right, it is likely trigger-able in our case, will fix it.
-> 
-> > 
-> >>> incorrect usage of RCU. I think any access to slab pointers will need to
-> >>> use those.
-> >>
-> >> Remove desc is not necessary i think since we do not mind to see the old
-> >> info. (hlist_nulls_del_rcu() does not use rcu_dereference() too)
-> >>
-> > May be a bug. I also noticed that rculist_nulls uses rcu_dereference()
-> 
-> But list_del_rcu() does not use rcu_assign_pointer() too.
-> 
-This also suspicious.
-
-> > to access ->next, but it does not use rcu_assign_pointer() pointer to
-> > assign it.
-> 
-> You mean rcu_dereference() is used in hlist_nulls_for_each_entry_rcu()? I think
-> it's because we should validate the prefetched data before entry->next is
-> accessed, it is paired with the barrier in rcu_assign_pointer() when add a
-> new entry into the list. rcu_assign_pointer() make other fields in the entry
-> be visible before linking entry to the list. Otherwise, the lookup can access
-> that entry but get the invalid fields.
-> 
-> After more thinking, I still think rcu_assign_pointer() is unneeded when a entry
-> is removed. The remove-API does not care the order between unlink the entry and
-> the changes to its fields. It is the caller's responsibility:
-> - in the case of rcuhlist, the caller uses call_rcu()/synchronize_rcu(), etc to
->   enforce all lookups exit and the later change on that entry is invisible to the
->   lookups.
-> 
-> - In the case of rculist_nulls, it seems refcounter is used to guarantee the order
->   (see the example from Documentation/RCU/rculist_nulls.txt).
-> 
-> - In our case, we allow the lookup to see the deleted desc even if it is in slab cache
->   or its is initialized or it is re-added.
-> 
-> Your thought?
->
-
-As Documentation/RCU/whatisRCU.txt says:
- 
-        As with rcu_assign_pointer(), an important function of
-        rcu_dereference() is to document which pointers are protected by
-        RCU, in particular, flagging a pointer that is subject to changing
-        at any time, including immediately after the rcu_dereference().
-        And, again like rcu_assign_pointer(), rcu_dereference() is
-        typically used indirectly, via the _rcu list-manipulation
-        primitives, such as list_for_each_entry_rcu().
-
-The documentation aspect of rcu_assign_pointer()/rcu_dereference() is
-important. The code is complicated, so self documentation will not hurt.
-I want to see what is actually protected by rcu here. Freeing shadow
-pages with call_rcu() further complicates matters: does it mean that
-shadow pages are also protected by rcu? 
+>  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>  				    struct list_head *invalid_list)
+>  {
+> @@ -2342,6 +2358,13 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>  	 */
+>  	kvm_flush_remote_tlbs(kvm);
+>  
+> +	if (kvm->arch.rcu_free_shadow_page) {
+> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+> +		list_del_init(invalid_list);
+> +		call_rcu(&sp->rcu, free_pages_rcu);
+> +		return;
+> +	}
+> +
+>  	list_for_each_entry_safe(sp, nsp, invalid_list, link) {
+>  		WARN_ON(!sp->role.invalid || sp->root_count);
+>  		kvm_mmu_free_page(sp);
+> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+> index 5b59c57..85405f1 100644
+> --- a/arch/x86/kvm/mmu.h
+> +++ b/arch/x86/kvm/mmu.h
+> @@ -115,4 +115,26 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+>  }
+>  
+>  void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm);
+> +
+> +/*
+> + * The caller should ensure that these two functions should be
+> + * serially called.
+> + */
+> +static inline void kvm_mmu_rcu_free_page_begin(struct kvm *kvm)
+> +{
+> +	rcu_read_lock();
+> +
+> +	kvm->arch.rcu_free_shadow_page = true;
+> +	/* Set the indicator before access shadow page. */
+> +	smp_mb();
+> +}
+> +
+> +static inline void kvm_mmu_rcu_free_page_end(struct kvm *kvm)
+> +{
+> +	/* Make sure that access shadow page has finished. */
+> +	smp_mb();
+> +	kvm->arch.rcu_free_shadow_page = false;
+> +
+> +	rcu_read_unlock();
+> +}
+>  #endif
+> -- 
+> 1.8.1.4
 
 --
 			Gleb.
