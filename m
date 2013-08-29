@@ -1,155 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3H2LJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 07:09:33 -0400
-Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:40424
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751799Ab3H2LJc (ORCPT
+	id S1756004Ab3H2LOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:14:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33806 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab3H2LOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 07:09:32 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(z37d4l551biz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 29 Aug 2013 19:08:50 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 08/16] ARM: mxs: remove custom .init_time hook
-Message-ID: <20130829110849.GB18729@S2101-09.ap.freescale.net>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1377638890-371-9-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 29 Aug 2013 07:14:31 -0400
+Date: Thu, 29 Aug 2013 13:14:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+Message-ID: <20130829111419.GA10002@twins.programming.kicks-ass.net>
+References: <20120307180852.GE17697@suse.de>
+ <20130823130332.GY31370@twins.programming.kicks-ass.net>
+ <20130823181546.GA31370@twins.programming.kicks-ass.net>
+ <20130829092828.GB22421@suse.de>
+ <20130829094342.GX10002@twins.programming.kicks-ass.net>
+ <20130829105656.GD22421@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377638890-371-9-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130829105656.GD22421@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:28:02PM +0200, Sebastian Hesselbarth wrote:
-> @@ -100,19 +101,17 @@ static enum imx23_clk clks_init_on[] __initdata = {
->  	cpu, hbus, xbus, emi, uart,
->  };
->  
-> -int __init mx23_clocks_init(void)
-> +static void __init mx23_clocks_init(struct device_node *np)
->  {
-> -	struct device_node *np;
->  	u32 i;
->  
-> +	clkctrl = of_iomap(np, 0);
-> +	WARN_ON(!clkctrl);
-> +
->  	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-digctl");
->  	digctrl = of_iomap(np, 0);
->  	WARN_ON(!digctrl);
->  
-> -	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-clkctrl");
-> -	clkctrl = of_iomap(np, 0);
-> -	WARN_ON(!clkctrl);
-> -
-
-With the changes, 'np' becomes a pointer to digctl node instead of
-clkctrl as the original.  This will cause problem for
-of_clk_add_provider(np, ...) later in this function.
-
-Same problem with mx28_clocks_init() changes.
-
-Shawn
-
->  	clk_misc_init();
->  
->  	clks[ref_xtal] = mxs_clk_fixed("ref_xtal", 24000000);
-> @@ -162,7 +161,7 @@ int __init mx23_clocks_init(void)
->  		if (IS_ERR(clks[i])) {
->  			pr_err("i.MX23 clk %d: register failed with %ld\n",
->  				i, PTR_ERR(clks[i]));
-> -			return PTR_ERR(clks[i]);
-> +			return;
->  		}
->  
->  	clk_data.clks = clks;
-> @@ -171,6 +170,5 @@ int __init mx23_clocks_init(void)
->  
->  	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
->  		clk_prepare_enable(clks[clks_init_on[i]]);
-> -
-> -	return 0;
->  }
-> +CLK_OF_DECLARE(imx23_clkctrl, "fsl,imx23-clkctrl", mx23_clocks_init);
-> diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
-> index 4faf0af..12d3f3d 100644
-> --- a/drivers/clk/mxs/clk-imx28.c
-> +++ b/drivers/clk/mxs/clk-imx28.c
-> @@ -12,6 +12,7 @@
->  #include <linux/clk.h>
->  #include <linux/clk/mxs.h>
->  #include <linux/clkdev.h>
-> +#include <linux/clk-provider.h>
->  #include <linux/err.h>
->  #include <linux/init.h>
->  #include <linux/io.h>
-> @@ -154,19 +155,17 @@ static enum imx28_clk clks_init_on[] __initdata = {
->  	cpu, hbus, xbus, emi, uart,
->  };
->  
-> -int __init mx28_clocks_init(void)
-> +static void __init mx28_clocks_init(struct device_node *np)
->  {
-> -	struct device_node *np;
->  	u32 i;
->  
-> +	clkctrl = of_iomap(np, 0);
-> +	WARN_ON(!clkctrl);
-> +
->  	np = of_find_compatible_node(NULL, NULL, "fsl,imx28-digctl");
->  	digctrl = of_iomap(np, 0);
->  	WARN_ON(!digctrl);
->  
-> -	np = of_find_compatible_node(NULL, NULL, "fsl,imx28-clkctrl");
-> -	clkctrl = of_iomap(np, 0);
-> -	WARN_ON(!clkctrl);
-> -
->  	clk_misc_init();
->  
->  	clks[ref_xtal] = mxs_clk_fixed("ref_xtal", 24000000);
-> @@ -239,7 +238,7 @@ int __init mx28_clocks_init(void)
->  		if (IS_ERR(clks[i])) {
->  			pr_err("i.MX28 clk %d: register failed with %ld\n",
->  				i, PTR_ERR(clks[i]));
-> -			return PTR_ERR(clks[i]);
-> +			return;
->  		}
->  
->  	clk_data.clks = clks;
-> @@ -250,6 +249,5 @@ int __init mx28_clocks_init(void)
->  
->  	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
->  		clk_prepare_enable(clks[clks_init_on[i]]);
-> -
-> -	return 0;
->  }
-> +CLK_OF_DECLARE(imx28_clkctrl, "fsl,imx28-clkctrl", mx28_clocks_init);
-> diff --git a/include/linux/clk/mxs.h b/include/linux/clk/mxs.h
-> index 90c30dc..5138a90 100644
-> --- a/include/linux/clk/mxs.h
-> +++ b/include/linux/clk/mxs.h
-> @@ -9,8 +9,6 @@
->  #ifndef __LINUX_CLK_MXS_H
->  #define __LINUX_CLK_MXS_H
->  
-> -int mx23_clocks_init(void);
-> -int mx28_clocks_init(void);
->  int mxs_saif_clkmux_select(unsigned int clkmux);
->  
->  #endif
-> -- 
-> 1.7.2.5
+On Thu, Aug 29, 2013 at 11:56:57AM +0100, Mel Gorman wrote:
+> > I thought it was, we crashed somewhere suspiciously close, but no. You
+> > need shared mpols for this to actually trigger and the NUMA stuff
+> > doesn't use that.
+> > 
 > 
+> Ah, so this is a red herring?
 
+Yeah, but I still think its an actual bug. It seems the easiest way to
+trigger this would be to:
+
+ create a task that constantly allocates pages
+ have said task have an MPOL_INTERLEAVE task policy
+ put said task into a cpuset
+ using a different task (your shell for example) flip the cpuset's
+   mems_allowed back and forth.
+
+This would have the shell task constantly rebind (in two steps) our
+allocating task's INTERLEAVE policy.
+
+> > I used whatever nodemask.h did to detect end-of-bitmap and they use
+> > MAX_NUMNODES. See __next_node() and for_each_node() like.
+> > 
+> 
+> The check does prevent us going off the end of the bitmap but does not
+> necessarily return an online node.
+
+Right, but its guaranteed to return a 'valid' node. I don't think it
+returning an offline node is a problem, we'll find it empty and fail the
+page allocation.
+
+> > MAX_NUMNODES doesn't assume contiguous numbers since its the actual size
+> > of the bitmap, nr_online_nodes would hoever.
+> > 
+> 
+> I intended to say nr_node_ids, the same size as buffers such as the
+> task_numa_buffers. If we ever return a nid > nr_node_ids here then
+> task_numa_fault would corrupt memory. However, it should be possible for
+> node_weight to exceed nr_node_ids except maybe during node hot-remove so
+> it's not the problem.
+
+The nodemask situation seems somewhat more confused than the cpumask
+case; how would we ever return a nid > nr_node_ids? Corrupt nodemask?
+
+In the cpumask case we use the runtime limit nr_cpu_ids for all bitmap
+operations, arguably we should make the nodemask stuff do the same.
+
+Less bits to iterate is always good; a MAX_NUMNODES=64
+(x86_64-defconfig) will still iterate all 64 bits, even though its
+unlikely to have more than 1 let alone more than 8 nodes.
+
+> > So I explicitly didn't use the node_isset() test because that's more
+> > likely to trigger than the nid >= MAX_NUMNODES test. Its fine to return
+> > a node that isn't actually part of the mask anymore -- a race is a race
+> > anyway.
+> 
+> Yeah and as long as it's < nr_node_ids it should be ok within the task
+> numa fault handling as well.
+
+Right, I'm just a tad confused on how we could ever get a nid >=
+nr_node_ids except from a prior bug (corrupted nodemask).
