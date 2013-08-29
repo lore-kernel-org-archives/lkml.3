@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab3H1X7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 19:59:36 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60037 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab3H1X7e (ORCPT
+	id S1754889Ab3H2AD1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:03:27 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:58774 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab3H2ADZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 19:59:34 -0400
-Date: Wed, 28 Aug 2013 16:58:55 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: soc update for 3.12 #1
-Message-ID: <20130828235855.GM8607@quad.lixom.net>
-References: <1377532543-349-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377532543-349-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Aug 2013 20:03:25 -0400
+Subject: Re: [RFC PATCH 00/18 v3] Signature verification of hibernate
+ snapshot
+From: joeyli <jlee@suse.com>
+To: Florian Weimer <fw@deneb.enyo.de>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <87eh9dzg00.fsf@mid.deneb.enyo.de>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+	 <87eh9dzg00.fsf@mid.deneb.enyo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Aug 2013 08:01:45 +0800
+Message-ID: <1377734505.19568.39.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 05:55:43PM +0200, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
-> 
-> Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
-> this topic and it is based on 3.11-rc5 like your next/soc branch.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
-> 
->   Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-soc
-> 
-> for you to fetch changes up to 99eb3b40ec42e7fce1fc58429bf9b26c17973c12:
-> 
->   ARM: at91: at91_dt_defconfig: enable rm9200 support (2013-08-26 09:58:29 +0200)
-> 
-> ----------------------------------------------------------------
-> AT91 SoC update for 3.12 take 1
-> - enable kernel uncompress information output for
->   SoC where it was missing: at91sam9n12 and sama5d3
-> - addition of at91rm9200 to the generic at91_dt_defconfig
-> 
-> ----------------------------------------------------------------
-> Jean-Christophe PLAGNIOL-VILLARD (1):
->       ARM: at91: at91_dt_defconfig: enable rm9200 support
-> 
-> voice (4):
->       ARM: at91: sama5d3: add definition for usart base address
->       ARM: at91: include sama5d3.h into hardware.h
->       ARM: at91: sama5: enable kernel uncompress info output
->       ARM: at91: sam9n12: enable kernel uncompress info output
+Hi Florian, 
 
-That doesn't look right. Author should probably be "Bo Shen
-<voice.shen@atmel.com>" instead. Can you fixup and respin, please?
+Thanks for your response.
+
+於 三，2013-08-28 於 23:01 +0200，Florian Weimer 提到：
+> * Chun-Yi Lee:
+> 
+> >  + EFI bootloader must generate RSA key-pair when system boot:
+
+I should add more information on this sentence for mention need GenS4Key
+runtime variable then re-generate key-pair.
+
+Thanks!
+
+> >    - Bootloader store the public key to EFI boottime variable by itself
+> >    - Bootloader put The private key to S4SignKey EFI variable for forward to
+> >      kernel.
+> 
+> Is the UEFI NVRAM really suited for such regular updates?
+> 
+
+Yes, Matthew raised this concern at before. I modified patch to load
+private key in efi stub kernel, before ExitBootServices(), that means we
+don't need generate key-pair at every system boot. So, the above
+procedure of efi bootloader will only run one time. 
+
+User can enable SNAPSHOT_REGEN_KEYS kernel config to notify efi
+booloader regenerate key-pair for every S4 to improve security if he
+want. So, the key-pair re-generate procedure will only launched when S4
+resume, not every system boot.
 
 
--Olof
+Thanks a lot!
+Joey Lee
+
