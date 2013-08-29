@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3H2AZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:25:48 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:51042 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab3H2AZr (ORCPT
+	id S1754676Ab3H2A0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:26:30 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:32837 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3H2A02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:25:47 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-fb-521e9509977c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Dan Carpenter'" <dan.carpenter@oracle.com>
-Cc: "'Anton Vorontsov'" <anton@enomsg.org>,
-        "'David Woodhouse'" <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, "'Joe Perches'" <joe@perches.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Mark Brown'" <broonie@kernel.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
- <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
- <003401ce96f2$0f53b840$2dfb28c0$@samsung.com> <20130813090039.GA5604@mwanda>
- <20130828015834.GH10506@lizard>
- <002d01cea395$0ef33ec0$2cd9bc40$%han@samsung.com>
- <20130828083630.GF19256@mwanda>
-In-reply-to: <20130828083630.GF19256@mwanda>
-Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
-Date: Thu, 29 Aug 2013 09:25:44 +0900
-Message-id: <001a01cea44e$4d1e0360$e75a0a20$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6jydD4V4GuPt+oQKe/CjJRTkYZSgAgv59w
-Content-language: ko
-x-cr-hashedpuzzle: GBY1 LHi5 TIzw X0t5 dgKR d8lS eq9Q wyT3 0wuP ABpUpQ==
- AEFkcA== AEsx6Q== AEtcIQ== AIq0Rg== AJNFQA==
- AKL4Xw==;9;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGEAbgB0AG8AbgBAAGUAbgBvAG0AcwBnAC4AbwByAGcAOwBiAHIAbwBvAG4AaQBlAEAAawBlAHIAbgBlAGwALgBvAHIAZwA7AGQAYQBuAC4AYwBhAHIAcABlAG4AdABlAHIAQABvAHIAYQBjAGwAZQAuAGMAbwBtADsAZAB3AG0AdwAyAEAAaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGcAcgBlAGcAawBoAEAAbABpAG4AdQB4AGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAG8AZQBAAHAAZQByAGMAaABlAHMALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{270EA80C-0723-42D3-A818-4DB44030CB75};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 29 Aug 2013 00:25:28
- GMT;UgBlADoAIABbAFAAQQBUAEMASAAgADMAMwAvADMANQBdACAAcABvAHcAZQByADoAIAB1AHMAZQAgAGQAZQB2AF8AZwBlAHQAXwBwAGwAYQB0AGQAYQB0AGEAKAApAA==
-x-cr-puzzleid: {270EA80C-0723-42D3-A818-4DB44030CB75}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t8zY13OqXJBBhMOsVjMWb+GzeLgVk2L
-	qQ+fsFm8/jedxWLiysnMFs2L17NZXF54idVi9v3HLBaXd81hc+D0mND/idFj8wotj02rOtk8
-	Tsz4zeKxf+4ado+PT2+xeHxZdY3Zo2/LKkaPz5vkAjijuGxSUnMyy1KL9O0SuDL+XOUrWMZa
-	cajvN1MD4wyWLkZODgkBE4n5jzewQdhiEhfurQeyuTiEBJYxSnx7Pp0VpujPno+MEIlFjBIz
-	vuxmgnB+MUo8v/iDHaSKTUBN4suXw2C2iICexNTF+5lAbGaBg0wSG07qQDTsZ5L4/XEHI0iC
-	U0BHYsfFl2ArhAUsJNq7W8GaWQRUJfb9/wgW5xWwlXi0Zhs7hC0o8WPyPRaIoVoSm7c1sULY
-	8hKb17xl7mLkADpVXeLRX12IG4wk3nxYxQZRIiKx78U7RohvFrBLbDlTDWGbSpzZPwEqvpJD
-	YsZOTYgTBCS+TT7EAjFSVmLTAWaIEkmJgytusExglJqF5KBZSA6aheSgWUg2L2BkWcUomlqQ
-	XFCclF5kqlecmFtcmpeul5yfu4kRkiQm7mC8f8D6EGMy0PqJzFKiyfnAJJNXEm9obGZkYWpi
-	amxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkbnuRnLNk98f3KbJ/OU
-	lpk3pPhvNX3PPilyWnvVvpeLrGvX9qnMu/1Pe5pZ2ln/X3df5HA+fWIhlpu5J2jfHIk1iltP
-	d81kEfuxedOhxhsL/+XurIzSMer//PblkZqHRVq/18psWRotKbU7f6vJp+ldLW/Dt04TWBW+
-	aUXRCe6WBKGXPy0bdsz6oMRSnJFoqMVcVJwIANCqY4QoAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMKsWRmVeSWpSXmKPExsVy+t9jAV2OqXJBBis/2VjMWb+GzeLgVk2L
-	qQ+fsFm8/jedxWLiysnMFs2L17NZXF54idVi9v3HLBaXd81hc+D0mND/idFj8wotj02rOtk8
-	Tsz4zeKxf+4ado+PT2+xeHxZdY3Zo2/LKkaPz5vkAjijGhhtMlITU1KLFFLzkvNTMvPSbZW8
-	g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4BuVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
-	GKHrGxIE12NkgAYS1jFm/LnKV7CMteJQ32+mBsYZLF2MnBwSAiYSf/Z8ZISwxSQu3FvP1sXI
-	xSEksIhRYsaX3UwQzi9GiecXf7CDVLEJqEl8+XIYzBYR0JOYung/E4jNLHCQSWLDSR2Ihv1M
-	Er8/7gAbyymgI7Hj4ktWEFtYwEKivbsVrJlFQFVi3/+PYHFeAVuJR2u2sUPYghI/Jt9jgRiq
-	JbF5WxMrhC0vsXnNW+YuRg6gU9UlHv3VhbjBSOLNh1VsECUiEvtevIP6ZgG7xJYz1RC2qcSZ
-	/RMYJzCKzEKyYRaSDbOQbJiFZNQCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFJ6Jn0
-	DsZVDRaHGAU4GJV4eCN+ywYJsSaWFVfmHmKU4GBWEuGdkikXJMSbklhZlVqUH19UmpNafIgx
-	GRgAE5mlRJPzgQkyryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4
-	pRoY1/K9uaXJWHpa8Jn+i68zbwnmfTvS/SYt7biJ5o4A35JLtzTeNc93kXVZ2NeUu38Lc4H3
-	m+Oz9nXdlzt+dhtPzo6WuAkVF3xZJV8uOKYtsGeFdsz3cDOuPmvJxhRD3oLpgXZWDUIq8i4O
-	OS0OaavnB6uofqlWVlPwUvW98je5dalMSn/wrxNKLMUZiYZazEXFiQCpejx3hgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 28 Aug 2013 20:26:28 -0400
+Message-ID: <521E9531.904@tilera.com>
+Date: Wed, 28 Aug 2013 20:26:25 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v2] tile: support KVM for tilegx
+References: <52091682.8020004@siemens.com> <201308122037.r7CKbo99011833@farm-0021.internal.tilera.com> <20130825113953.GN8218@redhat.com> <521AAED7.4080407@tilera.com> <20130826120445.GD8218@redhat.com>
+In-Reply-To: <20130826120445.GD8218@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 28, 2013 5:37 PM, Dan Carpenter wrote:
-> 
-> He doesn't want to take the patch.  He's the maintainer so it's his
-> choice.  That's the end of the story.
-> 
+On 8/26/2013 8:04 AM, Gleb Natapov wrote:
+> On Sun, Aug 25, 2013 at 09:26:47PM -0400, Chris Metcalf wrote:
+>> On 8/25/2013 7:39 AM, Gleb Natapov wrote:
+>>> On Mon, Aug 12, 2013 at 04:24:11PM -0400, Chris Metcalf wrote:
+>>>> This change provides the initial framework support for KVM on tilegx.
+>>>> Basic virtual disk and networking is supported.
+>>>>
+>>> This needs to be broken down to more reviewable patches.
+>> I already broke out one pre-requisite patch that wasn't strictly KVM-related:
+>>
+>> https://lkml.org/lkml/2013/8/12/339
+>>
+>> In addition, we've separately arranged to support booting our kernels in a way that is compatible with the Tilera booter running at the highest privilege level, which enables multiple kernel privilege levels:
+>>
+>> https://lkml.org/lkml/2013/5/2/468
+>>
+>> How would you recommend further breaking down this patch?  It's pretty much just the basic support for minimal KVM.  I suppose I could break out all the I/O related stuff into a separate patch, though it wouldn't amount to much; perhaps the console could also be broken out separately.  Any other suggestions?
+>>
+> First of all please break out host and guest bits. Also I/O related stuff,
+> like you suggest (so that guest PV bits will be in separate patch) and
+> change to a common code (not much as far as I see) with explanation why
+> it is needed. (Why kvm_vcpu_kick() is not needed for instance?)
 
-I know that the maintainer's choice is important,
-because I am also a maintainer of other system or drivers.
+I broke it down into three pieces in the end: the basic host support, the basic guest PV support, and the virtio/console support.  The first piece is still much the biggest.  I found that the generic kvm_vcpu_kick() is fine, so I removed the custom version (which predated the generic version in our internal tree).  Explanations are now in the git commit comments.
 
-But, there is no reasonable reason to object my patch.
+>>> Also can you
+>>> describe the implementation a little bit? Does tile arch has vitalization
+>>> extension this implementation uses, or is it trap and emulate approach?
+>>> If later does it run unmodified guest kernels? What userspace are you
+>>> using with this implementation?
+>> We could do full virtualization via trap and emulate, but we've elected to do a para-virtualized approach.  Userspace runs at PL (privilege level) 0, the guest kernel runs at PL1, and the host runs at PL2.  We have available per-PL resources for various things, and take advantage of having two on-chip timers (for example) to handle timing for the host and guest kernels.  We run the same userspace with either the host or the guest.
+>>
+> OK, thanks for explanation. Why have you decided to do PV over trap and
+> emulate?
 
-I sent all 35 patches that use dev_get_platdata().
-21 patches of 35 patches have been merged by each maintainer.
-The maintainers admitted that these patches make the code simpler
-and enhance the readability, even though these are cosmetic changes.
-Also, until now, there is no objection.
+Performance and simplicity; I added comments to the git commit to provide a rationale.
 
-Best regards,
-Jingoo Han
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
