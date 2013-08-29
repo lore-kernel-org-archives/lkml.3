@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab3H2Gdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 02:33:35 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:47132 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3H2Gde (ORCPT
+	id S1755526Ab3H2GfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 02:35:22 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:60566 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab3H2GfU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 02:33:34 -0400
+	Thu, 29 Aug 2013 02:35:20 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 32/35] arc: Replace __get_cpu_var uses
+Thread-Topic: [gcv v3 32/35] arc: Replace __get_cpu_var uses
+Thread-Index: AQHOpCeLDZJpVlrXFUupRy8NMNd0RQ==
+Date: Thu, 29 Aug 2013 06:33:07 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075140F60@IN01WEMBXA.internal.synopsys.com>
+References: <20130828193457.140443630@linux.com>
+ <00000140c6781cab-d0df0392-b65b-4213-8be0-1e4a04f67fb2-000000@email.amazonses.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130826125322.GA20329@amd.pavel.ucw.cz>
-References: <CA+icZUWYAhwXHY52=mvGJD_jxbzEUG9xXRcu8b4Ocs8O_=Fqpw@mail.gmail.com>
-	<20130826125322.GA20329@amd.pavel.ucw.cz>
-Date: Thu, 29 Aug 2013 12:03:33 +0530
-X-Google-Sender-Auth: rp8kLjurDTCFXsI8n2ayurh47oo
-Message-ID: <CAOh2x==SDOcaWb_Reba0AjwopHnSWCQYbMQwBTR_AGmo0A7BxA@mail.gmail.com>
-Subject: Re: Announcement of Linux v3.11-rc7?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 6:23 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> I am reading LKML offline (mostly on <marc.info>).
->> Did you send out an announcement for Linux v3.11-rc7 or am I missing
->> sth.?
->
-> I don't think it hit the mailing list. (Either that, or list
-> unsubscribed me, again).
+On 08/29/2013 01:18 AM, Christoph Lameter wrote:
+> Acked-by: Vineet Gupta <vgupta@synopsys.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-No you aren't.. Even I can't find it on mailing list :)
+Applied to for-next.
+
+Thx,
+-Vineet
