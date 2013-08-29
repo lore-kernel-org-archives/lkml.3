@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3H2HIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 03:08:48 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:46961 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab3H2HIr (ORCPT
+	id S1755426Ab3H2HLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 03:11:54 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:65042 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab3H2HLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 03:08:47 -0400
-Date: Thu, 29 Aug 2013 16:08:27 +0900
-From: takashi.yoshii.zj@renesas.com
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, arnd@arndb.de,
-        magnus.damm@gmail.com
-Subject: Re: [PATCH] arm: Prevent memory aliasing on non-LPAE kernels
-Message-Id: <20130829160827.5c13ad5af24a4d85c4df2eef@renesas.com>
-In-Reply-To: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
-References: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: Sylpheed 3.4.0beta3 (GTK+ 2.24.17; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Aug 2013 03:11:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1377613817.14731.1.camel@phoenix>
+References: <1377613817.14731.1.camel@phoenix>
+Date: Thu, 29 Aug 2013 09:11:52 +0200
+Message-ID: <CACRpkdb_pM=k0xL0XEq=c5Hu5EtCxJH9Hw6Zy_j5YFc87ococA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: rockchip: Implement .request() and .free()
+ callbacks on the GPIO chips
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stepan,
-What is the status of this fix?
+On Tue, Aug 27, 2013 at 4:30 PM, Axel Lin <axel.lin@ingics.com> wrote:
 
-I am looking forward it to be merged, but it seems not have happend, yet.
-Are you waiting for it to be merged, too? or planning to post v2?
-# IMHO, v2 is not needed. Checked conditions and places are reasonable.
+> Implement .request() and .free() callbacks on the GPIO chips to inform pinctrl
+> when a GPIO is requested or freed.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-I just confirmed on 3.11-rc7, that
-- The issue still exists.
-- This patch can be applied cleanly, and fixes the issue.
+Patch applied with Heiko's tags.
 
-Thanks,
-/yoshii
+Yours,
+Linus Walleij
