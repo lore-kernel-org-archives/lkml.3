@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3H2GAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 02:00:19 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:56430 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab3H2GAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 02:00:18 -0400
-Date: Thu, 29 Aug 2013 08:00:15 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/10] mm/hwpoison: fix lose PG_dirty flag for errors
- on mlocked pages
-Message-ID: <20130829060015.GK19750@two.firstfloor.org>
-References: <1377506774-5377-1-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377506774-5377-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755413Ab3H2GBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 02:01:19 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57475 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753870Ab3H2GBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 02:01:18 -0400
+Message-ID: <1377756078.1928.89.camel@joe-AO722>
+Subject: Re: [PATCH] ARC: Fix __udelay parentheses
+From: Joe Perches <joe@perches.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joern Rennecke <joern.rennecke@embecosm.com>
+Date: Wed, 28 Aug 2013 23:01:18 -0700
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA23075140F26@IN01WEMBXA.internal.synopsys.com>
+References: <1377714588-2144-1-git-send-email-mjonker@synopsys.com>
+	 <C2D7FE5348E1B147BCA15975FBA23075140F26@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-08-29 at 05:55 +0000, Vineet Gupta wrote:
 
-I did a quick read and the patches look all good to me
-(except the one just moving code around -- seems pointless,
-forward declarations are totally fine)
+> The intent of writing orig code was to generate only 1 MPYHU insn (32*32 =
+> high-part-64) for the whole math, at any optimization level whatsoever. If the
+> first MPY is overflowing, u r likely spinning for > 10,000 usec (10ms) which is 1
+> scheduling tick on ARC - not good - presumably for hardware debug. It would be
+> better to use a tight loop there and throw it out later.
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+It's a delay loop.  Does it matter whether
+or not a multiply or division is used?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+
