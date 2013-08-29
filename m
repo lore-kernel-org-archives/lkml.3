@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab3H2Rxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:53:46 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54017 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab3H2Rxp (ORCPT
+	id S1756079Ab3H2Rxo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:53:44 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49536 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab3H2Rxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:53:45 -0400
+	Thu, 29 Aug 2013 13:53:42 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Michal Simek <michal.simek@xilinx.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -14,9 +14,9 @@ To: Michal Simek <michal.simek@xilinx.com>,
         John Stultz <john.stultz@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 3/3] arm: dt: zynq: Mark TTC input clock as unstable
-Date: Thu, 29 Aug 2013 10:53:10 -0700
-Message-Id: <1377798790-28927-4-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH RFC 2/3] clocksource/cadence_ttc: Make clocksource optional
+Date: Thu, 29 Aug 2013 10:53:09 -0700
+Message-Id: <1377798790-28927-3-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1377798790-28927-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1377798790-28927-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -24,34 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Zynq the TTC's input clock is directly derived from the CPU clock.
-I.e. the input clock is not constant but scales with the CPU frequency.
+On some platforms, like Zynq, the input clock for the TTC is directly
+derived from the CPU clock, which means it scales when cpufreq adjusts
+the CPU frequency.
+At the same time the clocksource core expects a clocksource to be
+stable and doesn't allow frequency adjustments.
+
+Therefore a new flag - 'input-clock-unstable' - is added to the DT
+bindings for this driver. In case the flag is present the driver does
+not register the timer as clocksource.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- arch/arm/boot/dts/zynq-7000.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt | 4 ++++
+ drivers/clocksource/cadence_ttc_timer.c                       | 3 ++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 6f54a64..c4d4e59 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -97,6 +97,7 @@
- 			interrupts = < 0 10 4 0 11 4 0 12 4 >;
- 			compatible = "cdns,ttc";
- 			clocks = <&clkc 6>;
-+			input-clock-unstable;
- 			reg = <0xF8001000 0x1000>;
- 			clock-ranges;
- 		};
-@@ -107,6 +108,7 @@
- 			compatible = "cdns,ttc";
- 			clocks = <&clkc 6>;
- 			reg = <0xF8002000 0x1000>;
-+			input-clock-unstable;
- 			clock-ranges;
- 		};
- 		scutimer: scutimer@f8f00600 {
+diff --git a/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt b/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
+index 993695c..a936c0a 100644
+--- a/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
++++ b/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
+@@ -6,6 +6,10 @@ Required properties:
+ - interrupts : A list of 3 interrupts; one per timer channel.
+ - clocks: phandle to the source clock
+ 
++Optional properties:
++- input-clock-unstable : Mark the timer's input clock as unstable. E.g. it
++			 scales with cpufreq.
++
+ Example:
+ 
+ ttc0: ttc0@f8001000 {
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index 99ec898..66aaf6a 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -407,7 +407,8 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+ 
+-	ttc_setup_clocksource(clk_cs, timer_baseaddr);
++	if (!of_property_read_bool(timer, "input-clock-unstable"))
++		ttc_setup_clocksource(clk_cs, timer_baseaddr);
+ 	ttc_setup_clockevent(clk_ce, timer_baseaddr + 4, irq);
+ 
+ 	pr_info("%s #0 at %p, irq=%d\n", timer->name, timer_baseaddr, irq);
 -- 
 1.8.4
 
