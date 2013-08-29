@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab3H2JqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 05:46:13 -0400
-Received: from 219-118-191-131.cust.bit-drive.ne.jp ([219.118.191.131]:50845
-	"EHLO mail.omesemicon.co.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753409Ab3H2JqM (ORCPT
+	id S1756126Ab3H2Jrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 05:47:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48303 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3H2Jrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 05:46:12 -0400
-Message-ID: <521F1869.1090408@jinso.co.jp>
-Date: Thu, 29 Aug 2013 18:46:17 +0900
-From: Nguyen Viet Dung <nv-dung@jinso.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuninori.morimoto.gx@renesas.com
-Subject: Re: [PATCH v3 1/1 resend] i2c: rcar: modify I2C driver
-References: <1377590122-9309-1-git-send-email-nv-dung@jinso.co.jp> <1377590122-9309-2-git-send-email-nv-dung@jinso.co.jp> <20130828090246.GC4086@katana>
-In-Reply-To: <20130828090246.GC4086@katana>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Aug 2013 05:47:51 -0400
+Date: Thu, 29 Aug 2013 19:47:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxim Patlasov <mpatlasov@parallels.com>
+Subject: linux-next: build warnings after merge of the akpm-current tree
+Message-Id: <20130829194741.ff75bb1ce06207d5d3a703de@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Aug_2013_19_47_41_+1000_s2wjfsFJbCaUOeif"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+--Signature=_Thu__29_Aug_2013_19_47_41_+1000_s2wjfsFJbCaUOeif
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank your for the guide.
+Hi Andrew,
 
-I have understood your guide.
-And I have released version 4 of I2C patch.
+After merging the akpm tree, today's linux-next build (sparc64 defconfig
+and others) produced these warnings:
 
-Please check it for me.
+mm/page-writeback.c: In function 'balance_dirty_pages_ratelimited':
+mm/page-writeback.c:1450:13: warning: 'bdi_thresh' may be used uninitialize=
+d in this function [-Wuninitialized]
+mm/page-writeback.c:1372:16: note: 'bdi_thresh' was declared here
+mm/page-writeback.c:1226:16: warning: 'bdi_dirty' may be used uninitialized=
+ in this function [-Wuninitialized]
+mm/page-writeback.c:1369:16: note: 'bdi_dirty' was declared here
 
-Thanks,
-Nguyen Viet Dung
+Possibly introduced by commit 34c547af1e23 ("mm/page-writeback.c: add
+strictlimit feature"), but I am not sure anything can be done about them.
 
-On 08/28/2013 06:02 PM, Wolfram Sang wrote:
-> On Tue, Aug 27, 2013 at 04:55:22PM +0900, Nguyen Viet Dung wrote:
->> This patch modify I2C driver of rcar-H1 to usable on both rcar-H1 and rcar-H2.
->>
->> Signed-off-by: Nguyen Viet Dung <nv-dung@jinso.co.jp>
-> Yes, this is much better. Only minor things...
->
->> +	switch (priv->devtype) {
->> +	default:
->> +	case I2C_RCAR_H1:
->> +		cdf_width = 2;
->> +		break;
->> +	case I2C_RCAR_H2:
->> +		cdf_width = 3;
->> +		break;
->> +	}
->> +
-> Please put the default case block at the end.
->
->> @@ -632,6 +649,13 @@ static int rcar_i2c_probe(struct platform_device *pdev)
->>   	bus_speed = 100000; /* default 100 kHz */
->>   	if (pdata && pdata->bus_speed)
->>   		bus_speed = pdata->bus_speed;
->> +
->> +	if (!pdev->id_entry) {
->> +		dev_err(&pdev->dev, "no entry\n");
->> +		return -ENODEV;
->> +	}
-> This cannot happen. Since you have 'i2c-rcar' in the id_table, the
-> driver core will always match against the id_table and there is always a
-> driver_data defined.
->
->
->> +	priv->devtype = pdev->id_entry->driver_data;
-> Basically the same, but please use
->
-> 	platform_get_device_id(pdev)->driver_data;
->
-> Otherwise good!
->
-> Thanks,
->
->     Wolfram
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__29_Aug_2013_19_47_41_+1000_s2wjfsFJbCaUOeif
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHxjCAAoJEECxmPOUX5FEWJ4P/3x9Fuu5bcMWuPECFAMQvLW2
+U6HgkJh9rmTz1ZMOWwy9I9psVWnZnnnWOMQfnbRjn9aTvh0++56/xAJLLAHjM8qD
++bTNBHrhsmK2mk1ZiK60SDkQTTUWsXKULtufSFWME9O52DYNjA9I1pz9j84odxd2
+z1FHIY90P4YXvosdI6eQcvAGoTwqiij0eqR1OX7xurxoQvmqkfxDYrDVwNBpRKlD
+wkTdVdkKihX/01i+mElgib0iSUGmTEkwQtxlgbclGJyuGToGgasCWZTNqm9mS+gI
+6y896k4xBKFu98cvme98yKqv4+rmmrqaDvG7h+Kn3K3gtaUXqJWmZznQ6P29m2O2
+Ct9qWy54vKPYix34O/jgyVf0zRsvgAijsXZheAhnbnv47DCS5dfiMp6Zgbthj+TO
+x1GmaLWfYEouEYDISHxPa8951CHEMMAqlB5dLtTZUdzTr26ueqBQAh6U0mqjdmB4
+PWNUX7B3vzS0wcYc8A1hS/nG2UBzbYNI9mu/2hqpyc8/3w/1MD3GTMV8Qj+VLa7h
+/qJVDVe+BtFkE+xMEWE/BSWBzii6Tyj2Uyzg82/a1L7AGHnsdP1q/y1I1QpvBG/E
+0ZMWRLjslQTwSJp0YsM8QcW6ipAUmsRMtcWluqjSFe+hOrKCDJfUOo/vnzCcFvDd
+ovK5ukDbpcHGifvBiIeX
+=4nd2
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Aug_2013_19_47_41_+1000_s2wjfsFJbCaUOeif--
