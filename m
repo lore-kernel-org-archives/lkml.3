@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab3H2SYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:24:35 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62477 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab3H2SYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:24:32 -0400
+	id S1756712Ab3H2SZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:25:35 -0400
+Received: from mout.gmx.net ([212.227.17.20]:59884 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756250Ab3H2SZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:25:33 -0400
+From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+To: llvmlinux@lists.linuxfoundation.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, pageexec@freemail.hu, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [llvmlinux] [PATCH] [RFC] [X86] Fix a compilation issue with clang.
+Date: Thu, 29 Aug 2013 20:23:55 +0200
+Message-ID: <2571698.tomcdIIDB2@aragorn.auenland.lan>
+User-Agent: KMail/4.11 (Linux/3.7.10-1.16-default; KDE/4.11.0; x86_64; ; )
+In-Reply-To: <521F9076.1050405@zytor.com>
+References: <1377796428-12719-1-git-send-email-dl9pf@gmx.de> <3804425.88935NyK6A@aragorn.auenland.lan> <521F9076.1050405@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <7583101.2yAsZLOucV@avalon>
-References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-	<2400176.9Vcd5TUYl9@avalon>
-	<20130827171854.GA2988@katana>
-	<7583101.2yAsZLOucV@avalon>
-Date: Thu, 29 Aug 2013 20:24:32 +0200
-Message-ID: <CACRpkda=pZ6xQ2XJke=MBLiH_DAS8CXW+JOZ856ohGZi+fOCzA@mail.gmail.com>
-Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Archit Taneja <archit@ti.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:F9nzdycd2c8hTAtGF8kB3PCPn0BlLmTindUdLVI0ri3ZLCwarP8
+ cIxbiZ0ypJgjeaPtfksS3yvwgMRcCRQU2bvH6zm1GSxca+NusuZUKsJhFwCaafVbmpWnyXj
+ tEnM7vaZG7P391zhxqJs7dDuDiYCGo437s66FYEqHskGZblXKNHMO1easJMqeyW3fzrf2j0
+ rISrqr0n+Qm90aSqNZaOw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 1:58 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Tuesday 27 August 2013 19:18:55 Wolfram Sang wrote:
->> > The driver should support the same chip models reardless of whether it's
->> > used with or without DT. If an entry in the OF table has no corresponding
->> > entry in the I2C table I would consider that as a driver bug.
->>
->> Linus Walleij posted a patch to support DT only probing, but too many
->> side-effects showed up. Some were fixable (probe regressions) and some
->> need more work, if feasible at all. Most prominent is that runtime
->> instantiation of i2c slaves currently needs an entry in the i2c table.
->
-> Linus, I'd like to get this in v3.12 if it's not too late. Could you please
-> provide your input ?
 
-Provided some input on the v4 version, due to being a bit overloaded
-my patch queue is overloaded...
+> Actually, it might be a bad idea.  In C embedded assembly we sometimes
+> need %% and sometimes %.
 
-Yours,
-Linus Walleij
+You speak of arch/x86/kvm/vmx.c, right ?
+
+
