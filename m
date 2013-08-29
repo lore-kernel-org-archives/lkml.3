@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3H2KaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 06:30:10 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:35991 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab3H2KaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 06:30:07 -0400
+	id S1756203Ab3H2KcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 06:32:14 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:54325 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab3H2KcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 06:32:13 -0400
+Message-ID: <521F22D3.5070602@imgtec.com>
+Date: Thu, 29 Aug 2013 11:30:43 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <521F2112.5070501@ti.com>
-References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-	<521F2112.5070501@ti.com>
-Date: Thu, 29 Aug 2013 16:00:06 +0530
-Message-ID: <CAKohponHDZB37UsacYpmaJPb2-P3b_CJ51e7o=X+D3M68GcdEQ@mail.gmail.com>
-Subject: Re: [Query] CPUFreq: Does these machines have separate clock domains
- for CPUs?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Eric Miao <eric.y.miao@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, linux-cris-kernel@axis.com,
-        linux-sh@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
-        Paul Mundt <lethal@linux-sh.org>, sparclinux@vger.kernel.org,
-        Miao Steven <realmz6@gmail.com>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>, <akpm@linuxfoundation.org>,
+        <linux-arch@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 19/35] drivers: Replace __get_cpu_var uses
+References: <20130828193457.140443630@linux.com> <00000140c6781cfa-5624d7f6-8021-42d1-a6ab-d98d2a20d763-000000@email.amazonses.com>
+In-Reply-To: <00000140c6781cfa-5624d7f6-8021-42d1-a6ab-d98d2a20d763-000000@email.amazonses.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_08_29_11_32_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 August 2013 15:53, Sekhar Nori <nsekhar@ti.com> wrote:
-> On DaVinci (DA850), there is an async domain available to keep some
-> peripheral clocks insulated from cpu frequency changes. But there are a
-> bunch of other clocks which do get affected by CPU frequency change
-> (they need to run at a fixed ratio to CPU frequency).
+On 28/08/13 20:48, Christoph Lameter wrote:
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-My question wasn't about how peripherals are getting clocks.. but how
-CPUs are getting them..
+Acked-by: James Hogan <james.hogan@imgtec.com>
 
-Does all CPUs share clock line in Davinci? i.e. if we change freq of one
-cpu then freq of other one also gets changed?
+Let me know if you want me to take this metag_generic.c and the
+arch/metag one through the metag tree.
 
-Or they are capable of running at different frequencies?
+Cheers
+James
 
---
-viresh
