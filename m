@@ -1,149 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3H2Cmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 22:42:31 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:35249 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3H2Cm3 (ORCPT
+	id S1755394Ab3H2CrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 22:47:22 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:52874 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753228Ab3H2CrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 22:42:29 -0400
+	Wed, 28 Aug 2013 22:47:20 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
+Message-ID: <521EB623.5040301@freescale.com>
+Date: Thu, 29 Aug 2013 10:46:59 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU34RC+4uLpeza4PAAK-1CWu82WQ=rhaM_NNj_TVv0EMg@mail.gmail.com>
-References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
-	<20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
-	<CAE9FiQVy2uqLm2XyStYmzxSmsw7TzrB0XDhCRLymnf+L3NPxrA@mail.gmail.com>
-	<52142ffe.84c0440a.57e5.02acSMTPIN_ADDED_BROKEN@mx.google.com>
-	<CAE9FiQW1c3-d+iMebRK6JyHCpMt8mjga-TnsfTuVsC1bQZqsYA@mail.gmail.com>
-	<52146c58.a3e2440a.0f5a.ffffed8dSMTPIN_ADDED_BROKEN@mx.google.com>
-	<CAE9FiQVWVzO93RM_QT-Qp+5jJUEiw=5OOD_454fCjgQ5p9-b3g@mail.gmail.com>
-	<521600cc.22ab440a.2703.53f1SMTPIN_ADDED_BROKEN@mx.google.com>
-	<CAE9FiQXrpZU8DCFoF6NuaOoqwGFGcQfnHV7vdWWPfyAymCCGnQ@mail.gmail.com>
-	<CAE9FiQU34RC+4uLpeza4PAAK-1CWu82WQ=rhaM_NNj_TVv0EMg@mail.gmail.com>
-Date: Wed, 28 Aug 2013 19:42:29 -0700
-X-Google-Sender-Auth: 62t52E6yLIdnkEf-0Rkxt2cDD7U
-Message-ID: <CAE9FiQVPmjxCzOCPQWz4=6JwzB-Vn5YMtOEd-G97SvEgoY3RQg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7bfea09a9d9f5a04e50d0e79
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/3] DMA: Freescale: Add new 8-channel DMA engine device
+ tree nodes
+References: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com> <1377600123-5746-3-git-send-email-hongbo.zhang@freescale.com> <20130827113534.GI19893@e106331-lin.cambridge.arm.com> <521D9E89.7040700@freescale.com> <20130828125153.GC10250@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130828125153.GC10250@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bfea09a9d9f5a04e50d0e79
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Wed, Aug 28, 2013 at 7:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Aug 28, 2013 at 7:18 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> please change to function pointer to
->> void  (*alloc_func)(void *data,
->>                                  unsigned long pnum_begin,
->>                                  unsigned long pnum_end,
->>                                  unsigned long map_count, int nodeid)
->>
->> pnum_begin, pnum_end, map_coun, nodeid, should not be in the struct.
+On 08/28/2013 08:51 PM, Mark Rutland wrote:
+> On Wed, Aug 28, 2013 at 07:54:01AM +0100, Hongbo Zhang wrote:
+>> On 08/27/2013 07:35 PM, Mark Rutland wrote:
+>>> On Tue, Aug 27, 2013 at 11:42:02AM +0100, hongbo.zhang@freescale.com wrote:
+>>>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>>>
+>>>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
+>>>> the device tree nodes for them.
+>>>>
+>>>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>>> ---
+>>>>    .../devicetree/bindings/powerpc/fsl/dma.txt        |   66 ++++++++++++++++
+>>>>    arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+>>>>    arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++++++++
+>>>>    arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++++++++
+>>>>    arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+>>>>    5 files changed, 232 insertions(+), 4 deletions(-)
+>>>>    create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+>>>>    create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>>>> index ddf17af..10fd031 100644
+>>>> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>>>> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>>>> @@ -126,6 +126,72 @@ Example:
+>>>>                   };
+>>>>           };
+>>>>
+>>>> +** Freescale Elo3 DMA Controller
+>>>> +   This is EloPlus controller with 8 channels, used in Freescale Txxx and Bxxx
+>>>> +   series chips, such as t1040, t4240, b4860.
+>>>> +
+>>>> +Required properties:
+>>>> +
+>>>> +- compatible        : must include "fsl,elo3-dma"
+>>>> +- reg               : <registers specifier for DMA general status reg>
+>>>> +- ranges            : describes the mapping between the address space of the
+>>>> +                      DMA channels and the address space of the DMA controller
+>>>> +
+>>>> +- DMA channel nodes:
+>>>> +        - compatible        : must include "fsl,eloplus-dma-channel"
+>>>> +        - reg               : <registers specifier for channel>
+>>>> +        - interrupts        : <interrupt specifier for DMA channel IRQ>
+>>>> +        - interrupt-parent  : optional, if needed for interrupt mapping
+>>>> +
+>>>> +Example:
+>>>> +dma@100300 {
+>>>> +       #address-cells = <1>;
+>>>> +       #size-cells = <1>;
+>>>> +       compatible = "fsl,elo3-dma";
+>>>> +       reg = <0x100300 0x4 0x100600 0x4>;
+>>> Is that one reg entry where #size-cells=2 and #address-cells=2?
+>>>
+>>> That's what the binding implies (given it only describes a single reg
+>>> entry).
+>>>
+>>> if it's two entries, we should make that explicit (both in the binding
+>>> and example):
+>>>
+>>> 	reg = <0x100300 0x4>,
+>>> 	      <0x100600 0x4>;
+>> Yes they are two entries, I will change it this way.
+> Ok. Could you make sure you document what the two reg entries correspond
+> to? That's not clear from "<registers specifier for channel>".
+Yes I am sure, we have reg for DMA controller and also reg for each DMA 
+channel.
+these two reg entries are "registers specifier for DMA general status 
+reg", not "registers specifier for channel"
+because this is an 8-channel DMA controller, we have two general status 
+registers (vs. one status register for 4-chanel DMA controller previously )
+>>>> +       ranges = <0x0 0x100100 0x500>;
+>>> If it is one reg entry then the example ranges property isn't big enough
+>>> to contain the parent-bus-address.
+>> They are two reg entries, so the range is big enough.
+> Ok.
 >
-> looks like that is what is your first version did.
+>>>> +       dma-channel@0 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x0 0x80>;
+>>>> +               interrupts = <28 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@80 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x80 0x80>;
+>>>> +               interrupts = <29 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@100 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x100 0x80>;
+>>>> +               interrupts = <30 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@180 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x180 0x80>;
+>>>> +               interrupts = <31 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@300 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x300 0x80>;
+>>>> +               interrupts = <76 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@380 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x380 0x80>;
+>>>> +               interrupts = <77 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@400 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x400 0x80>;
+>>>> +               interrupts = <78 2 0 0>;
+>>>> +       };
+>>>> +       dma-channel@480 {
+>>>> +               compatible = "fsl,eloplus-dma-channel";
+>>>> +               reg = <0x480 0x80>;
+>>>> +               interrupts = <79 2 0 0>;
+>>>> +       };
+>>>> +};
+>>>> +
+>>>>    Note on DMA channel compatible properties: The compatible property must say
+>>>>    "fsl,elo-dma-channel" or "fsl,eloplus-dma-channel" to be used by the Elo DMA
+>>>>    driver (fsldma).  Any DMA channel used by fsldma cannot be used by another
+>>>> diff --git a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+>>>> index 7399154..ea53ea1 100644
+>>>> --- a/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+>>>> +++ b/arch/powerpc/boot/dts/fsl/b4si-post.dtsi
+>>>> @@ -223,13 +223,13 @@
+>>>>                   reg = <0xe2000 0x1000>;
+>>>>           };
+>>>>
+>>>> -/include/ "qoriq-dma-0.dtsi"
+>>>> +/include/ "elo3-dma-0.dtsi"
+>>>>           dma@100300 {
+>>>>                   fsl,iommu-parent = <&pamu0>;
+>>>>                   fsl,liodn-reg = <&guts 0x580>; /* DMA1LIODNR */
+>>>>           };
+>>>>
+>>>> -/include/ "qoriq-dma-1.dtsi"
+>>>> +/include/ "elo3-dma-1.dtsi"
+>>>>           dma@101300 {
+>>>>                   fsl,iommu-parent = <&pamu0>;
+>>>>                   fsl,liodn-reg = <&guts 0x584>; /* DMA2LIODNR */
+>>>> diff --git a/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+>>>> new file mode 100644
+>>>> index 0000000..69a3277
+>>>> --- /dev/null
+>>>> +++ b/arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+>>>> @@ -0,0 +1,81 @@
+>>>> +/*
+>>>> + * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
+>>> Copy-pasted?
+>>>
+>>> Presumably should be "Elo3 DMA devicetree stub", or similar?
+>>>
+>>> Similarly for elo3-dma-1.dtsi.
+>> Yes copy-pasted, but QorIQ isn't wrong, it is name of Freescale series
+>> chips.
+>> To be more specific, I'd like to use "QorIQ Elo3 DMA devicetree stub"
+> That sounds good to me.
 >
-> I updated it a little bit. please check it.
+> Cheers,
+> Mark.
 >
 
-removed more lines.
 
-Yinghai
 
---047d7bfea09a9d9f5a04e50d0e79
-Content-Type: application/octet-stream; name="0001-sparse_v3.patch"
-Content-Disposition: attachment; filename="0001-sparse_v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hkxdae1d1
-
-RnJvbSBhNzhlMTJhOWZmMzFmMmE3M2I4NzE0NWNlN2FkOTQzYTBmNzEyNzA4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogV2FucGVuZyBMaSA8bGl3YW5wQGxpbnV4LnZuZXQuaWJtLmNv
-bT4NCkRhdGU6IFdlZCwgMjEgQXVnIDIwMTMgMTU6MjM6MDggKzA4MDANClN1YmplY3Q6IFtQQVRD
-SF0gbW0vc3BhcnNlOiBpbnRyb2R1Y2UgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAgZml4IA0KDQpQ
-YXNzIGZ1bmN0aW9uIHBvaW50ZXIgdG8gYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAoKSBpbnN0ZWFk
-IG9mIHRydWUvZmFsc2UuIA0KDQpTaWduZWQtb2ZmLWJ5OiBXYW5wZW5nIExpIDxsaXdhbnBAbGlu
-dXgudm5ldC5pYm0uY29tPg0KLS0tDQogbW0vc3BhcnNlLmMgfCAgIDU0ICsrKysrKysrKysrKysr
-KysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KIDEgZmlsZXMgY2hhbmdl
-ZCwgMjUgaW5zZXJ0aW9ucygrKSwgMjkgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9tbS9z
-cGFyc2UuYyBiL21tL3NwYXJzZS5jDQppbmRleCA1NWU1NzUyLi4wNmFkZjNjIDEwMDY0NA0KLS0t
-IGEvbW0vc3BhcnNlLmMNCisrKyBiL21tL3NwYXJzZS5jDQpAQCAtMzM5LDE0ICszMzksMTUgQEAg
-c3RhdGljIHZvaWQgX19pbml0IGNoZWNrX3VzZW1hcF9zZWN0aW9uX25yKGludCBuaWQsIHVuc2ln
-bmVkIGxvbmcgKnVzZW1hcCkNCiB9DQogI2VuZGlmIC8qIENPTkZJR19NRU1PUllfSE9UUkVNT1ZF
-ICovDQogDQotc3RhdGljIHZvaWQgX19pbml0IHNwYXJzZV9lYXJseV91c2VtYXBzX2FsbG9jX25v
-ZGUodW5zaWduZWQgbG9uZyoqdXNlbWFwX21hcCwNCitzdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNl
-X2Vhcmx5X3VzZW1hcHNfYWxsb2Nfbm9kZSh2b2lkICpkYXRhLA0KIAkJCQkgdW5zaWduZWQgbG9u
-ZyBwbnVtX2JlZ2luLA0KIAkJCQkgdW5zaWduZWQgbG9uZyBwbnVtX2VuZCwNCiAJCQkJIHVuc2ln
-bmVkIGxvbmcgdXNlbWFwX2NvdW50LCBpbnQgbm9kZWlkKQ0KIHsNCiAJdm9pZCAqdXNlbWFwOw0K
-IAl1bnNpZ25lZCBsb25nIHBudW07DQorCXVuc2lnbmVkIGxvbmcgKip1c2VtYXBfbWFwID0gKHVu
-c2lnbmVkIGxvbmcgKiopZGF0YTsNCiAJaW50IHNpemUgPSB1c2VtYXBfc2l6ZSgpOw0KIA0KIAl1
-c2VtYXAgPSBzcGFyc2VfZWFybHlfdXNlbWFwc19hbGxvY19wZ2RhdF9zZWN0aW9uKE5PREVfREFU
-QShub2RlaWQpLA0KIAkJCQkJCQkgIHNpemUgKiB1c2VtYXBfY291bnQpOw0KQEAgLTQzMCwyMyAr
-NDMyLDE1IEBAIHZvaWQgX19pbml0IHNwYXJzZV9tZW1fbWFwc19wb3B1bGF0ZV9ub2RlKHN0cnVj
-dCBwYWdlICoqbWFwX21hcCwNCiAjZW5kaWYgLyogIUNPTkZJR19TUEFSU0VNRU1fVk1FTU1BUCAq
-Lw0KIA0KICNpZmRlZiBDT05GSUdfU1BBUlNFTUVNX0FMTE9DX01FTV9NQVBfVE9HRVRIRVINCi1z
-dGF0aWMgdm9pZCBfX2luaXQgc3BhcnNlX2Vhcmx5X21lbV9tYXBzX2FsbG9jX25vZGUoc3RydWN0
-IHBhZ2UgKiptYXBfbWFwLA0KK3N0YXRpYyB2b2lkIF9faW5pdCBzcGFyc2VfZWFybHlfbWVtX21h
-cHNfYWxsb2Nfbm9kZSh2b2lkICpkYXRhLA0KIAkJCQkgdW5zaWduZWQgbG9uZyBwbnVtX2JlZ2lu
-LA0KIAkJCQkgdW5zaWduZWQgbG9uZyBwbnVtX2VuZCwNCiAJCQkJIHVuc2lnbmVkIGxvbmcgbWFw
-X2NvdW50LCBpbnQgbm9kZWlkKQ0KIHsNCisJc3RydWN0IHBhZ2UgKiptYXBfbWFwID0gKHN0cnVj
-dCBwYWdlICoqKWRhdGE7DQogCXNwYXJzZV9tZW1fbWFwc19wb3B1bGF0ZV9ub2RlKG1hcF9tYXAs
-IHBudW1fYmVnaW4sIHBudW1fZW5kLA0KIAkJCQkJIG1hcF9jb3VudCwgbm9kZWlkKTsNCiB9DQog
-I2Vsc2UNCi0NCi1zdGF0aWMgdm9pZCBfX2luaXQgc3BhcnNlX2Vhcmx5X21lbV9tYXBzX2FsbG9j
-X25vZGUoc3RydWN0IHBhZ2UgKiptYXBfbWFwLA0KLQkJCQl1bnNpZ25lZCBsb25nIHBudW1fYmVn
-aW4sDQotCQkJCXVuc2lnbmVkIGxvbmcgcG51bV9lbmQsDQotCQkJCXVuc2lnbmVkIGxvbmcgbWFw
-X2NvdW50LCBpbnQgbm9kZWlkKQ0KLXsNCi19DQotDQogc3RhdGljIHN0cnVjdCBwYWdlIF9faW5p
-dCAqc3BhcnNlX2Vhcmx5X21lbV9tYXBfYWxsb2ModW5zaWduZWQgbG9uZyBwbnVtKQ0KIHsNCiAJ
-c3RydWN0IHBhZ2UgKm1hcDsNCkBAIC00NzEsOSArNDY2LDEwIEBAIHZvaWQgX19hdHRyaWJ1dGVf
-Xygod2VhaykpIF9fbWVtaW5pdCB2bWVtbWFwX3BvcHVsYXRlX3ByaW50X2xhc3Qodm9pZCkNCiAv
-KioNCiAgKiAgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAgLSBtZW1vcnkgYWxsb2N0aW9uIGZvciBw
-YWdlYmxvY2sgZmxhZ3MgYW5kIHZtZW1tYXANCiAgKiAgQG1hcDogdXNlbWFwX21hcCBmb3IgcGFn
-ZWJsb2NrIGZsYWdzIG9yIG1tYXBfbWFwIGZvciB2bWVtbWFwDQotICogIEB1c2VfbWFwOiB0cnVl
-IGlmIG1lbW9yeSBhbGxvY2F0ZWQgZm9yIHBhZ2VibG9jayBmbGFncywgb3RoZXJ3aXNlIGZhbHNl
-DQogICovDQotc3RhdGljIHZvaWQgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAodW5zaWduZWQgbG9u
-ZyAqKm1hcCwgYm9vbCB1c2VfbWFwKQ0KK3N0YXRpYyB2b2lkIGFsbG9jX3VzZW1hcF9hbmRfbWVt
-bWFwKHZvaWQgKCphbGxvY19mdW5jKQ0KKwkJCQkodm9pZCAqKiwgdW5zaWduZWQgbG9uZywgdW5z
-aWduZWQgbG9uZywNCisJCQkJdW5zaWduZWQgbG9uZywgaW50KSwgdm9pZCAqZGF0YSkNCiB7DQog
-CXVuc2lnbmVkIGxvbmcgcG51bTsNCiAJdW5zaWduZWQgbG9uZyBtYXBfY291bnQ7DQpAQCAtNTA0
-LDI0ICs1MDAsMTYgQEAgc3RhdGljIHZvaWQgYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAodW5zaWdu
-ZWQgbG9uZyAqKm1hcCwgYm9vbCB1c2VfbWFwKQ0KIAkJCWNvbnRpbnVlOw0KIAkJfQ0KIAkJLyog
-b2ssIHdlIG5lZWQgdG8gdGFrZSBjYWtlIG9mIGZyb20gcG51bV9iZWdpbiB0byBwbnVtIC0gMSov
-DQotCQlpZiAodXNlX21hcCkNCi0JCQlzcGFyc2VfZWFybHlfdXNlbWFwc19hbGxvY19ub2RlKG1h
-cCwgcG51bV9iZWdpbiwgcG51bSwNCi0JCQkJCQkgbWFwX2NvdW50LCBub2RlaWRfYmVnaW4pOw0K
-LQkJZWxzZQ0KLQkJCXNwYXJzZV9lYXJseV9tZW1fbWFwc19hbGxvY19ub2RlKChzdHJ1Y3QgcGFn
-ZSAqKiltYXAsDQotCQkJCXBudW1fYmVnaW4sIHBudW0sIG1hcF9jb3VudCwgbm9kZWlkX2JlZ2lu
-KTsNCisJCWFsbG9jX2Z1bmMoZGF0YSwgcG51bV9iZWdpbiwgcG51bSwNCisJCQkJCW1hcF9jb3Vu
-dCwgbm9kZWlkX2JlZ2luKTsNCiAJCS8qIG5ldyBzdGFydCwgdXBkYXRlIGNvdW50IGV0YyovDQog
-CQlub2RlaWRfYmVnaW4gPSBub2RlaWQ7DQogCQlwbnVtX2JlZ2luID0gcG51bTsNCiAJCW1hcF9j
-b3VudCA9IDE7DQogCX0NCiAJLyogb2ssIGxhc3QgY2h1bmsgKi8NCi0JaWYgKHVzZV9tYXApDQot
-CQlzcGFyc2VfZWFybHlfdXNlbWFwc19hbGxvY19ub2RlKG1hcCwgcG51bV9iZWdpbiwNCi0JCQkJ
-TlJfTUVNX1NFQ1RJT05TLCBtYXBfY291bnQsIG5vZGVpZF9iZWdpbik7DQotCWVsc2UNCi0JCXNw
-YXJzZV9lYXJseV9tZW1fbWFwc19hbGxvY19ub2RlKChzdHJ1Y3QgcGFnZSAqKiltYXAsDQotCQkJ
-cG51bV9iZWdpbiwgTlJfTUVNX1NFQ1RJT05TLCBtYXBfY291bnQsIG5vZGVpZF9iZWdpbik7DQor
-CWFsbG9jX2Z1bmMoZGF0YSwgcG51bV9iZWdpbiwgTlJfTUVNX1NFQ1RJT05TLA0KKwkJCQkJbWFw
-X2NvdW50LCBub2RlaWRfYmVnaW4pOw0KIH0NCiANCiAvKg0KQEAgLTU2MSwxNCArNTUzLDE2IEBA
-IHZvaWQgX19pbml0IHNwYXJzZV9pbml0KHZvaWQpDQogCXVzZW1hcF9tYXAgPSBhbGxvY19ib290
-bWVtKHNpemUpOw0KIAlpZiAoIXVzZW1hcF9tYXApDQogCQlwYW5pYygiY2FuIG5vdCBhbGxvY2F0
-ZSB1c2VtYXBfbWFwXG4iKTsNCi0JYWxsb2NfdXNlbWFwX2FuZF9tZW1tYXAodXNlbWFwX21hcCwg
-dHJ1ZSk7DQorCWFsbG9jX3VzZW1hcF9hbmRfbWVtbWFwKHNwYXJzZV9lYXJseV91c2VtYXBzX2Fs
-bG9jX25vZGUsDQorCQkJCQkJKHZvaWQgKil1c2VtYXBfbWFwKTsNCiANCiAjaWZkZWYgQ09ORklH
-X1NQQVJTRU1FTV9BTExPQ19NRU1fTUFQX1RPR0VUSEVSDQogCXNpemUyID0gc2l6ZW9mKHN0cnVj
-dCBwYWdlICopICogTlJfTUVNX1NFQ1RJT05TOw0KIAltYXBfbWFwID0gYWxsb2NfYm9vdG1lbShz
-aXplMik7DQogCWlmICghbWFwX21hcCkNCiAJCXBhbmljKCJjYW4gbm90IGFsbG9jYXRlIG1hcF9t
-YXBcbiIpOw0KLQlhbGxvY191c2VtYXBfYW5kX21lbW1hcCgodW5zaWduZWQgbG9uZyAqKiltYXBf
-bWFwLCBmYWxzZSk7DQorCWFsbG9jX3VzZW1hcF9hbmRfbWVtbWFwKHNwYXJzZV9lYXJseV9tZW1f
-bWFwc19hbGxvY19ub2RlLA0KKwkJCQkJCSh2b2lkICopbWFwX21hcCk7DQogI2VuZGlmDQogDQog
-CWZvciAocG51bSA9IDA7IHBudW0gPCBOUl9NRU1fU0VDVElPTlM7IHBudW0rKykgew0KLS0gDQox
-LjcuNy42DQoNCg==
---047d7bfea09a9d9f5a04e50d0e79--
