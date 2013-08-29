@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab3H2RfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:35:18 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4629 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab3H2RfQ convert rfc822-to-8bit (ORCPT
+	id S1756071Ab3H2Rgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:36:41 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:60361 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab3H2Rgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:35:16 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Sherman Yin" <syin@broadcom.com>
-To: "Linus Walleij" <linus.walleij@linaro.org>,
+	Thu, 29 Aug 2013 13:36:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130829163611.GL10783@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+	<1376243970-6489-10-git-send-email-tomasz.figa@gmail.com>
+	<20130829163611.GL10783@sirena.org.uk>
+Date: Thu, 29 Aug 2013 19:36:38 +0200
+Message-ID: <CACRpkdavSeiraVhjdaitLxBg+RE8h+N33uvddaCQGRcoui7=5Q@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH 09/18] ASoC: Samsung: Do not queue cyclic
+ buffers multiple times
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@kernel.org>, Vinod Koul <vinod.koul@intel.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-spi@vger.kernel.org,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-cc: "Stephen Warren" <swarren@nvidia.com>,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>
-Subject: RE: [PATCH] pinctrl: sunxi: drop lock on error path
-Thread-Topic: [PATCH] pinctrl: sunxi: drop lock on error path
-Thread-Index: AQHOpNwoQQMJ8qDPuEiABiBsb7Xy2pmsccCQ
-Date: Thu, 29 Aug 2013 17:35:08 +0000
-Message-ID: <051069C10411E24D9749790C498526FA1BDE04FD@SJEXCHMB12.corp.ad.broadcom.com>
-References: <1377796784-31147-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1377796784-31147-1-git-send-email-linus.walleij@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
-MIME-Version: 1.0
-X-WSS-ID: 7E015C6F2L879476703-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->@@ -291,8 +291,10 @@ static int sunxi_pconf_group_set(struct pinctrl_dev
->*pctldev,
-> 		switch (pinconf_to_config_param(configs[i])) {
-> 		case PIN_CONFIG_DRIVE_STRENGTH:
-> 			strength = pinconf_to_config_argument(configs[i]);
->-			if (strength > 40)
->+			if (strength > 40) {
->+				spin_unlock_irqrestore(&pctl->lock, flags);
-> 				return -EINVAL;
->+			}
-> 			/*
-> 			 * We convert from mA to what the register expects:
-> 			 *   0: 10mA
+On Thu, Aug 29, 2013 at 6:36 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Sun, Aug 11, 2013 at 07:59:21PM +0200, Tomasz Figa wrote:
+>> The legacy S3C-DMA API required every period of a cyclic buffer to be
+>> queued separately. After conversion of Samsung ASoC to Samsung DMA
+>> wrappers somebody made an assumption that the same is needed for DMA
+>> engine API, which is not true.
+>
+> Applied, thanks.
 
-Looks good.
+OK Vinod can you take in patch 1 thru 8?
 
-Regards,
-Sherman
-
+Yours,
+Linus Walleij
