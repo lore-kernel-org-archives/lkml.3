@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab3H2Rbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 13:31:39 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:59990 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab3H2Rbh (ORCPT
+	id S1755993Ab3H2Rb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 13:31:59 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36042 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab3H2Rb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 13:31:37 -0400
-Date: Thu, 29 Aug 2013 10:31:33 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
-Message-ID: <20130829173133.GA549@roeck-us.net>
-References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
- <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
- <20130801134632.GY9916@kw.sim.vm.gnt>
- <CACRpkdZcEPM-u19pc+v_cRqUSfJBFZ49rJYiewQ1sWWSU5YxEg@mail.gmail.com>
- <20130829125754.GA8813@srcf.ucam.org>
- <521F4F95.5080103@roeck-us.net>
- <20130829153738.GA16306@srcf.ucam.org>
- <20130829160830.GB25021@roeck-us.net>
- <20130829162551.GA17411@srcf.ucam.org>
+	Thu, 29 Aug 2013 13:31:57 -0400
+Date: Thu, 29 Aug 2013 10:31:53 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.11-rc7
+Message-ID: <20130829173153.GA1623@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
 Content-Disposition: inline
-In-Reply-To: <20130829162551.GA17411@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 05:25:51PM +0100, Matthew Garrett wrote:
-> On Thu, Aug 29, 2013 at 09:08:30AM -0700, Guenter Roeck wrote:
-> > On Thu, Aug 29, 2013 at 04:37:38PM +0100, Matthew Garrett wrote:
-> > > On Thu, Aug 29, 2013 at 06:41:41AM -0700, Guenter Roeck wrote:
-> > > The majority of board vendors clearly don't expect the OS to drive the 
-> > > hwmon chips - they're there for the benefit of ACPI and SMM code. That 
-> > > doesn't mean that there's no benefit in having drivers for them, just 
-> > > that the board vendors don't care about that use case and so won't do 
-> > > anything to make it easier.
-> > > 
-> > Actually, not entirely true. Some vendors even provide software running on
-> > Windows to access those chips (including access to fans controlled through
-> > GPIO pins) and to provide information to the user. It might be more accurate
-> > to say that some board vendors don't care about Linux (or about providing
-> > access through ACPI, for that matter).
-> 
-> Eh. If they're really providing code that just assumes that hardware is 
-> present and bangs on it, what choice do we have? You've checked that the 
-> machines in question don't have a magic ACPI device that provides 
-> resource information?
-> 
-Not to my knowledge. One vendor doing this extensively is ASRock. They have
-a Windows based tuning aplication which lets users even set chip voltages
-through SuperIO GPIO pins. Not that I would recommend supporting anything
-like that in Linux ;).
 
-I also have a couple of Intel motherboards which don't support ACPI methods 
-to access hardware monitoring information or the watchdog on the SuperIO chip.
-Guess they don't want me to use that information ;).
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There is lots of hardware monitoring tools available for Windows. Practically
-none of them uses ACPI to collect the information from the hardware. Instead,
-they use the same method we use in the Linux kernel to detect the SuperIO chip.
-An open source tool is http://openhardwaremonitor.org/. 
+Hi Linus,
 
-> > Question here is what the Linux kernel community's policy is going to be
-> > to handle such cases. Pragmatic or dogmatic ?
-> 
-> I don't see any benefit in changing the status quo. Sometimes hardware 
-> is just shit. The majority of x86 vendors certainly don't care about 
-> anything we do, so it's not like we're in a position to force them to 
-> change.
-> 
-Me not either. It just sounded to me that this was the suggestion, so I was
-asking for clarification. It doesn't make sense for people like me to submit
-a driver into the kernel only to have it rejected for non-technical reasons.
+Please pull from:
 
-Guenter
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. Just a couple of new IDs in
+Wacom and xpad drivers, i8042 is now disabled on ARC, and data checks
+in Elantech driver that were overly relaxed by the previous patch are
+now tightened.
+
+Changelog:
+---------
+
+Mag (1):
+      Input: xpad - add signature for Razer Onza Classic Edition
+
+Matteo Delfino (1):
+      Input: elantech - fix packet check for v3 and v4 hardware
+
+Mischa Jonker (1):
+      Input: i8042 - disable the driver on ARC platforms
+
+Ping Cheng (1):
+      Input: wacom - add support for 0x300 and 0x301
+
+
+Diffstat:
+--------
+
+ drivers/input/joystick/xpad.c    |  1 +
+ drivers/input/mouse/elantech.c   | 44 ++++++++++++++++++++++++++++++++++++=
+----
+ drivers/input/mouse/elantech.h   |  1 +
+ drivers/input/serio/Kconfig      |  3 ++-
+ drivers/input/tablet/wacom_wac.c | 10 ++++++++-
+ 5 files changed, 53 insertions(+), 6 deletions(-)
+
+--=20
+Dmitry
+
+
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSH4WJAAoJEH70+W8r6ZYqPmMQAI6a3jlPtt5O42u/YR1hkIRo
+vmRiLnvEFB8MvxWbgv5IwqdgMfKO/ccYeD8ALE6ygyR5AcqXmYD7fe1nmepgTexH
+8a1nFtGuHoHtIA1Y9txRl84lwCuMNDA1zwpfPY/OvggWRtfA7FE1V0DRoQJmjOeT
+oOXnXrE3novtbuL/cKuuMrHkhZu21Rb7aG15w73ee9LGDkHS7clKsfZZLzVjVehQ
+NjZKIHXZDFAKw5lzh4PM4A9cBovOaspJSn9lIm58UIBpo6RmFLybywfIUfSwkJXt
+a0RqlcnE97VEjNW0X7Dy0B9dkXe3Ioz11vUMp2cGPseFZ1ersZMJk2HUdDglNS+B
+rMezOspYUFWnwWR/HcMBDzgXjibLiyLXo/0Lao6h0PgBAUuOIDgA4GY2BEoj6qn7
+puooX2H25eTsXF4mp8ENljGWglbNufqXNxQnjpDs4pxnUAh7lh+t0lyq6mpfaziC
+K3jgp7yTOlP2khaxpquw5V1ymMyOEsDz2Q5WfqitW0shyK2GpxiG95z/wKYjIPPV
+/yaMzQyXzCveGTMlXDoaKXJDnENHxahvoa02UBddvdJ8Iqkp4Ls1XiH30yoOtMm2
+zR7VSaddloKtJ7LfGvLb4mfcu+BG30jDgNOTW376fH75v9EGQIpekTPy8IYUyMMr
+FaD8A0rcpFR2p6RqnIdD
+=YS7B
+-----END PGP SIGNATURE-----
+
+--SUOF0GtieIMvvwua--
