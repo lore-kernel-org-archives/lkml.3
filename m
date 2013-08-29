@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3H2OEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:04:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:10159 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511Ab3H2OEk (ORCPT
+	id S1753440Ab3H2OKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:10:43 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:64632 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3H2OKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:04:40 -0400
-From: Libin <huawei.libin@huawei.com>
-To: <akpm@linux-foundation.org>, <tj@kernel.org>, <viro@zeniv.linux.org.uk>,
-        <eparis@redhat.com>, <tglx@linutronix.de>, <rusty@rustcorp.com.au>,
-        <ebiederm@xmission.com>, <paulmck@linux.vnet.ibm.com>,
-        <john.stultz@linaro.org>, <mingo@redhat.com>, <peterz@infradead.org>,
-        <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <jovi.zhangwei@huawei.com>, <guohanjun@huawei.com>,
-        <zhangdianfang@huawei.com>, <wangyijing@huawei.com>,
-        <huawei.libin@huawei.com>
-Subject: [PATCH 06/14] irq: Fix invalid wakeup in irq_wait_for_interrupt
-Date: Thu, 29 Aug 2013 21:57:41 +0800
-Message-ID: <1377784669-28140-7-git-send-email-huawei.libin@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
+	Thu, 29 Aug 2013 10:10:42 -0400
+Date: Thu, 29 Aug 2013 10:10:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Libin <huawei.libin@huawei.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk, eparis@redhat.com,
+        tglx@linutronix.de, rusty@rustcorp.com.au, ebiederm@xmission.com,
+        paulmck@linux.vnet.ibm.com, john.stultz@linaro.org, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        jovi.zhangwei@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, wangyijing@huawei.com
+Subject: Re: [PATCH 00/14] Fix bug about invalid wake up problem
+Message-ID: <20130829141037.GB3985@htj.dyndns.org>
 References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If this thread is preempted at(or before) location a, and the other thread
-set the condition(kthread_stop). After that when this thread is re-scheduled,
-calling set_current_state to set itself as state TASK_INTERRUPTIBLE, if it is
-preempted again after that and before __set_current_state(TASK_RUNNING), it
-triggers the invalid wakeup problem.
------------------------
-irq_wait_for_interrupt()
------------------------
-...
-//location a
-set_current_state(TASK_INTERRUPTIBLE);
-//location b
-while (!kthread_should_stop()) {
+Hello, Libin.
 
-	if (test_and_clear_bit(IRQTF_RUNTHREAD,
-					   &action->thread_flags)) {
-			__set_current_state(TASK_RUNNING);
-			return 0;
-	}
-	schedule();//location c
-	set_current_state(TASK_INTERRUPTIBLE);
-	//location d
-}
-__set_current_state(TASK_RUNNING);
-...
+I'm completely confused by this series....
 
-The following circumstance will also trigger this issue:
-At location c, consumer is scheduled out, and be preempted after calling
-set_current_state(TASK_INTERRUPTIBLE) when it be re-schdeuled.
+On Thu, Aug 29, 2013 at 09:57:35PM +0800, Libin wrote:
+> 1)Problem Description:
+> The prototype of invalid wakeup problem is as follows:
+> ========================================================================
+> ----------------------------
+> Consumer Thread
+> ----------------------------
+> ...
+> if (list_empty(&list)){
+> 	//location a 
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> 	schedule();
+> }
+> ...
+> ----------------------------
+> Producer Thread
+> ----------------------------
+> ...
+> list_add_tail(&item, &list);
+> wake_up_process(A);
+> ...
 
-To solve this problem, using preempt_disable() to bound the operaion that
-setting the task state and the conditions(set by the wake thread) validation.
+This is of course broken.  set_current_state() should of course come
+*before* the conditions is checked.  This is just plain broken code.
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
----
- kernel/irq/manage.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> In most cases, the kernel codes use a form similar to the following:
+> --------------------------------------------
+>  ...
+>  //location a
+>  ...
+>  set_current_state(TASK_INTERRUPTIBLE);
+>  //location b
+>  while (list_empty(&product_list)){
+> 	schedule();	//location c
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> 	//location d
+> }
+> __set_current_state(TASK_RUNNING);
+> ...
+> --------------------------------------------
+> At location a, consumer is preempted, and producer is scheduled,
+> adding item to product_list and waking up consumer. After consumer is
+> re-scheduled, calling set_current_state to set itself as state
+> TASK_INTERRUPTIBLE, if it is preempted again before __set_current_state(TASK_RUNNING),
+> also trigger the invalid wakeup problem that the consumer will not be scheduled
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 514bcfd..09cb02f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -655,6 +655,7 @@ static irqreturn_t irq_nested_primary_handler(int irq, void *dev_id)
- 
- static int irq_wait_for_interrupt(struct irqaction *action)
- {
-+	preempt_disable();
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
- 	while (!kthread_should_stop()) {
-@@ -662,12 +663,16 @@ static int irq_wait_for_interrupt(struct irqaction *action)
- 		if (test_and_clear_bit(IRQTF_RUNTHREAD,
- 				       &action->thread_flags)) {
- 			__set_current_state(TASK_RUNNING);
-+			preempt_enable();
- 			return 0;
- 		}
-+		preempt_enable();
- 		schedule();
-+		preempt_disable();
- 		set_current_state(TASK_INTERRUPTIBLE);
- 	}
- 	__set_current_state(TASK_RUNNING);
-+	preempt_enable();
- 	return -1;
- }
- 
+Why?  Getting preempted != calling schedule().  A preempted task will
+be rescheduled *regardless* of ifs current->state; otherwise, the
+whole kernel is severely broken.  Tasks never get deactivated while
+preempted.
+
+> and the item be added by producer can't be consumed.
+> 
+> The following circumstance will also trigger this issue:
+> At location c, consumer is scheduled out, and be preempted after calling
+> set_current_state(TASK_INTERRUPTIBLE) when it be re-schdeuled.
+
+What?
+
+> 2)Test:
+> I have written a test module to trigger the problem by adding some
+> synchronization condition. I will post it in the form of an attachment soon.
+> 
+> Test result as follows:
+> [103135.332683] wakeup_test: create two kernel threads - producer & consumer
+> [103135.332686] wakeup_test: module loaded successfully
+> [103135.332692] wakeup_test: kthread producer try to wake up the kthread consumer
+> [103165.299865] wakeup_test: kthread consumer have waited for 30s, indicating
+> trigger an invalid wakeup problem!
+
+The most interesting question here is "what were you testing?".  Can
+you please post the test code?
+
+For the whole series,
+
+ Nacked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
 -- 
-1.8.2.1
-
-
+tejun
