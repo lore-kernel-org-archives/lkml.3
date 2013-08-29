@@ -1,88 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3H2NaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:30:22 -0400
-Received: from fieldses.org ([174.143.236.118]:46655 "EHLO fieldses.org"
+	id S1753756Ab3H2Nah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:30:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab3H2NaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:30:20 -0400
-Date: Thu, 29 Aug 2013 09:30:10 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [uml-devel] Issues with a rather unusual configured NFS server
-Message-ID: <20130829133010.GA14773@fieldses.org>
-References: <52075E01.7030506@gmx.de>
- <20130812143640.GF4596@quack.suse.cz>
- <20130813215313.GH17781@fieldses.org>
- <20130827180655.GE14809@fieldses.org>
- <521E318C.7040401@gmx.de>
- <CAFLxGvyK5+nB9TgW1uPho9KGwQrWQHx=wEpj+o-mZcN92bWAOg@mail.gmail.com>
+	id S1753490Ab3H2Nae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 09:30:34 -0400
+Date: Thu, 29 Aug 2013 15:30:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, memcg: store memcg name for oom kill log consistency
+Message-ID: <20130829133032.GB12077@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1308282302450.14291@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFLxGvyK5+nB9TgW1uPho9KGwQrWQHx=wEpj+o-mZcN92bWAOg@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1308282302450.14291@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 11:57:45AM +0200, richard -rw- weinberger wrote:
-> On Wed, Aug 28, 2013 at 7:21 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> > On 08/27/2013 08:06 PM, J. Bruce Fields wrote:
-> >> On Tue, Aug 13, 2013 at 05:53:14PM -0400, bfields wrote:
-> >>> On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
-> >>>> On Sun 11-08-13 11:48:49, Toralf Förster wrote:
-> >>>>> so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
-> >>>>> - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
-> >>>>>
-> >>>>> It can re reproduced, if
-> >>>>>    - the NFS share is an EXT3 or EXT4 directory
-> >>>>>    - and it is created at file located at tempfs and mounted via loop device
-> >>>>>    - and the NFS server is forced to umount the NFS share
-> >>>>>    - and the server forced to restart the NSF service afterwards
-> >>>>>    - and trinity is used
-> >>>>>
-> >>>>> I could find a scenario for an automated bisect. 2 times it brought this commit
-> >>>>> commit 68a3396178e6688ad7367202cdf0af8ed03c8727
-> >>>>> Author: J. Bruce Fields <bfields@redhat.com>
-> >>>>> Date:   Thu Mar 21 11:21:50 2013 -0400
-> >>>>>
-> >>>>>     nfsd4: shut down more of delegation earlier
-> >>>
-> >>> Thanks for the report.  I think I see the problem--after this commit
-> >>> nfs4_set_delegation() failures result in nfs4_put_delegation being
-> >>> called, but nfs4_put_delegation doesn't free the nfs4_file that has
-> >>> already been set by alloc_init_deleg().
-> >>>
-> >>> Let me think about how to fix that....
-> >>
-> >> Sorry for the slow response--can you check whether this fixes the
-> >> problem?
-> >>
-> > Yes.
-> >
-> > With the attached patch the problem can't be reproduced any longer with
-> > the prepared test case and current git kernels.
+On Wed 28-08-13 23:03:54, David Rientjes wrote:
+> A shared buffer is currently used for the name of the oom memcg and the
+> memcg of the killed process.  There is no serialization of memcg oom
+> kills, so this buffer can easily be overwritten if there is a concurrent
+> oom kill in another memcg.
+
+Right.
+
+> This patch stores the names of the memcgs directly in struct mem_cgroup.
+
+I do not like to make every mem_cgroup larger even if it never sees an
+OOM.
+
+Wouldn't it be much easier to add a new lock (memcg_oom_info_lock) inside
+mem_cgroup_print_oom_info instead? This would have a nice side effect
+that parallel memcg oom kill messages wouldn't interleave.
+
+> This allows it to be printed anytime during the oom kill without fearing
+> that it will change or become corrupted.  It also ensures that the name
+> of the memcg that is oom and the memcg of the killed process are the same
+> even if renamed at the same time.
 > 
-> BTW: Is nobody else fuzz testing NFS?
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  mm/memcontrol.c | 49 +++++++++++++++++++++++--------------------------
+>  1 file changed, 23 insertions(+), 26 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -83,6 +83,8 @@ static int really_do_swap_account __initdata = 0;
+>  #define do_swap_account		0
+>  #endif
+>  
+> +/* First 128 bytes of memcg name should be unique */
+> +#define MEM_CGROUP_STORE_NAME_LEN	128
+>  
+>  static const char * const mem_cgroup_stat_names[] = {
+>  	"cache",
+> @@ -247,6 +249,9 @@ struct mem_cgroup {
+>  	/* OOM-Killer disable */
+>  	int		oom_kill_disable;
+>  
+> +	/* name of memcg for display purposes only */
+> +	char		name[MEM_CGROUP_STORE_NAME_LEN];
+> +
+>  	/* set when res.limit == memsw.limit */
+>  	bool		memsw_is_minimum;
+>  
+> @@ -1538,27 +1543,22 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+>   */
+>  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>  {
+> +	struct mem_cgroup *task_memcg;
+> +	struct mem_cgroup *iter;
+>  	struct cgroup *task_cgrp;
+>  	struct cgroup *mem_cgrp;
+> -	/*
+> -	 * Need a buffer in BSS, can't rely on allocations. The code relies
+> -	 * on the assumption that OOM is serialized for memory controller.
+> -	 * If this assumption is broken, revisit this code.
+> -	 */
+> -	static char memcg_name[PATH_MAX];
+>  	int ret;
+> -	struct mem_cgroup *iter;
+>  	unsigned int i;
+>  
+>  	if (!p)
+>  		return;
+>  
+>  	rcu_read_lock();
+> -
+> -	mem_cgrp = memcg->css.cgroup;
+> +	task_memcg = mem_cgroup_from_task(p);
+>  	task_cgrp = task_cgroup(p, mem_cgroup_subsys_id);
+> +	mem_cgrp = memcg->css.cgroup;
+>  
+> -	ret = cgroup_path(task_cgrp, memcg_name, PATH_MAX);
+> +	ret = cgroup_path(task_cgrp, task_memcg->name, MEM_CGROUP_STORE_NAME_LEN);
+>  	if (ret < 0) {
+>  		/*
+>  		 * Unfortunately, we are unable to convert to a useful name
+> @@ -1567,24 +1567,20 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>  		rcu_read_unlock();
+>  		goto done;
+>  	}
+> -	rcu_read_unlock();
+>  
+> -	pr_info("Task in %s killed", memcg_name);
+> +	if (task_memcg != memcg) {
+> +		ret = cgroup_path(mem_cgrp, memcg->name, MEM_CGROUP_STORE_NAME_LEN);
+> +		if (ret < 0) {
+> +			rcu_read_unlock();
+> +			goto done;
+> +		}
+> +	} else
+> +		strncpy(memcg->name, task_memcg->name, MEM_CGROUP_STORE_NAME_LEN);
+>  
+> -	rcu_read_lock();
+> -	ret = cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
+> -	if (ret < 0) {
+> -		rcu_read_unlock();
+> -		goto done;
+> -	}
+> +	pr_info("Task in %s killed as a result of limit of %s\n",
+> +		task_memcg->name, memcg->name);
+>  	rcu_read_unlock();
+> -
+> -	/*
+> -	 * Continues from above, so we don't need an KERN_ level
+> -	 */
+> -	pr_cont(" as a result of limit of %s\n", memcg_name);
+>  done:
+> -
+>  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
+>  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
+>  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
+> @@ -1602,9 +1598,10 @@ done:
+>  		pr_info("Memory cgroup stats");
+>  
+>  		rcu_read_lock();
+> -		ret = cgroup_path(iter->css.cgroup, memcg_name, PATH_MAX);
+> +		ret = cgroup_path(iter->css.cgroup, iter->name,
+> +				  MEM_CGROUP_STORE_NAME_LEN);
+>  		if (!ret)
+> -			pr_cont(" for %s", memcg_name);
+> +			pr_cont(" for %s", iter->name);
+>  		rcu_read_unlock();
+>  		pr_cont(":");
+>  
 
-I don't know.  Toralf's reports are the only ones I recall off the top
-of my head, but I may have forgotten others.
-
-> Or are these bugs just more likely to hit on UML?
-
-That's also possible.
-
-> This is not the first NFS issue found by Toralf using UML and Trinity.
-
-Yep.  The testing is definitely appreciated.
-
---b.
+-- 
+Michal Hocko
+SUSE Labs
