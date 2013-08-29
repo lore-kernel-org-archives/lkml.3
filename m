@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab3H2VrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 17:47:11 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:35800 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab3H2VrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 17:47:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
-References: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
-Date: Thu, 29 Aug 2013 14:47:08 -0700
-X-Google-Sender-Auth: noeNfOVWRrZAszCH9HqflNLhOzk
-Message-ID: <CAE9FiQX9gU-S9X_eeB=JwqS8130CONKgrv+mGj1cEgShmxgS-Q@mail.gmail.com>
-Subject: Re: [PATCH v8 6/6] PCI: update device mps when doing pci hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, Jon Mason <jdmason@kudzu.us>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Jin Feng <joe.jin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756641Ab3H2VrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 17:47:18 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52351 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756373Ab3H2VrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 17:47:16 -0400
+Message-ID: <1377812836.1928.135.camel@joe-AO722>
+Subject: slab: krealloc with GFP_ZERO defect
+From: Joe Perches <joe@perches.com>
+To: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm <linux-mm@kvack.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Aug 2013 14:47:16 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 2:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc linux-kernel, since more folks might be interested]
+This sequence can return non-zeroed memory from the
+padding area of the original allocation.
 
-> I don't know what the BIOS "auto" setting means, but it must mean
-> something in case 3, because that's the only case where OS support is
-> required.  But if the OS is smart enough to manage MPS for hot-added
-> devices, why can't the OS also program MPS for the whole system at
-> boot-time?
->
-> That's why I don't understand what BIOS wants to do.  It sounds like
-> they want the performance benefit of larger MPS for devices present in
-> hot-plug slots at boot-time, even if the OS doesn't actively manage
-> MPS and things blow up if that device is replaced with one that
-> supports a smaller MPS.  That choice doesn't make sense.
->
-> In case 3, with a non-MPS-aware OS, you get better performance for a
-> while, but blow up if a card is replaced.  And with an MPS-aware OS,
-> there should be no advantage to case 3: the OS should be able to get
-> good performance by programming MPS itself, even without help from the
-> BIOS.
+	ptr = kzalloc(foo, GFP_KERNEL);
+	if (!ptr)
+		...
+	new_ptr = krealloc(ptr, foo + bar, GFP_KERNEL | __GFP_ZERO);
 
-With OS default setting on case 3, other two OS are ok with hotplug,
-but Linux does not.
+If the realloc size is within the first actual allocation
+then the additional memory is not zeroed.
 
-Yinghai
+If the realloc size is not within the original allocation
+size, any non-zeroed padding from the original allocation
+is overwriting newly allocated zeroed memory.
+
+Maybe someone more familiar with the alignment & padding can
+add the proper memset(,0,) for the __GFP_ZERO cases and also
+optimize kmalloc_track_caller to not use __GFP_ZERO, memcpy
+the current (non padded) size and zero the newly returned
+remainder if necessary.
+
+from: mm/util.c
+---------------------------
+static __always_inline void *__do_krealloc(const void *p, size_t new_size,
+					   gfp_t flags)
+{
+	void *ret;
+	size_t ks = 0;
+
+	if (p)
+		ks = ksize(p);
+
+	if (ks >= new_size)
+		return (void *)p;
+
+	ret = kmalloc_track_caller(new_size, flags);
+	if (ret && p)
+		memcpy(ret, p, ks);
+
+	return ret;
+}
+
+
