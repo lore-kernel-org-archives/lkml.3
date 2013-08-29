@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab3H2UoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 16:44:19 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:60724 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756905Ab3H2UoS (ORCPT
+	id S1757339Ab3H2UpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 16:45:12 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:53569 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594Ab3H2UpK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 16:44:18 -0400
+	Thu, 29 Aug 2013 16:45:10 -0400
+Date: Thu, 29 Aug 2013 22:45:09 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jamie Liu <jamieliu@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: defer to waiting stop_machine
+Message-ID: <20130829204509.GA7995@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-In-Reply-To: <521faf12.9JwU9Jt+2QNWkPCZ%akpm@linux-foundation.org>
-References: <521faf12.9JwU9Jt+2QNWkPCZ%akpm@linux-foundation.org>
-Date: Thu, 29 Aug 2013 13:44:18 -0700
-X-Google-Sender-Auth: GF0t8w8MfeC5iEMVcpsvhsO9eXo
-Message-ID: <CAE9FiQWHeip7XWF+-mCt3gXsESpr52Fb71fbrJbRSJyeHCAMeQ@mail.gmail.com>
-Subject: Re: + mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch added
- to -mm tree
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130828211312.GB18971@mtj.dyndns.org>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 1:29 PM,  <akpm@linux-foundation.org> wrote:
-> Subject: + mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch added to -mm tree
-> To: liwanp@linux.vnet.ibm.com,yinghai@kernel.org
-> From: akpm@linux-foundation.org
-> Date: Thu, 29 Aug 2013 13:29:06 -0700
->
->
-> The patch titled
->      Subject: mm/sparse: introduce alloc_usemap_and_memmap fix-2
-> has been added to the -mm tree.  Its filename is
->      mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
->
-> This patch should soon appear at
->     http://ozlabs.org/~akpm/mmots/broken-out/mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
-> and later at
->     http://ozlabs.org/~akpm/mmotm/broken-out/mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch
->
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
->
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
->
-> ------------------------------------------------------
-> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Subject: mm/sparse: introduce alloc_usemap_and_memmap fix-2
->
-> Pass function pointer to alloc_usemap_and_memmap() instead of true/false.
->
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->  mm/sparse.c |   41 +++++++++++++++--------------------------
->  1 file changed, 15 insertions(+), 26 deletions(-)
->
-> diff -puN mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2 mm/sparse.c
-> --- a/mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2
-> +++ a/mm/sparse.c
-> @@ -339,13 +339,14 @@ static void __init check_usemap_section_
->  }
->  #endif /* CONFIG_MEMORY_HOTREMOVE */
->
-> -static void __init sparse_early_usemaps_alloc_node(unsigned long**usemap_map,
-> +static void __init sparse_early_usemaps_alloc_node(void **data,
->                                  unsigned long pnum_begin,
->                                  unsigned long pnum_end,
->                                  unsigned long usemap_count, int nodeid)
->  {
->         void *usemap;
->         unsigned long pnum;
-> +       unsigned long **usemap_map = (unsigned long **)data;
+> Isn't the problem that the kworker wouldn't yield to the higher
+> priority stopper task while a work item keeps requeueing itself if
+> preemption is not enabled?  If so, isn't the correct solution just
+> adding cond_resched() in the work item processing loop?  The analysis
+> and solution seem to have gone a bit stray....
 
-Can you check if (void *data) will work?
+While I did not quite follow the very fine and detailed analysis,
+I had the same feeling about it.
 
-void ** looks strange.
+The previous solution seemed less preferable e.g. for two reasons,
+from a modularity/dependency POV:
+- required a very specific (code smell?) stop_machine handling dependency
+  in work queue code (machine stop handling arguably definitely
+  is a corner case, and thereby supposed to remain just that!)
+- new stop_machine_pending() helper is pretty bloated,
+  and called in a semi-hotpath to boot (since it's using && operators
+  rather than ||, seems like it would be called pretty much every time)
 
-Yinghai
+Preemption checks being expected to be much more general and widespread
+thus seems like a much better fit.
+
+
+Or, to put it another way, could it be that that extra very specific
+stop_machine check was simply added since due to missing preemption checks
+we were busy-handling there and thus not getting back to standard handling areas
+where some *usual*, *hotpath/mainstream* stop_machine checks would have been made?
+If so, perhaps there actually are some other cases of wasteful stop_machine check
+code sites in the kernel where instead we could simply have a much cheaper
+reschedule done, thereby go back to hitting one central (and thus cache-hot)
+code site with stop_machine check etc.?
+
+
+Afraid of having stated the glaringly obvious ;),
+
+Andreas Mohr
