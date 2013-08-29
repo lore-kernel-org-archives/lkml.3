@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3H2PRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:17:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43948 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab3H2PRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:17:47 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: laurent.pinchart@ideasonboard.com, m.chehab@samsung.com,
-        linux-media@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Dell SP2008WFP monitor.
-Date: Thu, 29 Aug 2013 11:17:41 -0400
-Message-Id: <efa845fedf7b2326c7fe6e82c4f90b15055c4a1c.1377781889.git.joseph.salisbury@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1377781889.git.joseph.salisbury@canonical.com>
-References: <cover.1377781889.git.joseph.salisbury@canonical.com>
+	id S1754324Ab3H2PSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:18:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51145 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752945Ab3H2PSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 11:18:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,984,1367996400"; 
+   d="scan'208";a="393998091"
+Message-ID: <521F662F.4050003@intel.com>
+Date: Thu, 29 Aug 2013 08:18:07 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
+ ARC
+References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://bugs.launchpad.net/bugs/1217957
+On 08/27/2013 01:31 AM, Vineet Gupta wrote:
+> Frame pointer on ARC doesn't serve the conventional purpose of stack
+> unwinding due to the typical way ABI designates it's usage.
+> Thus it's explicit usage on ARC is discouraged (gcc is free to use it,
+> for some tricky stack frames even if -fomit-frame-pointer)
+...
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 1501aa5..c971f3a 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -908,7 +908,7 @@ config LOCKDEP
+>  	bool
+>  	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+>  	select STACKTRACE
+> -	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE
+> +	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE && !ARC
+>  	select KALLSYMS
+>  	select KALLSYMS_ALL
 
-Add quirk for Dell SP2008WFP monitor: 05a9:2641
+I assume you're sending this my way since getmaintainer.pl has me tagged
+I moved a bunch of code in there. :)
 
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-Tested-by: Christopher Townsend <christopher.townsend@canonical.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com> 
-Cc: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
----
- drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+The Kconfig.debug stuff has no real maintainer.  It would probably be OK
+if you just stick this in your architecture's next git pull request.
 
-diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index ed123f4..8c1826c 100644
---- a/drivers/media/usb/uvc/uvc_driver.c
-+++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2174,6 +2174,15 @@ static struct usb_device_id uvc_ids[] = {
- 	  .bInterfaceSubClass	= 1,
- 	  .bInterfaceProtocol	= 0,
- 	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
-+	/* Dell SP2008WFP Monitor */
-+	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
-+				| USB_DEVICE_ID_MATCH_INT_INFO,
-+	  .idVendor		= 0x05a9,
-+	  .idProduct		= 0x2641,
-+	  .bInterfaceClass	= USB_CLASS_VIDEO,
-+	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
-+	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
- 	/* Dell Alienware X51 */
- 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
- 				| USB_DEVICE_ID_MATCH_INT_INFO,
--- 
-1.7.9.5
+Although, it would be nice if someone, at some point, actually
+abstracted that out so that the individual architectures could take care
+of this without editing the main files:
+
+# Kconfig.debug:
+
+config ARCH_FRAME_POINTER_UNAVAILABLE
+	def_bool y
+...
+select FRAME_POINTER if !ARCH_FRAME_POINTER_UNAVAILABLE
+
+# arch/.../Kconfig
+
+select ARCH_FRAME_POINTER_UNAVAILABLE
+
 
