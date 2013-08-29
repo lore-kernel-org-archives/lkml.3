@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab3H2LYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 07:24:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57448 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3H2LYf (ORCPT
+	id S1756362Ab3H2LY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 07:24:59 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38539 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab3H2LY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 07:24:35 -0400
-Date: Thu, 29 Aug 2013 13:24:31 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Simon Horman <horms@verge.net.au>
-cc: Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v5 0/7] DMA: shdma: switch DT to use OF device ID tables
-In-Reply-To: <20130826071725.GJ26682@verge.net.au>
-Message-ID: <Pine.LNX.4.64.1308291321260.3786@axis700.grange>
-References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
- <20130825073656.GF8091@intel.com> <20130826071725.GJ26682@verge.net.au>
+	Thu, 29 Aug 2013 07:24:57 -0400
+Message-ID: <521F2F7E.8010702@parallels.com>
+Date: Thu, 29 Aug 2013 15:24:46 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:LZl3bV0v6GMxCGoDzAw4AHYRQZq1vZBn4gSyzyllIJQ
- U6R37QwkIfd24GcMLNz6H8TN+QxTfdgY+CVMqOq2y33X10Aimu
- tLjHR+Kq+FrCPoa4zanIaY8NZAbVIj2nQAT9/J15C2zIGYVeer
- 6Go7xhwvtbFsVej9iEQBT52C3h/m/YdJH65iDq4jvWR/4qsUrJ
- aSokqaLSbFzQkjN+hGjiW/x4ALtnzLY8Z2x8GQkwEgc+23X11R
- MUsltxcnqa4jQ8PwDXTm+lAiL44dYL+BlGejR/fUEnR9ClwWvo
- HtXtWot/DJLWHsDCKXacGG+xyOTW8prTKMmQcRX+qBJ08OCyxo
- 2mvEI4021wC+sW7bMlognrINo4C/Kcn3BgePzoSEz2dP7NLTOr
- Dj9uWxdjv/MTA==
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build warnings after merge of the akpm-current tree
+References: <20130829194741.ff75bb1ce06207d5d3a703de@canb.auug.org.au>
+In-Reply-To: <20130829194741.ff75bb1ce06207d5d3a703de@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+Hi Stephen,
 
-On Mon, 26 Aug 2013, Simon Horman wrote:
+08/29/2013 01:47 PM, Stephen Rothwell пишет:
+> Hi Andrew,
+>
+> After merging the akpm tree, today's linux-next build (sparc64 defconfig
+> and others) produced these warnings:
+>
+> mm/page-writeback.c: In function 'balance_dirty_pages_ratelimited':
+> mm/page-writeback.c:1450:13: warning: 'bdi_thresh' may be used uninitialized in this function [-Wuninitialized]
+> mm/page-writeback.c:1372:16: note: 'bdi_thresh' was declared here
+> mm/page-writeback.c:1226:16: warning: 'bdi_dirty' may be used uninitialized in this function [-Wuninitialized]
+> mm/page-writeback.c:1369:16: note: 'bdi_dirty' was declared here
+>
+> Possibly introduced by commit 34c547af1e23 ("mm/page-writeback.c: add
+> strictlimit feature"), but I am not sure anything can be done about them.
+>
 
-> On Sun, Aug 25, 2013 at 01:06:57PM +0530, Vinod Koul wrote:
-> > On Fri, Aug 02, 2013 at 04:50:35PM +0200, Guennadi Liakhovetski wrote:
-> > > In this version of shdma Device Tree support I preserved the DT 
-> > > configuration approach via OF device ID tables from v4, but now it is only 
-> > > used for the DT-mode, the C-version is left untouched. In this series I 
-> > > only include one platform: r8a73a4-based APE6EVM, if accepted, others can 
-> > > be added easily. I also took care not to include mach/*.h headers in 
-> > > driver .c files. To illustrate the use of DT DMA support for MMC DMA on 
-> > > APE6EVM a patch from a previously separate patch series "DMA for MMCIF and 
-> > > SDHI devices in DT mode"
-> > I have applied all the dma patches, the ARM ones fail for me so should possible
-> > go thru ARM tree.
-> 
-> Guennadi, if you need me to queue up any patches please repost them
-> once their dependencies are available in a stable branch.
+This looks as gcc glitch. So far as I didn't observe the warnings, the 
+version of gcc does matter. May be moving the definitions of the two 
+variables into for(;;){...} would help. Could you please give it a try?
 
-I've just verified, that the current -next has all DMA and MMCIF 
-prerequisites for the following my patches:
-
-      ARM: shmobile: armadillo800eva-reference: add MMCIF and SDHI DT nodes
-      ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
-      ARM: shmobile: r8a73a4: add a DT node and a clock alias for the DMAC
-      ARM: shmobile: ape6evm-reference: enable DMA for the MMC interface
-      ARM: shmobile: ape6evm: disable MMCIF Command Completion Signal
-      ARM: shmobile: ape6evm: add DMA support to MMCIF
-      ARM: shmobile: armadillo800eva: disable MMCIF Command Completion Signal
-      ARM: shmobile: kzm9g: disable MMCIF Command Completion Signal
-      ARM: shmobile: lager: disable MMCIF Command Completion Signal, add CLK_CTRL2
-
-I can re-send them all to your privetly as an archive, if you like, or you 
-can pick their latest versions from an archive or from patchwork.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Thanks,
+Maxim
