@@ -1,230 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3H2SmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:42:08 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46772 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756353Ab3H2SmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:42:03 -0400
-X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
-   d="scan'208";a="48864268"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 12/13] swiotlb-xen: use xen_alloc/free_coherent_pages
-Date: Thu, 29 Aug 2013 19:32:33 +0100
-Message-ID: <1377801154-29215-12-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+	id S1757215Ab3H2Smc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:42:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52145 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab3H2Sm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:42:29 -0400
+Date: Thu, 29 Aug 2013 20:42:28 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
+Subject: [ANNOUNCE] 3.10.10-rt7
+Message-ID: <20130829184228.GD15360@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use xen_alloc_coherent_pages and xen_free_coherent_pages to allocate or
-free coherent pages.
+Dear RT folks!
 
-We need to be careful handling the pointer returned by
-xen_alloc_coherent_pages, because on ARM the pointer is not equal to
-phys_to_virt(*dma_handle). In fact virt_to_phys on the returned pointer
-doesn't return a valid physical address.
+I'm pleased to announce the v3.10.10-rt7 patch set.
 
-Make xen_create_contiguous_region take a phys_addr_t as start parameter to
-avoid the virt_to_phys calls which would be incorrect.
+Changes since v3.10.10-rt6
+- hwlat compiles on 32bit (again). Reported by Fernando Lopez-Lezcano.
+- bcache is disabled due to usage of anon semaphores. Anyone interrested
+  in using it?
+- "genirq affinity callback" are fixed. Reported by Joe Korty. There are
+  two nics using this feature.
+- Paul Gortmaker's swait rename patch has been included.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/mm.c         |    7 +++----
- arch/x86/xen/mmu.c        |    7 +++++--
- drivers/xen/swiotlb-xen.c |   24 +++++++++++++++---------
- include/xen/xen-ops.h     |    4 ++--
- 4 files changed, 25 insertions(+), 17 deletions(-)
+Known issues:
 
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index 1477ace..9163d4c 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -55,11 +55,10 @@ static int xen_exchange_memory(xen_ulong_t extents_in,
- 	return success;
- }
+      - SLAB support not working
+
+      - The cpsw network driver shows some issues.
+
+      - bcache is disabled.
+
+      - an ancient race (since we got sleeping spinlocks) where the
+        TASK_TRACED state is temporary replaced while waiting on a rw
+        lock and the task can't be traced.
+
+The delta patch against v3.10.10-rt6 is appended below and can be found
+here:
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.10-rt6-rt7.patch.xz
+
+The RT patch against 3.10.10 can be found here:
+
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.10-rt7.patch.xz
+
+The split quilt queue is available at:
+
+   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patches-3.10.10-rt7.tar.xz
+
+Sebastian
+
+diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
+index f950c9d..5eb76dd 100644
+--- a/drivers/md/bcache/Kconfig
++++ b/drivers/md/bcache/Kconfig
+@@ -1,6 +1,7 @@
  
--int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
-+int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
- {
--	phys_addr_t pstart = __pa(vstart);
- 	xen_pfn_t in_frame, out_frame;
- 	int success;
+ config BCACHE
+ 	tristate "Block device as cache"
++	depends on !PREEMPT_RT_FULL
+ 	---help---
+ 	Allows a block device to be used as cache for other devices; uses
+ 	a btree for indexing and the layout is optimized for SSDs.
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index 0bfa40d..6f61d5f 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -220,7 +220,7 @@ static struct sample *buffer_get_sample(struct sample *sample)
+ #else
+ #define time_type	u64
+ #define time_get()	trace_clock_local()
+-#define time_to_us(x)	((x) / 1000)
++#define time_to_us(x)	div_u64(x, 1000)
+ #define time_sub(a, b)	((a) - (b))
+ #define init_time(a, b)	a = b
+ #define time_u64(a)	a
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 11bdb1e..838d4bd 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -263,6 +263,7 @@ struct irq_affinity_notify {
+ 	unsigned int irq;
+ 	struct kref kref;
+ 	struct work_struct work;
++	struct list_head list;
+ 	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
+ 	void (*release)(struct kref *ref);
+ };
+diff --git a/include/linux/wait-simple.h b/include/linux/wait-simple.h
+index 4efba4d..f86bca2 100644
+--- a/include/linux/wait-simple.h
++++ b/include/linux/wait-simple.h
+@@ -47,6 +47,14 @@ extern void swait_prepare(struct swait_head *head, struct swaiter *w, int state)
+ extern void swait_finish_locked(struct swait_head *head, struct swaiter *w);
+ extern void swait_finish(struct swait_head *head, struct swaiter *w);
  
-@@ -78,9 +77,9 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- }
- EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
- 
--void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
-+void xen_destroy_contiguous_region(phys_addr_t pstart, unsigned int order)
- {
--	xen_pfn_t in_frame = __pa(vstart) >> PAGE_SHIFT;
-+	xen_pfn_t in_frame = pstart >> PAGE_SHIFT;
- 	struct xen_unpin unpin = {
- 		.in = {
- 			.nr_extents   = 1,
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 6c34d7c..07ee0e8 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2328,13 +2328,14 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
- 	return success;
- }
- 
--int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
-+int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
- {
- 	unsigned long *in_frames = discontig_frames, out_frame;
- 	unsigned long  flags;
- 	int            success;
-+	unsigned long vstart = (unsigned long) phys_to_virt(pstart);
- 
- 	/*
- 	 * Currently an auto-translated guest will not perform I/O, nor will
-@@ -2374,11 +2375,12 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- }
- EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
- 
--void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
-+void xen_destroy_contiguous_region(phys_addr_t pstart, unsigned int order)
- {
- 	unsigned long *out_frames = discontig_frames, in_frame;
- 	unsigned long  flags;
- 	int success;
-+	unsigned long vstart;
- 
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return;
-@@ -2386,6 +2388,7 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
- 	if (unlikely(order > MAX_CONTIG_ORDER))
- 		return;
- 
-+	vstart = (unsigned long) phys_to_virt(pstart);
- 	memset((void *) vstart, 0, PAGE_SIZE << order);
- 
- 	spin_lock_irqsave(&xen_reservation_lock, flags);
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 010da31..c96b928 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -46,6 +46,7 @@
- #include <xen/hvc-console.h>
- #include <xen/features.h>
- #include <asm/dma-mapping.h>
-+#include <asm/xen/page-coherent.h>
- 
++/* Check whether a head has waiters enqueued */
++static inline bool swaitqueue_active(struct swait_head *h)
++{
++	/* Make sure the condition is visible before checking list_empty() */
++	smp_mb();
++	return !list_empty(&h->list);
++}
++
  /*
-  * Used to do a quick range check in swiotlb_tbl_unmap_single and
-@@ -244,6 +245,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- {
- 	int i, j, rc;
- 	int dma_bits;
-+	phys_addr_t p = virt_to_phys(buf);
- 
- 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
- 
-@@ -253,7 +255,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- 
- 		do {
- 			rc = xen_create_contiguous_region(
--				(unsigned long)buf + (i << IO_TLB_SHIFT),
-+				p + (i << IO_TLB_SHIFT),
- 				get_order(slabs << IO_TLB_SHIFT),
- 				dma_bits, &xen_dma_seg[j].dma_addr);
- 		} while (rc && dma_bits++ < max_dma_bits);
-@@ -389,7 +391,6 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	void *ret;
- 	int order = get_order(size);
- 	u64 dma_mask = DMA_BIT_MASK(32);
--	unsigned long vstart;
- 	phys_addr_t phys;
- 	dma_addr_t dev_addr;
- 
-@@ -404,8 +405,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	if (dma_alloc_from_coherent(hwdev, size, dma_handle, &ret))
- 		return ret;
- 
--	vstart = __get_free_pages(flags, order);
--	ret = (void *)vstart;
-+	ret = xen_alloc_coherent_pages(hwdev, size, dma_handle, flags, attrs);
- 
- 	if (!ret)
- 		return ret;
-@@ -413,16 +413,20 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	if (hwdev && hwdev->coherent_dma_mask)
- 		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
- 
--	phys = virt_to_phys(ret);
-+	/* At this point dma_handle is the physical address, next we are
-+	 * going to set it to the machine address.
-+	 * Do not use virt_to_phys(ret) because on ARM it doesn't correspond
-+	 * to *dma_handle. */
-+	phys = *dma_handle;
- 	dev_addr = xen_phys_to_bus(phys);
- 	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
- 	    ((dev_addr + size - 1 <= dma_mask)) &&
- 	    !range_straddles_page_boundary(phys, size))
- 		*dma_handle = dev_addr;
- 	else {
--		if (xen_create_contiguous_region(vstart, order,
-+		if (xen_create_contiguous_region(phys, order,
- 						 fls64(dma_mask), dma_handle) != 0) {
--			free_pages(vstart, order);
-+			xen_free_coherent_pages(hwdev, size, ret, (dma_addr_t)phys, attrs);
- 			return NULL;
- 		}
- 	}
-@@ -445,14 +449,16 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 	if (hwdev && hwdev->coherent_dma_mask)
- 		dma_mask = hwdev->coherent_dma_mask;
- 
--	phys = virt_to_phys(vaddr);
-+	/* do not use virt_to_phys because on ARM it doesn't return you the
-+	 * physical address */
-+	phys = xen_bus_to_phys(dev_addr);
- 
- 	if (xen_feature(XENFEAT_auto_translated_physmap) ||
- 		(((dev_addr + size - 1 > dma_mask)) ||
- 		 range_straddles_page_boundary(phys, size)))
- 		xen_destroy_contiguous_region((unsigned long)vaddr, order);
- 
--	free_pages((unsigned long)vaddr, order);
-+	xen_free_coherent_pages(hwdev, size, vaddr, (dma_addr_t)phys, attrs);
+  * Wakeup functions
+  */
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0e34a98..c5c19ec 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -164,6 +164,62 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	return ret;
  }
- EXPORT_SYMBOL_GPL(xen_swiotlb_free_coherent);
  
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 9ef704d..fb2ea8f 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -19,11 +19,11 @@ void xen_arch_resume(void);
- int xen_setup_shutdown_event(void);
++#ifdef CONFIG_PREEMPT_RT_FULL
++static void _irq_affinity_notify(struct irq_affinity_notify *notify);
++static struct task_struct *set_affinity_helper;
++static LIST_HEAD(affinity_list);
++static DEFINE_RAW_SPINLOCK(affinity_list_lock);
++
++static int set_affinity_thread(void *unused)
++{
++	while (1) {
++		struct irq_affinity_notify *notify;
++		int empty;
++
++		set_current_state(TASK_INTERRUPTIBLE);
++
++		raw_spin_lock_irq(&affinity_list_lock);
++		empty = list_empty(&affinity_list);
++		raw_spin_unlock_irq(&affinity_list_lock);
++
++		if (empty)
++			schedule();
++		if (kthread_should_stop())
++			break;
++		set_current_state(TASK_RUNNING);
++try_next:
++		notify = NULL;
++
++		raw_spin_lock_irq(&affinity_list_lock);
++		if (!list_empty(&affinity_list)) {
++			notify = list_first_entry(&affinity_list,
++					struct irq_affinity_notify, list);
++			list_del_init(&notify->list);
++		}
++		raw_spin_unlock_irq(&affinity_list_lock);
++
++		if (!notify)
++			continue;
++		_irq_affinity_notify(notify);
++		goto try_next;
++	}
++	return 0;
++}
++
++static void init_helper_thread(void)
++{
++	if (set_affinity_helper)
++		return;
++	set_affinity_helper = kthread_run(set_affinity_thread, NULL,
++			"affinity-cb");
++	WARN_ON(IS_ERR(set_affinity_helper));
++}
++#else
++
++static inline void init_helper_thread(void) { }
++
++#endif
++
+ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+@@ -182,7 +238,17 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
  
- extern unsigned long *xen_contiguous_bitmap;
--int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
-+int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				unsigned int address_bits,
- 				dma_addr_t *dma_handle);
+ 	if (desc->affinity_notify) {
+ 		kref_get(&desc->affinity_notify->kref);
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++		raw_spin_lock(&affinity_list_lock);
++		if (list_empty(&desc->affinity_notify->list))
++			list_add_tail(&affinity_list,
++					&desc->affinity_notify->list);
++		raw_spin_unlock(&affinity_list_lock);
++		wake_up_process(set_affinity_helper);
++#else
+ 		schedule_work(&desc->affinity_notify->work);
++#endif
+ 	}
+ 	irqd_set(data, IRQD_AFFINITY_SET);
  
--void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
-+void xen_destroy_contiguous_region(phys_addr_t pstart, unsigned int order);
+@@ -223,10 +289,8 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
  
- struct vm_area_struct;
- int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
--- 
-1.7.2.5
-
+-static void irq_affinity_notify(struct work_struct *work)
++static void _irq_affinity_notify(struct irq_affinity_notify *notify)
+ {
+-	struct irq_affinity_notify *notify =
+-		container_of(work, struct irq_affinity_notify, work);
+ 	struct irq_desc *desc = irq_to_desc(notify->irq);
+ 	cpumask_var_t cpumask;
+ 	unsigned long flags;
+@@ -248,6 +312,13 @@ static void irq_affinity_notify(struct work_struct *work)
+ 	kref_put(&notify->kref, notify->release);
+ }
+ 
++static void irq_affinity_notify(struct work_struct *work)
++{
++	struct irq_affinity_notify *notify =
++		container_of(work, struct irq_affinity_notify, work);
++	_irq_affinity_notify(notify);
++}
++
+ /**
+  *	irq_set_affinity_notifier - control notification of IRQ affinity changes
+  *	@irq:		Interrupt for which to enable/disable notification
+@@ -277,6 +348,8 @@ irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
+ 		notify->irq = irq;
+ 		kref_init(&notify->kref);
+ 		INIT_WORK(&notify->work, irq_affinity_notify);
++		INIT_LIST_HEAD(&notify->list);
++		init_helper_thread();
+ 	}
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+diff --git a/kernel/wait-simple.c b/kernel/wait-simple.c
+index 2c85626..7dfa86d 100644
+--- a/kernel/wait-simple.c
++++ b/kernel/wait-simple.c
+@@ -26,14 +26,6 @@ static inline void __swait_dequeue(struct swaiter *w)
+ 	list_del_init(&w->node);
+ }
+ 
+-/* Check whether a head has waiters enqueued */
+-static inline bool swait_head_has_waiters(struct swait_head *h)
+-{
+-	/* Make sure the condition is visible before checking list_empty() */
+-	smp_mb();
+-	return !list_empty(&h->list);
+-}
+-
+ void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
+ {
+ 	raw_spin_lock_init(&head->lock);
+@@ -112,7 +104,7 @@ __swait_wake(struct swait_head *head, unsigned int state, unsigned int num)
+ 	unsigned long flags;
+ 	int woken;
+ 
+-	if (!swait_head_has_waiters(head))
++	if (!swaitqueue_active(head))
+ 		return 0;
+ 
+ 	raw_spin_lock_irqsave(&head->lock, flags);
+diff --git a/localversion-rt b/localversion-rt
+index 8fc605d..0454789 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt6
++-rt7
