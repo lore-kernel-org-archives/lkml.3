@@ -1,249 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3H2XU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:20:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52188 "EHLO arroyo.ext.ti.com"
+	id S1755070Ab3H2X2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:28:44 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55874 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400Ab3H2XU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:20:56 -0400
-Message-ID: <521FD70F.7080104@ti.com>
-Date: Thu, 29 Aug 2013 19:19:43 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752662Ab3H2X2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:28:41 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 2/3] crypto: omap-des: Add config and build options
+Date: Thu, 29 Aug 2013 18:27:52 -0500
+Message-ID: <1377818873-21174-3-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377818873-21174-1-git-send-email-joelf@ti.com>
+References: <1377818873-21174-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 02/14] drivers: thermal: introduce device tree parser
-References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com> <1377299755-5134-3-git-send-email-eduardo.valentin@ti.com> <20130827102205.GC19893@e106331-lin.cambridge.arm.com> <521CAD48.2030306@ti.com> <20130827162309.GR19893@e106331-lin.cambridge.arm.com> <521CED34.2090008@ti.com>
-In-Reply-To: <521CED34.2090008@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="hljwOBES33n2sROuwafPdDiSwA6IftoXC"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hljwOBES33n2sROuwafPdDiSwA6IftoXC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Add config and build options for the newly added omap-des driver.
 
-Mark, Pawel and Stephen,
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/crypto/Kconfig  | 11 +++++++++++
+ drivers/crypto/Makefile |  1 +
+ 2 files changed, 12 insertions(+)
 
-
-On 27-08-2013 14:17, Eduardo Valentin wrote:
-> On 27-08-2013 12:23, Mark Rutland wrote:
->> On Tue, Aug 27, 2013 at 02:44:40PM +0100, Eduardo Valentin wrote:
->>> Hello Mark,
-
-<cut>
-
-I believe now we need to align on thermal bindings, before I propose
-next version of this series. So, following the discussions on this
-thread, I believe a typical CPU thermal zone would look like the followin=
-g:
-+ #include <dt-bindings/thermal/thermal.h>
+diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+index e289afa..119a8e5 100644
+--- a/drivers/crypto/Kconfig
++++ b/drivers/crypto/Kconfig
+@@ -259,6 +259,17 @@ config CRYPTO_DEV_OMAP_AES
+ 	  OMAP processors have AES module accelerator. Select this if you
+ 	  want to use the OMAP module for AES algorithms.
+ 
++config CRYPTO_DEV_OMAP_DES
++	tristate "Support for OMAP DES3DES hw engine"
++	depends on ARCH_OMAP2PLUS
++	select CRYPTO_DES
++	select CRYPTO_BLKCIPHER2
++	help
++	  OMAP processors have DES/3DES module accelerator. Select this if you
++	  want to use the OMAP module for DES and 3DES algorithms. Currently
++	  the ECB and CBC modes of operation supported by the driver. Also
++	  accesses made on unaligned boundaries are also supported.
 +
-+ cpu_thermal: cpu_thermal {
-+         passive-delay =3D <250>; /* milliseconds */
-+         polling-delay =3D <1000>; /* milliseconds */
-+                 /*
-+                  * sensor       ID
-+                  */
-+         sensors =3D <&bandgap0     0>;
-+                         /*
-+                          * cooling
-+                          * device       Usage   Trip            lower
-bound             upper bound
-+                          */
-+         cooling-devices =3D <&cpu0        100     &cpu-alert
-THERMAL_NO_LIMITS        THERMAL_NO_LIMITS>;
-+         trips {
-+                 cpu-alert: cpu-alert {
-+                         temperature =3D <100000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 };
-+                 cpu-crit: cpu-crit {
-+                         temperature =3D <125000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_CRITICAL>;
-+                 };
-+         };
-+ };
+ config CRYPTO_DEV_PICOXCELL
+ 	tristate "Support for picoXcell IPSEC and Layer2 crypto engines"
+ 	depends on ARCH_PICOXCELL && HAVE_CLK
+diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
+index 38ce13d..ada440f 100644
+--- a/drivers/crypto/Makefile
++++ b/drivers/crypto/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_CRYPTO_DEV_IXP4XX) += ixp4xx_crypto.o
+ obj-$(CONFIG_CRYPTO_DEV_PPC4XX) += amcc/
+ obj-$(CONFIG_CRYPTO_DEV_OMAP_SHAM) += omap-sham.o
+ obj-$(CONFIG_CRYPTO_DEV_OMAP_AES) += omap-aes.o
++obj-$(CONFIG_CRYPTO_DEV_OMAP_DES) += omap-des.o
+ obj-$(CONFIG_CRYPTO_DEV_PICOXCELL) += picoxcell_crypto.o
+ obj-$(CONFIG_CRYPTO_DEV_SAHARA) += sahara.o
+ obj-$(CONFIG_CRYPTO_DEV_S5P) += s5p-sss.o
+-- 
+1.8.1.2
 
-*Note: THERMAL_NO_LIMIT means, it will be using the cooling device
-minimum and maximum limits.
-
-Couple of comments.
-1. I am keeping the pooling intervals. A possible alternative way to
-describe that would be specifying the maximum dT/dt. Essentially because
-I am still convinced that this is part of hw specs.
-
-2. The above follows your suggestion to use consumer pointing to
-producers. Although, I still need to figure out how this could be
-implemented for Linux. But I think that is another story, at least for
-now. We need to first align on the DT binding itself.
-
-3. The link from cooling device specification to trip points, from my
-perspective, should be enough, and thus we shall not need the thermal
-cells and size for trip points, as you proposed. Let me know what you thi=
-nk.
-
-Below is another example, on a more complex scenario, board specific
-case (hypothetical, just for exemplification):
-
-+ #include <dt-bindings/thermal/thermal.h>
-+
-+ board_thermal: board_thermal {
-+         passive-delay =3D <1000>; /* milliseconds */
-+         polling-delay =3D <2500>; /* milliseconds */
-+                 /*
-+                  * sensor       ID
-+                  */
-+         sensors =3D <&adc-dummy     0>,
-+		    <&adc-dummy     1>,
-+		    <&adc-dymmy     2>;
-+                         /*
-+                          * cooling
-+                          * device       Usage   Trip		lower	upper
-+                          */
-+         cooling-devices =3D <&cpu0       75     &cpu-trip	0      2>,
-+			    <&gpu0       40     &gpu-trip	0      2>;
-+			    <&lcd0       25     &lcd-trip	5      10>;
-+         trips {
-+                 cpu-trip: cpu-trip {
-+                         temperature =3D <60000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 };
-+                 gpu-trip: gpu-trip {
-+                         temperature =3D <55000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 }
-+                 lcd-trip: lcp-trip {
-+                         temperature =3D <53000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 };
-+                 crit-trip: crit-trip {
-+                         temperature =3D <68000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_CRITICAL>;
-+                 };
-+         };
-+ };
-
-Now writing the above example, one might want to have a way to say the
-sensor correlation equation.
-
-Another example:
-+ #include <dt-bindings/thermal/thermal.h>
-+
-+ dsp_thermal: dsp_thermal {
-+         passive-delay =3D <250>; /* milliseconds */
-+         polling-delay =3D <1000>; /* milliseconds */
-+                 /*
-+                  * sensor       ID
-+                  */
-+         sensors =3D <&bandgap0     1>;
-+                         /*
-+                          * cooling
-+                          * device       Usage   Trip            lower
-bound             upper bound
-+                          */
-+         cooling-devices =3D <&dsp0        100     &dsp-alert
-THERMAL_NO_LIMIT        THERMAL_NO_LIMIT>;
-+         trips {
-+                 dsp-alert: dsp-alert {
-+                         temperature =3D <100000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 };
-+                 dsp-crit: cdsp-crit {
-+                         temperature =3D <125000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_CRITICAL>;
-+                 };
-+         };
-+ };
-+
-+ gpu_thermal: gpu_thermal {
-+         passive-delay =3D <500>; /* milliseconds */
-+         polling-delay =3D <1000>; /* milliseconds */
-+                 /*
-+                  * sensor       ID
-+                  */
-+         sensors =3D <&bandgap0     2>;
-+                         /*
-+                          * cooling
-+                          * device       Usage   Trip            lower
-bound             upper bound
-+                          */
-+         cooling-devices =3D <&gpu0        100     &gpu-alert
-THERMAL_NO_LIMIT        THERMAL_NO_LIMIT>;
-+         trips {
-+                 gpu-alert: gpu-alert {
-+                         temperature =3D <100000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_PASSIVE>;
-+                 };
-+                 gpu-crit: gpu-crit {
-+                         temperature =3D <125000>; /* milliCelsius */
-+                         hysteresis =3D <2000>; /* milliCelsius */
-+                         type =3D <THERMAL_TRIP_CRITICAL>;
-+                 };
-+         };
-+ };
-
-
-Wei, I think the above would cover for the IPs with multiple internal
-sensors cases you were looking for, right?
-
-Durga, please also check if I am missing something to cover for your
-plans to, in case you will be using DT to describe your HW.
-
-Anyways, Mark and Pawel, let me know if I missed something from our
-discussion. I believe the above bindings would look more like regular
-standard DT bindings. And also they should be now slim enough, without
-Linux implementation details and also without policies.
-
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---hljwOBES33n2sROuwafPdDiSwA6IftoXC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlIf1xIACgkQCXcVR3XQvP2GQwD/adYTkBZgQ/rHFRrfL2rSMWi3
-F/TMKNfJ3na5F9QotQQA/22Kyle8mcbARnn+ADSh8sWahzcNTF8tilLOnYoRvQB0
-=o1Oi
------END PGP SIGNATURE-----
-
---hljwOBES33n2sROuwafPdDiSwA6IftoXC--
