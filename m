@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab3H2AD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 20:03:27 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:58774 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab3H2ADZ (ORCPT
+	id S1754465Ab3H2AIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 20:08:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52201 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab3H2AId convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 20:03:25 -0400
-Subject: Re: [RFC PATCH 00/18 v3] Signature verification of hibernate
- snapshot
-From: joeyli <jlee@suse.com>
-To: Florian Weimer <fw@deneb.enyo.de>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <87eh9dzg00.fsf@mid.deneb.enyo.de>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
-	 <87eh9dzg00.fsf@mid.deneb.enyo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Aug 2013 08:01:45 +0800
-Message-ID: <1377734505.19568.39.camel@linux-s257.site>
+	Wed, 28 Aug 2013 20:08:33 -0400
+Date: Wed, 28 Aug 2013 20:08:31 -0400 (EDT)
+Message-Id: <20130828.200831.289304393401193657.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: bridge@lists.linux-foundation.org, stephen@networkplumber.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.hengli.com.au, amwang@redhat.com,
+        linux@baker-net.org.uk
+Subject: Re: [PATCH] bridge: separate querier and query timer into
+ IGMP/IPv4 and MLD/IPv6 ones
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1377511266-14530-1-git-send-email-linus.luessing@web.de>
+References: <1377511266-14530-1-git-send-email-linus.luessing@web.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 28 Aug 2013 17:08:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian, 
+From: Linus L�ssing <linus.luessing@web.de>
+Date: Mon, 26 Aug 2013 12:01:06 +0200
 
-Thanks for your response.
-
-於 三，2013-08-28 於 23:01 +0200，Florian Weimer 提到：
-> * Chun-Yi Lee:
+> Currently we would still potentially suffer multicast packet loss if there
+> is just either an IGMP or an MLD querier: For the former case, we would
+> possibly drop IPv6 multicast packets, for the latter IPv4 ones. This is
+> because we are currently assuming that if either an IGMP or MLD querier
+> is present that the other one is present, too.
 > 
-> >  + EFI bootloader must generate RSA key-pair when system boot:
-
-I should add more information on this sentence for mention need GenS4Key
-runtime variable then re-generate key-pair.
-
-Thanks!
-
-> >    - Bootloader store the public key to EFI boottime variable by itself
-> >    - Bootloader put The private key to S4SignKey EFI variable for forward to
-> >      kernel.
+> This patch makes the behaviour and fix added in
+> "bridge: disable snooping if there is no querier" (b00589af3b04)
+> to also work if there is either just an IGMP or an MLD querier on the
+> link: It refines the deactivation of the snooping to be protocol
+> specific by using separate timers for the snooped IGMP and MLD queries
+> as well as separate timers for our internal IGMP and MLD queriers.
 > 
-> Is the UEFI NVRAM really suited for such regular updates?
-> 
+> Signed-off-by: Linus L�ssing <linus.luessing@web.de>
 
-Yes, Matthew raised this concern at before. I modified patch to load
-private key in efi stub kernel, before ExitBootServices(), that means we
-don't need generate key-pair at every system boot. So, the above
-procedure of efi bootloader will only run one time. 
+I think the logic of the fix is fine, but theres a lot of duplication
+here.
 
-User can enable SNAPSHOT_REGEN_KEYS kernel config to notify efi
-booloader regenerate key-pair for every S4 to improve security if he
-want. So, the key-pair re-generate procedure will only launched when S4
-resume, not every system boot.
+Why not make a:
 
+struct bridge_mcast_timer {
+	struct	timer_list	timer;
+	u32			queries_sent;
+	u32			startup_queries_sent;
 
-Thanks a lot!
-Joey Lee
+};
 
+Then in the port structure you have:
+
+	struct bridge_mcast_timer	ip4;
+	struct bridge_mcast_timer	ip6;
+
+And pass a reference to the right one into generic helper functions.
+
+That sounds a lot better right?
+
+Please make this improvement and resubmit, thanks.
