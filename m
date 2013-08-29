@@ -1,75 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3H2NK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:10:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:50345 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab3H2NK4 (ORCPT
+	id S1753539Ab3H2NOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 09:14:54 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:42175 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab3H2NOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:10:56 -0400
-X-IronPort-AV: E=Sophos;i="4.89,983,1367971200"; 
-   d="scan'208";a="46395606"
-Date: Thu, 29 Aug 2013 14:10:43 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Rob Herring <robherring2@gmail.com>
-CC: <xen-devel@lists.xensource.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <julien.grall@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH v3] ARM: xen: only set pm function ptrs for Xen guests
-In-Reply-To: <1377780232-13545-1-git-send-email-robherring2@gmail.com>
-Message-ID: <alpine.DEB.2.02.1308291409470.6397@kaball.uk.xensource.com>
-References: <1377780232-13545-1-git-send-email-robherring2@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	Thu, 29 Aug 2013 09:14:51 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-96-521f494833fc
+From: Tomasz Figa <t.figa@samsung.com>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: kyungmin.park@samsung.com, t.stanislaws@samsung.com, m.chehab@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ian.campbell@citrix.com, rob@landley.net, mturquette@linaro.org,
+        tomasz.figa@gmail.com, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, s.nawrocki@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] media: s5p-tv: Fix sdo driver to work with CCF
+Date: Thu, 29 Aug 2013 15:14:44 +0200
+Message-id: <2653159.4aiM8FeBLq@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11 (Linux/3.10.9-gentoo; KDE/4.11.0; x86_64; ; )
+In-reply-to: <1377706384-3697-4-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1377706384-3697-1-git-send-email-m.krawczuk@partner.samsung.com>
+ <1377706384-3697-4-git-send-email-m.krawczuk@partner.samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t/xq7oenvJBBtfe2FhMWneAyWL+kXOs
+	Fm96O1gsehdcZbM42/SG3WLT42usFgvblrBYXN41h82iZ8NWVosZ5/cxWdy+zGtxcZ28xek1
+	p5gtll6/yGTxdMJFNosJ09eyWBxeATRt3cvpQNabdlaLVwfbWCzmtb9ktTg2Ywmjxapdfxgd
+	xD3WzFvD6NHS3MPmseDzFXaP15MnMHr8XfWC2WPnrLvsHq9Wz2T1uHNtD5vH5iX1Hgff7WHy
+	6NuyitHj8yY5j41zQwN4o7hsUlJzMstSi/TtErgyjk14xl4wRa7iwqX9rA2MByS6GDk5JARM
+	JGbP3MsEYYtJXLi3nq2LkYtDSGApo8SXfxdZIZwuJom/a/6xgVSxCahJfG54BGaLCJhKvLt7
+	DayDWWA/i8TTtZMYuxg5OIQFvCQOzVcHqWERUJWYuWcZK0iYV0BTYtdqe5Awv4C6xLttT5lA
+	wqICLhJ9fzNBwpwCfhIzPvxmhFg7kVFi8s2V7CAJXgFBiR+T77GA2MwC8hL79k9lhbC1JNbv
+	PM40gVFwFpKyWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJMq/7GBcfMzq
+	EKMAB6MSD+8OA/kgIdbEsuLK3EOMEhzMSiK8bzmBQrwpiZVVqUX58UWlOanFhxiZODilGhhX
+	8MqYKGmkfH/3P1FQ9dDENfk6JVlX3dWlixQezixLPH9NY852+8i3yhkdCm/Xrwvf93q9dPWR
+	eyndJpc2fBX/8/lRiJPoFznX7Tv6GczZn4TfKIvQFmSq3FKx90R2qGxhftYySXkL1vwPSloc
+	WWW/T1woOc0TUdLnpDHfVP1TY8oVo39nfiixFGckGmoxFxUnAgCTqQa10AIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Aug 2013, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+Hi Mateusz,
+
+On Wednesday 28 of August 2013 18:13:01 Mateusz Krawczuk wrote:
+> Replace clk_enable by clock_enable_prepare and clk_disable with
+> clk_disable_unprepare. Clock prepare is required by Clock Common
+> Framework, and old clock driver didn`t support it. Without it Common
+> Clock Framework prints a warning.
 > 
-> xen_pm_init was unconditionally setting pm_power_off and arm_pm_restart
-> function pointers. This breaks multi-platform kernels. Make this
-> conditional on running as a Xen guest and make it a late_initcall to
-> ensure it is setup after platform code for Dom0.
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+> ---
+>  drivers/media/platform/s5p-tv/sdo_drv.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
 > 
-> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> diff --git a/drivers/media/platform/s5p-tv/sdo_drv.c
+> b/drivers/media/platform/s5p-tv/sdo_drv.c index 9dbdfe6..a79e620 100644
+> --- a/drivers/media/platform/s5p-tv/sdo_drv.c
+> +++ b/drivers/media/platform/s5p-tv/sdo_drv.c
+> @@ -209,10 +209,10 @@ static int sdo_streamon(struct sdo_device *sdev)
+>  	clk_get_rate(sdev->fout_vpll));
+>  	/* enable clock in SDO */
+>  	sdo_write_mask(sdev, SDO_CLKCON, ~0, SDO_TVOUT_CLOCK_ON);
+> -	ret = clk_enable(sdev->dacphy);
+> +	ret = clk_prepare_enable(sdev->dacphy);
+>  	if (ret < 0) {
+>  		dev_err(sdev->dev,
+> -			"clk_enable(dacphy) failed !\n");
+> +			"clk_prepare_enable(dacphy) failed !\n");
 
+nit: I haven't noticed this when reviewing previous patch, but please tone 
+down those errors messages a bit, by removing the exclamation mark (and the 
+space before it). We shouldn't be shouting at users. ;)
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-Added to my queue.
-
-
->  arch/arm/xen/enlighten.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+>  		goto fail;
+>  	}
+>  	/* enable DAC */
+> @@ -230,7 +230,7 @@ static int sdo_streamoff(struct sdo_device *sdev)
+>  	int tries;
 > 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 8a6295c..7071fca 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -273,12 +273,15 @@ core_initcall(xen_guest_init);
->  
->  static int __init xen_pm_init(void)
->  {
-> +	if (!xen_domain())
-> +		return -ENODEV;
-> +
->  	pm_power_off = xen_power_off;
->  	arm_pm_restart = xen_restart;
->  
+>  	sdo_write_mask(sdev, SDO_DAC, 0, SDO_POWER_ON_DAC);
+> -	clk_disable(sdev->dacphy);
+> +	clk_disable_unprepare(sdev->dacphy);
+>  	sdo_write_mask(sdev, SDO_CLKCON, 0, SDO_TVOUT_CLOCK_ON);
+>  	for (tries = 100; tries; --tries) {
+>  		if (sdo_read(sdev, SDO_CLKCON) & SDO_TVOUT_CLOCK_READY)
+> @@ -274,7 +274,7 @@ static int sdo_runtime_suspend(struct device *dev)
+>  	dev_info(dev, "suspend\n");
+>  	regulator_disable(sdev->vdet);
+>  	regulator_disable(sdev->vdac);
+> -	clk_disable(sdev->sclk_dac);
+> +	clk_disable_unprepare(sdev->sclk_dac);
 >  	return 0;
 >  }
-> -subsys_initcall(xen_pm_init);
-> +late_initcall(xen_pm_init);
->  
->  static irqreturn_t xen_arm_callback(int irq, void *arg)
->  {
-> -- 
-> 1.8.1.2
 > 
+> @@ -286,7 +286,7 @@ static int sdo_runtime_resume(struct device *dev)
+> 
+>  	dev_info(dev, "resume\n");
+> 
+> -	ret = clk_enable(sdev->sclk_dac);
+> +	ret = clk_prepare_enable(sdev->sclk_dac);
+>  	if (ret < 0)
+>  		return ret;
+> 
+> @@ -319,7 +319,7 @@ static int sdo_runtime_resume(struct device *dev)
+>  vdac_r_dis:
+>  	regulator_disable(sdev->vdac);
+>  dac_clk_dis:
+> -	clk_disable(sdev->sclk_dac);
+> +	clk_disable_unprepare(sdev->sclk_dac);
+>  	return ret;
+>  }
+> 
+> @@ -333,7 +333,7 @@ static int sdo_probe(struct platform_device *pdev)
+>  	struct device *dev = &pdev->dev;
+>  	struct sdo_device *sdev;
+>  	struct resource *res;
+> -	int ret = 0;
+> +	int ret;
+
+Hmm, this change doesn't look like belonging to this patch.
+
+>  	struct clk *sclk_vpll;
+> 
+>  	dev_info(dev, "probe start\n");
+> @@ -425,8 +425,13 @@ static int sdo_probe(struct platform_device *pdev)
+>  	}
+> 
+>  	/* enable gate for dac clock, because mixer uses it */
+> -	clk_enable(sdev->dac);
+> -
+> +	ret = clk_prepare_enable(sdev->dac);
+> +	if (ret < 0) {
+> +		dev_err(dev,
+> +			"clk_prepare_enable_enable(dac) failed !\n");
+> +		ret = PTR_ERR(sdev->dac);
+
+Hmm, ret already contains the error value returned by clk_prepare_enable() 
+here, so this looks like a copy paste error.
+
+Best regards,
+Tomasz
+
+> +		goto fail_fout_vpll;
+> +	}
+>  	/* configure power management */
+>  	pm_runtime_enable(dev);
+> 
+> @@ -464,7 +469,7 @@ static int sdo_remove(struct platform_device *pdev)
+>  	struct sdo_device *sdev = sd_to_sdev(sd);
+> 
+>  	pm_runtime_disable(&pdev->dev);
+> -	clk_disable(sdev->dac);
+> +	clk_disable_unprepare(sdev->dac);
+>  	clk_put(sdev->fout_vpll);
+>  	clk_put(sdev->dacphy);
+>  	clk_put(sdev->dac);
+
