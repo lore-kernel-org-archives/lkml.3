@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab3H2ShF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:37:05 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47906 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756720Ab3H2ShC (ORCPT
+	id S1757062Ab3H2ShN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:37:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42406 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab3H2ShK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:37:02 -0400
-Message-ID: <1377801416.13031.30.camel@dabdike>
-Subject: Re: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Yaniv Gardi <ygardi@codeaurora.org>
-Cc: "'Raviv Shvili'" <rshvili@codeaurora.org>, scsi-misc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        "'open list:SCSI SUBSYSTEM'" <linux-scsi@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>, merez@codeaurora.org
-Date: Thu, 29 Aug 2013 22:36:56 +0400
-In-Reply-To: <06be01cea4de$77b79ce0$6726d6a0$@codeaurora.org>
-References: <1377766493-5269-1-git-send-email-rshvili@codeaurora.org>
-	 <1377768462.2223.70.camel@dabdike>
-	 <06be01cea4de$77b79ce0$6726d6a0$@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Aug 2013 14:37:10 -0400
+Date: Thu, 29 Aug 2013 20:37:06 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Dave Airlie <airlied@redhat.com>, daniel.vetter@ffwll.ch,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] imx-drm: Fix probe failure
+Message-ID: <20130829183706.GZ30088@pengutronix.de>
+References: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
+ <20130829181412.GX30088@pengutronix.de>
+ <CAOMZO5BXowdp87WavAS5t0q2K6nxFvcrAp-WK5anfDub+H+5kA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5BXowdp87WavAS5t0q2K6nxFvcrAp-WK5anfDub+H+5kA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:31:43 up 5 days,  4:02, 38 users,  load average: 0.02, 0.04, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 20:37 +0300, Yaniv Gardi wrote:
-> Hi James,
+On Thu, Aug 29, 2013 at 03:30:12PM -0300, Fabio Estevam wrote:
+> >> @@ -485,11 +480,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
+> >>
+> >>       mutex_lock(&imxdrm->mutex);
+> >>
+> >> -     if (imxdrm->references) {
+> >> -             ret = -EBUSY;
+> >> -             goto err_busy;
+> >> -     }
+> >
+> > As I told in v1: Simply removing the code is not an option. We agreed
+> > that we use the drm core reference counting, so you must actually test
+> > for it here...
 > 
-> See reply inline
+> Yes, we did, but after reading a separate thread on this topic, I
+> learned that drm core does not support it currently.
 > 
-> Thanks,
-> Yaniv
+> Daniel mentions [1]: "And I wouldn't worry about module unloading and
+> refcounting for
+> now since core drm is terminally broken in that area already anyway"
 > 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org
-> [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of James Bottomley
-> Sent: Thursday, August 29, 2013 12:28 PM
-> To: Raviv Shvili
-> Cc: scsi-misc@vger.kernel.org; linux-arm-msm@vger.kernel.org; open list:SCSI
-> SUBSYSTEM; open list
-> Subject: Re: [RFC/PATCH 2/2] scsi: ufs: requests completion handling
+> [1] http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg43698.html
 > 
-> On Thu, 2013-08-29 at 11:54 +0300, Raviv Shvili wrote:
-> > The patch solves the request completion report order. At the current 
-> > implementation, when multiple requests end at the same interrupt call, 
-> > the requests reported as completed according to a bitmap scan from the 
-> > lowest tags to the highest, regardless the requests priority. That 
-> > cause to a priority unfairness and starvation of requests with a high
-> tags.
-> 
-> It does?  Why?  What seems to happen is that you loop over all the pending
-> requests and call done for them.  The way SCSI handles done commands is that
-> it queues them to the softirq, so there doesn't look to be any real
-> unfairness problem here.
-> 
-> <yaniv> The unfairness is that currently the loop goes over the tags
-> from 0
-> to NUTRS(i.e 31), and calls done() at this order, regardless of the
-> task_attribute they hold.
-> Also, the benefit in performance is that instead of going over NUTRS
-> (32)
-> iteration, we simple call done() only for the exact of completed
-> request
-> (and according to their task_attribute priority). 
+> Can't we just apply this patch so that imx-drm can be functional again
+> and fix module unloading/refcount later?
 
-Yes, I know that.  But all done does is queue the completion to the
-softirq.  All you get with this is a reordering of that queue.  If you
-can actually measure the performance impact of that, I'd be very
-surprised.  We're talking under a microsecond in a round trip activity
-that takes tens to hundreds of miliseconds to issue and complete.
+It's not about the module refcount. It's only that a on a drm device
+which is in use you better do not add/remove components.
 
-> Scenario: a new HEAD_OF_QUEUE request that is completed during the
-> current
-> loop, will be served only in the next interrupt (since the DOORBELL
-> will be
-> read again only in the next interrupt), and saying it is a high tag,
-> it will
-> be completed lastly. This patch will fix it, as I see that.
+Again: The imx-drm driver does *not* do hotplugging. It will *not* add
+or remove components when the device is opened. The code you remove
+exactly makes (or made before Daniels patch) that sure.
 
-It fixes something that isn't a problem.  The softirq won't even be
-activated until all pending interrupts are serviced, so a command
-arriving in the middle of processing gets immediately serviced on the
-next interrupt before the softirq activates.
+Sascha
 
-James
-
-> > SCSI Architecture Model 5 defines 3 task-attributes that are part of 
-> > each SCSI command, and integrated into each Command UPIU. The 
-> > task-attribute is for the device usage, it determines the order in 
-> > which the device prioritizes the requests.
-> > The task-attributes according to their priority are (from high to low):
-> > HEAD OF QUEUE, ORDERED and SIMPLE. There is a queue per task-attribute.
-> > Each request is assigned to one of the above sw queues according to 
-> > its task attribute field.
-> > Requests which are not SCSI commands (native UFS) will be assigned to 
-> > the lowest priority queue, since there is no much difference between 
-> > completing it first or last..
-> > 
-> > When request is completed, we go over the queues (from the queue's 
-> > highest priority to the lowest) and report the completion.
-> > 
-> > Requests are removed from the queue in case of command completion or 
-> > when aborting pending command.
-> 
-> Since we never use anything other than SIMPLE attributes, this rather looks
-> like a solution in search of a problem.
-> 
-> James
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
