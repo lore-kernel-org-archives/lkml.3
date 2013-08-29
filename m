@@ -1,116 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab3H2Hmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 03:42:39 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36624 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab3H2Hmh (ORCPT
+	id S1755807Ab3H2Hp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 03:45:56 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:44787 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696Ab3H2Hpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 03:42:37 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@chromium.org>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening\@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
-	<871u5gqtw3.fsf@xmission.com>
-	<20130826172054.GE27005@ZenIV.linux.org.uk>
-	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
-	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-	<20130828211116.GA22184@dztty> <87sixt735b.fsf@xmission.com>
-	<CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
-	<87li3l5mnh.fsf@xmission.com>
-	<CAGXu5j+axsd2DPA-QTLSLH32canH4V0FEnW4=wuCqZFa-niKGA@mail.gmail.com>
-Date: Thu, 29 Aug 2013 00:42:26 -0700
-In-Reply-To: <CAGXu5j+axsd2DPA-QTLSLH32canH4V0FEnW4=wuCqZFa-niKGA@mail.gmail.com>
-	(Kees Cook's message of "Wed, 28 Aug 2013 20:33:20 -0700")
-Message-ID: <87sixt3pul.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 29 Aug 2013 03:45:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18ch2PYHN41OF46HQvcqF6kLhQN+NdfydI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3248]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Kees Cook <keescook@chromium.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20130829171704.7a7630dd19d19ccdb9aaf384@canb.auug.org.au>
+References: <20130829171704.7a7630dd19d19ccdb9aaf384@canb.auug.org.au>
+Date: Thu, 29 Aug 2013 09:45:54 +0200
+Message-ID: <CACRpkdbHtjvY_VypnCQZNU2N1YqWtUv_grTK30A+tgEP3a0uwQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the pinctrl tree with Linus' tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Sherman Yin <syin@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
+On Thu, Aug 29, 2013 at 9:17 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> On Wed, Aug 28, 2013 at 6:08 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Kees Cook <keescook@chromium.org> writes:
->>
->>> On Wed, Aug 28, 2013 at 5:26 PM, Eric W. Biederman
->>> <ebiederm@xmission.com> wrote:
->>>> Can someome please state what they are worried about in simple language
->>>> step by step?
->>>> [...]
->>>> The closest I saw in the thread was people were worried about ASLR being
->>>> defeated.  All I see are kernel addresses and we don't have much if any
->>>> runtime or even load time randomization of where code is located in the
->>>> kernel address map on x86_64.  So I don't understand the concern.
->>>
->>> I showed the output of "syscall", since that contains user-space
->>> addresses and shows a leak of ASLR from a privileged process to an
->>> unprivileged process.
->>>
->>> The flaw as I see it is that an unprivileged process opens
->>> /proc/$priv_pid/syscall and passes it to a setuid process which is
->>> able to read it, and provides those contents to the unprivileged
->>> process.
->>>
->>> The unprivileged process should not be able to the open the file in
->>> the first place.
->>
->> I see so the complaint is that we don't give read permission but we do
->> give open permission.    Which is a variant of: the permissions used to
->> open are not the permission used to access the file.
->>
->> This does seem to be a legitimate concern.
->>
->> I think there are several discussions that have been going on lately
->> with respect to this class of problems in proc files.
->>
->> Given the existence of suid exec we can not in general prevent this
->> class of bugs with a check at open time.
->
-> I'm not suggesting removing the read check -- that's certainly needed.
->
->> I believe the solution needs to be to enhance the ptrace_may_access
->> checks to verify that both the creds of the current task and the creds
->> of the opening process would have allowed the access.
->
-> As in, DAC perms are insufficient?
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-As in any checks at open time are insufficient.
+I made a bit different fix, I just lock the spinlock around the entire
+loop, as this is not doing any delays or anything like that and
+just hammer a few registers with the settings, it makes sense to
+have that inside a single lock:
 
-Roughly what we need is to use the credentials that are present at open
-time (file->f_cred) in the ptrace_may_access call instead of or
-in addition to current_cred().
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@@ -282,48 -282,57 +283,51 @@@ static int sunxi_pconf_group_set(struc
+        u32 val, mask;
+        u16 strength;
+        u8 dlevel;
+ +      int i;
 
-Eric
+ -      switch (pinconf_to_config_param(config)) {
+ -      case PIN_CONFIG_DRIVE_STRENGTH:
+ -              strength = pinconf_to_config_argument(config);
+ -              if (strength > 40)
+ -                      return -EINVAL;
+ -              /*
+ -               * We convert from mA to what the register expects:
+ -               *   0: 10mA
+ -               *   1: 20mA
+ -               *   2: 30mA
+ -               *   3: 40mA
+ -               */
+ -              dlevel = strength / 10 - 1;
+ -
+ -              spin_lock_irqsave(&pctl->lock, flags);
+ -
+ -              val = readl(pctl->membase + sunxi_dlevel_reg(g->pin));
+ -              mask = DLEVEL_PINS_MASK << sunxi_dlevel_offset(g->pin);
+ -              writel((val & ~mask) | dlevel << sunxi_dlevel_offset(g->pin),
+ -                      pctl->membase + sunxi_dlevel_reg(g->pin));
+ -
+ -              spin_unlock_irqrestore(&pctl->lock, flags);
+ -              break;
+ -      case PIN_CONFIG_BIAS_PULL_UP:
+ -              spin_lock_irqsave(&pctl->lock, flags);
+ -
+ -              val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+ -              mask = PULL_PINS_MASK << sunxi_pull_offset(g->pin);
+ -              writel((val & ~mask) | 1 << sunxi_pull_offset(g->pin),
+ -                      pctl->membase + sunxi_pull_reg(g->pin));
+ -
+ -              spin_unlock_irqrestore(&pctl->lock, flags);
+ -              break;
+ -      case PIN_CONFIG_BIAS_PULL_DOWN:
+ -              spin_lock_irqsave(&pctl->lock, flags);
+ -
+ -              val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+ -              mask = PULL_PINS_MASK << sunxi_pull_offset(g->pin);
+ -              writel((val & ~mask) | 2 << sunxi_pull_offset(g->pin),
+ -                      pctl->membase + sunxi_pull_reg(g->pin));
+++      spin_lock_irqsave(&pctl->lock, flags);
++
+ -              spin_unlock_irqrestore(&pctl->lock, flags);
+ -              break;
+ -      default:
+ -              break;
+ -      }
+ +      for (i = 0; i < num_configs; i++) {
+ +              switch (pinconf_to_config_param(configs[i])) {
+ +              case PIN_CONFIG_DRIVE_STRENGTH:
+ +                      strength = pinconf_to_config_argument(configs[i]);
+ +                      if (strength > 40)
+ +                              return -EINVAL;
+ +                      /*
+ +                       * We convert from mA to what the register expects:
+ +                       *   0: 10mA
+ +                       *   1: 20mA
+ +                       *   2: 30mA
+ +                       *   3: 40mA
+ +                       */
+ +                      dlevel = strength / 10 - 1;
+ +                      val = readl(pctl->membase + sunxi_dlevel_reg(g->pin));
+ +                      mask = DLEVEL_PINS_MASK << sunxi_dlevel_offset(g->pin);
+ +                      writel((val & ~mask)
+ +                              | dlevel << sunxi_dlevel_offset(g->pin),
+ +                              pctl->membase + sunxi_dlevel_reg(g->pin));
+ +                      break;
+ +              case PIN_CONFIG_BIAS_PULL_UP:
+ +                      val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+ +                      mask = PULL_PINS_MASK << sunxi_pull_offset(g->pin);
+ +                      writel((val & ~mask) | 1 << sunxi_pull_offset(g->pin),
+ +                              pctl->membase + sunxi_pull_reg(g->pin));
+ +                      break;
++              case PIN_CONFIG_BIAS_PULL_DOWN:
+ +                      val = readl(pctl->membase + sunxi_pull_reg(g->pin));
+ +                      mask = PULL_PINS_MASK << sunxi_pull_offset(g->pin);
+ +                      writel((val & ~mask) | 2 << sunxi_pull_offset(g->pin),
+ +                              pctl->membase + sunxi_pull_reg(g->pin));
+ +                      break;
+ +              default:
+ +                      break;
+ +              }
+-
+ +              /* cache the config value */
+ +              g->config = configs[i];
+ +      } /* for each config */
+
+ -      /* cache the config value */
+ -      g->config = config;
+++      spin_unlock_irqrestore(&pctl->lock, flags);
++
+        return 0;
+  }
+
+
+Yours,
+Linus Walleij
