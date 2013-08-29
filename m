@@ -1,183 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab3H2O4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 10:56:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41323 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab3H2Oz3 (ORCPT
+	id S1755814Ab3H2O5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:57:49 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54848 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336Ab3H2O5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 10:55:29 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v6 3/5] ARM64: arch_timer: add support to configure and enable event stream
-Date: Thu, 29 Aug 2013 15:55:40 +0100
-Message-Id: <1377788142-21388-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 29 Aug 2013 14:55:26.0962 (UTC) FILETIME=[CC13CD20:01CEA4C7]
-X-MC-Unique: 113082915552802601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 29 Aug 2013 10:57:48 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 1/5] mfd: asic3: Remove .set_pwr() callback
+Date: Thu, 29 Aug 2013 16:59:11 +0200
+Message-ID: <5649106.WzMa2Sr8sS@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAGa+x87xcVBxc7_AV8mmGq8DWuhgA3EL6jiwqQD33terH4XPBg@mail.gmail.com>
+References: <000301cea3b2$c06f2a20$414d7e60$%han@samsung.com> <81053150.gZpPo7ioCr@avalon> <CAGa+x87xcVBxc7_AV8mmGq8DWuhgA3EL6jiwqQD33terH4XPBg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7TEuesM015654
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Hi Chris,
 
-This patch adds support for configuring the event stream frequency
-and enabling it.
+On Thursday 29 August 2013 07:42:26 Kevin Hilman wrote:
+> On Wed, Aug 28, 2013 at 12:51 AM, Laurent Pinchart wrote:
+> > On Wednesday 28 August 2013 08:41:26 Lee Jones wrote:
+> >> > > Since 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() callback from
+> >> > > platform data", .set_pwr() callback is removed from platform data.
+> >> > > Thus, .set_pwr() is not used anymore. Also, this patch fixes
+> >> > > the following build error and warning.
+> >> > > 
+> >> > > drivers/mfd/asic3.c:724:2: error: unknown field 'set_pwr' specified
+> >> > > in initializer drivers/mfd/asic3.c:724:2: warning: initialization
+> >> > > makes integer from pointer without a cast [enabled by default]
+> >> > > drivers/mfd/asic3.c:724:2: warning: (near initialization for
+> >> > > 'asic3_mmc_data.capabilities' [enabled by default]
+> >> > 
+> >> > My bad, it looks like I've overlooked a few users of the .set_pwr()
+> >> > field
+> >> > 
+> >> > :-/ Sorry about that.
+> >> 
+> >> <snip>
+> >> 
+> >> > I don't think blindly removing the function is the right fix, as it
+> >> > seems to be needed. Looking at the whole series, I believe we should
+> >> > just revert 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() callback from
+> >> > platform data" instead.
+> >> 
+> >> No need to revert it, as it's not in Mainline yet. Just request for it
+> >> to be removed from Chris' tree.
+> > 
+> > I spupose it depends on whether Chris has provided a stable branch with
+> > the patch included. I'm fine with both, the commit just needs to be undone
+> > one way or another.
+> 
+> Any progress on this?  linux-next builds are still failing for the
+> following defconfigs because of this removal:
 
-It also adds the hwcaps as well as compat-specific definitions to
-the user to detect this event stream feature.
+Chris, could you please drop 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() 
+callback from platform data" from your tree or revert it ?
 
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/arm64/include/asm/arch_timer.h | 32 +++++++++++++++++++++++++++++---
- arch/arm64/include/asm/hwcap.h      | 11 ++++++-----
- arch/arm64/include/uapi/asm/hwcap.h |  1 +
- arch/arm64/kernel/setup.c           | 11 +++++++++++
- 4 files changed, 47 insertions(+), 8 deletions(-)
+> Failed defconfigs:
+>         arm-magician_defconfig
+>         arm-eseries_pxa_defconfig
+> 
+> Errors:
+> 
+>          arm-magician_defconfig
+> drivers/mfd/asic3.c:724:2: error: unknown field 'set_pwr' specified in
+> initializer
+> 
+>         arm-eseries_pxa_defconfig
+> drivers/mfd/t7l66xb.c:146:2: error: unknown field 'set_pwr' specified
+> in initializer
+> drivers/mfd/tc6387xb.c:123:2: error: unknown field 'set_pwr' specified
+> in initializer
+> drivers/mfd/tc6393xb.c:381:2: error: unknown field 'set_pwr' specified
+> in initializer
 
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index fa4af76..3bca364 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -97,21 +97,47 @@ static inline u32 arch_timer_get_cntfrq(void)
- 	return val;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline u32 arch_timer_get_cntkctl(void)
- {
- 	u32 cntkctl;
--
- 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
-+	return cntkctl;
-+}
-+
-+static inline void arch_timer_set_cntkctl(u32 cntkctl)
-+{
-+	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
-+}
-+
-+static inline void arch_counter_set_user_access(void)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
- 
- 	/* Disable user access to the timers and the physical counter */
-+	/* Also disable virtual event stream */
- 	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
- 			| ARCH_TIMER_USR_VT_ACCESS_EN
-+			| ARCH_TIMER_VIRT_EVT_EN
- 			| ARCH_TIMER_USR_PCT_ACCESS_EN);
- 
- 	/* Enable user access to the virtual counter */
- 	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
- 
--	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
-+	arch_timer_set_cntkctl(cntkctl);
-+}
-+
-+static inline void arch_timer_evtstrm_enable(int divider)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
-+	cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
-+	/* Set the divider and enable virtual event stream */
-+	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
-+			| ARCH_TIMER_VIRT_EVT_EN;
-+	arch_timer_set_cntkctl(cntkctl);
-+	elf_hwcap |= HWCAP_EVTSTRM;
-+#ifdef CONFIG_COMPAT
-+	compat_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
-+#endif
- }
- 
- static inline u64 arch_counter_get_cntvct(void)
-diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
-index 6d4482f..3a48433 100644
---- a/arch/arm64/include/asm/hwcap.h
-+++ b/arch/arm64/include/asm/hwcap.h
-@@ -30,6 +30,7 @@
- #define COMPAT_HWCAP_IDIVA	(1 << 17)
- #define COMPAT_HWCAP_IDIVT	(1 << 18)
- #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
-+#define COMPAT_HWCAP_EVTSTRM	(1 << 21)
- 
- #ifndef __ASSEMBLY__
- /*
-@@ -37,11 +38,11 @@
-  * instruction set this cpu supports.
-  */
- #define ELF_HWCAP		(elf_hwcap)
--#define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
--				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
--				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
--				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
--				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
-+
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_ELF_HWCAP	(compat_elf_hwcap)
-+extern unsigned int compat_elf_hwcap;
-+#endif
- 
- extern unsigned int elf_hwcap;
- #endif
-diff --git a/arch/arm64/include/uapi/asm/hwcap.h b/arch/arm64/include/uapi/asm/hwcap.h
-index eea4975..9b12476 100644
---- a/arch/arm64/include/uapi/asm/hwcap.h
-+++ b/arch/arm64/include/uapi/asm/hwcap.h
-@@ -21,6 +21,7 @@
-  */
- #define HWCAP_FP		(1 << 0)
- #define HWCAP_ASIMD		(1 << 1)
-+#define HWCAP_EVTSTRM		(1 << 2)
- 
- 
- #endif /* _UAPI__ASM_HWCAP_H */
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index add6ea6..57cb006 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -60,6 +60,16 @@ EXPORT_SYMBOL(processor_id);
- unsigned int elf_hwcap __read_mostly;
- EXPORT_SYMBOL_GPL(elf_hwcap);
- 
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_ELF_HWCAP_DEFAULT	\
-+				(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
-+				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
-+				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
-+				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
-+				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
-+unsigned int compat_elf_hwcap __read_mostly = COMPAT_ELF_HWCAP_DEFAULT;
-+#endif
-+
- static const char *cpu_name;
- static const char *machine_name;
- phys_addr_t __fdt_pointer __initdata;
-@@ -309,6 +319,7 @@ subsys_initcall(topology_init);
- static const char *hwcap_str[] = {
- 	"fp",
- 	"asimd",
-+	"evtstrm",
- 	NULL
- };
- 
 -- 
-1.8.1.2
+Regards,
 
+Laurent Pinchart
 
