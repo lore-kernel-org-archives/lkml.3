@@ -1,104 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab3H2PmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:42:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46311 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112Ab3H2PmF convert rfc822-to-8bit (ORCPT
+	id S1755400Ab3H2Pml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:42:41 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:61147 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab3H2Pmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:42:05 -0400
-Message-ID: <521F6BDF.2050909@arm.com>
-Date: Thu, 29 Aug 2013 16:42:23 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 29 Aug 2013 11:42:38 -0400
+Date: Thu, 29 Aug 2013 11:42:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH cgroup/for-3.11-fixes] cgroup: fix rmdir EBUSY regression in
+ 3.11
+Message-ID: <20130829154234.GA23531@htj.dyndns.org>
+References: <alpine.LNX.2.00.1308281624430.1266@eggly.anvils>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v6 4/5] drivers: clocksource: add support for ARM architected
- timer event stream
-References: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1377788142-21388-5-git-send-email-Sudeep.KarkadaNagesha@arm.com> <20130829153914.GA10707@darko.cambridge.arm.com>
-In-Reply-To: <20130829153914.GA10707@darko.cambridge.arm.com>
-X-OriginalArrivalTime: 29 Aug 2013 15:42:01.0953 (UTC) FILETIME=[4E059510:01CEA4CE]
-X-MC-Unique: 113082916420308101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1308281624430.1266@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/08/13 16:39, Catalin Marinas wrote:
-> On Thu, Aug 29, 2013 at 03:55:41PM +0100, Sudeep KarkadaNagesha wrote:
->> From: Will Deacon <will.deacon@arm.com>
->>
->> The ARM architected timer can generate events (used for waking up
->> CPUs executing the wfe instruction) at a frequency represented as a
->> power-of-2 divisor of the clock rate.
->>
->> An event stream might be used:
->> - To impose a time-out on a wfe polling loop.
->> - To safeguard against any programming error in case an expected event
->>   is not generated.
->> - To implement wfe-based timeouts for userspace locking implementations.
->>
->> This patch computes the event stream frequency aiming for a period
->> of 100us between events. It uses ARM/ARM64 specific backends to configure
->> and enable the event stream.
->>
->> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Signed-off-by: Will Deacon <will.deacon@arm.com>
->> [sudeep: moving ARM/ARM64 changes into separate patches
->>          and adding Kconfig option]
->> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->> ---
->>  drivers/clocksource/Kconfig          | 14 ++++++++++++++
->>  drivers/clocksource/arm_arch_timer.c | 15 +++++++++++++++
->>  include/clocksource/arm_arch_timer.h |  2 ++
->>  3 files changed, 31 insertions(+)
->>
->> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->> index b7b9b04..49f1f6e 100644
->> --- a/drivers/clocksource/Kconfig
->> +++ b/drivers/clocksource/Kconfig
->> @@ -74,6 +74,20 @@ config ARM_ARCH_TIMER
->>  	bool
->>  	select CLKSRC_OF if OF
->>  
->> +config ARM_ARCH_TIMER_EVTSTREAM
->> +	bool "Support for ARM architected timer event stream generation"
->> +	default y if ARM_ARCH_TIMER
->> +	help
->> +	  This option enables support for event stream generation based on
->> +	  the ARM architected timer. It is used for waking up CPUs executing
->> +	  the wfe instruction at a frequency represented as a power-of-2
->> +	  divisor of the clock rate. An event stream might be mainly useful
->> +	  for wfe-based timeouts for userspace locking implementations.
-> 
-> I would be a bit more assertive here, something like "the main use of
-> the event stream is wfe-based timeouts of userspace locking
-> implementations."
-> 
->> +	  It might also be useful for imposing timeout on a wfe or even
->> +	  safeguarding against any programming errors in case an expected
-> 
-> Maybe "imposting timeout on wfe to safeguard against ...". We already
-> mentioned wfe-based timeout above.
-> 
-Ok will fix this Kconfig description.
+Hello, Hugh.
 
-> Otherwise, for the whole series:
-> 
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> 
+Oops, sorry about that.  I massaged the patch a bit and applied it to
+cgroup/for-3.11-fixes.  Will send pull request to Linus right away.
+
 Thanks.
+------ 8< ------
+>From bb78a92f47696b2da49f2692b6a9fa56d07c444a Mon Sep 17 00:00:00 2001
+From: Hugh Dickins <hughd@google.com>
+Date: Wed, 28 Aug 2013 16:31:23 -0700
 
-Regards,
-Sudeep
+On 3.11-rc we are seeing cgroup directories left behind when they should
+have been removed.  Here's a trivial reproducer:
+
+cd /sys/fs/cgroup/memory
+mkdir parent parent/child; rmdir parent/child parent
+rmdir: failed to remove `parent': Device or resource busy
+
+It's because cgroup_destroy_locked() (step 1 of destruction) leaves
+cgroup on parent's children list, letting cgroup_offline_fn() (step 2 of
+destruction) remove it; but step 2 is run by work queue, which may not
+yet have removed the children when parent destruction checks the list.
+
+Fix that by checking through a non-empty list of children: if every one
+of them has already been marked CGRP_DEAD, then it's safe to proceed:
+those children are invisible to userspace, and should not obstruct rmdir.
+
+(I didn't see any reason to keep the cgrp->children checks under the
+unrelated css_set_lock, so moved them out.)
+
+tj: Flattened nested ifs a bit and updated comment so that it's
+    correct on both for-3.11-fixes and for-3.12.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 781845a..e919633 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4480,6 +4480,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	struct dentry *d = cgrp->dentry;
+ 	struct cgroup_event *event, *tmp;
+ 	struct cgroup_subsys *ss;
++	struct cgroup *child;
+ 	bool empty;
+ 
+ 	lockdep_assert_held(&d->d_inode->i_mutex);
+@@ -4490,12 +4491,28 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	 * @cgrp from being removed while __put_css_set() is in progress.
+ 	 */
+ 	read_lock(&css_set_lock);
+-	empty = list_empty(&cgrp->cset_links) && list_empty(&cgrp->children);
++	empty = list_empty(&cgrp->cset_links);
+ 	read_unlock(&css_set_lock);
+ 	if (!empty)
+ 		return -EBUSY;
+ 
+ 	/*
++	 * Make sure there's no live children.  We can't test ->children
++	 * emptiness as dead children linger on it while being destroyed;
++	 * otherwise, "rmdir parent/child parent" may fail with -EBUSY.
++	 */
++	empty = true;
++	rcu_read_lock();
++	list_for_each_entry_rcu(child, &cgrp->children, sibling) {
++		empty = cgroup_is_dead(child);
++		if (!empty)
++			break;
++	}
++	rcu_read_unlock();
++	if (!empty)
++		return -EBUSY;
++
++	/*
+ 	 * Block new css_tryget() by killing css refcnts.  cgroup core
+ 	 * guarantees that, by the time ->css_offline() is invoked, no new
+ 	 * css reference will be given out via css_tryget().  We can't
+-- 
+1.8.3.1
 
