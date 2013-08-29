@@ -1,107 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab3H2Hkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 03:40:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55195 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab3H2Hkh (ORCPT
+	id S1755646Ab3H2Hmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 03:42:39 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36624 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab3H2Hmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 03:40:37 -0400
-Date: Thu, 29 Aug 2013 17:40:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vladimir Barinov <vladimir.barinov@cogentembedded.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Magnus Damm <damm@opensource.se>, Simon Horman <horms@verge.net.au>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: linux-next: manual merge of the arm-soc tree with the v4l-dvb tree
-Message-Id: <20130829174034.9594cef414d41a2943160ba3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Aug_2013_17_40_34_+1000_GGH=8Gv2bXAaNVu0"
+	Thu, 29 Aug 2013 03:42:37 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening\@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
+	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	<20130828211116.GA22184@dztty> <87sixt735b.fsf@xmission.com>
+	<CAGXu5jLD+wFpaDW=Zr0gMj-8FqZtD4=UXekrjJS4py_uD7YgUQ@mail.gmail.com>
+	<87li3l5mnh.fsf@xmission.com>
+	<CAGXu5j+axsd2DPA-QTLSLH32canH4V0FEnW4=wuCqZFa-niKGA@mail.gmail.com>
+Date: Thu, 29 Aug 2013 00:42:26 -0700
+In-Reply-To: <CAGXu5j+axsd2DPA-QTLSLH32canH4V0FEnW4=wuCqZFa-niKGA@mail.gmail.com>
+	(Kees Cook's message of "Wed, 28 Aug 2013 20:33:20 -0700")
+Message-ID: <87sixt3pul.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18ch2PYHN41OF46HQvcqF6kLhQN+NdfydI=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3248]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Aug_2013_17_40_34_+1000_GGH=8Gv2bXAaNVu0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kees Cook <keescook@chromium.org> writes:
 
-Hi all,
+> On Wed, Aug 28, 2013 at 6:08 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Kees Cook <keescook@chromium.org> writes:
+>>
+>>> On Wed, Aug 28, 2013 at 5:26 PM, Eric W. Biederman
+>>> <ebiederm@xmission.com> wrote:
+>>>> Can someome please state what they are worried about in simple language
+>>>> step by step?
+>>>> [...]
+>>>> The closest I saw in the thread was people were worried about ASLR being
+>>>> defeated.  All I see are kernel addresses and we don't have much if any
+>>>> runtime or even load time randomization of where code is located in the
+>>>> kernel address map on x86_64.  So I don't understand the concern.
+>>>
+>>> I showed the output of "syscall", since that contains user-space
+>>> addresses and shows a leak of ASLR from a privileged process to an
+>>> unprivileged process.
+>>>
+>>> The flaw as I see it is that an unprivileged process opens
+>>> /proc/$priv_pid/syscall and passes it to a setuid process which is
+>>> able to read it, and provides those contents to the unprivileged
+>>> process.
+>>>
+>>> The unprivileged process should not be able to the open the file in
+>>> the first place.
+>>
+>> I see so the complaint is that we don't give read permission but we do
+>> give open permission.    Which is a variant of: the permissions used to
+>> open are not the permission used to access the file.
+>>
+>> This does seem to be a legitimate concern.
+>>
+>> I think there are several discussions that have been going on lately
+>> with respect to this class of problems in proc files.
+>>
+>> Given the existence of suid exec we can not in general prevent this
+>> class of bugs with a check at open time.
+>
+> I'm not suggesting removing the read check -- that's certainly needed.
+>
+>> I believe the solution needs to be to enhance the ptrace_may_access
+>> checks to verify that both the creds of the current task and the creds
+>> of the opening process would have allowed the access.
+>
+> As in, DAC perms are insufficient?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-shmobile/board-marzen.c between commit 7cef5e7fd1ab
-("[media] ARM: shmobile: Marzen: add VIN and ADV7180 support") from the
-v4l-dvb tree and commits 85469abe4930 ("ARM: shmobile: Remove Marzen use
-of <mach/hardware.h>") and fee529df76ff ("ARM: shmobile: r8a7779: cleanup
-registration of usb phy") from the arm-soc tree.
+As in any checks at open time are insufficient.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Roughly what we need is to use the credentials that are present at open
+time (file->f_cred) in the ptrace_may_access call instead of or
+in addition to current_cred().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-shmobile/board-marzen.c
-index ca7fb2e,3551b54..0000000
---- a/arch/arm/mach-shmobile/board-marzen.c
-+++ b/arch/arm/mach-shmobile/board-marzen.c
-@@@ -38,8 -38,6 +39,7 @@@
-  #include <linux/mmc/host.h>
-  #include <linux/mmc/sh_mobile_sdhi.h>
-  #include <linux/mfd/tmio.h>
- +#include <media/soc_camera.h>
-- #include <mach/hardware.h>
-  #include <mach/r8a7779.h>
-  #include <mach/common.h>
-  #include <mach/irqs.h>
-@@@ -212,8 -203,7 +231,9 @@@ static struct platform_device *marzen_d
-  	&thermal_device,
-  	&hspi_device,
-  	&leds_device,
- +	&camera0_device,
- +	&camera1_device,
-+ 	&usb_phy,
-  };
- =20
-  static const struct pinctrl_map marzen_pinctrl_map[] =3D {
-@@@ -274,9 -254,6 +294,8 @@@ static void __init marzen_init(void
-  	r8a7779_init_irq_extpin(1); /* IRQ1 as individual interrupt */
- =20
-  	r8a7779_add_standard_devices();
-- 	r8a7779_add_usb_phy_device(&usb_phy_platform_data);
- +	r8a7779_add_vin_device(1, &vin_platform_data);
- +	r8a7779_add_vin_device(3, &vin_platform_data);
-  	platform_add_devices(marzen_devices, ARRAY_SIZE(marzen_devices));
-  }
- =20
-
---Signature=_Thu__29_Aug_2013_17_40_34_+1000_GGH=8Gv2bXAaNVu0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSHvryAAoJEECxmPOUX5FE8OUP/3dDQQeJcBzSc6Xqb6qfNueo
-x/wgM4R05jrYyoRQO5txB67kiDskBPupKE+CIwZ1ZTbp7R2tBliFy9dR2CIEEbHs
-Z0d8BhqtZtjs2+IYlwgcXtPzXS0c0KTWARB1DiKNoTmymXtQcJnHqa2EIDdZ+aNY
-nYvoukQdglzq1ovCAd1FEOF9el0ImGnAUFLyAU7lhOWO5hbKoG8UT+cEdYKtAjee
-hrTZvUGEu/Fhr35xoP8NiCd8r2PCY12DIpbBfFjJldcQnL9KogOvETQx1GJ0yTGc
-PQ8cYa5wRLm4NJOPfKkok/82+lDN5PA7BvWb9CgxtcZpO9fUJEUcg1OMRQOusXmF
-/gQm/ojKtzmbJH+N65vHNGjgdfLbvSvkbQ078z0Dbuij+676WTzlidlJPrQkxQf0
-KJMKfNq+AvIBYbfIM3ERFrKrgYQEfj1tWVaCWhL9x98eLHB7UUDcAzue145wVpSp
-wlvfXwnFvFtJ24LC5hkleQt1WivzcQF+NwvG65U2w7fycwLFXe8GRvXIbGQ3nCHA
-+j4lutWcS1p4+c+I367BTVKE0dJKH48jXyQLLnp54O0HQpkr9iaZZvLPQZDKCwZf
-yaFM+aU8F9Xcb7Ao27njkFHjsZ0QAux7oeHhkJCwQNWbeezd9RPs0yJBCZCBnYiw
-s0ZKpXTwIdgr8gXqO/U7
-=VRhz
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Aug_2013_17_40_34_+1000_GGH=8Gv2bXAaNVu0--
+Eric
