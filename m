@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3H2QrX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 12:47:23 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:37154 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754018Ab3H2QrX (ORCPT
+	id S1755268Ab3H2Qsn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 12:48:43 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:58029 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab3H2Qsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 12:47:23 -0400
-Message-ID: <521F76DE.6080709@st.com>
-Date: Thu, 29 Aug 2013 17:29:18 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 29 Aug 2013 12:48:42 -0400
+Message-ID: <521F7B04.6040200@gmail.com>
+Date: Thu, 29 Aug 2013 18:47:00 +0200
+From: Wladislav Wiebe <wladislav.kw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [STLinux Kernel] [PATCH RFC v2 12/16] ARM: sti: remove custom
- .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-13-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1377638890-371-13-git-send-email-sebastian.hesselbarth@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH] of/fdt: Remove duplicate memory clearing on FDT unflattening
+References: <1377783892-13226-1-git-send-email-grant.likely@linaro.org>
+In-Reply-To: <1377783892-13226-1-git-send-email-grant.likely@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/13 22:28, Sebastian Hesselbarth wrote:
-> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> remove custom .init_time hooks. To get rid of it, move l2cc init to
-> .init_machine hook instead.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+On 29/08/13 15:44, Grant Likely wrote:
+> Patch 9e4012752, "of: fdt: fix memory initialization for expanded DT"
+> fixed incomplete clearing of memory when unflattening the device tree.
+> However the code was already clearing some of the memory, it just wasn't
+> doing so for all allocations. Now that the memory is cleared right at
+> the point of allocation, the memset after unflatten_dt_alloc() is
+> redundant. Remove it.
 
-Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Acked-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+
+> 
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Wladislav Wiebe <wladislav.kw@gmail.com>
 > ---
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> Cc: Stuart Menefy <stuart.menefy@st.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: kernel@stlinux.com
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-sti/board-dt.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
+>  drivers/of/fdt.c | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> diff --git a/arch/arm/mach-sti/board-dt.c b/arch/arm/mach-sti/board-dt.c
-> index 8fe6f0c..1217fb5 100644
-> --- a/arch/arm/mach-sti/board-dt.c
-> +++ b/arch/arm/mach-sti/board-dt.c
-> @@ -7,9 +7,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#include <linux/clk-provider.h>
-> -#include <linux/clocksource.h>
->  #include <linux/irq.h>
-> +#include <linux/of_platform.h>
->  #include <asm/hardware/cache-l2x0.h>
->  #include <asm/mach/arch.h>
->  
-> @@ -28,11 +27,10 @@ void __init stih41x_l2x0_init(void)
->  	l2x0_of_init(aux_ctrl, L2X0_AUX_CTRL_MASK);
->  }
->  
-> -static void __init stih41x_timer_init(void)
-> +static void __init stih41x_machine_init(void)
->  {
-> -	of_clk_init(NULL);
-> -	clocksource_of_init();
->  	stih41x_l2x0_init();
-> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
->  }
->  
->  static const char *stih41x_dt_match[] __initdata = {
-> @@ -42,7 +40,7 @@ static const char *stih41x_dt_match[] __initdata = {
->  };
->  
->  DT_MACHINE_START(STM, "STiH415/416 SoC with Flattened Device Tree")
-> -	.init_time	= stih41x_timer_init,
-> +	.init_machine	= stih41x_machine_init,
->  	.smp		= smp_ops(sti_smp_ops),
->  	.dt_compat	= stih41x_dt_match,
->  MACHINE_END
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 55b028f..9d9be9617 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -202,7 +202,6 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+>  				__alignof__(struct device_node));
+>  	if (allnextpp) {
+>  		char *fn;
+> -		memset(np, 0, sizeof(*np));
+>  		np->full_name = fn = ((char *)np) + sizeof(*np);
+>  		if (new_format) {
+>  			/* rebuild full path for new format */
 > 
-
-
 
