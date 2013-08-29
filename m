@@ -1,169 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3H2N7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 09:59:40 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:44718 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753001Ab3H2N7i (ORCPT
+	id S1754305Ab3H2OBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 10:01:37 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11540 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3H2OBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 09:59:38 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <airlied@redhat.com>
-CC: <daniel.vetter@ffwll.ch>, <gregkh@linuxfoundation.org>,
-        <s.hauer@pengutronix.de>, <festevam@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2] imx-drm: Fix probe failure
-Date: Thu, 29 Aug 2013 10:59:22 -0300
-Message-ID: <1377784762-24045-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 29 Aug 2013 10:01:35 -0400
+From: Libin <huawei.libin@huawei.com>
+To: <akpm@linux-foundation.org>, <tj@kernel.org>, <viro@zeniv.linux.org.uk>,
+        <eparis@redhat.com>, <tglx@linutronix.de>, <rusty@rustcorp.com.au>,
+        <ebiederm@xmission.com>, <paulmck@linux.vnet.ibm.com>,
+        <john.stultz@linaro.org>, <mingo@redhat.com>, <peterz@infradead.org>,
+        <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <jovi.zhangwei@huawei.com>, <guohanjun@huawei.com>,
+        <zhangdianfang@huawei.com>, <wangyijing@huawei.com>,
+        <huawei.libin@huawei.com>
+Subject: [PATCH 04/14] exit: Fix invalid wakeup in do_wait
+Date: Thu, 29 Aug 2013 21:57:39 +0800
+Message-ID: <1377784669-28140-5-git-send-email-huawei.libin@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+In-Reply-To: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
+References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Originating-IP: [10.135.74.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
-failure is seen:
+If thread is preempted before calling set_current_state(TASK_INTERRUPTIBLE),
+and the other thread set the condition followed with wake_up_process. After
+that when this thread is re-scheduled, calling set_current_state to set itself
+as state TASK_INTERRUPTIBLE, if it is preempted again after that and before
+__set_current_state(TASK_RUNNING), it triggers the invalid wakeup problem.
 
-[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[drm] No driver support for vblank timestamp query.
-[drm] Initialized imx-drm 1.0.0 20120507 on minor 0
-imx-ldb ldb.10: adding encoder failed with -16
-imx-ldb: probe of ldb.10 failed with error -16
-imx-ipuv3 2400000.ipu: IPUv3H probed
-imx-ipuv3 2800000.ipu: IPUv3H probed
-imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
+To solve this problem, using preempt_disable() to bound the operaion that
+setting the task state and the conditions(set by the wake thread) validation.
 
-The reason for the probe failure is that now 'imxdrm->references' is incremented
-early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
-and imx_drm_add_encoder():
-
-	if (imxdrm->references) {
-		ret = -EBUSY;
-		goto err_busy;
-	}
-
-,will always fail.
-
-Let the drm core handle the references instead of doing this manually in 
-imx-drm. In imx-drm-core the open and close callbacks map to drm_open and 
-drm_close, which handle the references via open_count.
-
-After this patch, lvds panel is functional on a mx6qsabrelite board.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Libin <huawei.libin@huawei.com>
 ---
-Changes since v1:
-- Improved commit log by providing an explanation to the probe failure
-- Cc'ed Dave/Daniel
+ kernel/exit.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
- drivers/staging/imx-drm/imx-drm-core.c | 23 -----------------------
- 1 file changed, 23 deletions(-)
-
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 47c5888..6f0d24c 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -41,7 +41,6 @@ struct imx_drm_device {
- 	struct list_head			encoder_list;
- 	struct list_head			connector_list;
- 	struct mutex				mutex;
--	int					references;
- 	int					pipes;
- 	struct drm_fbdev_cma			*fbhelper;
- };
-@@ -241,8 +240,6 @@ struct drm_device *imx_drm_device_get(void)
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a949819..1ea7736 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1521,7 +1521,6 @@ repeat:
+ 	   (!wo->wo_pid || hlist_empty(&wo->wo_pid->tasks[wo->wo_type])))
+ 		goto notask;
+ 
+-	set_current_state(TASK_INTERRUPTIBLE);
+ 	read_lock(&tasklist_lock);
+ 	tsk = current;
+ 	do {
+@@ -1539,16 +1538,20 @@ repeat:
+ 	read_unlock(&tasklist_lock);
+ 
+ notask:
++	preempt_disable();
++	set_current_state(TASK_INTERRUPTIBLE);
+ 	retval = wo->notask_error;
+ 	if (!retval && !(wo->wo_flags & WNOHANG)) {
+ 		retval = -ERESTARTSYS;
+ 		if (!signal_pending(current)) {
++			preempt_enable();
+ 			schedule();
+ 			goto repeat;
  		}
  	}
- 
--	imxdrm->references++;
--
- 	return imxdrm->drm;
- 
- unwind_crtc:
-@@ -280,8 +277,6 @@ void imx_drm_device_put(void)
- 	list_for_each_entry(enc, &imxdrm->encoder_list, list)
- 		module_put(enc->owner);
- 
--	imxdrm->references--;
--
- 	mutex_unlock(&imxdrm->mutex);
+-end:
+ 	__set_current_state(TASK_RUNNING);
++	preempt_enable();
++end:
+ 	remove_wait_queue(&current->signal->wait_chldexit, &wo->child_wait);
+ 	return retval;
  }
- EXPORT_SYMBOL_GPL(imx_drm_device_put);
-@@ -485,11 +480,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
--		ret = -EBUSY;
--		goto err_busy;
--	}
--
- 	imx_drm_crtc = kzalloc(sizeof(*imx_drm_crtc), GFP_KERNEL);
- 	if (!imx_drm_crtc) {
- 		ret = -ENOMEM;
-@@ -523,7 +513,6 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
- err_register:
- 	kfree(imx_drm_crtc);
- err_alloc:
--err_busy:
- 	mutex_unlock(&imxdrm->mutex);
- 	return ret;
- }
-@@ -564,11 +553,6 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
--		ret = -EBUSY;
--		goto err_busy;
--	}
--
- 	imx_drm_encoder = kzalloc(sizeof(*imx_drm_encoder), GFP_KERNEL);
- 	if (!imx_drm_encoder) {
- 		ret = -ENOMEM;
-@@ -595,7 +579,6 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
- err_register:
- 	kfree(imx_drm_encoder);
- err_alloc:
--err_busy:
- 	mutex_unlock(&imxdrm->mutex);
- 
- 	return ret;
-@@ -709,11 +692,6 @@ int imx_drm_add_connector(struct drm_connector *connector,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
--		ret = -EBUSY;
--		goto err_busy;
--	}
--
- 	imx_drm_connector = kzalloc(sizeof(*imx_drm_connector), GFP_KERNEL);
- 	if (!imx_drm_connector) {
- 		ret = -ENOMEM;
-@@ -738,7 +716,6 @@ int imx_drm_add_connector(struct drm_connector *connector,
- err_register:
- 	kfree(imx_drm_connector);
- err_alloc:
--err_busy:
- 	mutex_unlock(&imxdrm->mutex);
- 
- 	return ret;
 -- 
-1.8.1.2
+1.8.2.1
 
 
