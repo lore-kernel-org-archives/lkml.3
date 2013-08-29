@@ -1,171 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3H2PHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 11:07:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38825 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab3H2PH3 (ORCPT
+	id S1755866Ab3H2PIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 11:08:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40515 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab3H2PIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 11:07:29 -0400
-From: "Yaniv Gardi" <ygardi@codeaurora.org>
-To: "'Raviv Shvili'" <rshvili@codeaurora.org>, <linux-scsi@vger.kernel.org>
-Cc: <linux-arm-msm@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1377788378-5494-1-git-send-email-rshvili@codeaurora.org>
-In-Reply-To: <1377788378-5494-1-git-send-email-rshvili@codeaurora.org>
-Subject: RE: [RFC/PATCH 2/3] scsi: ufs: device query status and size check
-Date: Thu, 29 Aug 2013 18:07:22 +0300
-Message-ID: <00cc01cea4c9$78be9220$6a3bb660$@codeaurora.org>
+	Thu, 29 Aug 2013 11:08:45 -0400
+Message-ID: <521F63E4.80809@infradead.org>
+Date: Thu, 29 Aug 2013 08:08:20 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+To: Jan Engelhardt <jengelh@inai.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: fixdep ought to be compiled with -D_FILE_OFFSET_BITS
+References: <alpine.LSU.2.10.9.1308291200240.15586@nerf07.vanv.qr>
+In-Reply-To: <alpine.LSU.2.10.9.1308291200240.15586@nerf07.vanv.qr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFiuay7OFyFOcseFGkhz+1FQ40F0JqEH2CA
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me.
-Reviewed-by: Yaniv Gardi <ygardi@codeaurora.org>
-
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+adding linux-kbuild list...
 
 
-= > -----Original Message-----
-= > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-= > owner@vger.kernel.org] On Behalf Of Raviv Shvili
-= > Sent: Thursday, August 29, 2013 6:00 PM
-= > To: linux-scsi@vger.kernel.org
-= > Cc: linux-arm-msm@vger.kernel.org; Raviv Shvili; open list
-= > Subject: [RFC/PATCH 2/3] scsi: ufs: device query status and size check
-= > 
-= > Check query response status before copying the response.
-= > Add descriptor query response size check, before copying it to buffer.
-= > 
-= > Signed-off-by: Raviv Shvili <rshvili@codeaurora.org>
-= > 
-= > diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c index
-= > 6da0d41..d0cad34 100644
-= > --- a/drivers/scsi/ufs/ufshcd.c
-= > +++ b/drivers/scsi/ufs/ufshcd.c
-= > @@ -440,31 +440,35 @@ static inline void ufshcd_query_to_be(struct
-= > utp_upiu_query *request)
-= >   * @lrb - pointer to local reference block
-= >   */
-= >  static
-= > -void ufshcd_copy_query_response(struct ufs_hba *hba, struct ufshcd_lrb
-= > *lrbp)
-= > +int ufshcd_copy_query_response(struct ufs_hba *hba, struct ufshcd_lrb
-= > +*lrbp)
-= >  {
-= >  	struct ufs_query_res *query_res = &hba-
-= > >dev_cmd.query.response;
-= > 
-= > -	/* Get the UPIU response */
-= > -	query_res->response = ufshcd_get_rsp_upiu_result(lrbp-
-= > >ucd_rsp_ptr) >>
-= > -			UPIU_RSP_CODE_OFFSET;
-= > -
-= >  	memcpy(&query_res->upiu_res, &lrbp->ucd_rsp_ptr->qr,
-= > QUERY_OSF_SIZE);
-= >  	ufshcd_query_to_cpu(&query_res->upiu_res);
-= > 
-= > -
-= >  	/* Get the descriptor */
-= >  	if (lrbp->ucd_rsp_ptr->qr.opcode ==
-= > UPIU_QUERY_OPCODE_READ_DESC) {
-= >  		u8 *descp = (u8 *)lrbp->ucd_rsp_ptr +
-= >  				GENERAL_UPIU_REQUEST_SIZE;
-= > -		u16 len;
-= > +		u16 resp_len;
-= > +		u16 buf_len;
-= > 
-= >  		/* data segment length */
-= > -		len = be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2) &
-= > +		resp_len = be32_to_cpu(lrbp->ucd_rsp_ptr-
-= > >header.dword_2) &
-= > 
-= > 	MASK_QUERY_DATA_SEG_LEN;
-= > -
-= > -		memcpy(hba->dev_cmd.query.descriptor, descp,
-= > -				min_t(u16, len, QUERY_DESC_MAX_SIZE));
-= > +		buf_len = hba->dev_cmd.query.request.upiu_req.length;
-= > +		if (likely(buf_len >= resp_len)) {
-= > +			memcpy(hba->dev_cmd.query.descriptor, descp,
-= > resp_len);
-= > +		} else {
-= > +			dev_warn(hba->dev,
-= > +				"%s: Response size is bigger than buffer",
-= > +				__func__);
-= > +			return -EINVAL;
-= > +		}
-= >  	}
-= > +
-= > +	return 0;
-= >  }
-= > 
-= >  /**
-= > @@ -781,11 +785,9 @@ static void
-= > ufshcd_prepare_utp_query_req_upiu(struct ufs_hba *hba,
-= >  	ufshcd_query_to_be(&ucd_req_ptr->qr);
-= > 
-= >  	/* Copy the Descriptor */
-= > -	if ((len > 0) && (query->request.upiu_req.opcode ==
-= > -
-= > 	UPIU_QUERY_OPCODE_WRITE_DESC)) {
-= > -		memcpy(descp, query->descriptor,
-= > -				min_t(u16, len, QUERY_DESC_MAX_SIZE));
-= > -	}
-= > +	if (query->request.upiu_req.opcode ==
-= > UPIU_QUERY_OPCODE_WRITE_DESC)
-= > +		memcpy(descp, query->descriptor, len);
-= > +
-= >  }
-= > 
-= >  static inline void ufshcd_prepare_utp_nop_upiu(struct ufshcd_lrb *lrbp)
-= > @@ -964,6 +966,17 @@ ufshcd_clear_cmd(struct ufs_hba *hba, int tag)
-= >  	return err;
-= >  }
-= > 
-= > +static int
-= > +ufshcd_check_query_response(struct ufs_hba *hba, struct ufshcd_lrb
-= > +*lrbp) {
-= > +	struct ufs_query_res *query_res = &hba-
-= > >dev_cmd.query.response;
-= > +
-= > +	/* Get the UPIU response */
-= > +	query_res->response = ufshcd_get_rsp_upiu_result(lrbp-
-= > >ucd_rsp_ptr) >>
-= > +				UPIU_RSP_CODE_OFFSET;
-= > +	return query_res->response;
-= > +}
-= > +
-= >  /**
-= >   * ufshcd_dev_cmd_completion() - handles device management command
-= > responses
-= >   * @hba: per adapter instance
-= > @@ -986,7 +999,9 @@ ufshcd_dev_cmd_completion(struct ufs_hba *hba,
-= > struct ufshcd_lrb *lrbp)
-= >  		}
-= >  		break;
-= >  	case UPIU_TRANSACTION_QUERY_RSP:
-= > -		ufshcd_copy_query_response(hba, lrbp);
-= > +		err = ufshcd_check_query_response(hba, lrbp);
-= > +		if (!err)
-= > +			err = ufshcd_copy_query_response(hba, lrbp);
-= >  		break;
-= >  	case UPIU_TRANSACTION_REJECT_UPIU:
-= >  		/* TODO: handle Reject UPIU Response */
-= > --
-= > QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc.
-= > is a member of Code Aurora Forum, hosted by The Linux Foundation
-= > 
-= > --
-= > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the
-= > body of a message to majordomo@vger.kernel.org More majordomo info
-= > at  http://vger.kernel.org/majordomo-info.html
+On 08/29/13 03:04, Jan Engelhardt wrote:
+> 
+> Because fixdep is compiled without -D_FILE_OFFSET_BITS=64,
+> a 32-bit fixdep (in a chroot build root, for example) may fail to run
+> on a 64-bit host system if any file has an inode larger than 2^32,
+> which can easily happen (in my case, on xfs):
+> 
+> 
+> [ares07:~/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj]
+> $ make silentoldconfig -C $PWD/../linux-3.10 O=$PWD V=1
+> 
+> make: Entering directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
+> make -C /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-obj \
+> KBUILD_SRC=/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10 \
+> KBUILD_EXTMOD="" -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/Makefile \
+> silentoldconfig
+> make -f /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/Makefile.build obj=scripts/basic
+>   gcc -Wp,-MD,scripts/basic/.fixdep.d -Iscripts/basic -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -o scripts/basic/fixdep /home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10/scripts/basic/fixdep.c  
+> fixdep: error fstat'ing depfile: scripts/basic/.fixdep.d: Value too large for defined data type
+> make[2]: *** [scripts/basic/fixdep] Error 2
+> make[1]: *** [scripts_basic] Error 2
+> make: *** [sub-make] Error 2
+> make: Leaving directory `/home/abuild/rpmbuild/BUILD/kernel-pae-3.10.9~jng20/linux-3.10'
+> --
 
+
+-- 
+~Randy
