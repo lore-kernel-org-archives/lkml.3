@@ -1,58 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3H2Sfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 14:35:42 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:27229
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756928Ab3H2Sff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 14:35:35 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Subject: Re: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Topic: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-Thread-Index: AQHOnPa6Tah/7plIa0O2SRc9QXB0Upmsj38AgAADqIA=
-Date: Thu, 29 Aug 2013 18:35:32 +0000
-Message-ID: <1377801331.27493.17.camel@x230>
-References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
-	 <1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
-	 <521F9162.9060405@zytor.com>
-In-Reply-To: <521F9162.9060405@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:51f:6613:ec7a:9b2f]
-x-forefront-prvs: 09538D3531
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(377424004)(377454003)(479174003)(65816001)(69226001)(80022001)(74366001)(74706001)(81816001)(80976001)(83072001)(19580395003)(56816003)(77096001)(83322001)(19580405001)(74876001)(81686001)(76482001)(56776001)(46102001)(54316002)(49866001)(81542001)(47736001)(47976001)(81342001)(50986001)(76786001)(76796001)(4396001)(77982001)(47446002)(59766001)(33646001)(74502001)(31966008)(79102001)(53806001)(51856001)(63696002)(54356001)(74662001)(33716001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:51f:6613:ec7a:9b2f;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <FFE8D3DD9711C04795D8A5BCCCB2A0B1@namprd05.prod.outlook.com>
+	id S1756966Ab3H2SgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 14:36:18 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:26260 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756654Ab3H2Scz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 14:32:55 -0400
+X-IronPort-AV: E=Sophos;i="4.89,984,1367971200"; 
+   d="scan'208";a="48860308"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+Subject: [PATCH v5 01/13] arm: make SWIOTLB available
+Date: Thu, 29 Aug 2013 19:32:22 +0100
+Message-ID: <1377801154-29215-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7TIZpBw017383
 
-On Thu, 2013-08-29 at 11:22 -0700, H. Peter Anvin wrote:
-> On 08/19/2013 09:10 AM, Matthew Garrett wrote:
-> > +	if (!capable(CAP_COMPROMISE_KERNEL))
-> > +		return -EPERM;
-> > +
-> 
-> Stale bits?
+IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+provided by lib/iommu_helper.c.
 
-Yeah. Did I manage to send out the old copy of that again? I'm sorry,
-spending a few months concentrating on cloud stuff seems to have
-entirely destroyed my ability to deal with git :(
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: will.deacon@arm.com
+CC: linux@arm.linux.org.uk
 
+
+Changes in v5:
+- implement dma_mark_clean using dmac_flush_range.
+
+Changes in v3:
+- dma_capable: do not treat dma_mask as a limit;
+- remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
+---
+ arch/arm/Kconfig                   |    6 ++++++
+ arch/arm/include/asm/dma-mapping.h |   32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ba412e0..c0bfb33 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1832,6 +1832,12 @@ config CC_STACKPROTECTOR
+ 	  neutralized via a kernel panic.
+ 	  This feature requires gcc version 4.2 or above.
+ 
++config SWIOTLB
++	def_bool y
++
++config IOMMU_HELPER
++	def_bool SWIOTLB
++
+ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 5b579b9..0982206 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -10,6 +10,7 @@
+ 
+ #include <asm-generic/dma-coherent.h>
+ #include <asm/memory.h>
++#include <asm/cacheflush.h>
+ 
+ #define DMA_ERROR_CODE	(~0)
+ extern struct dma_map_ops arm_dma_ops;
+@@ -86,6 +87,37 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+ }
+ #endif
+ 
++static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
++{
++	unsigned int offset = paddr & ~PAGE_MASK;
++	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
++}
++
++static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
++{
++	unsigned int offset = dev_addr & ~PAGE_MASK;
++	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;
++}
++
++static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	u64 limit, mask = *dev->dma_mask;
++
++	limit = (mask + 1) & ~mask;
++	if (limit && size > limit)
++		return 0;
++
++	if ((addr | (addr + size - 1)) & ~mask)
++		return 0;
++
++	return 1;
++}
++
++static inline void dma_mark_clean(void *addr, size_t size)
++{
++	dmac_flush_range(addr, addr + size);
++}
++
+ /*
+  * DMA errors are defined by all-bits-set in the DMA address.
+  */
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.2.5
+
