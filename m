@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3H3RQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:16:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53184 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752426Ab3H3RQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:16:38 -0400
-Message-ID: <5220D350.7030008@zytor.com>
-Date: Fri, 30 Aug 2013 10:16:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, Fenghua Yu <fenghua.yu@intel.com>,
+	id S1756678Ab3H3RR3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:17:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43756 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3H3RR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 13:17:27 -0400
+Date: Fri, 30 Aug 2013 19:17:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
-References: <5217908E.2040702@siemens.com> <5220BC1A.3030108@zytor.com> <20130830115142.1ee4c825@gandalf.local.home> <5220C9C6.5020808@zytor.com> <20130830130331.1e260e85@gandalf.local.home>
-In-Reply-To: <20130830130331.1e260e85@gandalf.local.home>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130830171707.GV31370@twins.programming.kicks-ass.net>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+ <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+ <1377751465.4028.20.camel@pasglop>
+ <20130829070012.GC27322@gmail.com>
+ <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 10:03 AM, Steven Rostedt wrote:
-> On Fri, 30 Aug 2013 09:35:18 -0700
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
-> 
->> On 08/30/2013 08:51 AM, Steven Rostedt wrote:
->>>
->>> It does when dynamic tracing is enabled. But this issue is with static
->>> tracing, there's no code modification, thus all functions call
->>> mcount/__fentry__ and we need to look at a variable to determine if we
->>> should trace or not.
->>>
->>
->> And of course global variables are a no-no without special handling in
->> pre-paging mode.  Sigh.
->>
->> You *could* bail out of the calling address is < PAGE_OFFSET.
->>
-> 
-> We could do that too, as static tracing already gives us high overhead,
-> I'm not sure how much more overhead another check like this even
-> matters.
+On Thu, Aug 29, 2013 at 09:43:07AM -0700, Linus Torvalds wrote:
 
-It's not too expensive: a compare and a jump.
+> We'll see. The real problem is that I'm not sure if I can even see the
+> scalability issue on any machine I actually personally want to use
+> (read: silent). On my current  system I can only get up to 15%
+> _raw_spin_lock by just stat'ing the same file over and over and over
+> again from lots of threads.
 
-> Who uses static tracing? I only use it to test that it still works ;-)
+Yeah, silent basically limits you to i7 single socket systems and sadly
+Intel doesn't seem to want to make those with more than 4 cores on :/
 
-Can we get rid of it?
-
-
+I've got a i7-K part (SNB iirc) with a _huge_ scythe cooler and a high
+efficiency fanless PSU for a system that's near noiseless -- as in my
+Thinkpad actually makes more noise.
