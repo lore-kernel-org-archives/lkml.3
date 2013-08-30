@@ -1,136 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3H3CH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 22:07:58 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:25371 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3H3CH5 (ORCPT
+	id S1755410Ab3H3CJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 22:09:30 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41360 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab3H3CJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 22:07:57 -0400
-Message-ID: <521FFE3B.7040801@huawei.com>
-Date: Fri, 30 Aug 2013 10:06:51 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linux-parisc@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <sparclinux@vger.kernel.org>,
-        <x86@kernel.org>
-Subject: [PATCH 4/4] mm/arch: use NUMA_NODE
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 29 Aug 2013 22:09:28 -0400
+Date: Thu, 29 Aug 2013 22:09:26 -0400 (EDT)
+Message-Id: <20130829.220926.226210132086755040.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-wireless@vger.kernel.org,
+        b43-dev@lists.infradead.org, users@rt2x00.serialmonkey.com
+Subject: Re: [PATCH net-next] drivers:net: Convert
+ dma_alloc_coherent(...__GFP_ZERO) to dma_zalloc_coherent
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1377582323.2658.10.camel@joe-AO722>
+References: <dbbfc5e66dba7d2b63549d218407fb0c4031f2ed.1363367992.git.joe@perches.com>
+	<1377582323.2658.10.camel@joe-AO722>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 29 Aug 2013 19:09:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more appropriate NUMA_NO_NODE instead of -1 in some archs' module_alloc()
+From: Joe Perches <joe@perches.com>
+Date: Mon, 26 Aug 2013 22:45:23 -0700
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
----
- arch/arm/kernel/module.c    |    2 +-
- arch/arm64/kernel/module.c  |    2 +-
- arch/mips/kernel/module.c   |    2 +-
- arch/parisc/kernel/module.c |    2 +-
- arch/s390/kernel/module.c   |    2 +-
- arch/sparc/kernel/module.c  |    2 +-
- arch/x86/kernel/module.c    |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+> __GFP_ZERO is an uncommon flag and perhaps is better
+> not used.  static inline dma_zalloc_coherent exists
+> so convert the uses of dma_alloc_coherent with __GFP_ZERO
+> to the more common kernel style with zalloc.
+> 
+> Remove memset from the static inline dma_zalloc_coherent
+> and add just one use of __GFP_ZERO instead.
+> 
+> Trivially reduces the size of the existing uses of
+> dma_zalloc_coherent.
+> 
+> Realign arguments as appropriate.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index 85c3fb6..8f4cff3 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -40,7 +40,7 @@
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/arm64/kernel/module.c b/arch/arm64/kernel/module.c
-index ca0e3d5..8f898bd 100644
---- a/arch/arm64/kernel/module.c
-+++ b/arch/arm64/kernel/module.c
-@@ -29,7 +29,7 @@
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				    GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				    GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- 
-diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
-index 977a623..b507e07 100644
---- a/arch/mips/kernel/module.c
-+++ b/arch/mips/kernel/module.c
-@@ -46,7 +46,7 @@ static DEFINE_SPINLOCK(dbe_lock);
- void *module_alloc(unsigned long size)
- {
- 	return __vmalloc_node_range(size, 1, MODULE_START, MODULE_END,
--				GFP_KERNEL, PAGE_KERNEL, -1,
-+				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/parisc/kernel/module.c b/arch/parisc/kernel/module.c
-index 2a625fb..50dfafc 100644
---- a/arch/parisc/kernel/module.c
-+++ b/arch/parisc/kernel/module.c
-@@ -219,7 +219,7 @@ void *module_alloc(unsigned long size)
- 	 * init_data correctly */
- 	return __vmalloc_node_range(size, 1, VMALLOC_START, VMALLOC_END,
- 				    GFP_KERNEL | __GFP_HIGHMEM,
--				    PAGE_KERNEL_RWX, -1,
-+				    PAGE_KERNEL_RWX, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- 
-diff --git a/arch/s390/kernel/module.c b/arch/s390/kernel/module.c
-index 7845e15..b89b591 100644
---- a/arch/s390/kernel/module.c
-+++ b/arch/s390/kernel/module.c
-@@ -50,7 +50,7 @@ void *module_alloc(unsigned long size)
- 	if (PAGE_ALIGN(size) > MODULES_LEN)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				    GFP_KERNEL, PAGE_KERNEL, -1,
-+				    GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				    __builtin_return_address(0));
- }
- #endif
-diff --git a/arch/sparc/kernel/module.c b/arch/sparc/kernel/module.c
-index 4435488..97655e0 100644
---- a/arch/sparc/kernel/module.c
-+++ b/arch/sparc/kernel/module.c
-@@ -29,7 +29,7 @@ static void *module_map(unsigned long size)
- 	if (PAGE_ALIGN(size) > MODULES_LEN)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				GFP_KERNEL, PAGE_KERNEL, -1,
-+				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
- 				__builtin_return_address(0));
- }
- #else
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index 216a4d7..18be189 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -49,7 +49,7 @@ void *module_alloc(unsigned long size)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
- 				GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL_EXEC,
--				-1, __builtin_return_address(0));
-+				NUMA_NO_NODE, __builtin_return_address(0));
- }
- 
- #ifdef CONFIG_X86_32
--- 
-1.7.1
-
-
+Applied, thanks a lot Joe.
