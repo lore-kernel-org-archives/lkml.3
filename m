@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab3H3NIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:08:13 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:56323 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab3H3NIL (ORCPT
+	id S1754635Ab3H3NMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:12:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46806 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab3H3NMP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:08:11 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 06/16] Enforce minimum alignment of 1 page on allocations. The efi_high_alloc() and efi_low_alloc() functions use the EFI_ALLOCATE_ADDRESS option to the EFI function allocate_pages(), which requires a minimum of page alignment, and rejects all other requests.
-To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        matt.fleming@intel.com, linux@arm.linux.org.uk
-Cc: Roy Franz <roy.franz@linaro.org>, dave.martin@arm.com,
-        leif.lindholm@linaro.org, msalter@redhat.com
-In-Reply-To: <1376090777-20090-7-git-send-email-roy.franz@linaro.org>
-References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org> <1376090777-20090-7-git-send-email-roy.franz@linaro.org>
-Date: Fri, 30 Aug 2013 14:08:11 +0100
-Message-Id: <20130830130811.7D7453E102A@localhost>
+	Fri, 30 Aug 2013 09:12:15 -0400
+Message-ID: <1377868330.3342.10.camel@hornet>
+Subject: Re: [PATCH RFC v2 14/16] ARM: vexpress: remove custom .init_time
+ hook
+From: Pawel Moll <pawel.moll@arm.com>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 30 Aug 2013 14:12:10 +0100
+In-Reply-To: <1377856951.3655.34.camel@linaro1.home>
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <1377638890-371-15-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <201308291535.53005.arnd@arndb.de> <521F901B.3090305@gmail.com>
+	 <1377856951.3655.34.camel@linaro1.home>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 30 Aug 2013 13:12:10.0965 (UTC) FILETIME=[89637050:01CEA582]
+X-MC-Unique: 113083014121200701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Aug 2013 16:26:07 -0700, Roy Franz <roy.franz@linaro.org> wrote:
-> The existing code could fail to allocate depending
-> on allocation size, as although repeated allocation
-> attempts were made, none were guaranteed to be page
-> aligned.
-
-Commit message. Otherwise looks reasonable.
-
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
-> ---
->  drivers/firmware/efi/efi-stub-helper.c |   14 ++++++++++++++
->  1 file changed, 14 insertions(+)
+On Fri, 2013-08-30 at 11:02 +0100, Jon Medhurst (Tixy) wrote:
+> On Thu, 2013-08-29 at 20:16 +0200, Sebastian Hesselbarth wrote:
+> > On 08/29/13 15:35, Arnd Bergmann wrote:
+> > > On Tuesday 27 August 2013, Sebastian Hesselbarth wrote:
+> > >> @@ -422,16 +419,8 @@ void __init v2m_dt_init_early(void)
+> > >>                          pr_warning("vexpress: DT HBI (%x) is not matching "
+> > >>                                          "hardware (%x)!\n", dt_hbi, hbi);
+> > >>          }
+> > >> -}
+> > >> -
+> > >> -static void __init v2m_dt_timer_init(void)
+> > >> -{
+> > >> -       of_clk_init(NULL);
+> > >>
+> > >> -       clocksource_of_init();
+> > >> -
+> > >> -       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(),
+> > >> -                               24000000);
+> > >> +       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(), 24000000);
+> > >>   }
+> > >
+> > > You are moving versatile_sched_clock_init() ahead of clocksource_of_init(), which I suspect
+> > > won't work. Have you checked this?
+> > 
+> > "Checked" as in "Tested", no I haven't.
+> > 
+> > But non-DT v2m has it in v2m_init_early also, while v2m_sp804_init()
+> > is called in v2m_timer_init().
+> > 
+> > That matches the above approach taken for DT v2m where
+> > versatile_sched_clock_init() is now called from v2m_dt_init_early()
+> > and clocksource_of_init() called from arch-wide .timer_init.
+> > 
+> > get_maintainer.pl did not spit out any additional maintainer except
+> > Russell of course. You know someone who can test the above?
 > 
-> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-> index 1d0a079..647b3ba 100644
-> --- a/drivers/firmware/efi/efi-stub-helper.c
-> +++ b/drivers/firmware/efi/efi-stub-helper.c
-> @@ -105,6 +105,13 @@ static efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
->  	if (status != EFI_SUCCESS)
->  		goto fail;
->  
-> +	/* Enforce minimum alignment that EFI requires when requesting
-> +	 * a specific address.  We are doing page-based allocations,
-> +	 * so we must be aligned to a page.
-> +	 */
-> +	if (align < EFI_PAGE_SIZE)
-> +		align = EFI_PAGE_SIZE;
-> +
->  	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
->  again:
->  	for (i = 0; i < map_size / desc_size; i++) {
-> @@ -184,6 +191,13 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
->  	if (status != EFI_SUCCESS)
->  		goto fail;
->  
-> +	/* Enforce minimum alignment that EFI requires when requesting
-> +	 * a specific address.  We are doing page-based allocations,
-> +	 * so we must be aligned to a page.
-> +	 */
-> +	if (align < EFI_PAGE_SIZE)
-> +		align = EFI_PAGE_SIZE;
-> +
->  	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
->  	for (i = 0; i < map_size / desc_size; i++) {
->  		efi_memory_desc_t *desc;
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> After adding of_clk_init(NULL) to time_init() things boot OK for me with
+> this patch. However, do we know that sched_clock is never going to get
+> read before time_init() has actually started the clock it reads? Are we
+> making things more fragile?
+
+The versatile_sched_clock_init() is currently completely independent of
+the clocksource infrastructure, so no harm should be done at all by
+moving it.
+
+Paweł
+
 
