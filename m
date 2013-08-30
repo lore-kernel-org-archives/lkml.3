@@ -1,267 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3H3MnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:43:03 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49921 "EHLO e9.ny.us.ibm.com"
+	id S1756610Ab3H3MnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:43:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38541 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755785Ab3H3MnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:43:01 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 13/35] mm: A new optimized O(log n) sorting algo to
- speed up buddy-sorting
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+	id S1755785Ab3H3MnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:43:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,990,1367996400"; 
+   d="scan'208";a="394507790"
+Date: Fri, 30 Aug 2013 15:43:05 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: intel-gfx@lists.freedesktop.org, airlied@redhat.com,
         linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:08:44 +0530
-Message-ID: <20130830123842.24352.5134.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
-References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+Subject: Re: [PATCH v3] i915: Update VGA arbiter support for newer devices
+Message-ID: <20130830124305.GI11428@intel.com>
+References: <20130828153700.10255.67664.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083012-7182-0000-0000-00000840EA91
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130828153700.10255.67664.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sorted-buddy design for memory power management depends on
-keeping the buddy freelists region-sorted. And this sorting operation
-has been pushed to the free() logic, keeping the alloc() path fast.
+On Wed, Aug 28, 2013 at 09:39:08AM -0600, Alex Williamson wrote:
+> This is intended to add VGA arbiter support for Intel HD graphics on
+> Core processors.  The old GMCH registers no longer exist, so even
+> though it appears that i915 participates in VGA arbitration, it doesn't
+> work.  On Intel HD graphics we already attempt to disable VGA regions
+> of the device.  This makes registering as a VGA client unnecessary since
+> we don't intend to operate differently depending on how many VGA devices
+> are present.  We can disable VGA memory regions by clearing the memory
+> enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+> the VGA arbiter to know that we don't participate in VGA memory
+> arbitration.  We also add a hook on unload to re-enable memory and
+> reinstate VGA memory arbitration.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-However, we would like to also keep the free() path as fast as possible,
-since it holds the zone->lock, which will indirectly affect alloc() also.
+Looking good.
 
-So replace the existing O(n) sorting logic used in the free-path, with
-a new special-case sorting algorithm of time complexity O(log n), in order
-to optimize the free() path further. This algorithm uses a bitmap-based
-radix tree to help speed up the sorting.
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-One of the other main advantages of this O(log n) design is that it can
-support large amounts of RAM (upto 2 TB and beyond) quite effortlessly.
+> ---
+> 
+> v3: Use explicit LEGACY_IO | LEGACY_MEM when restoring rather than
+>     LEGACY_MASK, per Ville's comments.
+> 
+> v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
+>     directly.  Also, on the driver unbind VGA enable path, acquire legacy
+>     IO to re-enable VGA memory.  Correct comment.
+> 
+> As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
+> all patches I'm able to assign a discrete PEG VGA device to a guest and
+> execute the VBIOS w/o interference from IGD or corruption of the IGD
+> framebuffer.
+> 
+>  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+>  drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
+>  2 files changed, 31 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index f466980..d9cf216 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+>  	 * then we do not take part in VGA arbitration and the
+>  	 * vga_client_register() fails with -ENODEV.
+>  	 */
+> -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+> -	if (ret && ret != -ENODEV)
+> -		goto out;
+> +	if (!HAS_PCH_SPLIT(dev)) {
+> +		ret = vga_client_register(dev->pdev, dev, NULL,
+> +					  i915_vga_set_decode);
+> +		if (ret && ret != -ENODEV)
+> +			goto out;
+> +	}
+>  
+>  	intel_register_dsm_handler();
+>  
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 5fb3058..2807760 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
+>  	outb(SR01, VGA_SR_INDEX);
+>  	sr1 = inb(VGA_SR_DATA);
+>  	outb(sr1 | 1<<5, VGA_SR_DATA);
+> +
+> +	/* Disable VGA memory on Intel HD */
+> +	if (HAS_PCH_SPLIT(dev)) {
+> +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
+> +						   VGA_RSRC_NORMAL_IO |
+> +						   VGA_RSRC_NORMAL_MEM);
+> +	}
+> +
+>  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+>  	udelay(300);
+>  
+> @@ -9526,6 +9535,20 @@ static void i915_disable_vga(struct drm_device *dev)
+>  	POSTING_READ(vga_reg);
+>  }
+>  
+> +static void i915_enable_vga(struct drm_device *dev)
+> +{
+> +	/* Enable VGA memory on Intel HD */
+> +	if (HAS_PCH_SPLIT(dev)) {
+> +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
+> +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
+> +						   VGA_RSRC_LEGACY_MEM |
+> +						   VGA_RSRC_NORMAL_IO |
+> +						   VGA_RSRC_NORMAL_MEM);
+> +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+> +	}
+> +}
+> +
+>  void intel_modeset_init_hw(struct drm_device *dev)
+>  {
+>  	intel_init_power_well(dev);
+> @@ -9983,6 +10006,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+>  
+>  	intel_disable_fbc(dev);
+>  
+> +	i915_enable_vga(dev);
+> +
+>  	intel_disable_gt_powersave(dev);
+>  
+>  	ironlake_teardown_rc6(dev);
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/mmzone.h |    2 +
- mm/page_alloc.c        |  144 ++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 139 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 932e71f..b35020f 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -102,6 +102,8 @@ struct free_list {
- 	 * this freelist.
- 	 */
- 	struct mem_region_list	mr_list[MAX_NR_ZONE_REGIONS];
-+	DECLARE_BITMAP(region_root_mask, BITS_PER_LONG);
-+	DECLARE_BITMAP(region_leaf_mask, MAX_NR_ZONE_REGIONS);
- };
- 
- struct free_area {
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 52b6655..4da02fc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -514,11 +514,131 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
- 	return 0;
- }
- 
-+/**
-+ *
-+ * An example should help illustrate the bitmap representation of memory
-+ * regions easily. So consider the following scenario:
-+ *
-+ * MAX_NR_ZONE_REGIONS = 256
-+ * DECLARE_BITMAP(region_leaf_mask, MAX_NR_ZONE_REGIONS);
-+ * DECLARE_BITMAP(region_root_mask, BITS_PER_LONG);
-+ *
-+ * Here region_leaf_mask is an array of unsigned longs. And region_root_mask
-+ * is a single unsigned long. The tree notion is constructed like this:
-+ * Each bit in the region_root_mask will correspond to an array element of
-+ * region_leaf_mask, as shown below. (The elements of the region_leaf_mask
-+ * array are shown as being discontiguous, only to help illustrate the
-+ * concept easily).
-+ *
-+ *                    Region Root Mask
-+ *                   ___________________
-+ *                  |____|____|____|____|
-+ *                    /    |     \     \
-+ *                   /     |      \     \
-+ *             ________    |   ________  \
-+ *            |________|   |  |________|  \
-+ *                         |               \
-+ *                      ________        ________
-+ *                     |________|      |________|   <--- Region Leaf Mask
-+ *                                                         array elements
-+ *
-+ * If an array element in the leaf mask is non-zero, the corresponding bit
-+ * for that array element will be set in the root mask. Every bit in the
-+ * region_leaf_mask will correspond to a memory region; it is set if that
-+ * region is present in that free list, cleared otherwise.
-+ *
-+ * This arrangement helps us find the previous set bit in region_leaf_mask
-+ * using at most 2 bitmask-searches (each bitmask of size BITS_PER_LONG),
-+ * one at the root-level, and one at the leaf level. Thus, this design of
-+ * an optimized access structure reduces the search-complexity when dealing
-+ * with large amounts of memory. The worst-case time-complexity of buddy
-+ * sorting comes to O(log n) using this algorithm, where 'n' is the no. of
-+ * memory regions in the zone.
-+ *
-+ * For example, with MEM_REGION_SIZE = 512 MB, on 64-bit machines, we can
-+ * deal with upto 2TB of RAM (MAX_NR_ZONE_REGIONS = 4096) efficiently (just
-+ * 12 ops in the worst case, as opposed to 4096 in an O(n) algo) with such
-+ * an arrangement, without even needing to extend this 2-level hierarchy
-+ * any further.
-+ */
-+
-+static void set_region_bit(int region_id, struct free_list *free_list)
-+{
-+	set_bit(region_id, free_list->region_leaf_mask);
-+	set_bit(BIT_WORD(region_id), free_list->region_root_mask);
-+}
-+
-+static void clear_region_bit(int region_id, struct free_list *free_list)
-+{
-+	clear_bit(region_id, free_list->region_leaf_mask);
-+
-+	if (!(free_list->region_leaf_mask[BIT_WORD(region_id)]))
-+		clear_bit(BIT_WORD(region_id), free_list->region_root_mask);
-+
-+}
-+
-+/* Note that Region 0 corresponds to bit position 1 (0x1) and so on */
-+static int find_prev_region(int region_id, struct free_list *free_list)
-+{
-+	int leaf_word, prev_region_id;
-+	unsigned long *region_root_mask, *region_leaf_mask;
-+	unsigned long tmp_root_mask, tmp_leaf_mask;
-+
-+	if (!region_id)
-+		return -1; /* No previous region */
-+
-+	leaf_word = BIT_WORD(region_id);
-+
-+	region_root_mask = free_list->region_root_mask;
-+	region_leaf_mask = free_list->region_leaf_mask;
-+
-+
-+	/*
-+	 * Try to get the prev region id without going to the root mask.
-+	 * Note that region_id itself might not be set yet.
-+	 */
-+	if (region_leaf_mask[leaf_word]) {
-+		tmp_leaf_mask = region_leaf_mask[leaf_word] &
-+							(BIT_MASK(region_id) - 1);
-+
-+		if (tmp_leaf_mask) {
-+			/* Prev region is in this leaf mask itself. Find it. */
-+			prev_region_id = leaf_word * BITS_PER_LONG +
-+							__fls(tmp_leaf_mask);
-+			goto out;
-+		}
-+	}
-+
-+	/* Search the root mask for the leaf mask having prev region */
-+	tmp_root_mask = *region_root_mask & (BIT(leaf_word) - 1);
-+	if (tmp_root_mask) {
-+		leaf_word = __fls(tmp_root_mask);
-+
-+		/* Get the prev region id from the leaf mask */
-+		prev_region_id = leaf_word * BITS_PER_LONG +
-+					__fls(region_leaf_mask[leaf_word]);
-+	} else {
-+		/*
-+		 * This itself is the first populated region in this
-+		 * freelist, so previous region doesn't exist.
-+		 */
-+		prev_region_id = -1;
-+	}
-+
-+out:
-+
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN(prev_region_id >= region_id, "%s: bitmap logic messed up\n",
-+								__func__);
-+#endif
-+	return prev_region_id;
-+}
-+
- static void add_to_freelist(struct page *page, struct free_list *free_list)
- {
- 	struct list_head *prev_region_list, *lru;
- 	struct mem_region_list *region;
--	int region_id, i;
-+	int region_id, prev_region_id;
- 
- 	lru = &page->lru;
- 	region_id = page_zone_region_id(page);
-@@ -536,12 +656,17 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
- #endif
- 
- 	if (!list_empty(&free_list->list)) {
--		for (i = region_id - 1; i >= 0; i--) {
--			if (free_list->mr_list[i].page_block) {
--				prev_region_list =
--					free_list->mr_list[i].page_block;
--				goto out;
--			}
-+		prev_region_id = find_prev_region(region_id, free_list);
-+		if (prev_region_id >= 0) {
-+			prev_region_list =
-+				free_list->mr_list[prev_region_id].page_block;
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+			WARN(prev_region_list == NULL,
-+				"%s: prev_region_list is NULL\n"
-+				"region_id=%d, prev_region_id=%d\n", __func__,
-+				 region_id, prev_region_id);
-+#endif
-+			goto out;
- 		}
- 	}
- 
-@@ -562,6 +687,7 @@ out:
- 
- 	/* Save pointer to page block of this region */
- 	region->page_block = lru;
-+	set_region_bit(region_id, free_list);
- }
- 
- /**
-@@ -576,6 +702,7 @@ static void rmqueue_del_from_freelist(struct page *page,
- 				      struct free_list *free_list)
- {
- 	struct list_head *lru = &page->lru;
-+	int region_id;
- 
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 	WARN((free_list->list.next != lru),
-@@ -599,6 +726,8 @@ static void rmqueue_del_from_freelist(struct page *page,
- 	 * in this freelist.
- 	 */
- 	free_list->next_region->page_block = NULL;
-+	region_id = free_list->next_region - free_list->mr_list;
-+	clear_region_bit(region_id, free_list);
- 
- 	/* Set 'next_region' to the new first region in the freelist. */
- 	set_next_region_in_freelist(free_list);
-@@ -659,6 +788,7 @@ page_found:
- 
- 	if (region->nr_free == 0) {
- 		region->page_block = NULL;
-+		clear_region_bit(region_id, free_list);
- 	} else {
- 		region->page_block = prev_page_lru;
- #ifdef CONFIG_DEBUG_PAGEALLOC
-
+-- 
+Ville Syrjälä
+Intel OTC
