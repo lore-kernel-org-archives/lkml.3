@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab3H3Pvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:51:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14384 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab3H3Pvp (ORCPT
+	id S1756756Ab3H3Pwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:52:47 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:51765 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756539Ab3H3Pwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:51:45 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDI8IL8UnGoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BKUXQ1-ENX0A:10 a=oGMlB6cnAAAA:8 a=pZp7V2q4PYYelp8t_h4A:9 a=CjuIK1q_8ugA:10 a=CY6gl2JlH4YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 30 Aug 2013 11:51:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled
- DYNAMIC_FTRACE
-Message-ID: <20130830115142.1ee4c825@gandalf.local.home>
-In-Reply-To: <5220BC1A.3030108@zytor.com>
-References: <5217908E.2040702@siemens.com>
-	<5220BC1A.3030108@zytor.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Aug 2013 11:52:46 -0400
+Date: Fri, 30 Aug 2013 17:52:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: suspicious RCU usage (perf)
+Message-ID: <20130830155242.GB10875@somewhere>
+References: <20130826145838.GA8377@redhat.com>
+ <20130826162928.GQ3871@linux.vnet.ibm.com>
+ <20130826133041.3d750b1b@gandalf.local.home>
+ <20130826175012.GA25202@redhat.com>
+ <20130826141814.54dcaa89@gandalf.local.home>
+ <20130826182907.GB25202@redhat.com>
+ <20130826150304.090a1025@gandalf.local.home>
+ <20130827121629.GE10002@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130827121629.GE10002@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Aug 2013 08:36:58 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> On 08/23/2013 09:40 AM, Jan Kiszka wrote:
-> > Hi all,
+On Tue, Aug 27, 2013 at 02:16:29PM +0200, Peter Zijlstra wrote:
+> On Mon, Aug 26, 2013 at 03:03:04PM -0400, Steven Rostedt wrote:
+> > > Is there some path through sys_perf_open_event that might be
+> > > missing a capability check perhaps ?
+> > > 
 > > 
-> > 32-bit kernels currently crash/reboot in early microcode loading when
-> > non-dynamic function tracing is enabled. Several functions in that path
-> > get instrumented with mcount, but its non-dynamic implementation does
-> > not work before paging is enabled (it accesses global variables at wrong
-> > addresses).
-> > 
-> > Below some hunks to get it working again - at least in the absence of
-> > any microcode in the initrd. Marking all involved functions as __init is
-> > another option (as __init implies notrace). But I bet there is more
-> > hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger the
-> > issue as well if we hit the error it reports (btw. printing at this
-> > point of the boot should not work anyway, should it?).
-> > 
-> > Better ideas?
-> > 
-> > Jan
-> > 
+> > That's a question for Ingo, Peter or Jiri.
 > 
-> A better idea would be for the mcount/__fentry__ function to simply
-> return until the function tracing stuff is actually ready.
+> Its not something I've looked at recently, git blames Jiri and fweisbec
+> for most of that code.
 > 
+> Permission checks appear to live in
+> kernel/trace/trace_event_perf.c:perf_trace_event_perm().
 
-It does when dynamic tracing is enabled. But this issue is with static
-tracing, there's no code modification, thus all functions call
-mcount/__fentry__ and we need to look at a variable to determine if we
-should trace or not.
+Actually the following condition is weird:
 
--- Steve
+	 /* The ftrace function trace is allowed only for root. */
+	 if (ftrace_event_is_function(tp_event) &&
+	     perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+     			    return -EPERM;
+
+We probably intended to do:
+
+   /* The ftrace function trace is allowed only for root. */
+   if (ftrace_event_is_function(tp_event) ||
+       perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+       			      return -EPERM;
+
+Can somebody confirm?
