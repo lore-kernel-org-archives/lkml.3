@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab3H3QGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:06:11 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48691 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756309Ab3H3QGK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:06:10 -0400
-Date: Fri, 30 Aug 2013 18:06:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        paulmck@linux.vnet.ibm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: suspicious RCU usage (perf)
-Message-ID: <20130830160602.GC10875@somewhere>
-References: <20130826145838.GA8377@redhat.com>
- <20130826162928.GQ3871@linux.vnet.ibm.com>
- <20130826133041.3d750b1b@gandalf.local.home>
- <20130826175012.GA25202@redhat.com>
- <20130826141814.54dcaa89@gandalf.local.home>
- <20130826182907.GB25202@redhat.com>
- <20130826150304.090a1025@gandalf.local.home>
- <20130827121629.GE10002@twins.programming.kicks-ass.net>
- <20130830155242.GB10875@somewhere>
- <20130830155936.GT31370@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130830155936.GT31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756853Ab3H3QGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:06:44 -0400
+Received: from ns.iliad.fr ([212.27.33.1]:49944 "EHLO ns.iliad.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756309Ab3H3QGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 12:06:43 -0400
+Message-ID: <1377878801.559.28.camel@sakura.staff.proxad.net>
+Subject: [PATCH] pstore/ram: (really) fix undefined usage of
+ rounddown_pow_of_two
+From: Maxime Bizon <mbizon@freebox.fr>
+Reply-To: mbizon@freebox.fr
+To: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 30 Aug 2013 18:06:41 +0200
+Organization: Freebox
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 05:59:36PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 30, 2013 at 05:52:43PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Aug 27, 2013 at 02:16:29PM +0200, Peter Zijlstra wrote:
-> > > On Mon, Aug 26, 2013 at 03:03:04PM -0400, Steven Rostedt wrote:
-> > > > > Is there some path through sys_perf_open_event that might be
-> > > > > missing a capability check perhaps ?
-> > > > > 
-> > > > 
-> > > > That's a question for Ingo, Peter or Jiri.
-> > > 
-> > > Its not something I've looked at recently, git blames Jiri and fweisbec
-> > > for most of that code.
-> > > 
-> > > Permission checks appear to live in
-> > > kernel/trace/trace_event_perf.c:perf_trace_event_perm().
-> > 
-> > Actually the following condition is weird:
-> > 
-> > 	 /* The ftrace function trace is allowed only for root. */
-> > 	 if (ftrace_event_is_function(tp_event) &&
-> > 	     perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> >      			    return -EPERM;
-> > 
-> 
-> That says: If its its a function-event and we're paranoid but we don't
-> have root, bail.
+Previous attempt to fix was b042e47491ba5f487601b5141a3f1d8582304170
 
-Right, I misunderstood and thought we messed up general tracepoint permissions
-with function events.
+Suggested use of is_power_of_2() was bogus because is_power_of_2(0) is
+false (documented behaviour).
 
-> 
-> > We probably intended to do:
-> > 
-> >    /* The ftrace function trace is allowed only for root. */
-> >    if (ftrace_event_is_function(tp_event) ||
-> >        perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> >        			      return -EPERM;
-> > 
-> > Can somebody confirm?
-> 
-> That would always disallow function-events, no?
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+---
+ fs/pstore/ram.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Yeah, sorry, returning from holidays require more dense coffee.
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index a6119f9..03325bc 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -400,11 +400,11 @@ static int ramoops_probe(struct platform_device *pdev)
+ 		goto fail_out;
+ 	}
+ 
+-	if (!is_power_of_2(pdata->record_size))
++	if (pdata->record_size && !is_power_of_2(pdata->record_size))
+ 		pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+-	if (!is_power_of_2(pdata->console_size))
++	if (pdata->console_size && !is_power_of_2(pdata->console_size))
+ 		pdata->console_size = rounddown_pow_of_two(pdata->console_size);
+-	if (!is_power_of_2(pdata->ftrace_size))
++	if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
+ 		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
+ 
+ 	cxt->dump_read_cnt = 0;
+-- 
+1.7.9.5
+
+
+-- 
+Maxime
+
+
