@@ -1,127 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3H3K1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:27:07 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:58359 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab3H3K1D (ORCPT
+	id S1755981Ab3H3K2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:28:03 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13461 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab3H3K2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:27:03 -0400
-Message-ID: <5220736E.5050503@ozlabs.ru>
-Date: Fri, 30 Aug 2013 20:26:54 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>, Gleb Natapov <gleb@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org, Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH v9 00/13] KVM: PPC: IOMMU in-kernel handling of VFIO
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Aug 2013 06:28:00 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-fc-522073a79f70
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] intel_idle: mark some functions with __init tag
+Date: Fri, 30 Aug 2013 12:27:45 +0200
+Message-id: <2017492.SHLf7BQHGW@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAd3lxQpBBjcPilnM+yxrsfPhWzaL
+	y7vmsFl87j3CaNG/sJfJgdVj06pONo871/aweTxa3MLo8XmTXABLFJdNSmpOZllqkb5dAlfG
+	p9nTWAvaOCvW/vnA3MB4k72LkYNDQsBEYums0i5GTiBTTOLCvfVsXYxcHEICixglznw+zA7h
+	tDBJHLp+mBGkik3ASmJi+yowW0RAXmLTzk4WkCJmgV5GiaOzLjODJIQFXCRen3zKCmKzCKhK
+	rP+9nhFkG6+ApsTN00kgYVEBT4lPk5aClfMKCEr8mHyPBcRmBpq5b/9UVghbS2L9zuNMExj5
+	ZiEpm4WkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgoPymfQOxlUNFocYBTgY
+	lXh4G6bKBwmxJpYVV+YeYpTgYFYS4a1IVQgS4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQ
+	SCA9sSQ1OzW1ILUIJsvEwSnVwBjy86km7y6VyNbTjZy6L+MduM5mT64r/raseo5HumBFdW3n
+	hQQvE+lmkXlzXY9+ucF97veH6pjZR+dNvNYa2ys4ceKHsuuHnU4cnLfy0Fv/SSuFogIiNpWu
+	2vFDw0PDYl7cp6+s4hvCFinKJQn8MXJ602HMEdqpwHk72KrIyS2+w4fFe4LgKSWW4oxEQy3m
+	ouJEADT0JzxGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2013 06:37 PM, Alexey Kardashevskiy wrote:
-> This accelerates VFIO DMA operations on POWER by moving them
-> into kernel.
-> 
-> This depends on VFIO external API patch which is on its way to upstream.
-> 
-> Changes:
-> v9:
-> * replaced the "link logical bus number to IOMMU group" ioctl to KVM
-> with a KVM device doing the same thing, i.e. the actual changes are in
-> these 3 patches:
->   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
->   KVM: PPC: remove warning from kvmppc_core_destroy_vm
->   KVM: PPC: Add support for IOMMU in-kernel handling
-> 
-> * moved some VFIO external API bits to a separate patch to reduce the size
-> of the "KVM: PPC: Add support for IOMMU in-kernel handling" patch
-> 
-> * fixed code style problems reported by checkpatch.pl.
-> 
-> v8:
-> * fixed comments about capabilities numbers
-> 
-> v7:
-> * rebased on v3.11-rc3.
-> * VFIO external user API will go through VFIO tree so it is
-> excluded from this series.
-> * As nobody ever reacted on "hashtable: add hash_for_each_possible_rcu_notrace()",
-> Ben suggested to push it via his tree so I included it to the series.
-> * realmode_(get|put)_page is reworked.
-> 
-> More details in the individual patch comments.
-> 
-> Alexey Kardashevskiy (13):
->   KVM: PPC: POWERNV: move iommu_add_device earlier
->   hashtable: add hash_for_each_possible_rcu_notrace()
->   KVM: PPC: reserve a capability number for multitce support
->   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
+intel_idle_probe() and intel_idle_cpuidle_driver_init() can be marked
+with __init tag as they are only called from intel_idle_init().
 
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Len Brown <lenb@kernel.org>
+---
+ drivers/idle/intel_idle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Hi Gleb!
-
-Could you please review and pick (if they are ok) the two "capability"
-patches from above?
-
-It would be cool if you also looked at "KVM: PPC: Add support for IOMMU
-in-kernel handling", the part about KVM device for SPAPR TCE IOMMU table.
-
-Thanks!
-
-
-
->   powerpc: Prepare to support kernel handling of IOMMU map/unmap
->   powerpc: add real mode support for dma operations on powernv
->   KVM: PPC: enable IOMMU_API for KVM_BOOK3S_64 permanently
->   KVM: PPC: Add support for multiple-TCE hcalls
->   powerpc/iommu: rework to support realmode
->   KVM: PPC: remove warning from kvmppc_core_destroy_vm
->   KVM: PPC: add trampolines for VFIO external API
->   KVM: PPC: Add support for IOMMU in-kernel handling
->   KVM: PPC: Add hugepage support for IOMMU in-kernel handling
-> 
->  Documentation/virtual/kvm/api.txt                  |  26 +
->  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 ++
->  arch/powerpc/include/asm/iommu.h                   |  18 +-
->  arch/powerpc/include/asm/kvm_host.h                |  38 ++
->  arch/powerpc/include/asm/kvm_ppc.h                 |  16 +-
->  arch/powerpc/include/asm/machdep.h                 |  12 +
->  arch/powerpc/include/asm/pgtable-ppc64.h           |   2 +
->  arch/powerpc/include/uapi/asm/kvm.h                |   8 +
->  arch/powerpc/kernel/iommu.c                        | 243 +++++----
->  arch/powerpc/kvm/Kconfig                           |   1 +
->  arch/powerpc/kvm/book3s_64_vio.c                   | 597 ++++++++++++++++++++-
->  arch/powerpc/kvm/book3s_64_vio_hv.c                | 408 +++++++++++++-
->  arch/powerpc/kvm/book3s_hv.c                       |  42 +-
->  arch/powerpc/kvm/book3s_hv_rmhandlers.S            |   8 +-
->  arch/powerpc/kvm/book3s_pr_papr.c                  |  35 ++
->  arch/powerpc/kvm/powerpc.c                         |   4 +
->  arch/powerpc/mm/init_64.c                          |  50 +-
->  arch/powerpc/platforms/powernv/pci-ioda.c          |  57 +-
->  arch/powerpc/platforms/powernv/pci-p5ioc2.c        |   2 +-
->  arch/powerpc/platforms/powernv/pci.c               |  75 ++-
->  arch/powerpc/platforms/powernv/pci.h               |   3 +-
->  arch/powerpc/platforms/pseries/iommu.c             |   8 +-
->  include/linux/hashtable.h                          |  15 +
->  include/linux/kvm_host.h                           |   1 +
->  include/linux/mm.h                                 |  14 +
->  include/linux/page-flags.h                         |   4 +-
->  include/uapi/linux/kvm.h                           |   3 +
->  virt/kvm/kvm_main.c                                |   5 +
->  28 files changed, 1564 insertions(+), 168 deletions(-)
->  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> 
-
-
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 53b24f1..33e599e 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -490,7 +490,7 @@ MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
+ /*
+  * intel_idle_probe()
+  */
+-static int intel_idle_probe(void)
++static int __init intel_idle_probe(void)
+ {
+ 	unsigned int eax, ebx, ecx;
+ 	const struct x86_cpu_id *id;
+@@ -558,7 +558,7 @@ static void intel_idle_cpuidle_devices_uninit(void)
+  * intel_idle_cpuidle_driver_init()
+  * allocate, initialize cpuidle_states
+  */
+-static int intel_idle_cpuidle_driver_init(void)
++static int __init intel_idle_cpuidle_driver_init(void)
+ {
+ 	int cstate;
+ 	struct cpuidle_driver *drv = &intel_idle_driver;
 -- 
-Alexey
+1.8.2.3
+
+
