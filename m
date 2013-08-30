@@ -1,140 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3H3MnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:43:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38541 "EHLO mga11.intel.com"
+	id S1756629Ab3H3MnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:43:23 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41452 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755785Ab3H3MnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:43:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,990,1367996400"; 
-   d="scan'208";a="394507790"
-Date: Fri, 30 Aug 2013 15:43:05 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: intel-gfx@lists.freedesktop.org, airlied@redhat.com,
+	id S1755785Ab3H3MnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:43:19 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 14/35] mm: Add support to accurately track
+ per-memory-region allocation
+To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] i915: Update VGA arbiter support for newer devices
-Message-ID: <20130830124305.GI11428@intel.com>
-References: <20130828153700.10255.67664.stgit@bling.home>
+Date: Fri, 30 Aug 2013 18:09:11 +0530
+Message-ID: <20130830123908.24352.57509.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130828153700.10255.67664.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083012-5806-0000-0000-00002296340C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 09:39:08AM -0600, Alex Williamson wrote:
-> This is intended to add VGA arbiter support for Intel HD graphics on
-> Core processors.  The old GMCH registers no longer exist, so even
-> though it appears that i915 participates in VGA arbitration, it doesn't
-> work.  On Intel HD graphics we already attempt to disable VGA regions
-> of the device.  This makes registering as a VGA client unnecessary since
-> we don't intend to operate differently depending on how many VGA devices
-> are present.  We can disable VGA memory regions by clearing the memory
-> enable bit in the VGA MSR.  That only leaves VGA IO, which we update
-> the VGA arbiter to know that we don't participate in VGA memory
-> arbitration.  We also add a hook on unload to re-enable memory and
-> reinstate VGA memory arbitration.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+The page allocator can make smarter decisions to influence memory power
+management, if we track the per-region memory allocations closely.
+So add the necessary support to accurately track allocations on a per-region
+basis.
 
-Looking good.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+ include/linux/mmzone.h |    2 +
+ mm/page_alloc.c        |   65 +++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 50 insertions(+), 17 deletions(-)
 
-> ---
-> 
-> v3: Use explicit LEGACY_IO | LEGACY_MEM when restoring rather than
->     LEGACY_MASK, per Ville's comments.
-> 
-> v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
->     directly.  Also, on the driver unbind VGA enable path, acquire legacy
->     IO to re-enable VGA memory.  Correct comment.
-> 
-> As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
-> all patches I'm able to assign a discrete PEG VGA device to a guest and
-> execute the VBIOS w/o interference from IGD or corruption of the IGD
-> framebuffer.
-> 
->  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
->  drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
->  2 files changed, 31 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index f466980..d9cf216 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
->  	 * then we do not take part in VGA arbitration and the
->  	 * vga_client_register() fails with -ENODEV.
->  	 */
-> -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
-> -	if (ret && ret != -ENODEV)
-> -		goto out;
-> +	if (!HAS_PCH_SPLIT(dev)) {
-> +		ret = vga_client_register(dev->pdev, dev, NULL,
-> +					  i915_vga_set_decode);
-> +		if (ret && ret != -ENODEV)
-> +			goto out;
-> +	}
->  
->  	intel_register_dsm_handler();
->  
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 5fb3058..2807760 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
->  	outb(SR01, VGA_SR_INDEX);
->  	sr1 = inb(VGA_SR_DATA);
->  	outb(sr1 | 1<<5, VGA_SR_DATA);
-> +
-> +	/* Disable VGA memory on Intel HD */
-> +	if (HAS_PCH_SPLIT(dev)) {
-> +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-> +						   VGA_RSRC_NORMAL_IO |
-> +						   VGA_RSRC_NORMAL_MEM);
-> +	}
-> +
->  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
->  	udelay(300);
->  
-> @@ -9526,6 +9535,20 @@ static void i915_disable_vga(struct drm_device *dev)
->  	POSTING_READ(vga_reg);
->  }
->  
-> +static void i915_enable_vga(struct drm_device *dev)
-> +{
-> +	/* Enable VGA memory on Intel HD */
-> +	if (HAS_PCH_SPLIT(dev)) {
-> +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-> +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-> +						   VGA_RSRC_LEGACY_MEM |
-> +						   VGA_RSRC_NORMAL_IO |
-> +						   VGA_RSRC_NORMAL_MEM);
-> +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-> +	}
-> +}
-> +
->  void intel_modeset_init_hw(struct drm_device *dev)
->  {
->  	intel_init_power_well(dev);
-> @@ -9983,6 +10006,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
->  
->  	intel_disable_fbc(dev);
->  
-> +	i915_enable_vga(dev);
-> +
->  	intel_disable_gt_powersave(dev);
->  
->  	ironlake_teardown_rc6(dev);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index b35020f..ef602a8 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -86,6 +86,7 @@ static inline int get_pageblock_migratetype(struct page *page)
+ struct mem_region_list {
+ 	struct list_head	*page_block;
+ 	unsigned long		nr_free;
++	struct zone_mem_region	*zone_region;
+ };
+ 
+ struct free_list {
+@@ -341,6 +342,7 @@ struct zone_mem_region {
+ 	unsigned long end_pfn;
+ 	unsigned long present_pages;
+ 	unsigned long spanned_pages;
++	unsigned long nr_free;
+ };
+ 
+ struct zone {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4da02fc..6e711b9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -634,7 +634,8 @@ out:
+ 	return prev_region_id;
+ }
+ 
+-static void add_to_freelist(struct page *page, struct free_list *free_list)
++static void add_to_freelist(struct page *page, struct free_list *free_list,
++			    int order)
+ {
+ 	struct list_head *prev_region_list, *lru;
+ 	struct mem_region_list *region;
+@@ -645,6 +646,7 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
+ 
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free++;
++	region->zone_region->nr_free += 1 << order;
+ 
+ 	if (region->page_block) {
+ 		list_add_tail(lru, region->page_block);
+@@ -699,9 +701,10 @@ out:
+  * inside the freelist.
+  */
+ static void rmqueue_del_from_freelist(struct page *page,
+-				      struct free_list *free_list)
++				      struct free_list *free_list, int order)
+ {
+ 	struct list_head *lru = &page->lru;
++	struct mem_region_list *mr_list;
+ 	int region_id;
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+@@ -712,7 +715,10 @@ static void rmqueue_del_from_freelist(struct page *page,
+ 	list_del(lru);
+ 
+ 	/* Fastpath */
+-	if (--(free_list->next_region->nr_free)) {
++	mr_list = free_list->next_region;
++	mr_list->zone_region->nr_free -= 1 << order;
++
++	if (--(mr_list->nr_free)) {
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 		WARN(free_list->next_region->nr_free < 0,
+@@ -734,7 +740,8 @@ static void rmqueue_del_from_freelist(struct page *page,
+ }
+ 
+ /* Generic delete function for region-aware buddy allocator. */
+-static void del_from_freelist(struct page *page, struct free_list *free_list)
++static void del_from_freelist(struct page *page, struct free_list *free_list,
++			      int order)
+ {
+ 	struct list_head *prev_page_lru, *lru, *p;
+ 	struct mem_region_list *region;
+@@ -744,11 +751,12 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ 
+ 	/* Try to fastpath, if deleting from the head of the list */
+ 	if (lru == free_list->list.next)
+-		return rmqueue_del_from_freelist(page, free_list);
++		return rmqueue_del_from_freelist(page, free_list, order);
+ 
+ 	region_id = page_zone_region_id(page);
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free--;
++	region->zone_region->nr_free -= 1 << order;
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 	WARN(region->nr_free < 0, "%s: nr_free is negative\n", __func__);
+@@ -803,10 +811,10 @@ page_found:
+  * Move a given page from one freelist to another.
+  */
+ static void move_page_freelist(struct page *page, struct free_list *old_list,
+-			       struct free_list *new_list)
++			       struct free_list *new_list, int order)
+ {
+-	del_from_freelist(page, old_list);
+-	add_to_freelist(page, new_list);
++	del_from_freelist(page, old_list, order);
++	add_to_freelist(page, new_list, order);
+ }
+ 
+ /*
+@@ -875,7 +883,7 @@ static inline void __free_one_page(struct page *page,
+ 
+ 			area = &zone->free_area[order];
+ 			mt = get_freepage_migratetype(buddy);
+-			del_from_freelist(buddy, &area->free_list[mt]);
++			del_from_freelist(buddy, &area->free_list[mt], order);
+ 			area->nr_free--;
+ 			rmv_page_order(buddy);
+ 			set_freepage_migratetype(buddy, migratetype);
+@@ -911,12 +919,13 @@ static inline void __free_one_page(struct page *page,
+ 			 * switch off this entire "is next-higher buddy free?"
+ 			 * logic when memory regions are used.
+ 			 */
+-			add_to_freelist(page, &area->free_list[migratetype]);
++			add_to_freelist(page, &area->free_list[migratetype],
++					order);
+ 			goto out;
+ 		}
+ 	}
+ 
+-	add_to_freelist(page, &area->free_list[migratetype]);
++	add_to_freelist(page, &area->free_list[migratetype], order);
+ out:
+ 	area->nr_free++;
+ }
+@@ -1138,7 +1147,8 @@ static inline void expand(struct zone *zone, struct page *page,
+ 			continue;
+ 		}
+ #endif
+-		add_to_freelist(&page[size], &area->free_list[migratetype]);
++		add_to_freelist(&page[size], &area->free_list[migratetype],
++				high);
+ 		area->nr_free++;
+ 		set_page_order(&page[size], high);
+ 
+@@ -1212,7 +1222,8 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 
+ 		page = list_entry(area->free_list[migratetype].list.next,
+ 							struct page, lru);
+-		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
++		rmqueue_del_from_freelist(page, &area->free_list[migratetype],
++					  current_order);
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
+@@ -1285,7 +1296,7 @@ int move_freepages(struct zone *zone,
+ 		old_mt = get_freepage_migratetype(page);
+ 		area = &zone->free_area[order];
+ 		move_page_freelist(page, &area->free_list[old_mt],
+-				    &area->free_list[migratetype]);
++				    &area->free_list[migratetype], order);
+ 		set_freepage_migratetype(page, migratetype);
+ 		page += 1 << order;
+ 		pages_moved += 1 << order;
+@@ -1405,7 +1416,8 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 
+ 			/* Remove the page from the freelists */
+ 			mt = get_freepage_migratetype(page);
+-			del_from_freelist(page, &area->free_list[mt]);
++			del_from_freelist(page, &area->free_list[mt],
++					  current_order);
+ 			rmv_page_order(page);
+ 
+ 			/*
+@@ -1766,7 +1778,7 @@ static int __isolate_free_page(struct page *page, unsigned int order)
+ 
+ 	/* Remove page from free list */
+ 	mt = get_freepage_migratetype(page);
+-	del_from_freelist(page, &zone->free_area[order].free_list[mt]);
++	del_from_freelist(page, &zone->free_area[order].free_list[mt], order);
+ 	zone->free_area[order].nr_free--;
+ 	rmv_page_order(page);
+ 
+@@ -5157,6 +5169,22 @@ static void __meminit init_node_memory_regions(struct pglist_data *pgdat)
+ 	pgdat->nr_node_regions = idx;
+ }
+ 
++static void __meminit zone_init_free_lists_late(struct zone *zone)
++{
++	struct mem_region_list *mr_list;
++	int order, t, i;
++
++	for_each_migratetype_order(order, t) {
++		for (i = 0; i < zone->nr_zone_regions; i++) {
++			mr_list =
++				&zone->free_area[order].free_list[t].mr_list[i];
++
++			mr_list->nr_free = 0;
++			mr_list->zone_region = &zone->zone_regions[i];
++		}
++	}
++}
++
+ static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
+ {
+ 	unsigned long start_pfn, end_pfn, absent;
+@@ -5204,6 +5232,8 @@ static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
+ 
+ 		z->nr_zone_regions = idx;
+ 
++		zone_init_free_lists_late(z);
++
+ 		/*
+ 		 * Revisit the last visited node memory region, in case it
+ 		 * spans multiple zones.
+@@ -6708,7 +6738,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		       pfn, 1 << order, end_pfn);
+ #endif
+ 		mt = get_freepage_migratetype(page);
+-		del_from_freelist(page, &zone->free_area[order].free_list[mt]);
++		del_from_freelist(page, &zone->free_area[order].free_list[mt],
++				  order);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
+ #ifdef CONFIG_HIGHMEM
 
--- 
-Ville Syrjälä
-Intel OTC
