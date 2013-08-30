@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3H3Oxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:53:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44915 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3H3Oxg (ORCPT
+	id S1756619Ab3H3OyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:54:11 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:40862 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756023Ab3H3OyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:53:36 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-e8-5220b1ee2af2
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        t.figa@samsung.com, g.liakhovetski@gmx.de,
-        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH v6 0/5] clk: clock deregistration support
-Date: Fri, 30 Aug 2013 16:53:17 +0200
-Message-id: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAd13GxWCDPauUrJ4v3Eek0XPn0qL
-	s01v2C06Jy5ht9j0+BqrxeVdc9gsJkydxG4x588UZovbl3ktnk64yGZxu3EFm8XhN+2sFutn
-	vGZx4PVoae5h8/jwMc5jdsdMVo871/aweRxduZbJY/OSeo/dX5sYPfq2rGL0+LxJLoAzissm
-	JTUnsyy1SN8ugSuj9cwlpoL/vBVXZr5kaWB8wNXFyMkhIWAi8f/FdHYIW0ziwr31bF2MXBxC
-	AosYJXonrWGEcDqYJN72TmQDqWITMJToPdrHCGKLCGhITOl6zA5SxCxwmUli05cusFHCApYS
-	ZzdtYAGxWQRUJfacbwFr4BVwlfi8ah9TFyMH0DoFiTmTbCYwci9gZFjFKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERyCz6R3MK5qsDjEKMDBqMTDu3O5QpAQa2JZcWXuIUYJDmYlEd6Pi4FC
-	vCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGGMNts4pUVqw
-	7/FXg8ykzD/l309Iqc2tkb/2KbKq03ZRRsn9RU731oRueWSxTLioY1bFXMHj6fsFr6hlzSir
-	fRYS3C/Kv5Lznkd5UeCyupKw7AQ2tkNTbxXM3jKj9bHcMSHXJJe9T059nqgiyvnh8Mq4Sf8j
-	1K+tdT6qJGLVvXVnqHTnsnyhtUosxRmJhlrMRcWJAN6W2tg9AgAA
+	Fri, 30 Aug 2013 10:54:10 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWNoq2+y511Mk8j_Vmo1_CdTmaG=2nLDz8oh6QPDqr_+A@mail.gmail.com>
+References: <CA+icZUWNrZQgjuXX+7JFgRKfCjYR_fSkfeRxHot_=xpLSaNaxg@mail.gmail.com>
+	<CA+icZUWNoq2+y511Mk8j_Vmo1_CdTmaG=2nLDz8oh6QPDqr_+A@mail.gmail.com>
+Date: Fri, 30 Aug 2013 16:54:08 +0200
+Message-ID: <CA+icZUUyiZXwjBkEtzHGW0sN0fvVDx_wrt5NT2Wuy5hNODk7Ow@mail.gmail.com>
+Subject: Re: [3.11-rc7] Building perf-only the "official" way seems to be BROKEN?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: multipart/mixed; boundary=e89a8f5034820f439204e52b6585
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series implements clock deregistration in the common clock
-framework. Comparing to v5 it only includes further corrections of NULL
-clock handling.
+--e89a8f5034820f439204e52b6585
+Content-Type: text/plain; charset=UTF-8
 
-Changes since v5:
- - fixed NULL clock handling in __clk_get(), __clk_put (patch 5/5).
+On Fri, Aug 30, 2013 at 4:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> [...]
+>
+>> [ BUILD PERF-ONLY ]
+>>
+>> So, I have finished a Linux-kernel build and wanted to build perf
+>> (from tools-dir) ONLY!
+>>
+>> I followed the advices (I am a "good" guy) seen for example in the
+>> "tools/Makefile" file.
+>>
+>> [ tools/Makefile ]
+>> ...
+>>         @echo 'You can do:'
+>>         @echo ' $$ make -C tools/ <tool>_install' <--- NOTE THIS ONE!
+>>         @echo ''
+>>         @echo '  from the kernel command line to build and install one of'
+>>         @echo '  the tools above'
+>>         @echo ''
+>>         @echo '  $$ make tools/install'
+>>         @echo ''
+>>         @echo '  installs all tools.'
+>> ...
+>>
+>> OK, so I did this for a perf-only build...
+>>
+>>
+>>    $ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../build-perf.txt
+>>
+>> ...this breaks like this...
+>>
+>> ...
+>> make[2]: Entering directory
+>> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+>> make[2]: Leaving directory
+>> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+>>     LINK perf
+>> gcc: error: /home/wearefam/src/linux-kernel/linux/tools/lib/lk/liblk.a:
+>> No such file or directory
+>> make[1]: *** [perf] Error 1
+>> make[1]: Leaving directory `/home/wearefam/src/linux-kernel/linux/tools/perf'
+>> make: *** [perf_install] Error 2
+>>
+>
+> [ From #linux-rt (OFTC) ]
+>
+> [16:17] <acme> dileks_webchat, there are many, many ways to build the tools
+> [16:17] <acme> the one I use is:
+> [16:17] <acme> make O=/tmp/build/perf -C tools/perf install
+> [16:19] <dileks_webchat> acme:  make -C tools/perf install works as
+> expected. interesting :-)
+>
 
-Changes since v4:
- - removed stray struct module forward declaration in patch 3/5.
+Attached patch seems to fix the issue when building perf this way...
 
-Changes since v3:
- - replaced WARN_ON() with WARN_ON_ONCE() in clk_nodrv_disable_unprepare()
-   callback.
+   $ make -C tools/ perf_install
 
-Changes since v2:
- - reordered the patches so the race condition is fixed before it can
-   actually cause any issues,
- - fixed handling of NULL clock pointers in __clk_get(), __clk_put(),
- - added patch adding actual asignment of clk->owner; more details are
-   discussed in that specific patch.
+- Sedat -
 
-Changes since v1:
- - moved of_clk_{lock, unlock}, __of_clk_get_from_provider() function
-   declaractions to a local header,
- - renamed clk_dummy_* to clk_nodrv_*.
+--e89a8f5034820f439204e52b6585
+Content-Type: application/octet-stream; 
+	name="fix-tools-perf_install-not-building-liblk.diff"
+Content-Disposition: attachment; 
+	filename="fix-tools-perf_install-not-building-liblk.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hkzitzyx0
 
-Sylwester Nawrocki (5):
-  clk: Provide not locked variant of of_clk_get_from_provider()
-  clkdev: Fix race condition in clock lookup from device tree
-  clk: Add common __clk_get(), __clk_put() implementations
-  clk: Assign module owner of a clock being registered
-  clk: Implement clk_unregister
-
- arch/arm/include/asm/clkdev.h      |    2 +
- arch/blackfin/include/asm/clkdev.h |    2 +
- arch/mips/include/asm/clkdev.h     |    2 +
- arch/sh/include/asm/clkdev.h       |    2 +
- drivers/clk/clk.c                  |  188 +++++++++++++++++++++++++++++++++---
- drivers/clk/clk.h                  |   16 +++
- drivers/clk/clkdev.c               |   12 ++-
- include/linux/clk-private.h        |    5 +
- include/linux/clkdev.h             |    5 +
- 9 files changed, 221 insertions(+), 13 deletions(-)
- create mode 100644 drivers/clk/clk.h
-
---
-1.7.9.5
-
+ZGlmZiAtLWdpdCBhL3Rvb2xzL01ha2VmaWxlIGIvdG9vbHMvTWFrZWZpbGUKaW5kZXggNDEwNjdm
+My4uYzE1ZjBlNyAxMDA2NDQKLS0tIGEvdG9vbHMvTWFrZWZpbGUKKysrIGIvdG9vbHMvTWFrZWZp
+bGUKQEAgLTUzLDcgKzUzLDEwIEBAIHR1cmJvc3RhdCB4ODZfZW5lcmd5X3BlcmZfcG9saWN5OiBG
+T1JDRQogY3B1cG93ZXJfaW5zdGFsbDoKIAkkKGNhbGwgZGVzY2VuZCxwb3dlci8kKEA6X2luc3Rh
+bGw9KSxpbnN0YWxsKQogCi1jZ3JvdXBfaW5zdGFsbCBmaXJld2lyZV9pbnN0YWxsIGxndWVzdF9p
+bnN0YWxsIHBlcmZfaW5zdGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faW5zdGFsbCB2bV9pbnN0YWxs
+IG5ldF9pbnN0YWxsOgorY2dyb3VwX2luc3RhbGwgZmlyZXdpcmVfaW5zdGFsbCBsZ3Vlc3RfaW5z
+dGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faW5zdGFsbCB2bV9pbnN0YWxsIG5ldF9pbnN0YWxsOgor
+CSQoY2FsbCBkZXNjZW5kLCQoQDpfaW5zdGFsbD0pLGluc3RhbGwpCisKK3BlcmZfaW5zdGFsbDog
+bGlibGsKIAkkKGNhbGwgZGVzY2VuZCwkKEA6X2luc3RhbGw9KSxpbnN0YWxsKQogCiBzZWxmdGVz
+dHNfaW5zdGFsbDoK
+--e89a8f5034820f439204e52b6585--
