@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab3H3OzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:55:16 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:37424 "EHLO
+	id S1756750Ab3H3Oz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:55:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:37454 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab3H3OzO (ORCPT
+	with ESMTP id S1756735Ab3H3OzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:55:14 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-36-5220b250ecb4
+	Fri, 30 Aug 2013 10:55:25 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-57-5220b25b5203
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
@@ -16,185 +16,281 @@ Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
         laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
         linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH v6 3/5] clk: Add common __clk_get(), __clk_put() implementations
-Date: Fri, 30 Aug 2013 16:53:20 +0200
-Message-id: <1377874402-2944-4-git-send-email-s.nawrocki@samsung.com>
+Subject: [PATCH v6 5/5] clk: Implement clk_unregister
+Date: Fri, 30 Aug 2013 16:53:22 +0200
+Message-id: <1377874402-2944-6-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
 References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t9jAd2ATQpBBg2/DCzeb5zHZNHzp9Li
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t9jAd3oTQpBBm/69S3eb5zHZNHzp9Li
 	bNMbdovOiUvYLTY9vsZqcXnXHDaLCVMnsVvM+TOF2eL2ZV6LpxMuslncblzBZnH4TTurxfoZ
 	r1kceD1amnvYPD58jPOY3TGT1ePOtT1sHkdXrmXy2Lyk3mP31yZGj74tqxg9Pm+SC+CM4rJJ
-	Sc3JLEst0rdL4MqYsqKNtaBduWLHiinMDYznZboYOTkkBEwkdi9exgphi0lcuLeerYuRi0NI
-	YBGjxMu3c1ggnA4mife3ljGBVLEJGEr0Hu1jBLFFBDQkpnQ9ZgcpYha4zCSx6UsXO0hCWCBA
-	4u3+XSwgNouAqsSszdfAbF4BV4lFv78BNXMArVOQmDPJBiTMKeAmcWEayGZOoGWuEnNOrGKc
-	wMi7gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwyD6T3sG4qsHiEKMAB6MSD+/O5QpB
-	QqyJZcWVuYcYJTiYlUR4Py4GCvGmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2a
-	WpBaBJNl4uCUamBUTVfziDn8KbQ2Jlnl6PpZ9xzVVi+7PO9nufzj2zPYNY0C/CySU1p6k545
-	/bW/dL3M9qFZYe9Xh0mKCxiu+R7psFk6w8zslcyvjTK+l2ZclAt6OGVa7q+He5gu6hxe6rPl
-	2GKPXwffBbNoswpelNi2c/+i/1b26j+SHj4+X/cnO2ZiB4deXv8DJZbijERDLeai4kQAcGyx
-	31UCAAA=
+	Sc3JLEst0rdL4Mq4/VawYI9pxdN7rUwNjK3aXYwcHBICJhJb3gd3MXICmWISF+6tZ+ti5OIQ
+	EljEKNG7sYsJwulgkji6s4MFpIpNwFCi92gfI4gtIqAhMaXrMTtIEbPAZSaJTV+62EESwgKm
+	Ekd/9zOCbGARUJV4eVwYxOQVcJXY9U8JYq+CxJxJNiDFnAJuEhemgezlBFrlKjHnxCrGCYy8
+	CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEh+oz6R2MqxosDjEKcDAq8fDuXK4QJMSa
+	WFZcmXuIUYKDWUmE9+NioBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWp
+	RTBZJg5OqQZGfWY1jedVzw7s4DHY1xgSfWPOHRX1YM7cifkCtYoFuR1FBbNNk0N0N5sw7uKY
+	tfRjKctd3tsXV+9pPdLWabNPb0FZ3wtntR4fsVX/WV6l9aquCt3cwyUXvnfvFUeHpWyrpx2I
+	l7/I0RVQrmvl8yXBU2D+0f1ratenf9P/mSdc8fCX4Ko6rm4lluKMREMt5qLiRAC0rtaSUQIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds common __clk_get(), __clk_put() clkdev helpers which
-replace their platform specific counterparts when the common clock
-API is enabled.
+clk_unregister() is currently not implemented and it is required when
+a clock provider module needs to be unloaded.
 
-The owner module pointer field is added to struct clk so a reference
-to the clock supplier module can be taken by the clock consumers.
+Normally the clock supplier module is prevented to be unloaded by
+taking reference on the module in clk_get().
 
+For cases when the clock supplier module deinitializes despite the
+consumers of its clocks holding a reference on the module, e.g. when
+the driver is unbound through "unbind" sysfs attribute, there are
+empty clock ops added. These ops are assigned temporarily to struct
+clk and used until all consumers release the clock, to avoid invoking
+callbacks from the module which just got removed.
+
+Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
 Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
 Changes since v5:
- - none.
+- ensure clk->kref is not referenced when the passed clk is NULL.
 
 Changes since v4:
- - dropped unnecessary struct module forward declaration from
-   clk-provider.h
+ - none.
 
 Changes since v3:
- - dropped exporting of __clk_get(), __clk_put().
+ - Use WARN_ON_ONCE() rather than WARN_ON() in clk_nodrv_disable_unprepare()
+   callback.
 
 Changes since v2:
- - fixed handling of NULL clock pointers in __clk_get(), __clk_put();
----
- arch/arm/include/asm/clkdev.h      |    2 ++
- arch/blackfin/include/asm/clkdev.h |    2 ++
- arch/mips/include/asm/clkdev.h     |    2 ++
- arch/sh/include/asm/clkdev.h       |    2 ++
- drivers/clk/clk.c                  |   20 ++++++++++++++++++++
- include/linux/clk-private.h        |    3 +++
- include/linux/clkdev.h             |    5 +++++
- 7 files changed, 36 insertions(+)
+ - none.
 
-diff --git a/arch/arm/include/asm/clkdev.h b/arch/arm/include/asm/clkdev.h
-index 80751c1..4e8a4b2 100644
---- a/arch/arm/include/asm/clkdev.h
-+++ b/arch/arm/include/asm/clkdev.h
-@@ -14,12 +14,14 @@
- 
- #include <linux/slab.h>
- 
-+#ifndef CONFIG_COMMON_CLK
- #ifdef CONFIG_HAVE_MACH_CLKDEV
- #include <mach/clkdev.h>
- #else
- #define __clk_get(clk)	({ 1; })
- #define __clk_put(clk)	do { } while (0)
- #endif
-+#endif
- 
- static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
- {
-diff --git a/arch/blackfin/include/asm/clkdev.h b/arch/blackfin/include/asm/clkdev.h
-index 9053bed..7ac2436 100644
---- a/arch/blackfin/include/asm/clkdev.h
-+++ b/arch/blackfin/include/asm/clkdev.h
-@@ -8,7 +8,9 @@ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
- 	return kzalloc(size, GFP_KERNEL);
- }
- 
-+#ifndef CONFIG_COMMON_CLK
- #define __clk_put(clk)
- #define __clk_get(clk) ({ 1; })
-+#endif
- 
- #endif
-diff --git a/arch/mips/include/asm/clkdev.h b/arch/mips/include/asm/clkdev.h
-index 2624754..1b3ad7b 100644
---- a/arch/mips/include/asm/clkdev.h
-+++ b/arch/mips/include/asm/clkdev.h
-@@ -14,8 +14,10 @@
- 
- #include <linux/slab.h>
- 
-+#ifndef CONFIG_COMMON_CLK
- #define __clk_get(clk)	({ 1; })
- #define __clk_put(clk)	do { } while (0)
-+#endif
- 
- static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
- {
-diff --git a/arch/sh/include/asm/clkdev.h b/arch/sh/include/asm/clkdev.h
-index 6ba9186..c419014 100644
---- a/arch/sh/include/asm/clkdev.h
-+++ b/arch/sh/include/asm/clkdev.h
-@@ -25,7 +25,9 @@ static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
- 		return kzalloc(size, GFP_KERNEL);
- }
- 
-+#ifndef CONFIG_COMMON_CLK
- #define __clk_put(clk)
- #define __clk_get(clk) ({ 1; })
-+#endif
- 
- #endif /* __CLKDEV_H__ */
+Changes since RFC v1:
+ - renamed clk_dummy_* to clk_nodrv_*.
+
+Changes since v3 of the original patch [1]:
+ - reparent all children to the orphan list instead of leaving
+   the clock unregistered when it has child clocks,
+ - removed unnecessary prerequisite checks in clk_debug_unregister(),
+ - struct clk is now being freed only when the last clock consumer
+   calls clk_put(),
+ - empty clock ops are used after clk_unregister() has been called
+   until all references to the clock are released and the clock
+   object is freed.
+
+[1] http://www.spinics.net/lists/arm-kernel/msg247548.html
+---
+ drivers/clk/clk.c           |  134 ++++++++++++++++++++++++++++++++++++++++---
+ include/linux/clk-private.h |    2 +
+ 2 files changed, 128 insertions(+), 8 deletions(-)
+
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 8f18564..dcf061a 100644
+index ac80e13..27f8c42 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -1965,6 +1965,26 @@ void devm_clk_unregister(struct device *dev, struct clk *clk)
+@@ -344,6 +344,21 @@ out:
+ 	return ret;
  }
- EXPORT_SYMBOL_GPL(devm_clk_unregister);
+ 
++ /**
++ * clk_debug_unregister - remove a clk node from the debugfs clk tree
++ * @clk: the clk being removed from the debugfs clk tree
++ *
++ * Dynamically removes a clk and all it's children clk nodes from the
++ * debugfs clk tree if clk->dentry points to debugfs created by
++ * clk_debug_register in __clk_init.
++ *
++ * Caller must hold prepare_lock.
++ */
++static void clk_debug_unregister(struct clk *clk)
++{
++	debugfs_remove_recursive(clk->dentry);
++}
++
+ /**
+  * clk_debug_reparent - reparent clk node in the debugfs clk tree
+  * @clk: the clk being reparented
+@@ -434,6 +449,9 @@ static inline int clk_debug_register(struct clk *clk) { return 0; }
+ static inline void clk_debug_reparent(struct clk *clk, struct clk *new_parent)
+ {
+ }
++static inline void clk_debug_unregister(struct clk *clk)
++{
++}
+ #endif
+ 
+ /* caller must hold prepare_lock */
+@@ -1770,6 +1788,7 @@ int __clk_init(struct device *dev, struct clk *clk)
+ 
+ 	clk_debug_register(clk);
+ 
++	kref_init(&clk->ref);
+ out:
+ 	clk_prepare_unlock();
+ 
+@@ -1905,13 +1924,106 @@ fail_out:
+ }
+ EXPORT_SYMBOL_GPL(clk_register);
  
 +/*
-+ * clkdev helpers
++ * Free memory allocated for a clock.
++ * Caller must hold prepare_lock.
 + */
-+int __clk_get(struct clk *clk)
++static void __clk_release(struct kref *ref)
 +{
-+	if (clk && !try_module_get(clk->owner))
-+		return 0;
++	struct clk *clk = container_of(ref, struct clk, ref);
++	int i = clk->num_parents;
 +
-+	return 1;
++	kfree(clk->parents);
++	while (--i >= 0)
++		kfree(clk->parent_names[i]);
++
++	kfree(clk->parent_names);
++	kfree(clk->name);
++	kfree(clk);
 +}
 +
-+void __clk_put(struct clk *clk)
++/*
++ * Empty clk_ops for unregistered clocks. These are used temporarily
++ * after clk_unregister() was called on a clock and until last clock
++ * consumer calls clk_put() and the struct clk object is freed.
++ */
++static int clk_nodrv_prepare_enable(struct clk_hw *hw)
 +{
-+	if (WARN_ON_ONCE(IS_ERR(clk)))
-+		return;
-+
-+	if (clk)
-+		module_put(clk->owner);
++	return -ENXIO;
 +}
 +
- /***        clk rate change notifiers        ***/
- 
++static void clk_nodrv_disable_unprepare(struct clk_hw *hw)
++{
++	WARN_ON(1);
++}
++
++static int clk_nodrv_set_rate(struct clk_hw *hw, unsigned long rate,
++					unsigned long parent_rate)
++{
++	return -ENXIO;
++}
++
++static int clk_nodrv_set_parent(struct clk_hw *hw, u8 index)
++{
++	return -ENXIO;
++}
++
++static const struct clk_ops clk_nodrv_ops = {
++	.enable		= clk_nodrv_prepare_enable,
++	.disable	= clk_nodrv_disable_unprepare,
++	.prepare	= clk_nodrv_prepare_enable,
++	.unprepare	= clk_nodrv_disable_unprepare,
++	.set_rate	= clk_nodrv_set_rate,
++	.set_parent	= clk_nodrv_set_parent,
++};
++
  /**
+  * clk_unregister - unregister a currently registered clock
+  * @clk: clock to unregister
+- *
+- * Currently unimplemented.
+  */
+-void clk_unregister(struct clk *clk) {}
++void clk_unregister(struct clk *clk)
++{
++	unsigned long flags;
++
++	clk_prepare_lock();
++
++	if (!clk || IS_ERR(clk)) {
++		pr_err("%s: invalid clock: %p\n", __func__, clk);
++		goto out;
++	}
++
++	if (clk->ops == &clk_nodrv_ops) {
++		pr_err("%s: unregistered clock: %s\n", __func__, clk->name);
++		goto out;
++	}
++	/*
++	 * Assign empty clock ops for consumers that might still hold
++	 * a reference to this clock.
++	 */
++	flags = clk_enable_lock();
++	clk->ops = &clk_nodrv_ops;
++	clk_enable_unlock(flags);
++
++	if (!hlist_empty(&clk->children)) {
++		struct clk *child;
++
++		/* Reparent all children to the orphan list. */
++		hlist_for_each_entry(child, &clk->children, child_node)
++			clk_set_parent(child, NULL);
++	}
++
++	clk_debug_unregister(clk);
++
++	hlist_del_init(&clk->child_node);
++
++	if (clk->prepare_count)
++		pr_warn("%s: unregistering prepared clock: %s\n",
++					__func__, clk->name);
++
++	kref_put(&clk->ref, __clk_release);
++out:
++	clk_prepare_unlock();
++}
+ EXPORT_SYMBOL_GPL(clk_unregister);
+ 
+ static void devm_clk_release(struct device *dev, void *res)
+@@ -1976,19 +2088,25 @@ EXPORT_SYMBOL_GPL(devm_clk_unregister);
+  */
+ int __clk_get(struct clk *clk)
+ {
+-	if (clk && !try_module_get(clk->owner))
+-		return 0;
++	if (clk) {
++		if (!try_module_get(clk->owner))
++			return 0;
+ 
++		kref_get(&clk->ref);
++	}
+ 	return 1;
+ }
+ 
+ void __clk_put(struct clk *clk)
+ {
+-	if (WARN_ON_ONCE(IS_ERR(clk)))
++	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+ 		return;
+ 
+-	if (clk)
+-		module_put(clk->owner);
++	clk_prepare_lock();
++	kref_put(&clk->ref, __clk_release);
++	clk_prepare_unlock();
++
++	module_put(clk->owner);
+ }
+ 
+ /***        clk rate change notifiers        ***/
 diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 8138c94..8cb1865 100644
+index 8cb1865..72c65e0 100644
 --- a/include/linux/clk-private.h
 +++ b/include/linux/clk-private.h
-@@ -25,10 +25,13 @@
+@@ -12,6 +12,7 @@
+ #define __LINUX_CLK_PRIVATE_H
  
- #ifdef CONFIG_COMMON_CLK
+ #include <linux/clk-provider.h>
++#include <linux/kref.h>
+ #include <linux/list.h>
  
-+struct module;
-+
- struct clk {
- 	const char		*name;
- 	const struct clk_ops	*ops;
- 	struct clk_hw		*hw;
-+	struct module		*owner;
- 	struct clk		*parent;
- 	const char		**parent_names;
- 	struct clk		**parents;
-diff --git a/include/linux/clkdev.h b/include/linux/clkdev.h
-index a6a6f60..94bad77 100644
---- a/include/linux/clkdev.h
-+++ b/include/linux/clkdev.h
-@@ -43,4 +43,9 @@ int clk_add_alias(const char *, const char *, char *, struct device *);
- int clk_register_clkdev(struct clk *, const char *, const char *, ...);
- int clk_register_clkdevs(struct clk *, struct clk_lookup *, size_t);
- 
-+#ifdef CONFIG_COMMON_CLK
-+int __clk_get(struct clk *clk);
-+void __clk_put(struct clk *clk);
-+#endif
-+
+ /*
+@@ -50,6 +51,7 @@ struct clk {
+ #ifdef CONFIG_COMMON_CLK_DEBUG
+ 	struct dentry		*dentry;
  #endif
++	struct kref		ref;
+ };
+ 
+ /*
 -- 
 1.7.9.5
 
