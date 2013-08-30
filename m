@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3H3TTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:19:03 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:39341 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3H3TTB (ORCPT
+	id S1756921Ab3H3TUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:20:11 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47005 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753716Ab3H3TUJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:19:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABSveYg3gAnx=cKTqN-iqZdypzivXDuvVAJCdKdbCS6fz3gYkw@mail.gmail.com>
-References: <CABSveYg3gAnx=cKTqN-iqZdypzivXDuvVAJCdKdbCS6fz3gYkw@mail.gmail.com>
-Date: Fri, 30 Aug 2013 21:18:59 +0200
-Message-ID: <CAN+gG=H=r3HH=J+1eMUWSiruEm3F64E6UfH5djjR_Xfk+kmmtQ@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Vasily Titskiy <qehgt0@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 30 Aug 2013 15:20:09 -0400
+Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale FTM PWM
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
+Date: Fri, 30 Aug 2013 14:19:12 -0500
+Cc: <r65073@freescale.com>, <thierry.reding@gmail.com>,
+        <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
+        <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5EFBF478-CFCC-4E66-A279-25F4A338B05B@kernel.crashing.org>
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Should have at least something w/regards to a commit message.
 
-first, for the next submission, do not forget to add Jiri (the HID
-maintainer) in CC, otherwise there are huge chances that he will miss
-your patch.
+On Aug 20, 2013, at 10:07 PM, Xiubo Li wrote:
 
-On Fri, Aug 30, 2013 at 8:47 PM, Vasily Titskiy <qehgt0@gmail.com> wrote:
-> The DuoSense touchscreen device causes a 10 second timeout. This fix
-> removes the delay.
->
-> Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 > ---
->  drivers/hid/hid-ids.h           |    2 ++
->  drivers/hid/usbhid/hid-quirks.c |    3 +++
->  2 files changed, 5 insertions(+)
->
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 2168885..c3929ea 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -898,4 +898,6 @@
->  #define USB_VENDOR_ID_PRIMAX 0x0461
->  #define USB_DEVICE_ID_PRIMAX_KEYBOARD 0x4e05
->
-> +#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
+> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52 ++++++++++++++++++++++
+> 1 file changed, 52 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> new file mode 100644
+> index 0000000..698965b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> @@ -0,0 +1,52 @@
+> +Freescale FTM PWM controller
 > +
+> +Required properties:
+> +- compatible: should be "fsl,vf610-ftm-pwm"
+> +- reg: physical base address and length of the controller's registers
+> +- #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
+> +  First cell specifies the per-chip channel index of the PWM to use, the
+> +  second cell is the period in nanoseconds and bit 0 in the third cell is
+> +  used to encode the polarity of PWM output. Set bit 0 of the third in PWM
+> +  specifier to 1 for inverse polarity & set to 0 for normal polarity.
+> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by 2^n(n = 0 ~ 7).
+> +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
 
-Please keep the list sorted. This define should go into the *_NTRIG_* block.
+Should describe this in more detail, what does the value actually mean for what modes there are?
 
->  #endif
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 19b8360..3fd4dfd 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -89,6 +89,9 @@ static const struct hid_blacklist {
->   { USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
->   { USB_VENDOR_ID_TPV, USB_DEVICE_ID_TPV_OPTICAL_TOUCHSCREEN, HID_QUIRK_NOGET },
->   { USB_VENDOR_ID_TURBOX, USB_DEVICE_ID_TURBOX_KEYBOARD, HID_QUIRK_NOGET },
+> +- fsl,pwm-number: the number of PWM devices, and is must equal to the number
+> +  of "fsl,pwm-channels".
+
+If they must be equal why do we need both?
+
+> +- fsl,pwm-channels: the channels' order which is be used for pwm in ftm0
+> +  module, and they must be one or some of 0 ~ 7, because the ftm0 only has
+> +  8 channels can be used.
+> +- for very channel, the revlatived the pinctrl should be at least two state
+
+revlatived?
+
+> +  {"enN", "dsN"}, which "en" means "enable", "ds" means "disable" and "N"
+> +  means the order of the channel.
 > +
-
-extra whitespace
-
-> + { USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NOGET },
-
-I'm sure we could try here the new quirk
-HID_QUIRK_NO_INIT_INPUT_REPORTS, this would be more accurate I think.
-At least can you test if HID_QUIRK_NO_INIT_REPORTS is enough?
-HID_QUIRK_NOGET prevent all request from the host to the device, which
-is a little bit too much in many cases.
-
+> +Example:
 > +
-
-extra whitespace too.
-
-Cheers,
-Benjamin
-
-
->   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_PF1209,
-> HID_QUIRK_MULTI_INPUT },
->   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U,
-> HID_QUIRK_MULTI_INPUT },
->   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_KNA5,
-> HID_QUIRK_MULTI_INPUT },
+> +pwm0: pwm@40038000 {
+> +	      compatible = "fsl,vf610-ftm-pwm";
+> +	      reg = <0x40038000 0x1000>;
+> +	      #pwm-cells = <3>;
+> +	      pinctrl-names = "en0", "ds0", "en3", "ds3";
+> +	      pinctrl-0 = <&pinctrl_pwm0_ch0_en>;
+> +	      pinctrl-1 = <&pinctrl_pwm0_ch0_ds>;
+> +	      pinctrl-2 = <&pinctrl_pwm0_ch3_en>;
+> +	      pinctrl-3 = <&pinctrl_pwm0_ch3_ds>;
+> +	      fsl,pwm-clk-ps = <7>;
+> +	      fsl,pwm-cpwm = <0>;
+> +	      fsl,pwm-number = <2>;
+> +	      fsl,pwm-channels = <0 3>;
+> +	      ...
+> +      };
+> +
+> +leds {
+> +	compatible = "pwm-leds";
+> +	led {
+> +		label = "fsl_led";
+> +		pwms = <&pwm0 0 10000000 0>;
+> +		max-brightness = <127>;
+> +	};
+> +	backlight {
+> +		label = "fsl_backlight";
+> +		pwms = <&pwm0 3 10000000 1>;
+> +		max-brightness = <100>;
+> +	};
+> +};
+> -- 
+> 1.8.0
+> 
+> 
 > --
-> 1.7.10.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
