@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3H3CGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 22:06:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:47687 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab3H3CGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 22:06:22 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless update of refcount
-In-reply-to: <CA+55aFz4rJAAWopcSEJct55jUgCHY_6ZD=GSkKFmWanvd0otuw@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com> <1375758759-29629-2-git-send-email-Waiman.Long@hp.com> <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com> <1377751465.4028.20.camel@pasglop> <20130829070012.GC27322@gmail.com> <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com> <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com> <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com> <1377822408.4028.44.camel@pasglop> <CA+55aFz4rJAAWopcSEJct55jUgCHY_6ZD=GSkKFmWanvd0otuw@mail.gmail.com>
-Comments: In-reply-to Linus Torvalds <torvalds@linux-foundation.org>
-   message dated "Thu, 29 Aug 2013 17:49:46 -0700."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Fri, 30 Aug 2013 12:06:20 +1000
-Message-ID: <29797.1377828380@ale.ozlabs.ibm.com>
+	id S1752693Ab3H3CH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 22:07:58 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:25371 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab3H3CH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 22:07:57 -0400
+Message-ID: <521FFE3B.7040801@huawei.com>
+Date: Fri, 30 Aug 2013 10:06:51 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <linux-parisc@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <sparclinux@vger.kernel.org>,
+        <x86@kernel.org>
+Subject: [PATCH 4/4] mm/arch: use NUMA_NODE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Anyway, I'm attaching my completely mindless test program. It has
-> hacky things like "unsigned long count[MAXTHREADS][32]" which are
-> purely to just spread out the counts so that they aren't in the same
-> cacheline etc.
-> 
-> Also note that the performance numbers it spits out depend a lot on
-> tings like how long the dcache hash chains etc are, so they are not
-> really reliable. Running the test-program right after reboot when the
-> dentries haven't been populated can result in much higher numbers -
-> without that having anything to do with contention or locking at all.
+Use more appropriate NUMA_NO_NODE instead of -1 in some archs' module_alloc()
 
-Running on a POWER7 here with 32 threads (8 cores x 4 threads) I'm
-getting some good improvements:
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+---
+ arch/arm/kernel/module.c    |    2 +-
+ arch/arm64/kernel/module.c  |    2 +-
+ arch/mips/kernel/module.c   |    2 +-
+ arch/parisc/kernel/module.c |    2 +-
+ arch/s390/kernel/module.c   |    2 +-
+ arch/sparc/kernel/module.c  |    2 +-
+ arch/x86/kernel/module.c    |    2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
 
-  Without patch:
-    # ./t
-    Total loops: 3730618
-
-  With patch:
-    # ./t
-    Total loops: 16826271
-
-The numbers move around about 10% from run to run.  I didn't change your
-program at all, so it's still running with MAXTHREADS 16.
-
-powerpc patch below. I'm using arch_spin_is_locked() to implement
-arch_spin_value_unlocked().
-
-Mikey
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 9cf59816d..4a3f86b 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -139,6 +139,7 @@ config PPC
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION if PPC32
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select ARCH_USE_CMPXCHG_LOCKREF
- 
- config EARLY_PRINTK
- 	bool
-diff --git a/arch/powerpc/include/asm/spinlock.h b/arch/powerpc/include/asm/spinlock.h
-index 5b23f91..65c25272 100644
---- a/arch/powerpc/include/asm/spinlock.h
-+++ b/arch/powerpc/include/asm/spinlock.h
-@@ -156,6 +156,11 @@ extern void arch_spin_unlock_wait(arch_spinlock_t *lock);
- 	do { while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index 85c3fb6..8f4cff3 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -40,7 +40,7 @@
+ void *module_alloc(unsigned long size)
+ {
+ 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
++				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
+ 				__builtin_return_address(0));
+ }
  #endif
+diff --git a/arch/arm64/kernel/module.c b/arch/arm64/kernel/module.c
+index ca0e3d5..8f898bd 100644
+--- a/arch/arm64/kernel/module.c
++++ b/arch/arm64/kernel/module.c
+@@ -29,7 +29,7 @@
+ void *module_alloc(unsigned long size)
+ {
+ 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				    GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
++				    GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
+ 				    __builtin_return_address(0));
+ }
  
-+static __always_inline int arch_spin_value_unlocked(arch_spinlock_t lock)
-+{
-+	return !arch_spin_is_locked(&lock);
-+}
-+
- /*
-  * Read-write spinlocks, allowing multiple readers
-  * but only one writer.
+diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
+index 977a623..b507e07 100644
+--- a/arch/mips/kernel/module.c
++++ b/arch/mips/kernel/module.c
+@@ -46,7 +46,7 @@ static DEFINE_SPINLOCK(dbe_lock);
+ void *module_alloc(unsigned long size)
+ {
+ 	return __vmalloc_node_range(size, 1, MODULE_START, MODULE_END,
+-				GFP_KERNEL, PAGE_KERNEL, -1,
++				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
+ 				__builtin_return_address(0));
+ }
+ #endif
+diff --git a/arch/parisc/kernel/module.c b/arch/parisc/kernel/module.c
+index 2a625fb..50dfafc 100644
+--- a/arch/parisc/kernel/module.c
++++ b/arch/parisc/kernel/module.c
+@@ -219,7 +219,7 @@ void *module_alloc(unsigned long size)
+ 	 * init_data correctly */
+ 	return __vmalloc_node_range(size, 1, VMALLOC_START, VMALLOC_END,
+ 				    GFP_KERNEL | __GFP_HIGHMEM,
+-				    PAGE_KERNEL_RWX, -1,
++				    PAGE_KERNEL_RWX, NUMA_NO_NODE,
+ 				    __builtin_return_address(0));
+ }
+ 
+diff --git a/arch/s390/kernel/module.c b/arch/s390/kernel/module.c
+index 7845e15..b89b591 100644
+--- a/arch/s390/kernel/module.c
++++ b/arch/s390/kernel/module.c
+@@ -50,7 +50,7 @@ void *module_alloc(unsigned long size)
+ 	if (PAGE_ALIGN(size) > MODULES_LEN)
+ 		return NULL;
+ 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				    GFP_KERNEL, PAGE_KERNEL, -1,
++				    GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
+ 				    __builtin_return_address(0));
+ }
+ #endif
+diff --git a/arch/sparc/kernel/module.c b/arch/sparc/kernel/module.c
+index 4435488..97655e0 100644
+--- a/arch/sparc/kernel/module.c
++++ b/arch/sparc/kernel/module.c
+@@ -29,7 +29,7 @@ static void *module_map(unsigned long size)
+ 	if (PAGE_ALIGN(size) > MODULES_LEN)
+ 		return NULL;
+ 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+-				GFP_KERNEL, PAGE_KERNEL, -1,
++				GFP_KERNEL, PAGE_KERNEL, NUMA_NO_NODE,
+ 				__builtin_return_address(0));
+ }
+ #else
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index 216a4d7..18be189 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -49,7 +49,7 @@ void *module_alloc(unsigned long size)
+ 		return NULL;
+ 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
+ 				GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL_EXEC,
+-				-1, __builtin_return_address(0));
++				NUMA_NO_NODE, __builtin_return_address(0));
+ }
+ 
+ #ifdef CONFIG_X86_32
+-- 
+1.7.1
+
+
