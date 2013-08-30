@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3H3JUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:20:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63088 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752694Ab3H3JUj convert rfc822-to-8bit (ORCPT
+	id S1754406Ab3H3J1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:27:06 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53544 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3H3J1E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:20:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,989,1367996400"; 
-   d="scan'208";a="353779991"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCHv3 0/8] Thermal Framework Enhancements
-Thread-Topic: [PATCHv3 0/8] Thermal Framework Enhancements
-Thread-Index: AQHOpO9fn2+fS6U/+ka5UqqQQPExz5mtTpLA
-Date: Fri, 30 Aug 2013 09:20:29 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59D4D3F8@BGSMSX101.gar.corp.intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
- <521FA335.2060309@ti.com>
-In-Reply-To: <521FA335.2060309@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Aug 2013 05:27:04 -0400
 MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+Date: Fri, 30 Aug 2013 11:27:01 +0200
+Message-ID: <CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+On Fri, Aug 30, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
+>>> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
+>>>>
+>>>> Waiman? Mind looking at this and testing? Linus
+>>>
+>>> Sure, I will try out the patch tomorrow morning and see how it works out for
+>>> my test case.
+>>
+>> Ok, thanks, please use this slightly updated patch attached here.
+>>
+>> It improves on the previous version in actually handling the
+>> "unlazy_walk()" case with native lockref handling, which means that
+>> one other not entirely odd case (symlink traversal) avoids the d_lock
+>> contention.
+>>
+>> It also refactored the __d_rcu_to_refcount() to be more readable, and
+>> adds a big comment about what the heck is going on. The old code was
+>> clever, but I suspect not very many people could possibly understand
+>> what it actually did. Plus it used nested spinlocks because it wanted
+>> to avoid checking the sequence count twice. Which is stupid, since
+>> nesting locks is how you get really bad contention, and the sequence
+>> count check is really cheap anyway. Plus the nesting *really* didn't
+>> work with the whole lockref model.
+>>
+>> With this, my stupid thread-lookup thing doesn't show any spinlock
+>> contention even for the "look up symlink" case.
+>>
+>> It also avoids the unnecessary aligned u64 for when we don't actually
+>> use cmpxchg at all.
+>>
+>> It's still one single patch, since I was working on lots of small
+>> cleanups. I think it's pretty close to done now (assuming your testing
+>> shows it performs fine - the powerpc numbers are promising, though),
+>> so I'll split it up into proper chunks rather than random commit
+>> points. But I'm done for today at least.
+>>
+>> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
+>> may hit cases I didn't test. I think it should be *stable*, but maybe
+>> there's some other d_lock case that your tuned waiting hid, and that
+>> my "fastpath only for unlocked case" version ends up having problems
+>> with.
+>>
+>
+> Following this thread with half an eye... Was that "unsigned" stuff
+> fixed (someone pointed to it).
+> How do you call that test-patch (subject)?
+> I would like to test it on my SNB ultrabook with your test-case script.
+>
 
-> -----Original Message-----
-> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
-> Sent: Friday, August 30, 2013 1:08 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCHv3 0/8] Thermal Framework Enhancements
-> 
-> Durga,
-> 
-> On 05-02-2013 06:46, Durgadoss R wrote:
-> > This patch set is a v3 of the previous versions submitted here:
-> > [v2]: http://lwn.net/Articles/531720/
-> > [v1]: https://lkml.org/lkml/2012/12/18/108
-> > [RFC]:https://patchwork.kernel.org/patch/1758921/
-> >
-> 
-> Long time this work is not moving forward. While writing the device tree
+Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
 
-I am trying my best to get to this,
-Will try to refresh in a couple of weeks.
+lockref:  w/o patch | w/ patch
+======================
+Run #1: 2.688.094 | 2.643.004
+Run #2: 2.678.884 | 2.652.787
+Run #3: 2.686.450 | 2.650.142
+Run #4: 2.688.435 | 2.648.409
+Run #5: 2.693.770 | 2.651.514
 
-> parser, I thought of using your work as baseline to see how the multiple
-> sensor per zone would look like (also in DT).
-> 
-> But while checking your code again, I realized that you are actually
-> creating a new API, that is probably why you named it sysfs-api2. While
-> I understand the motivation (they are pretty different), I believe this
-> is not a good thing to do. I would suggest making so that we have a
-> single API.
+Average: 2687126,6 VS. 2649171,2 ( −37955,4 )
 
-As in the sensor APIs ? or the zone level APIs ?
-The sensor level APIs are anyway new; the zone level ones
-we have to work out a way for them.
-
-Is this what you are referring to ? Could you confirm/explain a bit more ?
-
-Thanks,
-Durga
-
-> 
-> > This patch set is based on Rui's -next tree, and is
-> > tested on a Core-i5 and an Atom netbook.
-> >
-> > Changes since v2:
-> >  * Reworked the map sysfs attributes in patch [5/8]
-> >  * Dropped configuration for maximum sensors and
-> >    cooling devices, through Kconfig.
-> >  * Added __remove_trip_attr method
-> >  * Renamed __clean_map_entry to __remove_map_entry
-> >    for consistency in naming.
-> > Changes Since v1:
-> >  * Removed kobject creation for thermal_trip and thermal_map
-> >    nodes as per Greg-KH's comments.
-> >  * Added ABI Documentation under 'testing'.
-> >  * Modified the GET_INDEX macro to be more linux-like, thanks
-> >    to Joe Perches.
-> >  * Added get_[sensor/cdev]_by_name APIs to thermal.h
-> >
-> > This series contains 8 patches:
-> > Patch 1/8: Creates new sensor level APIs
-> > Patch 2/8: Creates new zone level APIs. The existing tzd structure is
-> >            kept as such for clarity and compatibility purposes.
-> > Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
-> >            existing tcd structure need not be modified.
-> > Patch 4/8: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
-> > 	   under /sys/class/thermal/zoneY/. This exposes various trip
-> >            points for sensorX present in zoneY.
-> > Patch 5/8: Adds mapY_* sysfs node. These attributes represent
-> >            the binding relationship between a sensor and a cdev,
-> >            within a zone.
-> > Patch 6/8: Creates Documentation for the new APIs. A new file is
-> >            created for clarity. Final goal is to merge with the existing
-> >            file or refactor the files, as whatever seems appropriate.
-> > Patch 7/8: Add ABI documentation for sysfs interfaces introduced in this patch.
-> > Patch 8/8: A dummy driver that can be used for testing. This is not for merge.
-> >
-> > Durgadoss R (8):
-> >   Thermal: Create sensor level APIs
-> >   Thermal: Create zone level APIs
-> >   Thermal: Add APIs to bind cdev to new zone structure
-> >   Thermal: Add trip point sysfs nodes for sensor
-> >   Thermal: Create Thermal map sysfs attributes for a zone
-> >   Thermal: Add Documentation to new APIs
-> >   Thermal: Add ABI Documentation for sysfs interfaces
-> >   Thermal: Dummy driver used for testing
-> >
-> >  Documentation/ABI/testing/sysfs-class-thermal |  137 ++++
-> >  Documentation/thermal/sysfs-api2.txt          |  247 ++++++
-> >  drivers/thermal/Kconfig                       |    5 +
-> >  drivers/thermal/Makefile                      |    2 +
-> >  drivers/thermal/thermal_sys.c                 |  994 +++++++++++++++++++++++++
-> >  drivers/thermal/thermal_test.c                |  324 ++++++++
-> >  include/linux/thermal.h                       |  123 ++-
-> >  7 files changed, 1831 insertions(+), 1 deletion(-)
-> >  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
-> >  create mode 100644 Documentation/thermal/sysfs-api2.txt
-> >  create mode 100644 drivers/thermal/thermal_test.c
-> >
-> 
-> 
-> --
-> You have got to be excited about what you are doing. (L. Lamport)
-> 
-> Eduardo Valentin
-
+- Sedat -
