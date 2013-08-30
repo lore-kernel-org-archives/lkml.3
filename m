@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3H3Vak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 17:30:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35103 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755569Ab3H3Vai (ORCPT
+	id S1756702Ab3H3VbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 17:31:09 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:46430 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756577Ab3H3VbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 17:30:38 -0400
-Date: Fri, 30 Aug 2013 22:30:30 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130830213029.GG13318@ZenIV.linux.org.uk>
-References: <52200DAE.2020303@hp.com>
- <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
- <5220E56A.80603@hp.com>
- <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
- <5220F090.5050908@hp.com>
- <CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
- <5220FD51.2010709@hp.com>
- <CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
- <20130830205404.GF13318@ZenIV.linux.org.uk>
- <52210A55.8010308@hp.com>
+	Fri, 30 Aug 2013 17:31:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52210A55.8010308@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABSveYhSMyCxPZS3nqSdiG-UZwAMMTX7UjgFG=emY+L-K60sdQ@mail.gmail.com>
+References: <CABSveYg3gAnx=cKTqN-iqZdypzivXDuvVAJCdKdbCS6fz3gYkw@mail.gmail.com>
+	<CAN+gG=H=r3HH=J+1eMUWSiruEm3F64E6UfH5djjR_Xfk+kmmtQ@mail.gmail.com>
+	<CABSveYhSMyCxPZS3nqSdiG-UZwAMMTX7UjgFG=emY+L-K60sdQ@mail.gmail.com>
+Date: Fri, 30 Aug 2013 23:31:05 +0200
+Message-ID: <CAN+gG=Gcov3YhnY38mjQFp8vxx_E7djBOXHbkNV14Oa8_fOtHA@mail.gmail.com>
+Subject: Re: [PATCH] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Vasily Titskiy <qehgt0@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 05:10:45PM -0400, Waiman Long wrote:
-> On 08/30/2013 04:54 PM, Al Viro wrote:
-> >On Fri, Aug 30, 2013 at 01:43:11PM -0700, Linus Torvalds wrote:
-> >>On Fri, Aug 30, 2013 at 1:15 PM, Waiman Long<waiman.long@hp.com>  wrote:
-> >>>The prepend_path() isn't all due to getcwd. The correct profile should be
-> >>Ugh. I really think that prepend_path() should just be rewritten to
-> >>run entirely under RCU.
-> >>
-> >>Then we can remove *all* the stupid locking, and replace it with doing
-                                                     ^^^^^^^^^^^^^^^^^^^^^
-> >>a read-lock on the rename sequence count, and repeating if requited.
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> >>
-> >>That shouldn't even be hard to do, it just requires mindless massaging
-> >>and being careful.
-> >Not really.  Sure, you'll retry it if you race with d_move(); that's not
-> >the real problem - access past the end of the object containing ->d_name.name
-> >would screw you and that's what ->d_lock is preventing there.  Delayed freeing
-> >of what ->d_name is pointing into is fine, but it's not the only way to get
-> >hurt there...
-> 
-> Actually, prepend_path() was called with rename_lock taken. So
-> d_move() couldn't be run at the same time. Am I right?
+On Fri, Aug 30, 2013 at 9:34 PM, Vasily Titskiy <qehgt0@gmail.com> wrote:
+> Hi,
+>
+> I've re-tested it with HID_QUIRK_NO_INIT_REPORTS parameter. Looks
+> fine, still no delays.
+>
 
-See above.  You are right, but if Linus wants to turn that sucker into
-reader (which is possible - see e.g. cifs build_path_from_dentry() and its
-ilk), d_move() races will start to play.
+Yes please. Send a v2 so that Jiri can take it through his tree.
+
+Cheers,
+Benjamin
+
+>
+>
+> On Fri, Aug 30, 2013 at 3:18 PM, Benjamin Tissoires
+> <benjamin.tissoires@gmail.com> wrote:
+>> Hi,
+>>
+>> first, for the next submission, do not forget to add Jiri (the HID
+>> maintainer) in CC, otherwise there are huge chances that he will miss
+>> your patch.
+>>
+>> On Fri, Aug 30, 2013 at 8:47 PM, Vasily Titskiy <qehgt0@gmail.com> wrote:
+>>> The DuoSense touchscreen device causes a 10 second timeout. This fix
+>>> removes the delay.
+>>>
+>>> Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
+>>> ---
+>>>  drivers/hid/hid-ids.h           |    2 ++
+>>>  drivers/hid/usbhid/hid-quirks.c |    3 +++
+>>>  2 files changed, 5 insertions(+)
+>>>
+>>> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+>>> index 2168885..c3929ea 100644
+>>> --- a/drivers/hid/hid-ids.h
+>>> +++ b/drivers/hid/hid-ids.h
+>>> @@ -898,4 +898,6 @@
+>>>  #define USB_VENDOR_ID_PRIMAX 0x0461
+>>>  #define USB_DEVICE_ID_PRIMAX_KEYBOARD 0x4e05
+>>>
+>>> +#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
+>>> +
+>>
+>> Please keep the list sorted. This define should go into the *_NTRIG_* block.
+>>
+>>>  #endif
+>>> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+>>> index 19b8360..3fd4dfd 100644
+>>> --- a/drivers/hid/usbhid/hid-quirks.c
+>>> +++ b/drivers/hid/usbhid/hid-quirks.c
+>>> @@ -89,6 +89,9 @@ static const struct hid_blacklist {
+>>>   { USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
+>>>   { USB_VENDOR_ID_TPV, USB_DEVICE_ID_TPV_OPTICAL_TOUCHSCREEN, HID_QUIRK_NOGET },
+>>>   { USB_VENDOR_ID_TURBOX, USB_DEVICE_ID_TURBOX_KEYBOARD, HID_QUIRK_NOGET },
+>>> +
+>>
+>> extra whitespace
+>>
+>>> + { USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NOGET },
+>>
+>> I'm sure we could try here the new quirk
+>> HID_QUIRK_NO_INIT_INPUT_REPORTS, this would be more accurate I think.
+>> At least can you test if HID_QUIRK_NO_INIT_REPORTS is enough?
+>> HID_QUIRK_NOGET prevent all request from the host to the device, which
+>> is a little bit too much in many cases.
+>>
+>>> +
+>>
+>> extra whitespace too.
+>>
+>> Cheers,
+>> Benjamin
+>>
+>>
+>>>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_PF1209,
+>>> HID_QUIRK_MULTI_INPUT },
+>>>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U,
+>>> HID_QUIRK_MULTI_INPUT },
+>>>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_KNA5,
+>>> HID_QUIRK_MULTI_INPUT },
+>>> --
+>>> 1.7.10.4
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
