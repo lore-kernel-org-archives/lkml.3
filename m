@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab3H3XwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 19:52:21 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:64255 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756033Ab3H3XwC (ORCPT
+	id S1756845Ab3H3XwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 19:52:19 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:42870 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3H3XwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 19:52:02 -0400
+	Fri, 30 Aug 2013 19:52:05 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-ide@vger.kernel.org, netdev@vger.kernel.org,
@@ -21,9 +21,9 @@ Cc: linux-ide@vger.kernel.org, netdev@vger.kernel.org,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 2/8] ide: Drop H8/300 driver
-Date: Fri, 30 Aug 2013 16:51:28 -0700
-Message-Id: <1377906694-9578-3-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 3/8] net/ethernet: smsc9194: Drop conditional code for H8/300
+Date: Fri, 30 Aug 2013 16:51:29 -0700
+Message-Id: <1377906694-9578-4-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1377906694-9578-1-git-send-email-linux@roeck-us.net>
 References: <1377906694-9578-1-git-send-email-linux@roeck-us.net>
@@ -31,165 +31,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architecture is gone, so there is no need to keep its ide driver around.
+With the H8/300 architecture gone, this code is no longer necessary.
 
 Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
 Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/ide/Kconfig     |    7 ---
- drivers/ide/Makefile    |    2 -
- drivers/ide/ide-h8300.c |  109 -----------------------------------------------
- 3 files changed, 118 deletions(-)
- delete mode 100644 drivers/ide/ide-h8300.c
+ drivers/net/ethernet/smsc/smc9194.c |   24 ------------------------
+ 1 file changed, 24 deletions(-)
 
-diff --git a/drivers/ide/Kconfig b/drivers/ide/Kconfig
-index 02906ca..5dba90a 100644
---- a/drivers/ide/Kconfig
-+++ b/drivers/ide/Kconfig
-@@ -722,13 +722,6 @@ config BLK_DEV_IDE_RAPIDE
- 	  Say Y here if you want to support the Yellowstone RapIDE controller
- 	  manufactured for use with Acorn computers.
+diff --git a/drivers/net/ethernet/smsc/smc9194.c b/drivers/net/ethernet/smsc/smc9194.c
+index e85c2e7..afd9873 100644
+--- a/drivers/net/ethernet/smsc/smc9194.c
++++ b/drivers/net/ethernet/smsc/smc9194.c
+@@ -95,14 +95,6 @@ static const char version[] =
+ #define USE_32_BIT 1
+ #endif
  
--config IDE_H8300
--	tristate "H8300 IDE support"
--	depends on H8300
--	default y
--	help
--	  Enables the H8300 IDE driver.
+-#if defined(__H8300H__) || defined(__H8300S__)
+-#define NO_AUTOPROBE
+-#undef insl
+-#undef outsl
+-#define insl(a,b,l)  io_insl_noswap(a,b,l)
+-#define outsl(a,b,l) io_outsl_noswap(a,b,l)
+-#endif
 -
- config BLK_DEV_GAYLE
- 	tristate "Amiga Gayle IDE interface support"
- 	depends on AMIGA
-diff --git a/drivers/ide/Makefile b/drivers/ide/Makefile
-index af8d016..a04ee82 100644
---- a/drivers/ide/Makefile
-+++ b/drivers/ide/Makefile
-@@ -78,8 +78,6 @@ obj-$(CONFIG_BLK_DEV_CMD640)		+= cmd640.o
+ /*
+  .the SMC9194 can be at any of the following port addresses.  To change,
+  .for a slightly different card, you can add it to the array.  Keep in
+@@ -114,12 +106,6 @@ struct devlist {
+ 	unsigned int irq;
+ };
  
- obj-$(CONFIG_BLK_DEV_IDE_PMAC)		+= pmac.o
- 
--obj-$(CONFIG_IDE_H8300)			+= ide-h8300.o
--
- obj-$(CONFIG_IDE_GENERIC)		+= ide-generic.o
- obj-$(CONFIG_BLK_DEV_IDEPNP)		+= ide-pnp.o
- 
-diff --git a/drivers/ide/ide-h8300.c b/drivers/ide/ide-h8300.c
-deleted file mode 100644
-index 520f42c..0000000
---- a/drivers/ide/ide-h8300.c
-+++ /dev/null
-@@ -1,109 +0,0 @@
--/*
-- * H8/300 generic IDE interface
-- */
--
--#include <linux/init.h>
--#include <linux/ide.h>
--
--#include <asm/io.h>
--#include <asm/irq.h>
--
--#define DRV_NAME "ide-h8300"
--
--#define bswap(d) \
--({					\
--	u16 r;				\
--	__asm__("mov.b %w1,r1h\n\t"	\
--		"mov.b %x1,r1l\n\t"	\
--		"mov.w r1,%0"		\
--		:"=r"(r)		\
--		:"r"(d)			\
--		:"er1");		\
--	(r);				\
--})
--
--static void mm_outsw(unsigned long addr, void *buf, u32 len)
--{
--	unsigned short *bp = (unsigned short *)buf;
--	for (; len > 0; len--, bp++)
--		*(volatile u16 *)addr = bswap(*bp);
--}
--
--static void mm_insw(unsigned long addr, void *buf, u32 len)
--{
--	unsigned short *bp = (unsigned short *)buf;
--	for (; len > 0; len--, bp++)
--		*bp = bswap(*(volatile u16 *)addr);
--}
--
--static void h8300_input_data(ide_drive_t *drive, struct ide_cmd *cmd,
--			     void *buf, unsigned int len)
--{
--	mm_insw(drive->hwif->io_ports.data_addr, buf, (len + 1) / 2);
--}
--
--static void h8300_output_data(ide_drive_t *drive, struct ide_cmd *cmd,
--			      void *buf, unsigned int len)
--{
--	mm_outsw(drive->hwif->io_ports.data_addr, buf, (len + 1) / 2);
--}
--
--static const struct ide_tp_ops h8300_tp_ops = {
--	.exec_command		= ide_exec_command,
--	.read_status		= ide_read_status,
--	.read_altstatus		= ide_read_altstatus,
--	.write_devctl		= ide_write_devctl,
--
--	.dev_select		= ide_dev_select,
--	.tf_load		= ide_tf_load,
--	.tf_read		= ide_tf_read,
--
--	.input_data		= h8300_input_data,
--	.output_data		= h8300_output_data,
+-#if defined(CONFIG_H8S_EDOSK2674)
+-static struct devlist smc_devlist[] __initdata = {
+-	{.port = 0xf80000, .irq = 16},
+-	{.port = 0,        .irq = 0 },
 -};
+-#else
+ static struct devlist smc_devlist[] __initdata = {
+ 	{.port = 0x200, .irq = 0},
+ 	{.port = 0x220, .irq = 0},
+@@ -139,7 +125,6 @@ static struct devlist smc_devlist[] __initdata = {
+ 	{.port = 0x3E0, .irq = 0},
+ 	{.port = 0,     .irq = 0},
+ };
+-#endif
+ /*
+  . Wait time for memory to be free.  This probably shouldn't be
+  . tuned that much, as waiting for this means nothing else happens
+@@ -651,11 +636,7 @@ static void smc_hardware_send_packet( struct net_device * dev )
+ #ifdef USE_32_BIT
+ 	if ( length & 0x2  ) {
+ 		outsl(ioaddr + DATA_1, buf,  length >> 2 );
+-#if !defined(__H8300H__) && !defined(__H8300S__)
+ 		outw( *((word *)(buf + (length & 0xFFFFFFFC))),ioaddr +DATA_1);
+-#else
+-		ctrl_outw( *((word *)(buf + (length & 0xFFFFFFFC))),ioaddr +DATA_1);
+-#endif
+ 	}
+ 	else
+ 		outsl(ioaddr + DATA_1, buf,  length >> 2 );
+@@ -899,7 +880,6 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
+ 		retval = -ENODEV;
+ 		goto err_out;
+ 	}
+-#if !defined(CONFIG_H8S_EDOSK2674)
+ 	/* well, we've already written once, so hopefully another time won't
+  	   hurt.  This time, I need to switch the bank register to bank 1,
+ 	   so I can access the base address register */
+@@ -914,10 +894,6 @@ static int __init smc_probe(struct net_device *dev, int ioaddr)
+ 		retval = -ENODEV;
+ 		goto err_out;
+ 	}
+-#else
+-	(void)base_address_register; /* Warning suppression */
+-#endif
 -
--#define H8300_IDE_GAP (2)
--
--static inline void hw_setup(struct ide_hw *hw)
--{
--	int i;
--
--	memset(hw, 0, sizeof(*hw));
--	for (i = 0; i <= 7; i++)
--		hw->io_ports_array[i] = CONFIG_H8300_IDE_BASE + H8300_IDE_GAP*i;
--	hw->io_ports.ctl_addr = CONFIG_H8300_IDE_ALT;
--	hw->irq = EXT_IRQ0 + CONFIG_H8300_IDE_IRQ;
--}
--
--static const struct ide_port_info h8300_port_info = {
--	.tp_ops			= &h8300_tp_ops,
--	.host_flags		= IDE_HFLAG_NO_IO_32BIT | IDE_HFLAG_NO_DMA,
--	.chipset		= ide_generic,
--};
--
--static int __init h8300_ide_init(void)
--{
--	struct ide_hw hw, *hws[] = { &hw };
--
--	printk(KERN_INFO DRV_NAME ": H8/300 generic IDE interface\n");
--
--	if (!request_region(CONFIG_H8300_IDE_BASE, H8300_IDE_GAP*8, "ide-h8300"))
--		goto out_busy;
--	if (!request_region(CONFIG_H8300_IDE_ALT, H8300_IDE_GAP, "ide-h8300")) {
--		release_region(CONFIG_H8300_IDE_BASE, H8300_IDE_GAP*8);
--		goto out_busy;
--	}
--
--	hw_setup(&hw);
--
--	return ide_host_add(&h8300_port_info, hws, 1, NULL);
--
--out_busy:
--	printk(KERN_ERR "ide-h8300: IDE I/F resource already used.\n");
--
--	return -EBUSY;
--}
--
--module_init(h8300_ide_init);
--
--MODULE_LICENSE("GPL");
+ 
+ 	/*  check if the revision register is something that I recognize.
+ 	    These might need to be added to later, as future revisions
 -- 
 1.7.9.7
 
