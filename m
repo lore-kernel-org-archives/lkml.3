@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab3H3Te5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:34:57 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50961 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab3H3Te4 (ORCPT
+	id S1756940Ab3H3Thr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:37:47 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52551 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3H3Thn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:34:56 -0400
-Message-ID: <5220F3DC.6030604@gmail.com>
-Date: Fri, 30 Aug 2013 20:34:52 +0100
-From: Paul McQuade <paulmcquad@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 15:37:43 -0400
+Date: Fri, 30 Aug 2013 12:37:40 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
+Message-ID: <20130830193740.GA13101@roeck-us.net>
+References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
+ <20130830184611.GA27455@spo001.leaseweb.com>
+ <20130830191146.GA12090@roeck-us.net>
+ <CA+55aFyxHsKhtqqz9jTDYo89bCNqCWhjHGJ4HzFrHnJ0yxLXjQ@mail.gmail.com>
 MIME-Version: 1.0
-To: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Email-clients:More config Settings for Thunderbird
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyxHsKhtqqz9jTDYo89bCNqCWhjHGJ4HzFrHnJ0yxLXjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 1e86f069b7cacdd6d369eac40b4b7aba7a0523a6 Mon Sep 17 00:00:00 2001
-From: Paul McQuade <paulmcquad@gmail.com>
-Date: Fri, 30 Aug 2013 20:24:38 +0100
-Subject: [PATCH] Email-clients:More config Settings for Thunderbird
+On Fri, Aug 30, 2013 at 12:14:20PM -0700, Linus Torvalds wrote:
+> On Fri, Aug 30, 2013 at 12:11 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >
+> > I would not mind if Linus would agree to pull it right away for 3.12,
+> > but that seems to be a bit on the fast side.
+> 
+> I'm ok with code deletion patches, I don't think that would be a
+> problem. I didn't check them, but I assume this is all literally just
+> removing code that is conditional on h8/300 config options?
+> 
+Yes.
 
-Disable Word Wrap
-Default Charset
+I found a couple more since I sent the series, but nothing significant.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
----
- Documentation/email-clients.txt |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+What is your preference - keep it until 3.13, or prepare it now and send you
+a pull request for 3.12 ?
 
-diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
-index 860c29a..b0e71c0 100644
---- a/Documentation/email-clients.txt
-+++ b/Documentation/email-clients.txt
-@@ -205,13 +205,17 @@ To beat some sense out of the internal editor, do this:
-   "false".
- 
- - Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
--
--- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
-+  OR Account Settings: Composition & Addressing: Untick "Compose messages in HTML format".
- 
- - Enable UTF8: Set "prefs.converted-to-utf8" to "true".
- 
--- Install the "toggle wordwrap" extension.  Download the file from:
--    https://addons.mozilla.org/thunderbird/addon/2351/
-+- Default Charset: Set "mailnews.Send_default_charset" to "UTF-8"
-+
-+- Disable Word Wrap: Set "mailnews.wraplength" to "0".
-+
-+- You can also use the addon "toggle wordwrap" extension.
-+  From:
-+  https://addons.mozilla.org/thunderbird/addon/2351/
-   Then go to "tools->add ons", select "install" at the bottom of the screen,
-   and browse to where you saved the .xul file.  This adds an "Enable
-   Wordwrap" entry under the Options menu of the message composer.
--- 
-1.7.10.4
+Thanks,
+Guenter
