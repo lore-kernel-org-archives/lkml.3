@@ -1,110 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab3H3Mnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:43:43 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53720 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab3H3Mnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:43:41 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 15/35] mm: Print memory region statistics to understand
- the buddy allocator behavior
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:09:34 +0530
-Message-ID: <20130830123925.24352.708.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
-References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083012-7182-0000-0000-00000840EAEF
+	id S1756146Ab3H3MpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:45:15 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:60065 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab3H3MpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:45:13 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 01/16] Move common EFI stub code from x86 arch code to common location
+To: Mark Salter <msalter@redhat.com>, Roy Franz <roy.franz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk, leif.lindholm@linaro.org, dave.martin@arm.com
+In-Reply-To: <1376402180.27484.12.camel@t520.redhat.com>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org> <1376090777-20090-2-git-send-email-roy.franz@linaro.org> <1376402180.27484.12.camel@t520.redhat.com>
+Date: Fri, 30 Aug 2013 13:45:18 +0100
+Message-Id: <20130830124518.68BBA3E102A@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to observe the behavior of the region-aware buddy allocator, modify
-vmstat.c to also print memory region related statistics. In particular, enable
-memory region-related info in /proc/zoneinfo and /proc/buddyinfo, since they
-would help us to atleast (roughly) observe how the new buddy allocator is
-behaving.
+On Tue, 13 Aug 2013 09:56:20 -0400, Mark Salter <msalter@redhat.com> wrote:
+> On Fri, 2013-08-09 at 16:26 -0700, Roy Franz wrote:
+> > No code changes made, just moving functions from x86 arch directory
+> > to common location.
+> > Code is shared using #include, similar to how decompression code
+> > is shared among architectures.
+> > 
+> > Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> > ---
+> 
+> Tested on arm64.
+> 
+> Acked-by: Mark Salter <msalter@redhat.com>
 
-For now, the region statistics correspond to the zone memory regions and not
-the (absolute) node memory regions, and some of the statistics (especially the
-no. of present pages) might not be very accurate. But since we account for
-and print the free page statistics for every zone memory region accurately, we
-should be able to observe the new page allocator behavior to a reasonable
-degree of accuracy.
+Looks okay to me. I'm not a big fan of #including .c files, but I'm okay
+with it as-is for the time being. It can be revisited later to
+investigate a clean way to compile these functions as a separate .o file.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Reviewed-by: Grant Likely <grant.likely@linaro.org>
 
- mm/vmstat.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
-
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 0451957..4cba0da 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -827,11 +827,28 @@ const char * const vmstat_text[] = {
- static void frag_show_print(struct seq_file *m, pg_data_t *pgdat,
- 						struct zone *zone)
- {
--	int order;
-+	int i, order, t;
-+	struct free_area *area;
- 
--	seq_printf(m, "Node %d, zone %8s ", pgdat->node_id, zone->name);
--	for (order = 0; order < MAX_ORDER; ++order)
--		seq_printf(m, "%6lu ", zone->free_area[order].nr_free);
-+	seq_printf(m, "Node %d, zone %8s \n", pgdat->node_id, zone->name);
-+
-+	for (i = 0; i < zone->nr_zone_regions; i++) {
-+
-+		seq_printf(m, "\t\t Region %6d ", i);
-+
-+		for (order = 0; order < MAX_ORDER; ++order) {
-+			unsigned long nr_free = 0;
-+
-+			area = &zone->free_area[order];
-+
-+			for (t = 0; t < MIGRATE_TYPES; t++) {
-+				nr_free +=
-+					area->free_list[t].mr_list[i].nr_free;
-+			}
-+			seq_printf(m, "%6lu ", nr_free);
-+		}
-+		seq_putc(m, '\n');
-+	}
- 	seq_putc(m, '\n');
- }
- 
-@@ -1018,6 +1035,15 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 		   zone->present_pages,
- 		   zone->managed_pages);
- 
-+	seq_printf(m, "\n\nPer-region page stats\t present\t free\n\n");
-+	for (i = 0; i < zone->nr_zone_regions; i++) {
-+		struct zone_mem_region *region;
-+
-+		region = &zone->zone_regions[i];
-+		seq_printf(m, "\tRegion %6d \t %6lu \t %6lu\n", i,
-+				region->present_pages, region->nr_free);
-+	}
-+
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
- 		seq_printf(m, "\n    %-12s %lu", vmstat_text[i],
- 				zone_page_state(zone, i));
-
+g.
