@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab3H3MD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:03:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44683 "EHLO hydra.sisk.pl"
+	id S1755979Ab3H3MEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:04:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab3H3MDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:03:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, mingo@redhat.com, hpa@linux.intel.com,
-        tglx@linutronix.de, gregkh@linuxfoundation.org,
-        benh@kernel.crashing.org, linux-acpi@vger.kernel.org, x86@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        nfont@linux.vnet.ibm.com, fenghua.yu@intel.com, bp@suse.de,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/4] Unify CPU hotplug lock interface
-Date: Fri, 30 Aug 2013 14:14:38 +0200
-Message-ID: <4448049.EdPFQ3JMc0@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <522006F6.2060206@jp.fujitsu.com>
-References: <1377822129-4143-1-git-send-email-toshi.kani@hp.com> <522006F6.2060206@jp.fujitsu.com>
+	id S1754965Ab3H3MEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:04:52 -0400
+Date: Fri, 30 Aug 2013 14:04:50 +0200
+From: Marcus Meissner <meissner@suse.de>
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: PATCH: scsi: make scsi reset permissions more relaxed (RFC)
+Message-ID: <20130830120450.GB31120@suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild,
+	Felix Imendoerffer, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 30, 2013 11:44:06 AM Yasuaki Ishimatsu wrote:
-> (2013/08/30 9:22), Toshi Kani wrote:
-> > lock_device_hotplug() was recently introduced to serialize CPU & Memory
-> > online/offline and hotplug operations, along with sysfs online interface
-> > restructure (commit 4f3549d7).  With this new locking scheme,
-> > cpu_hotplug_driver_lock() is redundant and is no longer necessary.
-> > 
-> > This patchset makes sure that lock_device_hotplug() covers all CPU online/
-> > offline interfaces, and then removes cpu_hotplug_driver_lock().
-> > 
-> > v2:
-> >   - Rebased to the pm tree, bleeding-edge.
-> >   - Changed patch 2/4 to use lock_device_hotplug_sysfs().
-> > 
-> > ---
-> > Toshi Kani (4):
-> >    hotplug, x86: Fix online state in cpu0 debug interface
-> >    hotplug, x86: Add hotplug lock to missing places
-> >    hotplug, x86: Disable ARCH_CPU_PROBE_RELEASE on x86
-> >    hotplug, powerpc, x86: Remove cpu_hotplug_driver_lock()
-> > 
-> > ---
-> The patch-set looks good to me.
-> 
-> Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hi folks,
 
-Thanks!  I'll tentatively queue up this series for 3.12 (for the second
-half of the merge window).
+cdrecord wants to whack the CD drive with a SCSI RESET ...
 
-Thanks,
-Rafael
+So far SCSI RESET can be done at 4 levels (target, device, bus, host)
+and all 4 are checked for CAP_SYS_ADMIN / CAP_SYS_RAWIO.
+
+
+As the cdrecord author wants special permissions for cdrecord, readcd ,
+cdda2wav to allow it to send SCSI RESET commands I was wondering if
+relaxing the permission is a potential idea?
+
+This would allow SCSI reset on target/device if a local user
+gets regular access to a SCSI device (via udev acls etc.)
+
+
+(I know that the actual reset code will fall back into the chain
+ target -> device -> bus -> host resetting if one fails.)
+
+Signed-off-by: Marcus Meissner <meissner@suse.de>
+
+Ciao, Marcus
+---
+ drivers/scsi/scsi_ioctl.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/scsi_ioctl.c b/drivers/scsi/scsi_ioctl.c
+index d9564fb..770720e 100644
+--- a/drivers/scsi/scsi_ioctl.c
++++ b/drivers/scsi/scsi_ioctl.c
+@@ -306,22 +306,26 @@ int scsi_nonblockable_ioctl(struct scsi_device *sdev, int cmd,
+ 			return 0;
+ 		switch (val) {
+ 		case SG_SCSI_RESET_DEVICE:
++			/* allowed if you can send scsi commands to the device */
+ 			val = SCSI_TRY_RESET_DEVICE;
+ 			break;
+ 		case SG_SCSI_RESET_TARGET:
++			/* allowed if you can send scsi commands to the device */
+ 			val = SCSI_TRY_RESET_TARGET;
+ 			break;
+ 		case SG_SCSI_RESET_BUS:
++			if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
++				return -EACCES;
+ 			val = SCSI_TRY_RESET_BUS;
+ 			break;
+ 		case SG_SCSI_RESET_HOST:
++			if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
++				return -EACCES;
+ 			val = SCSI_TRY_RESET_HOST;
+ 			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
+-		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SYS_RAWIO))
+-			return -EACCES;
+ 		return (scsi_reset_provider(sdev, val) ==
+ 			SUCCESS) ? 0 : -EIO;
+ 	}
+-- 
+1.8.1.4
 
