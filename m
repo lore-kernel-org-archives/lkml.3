@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3H3J1G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:27:06 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:53544 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab3H3J1E convert rfc822-to-8bit (ORCPT
+	id S1754156Ab3H3Jj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:39:58 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:7201 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab3H3Jj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:27:04 -0400
+	Fri, 30 Aug 2013 05:39:57 -0400
+Message-ID: <52206850.807@huawei.com>
+Date: Fri, 30 Aug 2013 17:39:28 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-Date: Fri, 30 Aug 2013 11:27:01 +0200
-Message-ID: <CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: <rob@landley.net>, <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] doc: Documentation/DMA-attributes.txt fix typo
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
->>> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
->>>>
->>>> Waiman? Mind looking at this and testing? Linus
->>>
->>> Sure, I will try out the patch tomorrow morning and see how it works out for
->>> my test case.
->>
->> Ok, thanks, please use this slightly updated patch attached here.
->>
->> It improves on the previous version in actually handling the
->> "unlazy_walk()" case with native lockref handling, which means that
->> one other not entirely odd case (symlink traversal) avoids the d_lock
->> contention.
->>
->> It also refactored the __d_rcu_to_refcount() to be more readable, and
->> adds a big comment about what the heck is going on. The old code was
->> clever, but I suspect not very many people could possibly understand
->> what it actually did. Plus it used nested spinlocks because it wanted
->> to avoid checking the sequence count twice. Which is stupid, since
->> nesting locks is how you get really bad contention, and the sequence
->> count check is really cheap anyway. Plus the nesting *really* didn't
->> work with the whole lockref model.
->>
->> With this, my stupid thread-lookup thing doesn't show any spinlock
->> contention even for the "look up symlink" case.
->>
->> It also avoids the unnecessary aligned u64 for when we don't actually
->> use cmpxchg at all.
->>
->> It's still one single patch, since I was working on lots of small
->> cleanups. I think it's pretty close to done now (assuming your testing
->> shows it performs fine - the powerpc numbers are promising, though),
->> so I'll split it up into proper chunks rather than random commit
->> points. But I'm done for today at least.
->>
->> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
->> may hit cases I didn't test. I think it should be *stable*, but maybe
->> there's some other d_lock case that your tuned waiting hid, and that
->> my "fastpath only for unlocked case" version ends up having problems
->> with.
->>
->
-> Following this thread with half an eye... Was that "unsigned" stuff
-> fixed (someone pointed to it).
-> How do you call that test-patch (subject)?
-> I would like to test it on my SNB ultrabook with your test-case script.
->
+Fix some typos in Documentation/DMA-attributes.txt.
 
-Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ Documentation/DMA-attributes.txt |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-lockref:  w/o patch | w/ patch
-======================
-Run #1: 2.688.094 | 2.643.004
-Run #2: 2.678.884 | 2.652.787
-Run #3: 2.686.450 | 2.650.142
-Run #4: 2.688.435 | 2.648.409
-Run #5: 2.693.770 | 2.651.514
+diff --git a/Documentation/DMA-attributes.txt b/Documentation/DMA-attributes.txt
+index e59480d..cc2450d 100644
+--- a/Documentation/DMA-attributes.txt
++++ b/Documentation/DMA-attributes.txt
+@@ -13,7 +13,7 @@ all pending DMA writes to complete, and thus provides a mechanism to
+ strictly order DMA from a device across all intervening busses and
+ bridges.  This barrier is not specific to a particular type of
+ interconnect, it applies to the system as a whole, and so its
+-implementation must account for the idiosyncracies of the system all
++implementation must account for the idiosyncrasies of the system all
+ the way from the DMA device to memory.
+ 
+ As an example of a situation where DMA_ATTR_WRITE_BARRIER would be
+@@ -60,7 +60,7 @@ such mapping is non-trivial task and consumes very limited resources
+ Buffers allocated with this attribute can be only passed to user space
+ by calling dma_mmap_attrs(). By using this API, you are guaranteeing
+ that you won't dereference the pointer returned by dma_alloc_attr(). You
+-can threat it as a cookie that must be passed to dma_mmap_attrs() and
++can treat it as a cookie that must be passed to dma_mmap_attrs() and
+ dma_free_attrs(). Make sure that both of these also get this attribute
+ set on each call.
+ 
+@@ -82,7 +82,7 @@ to 'device' domain, what synchronizes CPU caches for the given region
+ (usually it means that the cache has been flushed or invalidated
+ depending on the dma direction). However, next calls to
+ dma_map_{single,page,sg}() for other devices will perform exactly the
+-same sychronization operation on the CPU cache. CPU cache sychronization
++same synchronization operation on the CPU cache. CPU cache synchronization
+ might be a time consuming operation, especially if the buffers are
+ large, so it is highly recommended to avoid it if possible.
+ DMA_ATTR_SKIP_CPU_SYNC allows platform code to skip synchronization of
+-- 
+1.7.1
 
-Average: 2687126,6 VS. 2649171,2 ( −37955,4 )
 
-- Sedat -
