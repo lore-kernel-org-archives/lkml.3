@@ -1,98 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3H3OOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:14:08 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:41955 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3H3OOE (ORCPT
+	id S1756457Ab3H3OPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:15:17 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:55542 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab3H3OPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:14:04 -0400
-X-ASG-Debug-ID: 1377872043-0421b50221329bf0001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-From: Josef Bacik <jbacik@fusionio.com>
-To: <linux-btrfs@vger.kernel.org>, <walken@google.com>, <mingo@elte.hu>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rwsem: add rwsem_is_contended
-Date: Fri, 30 Aug 2013 10:14:01 -0400
-X-ASG-Orig-Subj: [PATCH] rwsem: add rwsem_is_contended
-Message-ID: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 30 Aug 2013 10:15:15 -0400
+Message-ID: <201308301415.r7UEFDZR029818@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 30 Aug 2013 10:12:36 -0400
+Subject: [PATCH] tile PCI RC: make default consistent DMA mask 32-bit
+In-Reply-To: <CAErSpo6SzUF44pk3HVyR5UUN0BJUHUz+Z5egWKCoGG70VuB6wg@mail.gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        adam radford <aradford@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
-X-Barracuda-Start-Time: 1377872043
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.139843
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
-read lock on this rwsem while they scan the extent tree, and if need_resched()
-they will drop the lock and schedule.  The transaction commit needs to take a
-write lock for this rwsem for a very short period to switch out the commit
-roots.  If there are a lot of threads doing this caching operation we can starve
-out the committers which slows everybody out.  To address this we want to add
-this functionality to see if our rwsem has anybody waiting to take a write lock
-so we can drop it and schedule for a bit to allow the commit to continue.
-Thanks,
+This change sets the PCI devices' initial DMA capabilities
+conservatively and promotes them at the request of the driver,
+as opposed to assuming advanced DMA capabilities. The old design
+runs the risk of breaking drivers that assume default capabilities.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
-I've cc'ed people who seemed like they may be in charge/familiar with this code,
-hopefully I got the right people.
+ arch/tile/include/asm/device.h      |  5 ++++-
+ arch/tile/include/asm/dma-mapping.h | 21 +++++++++++++--------
+ arch/tile/kernel/pci-dma.c          | 21 ++++++++++++---------
+ arch/tile/kernel/pci_gx.c           | 15 +++++++++++++--
+ 4 files changed, 42 insertions(+), 20 deletions(-)
 
- include/linux/rwsem.h |    1 +
- lib/rwsem.c           |   17 +++++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..61a8802 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -35,6 +35,7 @@ extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
- extern struct rw_semaphore *rwsem_down_write_failed(struct rw_semaphore *sem);
- extern struct rw_semaphore *rwsem_wake(struct rw_semaphore *);
- extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
-+extern int rwsem_is_contended(struct rw_semaphore *sem);
+diff --git a/arch/tile/include/asm/device.h b/arch/tile/include/asm/device.h
+index 5182705..6ab8bf14 100644
+--- a/arch/tile/include/asm/device.h
++++ b/arch/tile/include/asm/device.h
+@@ -23,7 +23,10 @@ struct dev_archdata {
+ 	/* Offset of the DMA address from the PA. */
+ 	dma_addr_t		dma_offset;
  
- /* Include the arch specific part */
- #include <asm/rwsem.h>
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 19c5fa9..20858cd 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -287,6 +287,23 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
- 	return sem;
+-	/* Highest DMA address that can be generated by this device. */
++	/*
++	 * Highest DMA address that can be generated by devices that
++	 * have limited DMA capability, i.e. non 64-bit capable.
++	 */
+ 	dma_addr_t		max_direct_dma_addr;
+ };
+ 
+diff --git a/arch/tile/include/asm/dma-mapping.h b/arch/tile/include/asm/dma-mapping.h
+index 6f522d5..1eae359 100644
+--- a/arch/tile/include/asm/dma-mapping.h
++++ b/arch/tile/include/asm/dma-mapping.h
+@@ -92,14 +92,19 @@ dma_set_mask(struct device *dev, u64 mask)
+ {
+ 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+ 
+-	/* Handle legacy PCI devices with limited memory addressability. */
+-	if ((dma_ops == gx_pci_dma_map_ops ||
+-	     dma_ops == gx_hybrid_pci_dma_map_ops ||
+-	     dma_ops == gx_legacy_pci_dma_map_ops) &&
+-	    (mask <= DMA_BIT_MASK(32))) {
+-		set_dma_ops(dev, gx_legacy_pci_dma_map_ops);
+-		set_dma_offset(dev, 0);
+-		if (mask > dev->archdata.max_direct_dma_addr)
++	/*
++	 * For PCI devices with 64-bit DMA addressing capability, promote
++	 * the dma_ops to hybrid, with the consistent memory DMA space limited
++	 * to 32-bit. For 32-bit capable devices, limit the streaming DMA
++	 * address range to max_direct_dma_addr.
++	 */
++	if (dma_ops == gx_pci_dma_map_ops ||
++	    dma_ops == gx_hybrid_pci_dma_map_ops ||
++	    dma_ops == gx_legacy_pci_dma_map_ops) {
++		if (mask == DMA_BIT_MASK(64) &&
++		    dma_ops == gx_legacy_pci_dma_map_ops)
++			set_dma_ops(dev, gx_hybrid_pci_dma_map_ops);
++		else if (mask > dev->archdata.max_direct_dma_addr)
+ 			mask = dev->archdata.max_direct_dma_addr;
+ 	}
+ 
+diff --git a/arch/tile/kernel/pci-dma.c b/arch/tile/kernel/pci-dma.c
+index d94f487..09b5870 100644
+--- a/arch/tile/kernel/pci-dma.c
++++ b/arch/tile/kernel/pci-dma.c
+@@ -588,15 +588,18 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
+ {
+ 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+ 
+-	/* Handle hybrid PCI devices with limited memory addressability. */
+-	if ((dma_ops == gx_pci_dma_map_ops ||
+-	     dma_ops == gx_hybrid_pci_dma_map_ops ||
+-	     dma_ops == gx_legacy_pci_dma_map_ops) &&
+-	    (mask <= DMA_BIT_MASK(32))) {
+-		if (dma_ops == gx_pci_dma_map_ops)
+-			set_dma_ops(dev, gx_hybrid_pci_dma_map_ops);
+-
+-		if (mask > dev->archdata.max_direct_dma_addr)
++	/*
++	 * For PCI devices with 64-bit DMA addressing capability, promote
++	 * the dma_ops to full capability for both streams and consistent
++	 * memory access. For 32-bit capable devices, limit the consistent 
++	 * memory DMA range to max_direct_dma_addr.
++	 */
++	if (dma_ops == gx_pci_dma_map_ops ||
++	    dma_ops == gx_hybrid_pci_dma_map_ops ||
++	    dma_ops == gx_legacy_pci_dma_map_ops) {
++		if (mask == DMA_BIT_MASK(64))
++			set_dma_ops(dev, gx_pci_dma_map_ops);
++		else if (mask > dev->archdata.max_direct_dma_addr)
+ 			mask = dev->archdata.max_direct_dma_addr;
+ 	}
+ 
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+index 66ef9db..29acac6 100644
+--- a/arch/tile/kernel/pci_gx.c
++++ b/arch/tile/kernel/pci_gx.c
+@@ -1081,13 +1081,24 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 	return pci_enable_resources(dev, mask);
  }
  
+-/* Called for each device after PCI setup is done. */
 +/*
-+ * check to see if the rwsem we're holding has anybody waiting to acquire it.
++ * Called for each device after PCI setup is done.
++ * We initialize the PCI device capabilities conservatively, assuming that
++ * all devices can only address the 32-bit DMA space. The exception here is
++ * that the device dma_offset is set to the value that matches the 64-bit
++ * capable devices. This is OK because dma_offset is not used by legacy
++ * dma_ops, nor by the hybrid dma_ops's streaming DMAs, which are 64-bit ops.
++ * This implementation matches the kernel design of setting PCI devices'
++ * coherent_dma_mask to 0xffffffffull by default, allowing the device drivers
++ * to skip calling pci_set_consistent_dma_mask(DMA_BIT_MASK(32)).
 + */
-+int rwsem_is_contended(struct rw_semaphore *sem)
-+{
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	if (!raw_spin_trylock_irqsave(&sem->wait_lock, flags))
-+		return 1;
-+	if (!list_empty(&sem->wait_list))
-+		ret = 1;
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	return ret;
-+}
-+
-+EXPORT_SYMBOL(rwsem_is_contended);
- EXPORT_SYMBOL(rwsem_down_read_failed);
- EXPORT_SYMBOL(rwsem_down_write_failed);
- EXPORT_SYMBOL(rwsem_wake);
+ static void pcibios_fixup_final(struct pci_dev *pdev)
+ {
+-	set_dma_ops(&pdev->dev, gx_pci_dma_map_ops);
++	set_dma_ops(&pdev->dev, gx_legacy_pci_dma_map_ops);
+ 	set_dma_offset(&pdev->dev, TILE_PCI_MEM_MAP_BASE_OFFSET);
+ 	pdev->dev.archdata.max_direct_dma_addr =
+ 		TILE_PCI_MAX_DIRECT_DMA_ADDRESS;
++	pdev->dev.coherent_dma_mask = TILE_PCI_MAX_DIRECT_DMA_ADDRESS;
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, pcibios_fixup_final);
+ 
 -- 
-1.7.7.6
+1.8.3.1
 
