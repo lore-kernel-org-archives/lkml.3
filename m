@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab3H3LoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:44:07 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:49839 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab3H3LoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:44:05 -0400
+	id S1755455Ab3H3Loc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:44:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755050Ab3H3Lob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 07:44:31 -0400
+Date: Fri, 30 Aug 2013 14:44:26 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130830114426.GB1844@redhat.com>
+References: <521DC3FD.1020507@linux.vnet.ibm.com>
+ <20130828094630.GR22899@redhat.com>
+ <521DCD57.7000401@linux.vnet.ibm.com>
+ <20130828104938.GT22899@redhat.com>
+ <521DE9E8.2040908@linux.vnet.ibm.com>
+ <20130828133635.GU22899@redhat.com>
+ <521EEF4B.4040107@linux.vnet.ibm.com>
+ <20130829093141.GC22899@redhat.com>
+ <521F319B.9000006@linux.vnet.ibm.com>
+ <521F3856.70305@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <52207F74.6000702@roeck-us.net>
-References: <521B2E75.1040802@asianux.com>
-	<5220177E.709@asianux.com>
-	<52201896.9040309@asianux.com>
-	<5220254E.3050704@roeck-us.net>
-	<52203CF0.5040600@asianux.com>
-	<52207F74.6000702@roeck-us.net>
-Date: Fri, 30 Aug 2013 13:44:03 +0200
-Message-ID: <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com>
-Subject: Re: [PATCH v2] h8300/kernel/setup.c: add "linux/initrd.h" to pass compiling
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Chen Gang <gang.chen@asianux.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521F3856.70305@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 1:18 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 08/29/2013 11:34 PM, Chen Gang wrote:
->>
->> On 08/30/2013 12:53 PM, Guenter Roeck wrote:
->>>
->>> On 08/29/2013 08:59 PM, Chen Gang wrote:
->>>>
->>>> The related error (allmodconfig for h8300):
->>>>
->>>>     arch/h8300/kernel/setup.c: In function 'setup_arch':
->>>>     arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared
->>>> (first use in this function)
->>>>        initrd_start = memory_start;
->>>>        ^
->>>>     arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier
->>>> is reported only once for each function it appears in
->>>>     arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared
->>>> (first use in this function)
->>>>        initrd_end = memory_start += be32_to_cpu(((unsigned long *)
->>>> (memory_start))[2]);
->>>>        ^
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>
->>>
->>> Maybe an odd question, but is there a way to actually compile the h8300
->>> target
->>
->>
->> Firstly, at least for me, I don't think it is an odd question.  :-)
->>
->> For the tool-chain:
->>
->>    I compiled the cross-compiler from the gcc and binutils source code.
->>    GCC has too many bugs to compile kernel with -Os (normal make will
->> fail).
->>    If without -Os (no optimization), it can work correctly which is enough
->> for my goal: "let h8300 pass allmodconfig".  ;-)
->>
->>> From building with allmodconfig for h8300:
->>
->>
->>    I can find more chances to provide contributes (both for h8300 and for
->> others).
->>    I can learn more in kernel wide.
->>    I can familiar the gcc and binutils step by step (especially to
->> familiar with their issues).
->>
->> Next:
->>
->>    I will communicate/work with the gcc guys for the gcc issues which
->> found by building kernel.
->>
->>    :-)
->>
->>
->>
->>> in the first place ? The cross compiler on kernel.org doesn't work, nor
->>> does
->>> the one available through Ubuntu.
->>>
->>> Guenter
->>>
->>
->> For binutils, no release under Ubuntu, and the Fedora17's is incorrect
->> (can not use), but the binutils-2.22 from gnu is OK.
->>
->> For gcc, no release under Ubuntu, for Fedora17's, gcc-4.9, gcc-4.8,
->> gcc-4.7.4, and gcc-4.4.7 all have bugs for compiling kernel(their bugs
->> are different too).
->>
->> It is really not easy to fix these bugs (gcc guys have too many issues
->> to fix), even if really find the root cause, it is still difficult to
->> fix (fix one bug is very easy to cause another more issues).
->>
->
-> I have to wonder ... is this all worth it ? It almost looks like no one
-> is using this architecture anymore. Do you have target hardware to test
-> any of your changes ?
+On Thu, Aug 29, 2013 at 08:02:30PM +0800, Xiao Guangrong wrote:
+> On 08/29/2013 07:33 PM, Xiao Guangrong wrote:
+> > On 08/29/2013 05:31 PM, Gleb Natapov wrote:
+> >> On Thu, Aug 29, 2013 at 02:50:51PM +0800, Xiao Guangrong wrote:
+> >>> After more thinking, I still think rcu_assign_pointer() is unneeded when a entry
+> >>> is removed. The remove-API does not care the order between unlink the entry and
+> >>> the changes to its fields. It is the caller's responsibility:
+> >>> - in the case of rcuhlist, the caller uses call_rcu()/synchronize_rcu(), etc to
+> >>>   enforce all lookups exit and the later change on that entry is invisible to the
+> >>>   lookups.
+> >>>
+> >>> - In the case of rculist_nulls, it seems refcounter is used to guarantee the order
+> >>>   (see the example from Documentation/RCU/rculist_nulls.txt).
+> >>>
+> >>> - In our case, we allow the lookup to see the deleted desc even if it is in slab cache
+> >>>   or its is initialized or it is re-added.
+> >>>
+> >> BTW is it a good idea? We can access deleted desc while it is allocated
+> >> and initialized to zero by kmem_cache_zalloc(), are we sure we cannot
+> >> see partially initialized desc->sptes[] entry? On related note what about
+> >> 32 bit systems, they do not have atomic access to desc->sptes[].
+> 
+> Ah... wait. desc is a array of pointers:
+> 
+> struct pte_list_desc {
+> 	u64 *sptes[PTE_LIST_EXT];
+> 	struct pte_list_desc *more;
+> };
+> 
+Yep, I misread it to be u64 bits and wondered why do we use u64 to store
+pointers.
 
-Chen has to achieve his 10 patches/month quota. :-\
+> assigning a pointer is aways aotomic, but we should carefully initialize it
+> as you said. I will introduce a constructor for desc slab cache which initialize
+> the struct like this:
+> 
+> for (i = 0; i < PTE_LIST_EXT; i++)
+> 	desc->sptes[i] = NULL;
+> 
+> It is okay.
+> 
+I hope slab does not write anything into allocated memory internally if
+constructor is present. BTW do you know what happens when SLAB debug is enabled
+and SLAB_DESTROY_BY_RCU is set? Does poison value is written into freed
+object (freed to slab, but not yet to page allocator)?
 
--- 
-Thanks,
-//richard
+--
+			Gleb.
