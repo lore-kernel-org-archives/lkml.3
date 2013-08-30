@@ -1,131 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3H3Mlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:41:49 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:61046 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab3H3Mlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:41:46 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, glin@suse.de, agraf@suse.de, brogers@suse.de,
-        afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
-        stable@vger.kernel.org, gleb@redhat.com,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH] KVM: mmu: allow page tables to be in read-only slots
-Date: Fri, 30 Aug 2013 14:41:37 +0200
-Message-Id: <1377866497-3866-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1756539Ab3H3MmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:42:05 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49977 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab3H3MmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:42:01 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 11/35] mm: Add an optimized version of
+ del_from_freelist to keep page allocation fast
+To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 30 Aug 2013 18:07:55 +0530
+Message-ID: <20130830123743.24352.27969.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083012-0320-0000-0000-000000D8382C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page tables in a read-only memory slot will currently cause a triple
-fault because the page walker uses gfn_to_hva and it fails on such a slot.
+One of the main advantages of this design of memory regions is that page
+allocations can potentially be extremely fast - almost with no extra
+overhead from memory regions.
 
-OVMF uses such a page table; however, real hardware seems to be fine with
-that as long as the accessed/dirty bits are set.  Save whether the slot
-is readonly, and later check it when updating the accessed and dirty bits.
+To exploit that, introduce an optimized version of del_from_freelist(), which
+utilizes the fact that we always delete items from the head of the list
+during page allocation.
 
-Cc: stable@vger.kernel.org
-Cc: gleb@redhat.com
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Basically, we want to keep a note of the region from which we are allocating
+in a given freelist, to avoid having to compute the page-to-zone-region for
+every page allocation. So introduce a 'next_region' pointer in every freelist
+to achieve that, and use it to keep the fastpath of page allocation almost as
+fast as it would have been without memory regions.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
-	CCing to stable@ since the regression was introduced with
-	support for readonly memory slots.
 
- arch/x86/kvm/paging_tmpl.h |  7 ++++++-
- include/linux/kvm_host.h   |  1 +
- virt/kvm/kvm_main.c        | 14 +++++++++-----
- 3 files changed, 16 insertions(+), 6 deletions(-)
+ include/linux/mm.h     |   14 +++++++++++
+ include/linux/mmzone.h |    6 +++++
+ mm/page_alloc.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 81 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 0433301..dadc5c0 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -99,6 +99,7 @@ struct guest_walker {
- 	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
- 	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
- 	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
-+	bool pte_writable[PT_MAX_FULL_LEVELS];
- 	unsigned pt_access;
- 	unsigned pte_access;
- 	gfn_t gfn;
-@@ -235,6 +236,9 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
- 		if (pte == orig_pte)
- 			continue;
- 
-+		if (unlikely(!walker->pte_writable[level - 1]))
-+			return -EACCES;
-+
- 		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
- 		if (ret)
- 			return ret;
-@@ -309,7 +313,8 @@ retry_walk:
- 			goto error;
- 		real_gfn = gpa_to_gfn(real_gfn);
- 
--		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
-+		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
-+					    &walker->pte_writable[walker->level - 1]);
- 		if (unlikely(kvm_is_error_hva(host_addr)))
- 			goto error;
- 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ca645a0..22f9cdf 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -533,6 +533,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
- 
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
-+unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable);
- unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
- void kvm_release_page_clean(struct page *page);
- void kvm_release_page_dirty(struct page *page);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index f7e4334..418d037 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1078,11 +1078,15 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- EXPORT_SYMBOL_GPL(gfn_to_hva);
- 
- /*
-- * The hva returned by this function is only allowed to be read.
-- * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
-+ * If writable is set to false, the hva returned by this function is only
-+ * allowed to be read.
-  */
--static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
-+unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable)
- {
-+	struct kvm_memory_slot *slot = gfn_to_memslot(kvm, gfn);
-+	if (writable)
-+		*writable = !memslot_is_readonly(slot);
-+
- 	return __gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL, false);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 52329d1..156d7db 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -747,6 +747,20 @@ static inline int page_zone_region_id(const struct page *page)
+ 	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
  }
  
-@@ -1450,7 +1454,7 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
- 	int r;
- 	unsigned long addr;
++static inline void set_next_region_in_freelist(struct free_list *free_list)
++{
++	struct page *page;
++	int region_id;
++
++	if (unlikely(list_empty(&free_list->list))) {
++		free_list->next_region = NULL;
++	} else {
++		page = list_entry(free_list->list.next, struct page, lru);
++		region_id = page_zone_region_id(page);
++		free_list->next_region = &free_list->mr_list[region_id];
++	}
++}
++
+ #ifdef SECTION_IN_PAGE_FLAGS
+ static inline void set_page_section(struct page *page, unsigned long section)
+ {
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 201ab42..932e71f 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -92,6 +92,12 @@ struct free_list {
+ 	struct list_head	list;
  
--	addr = gfn_to_hva_read(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn, NULL);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
- 	r = kvm_read_hva(data, (void __user *)addr + offset, len);
-@@ -1488,7 +1492,7 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
- 	gfn_t gfn = gpa >> PAGE_SHIFT;
- 	int offset = offset_in_page(gpa);
+ 	/*
++	 * Pointer to the region from which the next allocation will be
++	 * satisfied. (Same as the freelist's first pageblock's region.)
++	 */
++	struct mem_region_list	*next_region; /* for fast page allocation */
++
++	/*
+ 	 * Demarcates pageblocks belonging to different regions within
+ 	 * this freelist.
+ 	 */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 07ac019..52b6655 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -548,6 +548,15 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
+ 	/* This is the first region, so add to the head of the list */
+ 	prev_region_list = &free_list->list;
  
--	addr = gfn_to_hva_read(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn, NULL);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
- 	pagefault_disable();
--- 
-1.8.3.1
++#ifdef CONFIG_DEBUG_PAGEALLOC
++	WARN((list_empty(&free_list->list) && free_list->next_region != NULL),
++					"%s: next_region not NULL\n", __func__);
++#endif
++	/*
++	 * Set 'next_region' to this region, since this is the first region now
++	 */
++	free_list->next_region = region;
++
+ out:
+ 	list_add(lru, prev_region_list);
+ 
+@@ -555,6 +564,47 @@ out:
+ 	region->page_block = lru;
+ }
+ 
++/**
++ * __rmqueue_smallest() *always* deletes elements from the head of the
++ * list. Use this knowledge to keep page allocation fast, despite being
++ * region-aware.
++ *
++ * Do *NOT* call this function if you are deleting from somewhere deep
++ * inside the freelist.
++ */
++static void rmqueue_del_from_freelist(struct page *page,
++				      struct free_list *free_list)
++{
++	struct list_head *lru = &page->lru;
++
++#ifdef CONFIG_DEBUG_PAGEALLOC
++	WARN((free_list->list.next != lru),
++				"%s: page not at head of list", __func__);
++#endif
++
++	list_del(lru);
++
++	/* Fastpath */
++	if (--(free_list->next_region->nr_free)) {
++
++#ifdef CONFIG_DEBUG_PAGEALLOC
++		WARN(free_list->next_region->nr_free < 0,
++				"%s: nr_free is negative\n", __func__);
++#endif
++		return;
++	}
++
++	/*
++	 * Slowpath, when this is the last pageblock of this region
++	 * in this freelist.
++	 */
++	free_list->next_region->page_block = NULL;
++
++	/* Set 'next_region' to the new first region in the freelist. */
++	set_next_region_in_freelist(free_list);
++}
++
++/* Generic delete function for region-aware buddy allocator. */
+ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ {
+ 	struct list_head *prev_page_lru, *lru, *p;
+@@ -562,6 +612,11 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ 	int region_id;
+ 
+ 	lru = &page->lru;
++
++	/* Try to fastpath, if deleting from the head of the list */
++	if (lru == free_list->list.next)
++		return rmqueue_del_from_freelist(page, free_list);
++
+ 	region_id = page_zone_region_id(page);
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free--;
+@@ -597,6 +652,11 @@ page_found:
+ 	prev_page_lru = lru->prev;
+ 	list_del(lru);
+ 
++	/*
++	 * Since we are not deleting from the head of the freelist, the
++	 * 'next_region' pointer doesn't have to change.
++	 */
++
+ 	if (region->nr_free == 0) {
+ 		region->page_block = NULL;
+ 	} else {
+@@ -1022,7 +1082,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 
+ 		page = list_entry(area->free_list[migratetype].list.next,
+ 							struct page, lru);
+-		del_from_freelist(page, &area->free_list[migratetype]);
++		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
 
