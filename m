@@ -1,177 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3H3Jw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:52:27 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:38806 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754264Ab3H3Jvi (ORCPT
+	id S1754438Ab3H3J4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:56:12 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:34192 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab3H3J4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:51:38 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <r65073@freescale.com>, <thierry.reding@gmail.com>
-CC: <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
-        <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: [PATCHv2 2/4] ARM: dts: Add Freescale FTM PWM node for VF610.
-Date: Fri, 30 Aug 2013 17:48:50 +0800
-Message-ID: <1377856132-11290-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1377856132-11290-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1377856132-11290-1-git-send-email-Li.Xiubo@freescale.com>
+	Fri, 30 Aug 2013 05:56:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130830094857.GA14502@gmail.com>
+References: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<20130830094857.GA14502@gmail.com>
+Date: Fri, 30 Aug 2013 11:56:08 +0200
+Message-ID: <CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds devicetree for VF610, with necessary support for leds,
-backlight motor, etc.
-And there are 8 channels supported default.
+On Fri, Aug 30, 2013 at 11:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+>> On Fri, Aug 30, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
+>> > <torvalds@linux-foundation.org> wrote:
+>> >> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
+>> >>> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
+>> >>>>
+>> >>>> Waiman? Mind looking at this and testing? Linus
+>> >>>
+>> >>> Sure, I will try out the patch tomorrow morning and see how it works out for
+>> >>> my test case.
+>> >>
+>> >> Ok, thanks, please use this slightly updated patch attached here.
+>> >>
+>> >> It improves on the previous version in actually handling the
+>> >> "unlazy_walk()" case with native lockref handling, which means that
+>> >> one other not entirely odd case (symlink traversal) avoids the d_lock
+>> >> contention.
+>> >>
+>> >> It also refactored the __d_rcu_to_refcount() to be more readable, and
+>> >> adds a big comment about what the heck is going on. The old code was
+>> >> clever, but I suspect not very many people could possibly understand
+>> >> what it actually did. Plus it used nested spinlocks because it wanted
+>> >> to avoid checking the sequence count twice. Which is stupid, since
+>> >> nesting locks is how you get really bad contention, and the sequence
+>> >> count check is really cheap anyway. Plus the nesting *really* didn't
+>> >> work with the whole lockref model.
+>> >>
+>> >> With this, my stupid thread-lookup thing doesn't show any spinlock
+>> >> contention even for the "look up symlink" case.
+>> >>
+>> >> It also avoids the unnecessary aligned u64 for when we don't actually
+>> >> use cmpxchg at all.
+>> >>
+>> >> It's still one single patch, since I was working on lots of small
+>> >> cleanups. I think it's pretty close to done now (assuming your testing
+>> >> shows it performs fine - the powerpc numbers are promising, though),
+>> >> so I'll split it up into proper chunks rather than random commit
+>> >> points. But I'm done for today at least.
+>> >>
+>> >> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
+>> >> may hit cases I didn't test. I think it should be *stable*, but maybe
+>> >> there's some other d_lock case that your tuned waiting hid, and that
+>> >> my "fastpath only for unlocked case" version ends up having problems
+>> >> with.
+>> >>
+>> >
+>> > Following this thread with half an eye... Was that "unsigned" stuff
+>> > fixed (someone pointed to it).
+>> > How do you call that test-patch (subject)?
+>> > I would like to test it on my SNB ultrabook with your test-case script.
+>> >
+>>
+>> Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
+>>
+>> lockref:  w/o patch | w/ patch
+>> ======================
+>> Run #1: 2.688.094 | 2.643.004
+>> Run #2: 2.678.884 | 2.652.787
+>> Run #3: 2.686.450 | 2.650.142
+>> Run #4: 2.688.435 | 2.648.409
+>> Run #5: 2.693.770 | 2.651.514
+>>
+>> Average: 2687126,6 VS. 2649171,2 ( ???37955,4 )
+>
+> For precise stddev numbers you can run it like this:
+>
+>    perf stat --null --repeat 5 ./test
+>
+> and it will measure time only and print the stddev in percentage:
+>
+>  Performance counter stats for './test' (5 runs):
+>
+>        1.001008928 seconds time elapsed                                          ( +-  0.00% )
+>
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/boot/dts/vf610.dtsi | 103 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 102 insertions(+), 1 deletion(-)
+Hi Ingo,
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 67d929c..44787b5 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -140,6 +140,37 @@
- 				clock-names = "pit";
- 			};
- 
-+			pwm0: pwm@40038000 {
-+				compatible = "fsl,vf610-ftm-pwm";
-+				#pwm-cells = <3>;
-+				reg = <0x40038000 0x1000>;
-+				clock-names = "ftm0", "ftm0_fix_sel", "ftm0_ext_sel";
-+				clocks = <&clks VF610_CLK_FTM0>,
-+					<&clks VF610_CLK_FTM0_FIX_SEL>,
-+					<&clks VF610_CLK_FTM0_EXT_SEL>;
-+				pinctrl-names = "ch0-active", "ch0-idle", "ch1-active", "ch1-idle",
-+						"ch2-active", "ch2-idle", "ch3-active", "ch3-idle",
-+						"ch4-active", "ch4-idle", "ch5-active", "ch5-idle",
-+						"ch6-active", "ch6-idle", "ch7-active", "ch7-idle";
-+				pinctrl-0 = <&pinctrl_pwm0_ch0_active>;
-+				pinctrl-1 = <&pinctrl_pwm0_ch0_idle>;
-+				pinctrl-2 = <&pinctrl_pwm0_ch1_active>;
-+				pinctrl-3 = <&pinctrl_pwm0_ch1_idle>;
-+				pinctrl-4 = <&pinctrl_pwm0_ch2_active>;
-+				pinctrl-5 = <&pinctrl_pwm0_ch2_idle>;
-+				pinctrl-6 = <&pinctrl_pwm0_ch3_active>;
-+				pinctrl-7 = <&pinctrl_pwm0_ch3_idle>;
-+				pinctrl-8 = <&pinctrl_pwm0_ch4_active>;
-+				pinctrl-9 = <&pinctrl_pwm0_ch4_idle>;
-+				pinctrl-10 = <&pinctrl_pwm0_ch5_active>;
-+				pinctrl-11 = <&pinctrl_pwm0_ch5_idle>;
-+				pinctrl-12 = <&pinctrl_pwm0_ch6_active>;
-+				pinctrl-13 = <&pinctrl_pwm0_ch6_idle>;
-+				pinctrl-14 = <&pinctrl_pwm0_ch7_active>;
-+				pinctrl-15 = <&pinctrl_pwm0_ch7_idle>;
-+				status = "disabled";
-+			};
-+
- 			wdog@4003e000 {
- 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
- 				reg = <0x4003e000 0x1000>;
-@@ -270,16 +301,86 @@
- 				};
- 
- 				pwm0 {
--					pinctrl_pwm0_1: pwm0grp_1 {
-+					pinctrl_pwm0_ch0_active: pwm0grp_ch0_active {
- 						fsl,pins = <
- 						VF610_PAD_PTB0__FTM0_CH0	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch0_idle: pwm0grp_ch0_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB0__FTM0_CH0	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch1_active: pwm0grp_ch1_active {
-+						fsl,pins = <
- 						VF610_PAD_PTB1__FTM0_CH1	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch1_idle: pwm0grp_ch1_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB1__FTM0_CH1	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch2_active: pwm0grp_ch2_active {
-+						fsl,pins = <
- 						VF610_PAD_PTB2__FTM0_CH2	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch2_idle: pwm0grp_ch2_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB2__FTM0_CH2	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch3_active: pwm0grp_ch3_active {
-+						fsl,pins = <
- 						VF610_PAD_PTB3__FTM0_CH3	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch3_idle: pwm0grp_ch3_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB3__FTM0_CH3	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch4_active: pwm0grp_ch4_active {
-+						fsl,pins = <
-+						VF610_PAD_PTB4__FTM0_CH4	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch4_idle: pwm0grp_ch4_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB4__FTM0_CH4	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch5_active: pwm0grp_ch5_active {
-+						fsl,pins = <
-+						VF610_PAD_PTB5__FTM0_CH5	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch5_idle: pwm0grp_ch5_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB5__FTM0_CH5	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch6_active: pwm0grp_ch6_active {
-+						fsl,pins = <
- 						VF610_PAD_PTB6__FTM0_CH6	0x1582
-+						>;
-+					};
-+					pinctrl_pwm0_ch6_idle: pwm0grp_ch6_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB6__FTM0_CH6	0x0000
-+						>;
-+					};
-+					pinctrl_pwm0_ch7_active: pwm0grp_ch7_active {
-+						fsl,pins = <
- 						VF610_PAD_PTB7__FTM0_CH7	0x1582
- 						>;
- 					};
-+					pinctrl_pwm0_ch7_idle: pwm0grp_ch7_idle {
-+						fsl,pins = <
-+						VF610_PAD_PTB7__FTM0_CH7	0x0000
-+						>;
-+					};
- 				};
- 
- 				qspi0 {
--- 
-1.8.0
+that sounds really good :-).
 
+AFAICS 'make deb-pkg' does not have support to build linux-tools
+Debian package where perf is included.
+Can I run an older version of perf or should I / have to try with the
+one shipped in Linux v3.11-rc7+ sources?
+How can I build perf standalone, out of my sources?
 
+- Sedat -
