@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab3H3Hz3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 03:55:29 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:49865 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3H3Hz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 03:55:26 -0400
+	id S1754621Ab3H3H5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 03:57:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55789 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562Ab3H3H5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 03:57:17 -0400
+Message-ID: <52205056.8080908@ti.com>
+Date: Fri, 30 Aug 2013 10:57:10 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-Date: Fri, 30 Aug 2013 09:55:25 +0200
-Message-ID: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: Marek Belisko <marek@goldelico.com>
+CC: <plagnioj@jcrosoft.com>, <linux-omap@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH] omap2: panel-generic: Added panel parameters for ortus-com37h3m05dtc/99dtc
+ and sharp-lq070y3dg3b.
+References: <1377779724-30648-1-git-send-email-marek@goldelico.com>
+In-Reply-To: <1377779724-30648-1-git-send-email-marek@goldelico.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="xCkXAwdt47atsvQTJkFeT0tB0d6MDTOHI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
->> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
->>>
->>> Waiman? Mind looking at this and testing? Linus
->>
->> Sure, I will try out the patch tomorrow morning and see how it works out for
->> my test case.
->
-> Ok, thanks, please use this slightly updated patch attached here.
->
-> It improves on the previous version in actually handling the
-> "unlazy_walk()" case with native lockref handling, which means that
-> one other not entirely odd case (symlink traversal) avoids the d_lock
-> contention.
->
-> It also refactored the __d_rcu_to_refcount() to be more readable, and
-> adds a big comment about what the heck is going on. The old code was
-> clever, but I suspect not very many people could possibly understand
-> what it actually did. Plus it used nested spinlocks because it wanted
-> to avoid checking the sequence count twice. Which is stupid, since
-> nesting locks is how you get really bad contention, and the sequence
-> count check is really cheap anyway. Plus the nesting *really* didn't
-> work with the whole lockref model.
->
-> With this, my stupid thread-lookup thing doesn't show any spinlock
-> contention even for the "look up symlink" case.
->
-> It also avoids the unnecessary aligned u64 for when we don't actually
-> use cmpxchg at all.
->
-> It's still one single patch, since I was working on lots of small
-> cleanups. I think it's pretty close to done now (assuming your testing
-> shows it performs fine - the powerpc numbers are promising, though),
-> so I'll split it up into proper chunks rather than random commit
-> points. But I'm done for today at least.
->
-> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
-> may hit cases I didn't test. I think it should be *stable*, but maybe
-> there's some other d_lock case that your tuned waiting hid, and that
-> my "fastpath only for unlocked case" version ends up having problems
-> with.
->
+--xCkXAwdt47atsvQTJkFeT0tB0d6MDTOHI
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Following this thread with half an eye... Was that "unsigned" stuff
-fixed (someone pointed to it).
-How do you call that test-patch (subject)?
-I would like to test it on my SNB ultrabook with your test-case script.
+On 29/08/13 15:35, Marek Belisko wrote:
+> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+>  drivers/video/omap2/displays/panel-generic-dpi.c | 53 ++++++++++++++++=
+++++++++
+>  1 file changed, 53 insertions(+)
+>=20
+> diff --git a/drivers/video/omap2/displays/panel-generic-dpi.c b/drivers=
+/video/omap2/displays/panel-generic-dpi.c
+> index bebebd4..d573291 100644
+> --- a/drivers/video/omap2/displays/panel-generic-dpi.c
+> +++ b/drivers/video/omap2/displays/panel-generic-dpi.c
+> @@ -107,6 +107,33 @@ static struct panel_config generic_dpi_panels[] =3D=
+ {
+>  		.name			=3D "sharp_ls",
+>  	},
 
-- Sedat -
+The drivers in drivers/video/omap2/displays/ are on their way out, and
+will probably be removed for 3.12. Please look at the new one at
+drivers/video/omap2/displays-new/panel-dpi.c.
+
+ Tomi
+
+
+
+--xCkXAwdt47atsvQTJkFeT0tB0d6MDTOHI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSIFBWAAoJEPo9qoy8lh71/ZMP/27bd5Yhlc4KB+SNdC4s6L3c
+wtxIuRdh1H0FhKrelfhER8sZO88syO3nAkYH5CRRi2vMerJj0HRDdeJH+jxFo1wk
+Z6MeiVznRfDX56Lk5bCsrTPtKyvZvOmuutiOF8EOsPfbCSNfeVQ7JscQa8m2NOG2
+A9AA1Y2wjOAjF5kNilqYH31r1ClI9IwfuNB3vdJsWdj0t0ZUueRc+2TsYQGYFegP
+5STD+HzAYlUlt141dvKVOIZyvjHa1SDbStQkHiloTfrO8OOMUU4RugpMjTrmL9Ue
+rTdhU7gki2j4zMFrW14wJqWQ+P2mc5shFzSicg6viRaoUKJIRIZ5XhLe36XnEBj9
+846DV8XjDurH2bXLWeYh/BjBvQ80EuqHRG9xWXF8GQDgvuSYR9EkfPKGmc9SM2A3
+tvtvEIuV/8B8EPrb4Abeo9MjR5y6Ef6Q7pW1rtfas+TUvd7bfwOs4ZyApz9eTWUc
+eND/Uq2GJQc5ctTbg+E0obzdqKZF0D6+ePaXMarsjusstQBvMXOvJJ7EG6PXkbI/
++y34IB0+d185bMWML+TNKP/tUxbEruGdBqXuAjSXsJIa46rD24sCzMO0qdj7OTRZ
+9tn9/1aKc3qadEG0ckP28CkXaeZejCEfLP3CAAjI5d6D7ONgiep6fLTqlYvb3JHP
+dBdCLpnOXmgn5o+G1/Mx
+=sm/j
+-----END PGP SIGNATURE-----
+
+--xCkXAwdt47atsvQTJkFeT0tB0d6MDTOHI--
