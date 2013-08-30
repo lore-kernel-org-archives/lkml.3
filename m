@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab3H3Rdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:33:50 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:33133 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab3H3Rdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:33:49 -0400
+	id S1757067Ab3H3ReV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:34:21 -0400
+Received: from david.siemens.de ([192.35.17.14]:27527 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756532Ab3H3ReU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 13:34:20 -0400
+Message-ID: <5220D787.1060304@siemens.com>
+Date: Fri, 30 Aug 2013 19:33:59 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzYrCbJ78XVKk7Apkxa+F-gpE911zTpMnSoGsn4S+CdpA@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<20130830171707.GV31370@twins.programming.kicks-ass.net>
-	<CA+55aFzYrCbJ78XVKk7Apkxa+F-gpE911zTpMnSoGsn4S+CdpA@mail.gmail.com>
-Date: Fri, 30 Aug 2013 10:33:48 -0700
-X-Google-Sender-Auth: VQXObKVj_5zjmtyvjn5M7R5IwK8
-Message-ID: <CA+55aFyffg5wk5gS-xEZz093uQL3Uveo_3ZV+k0RL76agNDNcA@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
+References: <5217908E.2040702@siemens.com> <5220BC1A.3030108@zytor.com> <20130830115142.1ee4c825@gandalf.local.home> <5220C9C6.5020808@zytor.com> <20130830130331.1e260e85@gandalf.local.home> <5220D350.7030008@zytor.com> <20130830132525.06a944e8@gandalf.local.home>
+In-Reply-To: <20130830132525.06a944e8@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 10:28 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I've got a 4770S on order, it should arrive tomorrow. It's the 65W
-> part, and it has TSX. But no, I doubt I'll see any real scalability
-> issues with it, but at least I can test any TSX codepaths.
+On 2013-08-30 19:25, Steven Rostedt wrote:
+> On Fri, 30 Aug 2013 10:16:00 -0700
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+>  
+>>> Who uses static tracing? I only use it to test that it still works ;-)
+>>
+>> Can we get rid of it?
+>>
+> 
+> I've though about it. But as some archs only have static tracing
+> available (I need to revisit to make sure that's still the case), I
+> kept it because I only test static tracing on x86.
+> 
+> I'm not sure if people still use it for x86 or not.
+> 
+> Jan, you use static tracing on x86?
 
-Side note: whatever marketing person inside Intel that decided that
-the "K" parts shouldn't get TSX-NI support should be fired. Or at
-least have a stern talking to (and by "stern" I obviously mean that
-thumbscrews and hot pins under their nails should be involved).
+Yes, due to out-of-tree code that is not compatible with dynamic
+tracing. It might be feasible to change this, I didn't try again
+recently. If static tracing goes away upstream, I'll have to sooner or
+later.
 
-If I wanted to build a peak performance machine (rather than a silent
-one), I wouldn't have had TSX. What the hell is wrong with Intel
-marketing? Their "lets fragment things" crap is making it harder to
-actually support their new technologies.
+Jan
 
-                Linus
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
