@@ -1,150 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab3H3LAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:00:10 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:65493 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738Ab3H3LAH (ORCPT
+	id S1755905Ab3H3LFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:05:24 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:35073 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3H3LFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:00:07 -0400
-From: Dan Aloni <alonid@postram.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH net-next] netconsole: avoid a crash with multiple sysfs writers
-Date: Fri, 30 Aug 2013 13:59:46 +0300
-Message-Id: <1377860386-8494-1-git-send-email-alonid@postram.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <20130809062405.GA8031@neilslaptop.think-freely.org>
-References: <20130809062405.GA8031@neilslaptop.think-freely.org>
+	Fri, 30 Aug 2013 07:05:22 -0400
+Date: Fri, 30 Aug 2013 13:05:19 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [RFC PATCH 6/6] timekeeping: Debug missing timekeeping updates
+Message-ID: <20130830110517.GB7806@somewhere>
+References: <1377103341-15235-1-git-send-email-fweisbec@gmail.com>
+ <1377103341-15235-7-git-send-email-fweisbec@gmail.com>
+ <5214F825.8010504@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5214F825.8010504@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When my 'ifup eth' script was fired multiple times and ran concurrent on
-my laptop, for some obscure /etc scripting reason, it was revealed
-that the store_enabled() function in netconsole doesn't handle it nicely,
-as recorded by the Oops below (a syslog paste, but not mangled too much
-to prevent from discerning the traceback).
+On Wed, Aug 21, 2013 at 10:25:57AM -0700, John Stultz wrote:
+> On 08/21/2013 09:42 AM, Frederic Weisbecker wrote:
+> > With the full dynticks feature and the tricky full system idle
+> > detection code that is coming soon, it becomes necessary to have
+> > some debug code that makes sure that the timekeeping is always
+> > maintained and moving forward as expected.
+> >
+> > This provides a simple detection of missing timekeeping updates
+> > inspired by the lockup detector's use of CPU cycles clock.
+> >
+> > The jiffies are compared to the cpu clock after several snapshots taken
+> > from NMIs that trigger after arbitrary CPU cycles period overflow.
+> >
+> > If the jiffies progression appears to drift too far away from the CPU
+> > clock's, this triggers a warning.
+> >
+> > We just make sure not to account the tiny code on irq entry that
+> > may have stale jiffies values before tick_check_nohz() is called
+> > after the CPU is woken up while the system went full idle for some
+> > time.
+> >
+> > Same goes for idle exit in case the tick were stopped but idle
+> > was polling on need_resched().
+> 
+> So you're using sched_clock to try to detect timekeeping
+> inconsistencies. Hrm.. Do you have some examples of where this debug
+> infrastructure helped out?
 
-On Linux 3.10.4, this patch seeks to remedy the problem, and it has been
-running stable on my laptop for a few days.
+Yeah, currently the full dynticks implies to keep a CPU with the tick alive all
+the time. This way we make sure that busy CPUs have a reliable timekeeping even
+when they run tickless.
 
-[52608.609325] BUG: unable to handle kernel NULL pointer dereference at 00000000000003e0
-[52608.609331] IP: [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-[52608.609339] PGD 15e51a067 PUD 15433e067 PMD 0
-[52608.609343] Oops: 0000 [#1] SMP re firewire_ohci firewire_core crc_itu_t [last unloaded: kvm_intel]
-[52608.609347] Modules linked in: kvm_intel tun vfat fat ppdev parport_pc parport fuse ipt_MASQUERADE usb_storage nf_conntrack_netbios_ns nf_conn [..garbled..]
-[52608.609433] RAX: 0000000000000000 RBX: ffff880210bbcc68 RCX: 0000000000000000
-[52608.609435] RDX: 0000000000000000 RSI: ffff8801ba447da0 RDI: ffff880210bbcc68
-[52608.609437] RBP: ffff8801ba447e18 R08: 0000000000000000 R09: 0000000000000001
-[52608.609439] R10: 000000000000000a R11: f000000000000000 R12: ffff880210bbcc68
-[52608.609441] R13: ffff88020bc41000 R14: 0000000000000002 R15: 000000000000000200000000000
-[52608.609443] FS:  00007f38d7bff740(0000) GS:ffff88021dc40000(0000) knlGS:0000000000000000
-[52608.609446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003300000000001427e0
-[52608.609448] CR2: 00000000000003e0 CR3: 0000000154103000 CR4: 00000000001427e0
-[52608.609450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[52608.609452] netpoll: netconsole: local port 6665ess 10.0.0.27
-[52608.609454] netpoll: netconsole: local IPv4 address 10.0.0.27
-[52608.609456] netpoll: netconsole: interface 'em1'
-[52608.609457] netpoll: netconsole: remote port 514ress 10.0.0.15
-[52608.609459] netpoll: netconsole: remote IPv4 address 10.0.0.15:65:a8:9a:c7
-[52608.609461] netpoll: netconsole: remote ethernet address 1c:6f:65:a8:9a:c7
-[52608.609463] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[52608.609464] Stack:801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-[52608.609466]  ffff8801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-[52608.609471]  0000000000000002 0000000000000002 ffff8801ba447e38 ffffffff81532af4
-[52608.609475]  0000000000000000 ffff880210bbcc00 ffff8801ba447e78 ffffffff81420e7c
-[52608.609479] Call Trace:
-[52608.609484]  [<ffffffff81532af4>] netpoll_cleanup+0x24/0x50
-[52608.609489]  [<ffffffff81420e7c>] store_enabled+0x5c/0xe0
-[52608.609492]  [<ffffffff81420abe>] netconsole_target_attr_store+0x2e/0x40
-[52608.609498]  [<ffffffff811ff2a2>] configfs_write_file+0xd2/0x130
-[52608.609503]  [<ffffffff81188f95>] vfs_write+0xc5/0x1f0
-[52608.609506]  [<ffffffff81189482>] SyS_write+0x52/0xa0/0x10
-[52608.609511]  [<ffffffff81628c2e>] ? do_page_fault+0xe/0x10
-[52608.609516]  [<ffffffff8162d402>] system_call_fastpath+0x16/0x1b
-[52608.609517] Code: 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 30 4c 89 65 e0 48 89 5d d8 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 48 8 [..garbled..]
-[52608.609559] RIP  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-[52608.609563]  RSP <ffff8801ba447de8>
-[52608.609564] CR2: 00000000000003e0
-[52608.609567] ---[ end trace d25ec343349b61d2 ]---
+We could make the timekeeper go to sleep when the system is fully idle and wake
+it up when there is at least a full dynticks CPU alive. But the simple concept of
+full idle detection is actually not that obvious. We need to maintain some atomic
+counter of busy CPUs, send an IPI to the timekeeper when a single CPU wakes up, and
+order all that correctly.
 
-Signed-off-by: Dan Aloni <alonid@postram.com>
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: David S. Miller <davem@davemloft.net>
----
- drivers/net/netconsole.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+But maintaining such atomic counter is bad for scalability.
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index 4822aaf..dcb2134 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -102,6 +102,7 @@ struct netconsole_target {
- 	struct config_item	item;
- #endif
- 	int			enabled;
-+	struct mutex		mutex;
- 	struct netpoll		np;
- };
- 
-@@ -181,6 +182,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
- 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
- 	nt->np.local_port = 6665;
- 	nt->np.remote_port = 6666;
-+	mutex_init(&nt->mutex);
- 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
- 
- 	/* Parse parameters and setup netpoll */
-@@ -322,6 +324,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		return -EINVAL;
- 	}
- 
-+	mutex_lock(&nt->mutex);
- 	if (enabled) {	/* 1 */
- 
- 		/*
-@@ -331,8 +334,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		netpoll_print_options(&nt->np);
- 
- 		err = netpoll_setup(&nt->np);
--		if (err)
-+		if (err) {
-+			mutex_unlock(&nt->mutex);
- 			return err;
-+		}
- 
- 		printk(KERN_INFO "netconsole: network logging started\n");
- 
-@@ -341,6 +346,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 	}
- 
- 	nt->enabled = enabled;
-+	mutex_unlock(&nt->mutex);
- 
- 	return strnlen(buf, count);
- }
-@@ -597,6 +603,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
- 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
- 	nt->np.local_port = 6665;
- 	nt->np.remote_port = 6666;
-+	mutex_init(&nt->mutex);
- 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
- 
- 	/* Initialize the config_item member */
-@@ -682,7 +689,11 @@ restart:
- 				 * we might sleep in __netpoll_cleanup()
- 				 */
- 				spin_unlock_irqrestore(&target_list_lock, flags);
-+
-+				mutex_lock(&nt->mutex);
- 				__netpoll_cleanup(&nt->np);
-+				mutex_unlock(&nt->mutex);
-+
- 				spin_lock_irqsave(&target_list_lock, flags);
- 				dev_put(nt->np.dev);
- 				nt->np.dev = NULL;
--- 
-1.8.1.4
+So Paul MckKenney is working on a full system idle detection that reuse the RCU
+extended grace period detection infrastructure. He enhanced it with a state machine
+based on smp barriers and atomic ops. The thing appears to be much more scalable
+that a single busy CPU counters.
 
+All in one it makes sure that timekeeping is always well maintained while keeping
+reasonable power consumption by allowing the timekeeper to sleep when it considers
+that it's time to do so.
+
+I don't understand the state macchine completely though, so my brain takes it as a lemma.
+And in any case it's a quite complicated piece on which the timekeeping progression depends.
+
+So I thought we really need to start adding some automated detection of missing timekeeping.
+
+> 
+> A few thoughts:
+> 
+> 1) Why are you using jiffies as the timekeeping reference instead of
+> reading some of actual timekeeping values? Jiffies usage has been
+> intentionally on the decline, and since the dynticks infrastructure
+> landed, jiffies are just derived from the timekeeping core, so its so
+> its sort of strange to see it used for this.
+
+That's because it's a simple counter so it's simpler to compute diffs and
+comparisons on top of it. I prefered to use it instead of gtod values to
+keep the NMI fast check path simple enough.
+
+> 
+> 2) This seems very similar to the old lost-ticks compensation code we
+> had prior to the clocksource infrastructure, and seems like it might
+> suffer from some of the issues seen there. For instance, sched_clock has
+> been historically looser in its correctness requirements then the
+> timekeeping code, so using it to validate the more strict timekeeping
+> code, makes me worry we might see cases of false positives.
+
+Yeah I was worried about that too. That's why that detection allows large
+drifts between jiffies and sched clock (around 0.5 secs).
+
+Do you think of other clock base I could use instead? sched clock also has
+the advantage to be fast and NMI-safe, at least in x86.
+
+> 
+> 3) I'm also curious (maybe skeptical) as if sched_clock is reliable
+> enough to use for validating time, then we likely are using that same
+> hardware as the timekeeping clocksource. Thus cases where I'd suspect
+> you'd see likely issues w/ nohz, like clocksource counter overflows
+> being missed on quick wrapping clcoksources wouldn't really apply.
+
+Hmm, but I thought timekeeping_max_deferment would takes care of clocksource
+overflows?
+
+> 
+> 
+> Personally, I've been thinking the timekeeping update code could use
+> some improvements/warnings around cases where update delay is larger
+> then the clocksource max_deferment - possibly falling back to a slower
+> overflow-proof multiply as is done in the CLOCK_SOURCE_SUSPEND_NONSTOP
+> resume case. This would allow more robust behaivor in cases like kvm
+> guests being paused for unreasonable lengths of time, and could also
+> provide very similar NOHZ debug warnings (assuming the clocksource
+> doesn't wrap quickly - but again, in those cases, I'm not confident we
+> can trust sched_clock either).
+
+May be. I don't know enough the details of timekeeping to debate there :)
+
+Thanks.
