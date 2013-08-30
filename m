@@ -1,200 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab3H3UGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 16:06:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31409 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab3H3UF7 (ORCPT
+	id S1755590Ab3H3UGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 16:06:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41962 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab3H3UGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 16:05:59 -0400
-Message-ID: <5220FB1B.1060304@oracle.com>
-Date: Fri, 30 Aug 2013 15:05:47 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 16:06:37 -0400
+Message-ID: <5220FB48.7080607@wwwdotorg.org>
+Date: Fri, 30 Aug 2013 14:06:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>
-Subject: Re: [PATCH V8 15/33] aio: add aio support for iov_iter arguments
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <1374774659-13121-16-git-send-email-dave.kleikamp@oracle.com> <20130821135538.GH13330@kvack.org>
-In-Reply-To: <20130821135538.GH13330@kvack.org>
-X-Enigmail-Version: 1.5.2
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
+CC: Mike Turquette <mturquette@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 5/5] clk: dt: binding for basic gate clock
+References: <1377150793-27864-1-git-send-email-mturquette@linaro.org> <1377150793-27864-6-git-send-email-mturquette@linaro.org> <CAD6h2NRBq8hD8J5+P4NBZJZsPo4QAebgGaxmAn5TL0c2Cc5ULQ@mail.gmail.com>
+In-Reply-To: <CAD6h2NRBq8hD8J5+P4NBZJZsPo4QAebgGaxmAn5TL0c2Cc5ULQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the lack of response. Getting back to this.
-
-On 08/21/2013 08:55 AM, Benjamin LaHaise wrote:
-> On Thu, Jul 25, 2013 at 12:50:41PM -0500, Dave Kleikamp wrote:
->> This adds iocb cmds which specify that memory is held in iov_iter
->> structures.  This lets kernel callers specify memory that can be
->> expressed in an iov_iter, which includes pages in bio_vec arrays.
+On 08/29/2013 07:45 PM, Haojian Zhuang wrote:
+> On 22 August 2013 13:53, Mike Turquette <mturquette@linaro.org> wrote:
+>> Device Tree binding for the basic clock gate, plus the setup function to
+>> register the clock.  Based on the existing fixed-clock binding.
 >>
->> Only kernel callers can provide an iov_iter so it doesn't make a lot of
->> sense to expose the IOCB_CMD values for this as part of the user space
->> ABI.
+>> A different approach to this was proposed in 2012[1] and a similar
+>> binding was proposed more recently[2] if anyone wants some extra
+>> reading.
+
+>> diff --git a/Documentation/devicetree/bindings/clock/gate-clock.txt b/Documentation/devicetree/bindings/clock/gate-clock.txt
+
+>> +Binding for simple gate clock.
+...
+>> +       clock_foo: clock_foo@4a008100 {
+>> +               compatible = "gate-clock";
+>> +               #clock-cells = <0>;
+>> +               clocks = <&clock_bar>;
+>> +               reg = <0x4a008100 0x4>
+>> +               bit-shift = <3>
 > 
-> I don't think adding the IOCB_CMD_{READ,WRITE}_ITER operations to 
-> include/uapi/linux/aio_abi.h is the right thing to do here -- they're 
-> never going to be used by userland, and care certainly not part of the 
-> abi we're presenting to userland.  I'd suggest moving these opcodes to 
-> include/linux/aio.h.
-
-Agreed.
-
-> Also, if you make the values > 16 bits, userland 
-> will never be able to pass them in inadvertently (although things look 
-> okay if that does happen at present).
-
-I'd have to change the declaration of ki_opcode to an int. This
-shouldn't be a problem since it'll be padded to a long anyway.
-
+> There's some argument on my clock binding patch set of Hi3620.
 > 
-> 		-ben
+> I defined each clock as one clock node and some of them are sharing one
+> register. Stephen attacked on this since it means multiple clock node sharing
+> one register.
+
+s/attacked/disagreed with/ I think:-)
+
+> Now the same thing also exists in Mike's patch. Mike's patch could also
+> support this behavior. And it's very common that one register is sharing among
+> multiple clocks in every SoC. Which one should I follow?
+
+I believe it's a matter of how the HW is structured.
+
+If the HW truly has segregated register regions for each individual
+clock, and is documented in a way that implies each individual clock is
+a separate HW module, then it makes sense to describe each clock as a
+separate DT node.
+
+However, if the HW simply has a "clock module" that provides many
+clocks, with inter-mingled registers all over the place, and is
+documented as a single module that generates lots of clocks, then it
+makes sense to describe that one module as a single DT node.
+
+In other words, the DT representation should match the HW design and
+documentation.
+
+This is exactly why we have the #clock-cells property in DT; so that a
+clock provider can provide multiple clocks if that's the way the HW is
+designed.
+
+>> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+
+>> +void of_gate_clk_setup(struct device_node *node)
+>> +{
+>> +       struct clk *clk;
+>> +       const char *clk_name = node->name;
+>> +       void __iomem *reg;
+>> +       const char *parent_name;
+>> +       u8 clk_gate_flags = 0;
+>> +       u32 bit_idx = 0;
+>> +
+>> +       of_property_read_string(node, "clock-output-names", &clk_name);
+>> +
+>> +       parent_name = of_clk_get_parent_name(node, 0);
+>> +
+>> +       reg = of_iomap(node, 0);
 > 
->> But kernel callers should also be able to perform the usual aio
->> operations which suggests using the the existing operation namespace and
->> support code.
->>
->> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
->> Cc: Zach Brown <zab@zabbo.net>
->> ---
->>  fs/aio.c                     | 67 ++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/aio.h          |  3 ++
->>  include/uapi/linux/aio_abi.h |  2 ++
->>  3 files changed, 72 insertions(+)
->>
->> diff --git a/fs/aio.c b/fs/aio.c
->> index c65ba13..0da82c0 100644
->> --- a/fs/aio.c
->> +++ b/fs/aio.c
->> @@ -991,6 +991,48 @@ static ssize_t aio_setup_single_vector(int rw, struct kiocb *kiocb)
->>  	return 0;
->>  }
->>  
->> +static ssize_t aio_read_iter(struct kiocb *iocb)
->> +{
->> +	struct file *file = iocb->ki_filp;
->> +	ssize_t ret;
->> +
->> +	if (unlikely(!is_kernel_kiocb(iocb)))
->> +		return -EINVAL;
->> +
->> +	if (unlikely(!(file->f_mode & FMODE_READ)))
->> +		return -EBADF;
->> +
->> +	ret = security_file_permission(file, MAY_READ);
->> +	if (unlikely(ret))
->> +		return ret;
->> +
->> +	if (!file->f_op->read_iter)
->> +		return -EINVAL;
->> +
->> +	return file->f_op->read_iter(iocb, iocb->ki_iter, iocb->ki_pos);
->> +}
->> +
->> +static ssize_t aio_write_iter(struct kiocb *iocb)
->> +{
->> +	struct file *file = iocb->ki_filp;
->> +	ssize_t ret;
->> +
->> +	if (unlikely(!is_kernel_kiocb(iocb)))
->> +		return -EINVAL;
->> +
->> +	if (unlikely(!(file->f_mode & FMODE_WRITE)))
->> +		return -EBADF;
->> +
->> +	ret = security_file_permission(file, MAY_WRITE);
->> +	if (unlikely(ret))
->> +		return ret;
->> +
->> +	if (!file->f_op->write_iter)
->> +		return -EINVAL;
->> +
->> +	return file->f_op->write_iter(iocb, iocb->ki_iter, iocb->ki_pos);
->> +}
->> +
->>  /*
->>   * aio_setup_iocb:
->>   *	Performs the initial checks and aio retry method
->> @@ -1042,6 +1084,14 @@ rw_common:
->>  		ret = aio_rw_vect_retry(req, rw, rw_op);
->>  		break;
->>  
->> +	case IOCB_CMD_READ_ITER:
->> +		ret = aio_read_iter(req);
->> +		break;
->> +
->> +	case IOCB_CMD_WRITE_ITER:
->> +		ret = aio_write_iter(req);
->> +		break;
->> +
->>  	case IOCB_CMD_FDSYNC:
->>  		if (!file->f_op->aio_fsync)
->>  			return -EINVAL;
->> @@ -1116,6 +1166,23 @@ void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
->>  }
->>  EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
->>  
->> +/*
->> + * The iter count must be set before calling here.  Some filesystems uses
->> + * iocb->ki_left as an indicator of the size of an IO.
->> + */
->> +void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
->> +			  unsigned short op, struct iov_iter *iter, loff_t off)
->> +{
->> +	iocb->ki_filp = filp;
->> +	iocb->ki_iter = iter;
->> +	iocb->ki_opcode = op;
->> +	iocb->ki_pos = off;
->> +	iocb->ki_nbytes = iov_iter_count(iter);
->> +	iocb->ki_left = iocb->ki_nbytes;
->> +	iocb->ki_ctx = (void *)-1;
->> +}
->> +EXPORT_SYMBOL_GPL(aio_kernel_init_iter);
->> +
->>  void aio_kernel_init_callback(struct kiocb *iocb,
->>  			      void (*complete)(u64 user_data, long res),
->>  			      u64 user_data)
->> diff --git a/include/linux/aio.h b/include/linux/aio.h
->> index 014a75d..64d059d 100644
->> --- a/include/linux/aio.h
->> +++ b/include/linux/aio.h
->> @@ -66,6 +66,7 @@ struct kiocb {
->>  	 * this is the underlying eventfd context to deliver events to.
->>  	 */
->>  	struct eventfd_ctx	*ki_eventfd;
->> +	struct iov_iter		*ki_iter;
->>  };
->>  
->>  static inline bool is_sync_kiocb(struct kiocb *kiocb)
->> @@ -102,6 +103,8 @@ struct kiocb *aio_kernel_alloc(gfp_t gfp);
->>  void aio_kernel_free(struct kiocb *iocb);
->>  void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
->>  			unsigned short op, void *ptr, size_t nr, loff_t off);
->> +void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
->> +			  unsigned short op, struct iov_iter *iter, loff_t off);
->>  void aio_kernel_init_callback(struct kiocb *iocb,
->>  			      void (*complete)(u64 user_data, long res),
->>  			      u64 user_data);
->> diff --git a/include/uapi/linux/aio_abi.h b/include/uapi/linux/aio_abi.h
->> index bb2554f..22ce4bd 100644
->> --- a/include/uapi/linux/aio_abi.h
->> +++ b/include/uapi/linux/aio_abi.h
->> @@ -44,6 +44,8 @@ enum {
->>  	IOCB_CMD_NOOP = 6,
->>  	IOCB_CMD_PREADV = 7,
->>  	IOCB_CMD_PWRITEV = 8,
->> +	IOCB_CMD_READ_ITER = 9,
->> +	IOCB_CMD_WRITE_ITER = 10,
->>  };
->>  
->>  /*
->> -- 
->> 1.8.3.4
+> I suggest not using of_iomap for each clock node.
+> 
+> If each clock is one node, it means hundreds of clock node existing in
+> device tree. Hundreds of mapping page only cost unnecessary mapping.
+
+The page table entries will get re-used. I'm not familiar with the mm
+code, but multiple of_iomap() for the exact same range probably just map
+down to incrementing a refcount on some kernel data structure, so
+actually has zero overhead?
+
+
+> Maybe we can resolve it by this way.
+> 
+> DTS file:
+>         clock register bank {
+
+You need a compatible value here, in order to instantiate the top-level
+driver for the "clock generator" HW block.
+
+>                 reg = <{start} {size}>;
+>                 #address-cells = <1>;
+>                 #size-cells = <0>;             /* each clock only
+> exists in one register */
+
+You would need a ranges property here, to map the child reg properties
+into the parent node's address space.
+
+>                 clock node {
+>                         compatible = "xxx";
+>                         #clock-cells = <0>;
+>                         clock-output-names = yyy";
+>                         reg = <{offset}>;
+>                         ... other properties ...
+>                 };
+>          };
+
+That could be a reasonable solution; the existence of a single "clock
+generator" HW block is clearly called out by the existing of the
+top-level DT node, yet the internals of that node are free to be
+whatever you want, since this is purely defined by the binding
+definition for that top-level "clock generator" node.
+
+That all said, I see almost zero value in having all these child nodes,
+since the top-level compatible value implies every single detail about
+the HW, so the list of clocks and their parameters could just as easily
+be a table in the driver for the HW, in order to avoid having to parse
+that data every boot just to end up with the same table...
+
+The only exception would be if the SoC designer truly had composed the
+top-level "clock generator" HW block out of many completely independent
+re-usable clock IP blocks, and many SoCs existed that used those
+individual clock blocks completely unchanged, without any SoC-specific
+differences such as additional SoC-specific clock block types, so that
+one could get greater re-use by parametrizing everything in DT. In my
+(perhaps limited) experience of SoCS, this seems like an /extremely/
+unlikely situation.
+
