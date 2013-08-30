@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab3H3LSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:18:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55850 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab3H3LSO (ORCPT
+	id S1755971Ab3H3LTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:19:47 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:56207 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab3H3LTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:18:14 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52207F74.6000702@roeck-us.net>
-Date: Fri, 30 Aug 2013 04:18:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 07:19:45 -0400
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2]  h8300/kernel/setup.c: add "linux/initrd.h" to pass
- compiling
-References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <5220254E.3050704@roeck-us.net> <52203CF0.5040600@asianux.com>
-In-Reply-To: <52203CF0.5040600@asianux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130830103633.GG10002@twins.programming.kicks-ass.net>
+References: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<20130830094857.GA14502@gmail.com>
+	<CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
+	<CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
+	<CA+icZUVnfVcYdc7XHyM9oA5GF-HG35JghWNabE4pgvBvTh1E0g@mail.gmail.com>
+	<20130830103633.GG10002@twins.programming.kicks-ass.net>
+Date: Fri, 30 Aug 2013 13:19:43 +0200
+Message-ID: <CA+icZUUsa+TytTva_fg-4=NoYQfLP_d+QrugNPXuWuOr606hgQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 11:34 PM, Chen Gang wrote:
-> On 08/30/2013 12:53 PM, Guenter Roeck wrote:
->> On 08/29/2013 08:59 PM, Chen Gang wrote:
->>> The related error (allmodconfig for h8300):
->>>
->>>     arch/h8300/kernel/setup.c: In function 'setup_arch':
->>>     arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared
->>> (first use in this function)
->>>        initrd_start = memory_start;
->>>        ^
->>>     arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier
->>> is reported only once for each function it appears in
->>>     arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared
->>> (first use in this function)
->>>        initrd_end = memory_start += be32_to_cpu(((unsigned long *)
->>> (memory_start))[2]);
->>>        ^
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
+On Fri, Aug 30, 2013 at 12:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Aug 30, 2013 at 12:29:34PM +0200, Sedat Dilek wrote:
+>> [ Sorry for being off-topic ]
 >>
->> Maybe an odd question, but is there a way to actually compile the h8300
->> target
->
-> Firstly, at least for me, I don't think it is an odd question.  :-)
->
-> For the tool-chain:
->
->    I compiled the cross-compiler from the gcc and binutils source code.
->    GCC has too many bugs to compile kernel with -Os (normal make will fail).
->    If without -Os (no optimization), it can work correctly which is enough for my goal: "let h8300 pass allmodconfig".  ;-)
->
->>From building with allmodconfig for h8300:
->
->    I can find more chances to provide contributes (both for h8300 and for others).
->    I can learn more in kernel wide.
->    I can familiar the gcc and binutils step by step (especially to familiar with their issues).
->
-> Next:
->
->    I will communicate/work with the gcc guys for the gcc issues which found by building kernel.
->
->    :-)
->
->
->
->> in the first place ? The cross compiler on kernel.org doesn't work, nor
->> does
->> the one available through Ubuntu.
+>> Hey Ingo,
 >>
->> Guenter
+>> can you help, please?
 >>
+>> I installed so far all missing -dev packages...
+>>
+>> $ sudo apt-get install libelf-dev libdw-dev libunwind7-dev libslang2-dev
 >
-> For binutils, no release under Ubuntu, and the Fedora17's is incorrect
-> (can not use), but the binutils-2.22 from gnu is OK.
+> It seems to me the easier way is:
 >
-> For gcc, no release under Ubuntu, for Fedora17's, gcc-4.9, gcc-4.8,
-> gcc-4.7.4, and gcc-4.4.7 all have bugs for compiling kernel(their bugs
-> are different too).
->
-> It is really not easy to fix these bugs (gcc guys have too many issues
-> to fix), even if really find the root cause, it is still difficult to
-> fix (fix one bug is very easy to cause another more issues).
+>  $ apt-get build-dep linux-tools
 >
 
-I have to wonder ... is this all worth it ? It almost looks like no one
-is using this architecture anymore. Do you have target hardware to test
-any of your changes ?
+The B-Ds for latest linux-tools (3.11~rc4-1~exp1) in
+Debian/experimental look like this:
 
-Thanks,
-Guenter
+Build-Depends: debhelper (>> 7), python, asciidoc, binutils-dev,
+bison, flex, libdw-dev, libelf-dev, libnewt-dev, libperl-dev,
+python-dev, xmlto, autoconf, automake, libtool, libglib2.0-dev,
+libsysfs-dev, libwrap0-dev
 
+- Sedat -
+
+[1] http://ftp.de.debian.org/debian/pool/main/l/linux-tools/linux-tools_3.11~rc4-1~exp1.dsc
