@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3H3Tky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:40:54 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45556 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab3H3Tkw convert rfc822-to-8bit (ORCPT
+	id S1756959Ab3H3TlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:41:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34659 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab3H3TlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:40:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Fu <danifu@nvidia.com>
-Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johnny Qiu <joqiu@nvidia.com>
-Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
-Date: Fri, 30 Aug 2013 21:51:35 +0200
-Message-ID: <5922282.AsA87j7ngC@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <D9A2FA38A1E15B4E832469E5FE40C7ABFB583335A4@HKMAIL01.nvidia.com>
-References: <1377863302-22465-1-git-send-email-danifu@nvidia.com> <1725801.dn2z0gQifB@vostro.rjw.lan> <D9A2FA38A1E15B4E832469E5FE40C7ABFB583335A4@HKMAIL01.nvidia.com>
+	Fri, 30 Aug 2013 15:41:17 -0400
+Date: Fri, 30 Aug 2013 20:40:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130830194059.GC13318@ZenIV.linux.org.uk>
+References: <1377751465.4028.20.camel@pasglop>
+ <20130829070012.GC27322@gmail.com>
+ <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+ <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+ <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+ <52200DAE.2020303@hp.com>
+ <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+ <5220E56A.80603@hp.com>
+ <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
+ <5220F090.5050908@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5220F090.5050908@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 30, 2013 09:39:27 PM Daniel Fu wrote:
-> Yes, I saw it. 
-> Thanks. found one case when  Find PM domain and connect cpuidle to it , in when Kernel booting ,opening early prink testing
-> pm_genpd_name_attach_cpuidle()->cpuidle_driver_ref().
+On Fri, Aug 30, 2013 at 03:20:48PM -0400, Waiman Long wrote:
 
-I see. OK, I'll queue it up for the second part of the 3.12 merge window.
+> There are more contention in the lglock than I remember for the run
+> in 3.10. This is an area that I need to look at. In fact, lglock is
+> becoming a problem for really large machine with a lot of cores. We
+> have a prototype 16-socket machine with 240 cores under development.
+> The cost of doing a lg_global_lock will be very high in that type of
+> machine given that it is already high in this 80-core machine. I
+> have been thinking about instead of per-cpu spinlocks, we could
+> change the locking to per-node level. While there will be more
+> contention for lg_local_lock, the cost of doing a lg_global_lock
+> will be much lower and contention within the local die should not be
+> too bad. That will require either a per-node variable infrastructure
+> or simulated with the existing per-cpu subsystem.
 
-Thanks,
-Rafael
+Speaking of lglock, there's a low-hanging fruit in that area: we have
+no reason whatsoever to put anything but regular files with FMODE_WRITE
+on the damn per-superblock list - the *only* thing it's used for is
+mark_files_ro(), which will skip everything except those.  And since
+read opens normally outnumber the writes quite a bit...  Could you
+try the diff below and see if it changes the picture?  files_lglock
+situation ought to get better...
 
-
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl] 
-> Sent: 2013年8月30日 21:26
-> To: Daniel Fu
-> Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Johnny Qiu
-> Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
-> 
-> On Friday, August 30, 2013 08:26:34 PM Daniel Fu wrote:
-> > X-NVConfidentiality: public
-> > 
-> > In SMP, When doing the cpuidle driver registration. There maybe only 1 
-> > cpu have register cpuidle(CPU0), but In the process of registration 
-> > cpuidle driver, the scheduler maybe schedule the process to the other 
-> > CPU (eg. CPU0 have heay load, migrate to CPU1)
-> > cpuidle_get_driver() --> get_cpu() , will get CPU1, if CPU1 didn't register cpuidle driver, Will get NULL.
-> > 
-> > I know we should prevent the registration migrate to the other CPU, but we should check drv before add refcount to prevent kernel panic at least, Right?
-> 
-> Well, cpuidle_driver_ref() has only one caller, which is not the registration.
-> 
-> However, the caller apparently assumes that that function may return NULL and
-> cpuidle_driver_unref() check drv against NULL too, so cpuidle_driver_ref() should do that either.
-> 
-> Did you see that problem in testing or just through code inspection?
-> 
-> Rafael
-> 
-> 
-> > -----Original Message-----
-> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > Sent: 2013年8月30日 20:01
-> > To: Daniel Fu
-> > Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; 
-> > linux-kernel@vger.kernel.org; Johnny Qiu
-> > Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
-> > 
-> > On Friday, August 30, 2013 07:48:22 PM Daniel Fu wrote:
-> > > If the current CPU has no cpuidle driver, drv will be NULL.
-> > > Check if we get drv successfully before add refount to prevent 
-> > > Kernel panic.
-> > 
-> > What is the actual scenario that may lead to this panic?
-> > 
-> > Rafael
-> > 
-> > 
-> > > Signed-off-by: Daniel Fu <danifu@nvidia.com>
-> > > ---
-> > >  drivers/cpuidle/driver.c | 3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c 
-> > > index
-> > > 3ac499d..6e11701 100644
-> > > --- a/drivers/cpuidle/driver.c
-> > > +++ b/drivers/cpuidle/driver.c
-> > > @@ -331,7 +331,8 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
-> > >  	spin_lock(&cpuidle_driver_lock);
-> > >  
-> > >  	drv = cpuidle_get_driver();
-> > > -	drv->refcnt++;
-> > > +	if (drv)
-> > > +		drv->refcnt++;
-> > >  
-> > >  	spin_unlock(&cpuidle_driver_lock);
-> > >  	return drv;
-> > > 
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
-> > 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+diff --git a/fs/file_table.c b/fs/file_table.c
+index b44e4c5..322cd37 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -385,6 +385,10 @@ static inline void __file_sb_list_add(struct file *file, struct super_block *sb)
+  */
+ void file_sb_list_add(struct file *file, struct super_block *sb)
+ {
++	if (likely(!(file->f_mode & FMODE_WRITE)))
++		return;
++	if (!S_ISREG(file_inode(file)->i_mode))
++		return;
+ 	lg_local_lock(&files_lglock);
+ 	__file_sb_list_add(file, sb);
+ 	lg_local_unlock(&files_lglock);
+@@ -450,8 +454,6 @@ void mark_files_ro(struct super_block *sb)
+ 
+ 	lg_global_lock(&files_lglock);
+ 	do_file_list_for_each_entry(sb, f) {
+-		if (!S_ISREG(file_inode(f)->i_mode))
+-		       continue;
+ 		if (!file_count(f))
+ 			continue;
+ 		if (!(f->f_mode & FMODE_WRITE))
