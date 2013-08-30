@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab3H3O05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:26:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41593 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab3H3O0z (ORCPT
+	id S1756668Ab3H3O2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:28:37 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:38552 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab3H3O2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:26:55 -0400
-Date: Fri, 30 Aug 2013 15:26:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: AnilKumar Ch <anilkumar@ti.com>,
-        Colin Foe-Parker <colin.foeparker@logicpd.com>,
-        Matthias Kaehlcke <matthias@kaehlcke.net>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130830142623.GA10783@sirena.org.uk>
-References: <1377857166.25715.1.camel@phoenix>
+	Fri, 30 Aug 2013 10:28:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZU25/NGocqLNwEGF"
-Content-Disposition: inline
-In-Reply-To: <1377857166.25715.1.camel@phoenix>
-X-Cookie: Snow Day -- stay home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFT][PATCH RESEND] regulator: tps65217: Convert to use linear
- ranges
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWNrZQgjuXX+7JFgRKfCjYR_fSkfeRxHot_=xpLSaNaxg@mail.gmail.com>
+References: <CA+icZUWNrZQgjuXX+7JFgRKfCjYR_fSkfeRxHot_=xpLSaNaxg@mail.gmail.com>
+Date: Fri, 30 Aug 2013 16:28:34 +0200
+Message-ID: <CA+icZUWNoq2+y511Mk8j_Vmo1_CdTmaG=2nLDz8oh6QPDqr_+A@mail.gmail.com>
+Subject: Re: [3.11-rc7] Building perf-only the "official" way seems to be BROKEN?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[...]
 
---ZU25/NGocqLNwEGF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> [ BUILD PERF-ONLY ]
+>
+> So, I have finished a Linux-kernel build and wanted to build perf
+> (from tools-dir) ONLY!
+>
+> I followed the advices (I am a "good" guy) seen for example in the
+> "tools/Makefile" file.
+>
+> [ tools/Makefile ]
+> ...
+>         @echo 'You can do:'
+>         @echo ' $$ make -C tools/ <tool>_install' <--- NOTE THIS ONE!
+>         @echo ''
+>         @echo '  from the kernel command line to build and install one of'
+>         @echo '  the tools above'
+>         @echo ''
+>         @echo '  $$ make tools/install'
+>         @echo ''
+>         @echo '  installs all tools.'
+> ...
+>
+> OK, so I did this for a perf-only build...
+>
+>
+>    $ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../build-perf.txt
+>
+> ...this breaks like this...
+>
+> ...
+> make[2]: Entering directory
+> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+> make[2]: Leaving directory
+> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+>     LINK perf
+> gcc: error: /home/wearefam/src/linux-kernel/linux/tools/lib/lk/liblk.a:
+> No such file or directory
+> make[1]: *** [perf] Error 1
+> make[1]: Leaving directory `/home/wearefam/src/linux-kernel/linux/tools/perf'
+> make: *** [perf_install] Error 2
+>
 
-On Fri, Aug 30, 2013 at 06:06:06PM +0800, Axel Lin wrote:
-> Below is the equation in original code:
+[ From #linux-rt (OFTC) ]
 
-Applied, thanks.
+[16:17] <acme> dileks_webchat, there are many, many ways to build the tools
+[16:17] <acme> the one I use is:
+[16:17] <acme> make O=/tmp/build/perf -C tools/perf install
+[16:19] <dileks_webchat> acme:  make -C tools/perf install works as
+expected. interesting :-)
 
---ZU25/NGocqLNwEGF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSIKuMAAoJELSic+t+oim9S8AP/i0FtrTUZOXgiRda7zc5QenV
-RDsF2aFYwtCsG+5nebnCpNKG2f2l0fInasm9MRBuL178aqk/xLmFPPmoyn/ZDAZp
-XHZlu8UmnmUrgaKoRKZv3uV42P3TDcYmk5np+lsJWovUAwLKspze8X82+VKWaNeS
-kE+PhHpWmRackIPhEDkl7IFpYnbKeceq0EE7NdyQ0OsBQXz71AofnS98zroUJ6bS
-hSJ3vfrAifYN4HVAYaN0J1iPcH0Mj7EH1/pXkjEy5JrXkIltn90AaS7ZGtz9DVbL
-vaNTv+JD2VVw+fmnDADavxVxo7TuFPmS/aNCk75j/bEsnEzmIXOnjOpzmbrvNuOI
-4hKLXpzdF+MMpf/PfuOGcx64aBsaoMQ8dX9LbnWF8CIPuYde2vNFjHw4VM0lGt0b
-FQMp2pP9G02C8Xp9W9qJ8FELA+fCP1HzvJMrmvI0JntUBROEeO0HXPlgnxnA+OPg
-wBDPkuruaEe3PYeBvuVtJOpd5JM34/eTcypcEPrUI9hFxJ3g5n5flOiKCkLJqiwt
-1MM1378N+O2hxWKZuQvbI7PCUjnqkFisjBwx4XBX4oTgb+zOlkp4p3IlhdAKfXhe
-BX10+kSGySFFZKgHQQMJAyFHG43Mrl0+7kjyKvF0N9Oj8sSjRJi4A1RcEzV09Re6
-Us1zzZUKrQxexuLsPVCc
-=vZxA
------END PGP SIGNATURE-----
-
---ZU25/NGocqLNwEGF--
+- Sedat (dileks on IRC) -
