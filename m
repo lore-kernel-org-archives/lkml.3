@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3H3PiC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:38:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52294 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756657Ab3H3PiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:38:00 -0400
-Message-ID: <5220BC1A.3030108@zytor.com>
-Date: Fri, 30 Aug 2013 08:36:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756763Ab3H3Piw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:38:52 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:62295 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755496Ab3H3Piv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 11:38:51 -0400
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+Date: Fri, 30 Aug 2013 17:38:47 +0200
+Message-ID: <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
-References: <5217908E.2040702@siemens.com>
-In-Reply-To: <5217908E.2040702@siemens.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 09:40 AM, Jan Kiszka wrote:
-> Hi all,
-> 
-> 32-bit kernels currently crash/reboot in early microcode loading when
-> non-dynamic function tracing is enabled. Several functions in that path
-> get instrumented with mcount, but its non-dynamic implementation does
-> not work before paging is enabled (it accesses global variables at wrong
-> addresses).
-> 
-> Below some hunks to get it working again - at least in the absence of
-> any microcode in the initrd. Marking all involved functions as __init is
-> another option (as __init implies notrace). But I bet there is more
-> hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger the
-> issue as well if we hit the error it reports (btw. printing at this
-> point of the boot should not work anyway, should it?).
-> 
-> Better ideas?
-> 
-> Jan
-> 
+On Fri, Aug 30, 2013 at 5:34 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Aug 30, 2013 at 2:27 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
+>>
+>> lockref:  w/o patch | w/ patch
+>> ======================
+>> Run #1: 2.688.094 | 2.643.004
+>> Run #2: 2.678.884 | 2.652.787
+>> Run #3: 2.686.450 | 2.650.142
+>> Run #4: 2.688.435 | 2.648.409
+>> Run #5: 2.693.770 | 2.651.514
+>
+> Yes, so this is pretty much expected.
+>
+> If you don't have a very high core count (you don't mention your
+> system, but that's pretty - I get ~65 million repetitions in 10
+> seconds on my i5-670), the cmpxchg will not help - because you don't
+> actually see the bad "wait on spinlock" behavior in the first place.
+>
+> And a "cmpxchg" is slightly slower than the very optimized spinlocks,
+> and has that annoying "read original value" first issue too. So the
+> patch can make things a bit slower, although it will depends on the
+> microarchitecture (and as mentioned elsewhere, there are other things
+> that can make a bigger difference boot-to-boot - dentry allocation
+> details etc can have "sticky" performance impact).
+>
+> So we may take a small hit in order to then *not* have horrible
+> scalability at the high end.
+>
 
-A better idea would be for the mcount/__fentry__ function to simply
-return until the function tracing stuff is actually ready.
+A Samsung series-5 ultrabook.
 
-	-hpa
+$ grep "model name" /proc/cpuinfo | uniq
+model name      : Intel(R) Core(TM) i5-2467M CPU @ 1.60GHz
 
-
+- Sedat -
