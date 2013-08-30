@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3H3K5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:57:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40209 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738Ab3H3K5k (ORCPT
+	id S1756181Ab3H3LAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:00:10 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:65493 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab3H3LAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:57:40 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130830105215.GH10002@twins.programming.kicks-ass.net>
-References: <52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-	<20130830094857.GA14502@gmail.com>
-	<CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
-	<CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
-	<CA+icZUVnfVcYdc7XHyM9oA5GF-HG35JghWNabE4pgvBvTh1E0g@mail.gmail.com>
-	<20130830103633.GG10002@twins.programming.kicks-ass.net>
-	<CA+icZUWYNGWYeVfGZy13wdrXgJaC_ZNS6ZkSMW5Ger3MkPkXSw@mail.gmail.com>
-	<20130830105215.GH10002@twins.programming.kicks-ass.net>
-Date: Fri, 30 Aug 2013 12:57:38 +0200
-Message-ID: <CA+icZUXmt1oKSguM4iXfHBPFR6MWWWL8w=KC+_c8y212+ckFnw@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 30 Aug 2013 07:00:07 -0400
+From: Dan Aloni <alonid@postram.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH net-next] netconsole: avoid a crash with multiple sysfs writers
+Date: Fri, 30 Aug 2013 13:59:46 +0300
+Message-Id: <1377860386-8494-1-git-send-email-alonid@postram.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <20130809062405.GA8031@neilslaptop.think-freely.org>
+References: <20130809062405.GA8031@neilslaptop.think-freely.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 12:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Aug 30, 2013 at 12:44:29PM +0200, Sedat Dilek wrote:
->> Please, see advices in 'tools/Makefile':
->>
->>         @echo 'You can do:'
->>         @echo ' $$ make -C tools/ <tool>_install'
->>         @echo ''
->>         @echo '  from the kernel command line to build and install one of'
->>         @echo '  the tools above'
->>         @echo ''
->>         @echo '  $$ make tools/install'
->>         @echo ''
->>         @echo '  installs all tools.'
->
-> I never follow advice :-) Muwhaha, also I'm generally not interested in
-> 'all' tools anywya.
->
->> If you tell me where you discuss perf issues I can describe the problem.
->
-> On this list, start a new thread CC ingo, acme and me. There's also an
-> IRC channel but I keep forgetting what the official channel is and I'm
-> likely not on it. I do tend to abuse irc.oftc.net/#linux-rt for it since
-> most people are on there anyway.
+When my 'ifup eth' script was fired multiple times and ran concurrent on
+my laptop, for some obscure /etc scripting reason, it was revealed
+that the store_enabled() function in netconsole doesn't handle it nicely,
+as recorded by the Oops below (a syslog paste, but not mangled too much
+to prevent from discerning the traceback).
 
-Hi rebel :-)!
+On Linux 3.10.4, this patch seeks to remedy the problem, and it has been
+running stable on my laptop for a few days.
 
-I was away from IRC for quite a year.
-I will write some words...
+[52608.609325] BUG: unable to handle kernel NULL pointer dereference at 00000000000003e0
+[52608.609331] IP: [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
+[52608.609339] PGD 15e51a067 PUD 15433e067 PMD 0
+[52608.609343] Oops: 0000 [#1] SMP re firewire_ohci firewire_core crc_itu_t [last unloaded: kvm_intel]
+[52608.609347] Modules linked in: kvm_intel tun vfat fat ppdev parport_pc parport fuse ipt_MASQUERADE usb_storage nf_conntrack_netbios_ns nf_conn [..garbled..]
+[52608.609433] RAX: 0000000000000000 RBX: ffff880210bbcc68 RCX: 0000000000000000
+[52608.609435] RDX: 0000000000000000 RSI: ffff8801ba447da0 RDI: ffff880210bbcc68
+[52608.609437] RBP: ffff8801ba447e18 R08: 0000000000000000 R09: 0000000000000001
+[52608.609439] R10: 000000000000000a R11: f000000000000000 R12: ffff880210bbcc68
+[52608.609441] R13: ffff88020bc41000 R14: 0000000000000002 R15: 000000000000000200000000000
+[52608.609443] FS:  00007f38d7bff740(0000) GS:ffff88021dc40000(0000) knlGS:0000000000000000
+[52608.609446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003300000000001427e0
+[52608.609448] CR2: 00000000000003e0 CR3: 0000000154103000 CR4: 00000000001427e0
+[52608.609450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[52608.609452] netpoll: netconsole: local port 6665ess 10.0.0.27
+[52608.609454] netpoll: netconsole: local IPv4 address 10.0.0.27
+[52608.609456] netpoll: netconsole: interface 'em1'
+[52608.609457] netpoll: netconsole: remote port 514ress 10.0.0.15
+[52608.609459] netpoll: netconsole: remote IPv4 address 10.0.0.15:65:a8:9a:c7
+[52608.609461] netpoll: netconsole: remote ethernet address 1c:6f:65:a8:9a:c7
+[52608.609463] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[52608.609464] Stack:801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
+[52608.609466]  ffff8801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
+[52608.609471]  0000000000000002 0000000000000002 ffff8801ba447e38 ffffffff81532af4
+[52608.609475]  0000000000000000 ffff880210bbcc00 ffff8801ba447e78 ffffffff81420e7c
+[52608.609479] Call Trace:
+[52608.609484]  [<ffffffff81532af4>] netpoll_cleanup+0x24/0x50
+[52608.609489]  [<ffffffff81420e7c>] store_enabled+0x5c/0xe0
+[52608.609492]  [<ffffffff81420abe>] netconsole_target_attr_store+0x2e/0x40
+[52608.609498]  [<ffffffff811ff2a2>] configfs_write_file+0xd2/0x130
+[52608.609503]  [<ffffffff81188f95>] vfs_write+0xc5/0x1f0
+[52608.609506]  [<ffffffff81189482>] SyS_write+0x52/0xa0/0x10
+[52608.609511]  [<ffffffff81628c2e>] ? do_page_fault+0xe/0x10
+[52608.609516]  [<ffffffff8162d402>] system_call_fastpath+0x16/0x1b
+[52608.609517] Code: 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 30 4c 89 65 e0 48 89 5d d8 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 48 8 [..garbled..]
+[52608.609559] RIP  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
+[52608.609563]  RSP <ffff8801ba447de8>
+[52608.609564] CR2: 00000000000003e0
+[52608.609567] ---[ end trace d25ec343349b61d2 ]---
 
-- Sedat -
+Signed-off-by: Dan Aloni <alonid@postram.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/netconsole.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-P.S.: It worked...
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index 4822aaf..dcb2134 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -102,6 +102,7 @@ struct netconsole_target {
+ 	struct config_item	item;
+ #endif
+ 	int			enabled;
++	struct mutex		mutex;
+ 	struct netpoll		np;
+ };
+ 
+@@ -181,6 +182,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
+ 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+ 	nt->np.local_port = 6665;
+ 	nt->np.remote_port = 6666;
++	mutex_init(&nt->mutex);
+ 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+ 
+ 	/* Parse parameters and setup netpoll */
+@@ -322,6 +324,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 		return -EINVAL;
+ 	}
+ 
++	mutex_lock(&nt->mutex);
+ 	if (enabled) {	/* 1 */
+ 
+ 		/*
+@@ -331,8 +334,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 		netpoll_print_options(&nt->np);
+ 
+ 		err = netpoll_setup(&nt->np);
+-		if (err)
++		if (err) {
++			mutex_unlock(&nt->mutex);
+ 			return err;
++		}
+ 
+ 		printk(KERN_INFO "netconsole: network logging started\n");
+ 
+@@ -341,6 +346,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 	}
+ 
+ 	nt->enabled = enabled;
++	mutex_unlock(&nt->mutex);
+ 
+ 	return strnlen(buf, count);
+ }
+@@ -597,6 +603,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
+ 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+ 	nt->np.local_port = 6665;
+ 	nt->np.remote_port = 6666;
++	mutex_init(&nt->mutex);
+ 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+ 
+ 	/* Initialize the config_item member */
+@@ -682,7 +689,11 @@ restart:
+ 				 * we might sleep in __netpoll_cleanup()
+ 				 */
+ 				spin_unlock_irqrestore(&target_list_lock, flags);
++
++				mutex_lock(&nt->mutex);
+ 				__netpoll_cleanup(&nt->np);
++				mutex_unlock(&nt->mutex);
++
+ 				spin_lock_irqsave(&target_list_lock, flags);
+ 				dev_put(nt->np.dev);
+ 				nt->np.dev = NULL;
+-- 
+1.8.1.4
 
-$ ~/src/linux-kernel/linux/tools/perf/perf --version
-perf version 3.11.rc7.ga7370
-
-$ ~/src/linux-kernel/linux/tools/perf/perf stat --null --repeat 5
-./t_lockref_from-linus
-Total loops: 2652351
-Total loops: 2604876
-Total loops: 2649696
-Total loops: 2651417
-Total loops: 2644068
-
- Performance counter stats for './t_lockref_from-linus' (5 runs):
-
-      10,002926693 seconds time elapsed
-          ( +-  0,00% )
-
-$ cat /proc/version
-Linux version 3.11.0-rc7-1-lockref-small
-(sedat.dilek@gmail.com@fambox) (gcc version 4.6.3 (Ubuntu/Linaro
-4.6.3-1ubuntu5) ) #1 SMP Fri Aug 30 10:23:19 CEST 2013
