@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3H3E2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 00:28:00 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:36208 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3H3E17 convert rfc822-to-8bit (ORCPT
+	id S1756023Ab3H3E3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 00:29:50 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49524 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab3H3E3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 00:27:59 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Dave Hansen <dave.hansen@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for ARC
-Thread-Topic: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
- ARC
-Thread-Index: AQHOov/erDeR0JeI70CghkAjOCB3Tg==
-Date: Fri, 30 Aug 2013 04:25:18 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514113D@IN01WEMBXA.internal.synopsys.com>
-References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
- <521F662F.4050003@intel.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 30 Aug 2013 00:29:48 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 0/6] extcon-gpio: Add devicetree support
+Date: Thu, 29 Aug 2013 21:29:32 -0700
+Message-Id: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2013 08:48 PM, Dave Hansen wrote:
->
-> I assume you're sending this my way since getmaintainer.pl has me tagged
-> I moved a bunch of code in there. :)
+The first three patches of this series are either cleanup or add functionality
+unrelated to devicetree support and should hopefully be acceptable as-is or with
+minor modifications.
 
-Indeed :-)
+Patch 1 of this series is a tiny cleanup patch.
+Patch 2 adds support for hardware debounce. If the gpio chip supports debounce,
+use it instead of software debounce.
+Patch 3 adds support for low-active presence detect signals.
 
-> The Kconfig.debug stuff has no real maintainer.  It would probably be OK
-> if you just stick this in your architecture's next git pull request.
+Patch 4 and 5 add devicetree support. Patch 4 is the actual code and patch 5
+describes devicetree bindings. Both could possibly be merged into a single
+patch.
 
-Will do, thx.
-
-> Although, it would be nice if someone, at some point, actually
-> abstracted that out so that the individual architectures could take care
-> of this without editing the main files:
->
-> # Kconfig.debug:
->
-> config ARCH_FRAME_POINTER_UNAVAILABLE
-> 	def_bool y
-
-def_bool n
-
-> ...
-> select FRAME_POINTER if !ARCH_FRAME_POINTER_UNAVAILABLE
->
-> # arch/.../Kconfig
->
-> select ARCH_FRAME_POINTER_UNAVAILABLE
-
-Sure, I was thinking the same. I'll send out a patchset soon, although next week
-is gonna be tight due to upcoming merge window.
-
--Vineet
+Patch 6 adds possible properties for connectors supporting multiple cable
+types to the devicetree bindings document. This is purely for discussion
+and would be implemented in a separate patch. While I don't need this code
+for our application, I would be happy to provide it if the community sees
+value in it.
