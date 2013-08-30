@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab3H3NrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:47:22 -0400
-Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:35221 "EHLO
-	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756016Ab3H3NrV (ORCPT
+	id S1756277Ab3H3NsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:48:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51261 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058Ab3H3NsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:47:21 -0400
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Aug 2013 09:47:21 EDT
-Date: Fri, 30 Aug 2013 13:37:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joe Perches <joe@perches.com>
-cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/6] slab/block: Add and use kmem_cache_zalloc_node
-In-Reply-To: <35769f9779144ace313671235f6508ba683e752b.1377806578.git.joe@perches.com>
-Message-ID: <00000140cf71c343-f6cdd204-a553-49b0-bd0b-28492d6d97fe-000000@email.amazonses.com>
-References: <cover.1377806578.git.joe@perches.com> <35769f9779144ace313671235f6508ba683e752b.1377806578.git.joe@perches.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 30 Aug 2013 09:48:10 -0400
+Date: Fri, 30 Aug 2013 14:47:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        matt.fleming@intel.com, leif.lindholm@linaro.org, dave.martin@arm.com,
+        msalter@redhat.com
+Subject: Re: [PATCH 14/16] Add strstr to compressed string.c for ARM.
+Message-ID: <20130830134754.GX6617@n2100.arm.linux.org.uk>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org> <1376090777-20090-15-git-send-email-roy.franz@linaro.org> <20130830134325.51DC83E102A@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.110
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130830134325.51DC83E102A@localhost>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Aug 2013, Joe Perches wrote:
+On Fri, Aug 30, 2013 at 02:43:25PM +0100, Grant Likely wrote:
+> On Fri,  9 Aug 2013 16:26:15 -0700, Roy Franz <roy.franz@linaro.org> wrote:
+> > The shared efi-stub-helper.c functions require a strstr
+> > implementation.
+> > Implementation copied from arch/x86/boot/string.c
+> > 
+> > Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> 
+> Okay, but at some point arch/arm/boot/compressed/string.c should be
+> reworked into a common place.
 
-> Create and use kmem_cache_zalloc_node utility to be
-> acompatible style with all the zalloc equivalents
-> for kmem_cache_zalloc.
-
-Well I thought more along the lines of dropping the *_zalloc in favor of
-__GFP_ZERO but if this is more convenient then I have no objections.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+Only if the common place can be built with arch specific compile options,
+like -fpic, without impacting the rest of the kernel.
