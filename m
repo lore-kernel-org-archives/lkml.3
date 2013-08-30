@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab3H3HXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 03:23:04 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:31875 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3H3HWt (ORCPT
+	id S1754115Ab3H3H3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 03:29:31 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:52523 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3H3H33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 03:22:49 -0400
-From: Rui Xiang <rui.xiang@huawei.com>
-To: Ian Kent <raven@themaw.net>
-CC: <autofs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 2/2] autofs: use IS_ROOT to replace parent == dentry->d_parent
-Date: Fri, 30 Aug 2013 15:22:18 +0800
-Message-ID: <1377847338-51032-2-git-send-email-rui.xiang@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1377847338-51032-1-git-send-email-rui.xiang@huawei.com>
-References: <1377847338-51032-1-git-send-email-rui.xiang@huawei.com>
+	Fri, 30 Aug 2013 03:29:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+In-Reply-To: <52202948.7010303@sonymobile.com>
+References: <52202948.7010303@sonymobile.com>
+Date: Fri, 30 Aug 2013 09:29:29 +0200
+Message-ID: <CACRpkdbRR2aVM3L=NfFWQQVwBvh8ndLsXxafKZCza=z5RPzOzg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: null pointer dereference in error handling in gpiolib.c
+From: Linus Walleij <linus.walleij@linaro.org>
+To: frowand.list@gmail.com
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bird, Tim" <tim.bird@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the helper macro !IS_ROOT to replace parent != dentry->d_parent.
-Just clean up.
+On Fri, Aug 30, 2013 at 7:10 AM, Frank Rowand
+<frank.rowand@sonymobile.com> wrote:
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- fs/autofs4/root.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> Avoid calling desc_to_gpio() if desc->chip is NULL, as this will
+> cause a kernel panic.
+>
+> In the code above the calls, there is a test for !chip, which
+> comes to the 'fail' label if true. In this case, the code
+> panics, since desc_to_gpio() uses desc->chip to look up the
+> gpio number.
+>
+> An RFC patch that explained the cause of one example of panic when
+> desc->chip is NULL and fixed that example
+> (http://lkml.indiana.edu/hypermail/linux/kernel/1308.3/01473.html)
+> was accepted.  This patch fixes the remaining locations which have
+> the same problem.
+>
+> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 92ef341..2caf36a 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -558,7 +558,7 @@ static int autofs4_dir_symlink(struct inode *dir,
- 	dget(dentry);
- 	atomic_inc(&ino->count);
- 	p_ino = autofs4_dentry_ino(dentry->d_parent);
--	if (p_ino && dentry->d_parent != dentry)
-+	if (p_ino && !IS_ROOT(dentry))
- 		atomic_inc(&p_ino->count);
- 
- 	dir->i_mtime = CURRENT_TIME;
-@@ -593,7 +593,7 @@ static int autofs4_dir_unlink(struct inode *dir, struct dentry *dentry)
- 
- 	if (atomic_dec_and_test(&ino->count)) {
- 		p_ino = autofs4_dentry_ino(dentry->d_parent);
--		if (p_ino && dentry->d_parent != dentry)
-+		if (p_ino && !IS_ROOT(dentry))
- 			atomic_dec(&p_ino->count);
- 	}
- 	dput(ino->dentry);
-@@ -732,7 +732,7 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, umode_t m
- 	dget(dentry);
- 	atomic_inc(&ino->count);
- 	p_ino = autofs4_dentry_ino(dentry->d_parent);
--	if (p_ino && dentry->d_parent != dentry)
-+	if (p_ino && !IS_ROOT(dentry))
- 		atomic_inc(&p_ino->count);
- 	inc_nlink(dir);
- 	dir->i_mtime = CURRENT_TIME;
--- 
-1.8.2.2
+Hm it appears Alexandre has another idea on how it should be
+fixed, but he was in a hurry and didn't provide a proper patch.
 
+Let me cook something up so we can see of we can get
+this right.
 
+Yours,
+Linus Walleij
