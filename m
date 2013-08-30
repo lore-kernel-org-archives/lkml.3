@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3H3ONv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:13:51 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:33003 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3H3ONt (ORCPT
+	id S1756314Ab3H3OOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:14:08 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:41955 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3H3OOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:13:49 -0400
-Message-ID: <1377872024.10551.1.camel@phoenix>
-Subject: [PATCH] regulator: lp872x: Make REGULATOR_LP872X depend on I2C
- rather than I2C=y
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 22:13:44 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Aug 2013 10:14:04 -0400
+X-ASG-Debug-ID: 1377872043-0421b50221329bf0001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+From: Josef Bacik <jbacik@fusionio.com>
+To: <linux-btrfs@vger.kernel.org>, <walken@google.com>, <mingo@elte.hu>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] rwsem: add rwsem_is_contended
+Date: Fri, 30 Aug 2013 10:14:01 -0400
+X-ASG-Orig-Subj: [PATCH] rwsem: add rwsem_is_contended
+Message-ID: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
+X-Mailer: git-send-email 1.7.7.6
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1377872043
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.139843
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lp872x regulator driver can be built a module after commit 631a1fc
-"regulator: build: Allow most regulators to be built as modules".
-Make REGULATOR_LP872X depend on I2C to allow building lp872x module when I2C=m.
+Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
+read lock on this rwsem while they scan the extent tree, and if need_resched()
+they will drop the lock and schedule.  The transaction commit needs to take a
+write lock for this rwsem for a very short period to switch out the commit
+roots.  If there are a lot of threads doing this caching operation we can starve
+out the committers which slows everybody out.  To address this we want to add
+this functionality to see if our rwsem has anybody waiting to take a write lock
+so we can drop it and schedule for a bit to allow the commit to continue.
+Thanks,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 ---
- drivers/regulator/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I've cc'ed people who seemed like they may be in charge/familiar with this code,
+hopefully I got the right people.
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 052e284..dfe5809 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -231,7 +231,7 @@ config REGULATOR_LP3972
+ include/linux/rwsem.h |    1 +
+ lib/rwsem.c           |   17 +++++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 0616ffe..61a8802 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -35,6 +35,7 @@ extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
+ extern struct rw_semaphore *rwsem_down_write_failed(struct rw_semaphore *sem);
+ extern struct rw_semaphore *rwsem_wake(struct rw_semaphore *);
+ extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
++extern int rwsem_is_contended(struct rw_semaphore *sem);
  
- config REGULATOR_LP872X
- 	tristate "TI/National Semiconductor LP8720/LP8725 voltage regulators"
--	depends on I2C=y
-+	depends on I2C
- 	select REGMAP_I2C
- 	help
- 	  This driver supports LP8720/LP8725 PMIC
+ /* Include the arch specific part */
+ #include <asm/rwsem.h>
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 19c5fa9..20858cd 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -287,6 +287,23 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
+ 	return sem;
+ }
+ 
++/*
++ * check to see if the rwsem we're holding has anybody waiting to acquire it.
++ */
++int rwsem_is_contended(struct rw_semaphore *sem)
++{
++	int ret = 0;
++	unsigned long flags;
++
++	if (!raw_spin_trylock_irqsave(&sem->wait_lock, flags))
++		return 1;
++	if (!list_empty(&sem->wait_list))
++		ret = 1;
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
++	return ret;
++}
++
++EXPORT_SYMBOL(rwsem_is_contended);
+ EXPORT_SYMBOL(rwsem_down_read_failed);
+ EXPORT_SYMBOL(rwsem_down_write_failed);
+ EXPORT_SYMBOL(rwsem_wake);
 -- 
-1.8.1.2
-
-
+1.7.7.6
 
