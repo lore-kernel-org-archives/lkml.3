@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3H3Iz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 04:55:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56772 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab3H3Iz5 (ORCPT
+	id S1755096Ab3H3I4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 04:56:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59905 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab3H3Iz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Aug 2013 04:55:57 -0400
-Date: Fri, 30 Aug 2013 18:55:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-Message-Id: <20130830185546.69a289c2bef2173cc1ededf4@canb.auug.org.au>
-In-Reply-To: <20130820064209.GB9518@gmail.com>
-References: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
-	<20130819065817.GB23742@gmail.com>
-	<20130820005234.GX19750@two.firstfloor.org>
-	<20130820064209.GB9518@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__30_Aug_2013_18_55_46_+1000_a0fguXyJr.tb2=c2"
+Date: Fri, 30 Aug 2013 10:55:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf_swevent_add warn_on.
+Message-ID: <20130830085552.GB10002@twins.programming.kicks-ass.net>
+References: <20130830035716.GA3713@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130830035716.GA3713@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Aug_2013_18_55_46_+1000_a0fguXyJr.tb2=c2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 29, 2013 at 11:57:16PM -0400, Dave Jones wrote:
+> WARNING: CPU: 2 PID: 7498 at kernel/events/core.c:5485 perf_swevent_add+0x18d/0x1a0()
+> Modules linked in: snd_seq_dummy 8021q garp stp fuse tun rfcomm hidp nfnetlink ipt_ULOG nfc caif_socket caif af_802154 phonet af_rxrpc bnep bluetooth can_bcm rfkill can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt scsi_transport_iscsi rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd e1000e usb_debug ptp soundcore pps_core pcspkr
+> CPU: 2 PID: 7498 Comm: trinity-child1 Not tainted 3.11.0-rc7+ #32 
+>  ffffffff81a228d4 ffff88022ea55a70 ffffffff816fa71e 0000000000000000
+>  ffff88022ea55aa8 ffffffff81052ebd ffff88022d147000 ffff88024d9cf3e0
+>  0000000000000003 0000000000000001 0000000009527bd7 ffff88022ea55ab8
+> Call Trace:
+>  [<ffffffff816fa71e>] dump_stack+0x54/0x74
+>  [<ffffffff81052ebd>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff81052f9a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff8113ea2d>] perf_swevent_add+0x18d/0x1a0
+>  [<ffffffff8113f4e7>] event_sched_in.isra.75+0x87/0x1c0
+>  [<ffffffff8114035a>] group_sched_in+0x6a/0x1c0
+>  [<ffffffff81140f21>] ctx_sched_in+0x101/0x290
+>  [<ffffffff81141110>] perf_event_sched_in+0x60/0x90
+>  [<ffffffff81144c0b>] perf_event_context_sched_in+0x7b/0xc0
+>  [<ffffffff81145777>] __perf_event_task_sched_in+0x477/0x490
+>  [<ffffffff81098c74>] ? arch_vtime_task_switch+0x94/0xa0
+>  [<ffffffff8108cb70>] finish_task_switch+0xf0/0x130
+>  [<ffffffff817015fd>] __schedule+0x34d/0x970
+>  [<ffffffff81701c49>] schedule+0x29/0x70
+>  [<ffffffff810831b4>] do_cpu_nanosleep+0x154/0x250
+>  [<ffffffff8108316b>] ? do_cpu_nanosleep+0x10b/0x250
+>  [<ffffffff810833c9>] posix_cpu_nsleep+0x69/0x120
+>  [<ffffffff81083493>] process_cpu_nsleep+0x13/0x20
+>  [<ffffffff8107feaa>] SyS_clock_nanosleep+0x9a/0x110
+>  [<ffffffff8170ded4>] tracesys+0xdd/0xe2
+> ---[ end trace 809ae0fc0cbb6fcc ]---
+> 
+> 
+> 5484         head = find_swevent_head(swhash, event);
+> 5485         if (WARN_ON_ONCE(!head))
+> 5486                 return -EINVAL;
+> 5487 
+> 
 
-Hi all,
-
-On Tue, 20 Aug 2013 08:42:09 +0200 Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andi Kleen <andi@firstfloor.org> wrote:
->=20
-> > > > Introduced by commit 9a55fdbe941e ("x86, asmlinkage, paravirt: Add
-> > > > __visible/asmlinkage to xen paravirt ops").  The 2 definitions used=
- to be
-> > > > identical ... maybe there should be only one.
-> > >=20
-> > > Andi, please send a fix for this build warning, against=20
-> > > tip:x86/asmlinkage.
-> >=20
-> > I resent the patch. Thanks for the headsup.
->=20
-> I suspect hpa missed it because the patch was opaque and=20
-> non-descriptive: the title talks about a 'warning' that is=20
-> supposedly fixed but the changelog does not explain what=20
-> warning it is and why the change matters.
->=20
-> Please use the customary changelog style we use in the=20
-> kernel:
->=20
->   " Current code does (A), this has a problem when (B).
->     We can improve this doing (C), because (D)."
->=20
-> I've seen this pattern of deficient changelogs a dozen=20
-> times in your patches this year alone ...
-
-Ping?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__30_Aug_2013_18_55_46_+1000_a0fguXyJr.tb2=c2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSIF4WAAoJEECxmPOUX5FE0wgP/1pdTFAe+sVoGnxbwkqvqcPk
-MFRCVqYQcyp26ago7b9nstVL+vOL2UpXOMAMnv8Sgs9X2RY0SaYrgMJeHio15hTJ
-8Pk73d7ry8mzmHc8az7OPPbbngw1GeMh+WKEgv/bsO5aLOjKDrw8+hVoMwn8bl8P
-cUkytMm5tCPSBXSMCEVqrnJOf/X2rBmPpnunWgDGvusRsMy10VM7meWMMsxxB9pr
-xQjzKeiY4HxHe1R087+MQ03K1bd/ZDFhp0Cawjdce6EX6F+8bjFcjO++l8Ut+uia
-xHvzQO2UHr844VHFqJjk1RJ+4AZff0RcTvnrGRk+2KclKs6q9mUUCdIZqThGneFW
-2dNAiivZEg0Q31/Nv+S0SKIvciHcEiIkRns3VioUF3Cd8RbTniDxJRskUlGW0DXR
-DqlOXU5cSqNzAfOG3OyHSeN2rAC5ywNtrF4P6L5uNV0gzOk4cSXtkMwg1OrYt1Gz
-jAJpzXfz8cY4n3KHT6osShMRFI3ttpuYVmBAWNfdPK6T51491d20Cd+Aam5At7Ar
-64fMGAPoZ0EF26dFSmfjOo2BzZ0V6NQI/bF1ZmHbdQ47+gVgTiu+sTFtk1Nv9OzU
-PXD4SVwYqx3233FD0MEke3UlbHahDQeWCX5c/R6/G/Hj+Pc6Vv2EOSw/hApRA3iP
-s2/kpxzP8H0t5pAMsdSr
-=yMIG
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Aug_2013_18_55_46_+1000_a0fguXyJr.tb2=c2--
+Does
+http://lkml.kernel.org/r/1377355554-8934-1-git-send-email-jolsa@redhat.com
+help with that?
