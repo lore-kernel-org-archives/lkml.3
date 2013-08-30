@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab3H3Ldn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:33:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43767 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3H3Ldm (ORCPT
+	id S1755407Ab3H3Lfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:35:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43850 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab3H3Lff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:33:42 -0400
-Message-ID: <52208313.6000700@parallels.com>
-Date: Fri, 30 Aug 2013 15:33:39 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 07:35:35 -0400
+Date: Fri, 30 Aug 2013 13:35:33 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, linaro-dev@lists.linaro.org,
+        len.brown@intel.com, rjw@sisk.pl
+Subject: Re: [PATCH RFC 1/2] PM / Hibernate: use name_to_dev_t to parse
+ resume
+Message-ID: <20130830113533.GA7226@amd.pavel.ucw.cz>
+References: <1377114413-8521-1-git-send-email-sebastian.capella@linaro.org>
+ <1377114413-8521-2-git-send-email-sebastian.capella@linaro.org>
+ <20130825153811.GA4795@amd.pavel.ucw.cz>
+ <20130826174050.16429.7419@capellas-linux>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate()
- -v2
-References: <20130812163935.10366.88320.stgit@maximpc.sw.ru> <20130816112854.5630.1907.stgit@maximpc.sw.ru> <20130829154110.GB19636@tucsk.piliscsaba.szeredi.hu> <521F7672.7050407@parallels.com> <20130829163744.GC19636@tucsk.piliscsaba.szeredi.hu> <CAJfpegszfc9_ZkGGHg84VvOdmWz1=zWCnHRDbVOWf6_c-oJAXA@mail.gmail.com> <CAJfpegueaj7dF1SL68=pKSTO-q6RnbD-D=C65B8RGEPC4_DMfQ@mail.gmail.com>
-In-Reply-To: <CAJfpegueaj7dF1SL68=pKSTO-q6RnbD-D=C65B8RGEPC4_DMfQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826174050.16429.7419@capellas-linux>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08/30/2013 01:13 PM, Miklos Szeredi пишет:
-> On Thu, Aug 29, 2013 at 6:41 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> BTW, isn't it enough to do the filemap_write_and_wait() *plus* the
->> fuse_set_nowrite()?
-> Thought about it a bit and I think this should do fine.
->
-> Any writes before the fallocate will go trough before the fallocate.
-> i_mutex guarantees that only one instance of fuse_set_nowrite() is
-> running.  Any mmaped writes during the fallocate() will go after the
-> fallocate request and the page cache truncation and that's fine too.
-> Page cache is consistent since it doens't contain pages for those
-> writes to the hole.  Subsequent reads to that area will fill them in.
->
-> Any other concerns?
+On Mon 2013-08-26 10:40:50, Sebastian Capella wrote:
+> Apologies for my previous top post reply...
+> 
+> Quoting Pavel Machek (2013-08-25 08:38:11)
+> > Is the allocation actually neccessary? At the very least this should
+> > test for NULL...
+> 
+> 
+> Thanks Pavel!  I'll add the check for NULL.
+> 
+> name_to_dev_t expects a non-const name, but the buffer passed in
+> is const.  I also am removing the '\n' if found at the end of the
+> string which would violate the const.
 
-No. What you suggest looks as a neat and correct solution. I'll resend 
-the updated patch after some testing (since now till Monday).
+Fix name_to_dev_t, then. No need to do memory allocation just to work
+around const.
 
-As for proof-of-correctness, all you wrote above is correct, but the 
-first point had been boiling my mind for a while. I came to the 
-following reasoning (hopefully it is what you meant):
+[You can also take a look why it is const in the first place. I don't
+think it needs to be.]
 
-The fact that filemap_write_and_wait() returned infers that 
-end_page_writeback() was called for all relevant pages. And fuse doesn't 
-call it before adding request to fi->queued_writes and calling 
-fuse_flush_writepages(). And the latter, in turn, guarantees proper 
-accounting of request in fi->writectr. Here, of course, it's crucial 
-that we can't have concurrent fuse_set_nowrite(), as you explained. 
-Hence, so far as fi->writectr was bumped, fuse_set_nowrite() we call 
-after filemap_write_and_wait() would wait until all changes have gone to 
-the server.
-
-Thanks,
-Maxim
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
