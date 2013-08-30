@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab3H3VBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 17:01:24 -0400
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:35076 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab3H3VBN (ORCPT
+	id S1756126Ab3H3VEC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 17:04:02 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:35493 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3H3VEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 17:01:13 -0400
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Aug 2013 17:01:12 EDT
-From: Yann Cantin <yann.cantin@laposte.net>
-To: linux-input@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz, rob@landley.net,
-        gregkh@linuxfoundation.org, Yann Cantin <yann.cantin@laposte.net>
-Subject: [PATCH v2 1/2] hid: Blacklist eBeam devices
-Date: Fri, 30 Aug 2013 22:53:06 +0200
-Message-Id: <1377895987-27715-2-git-send-email-yann.cantin@laposte.net>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1377895987-27715-1-git-send-email-yann.cantin@laposte.net>
-References: <1377895987-27715-1-git-send-email-yann.cantin@laposte.net>
+	Fri, 30 Aug 2013 17:04:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130830205404.GF13318@ZenIV.linux.org.uk>
+References: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<5220E56A.80603@hp.com>
+	<CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
+	<5220F090.5050908@hp.com>
+	<CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
+	<5220FD51.2010709@hp.com>
+	<CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
+	<20130830205404.GF13318@ZenIV.linux.org.uk>
+Date: Fri, 30 Aug 2013 14:03:59 -0700
+X-Google-Sender-Auth: Be9SiIRfzB-xTmM2p_TFijSizN0
+Message-ID: <CA+55aFwwKEaTBX9Uoexpote7dOHBq+TiJ=RifzTpVL_jh24A9w@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 30, 2013 at 1:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Not really.  Sure, you'll retry it if you race with d_move(); that's not
+> the real problem - access past the end of the object containing ->d_name.name
+> would screw you and that's what ->d_lock is preventing there.  Delayed freeing
+> of what ->d_name is pointing into is fine, but it's not the only way to get
+> hurt there...
 
-Signed-off-by: Yann Cantin <yann.cantin@laposte.net>
----
- drivers/hid/hid-core.c | 3 +++
- drivers/hid/hid-ids.h  | 3 +++
- 2 files changed, 6 insertions(+)
+Umm? We follow d->d_name.name without d_lock under RCU all the time -
+that's what the pathname lookup is all about, after all.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 36668d1..da5dfa0 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1985,6 +1985,9 @@ static const struct hid_device_id hid_ignore_list[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
-+#if defined(CONFIG_INPUT_EBEAM_USB)
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_EFI, USB_DEVICE_ID_EFI_EBEAM) },
-+#endif
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index ffe4c7a..abd1c53 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -288,6 +288,9 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7	0x73f7
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
- 
-+#define USB_VENDOR_ID_EFI		0x2650
-+#define USB_DEVICE_ID_EFI_EBEAM		0x1311
-+
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
- 
--- 
-1.8.1.5
+Yes, yes, you haev to be careful and cannot just blindly trust the
+length: you also have to check for NUL character as you are copying it
+and stop if you hit it. But that's trivial.
 
+Why would d_prepend be any different?
+
+            Linus
