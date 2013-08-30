@@ -1,178 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab3H3NeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:34:10 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:33757 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3H3NeH (ORCPT
+	id S1755703Ab3H3Ni7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:38:59 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:42851 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab3H3Ni5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:34:07 -0400
+	Fri, 30 Aug 2013 09:38:57 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 11/16] Add proper definitions for some EFI function pointers.
+Subject: Re: [PATCH 12/16] Fix types in EFI calls to match EFI function definitions.
 To: Roy Franz <roy.franz@linaro.org>, linux-kernel@vger.kernel.org,
         linux-efi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         matt.fleming@intel.com, linux@arm.linux.org.uk
 Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
         Roy Franz <roy.franz@linaro.org>
-In-Reply-To: <1376090777-20090-12-git-send-email-roy.franz@linaro.org>
-References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org> <1376090777-20090-12-git-send-email-roy.franz@linaro.org>
-Date: Fri, 30 Aug 2013 14:34:08 +0100
-Message-Id: <20130830133408.14CCD3E102A@localhost>
+In-Reply-To: <1376090777-20090-13-git-send-email-roy.franz@linaro.org>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org> <1376090777-20090-13-git-send-email-roy.franz@linaro.org>
+Date: Fri, 30 Aug 2013 14:39:02 +0100
+Message-Id: <20130830133902.AEA7A3E102A@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Aug 2013 16:26:12 -0700, Roy Franz <roy.franz@linaro.org> wrote:
-> The x86/AMD64 EFI stubs must us a call wrapper to convert between
-> the Linux and EFI ABIs, so void pointers are sufficient.  For ARM,
-> the ABIs are compatible, so we can directly invoke the function
-> pointers.  The functions that are used by the ARM stub are updated
-> to match the EFI definitions.
+On Fri,  9 Aug 2013 16:26:13 -0700, Roy Franz <roy.franz@linaro.org> wrote:
+> EFI calls can made directly on ARM, so the function pointers
+> are directly invoked.  This allows types to be checked at
+> compile time, so here we ensure that the parameters match
+> the function signature.
 > 
 > Signed-off-by: Roy Franz <roy.franz@linaro.org>
-
-Looks reasonable.
-
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
-
 > ---
->  arch/x86/boot/compressed/eboot.h |    2 --
->  include/linux/efi.h              |   45 ++++++++++++++++++++++++--------------
->  2 files changed, 28 insertions(+), 19 deletions(-)
+>  drivers/firmware/efi/efi-stub-helper.c |   15 +++++++++------
+>  1 file changed, 9 insertions(+), 6 deletions(-)
 > 
-> diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
-> index bafbd94..81b6b65 100644
-> --- a/arch/x86/boot/compressed/eboot.h
-> +++ b/arch/x86/boot/compressed/eboot.h
-> @@ -11,8 +11,6 @@
+> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+> index b707a9f..4bb542f 100644
+> --- a/drivers/firmware/efi/efi-stub-helper.c
+> +++ b/drivers/firmware/efi/efi-stub-helper.c
+> @@ -321,7 +321,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>  	status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+>  				EFI_LOADER_DATA,
+>  				nr_files * sizeof(*files),
+> -				&files);
+> +				(void **)&files);
+>  	if (status != EFI_SUCCESS) {
+>  		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
+>  		goto fail;
+> @@ -372,7 +372,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>  			boottime = sys_table_arg->boottime;
 >  
->  #define DESC_TYPE_CODE_DATA	(1 << 0)
+>  			status = efi_call_phys3(boottime->handle_protocol,
+> -					image->device_handle, &fs_proto, &io);
+> +					image->device_handle, &fs_proto,
+> +						(void **)&io);
+>  			if (status != EFI_SUCCESS) {
+>  				efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
+>  				goto free_files;
+> @@ -406,7 +407,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
 >  
-> -#define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
-> -
->  #define EFI_CONSOLE_OUT_DEVICE_GUID    \
->  	EFI_GUID(0xd3b36f2c, 0xd551, 0x11d4, 0x9a, 0x46, 0x0, 0x90, 0x27, \
->  		  0x3f, 0xc1, 0x4d)
-> diff --git a/include/linux/efi.h b/include/linux/efi.h
-> index 51f5641..1a7ae34 100644
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -39,6 +39,8 @@
->  typedef unsigned long efi_status_t;
->  typedef u8 efi_bool_t;
->  typedef u16 efi_char16_t;		/* UNICODE character */
-> +typedef u64 efi_physical_addr_t;
-> +typedef void *efi_handle_t;
+>  grow:
+>  		status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+> -					EFI_LOADER_DATA, info_sz, &info);
+> +					EFI_LOADER_DATA, info_sz,
+> +					(void **)&info);
+>  		if (status != EFI_SUCCESS) {
+>  			efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
+>  			goto close_handles;
+> @@ -456,18 +458,19 @@ grow:
 >  
+>  		addr = file_addr;
+>  		for (j = 0; j < nr_files; j++) {
+> -			u64 size;
+> +			unsigned long size;
 >  
->  typedef struct {
-> @@ -96,6 +98,7 @@ typedef	struct {
->  #define EFI_MEMORY_DESCRIPTOR_VERSION	1
->  
->  #define EFI_PAGE_SHIFT		12
-> +#define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
->  
->  typedef struct {
->  	u32 type;
-> @@ -157,11 +160,13 @@ typedef struct {
->  	efi_table_hdr_t hdr;
->  	void *raise_tpl;
->  	void *restore_tpl;
-> -	void *allocate_pages;
-> -	void *free_pages;
-> -	void *get_memory_map;
-> -	void *allocate_pool;
-> -	void *free_pool;
-> +	efi_status_t (*allocate_pages)(int, int, unsigned long,
-> +				       efi_physical_addr_t *);
-> +	efi_status_t (*free_pages)(efi_physical_addr_t, unsigned long);
-> +	efi_status_t (*get_memory_map)(unsigned long *, void *, unsigned long *,
-> +				       unsigned long *, u32 *);
-> +	efi_status_t (*allocate_pool)(int, unsigned long, void **);
-> +	efi_status_t (*free_pool)(void *);
->  	void *create_event;
->  	void *set_timer;
->  	void *wait_for_event;
-> @@ -171,7 +176,7 @@ typedef struct {
->  	void *install_protocol_interface;
->  	void *reinstall_protocol_interface;
->  	void *uninstall_protocol_interface;
-> -	void *handle_protocol;
-> +	efi_status_t (*handle_protocol)(efi_handle_t, efi_guid_t *, void **);
->  	void *__reserved;
->  	void *register_protocol_notify;
->  	void *locate_handle;
-> @@ -181,7 +186,7 @@ typedef struct {
->  	void *start_image;
->  	void *exit;
->  	void *unload_image;
-> -	void *exit_boot_services;
-> +	efi_status_t (*exit_boot_services)(efi_handle_t, unsigned long);
->  	void *get_next_monotonic_count;
->  	void *stall;
->  	void *set_watchdog_timer;
-> @@ -488,10 +493,6 @@ typedef struct {
->  	unsigned long unload;
->  } efi_loaded_image_t;
->  
-> -typedef struct {
-> -	u64 revision;
-> -	void *open_volume;
-> -} efi_file_io_interface_t;
->  
->  typedef struct {
->  	u64 size;
-> @@ -504,20 +505,30 @@ typedef struct {
->  	efi_char16_t filename[1];
->  } efi_file_info_t;
->  
-> -typedef struct {
-> +typedef struct _efi_file_handle {
->  	u64 revision;
-> -	void *open;
-> -	void *close;
-> +	efi_status_t (*open)(struct _efi_file_handle *,
-> +			     struct _efi_file_handle **,
-> +			     efi_char16_t *, u64, u64);
-> +	efi_status_t (*close)(struct _efi_file_handle *);
->  	void *delete;
-> -	void *read;
-> +	efi_status_t (*read)(struct _efi_file_handle *, unsigned long *,
-> +			     void *);
->  	void *write;
->  	void *get_position;
->  	void *set_position;
-> -	void *get_info;
-> +	efi_status_t (*get_info)(struct _efi_file_handle *, efi_guid_t *,
-> +			unsigned long *, void *);
->  	void *set_info;
->  	void *flush;
->  } efi_file_handle_t;
->  
-> +typedef struct _efi_file_io_interface {
-> +	u64 revision;
-> +	int (*open_volume)(struct _efi_file_io_interface *,
-> +			   efi_file_handle_t **);
-> +} efi_file_io_interface_t;
-> +
->  #define EFI_FILE_MODE_READ	0x0000000000000001
->  #define EFI_FILE_MODE_WRITE	0x0000000000000002
->  #define EFI_FILE_MODE_CREATE	0x8000000000000000
-> @@ -787,7 +798,7 @@ struct efivar_entry {
->  
->  struct efi_simple_text_output_protocol {
->  	void *reset;
-> -	void *output_string;
-> +	efi_status_t (*output_string)(void *, void *);
->  	void *test_string;
->  };
->  
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  			size = files[j].size;
+>  			while (size) {
+> -				u64 chunksize;
+> +				unsigned long chunksize;
+>  				if (size > EFI_READ_CHUNK_SIZE)
+>  					chunksize = EFI_READ_CHUNK_SIZE;
+>  				else
+>  					chunksize = size;
+>  				status = efi_call_phys3(fh->read,
+>  							files[j].handle,
+> -							&chunksize, addr);
+> +							&chunksize,
+> +							(void *)addr);
 
+I think you need some description in the commit text about why the type
+of chunksize is changing. It's not clear why you're making this change.
+It is a bug fix?
+
+g.
