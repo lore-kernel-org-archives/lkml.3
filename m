@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3H3NXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:23:13 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50839 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab3H3NXL (ORCPT
+	id S1756667Ab3H3NXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:23:20 -0400
+Received: from smtp-out-137.synserver.de ([212.40.185.137]:1074 "EHLO
+	smtp-out-137.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab3H3NXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:23:11 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 17/35] mm: Add aggressive bias to prefer lower regions
- during page allocation
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:49:05 +0530
-Message-ID: <20130830131902.4947.17975.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Fri, 30 Aug 2013 09:23:18 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 8199
+Message-ID: <52209D1D.3080102@metafoo.de>
+Date: Fri, 30 Aug 2013 15:24:45 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Mike Turquette <mturquette@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Clock framework deadlock with external SPI clockchip
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083013-9332-0000-0000-00000141D616
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While allocating pages from buddy freelists, there could be situations
-in which we have a ready freepage of the required order in a *higher*
-numbered memory region, and there also exists a freepage of a higher
-page order in a *lower* numbered memory region.
+Hi,
 
-To make the consolidation logic more aggressive, try to split up the
-higher order buddy page of a lower numbered region and allocate it,
-rather than allocating pages from a higher numbered region.
+I'm currently facing a deadlock in the common clock framework that
+unfortunately is not addressed by the reentrancy patches. I have a external
+clock chip that is controlled via SPI. So for example to configure the rate
+of the clock chip you need to send a SPI message. Naturally the clock
+framework will hold the prepare lock while configuring the rate.
+Communication in the SPI framework happens asynchronously, spi_sync() will
+enqueue a message in the SPI masters queue and then wait using
+wait_for_completion(). The master will call complete() once the transfer has
+been finished. The SPI master runs in it's own thread in which it processes
+the messages. In this thread it also calls clk_set_rate() to configure the
+SPI transfer clock rate based on what the message says. Now the deadlock
+happens as we try to take the prepare_lock again and since the clock chip
+and the SPI master run in different threads the reentrancy code does not
+kick in.
 
-This ensures that we spill over to a new region only when we truly
-don't have enough contiguous memory in any lower numbered region to
-satisfy that allocation request.
+The basic sequence is like this:
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+=== Clock chip driver ===        === SPI master driver ===
+ clk_prepare_lock()
+ spi_sync()
+   wait_for_completion(X)
+                                 clk_get_rate()
+			           clk_prepare_lock() <--- DEADLOCK
+				   clk_prepare_unlock()
+				 ...
+				 complete(X)
+ ...
+ clk_prepare_unlock()
 
- mm/page_alloc.c |   44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
+I'm wondering if you have any idea how this can be fixed. In my opinion we'd
+need a per clock mutex to address this properly.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e711b9..0cc2a3e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1210,8 +1210,9 @@ static inline
- struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
- 						int migratetype)
- {
--	unsigned int current_order;
--	struct free_area * area;
-+	unsigned int current_order, alloc_order;
-+	struct free_area *area, *other_area;
-+	int alloc_region, other_region;
- 	struct page *page;
- 
- 	/* Find a page of the appropriate size in the preferred list */
-@@ -1220,17 +1221,40 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
- 		if (list_empty(&area->free_list[migratetype].list))
- 			continue;
- 
--		page = list_entry(area->free_list[migratetype].list.next,
--							struct page, lru);
--		rmqueue_del_from_freelist(page, &area->free_list[migratetype],
--					  current_order);
--		rmv_page_order(page);
--		area->nr_free--;
--		expand(zone, page, order, current_order, area, migratetype);
--		return page;
-+		alloc_order = current_order;
-+		alloc_region = area->free_list[migratetype].next_region -
-+				area->free_list[migratetype].mr_list;
-+		current_order++;
-+		goto try_others;
- 	}
- 
- 	return NULL;
-+
-+try_others:
-+	/* Try to aggressively prefer lower numbered regions for allocations */
-+	for ( ; current_order < MAX_ORDER; ++current_order) {
-+		other_area = &(zone->free_area[current_order]);
-+		if (list_empty(&other_area->free_list[migratetype].list))
-+			continue;
-+
-+		other_region = other_area->free_list[migratetype].next_region -
-+				other_area->free_list[migratetype].mr_list;
-+
-+		if (other_region < alloc_region) {
-+			alloc_region = other_region;
-+			alloc_order = current_order;
-+		}
-+	}
-+
-+	area = &(zone->free_area[alloc_order]);
-+	page = list_entry(area->free_list[migratetype].list.next, struct page,
-+			  lru);
-+	rmqueue_del_from_freelist(page, &area->free_list[migratetype],
-+				  alloc_order);
-+	rmv_page_order(page);
-+	area->nr_free--;
-+	expand(zone, page, order, alloc_order, area, migratetype);
-+	return page;
- }
- 
- 
-
+Thanks,
+- Lars
