@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab3H3Emp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 00:42:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58834 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755788Ab3H3Emm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 00:42:42 -0400
-Message-ID: <1377837761.1928.139.camel@joe-AO722>
-Subject: Re: [PATCH] USB2NET : SR9700 : One Chip USB 1.1 USB2NET SR9700
- Device Driver Support
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: liujunliang_ljl@163.com, davem@davemloft.net, horms@verge.net.au,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sunhecheng@vip.126.com
-Date: Thu, 29 Aug 2013 21:42:41 -0700
-In-Reply-To: <20130829230644.GA12124@electric-eye.fr.zoreil.com>
-References: <1377746832-6201-1-git-send-email-liujunliang_ljl@163.com>
-	 <20130829230644.GA12124@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756015Ab3H3Elc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 00:41:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755435Ab3H3ElM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 00:41:12 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V2 2/6] vhost_net: use vhost_add_used_and_signal_n() in vhost_zerocopy_signal_used()
+Date: Fri, 30 Aug 2013 12:29:18 +0800
+Message-Id: <1377836962-49780-3-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1377836962-49780-1-git-send-email-jasowang@redhat.com>
+References: <1377836962-49780-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-30 at 01:06 +0200, Francois Romieu wrote:
+We tend to batch the used adding and signaling in vhost_zerocopy_callback()
+which may result more than 100 used buffers to be updated in
+vhost_zerocopy_signal_used() in some cases. So wwitch to use
+vhost_add_used_and_signal_n() to avoid multiple calls to
+vhost_add_used_and_signal(). Which means much more less times of used index
+updating and memory barriers.
 
-just trivia:
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-> diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
-[]
-> @@ -288,19 +291,19 @@ static void sr9700_set_multicast(struct net_device *net)
-[]
-> +static int sr9700_set_mac_address(struct net_device *netdev, void *p)
-[]
-> -	memcpy(net->dev_addr, addr->sa_data, net->addr_len);
-> -	sr_write_async(dev, PAR, 6, dev->net->dev_addr);
-> +	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
-> +	sr_write_async(dev, PAR, 6, netdev->dev_addr);
-
-s/6/ETH_ALEN/
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 280ee66..8a6dd0d 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -281,7 +281,7 @@ static void vhost_zerocopy_signal_used(struct vhost_net *net,
+ {
+ 	struct vhost_net_virtqueue *nvq =
+ 		container_of(vq, struct vhost_net_virtqueue, vq);
+-	int i;
++	int i, add;
+ 	int j = 0;
  
+ 	for (i = nvq->done_idx; i != nvq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
+@@ -289,14 +289,17 @@ static void vhost_zerocopy_signal_used(struct vhost_net *net,
+ 			vhost_net_tx_err(net);
+ 		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
+ 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
+-			vhost_add_used_and_signal(vq->dev, vq,
+-						  vq->heads[i].id, 0);
+ 			++j;
+ 		} else
+ 			break;
+ 	}
+-	if (j)
+-		nvq->done_idx = i;
++	while (j) {
++		add = min(UIO_MAXIOV - nvq->done_idx, j);
++		vhost_add_used_and_signal_n(vq->dev, vq,
++					    &vq->heads[nvq->done_idx], add);
++		nvq->done_idx = (nvq->done_idx + add) % UIO_MAXIOV;
++		j -= add;
++	}
+ }
+ 
+ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+-- 
+1.7.1
 
