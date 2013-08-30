@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3H3MmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:42:05 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:49977 "EHLO e8.ny.us.ibm.com"
+	id S1756559Ab3H3Mmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:42:35 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49812 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab3H3MmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:42:01 -0400
+	id S1755199Ab3H3Mmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:42:32 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 11/35] mm: Add an optimized version of
- del_from_freelist to keep page allocation fast
+Subject: [RFC PATCH v3 12/35] bitops: Document the difference in indexing
+ between fls() and __fls()
 To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
         tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
         riel@redhat.com, arjan@linux.intel.com,
@@ -20,8 +20,8 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
         kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:07:55 +0530
-Message-ID: <20130830123743.24352.27969.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 30 Aug 2013 18:08:26 +0530
+Message-ID: <20130830123809.24352.89088.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
 References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,174 +30,51 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083012-0320-0000-0000-000000D8382C
+x-cbid: 13083012-7182-0000-0000-00000840EA4E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the main advantages of this design of memory regions is that page
-allocations can potentially be extremely fast - almost with no extra
-overhead from memory regions.
-
-To exploit that, introduce an optimized version of del_from_freelist(), which
-utilizes the fact that we always delete items from the head of the list
-during page allocation.
-
-Basically, we want to keep a note of the region from which we are allocating
-in a given freelist, to avoid having to compute the page-to-zone-region for
-every page allocation. So introduce a 'next_region' pointer in every freelist
-to achieve that, and use it to keep the fastpath of page allocation almost as
-fast as it would have been without memory regions.
+fls() indexes the bits starting with 1, ie., from 1 to BITS_PER_LONG
+whereas __fls() uses a zero-based indexing scheme (0 to BITS_PER_LONG - 1).
+Add comments to document this important difference.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/mm.h     |   14 +++++++++++
- include/linux/mmzone.h |    6 +++++
- mm/page_alloc.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 81 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/bitops.h      |    4 ++++
+ include/asm-generic/bitops/__fls.h |    5 +++++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 52329d1..156d7db 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -747,6 +747,20 @@ static inline int page_zone_region_id(const struct page *page)
- 	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
- }
- 
-+static inline void set_next_region_in_freelist(struct free_list *free_list)
-+{
-+	struct page *page;
-+	int region_id;
-+
-+	if (unlikely(list_empty(&free_list->list))) {
-+		free_list->next_region = NULL;
-+	} else {
-+		page = list_entry(free_list->list.next, struct page, lru);
-+		region_id = page_zone_region_id(page);
-+		free_list->next_region = &free_list->mr_list[region_id];
-+	}
-+}
-+
- #ifdef SECTION_IN_PAGE_FLAGS
- static inline void set_page_section(struct page *page, unsigned long section)
- {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 201ab42..932e71f 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -92,6 +92,12 @@ struct free_list {
- 	struct list_head	list;
- 
- 	/*
-+	 * Pointer to the region from which the next allocation will be
-+	 * satisfied. (Same as the freelist's first pageblock's region.)
-+	 */
-+	struct mem_region_list	*next_region; /* for fast page allocation */
-+
-+	/*
- 	 * Demarcates pageblocks belonging to different regions within
- 	 * this freelist.
- 	 */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 07ac019..52b6655 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -548,6 +548,15 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
- 	/* This is the first region, so add to the head of the list */
- 	prev_region_list = &free_list->list;
- 
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN((list_empty(&free_list->list) && free_list->next_region != NULL),
-+					"%s: next_region not NULL\n", __func__);
-+#endif
-+	/*
-+	 * Set 'next_region' to this region, since this is the first region now
-+	 */
-+	free_list->next_region = region;
-+
- out:
- 	list_add(lru, prev_region_list);
- 
-@@ -555,6 +564,47 @@ out:
- 	region->page_block = lru;
- }
- 
-+/**
-+ * __rmqueue_smallest() *always* deletes elements from the head of the
-+ * list. Use this knowledge to keep page allocation fast, despite being
-+ * region-aware.
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 6dfd019..25e6fdc 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -380,6 +380,10 @@ static inline unsigned long ffz(unsigned long word)
+  * @word: The word to search
+  *
+  * Undefined if no set bit exists, so code should check against 0 first.
 + *
-+ * Do *NOT* call this function if you are deleting from somewhere deep
-+ * inside the freelist.
-+ */
-+static void rmqueue_del_from_freelist(struct page *page,
-+				      struct free_list *free_list)
-+{
-+	struct list_head *lru = &page->lru;
-+
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN((free_list->list.next != lru),
-+				"%s: page not at head of list", __func__);
-+#endif
-+
-+	list_del(lru);
-+
-+	/* Fastpath */
-+	if (--(free_list->next_region->nr_free)) {
-+
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+		WARN(free_list->next_region->nr_free < 0,
-+				"%s: nr_free is negative\n", __func__);
-+#endif
-+		return;
-+	}
-+
-+	/*
-+	 * Slowpath, when this is the last pageblock of this region
-+	 * in this freelist.
-+	 */
-+	free_list->next_region->page_block = NULL;
-+
-+	/* Set 'next_region' to the new first region in the freelist. */
-+	set_next_region_in_freelist(free_list);
-+}
-+
-+/* Generic delete function for region-aware buddy allocator. */
- static void del_from_freelist(struct page *page, struct free_list *free_list)
++ * Note: __fls(x) is equivalent to fls(x) - 1. That is, __fls() uses
++ * a zero-based indexing scheme (0 to BITS_PER_LONG - 1), where
++ * __fls(1) = 0, __fls(2) = 1, and so on.
+  */
+ static inline unsigned long __fls(unsigned long word)
  {
- 	struct list_head *prev_page_lru, *lru, *p;
-@@ -562,6 +612,11 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
- 	int region_id;
- 
- 	lru = &page->lru;
-+
-+	/* Try to fastpath, if deleting from the head of the list */
-+	if (lru == free_list->list.next)
-+		return rmqueue_del_from_freelist(page, free_list);
-+
- 	region_id = page_zone_region_id(page);
- 	region = &free_list->mr_list[region_id];
- 	region->nr_free--;
-@@ -597,6 +652,11 @@ page_found:
- 	prev_page_lru = lru->prev;
- 	list_del(lru);
- 
-+	/*
-+	 * Since we are not deleting from the head of the freelist, the
-+	 * 'next_region' pointer doesn't have to change.
-+	 */
-+
- 	if (region->nr_free == 0) {
- 		region->page_block = NULL;
- 	} else {
-@@ -1022,7 +1082,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
- 
- 		page = list_entry(area->free_list[migratetype].list.next,
- 							struct page, lru);
--		del_from_freelist(page, &area->free_list[migratetype]);
-+		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
- 		rmv_page_order(page);
- 		area->nr_free--;
- 		expand(zone, page, order, current_order, area, migratetype);
+diff --git a/include/asm-generic/bitops/__fls.h b/include/asm-generic/bitops/__fls.h
+index a60a7cc..ae908a5 100644
+--- a/include/asm-generic/bitops/__fls.h
++++ b/include/asm-generic/bitops/__fls.h
+@@ -8,6 +8,11 @@
+  * @word: the word to search
+  *
+  * Undefined if no set bit exists, so code should check against 0 first.
++ *
++ * Note: __fls(x) is equivalent to fls(x) - 1. That is, __fls() uses
++ * a zero-based indexing scheme (0 to BITS_PER_LONG - 1), where
++ * __fls(1) = 0, __fls(2) = 1, and so on.
++ *
+  */
+ static __always_inline unsigned long __fls(unsigned long word)
+ {
 
