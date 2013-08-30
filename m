@@ -1,60 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab3H3K04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:26:56 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:60596 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab3H3K0x (ORCPT
+	id S1755910Ab3H3K1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:27:07 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:58359 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab3H3K1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:26:53 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Greg KH <greg@kroah.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        linux-kernel@vger.kernel.org, m.chehab@samsung.com,
-        linux-media@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Dell SP2008WFP monitor.
-Date: Fri, 30 Aug 2013 12:28:16 +0200
-Message-ID: <1985123.qJiQ0PhVD2@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130830040021.GA31290@kroah.com>
-References: <cover.1377781889.git.joseph.salisbury@canonical.com> <3172143.JtUQzMAjLG@avalon> <20130830040021.GA31290@kroah.com>
+	Fri, 30 Aug 2013 06:27:03 -0400
+Message-ID: <5220736E.5050503@ozlabs.ru>
+Date: Fri, 30 Aug 2013 20:26:54 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Alexey Kardashevskiy <aik@ozlabs.ru>, Gleb Natapov <gleb@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org, Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH v9 00/13] KVM: PPC: IOMMU in-kernel handling of VFIO
+References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Thursday 29 August 2013 21:00:21 Greg KH wrote:
-> On Fri, Aug 30, 2013 at 02:41:17AM +0200, Laurent Pinchart wrote:
-> > On Thursday 29 August 2013 11:17:41 Joseph Salisbury wrote:
-> > > BugLink: http://bugs.launchpad.net/bugs/1217957
-> > > 
-> > > Add quirk for Dell SP2008WFP monitor: 05a9:2641
-> > > 
-> > > Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> > > Tested-by: Christopher Townsend <christopher.townsend@canonical.com>
-> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > > Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> > > Cc: linux-media@vger.kernel.org
-> > > Cc: linux-kernel@vger.kernel.org
-> > > Cc: stable@vger.kernel.org
-> > 
-> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > 
-> > I've applied it to my tree. Given that we're too close to the v3.12 merge
-> > window I will push it for v3.13.
+On 08/28/2013 06:37 PM, Alexey Kardashevskiy wrote:
+> This accelerates VFIO DMA operations on POWER by moving them
+> into kernel.
 > 
-> A quirk has to wait that long?  That's not ok, they should go in much
-> sooner than that...
+> This depends on VFIO external API patch which is on its way to upstream.
+> 
+> Changes:
+> v9:
+> * replaced the "link logical bus number to IOMMU group" ioctl to KVM
+> with a KVM device doing the same thing, i.e. the actual changes are in
+> these 3 patches:
+>   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
+>   KVM: PPC: remove warning from kvmppc_core_destroy_vm
+>   KVM: PPC: Add support for IOMMU in-kernel handling
+> 
+> * moved some VFIO external API bits to a separate patch to reduce the size
+> of the "KVM: PPC: Add support for IOMMU in-kernel handling" patch
+> 
+> * fixed code style problems reported by checkpatch.pl.
+> 
+> v8:
+> * fixed comments about capabilities numbers
+> 
+> v7:
+> * rebased on v3.11-rc3.
+> * VFIO external user API will go through VFIO tree so it is
+> excluded from this series.
+> * As nobody ever reacted on "hashtable: add hash_for_each_possible_rcu_notrace()",
+> Ben suggested to push it via his tree so I included it to the series.
+> * realmode_(get|put)_page is reworked.
+> 
+> More details in the individual patch comments.
+> 
+> Alexey Kardashevskiy (13):
+>   KVM: PPC: POWERNV: move iommu_add_device earlier
+>   hashtable: add hash_for_each_possible_rcu_notrace()
+>   KVM: PPC: reserve a capability number for multitce support
+>   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
 
-Can such a patch get merged during the -rc phase ? If so I will push it to 
-v3.12.
+
+Hi Gleb!
+
+Could you please review and pick (if they are ok) the two "capability"
+patches from above?
+
+It would be cool if you also looked at "KVM: PPC: Add support for IOMMU
+in-kernel handling", the part about KVM device for SPAPR TCE IOMMU table.
+
+Thanks!
+
+
+
+>   powerpc: Prepare to support kernel handling of IOMMU map/unmap
+>   powerpc: add real mode support for dma operations on powernv
+>   KVM: PPC: enable IOMMU_API for KVM_BOOK3S_64 permanently
+>   KVM: PPC: Add support for multiple-TCE hcalls
+>   powerpc/iommu: rework to support realmode
+>   KVM: PPC: remove warning from kvmppc_core_destroy_vm
+>   KVM: PPC: add trampolines for VFIO external API
+>   KVM: PPC: Add support for IOMMU in-kernel handling
+>   KVM: PPC: Add hugepage support for IOMMU in-kernel handling
+> 
+>  Documentation/virtual/kvm/api.txt                  |  26 +
+>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 ++
+>  arch/powerpc/include/asm/iommu.h                   |  18 +-
+>  arch/powerpc/include/asm/kvm_host.h                |  38 ++
+>  arch/powerpc/include/asm/kvm_ppc.h                 |  16 +-
+>  arch/powerpc/include/asm/machdep.h                 |  12 +
+>  arch/powerpc/include/asm/pgtable-ppc64.h           |   2 +
+>  arch/powerpc/include/uapi/asm/kvm.h                |   8 +
+>  arch/powerpc/kernel/iommu.c                        | 243 +++++----
+>  arch/powerpc/kvm/Kconfig                           |   1 +
+>  arch/powerpc/kvm/book3s_64_vio.c                   | 597 ++++++++++++++++++++-
+>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 408 +++++++++++++-
+>  arch/powerpc/kvm/book3s_hv.c                       |  42 +-
+>  arch/powerpc/kvm/book3s_hv_rmhandlers.S            |   8 +-
+>  arch/powerpc/kvm/book3s_pr_papr.c                  |  35 ++
+>  arch/powerpc/kvm/powerpc.c                         |   4 +
+>  arch/powerpc/mm/init_64.c                          |  50 +-
+>  arch/powerpc/platforms/powernv/pci-ioda.c          |  57 +-
+>  arch/powerpc/platforms/powernv/pci-p5ioc2.c        |   2 +-
+>  arch/powerpc/platforms/powernv/pci.c               |  75 ++-
+>  arch/powerpc/platforms/powernv/pci.h               |   3 +-
+>  arch/powerpc/platforms/pseries/iommu.c             |   8 +-
+>  include/linux/hashtable.h                          |  15 +
+>  include/linux/kvm_host.h                           |   1 +
+>  include/linux/mm.h                                 |  14 +
+>  include/linux/page-flags.h                         |   4 +-
+>  include/uapi/linux/kvm.h                           |   3 +
+>  virt/kvm/kvm_main.c                                |   5 +
+>  28 files changed, 1564 insertions(+), 168 deletions(-)
+>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> 
+
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Alexey
