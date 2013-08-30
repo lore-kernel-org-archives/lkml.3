@@ -1,191 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3H3K3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:29:38 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51112 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab3H3K3g (ORCPT
+	id S1756054Ab3H3K3x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:29:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33690 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab3H3K3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:29:36 -0400
+	Fri, 30 Aug 2013 06:29:52 -0400
+Date: Fri, 30 Aug 2013 12:29:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        pjt@google.com, preeti@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mgorman@suse.de, riel@redhat.com, aswin@hp.com, scott.norton@hp.com,
+        srikar@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH v4 3/3] sched: Periodically decay max cost of idle
+ balance
+Message-ID: <20130830102941.GF10002@twins.programming.kicks-ass.net>
+References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+ <1377806736-3752-4-git-send-email-jason.low2@hp.com>
+ <20130830101817.GE10002@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
-References: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-	<20130830094857.GA14502@gmail.com>
-	<CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
-	<CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
-Date: Fri, 30 Aug 2013 12:29:34 +0200
-Message-ID: <CA+icZUVnfVcYdc7XHyM9oA5GF-HG35JghWNabE4pgvBvTh1E0g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130830101817.GE10002@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 11:58 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Aug 30, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Aug 30, 2013 at 11:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>>
->>> * Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>
->>>> On Fri, Aug 30, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> > On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
->>>> > <torvalds@linux-foundation.org> wrote:
->>>> >> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
->>>> >>> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
->>>> >>>>
->>>> >>>> Waiman? Mind looking at this and testing? Linus
->>>> >>>
->>>> >>> Sure, I will try out the patch tomorrow morning and see how it works out for
->>>> >>> my test case.
->>>> >>
->>>> >> Ok, thanks, please use this slightly updated patch attached here.
->>>> >>
->>>> >> It improves on the previous version in actually handling the
->>>> >> "unlazy_walk()" case with native lockref handling, which means that
->>>> >> one other not entirely odd case (symlink traversal) avoids the d_lock
->>>> >> contention.
->>>> >>
->>>> >> It also refactored the __d_rcu_to_refcount() to be more readable, and
->>>> >> adds a big comment about what the heck is going on. The old code was
->>>> >> clever, but I suspect not very many people could possibly understand
->>>> >> what it actually did. Plus it used nested spinlocks because it wanted
->>>> >> to avoid checking the sequence count twice. Which is stupid, since
->>>> >> nesting locks is how you get really bad contention, and the sequence
->>>> >> count check is really cheap anyway. Plus the nesting *really* didn't
->>>> >> work with the whole lockref model.
->>>> >>
->>>> >> With this, my stupid thread-lookup thing doesn't show any spinlock
->>>> >> contention even for the "look up symlink" case.
->>>> >>
->>>> >> It also avoids the unnecessary aligned u64 for when we don't actually
->>>> >> use cmpxchg at all.
->>>> >>
->>>> >> It's still one single patch, since I was working on lots of small
->>>> >> cleanups. I think it's pretty close to done now (assuming your testing
->>>> >> shows it performs fine - the powerpc numbers are promising, though),
->>>> >> so I'll split it up into proper chunks rather than random commit
->>>> >> points. But I'm done for today at least.
->>>> >>
->>>> >> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
->>>> >> may hit cases I didn't test. I think it should be *stable*, but maybe
->>>> >> there's some other d_lock case that your tuned waiting hid, and that
->>>> >> my "fastpath only for unlocked case" version ends up having problems
->>>> >> with.
->>>> >>
->>>> >
->>>> > Following this thread with half an eye... Was that "unsigned" stuff
->>>> > fixed (someone pointed to it).
->>>> > How do you call that test-patch (subject)?
->>>> > I would like to test it on my SNB ultrabook with your test-case script.
->>>> >
->>>>
->>>> Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
->>>>
->>>> lockref:  w/o patch | w/ patch
->>>> ======================
->>>> Run #1: 2.688.094 | 2.643.004
->>>> Run #2: 2.678.884 | 2.652.787
->>>> Run #3: 2.686.450 | 2.650.142
->>>> Run #4: 2.688.435 | 2.648.409
->>>> Run #5: 2.693.770 | 2.651.514
->>>>
->>>> Average: 2687126,6 VS. 2649171,2 ( ???37955,4 )
->>>
->>> For precise stddev numbers you can run it like this:
->>>
->>>    perf stat --null --repeat 5 ./test
->>>
->>> and it will measure time only and print the stddev in percentage:
->>>
->>>  Performance counter stats for './test' (5 runs):
->>>
->>>        1.001008928 seconds time elapsed                                          ( +-  0.00% )
->>>
->>
->> Hi Ingo,
->>
->> that sounds really good :-).
->>
->> AFAICS 'make deb-pkg' does not have support to build linux-tools
->> Debian package where perf is included.
->> Can I run an older version of perf or should I / have to try with the
->> one shipped in Linux v3.11-rc7+ sources?
->> How can I build perf standalone, out of my sources?
->>
->
-> Hmm, I installed linux-tools-common (3.2.0-53.81).
->
-> $ perf stat --null --repeat 5 ./t_lockref_from-linus
-> perf_3.11.0-rc7 not found
-> You may need to install linux-tools-3.11.0-rc7
->
+On Fri, Aug 30, 2013 at 12:18:17PM +0200, Peter Zijlstra wrote:
+>  	for_each_domain(cpu, sd) {
+> +		/*
+> +		 * Decay the newidle max times here because this is a regular
+> +		 * visit to all the domains. Decay ~0.5% per second.
+> +		 */
+> +		if (time_after(jiffies, sd->next_decay_max_lb_cost)) {
+> +			sd->max_newidle_lb_cost =
+> +				(sd->max_newidle_lb_cost * 254) / 256;
+> +			sd->next_decay_max_lb_cost = jiffies + HZ;
+> +			max_cost = max(max_cost, sd->max_newidle_lb_cost);
+> +			need_decay = 1;
+> +		}
 
-[ Sorry for being off-topic ]
+We need to pull the max_cost thing out of that condition, for we could
+possibly trigger need_decay half-way through the iteration.
 
-Hey Ingo,
+That said, why is it: max(sd->max_newidle_lb_cost) and not
+sum(sd->max_newidly_lb_cost)?
 
-can you help, please?
+The sum seems like the more reasonable thing since we're actually
+computing the sum over in idle_balance().
 
-I installed so far all missing -dev packages...
+> +	if (need_decay) {
+>  		/*
+> -		 * Stop the load balance at this level. There is another
+> -		 * CPU in our sched group which is doing load balancing more
+> -		 * actively.
+> +		 * Ensure the rq-wide value also decays but keep it at a
+> +		 * reasonable floor to avoid funnies with rq->avg_idle.
+>  		 */
+> -		if (!continue_balancing)
+> -			break;
+> +		rq->max_idle_balance_cost =
+> +			min(sysctl_sched_migration_cost, max_cost);
 
-$ sudo apt-get install libelf-dev libdw-dev libunwind7-dev libslang2-dev
+OK, that gives an ugly compile warn, and that should obviously have
+been max, so I suppose max((u64)sysctl_sched_migration_cost, max_cost)
+would cure that.
 
-...and then want a perf-only build...
+Given all that I end up with:
 
-[ See tools/Makefile ]
+---
+Subject: sched: Periodically decay max cost of idle balance
+From: Jason Low <jason.low2@hp.com>
+Date: Thu, 29 Aug 2013 13:05:36 -0700
 
-$ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../perf_install-log.txt
+This RFC patch builds on patch 2 and periodically decays that max value to
+do idle balancing per sched domain.
 
-This ends up like this:
-...
-make[2]: Entering directory
-`/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
-make[2]: Leaving directory
-`/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
-    LINK perf
-gcc: error: /home/wearefam/src/linux-kernel/linux/tools/lib/lk/liblk.a:
-No such file or directory
-make[1]: *** [perf] Error 1
-make[1]: Leaving directory `/home/wearefam/src/linux-kernel/linux/tools/perf'
-make: *** [perf_install] Error 2
+Though we want to decay it fairly consistently, we may not want to lower it by
+too much each time, especially since avg_idle is capped based on that value.
+So I thought that decaying the value every second and lowering it by half a
+percent each time appeared to be fairly reasonable.
 
-$ LANG=C LC_ALL=C ll tools/lib/lk/
-total 20
-drwxr-xr-x 2 wearefam wearefam 4096 Aug 30 12:11 ./
-drwxr-xr-x 4 wearefam wearefam 4096 Jul 11 19:42 ../
--rw-r--r-- 1 wearefam wearefam 1430 Aug 30 09:56 Makefile
--rw-r--r-- 1 wearefam wearefam 2144 Jul 11 19:42 debugfs.c
--rw-r--r-- 1 wearefam wearefam  619 Jul 11 19:42 debugfs.h
+This change would allow us to remove the limit we set on each domain's max cost
+to idle balance. Also, since the max can be reduced now, we now have to
+update rq->max_idle balance_cost more frequently. So after every idle balance,
+we loop through the sched domain to find the max sd's newidle load balance cost
+for any one domain. Then we will set rq->max_idle_balance_cost to that value.
 
-Why is liblk not built?
+Since we are now decaying the max cost to do idle balancing, that max cost can
+also become not high enough. One possible explanation for why is that
+besides the time spent on each newidle load balance, there are other costs
+associated with attempting idle balancing. Idle balance also releases and
+reacquires a spin lock. That cost is not counted when we keep track of each
+domain's cost to do newidle load balance. Also, acquiring the rq locks can
+potentially prevent other CPUs from running something useful. And after
+migrating tasks, it might potentially have to pay the costs of cache misses and
+refreshing tasks' cache.
 
-- Sedat -
+Because of that, this patch also compares avg_idle with max cost to do idle
+balancing + sched_migration_cost. While using the max cost helps reduce
+overestimating the average idle, the sched_migration_cost can help account
+for those additional costs of idle balancing.
 
-P.S.: To clean perf build, run...
+Signed-off-by: Jason Low <jason.low2@hp.com>
+[peterz: rewrote the logic, but kept the spirit]
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1377806736-3752-4-git-send-email-jason.low2@hp.com
+---
+ arch/metag/include/asm/topology.h |    1 
+ include/linux/sched.h             |    3 ++
+ include/linux/topology.h          |    3 ++
+ kernel/sched/fair.c               |   44 ++++++++++++++++++++++++++++----------
+ 4 files changed, 40 insertions(+), 11 deletions(-)
 
-$ LANG=C LC_ALL=C make -C tools/ perf_clean
+--- a/arch/metag/include/asm/topology.h
++++ b/arch/metag/include/asm/topology.h
+@@ -27,6 +27,7 @@
+ 	.balance_interval	= 1,			\
+ 	.nr_balance_failed	= 0,			\
+ 	.max_newidle_lb_cost	= 0,			\
++	.next_decay_max_lb_cost	= jiffies,		\
+ }
+ 
+ #define cpu_to_node(cpu)	((void)(cpu), 0)
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -818,7 +818,10 @@ struct sched_domain {
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
+ 
+ 	u64 last_update;
++
++	/* idle_balance() stats */
+ 	u64 max_newidle_lb_cost;
++	unsigned long next_decay_max_lb_cost;
+ 
+ #ifdef CONFIG_SCHEDSTATS
+ 	/* load_balance() stats */
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -107,6 +107,7 @@ int arch_update_cpu_topology(void);
+ 	.balance_interval	= 1,					\
+ 	.smt_gain		= 1178,	/* 15% */			\
+ 	.max_newidle_lb_cost	= 0,					\
++	.next_decay_max_lb_cost	= jiffies,				\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_SMT */
+@@ -137,6 +138,7 @@ int arch_update_cpu_topology(void);
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.max_newidle_lb_cost	= 0,					\
++	.next_decay_max_lb_cost	= jiffies,				\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_MC */
+@@ -169,6 +171,7 @@ int arch_update_cpu_topology(void);
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.max_newidle_lb_cost	= 0,					\
++	.next_decay_max_lb_cost	= jiffies,				\
+ }
+ #endif
+ 
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5409,7 +5409,7 @@ void idle_balance(int this_cpu, struct r
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+ 		int continue_balancing = 1;
+-		u64 t0, domain_cost, max = 5*sysctl_sched_migration_cost;
++		u64 t0, domain_cost;
+ 
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+ 			continue;
+@@ -5426,8 +5426,6 @@ void idle_balance(int this_cpu, struct r
+ 						   &continue_balancing);
+ 
+ 			domain_cost = sched_clock_cpu(this_cpu) - t0;
+-			if (domain_cost > max)
+-				domain_cost = max;
+ 
+ 			if (domain_cost > sd->max_newidle_lb_cost)
+ 				sd->max_newidle_lb_cost = domain_cost;
+@@ -5680,15 +5678,39 @@ static void rebalance_domains(int cpu, e
+ 	/* Earliest time when we have to do rebalance again */
+ 	unsigned long next_balance = jiffies + 60*HZ;
+ 	int update_next_balance = 0;
+-	int need_serialize;
++	int need_serialize, need_decay = 0;
++	u64 max_cost = 0;
+ 
+ 	update_blocked_averages(cpu);
+ 
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
++		/*
++		 * Decay the newidle max times here because this is a regular
++		 * visit to all the domains. Decay ~0.5% per second.
++		 */
++		if (time_after(jiffies, sd->next_decay_max_lb_cost)) {
++			sd->max_newidle_lb_cost =
++				(sd->max_newidle_lb_cost * 254) / 256;
++			sd->next_decay_max_lb_cost = jiffies + HZ;
++			need_decay = 1;
++		}
++		max_cost += sd->max_newidle_lb_cost;
++
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+ 			continue;
+ 
++		/*
++		 * Stop the load balance at this level. There is another
++		 * CPU in our sched group which is doing load balancing more
++		 * actively.
++		 */
++		if (!continue_balancing) {
++			if (need_decay)
++				continue;
++			break;
++		}
++
+ 		interval = sd->balance_interval;
+ 		if (idle != CPU_IDLE)
+ 			interval *= sd->busy_factor;
+@@ -5722,14 +5744,14 @@ static void rebalance_domains(int cpu, e
+ 			next_balance = sd->last_balance + interval;
+ 			update_next_balance = 1;
+ 		}
+-
+-		/*
+-		 * Stop the load balance at this level. There is another
+-		 * CPU in our sched group which is doing load balancing more
+-		 * actively.
++	}
++	if (need_decay) {
++		/*
++		 * Ensure the rq-wide value also decays but keep it at a
++		 * reasonable floor to avoid funnies with rq->avg_idle.
+ 		 */
+-		if (!continue_balancing)
+-			break;
++		rq->max_idle_balance_cost =
++			max((u64)sysctl_sched_migration_cost, max_cost);
+ 	}
+ 	rcu_read_unlock();
+ 
