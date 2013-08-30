@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3H3S2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 14:28:43 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:42027 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab3H3S2m (ORCPT
+	id S1756948Ab3H3Sae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 14:30:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55564 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab3H3Sac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 14:28:42 -0400
-Date: Fri, 30 Aug 2013 14:35:26 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: eranian@gmail.com
-cc: LKML <linux-kernel@vger.kernel.org>, linux-perf-users@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf_event: rdpmc self-monitoring overhead issue
-In-Reply-To: <CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1308301426070.19485@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu> <CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 30 Aug 2013 14:30:32 -0400
+Date: Fri, 30 Aug 2013 14:30:20 -0400 (EDT)
+Message-Id: <20130830.143020.1246803952303746167.davem@davemloft.net>
+To: gregkh@linuxfoundation.org
+Cc: linux@roeck-us.net, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, netdev@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, wim@iguana.be, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, jiang.liu@huawei.com, dhowells@redhat.com,
+        tglx@linutronix.de, sfr@canb.auug.org.au,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130830165550.GA8151@kroah.com>
+References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
+	<20130830165550.GA8151@kroah.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 30 Aug 2013 11:30:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Aug 2013, Stephane Eranian wrote:
-> >
-> You mean that the high cost in your first example comes from the fact
-> that you are averaging over all the iterations and not n-1 (where 1 is
-> the first). I don't see a flag in mmap() to fault it in immediately. But
-> why not document, that programs should touch the page once before
-> starting any timing measurements.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 30 Aug 2013 09:55:50 -0700
 
-I was just curious why perfctr didn't need to do this, but possibly
-I'm just missing the mmap page being touched.  Though the code is pretty
-small and I'm not seeing any such access.
+> On Fri, Aug 30, 2013 at 09:40:35AM -0700, Guenter Roeck wrote:
+>> H8/300 has been dead for several years, the kernel for it has
+>> not compiled for ages, and recent versions of gcc for it are broken.
+>> It is time to drop support for it.
+>> 
+>> Yes, I understand it is not that simple to drop an architecture,
+>> and it may need some discussion, but someone has to put a stake
+>> into the ground. Keeping a virtually dead architecture on life support
+>> takes resources which are better spent elsewhere.
+> 
+> If this doesn't build, and no one is using it anymore, I agree, it
+> should be removed.  If someone wants to revive it, 'git revert' works
+> just fine.
+> 
+> You can put my:
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> on these patches, unless someone steps up to be the active maintainer of
+> the arch and gets it building/working again.
 
-With perf_event you have one mmap page per event so touching all the pages
-starts racking up some overhead if you have multiple events, but yes 
-probably lost in the noise if you do it at open() rather than at read().
+I completely agree with Greg, and for the IDE and networking bits:
 
-It's also hard to have a dummy read of a page w/o the compiler
-optimizing it away...
-
-Vince Weaver
-vincent.weaver@maine.edu
-http://www.eece.maine.edu/~vweaver/
+Acked-by: David S. Miller <davem@davemloft.net>
