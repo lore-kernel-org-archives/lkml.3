@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab3H3QwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:52:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62162 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457Ab3H3QwV (ORCPT
+	id S1756881Ab3H3Qx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:53:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46852 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab3H3Qx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:52:21 -0400
+	Fri, 30 Aug 2013 12:53:26 -0400
+Date: Fri, 30 Aug 2013 09:55:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
+Message-ID: <20130830165550.GA8151@kroah.com>
+References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
-	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
-	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
-	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
-Date: Fri, 30 Aug 2013 09:52:18 -0700
-X-Google-Sender-Auth: Gj7TtaTv8kULsjErJQkQ4q66pO0
-Message-ID: <CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 9:37 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
-> Where is this a.out file from or how to generate it?
+On Fri, Aug 30, 2013 at 09:40:35AM -0700, Guenter Roeck wrote:
+> H8/300 has been dead for several years, the kernel for it has
+> not compiled for ages, and recent versions of gcc for it are broken.
+> It is time to drop support for it.
+> 
+> Yes, I understand it is not that simple to drop an architecture,
+> and it may need some discussion, but someone has to put a stake
+> into the ground. Keeping a virtually dead architecture on life support
+> takes resources which are better spent elsewhere.
 
-Oh, that's just the silly threaded test-binary. I don't know what you
-called it.
+If this doesn't build, and no one is using it anymore, I agree, it
+should be removed.  If someone wants to revive it, 'git revert' works
+just fine.
 
-As to your config options, yesh, you have some expensive stuff.
-DEBUG_OBJECTS and DEBUG_MUTEXES in particular tend to cause lots of
-horrible performance issues. I didn't check if there might be other
-things..
+You can put my:
 
-                Linusc
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+on these patches, unless someone steps up to be the active maintainer of
+the arch and gets it building/working again.
+
+thanks,
+
+greg k-h
