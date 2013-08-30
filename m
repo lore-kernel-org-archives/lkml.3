@@ -1,114 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3H3KL1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:11:27 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:21366 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab3H3KLZ (ORCPT
+	id S1755455Ab3H3KML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:12:11 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58758 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab3H3KMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:11:25 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-c8-52206fcb074d
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] of/platform: add error reporting to of_amba_device_create()
-Date: Fri, 30 Aug 2013 12:11:17 +0200
-Message-id: <1464891.8oCRh2189n@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-52-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAd3T+QpBBodO6FrMP3KO1eLAnx2M
-	Fpd3zWGzOLziAJMDi8eCz1fYPe5c28Pm8XmTXABzFJdNSmpOZllqkb5dAlfGliXbmApmClfc
-	uHaXsYFxF38XIyeHhICJxMZtPxghbDGJC/fWs3UxcnEICSxilPhyo40Vwmlhkui+8ZcZpIpN
-	wEpiYvsqsA4RAS2JJ3M+A3VwcDALpEo8XccJEhYW8JE4ev8PWDmLgKrEyu67bCA2r4CmxJqZ
-	rawgtqiAp8SnSUuZIeKCEj8m32MBsZkF5CX27Z/KCmFrSazfeZxpAiPfLCRls5CUzUJStoCR
-	eRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcAg+k97BuKrB4hCjAAejEg9vw1T5ICHWxLLi
-	ytxDjBIczEoivBWpCkFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbB
-	ZJk4OKUaGGM14prc+zc8CHbtWKa45YO75vNn3hGzd9/dv9m7Y2PQqn+TZnJbhHyfxhy6f+7a
-	nKu1f9tDl76dvfzcYlHN1EWS6R9LDvqtK908/eubHMmwjH0LdRvZTh2MWOz5KZjvTn5pWMKD
-	oz02YXMenpA9+yK9YnI242ctrZnn2++2rwtqnvFdP6b75lElluKMREMt5qLiRACv+Jl1PQIA	AA==
+	Fri, 30 Aug 2013 06:12:08 -0400
+Date: Fri, 30 Aug 2013 12:12:07 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: riel@redhat.com, Kirill Korotaev <dev@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, linux-mm@kvack.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
+        devel@openvz.org, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
+Message-ID: <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu>
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
+ <20130629174525.20175.18987.stgit@maximpc.sw.ru>
+ <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
+ <51FBD2DF.50506@parallels.com>
+ <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com>
+ <52050474.8040608@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52050474.8040608@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add error reporting to of_amba_device_create() so the user knows
-when (and why) some device tree nodes fail to initialize.
+On Fri, Aug 09, 2013 at 07:02:12PM +0400, Maxim Patlasov wrote:
+> 08/06/2013 08:25 PM, Miklos Szeredi пишет:
+> >Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
+> >do the necessary page fault magic and ->page_mkwrite() will be called.
+> >At least AFAICS.
+> 
+> Yes, I agree.
+> 
+> >
+> >The page cannot become dirty through a memory mapping without first
+> >switching the pte from read-only to read-write first.  Page accounting
+> >logic relies on this too.  The other way the page can become dirty is
+> >through write(2) on the fs.  But we do get notified about that too.
+> 
+> Yes, that's correct, but I don't understand why you disregard two
+> other cases of marking page dirty (both related to direct AIO read
+> from a file to a memory region mmap-ed to a fuse file):
+> 
+> 1. dio_bio_submit() -->
+>       bio_set_pages_dirty() -->
+>         set_page_dirty_lock()
+> 
+> 2. dio_bio_complete() -->
+>       bio_check_pages_dirty() -->
+>          bio_dirty_fn() -->
+>             bio_set_pages_dirty() -->
+>                set_page_dirty_lock()
+> 
+> As soon as a page became dirty through a memory mapping (exactly as
+> you explained), nothing would prevent it to be written-back. And
+> fuse will call end_page_writeback almost immediately after copying
+> the real page to a temporary one. Then dio_bio_submit may re-dirty
+> page speculatively w/o notifying fuse. And again, since then nothing
+> would prevent it to be written-back once more. Hence we can end up
+> in more then one temporary page in fuse write-back. And similar
+> concern for dio_bio_complete() re-dirty.
+> 
+> This make me think that we do need fuse_page_is_writeback() in
+> fuse_writepages_fill(). But it shouldn't be harmful because it will
+> no-op practically always due to waiting for fuse writeback in
+> ->page_mkwrite() and in course of handling write(2).
 
-Also while at it fix the function to return an error value on error.
+The problem is: if we need it in ->writepages, we need it in ->writepage too.
+And that's where we can't have it because it would deadlock in reclaim.
 
-[ The issue was spotted on Universal C210 board (using revision 0 of
-  ARM Exynos4210 SoC) on which initialization was silently failing
-  for PL330 MDMA1 device tree node (it was using the wrong addres
-  resulting in amba_device_add() returning -ENODEV). ]
+There's a way to work around this:
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/of/platform.c | 25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
+   - if the request is still in queue, just update it with the contents of the
+     new page
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b0d1ff8..cab4d0a 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -264,8 +264,11 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 		return NULL;
- 
- 	dev = amba_device_alloc(NULL, 0, 0);
--	if (!dev)
--		return NULL;
-+	if (!dev) {
-+		pr_err("%s(): amba_device_alloc() failed for %s\n",
-+		       __func__, node->full_name);
-+		return ERR_PTR(-ENOMEM);
-+	}
- 
- 	/* setup generic device info */
- 	dev->dev.coherent_dma_mask = ~0;
-@@ -290,18 +293,24 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 		dev->irq[i] = irq_of_parse_and_map(node, i);
- 
- 	ret = of_address_to_resource(node, 0, &dev->res);
--	if (ret)
-+	if (ret) {
-+		pr_err("%s(): of_address_to_resource() failed (%d) for %s\n",
-+		       __func__, ret, node->full_name);
- 		goto err_free;
-+	}
- 
- 	ret = amba_device_add(dev, &iomem_resource);
--	if (ret)
-+	if (ret) {
-+		pr_err("%s(): amba_device_add() failed (%d) for %s\n",
-+		       __func__, ret, node->full_name);
- 		goto err_free;
-+	}
- 
- 	return dev;
- 
- err_free:
- 	amba_device_put(dev);
--	return NULL;
-+	return ERR_PTR(ret);
- }
- #else /* CONFIG_ARM_AMBA */
- static struct amba_device *of_amba_device_create(struct device_node *node,
-@@ -374,7 +383,11 @@ static int of_platform_bus_create(struct device_node *bus,
- 	}
- 
- 	if (of_device_is_compatible(bus, "arm,primecell")) {
--		of_amba_device_create(bus, bus_id, platform_data, parent);
-+		/*
-+		 * Don't return an error here to keep compatibility with older
-+		 * device tree files.
-+		 */
-+		(void)of_amba_device_create(bus, bus_id, platform_data, parent);
- 		return 0;
- 	}
- 
--- 
-1.8.2.3
+   - if the request already in userspace, create a new reqest, but only let
+     userspace have it once the previous request for the same page completes, so
+     the ordering is not messed up
 
+But that's a lot of hairy code.
 
+Any other ideas?
+
+The best would be if we could get rid of the ugly temporary page requirement for
+fuse writeback.  The big blocker has always been direct reclaim: allocation must
+not wait on fuse writebacks.  AFAICS there's still a wait_on_page_writeback() in
+relation to memcg.  And it interacts with page migration which also has them.
+Those are the really difficult ones...
+
+The other offender, balance_dirty_pages() is much easier and needs to be tought
+about fuse behavior anyway.
+
+Thoughts?
+
+Thanks,
+Miklos
