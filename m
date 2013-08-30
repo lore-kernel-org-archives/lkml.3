@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3H3DXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 23:23:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab3H3DXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 23:23:21 -0400
-Message-ID: <5220101B.3020108@redhat.com>
-Date: Fri, 30 Aug 2013 11:23:07 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755096Ab3H3DX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 23:23:57 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:26587 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3H3DXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 23:23:55 -0400
+Message-ID: <52201023.40409@huawei.com>
+Date: Fri, 30 Aug 2013 11:23:15 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] vhost_net: remove the max pending check
-References: <1376630190-5912-1-git-send-email-jasowang@redhat.com> <1376630190-5912-7-git-send-email-jasowang@redhat.com> <20130816100225.GD21821@redhat.com> <5212D8F2.10307@redhat.com> <52172395.9000400@redhat.com> <20130825115344.GB1829@redhat.com>
-In-Reply-To: <20130825115344.GB1829@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <balbi@ti.com>, <stern@rowland.harvard.edu>,
+        USB <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH RESEND 2/4] usb: r8a66597-hcd: use platform_{get,set}_drvdata()
+References: <521C5EEE.1080505@huawei.com> <20130828043607.GA21756@kroah.com>
+In-Reply-To: <20130828043607.GA21756@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2013 07:53 PM, Michael S. Tsirkin wrote:
-> On Fri, Aug 23, 2013 at 04:55:49PM +0800, Jason Wang wrote:
->> On 08/20/2013 10:48 AM, Jason Wang wrote:
->>> On 08/16/2013 06:02 PM, Michael S. Tsirkin wrote:
->>>>> On Fri, Aug 16, 2013 at 01:16:30PM +0800, Jason Wang wrote:
->>>>>>> We used to limit the max pending DMAs to prevent guest from pinning too many
->>>>>>> pages. But this could be removed since:
->>>>>>>
->>>>>>> - We have the sk_wmem_alloc check in both tun/macvtap to do the same work
->>>>>>> - This max pending check were almost useless since it was one done when there's
->>>>>>>   no new buffers coming from guest. Guest can easily exceeds the limitation.
->>>>>>> - We've already check upend_idx != done_idx and switch to non zerocopy then. So
->>>>>>>   even if all vq->heads were used, we can still does the packet transmission.
->>>>> We can but performance will suffer.
->>> The check were in fact only done when no new buffers submitted from
->>> guest. So if guest keep sending, the check won't be done.
->>>
->>> If we really want to do this, we should do it unconditionally. Anyway, I
->>> will do test to see the result.
->> There's a bug in PATCH 5/6, the check:
->>
->> nvq->upend_idx != nvq->done_idx
->>
->> makes the zerocopy always been disabled since we initialize both
->> upend_idx and done_idx to zero. So I change it to:
->>
->> (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx.
-> But what I would really like to try is limit ubuf_info to VHOST_MAX_PEND.
-> I think this has a chance to improve performance since
-> we'll be using less cache.
-> Of course this means we must fix the code to really never submit
-> more than VHOST_MAX_PEND requests.
->
-> Want to try?
 
-The result is, I see about 5%-10% improvement for per cpu throughput on
-guest tx. But about 5% degradation on per cpu transaction rate on TCP_RR.
->> With this change on top, I didn't see performance difference w/ and w/o
->> this patch.
-> Did you try small message sizes btw (like 1K)? Or just netperf
-> default of 64K?
->
+Use the wrapper functions for getting and setting the driver data using
+platform_device instead of using dev_{get,set}_drvdata() with &of->dev,
+so we can directly pass a struct platform_device.
 
-5%-10% improvement on for per cpu throughput on guest rx, but some
-regressions (5%) on guest tx. So we'd better keep and make it doing
-properly.
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/usb/host/r8a66597-hcd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Will post V2 for your reviewing.
+rebase on usb-next tree
+
+diff --git a/drivers/usb/host/r8a66597-hcd.c b/drivers/usb/host/r8a66597-hcd.c
+index a9eef68..2ad004a 100644
+--- a/drivers/usb/host/r8a66597-hcd.c
++++ b/drivers/usb/host/r8a66597-hcd.c
+@@ -2393,7 +2393,7 @@ static const struct dev_pm_ops r8a66597_dev_pm_ops = {
+
+ static int r8a66597_remove(struct platform_device *pdev)
+ {
+-	struct r8a66597		*r8a66597 = dev_get_drvdata(&pdev->dev);
++	struct r8a66597		*r8a66597 = platform_get_drvdata(pdev);
+ 	struct usb_hcd		*hcd = r8a66597_to_hcd(r8a66597);
+
+ 	del_timer_sync(&r8a66597->rh_timer);
+@@ -2466,7 +2466,7 @@ static int r8a66597_probe(struct platform_device *pdev)
+ 	}
+ 	r8a66597 = hcd_to_r8a66597(hcd);
+ 	memset(r8a66597, 0, sizeof(struct r8a66597));
+-	dev_set_drvdata(&pdev->dev, r8a66597);
++	platform_set_drvdata(pdev, r8a66597);
+ 	r8a66597->pdata = dev_get_platdata(&pdev->dev);
+ 	r8a66597->irq_sense_low = irq_trigger == IRQF_TRIGGER_LOW;
+
+-- 
+1.7.1
+
+
