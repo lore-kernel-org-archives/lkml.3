@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab3H3QVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:21:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11847 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab3H3QVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:21:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,992,1367996400"; 
-   d="scan'208";a="371131590"
-Subject: Re: [PATCH] Avoid useless inodes and dentries reclamation
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <dchinner@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20130830014005.GT12779@dastard>
-References: <1377726732.3625.31.camel@schen9-DESK>
-	 <20130829110741.GA23571@dastard> <1377799676.3625.69.camel@schen9-DESK>
-	 <20130830014005.GT12779@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Aug 2013 09:21:34 -0700
-Message-ID: <1377879694.3625.77.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1756424Ab3H3QXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:23:17 -0400
+Received: from relay.ihostexchange.net ([66.46.182.51]:30724 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab3H3QXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 12:23:15 -0400
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Aug 2013 12:23:15 EDT
+Message-ID: <5220C5B9.3000908@tributary.com>
+Date: Fri, 30 Aug 2013 11:18:01 -0500
+From: Jeremy Linton <jlinton@tributary.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "dgilbert@interlog.com" <dgilbert@interlog.com>
+CC: Marcus Meissner <meissner@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH: scsi: make scsi reset permissions more relaxed (RFC)
+References: <20130830120450.GB31120@suse.de> <5220945A.2090906@interlog.com>
+In-Reply-To: <5220945A.2090906@interlog.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-30 at 11:40 +1000, Dave Chinner wrote:
+On 8/30/2013 7:47 AM, Douglas Gilbert wrote:
 
+> I proposed the following patch some time back to give the user space finer
+> resolution on resets with the option of stopping the escalation but it has
+> gone nowhere: http://marc.info/?l=linux-scsi&m=136104139102048&w=2
 > 
-> The new shrinker infrastructure has a ->count_objects() callout to
-> specifically return the number of objects in the cache.
-> shrink_slab_node() can check that return value against the "minimum
-> call count" and determine whether it needs to call ->scan_objects()
-> at all.
+> With that patch you might only allow an unprivileged user the
+> non-escalating LU and target reset variants.
 > 
-> Actually, the shrinker already behaves like this with the batch_size
-> variable - the shrinker has to be asking for more items to be
-> scanned than the batch size. That means the problem is that counting
-> callouts are causing the problem, not the scanning callouts.
-> 
-> With the new code in the mmotm tree, for counting purposes we
-> probably don't need to grab a passive superblock reference at all -
-> the superblock and LRUs are guaranteed to be valid if the shrinker
-> is currently running, but we don't really care if the superblock is
-> being shutdown and the values that come back are invalid because the
-> ->scan_objects() callout will fail to grab the superblock to do
-> anything with the calculated values.
+> If changes are made in that area, we might like to think about adding a new
+> RESET variant mapping through to the I_T Nexus Reset TMF.
 
-If that's the case, then we should remove grab_super_passive
-from the super_cache_count code.  That should remove the bottleneck
-in reclamation.
+And a fine, incredibly useful patch it is. To the point of basically being a
+requirement for SAN environments. Without it, all kinds of havoc can ensue.
 
-Thanks for your detailed explanation.
+But, the problem of burners going out to lunch, shows why its a stopgap. As most
+burners are going to be SATA attached (without an expander), you probably want
+to escalate all the way to the host reset if none of the other options work.
 
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
-diff --git a/fs/super.c b/fs/super.c
-index 73d0952..4df1fab 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -112,9 +112,6 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 
- 	sb = container_of(shrink, struct super_block, s_shrink);
- 
--	if (!grab_super_passive(sb))
--		return 0;
--
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
- 		total_objects = sb->s_op->nr_cached_objects(sb,
- 						 sc->nid);
-
+With a few other tweaks and the no-escalate patch, its possible to implement
+escalation logic outside of the kernel that is aware of the device topology and
+individual device states. That way HBA's aren't getting reset under active
+functional devices.
 
 
 
