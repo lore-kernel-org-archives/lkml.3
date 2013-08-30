@@ -1,126 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3H3L2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:28:34 -0400
-Received: from [213.199.154.185] ([213.199.154.185]:13749 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754757Ab3H3L2L (ORCPT
+	id S1755554Ab3H3Lbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:31:50 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31621 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab3H3Lbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:28:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <vinod.koul@intel.com>, <djbw@fb.com>
-CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v9 3/3] DMA: Freescale: update driver to support 8-channel DMA engine
-Date: Fri, 30 Aug 2013 19:26:20 +0800
-Message-ID: <1377861980-7027-4-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1377861980-7027-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1377861980-7027-1-git-send-email-hongbo.zhang@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 30 Aug 2013 07:31:48 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-d5-522082a218b6
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>, "'Chris Ball'" <cjb@laptop.org>
+Cc: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'James Hogan'" <james.hogan@imgtec.com>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
+        "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Olof Johansson'" <olof@lixom.net>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1377188348-3418-1-git-send-email-dianders@chromium.org>
+ <1377794350-12335-1-git-send-email-dianders@chromium.org>
+ <1377794350-12335-3-git-send-email-dianders@chromium.org>
+In-reply-to: <1377794350-12335-3-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH v7 2/3] mmc: dw_mmc: Honor requests to set the clock to 0
+ (turn off clock)
+Date: Fri, 30 Aug 2013 20:31:46 +0900
+Message-id: <000201cea574$8287f2a0$8797d7e0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6k1lNuN/xG/+XJQROf1VSRuFf4twAlW4EA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t8zQ91FTQpBBp8+61k8XrOYyeLBvG1s
+	Fttfb2SzOLvsIJvFqyM/mCzezXvBbHHjVxurxeVdc9gsjvzvZ7Q4df0zm8WqXX8YHbg9Zjdc
+	ZPHYOesuu0fPzjOMHoeurGX0uHKiidWjb8sqRo/Pm+QC2KO4bFJSczLLUov07RK4MvbtX8lc
+	cEm74u+mzAbGtUpdjJwcEgImEq3tT9ggbDGJC/fWA9lcHEICyxglvm5qYYQpWndvBQtEYjqj
+	xM897UwQzh9GiRNNE5lBqtgEtCT+vnkDZosIeEm82P2AGaSIWeARk8TdJbOZITr2MEocvXQY
+	aBYHB6eAm8S3pYYgprBAgsT5M/ogvSwCqhITJq8Em8MrYCvRcekJlC0o8WPyPRYQm1nAQOL9
+	rD5WCFteYvOat8wgYyQE1CUe/dWFOMFIomfiJGaIEhGJfS/eMYJcICEwlUNiw601zBC7BCS+
+	TT7EAtErK7HpADPEw5ISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpReZ6BUn
+	5haX5qXrJefnbmKERP6EHYz3DlgfYkwGWj+RWUo0OR+YOPJK4g2NzYwsTE1MjY3MLc1IE1YS
+	51VvsQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOg8Z01BgqEjm4XCZ9GVR5d0qhTM451v
+	IFD8jveoK/uXSp/JZs7vvt1ay9Oj6dEd36rPOT1eudLYMyheXYtPKEb/eSJnckOO8WPH6th1
+	yb4iC+9dCy3ZorzD/sDmVZs42UMfdx9YUn6whSd2z3Nv5QULJ8nmcNziV5lRnlvsobwm9N2V
+	eVufKLEUZyQaajEXFScCANgwsRgSAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDKsWRmVeSWpSXmKPExsVy+t9jQd1FTQpBBm8na1o8XrOYyeLBvG1s
+	Fttfb2SzOLvsIJvFqyM/mCzezXvBbHHjVxurxeVdc9gsjvzvZ7Q4df0zm8WqXX8YHbg9Zjdc
+	ZPHYOesuu0fPzjOMHoeurGX0uHKiidWjb8sqRo/Pm+QC2KMaGG0yUhNTUosUUvOS81My89Jt
+	lbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgK5UUihLzCkFCgUkFhcr6dthmhAa4qZr
+	AdMYoesbEgTXY2SABhLWMWbs27+SueCSdsXfTZkNjGuVuhg5OSQETCTW3VvBAmGLSVy4t56t
+	i5GLQ0hgOqPEzz3tTBDOH0aJE00TmUGq2AS0JP6+eQNmiwh4SbzY/YAZpIhZ4BGTxN0ls5kh
+	OvYwShy9dBhoLgcHp4CbxLelhiCmsECCxPkz+iC9LAKqEhMmrwSbwytgK9Fx6QmULSjxY/I9
+	sIuYBQwk3s/qY4Ww5SU2r3nLDDJGQkBd4tFfXYgTjCR6Jk5ihigRkdj34h3jBEahWUgmzUIy
+	aRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZxWnknvYFzVYHGIUYCDUYmH
+	t2GqfJAQa2JZcWXuIUYJDmYlEd6KVIUgId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4Hpry8
+	knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBkzIs5HCUaV7+h
+	5kqvj1/P4W0s/Jf7KhWtO7La+Dk5uKUCCqK9GnnSvGXq/z+N9nn+JtK9f/aJlJWJjYvrrLgy
+	ghViN5za0XRY0iMiKzLmpv5DlsvJWy9FmihaR+/f9IwjStbbbWe+U5Rel0Mq15XdaX3la/Pn
+	n8iak33g1FKutzF8Vj/PKbEUZyQaajEXFScCAHHhOldvAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+Hi Doug,
 
-This patch adds support to 8-channel DMA engine, thus the driver works for both
-the new 8-channel and the legacy 4-channel DMA engines.
+On Friday, August 30, 2013, Doug Anderson wrote:
+> Previously the dw_mmc driver would ignore any requests to disable the
+> card's clock.  This doesn't seem like a good thing in general, but had
+> one extra bad side effect in the following situtation:
+> * mmc core would set clk to 400kHz at boot time while initting
+> * mmc core would set clk to 0 since no card, but it would be ignored.
+> * suspend to ram and resume; clocks in the dw_mmc IP block are now 0
+>   but dw_mmc thinks that they're 400kHz (it ignored the set to 0).
+> * insert card
+> * mmc core would set clk to 400kHz which would be considered a no-op.
+> 
+> Note that if there is no card in the slot and we do a suspend/resume
+> cycle, we _do_ still end up with differences in a dw_mmc register
+> dump, but the differences are clock related and we've got the clock
+> disabled both before and after, so this should be OK.
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- drivers/dma/Kconfig  |    9 +++++----
- drivers/dma/fsldma.c |    9 ++++++---
- drivers/dma/fsldma.h |    2 +-
- 3 files changed, 12 insertions(+), 8 deletions(-)
+I looked into this change with various kinds.
+When we consider the SDIO, clock off may need to be cared.
+As we know, because low power mode is off in case of SDIO,
+there is no way to disable clock though '0' is requested for clock rate.
+Ok, it would be better if some minor things below are applied.
+I guess I can update those.
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 6825957..3979c65 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -89,14 +89,15 @@ config AT_HDMAC
- 	  Support the Atmel AHB DMA controller.
- 
- config FSL_DMA
--	tristate "Freescale Elo and Elo Plus DMA support"
-+	tristate "Freescale Elo series DMA support"
- 	depends on FSL_SOC
- 	select DMA_ENGINE
- 	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
- 	---help---
--	  Enable support for the Freescale Elo and Elo Plus DMA controllers.
--	  The Elo is the DMA controller on some 82xx and 83xx parts, and the
--	  Elo Plus is the DMA controller on 85xx and 86xx parts.
-+	  Enable support for the Freescale Elo series DMA controllers.
-+	  The Elo is the DMA controller on some mpc82xx and mpc83xx parts, the
-+	  EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is on
-+	  some Txxx and Bxxx parts.
- 
- config MPC512X_DMA
- 	tristate "Freescale MPC512x built-in DMA engine support"
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 49e8fbd..16a9a48 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
- 	WARN_ON(fdev->feature != chan->feature);
- 
- 	chan->dev = fdev->dev;
--	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
-+	chan->id = (res.start & 0xfff) < 0x300 ?
-+		   ((res.start - 0x100) & 0xfff) >> 7 :
-+		   ((res.start - 0x200) & 0xfff) >> 7;
- 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
- 		dev_err(fdev->dev, "too many channels for device\n");
- 		err = -EINVAL;
-@@ -1434,6 +1436,7 @@ static int fsldma_of_remove(struct platform_device *op)
- }
- 
- static const struct of_device_id fsldma_of_ids[] = {
-+	{ .compatible = "fsl,elo3-dma", },
- 	{ .compatible = "fsl,eloplus-dma", },
- 	{ .compatible = "fsl,elo-dma", },
- 	{}
-@@ -1455,7 +1458,7 @@ static struct platform_driver fsldma_of_driver = {
- 
- static __init int fsldma_init(void)
- {
--	pr_info("Freescale Elo / Elo Plus DMA driver\n");
-+	pr_info("Freescale Elo series DMA driver\n");
- 	return platform_driver_register(&fsldma_of_driver);
- }
- 
-@@ -1467,5 +1470,5 @@ static void __exit fsldma_exit(void)
- subsys_initcall(fsldma_init);
- module_exit(fsldma_exit);
- 
--MODULE_DESCRIPTION("Freescale Elo / Elo Plus DMA driver");
-+MODULE_DESCRIPTION("Freescale Elo series DMA driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-index f5c3879..1ffc244 100644
---- a/drivers/dma/fsldma.h
-+++ b/drivers/dma/fsldma.h
-@@ -112,7 +112,7 @@ struct fsldma_chan_regs {
- };
- 
- struct fsldma_chan;
--#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
-+#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
- 
- struct fsldma_device {
- 	void __iomem *regs;	/* DGSR register base */
--- 
-1.7.9.5
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v7:
+> - Avoid printing the same clock over and over again w/ MMC_CLKGATE.
+> 
+> Changes in v6:
+> - Replaces previous pathes that ensured saving/restoring clocks.
+> 
+>  drivers/mmc/host/dw_mmc.c | 36 ++++++++++++++++++++++--------------
+>  1 file changed, 22 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index ee5f167..1584705 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -88,6 +88,8 @@ struct idmac_desc {
+>   * @queue_node: List node for placing this node in the @queue list of
+>   *	&struct dw_mci.
+>   * @clock: Clock rate configured by set_ios(). Protected by host->lock.
+> + * @last_printed_clock: The last clock we printed.  Keeping track of this helps
+'last_printed_clock' can be changed to a nice name.
+
+> + *	us to avoid spamming the console with CONFIG_MMC_CLKGATE.
+>   * @flags: Random state bits associated with the slot.
+>   * @id: Number of this slot.
+>   * @last_detect_state: Most recently observed card detect state.
+> @@ -105,6 +107,7 @@ struct dw_mci_slot {
+>  	struct list_head	queue_node;
+> 
+>  	unsigned int		clock;
+> +	unsigned int		last_printed_clock;
+>  	unsigned long		flags;
+>  #define DW_MMC_CARD_PRESENT	0
+>  #define DW_MMC_CARD_NEED_INIT	1
+> @@ -635,7 +638,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+>  	u32 div;
+>  	u32 clk_en_a;
+> 
+> -	if (slot->clock != host->current_speed || force_clkinit) {
+> +	if (slot->clock == 0) {
+> +		mci_writel(host, CLKENA, 0);
+> +		mci_send_cmd(slot,
+> +			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+In the dw_mci_setup_bus(), above two lines related to clock-disable are necessary both if and else-if statement
+That is it can be executed unconditionally.
 
 
+> +	} else if (slot->clock != host->current_speed || force_clkinit) {
+>  		div = host->bus_hz / slot->clock;
+>  		if (host->bus_hz % slot->clock && host->bus_hz > slot->clock)
+>  			/*
+> @@ -646,10 +653,14 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+> 
+>  		div = (host->bus_hz != slot->clock) ? DIV_ROUND_UP(div, 2) : 0;
+> 
+> -		dev_info(&slot->mmc->class_dev,
+> -			 "Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ"
+> -			 " div = %d)\n", slot->id, host->bus_hz, slot->clock,
+> -			 div ? ((host->bus_hz / div) >> 1) : host->bus_hz, div);
+> +		if (slot->clock != slot->last_printed_clock || force_clkinit) {
+If 'bus_hz' or 'div' is different with old one as well, it should be considered.
+'div' can be a good factor to compare this condition. Then 'last_printed_clock' should reflect clock divider.
+
+Thanks,
+Seungwon Jeon
+> +			dev_info(&slot->mmc->class_dev,
+> +				 "Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ div = %d)\n",
+> +				 slot->id, host->bus_hz, slot->clock,
+> +				 div ? ((host->bus_hz / div) >> 1) :
+> +				 host->bus_hz, div);
+> +			slot->last_printed_clock = slot->clock;
+> +		}
+> 
+>  		/* disable clock */
+>  		mci_writel(host, CLKENA, 0);
+> @@ -675,9 +686,8 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+>  		/* inform CIU */
+>  		mci_send_cmd(slot,
+>  			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+> -
+> -		host->current_speed = slot->clock;
+>  	}
+> +	host->current_speed = slot->clock;
+> 
+>  	/* Set the current slot bus width */
+>  	mci_writel(host, CTYPE, (slot->ctype << slot->id));
+> @@ -807,13 +817,11 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> 
+>  	mci_writel(slot->host, UHS_REG, regs);
+> 
+> -	if (ios->clock) {
+> -		/*
+> -		 * Use mirror of ios->clock to prevent race with mmc
+> -		 * core ios update when finding the minimum.
+> -		 */
+> -		slot->clock = ios->clock;
+> -	}
+> +	/*
+> +	 * Use mirror of ios->clock to prevent race with mmc
+> +	 * core ios update when finding the minimum.
+> +	 */
+> +	slot->clock = ios->clock;
+> 
+>  	if (drv_data && drv_data->set_ios)
+>  		drv_data->set_ios(slot->host, ios);
+> --
+> 1.8.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
