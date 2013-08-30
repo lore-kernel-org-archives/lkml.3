@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3H3Wnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 18:43:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52949 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943Ab3H3Wnq (ORCPT
+	id S1755785Ab3H3WrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 18:47:21 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:35636 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3H3WrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 18:43:46 -0400
-Message-ID: <5221201D.9060109@canonical.com>
-Date: Fri, 30 Aug 2013 15:43:41 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 18:47:20 -0400
+Subject: [PATCH v2 1/2] elevator: Fix a race in elevator switching and md
+ device initialization
+To: linux-kernel@vger.kernel.org
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Cc: axboe@kernel.dk, tj@kernel.org, seiji.aguchi@hds.com, vgoyal@redhat.com,
+        majianpeng@gmail.com
+Date: Fri, 30 Aug 2013 18:47:07 -0400
+Message-ID: <20130830224707.21812.63516.stgit@hds.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: John Johansen <john.johansen@canonical.com>
-CC: Richard Guy Briggs <rgb@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 03/3] apparmor: remove parent task info from audit logging
-References: <cover.1377032086.git.rgb@redhat.com> <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com> <20130827172155.GC29147@redhat.com> <20130830195646.GJ21110@madcap2.tricolour.ca> <52210275.8040601@canonical.com>
-In-Reply-To: <52210275.8040601@canonical.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-08-30_09:2013-08-30,2013-08-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1308300162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reporting of the parent task info is a vestage from old versions of
-apparmor. The need for this information was removed by unique null-
-profiles before apparmor was upstreamed so remove this info from logging.
+The soft lockup below happens at the boot time of the system using dm
+multipath and the udev rules to switch scheduler.
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
+[  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
+[  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>] lock_timer_base.isra.35+0x1d/0x50
+...
+[  356.127001] Call Trace:
+[  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
+[  356.127001]  [<ffffffff8118b08a>] ? kmem_cache_alloc_node_trace+0x20a/0x230
+[  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
+[  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
+[  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
+[  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
+[  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
+[  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
+[  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
+[  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
+[  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
+[  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
+
+This is caused by a race between md device initialization by multipathd and
+shell script to switch the scheduler using sysfs.
+
+ - multipathd:
+   SyS_ioctl -> do_vfs_ioctl -> dm_ctl_ioctl -> ctl_ioctl -> table_load
+   -> dm_setup_md_queue -> blk_init_allocated_queue -> elevator_init
+    q->elevator = elevator_alloc(q, e); // not yet initialized
+
+ - sh -c 'echo deadline > /sys/$DEVPATH/queue/scheduler':
+   elevator_switch (in the call trace above)
+    struct elevator_queue *old = q->elevator;
+    q->elevator = elevator_alloc(q, new_e);
+    elevator_exit(old);                 // lockup! (*)
+
+ - multipathd: (cont.)
+    err = e->ops.elevator_init_fn(q);   // init fails; q->elevator is modified
+
+(*) When del_timer_sync() is called, lock_timer_base() will loop infinitely
+while timer->base == NULL. In this case, as timer will never initialized,
+it results in lockup.
+
+This patch introduces acquisition of q->sysfs_lock around elevator_init()
+into blk_init_allocated_queue(), to provide mutual exclusion between
+initialization of the q->scheduler and switching of the scheduler.
+
+This should fix this bugzilla:
+https://bugzilla.redhat.com/show_bug.cgi?id=902012
+
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 ---
- security/apparmor/audit.c         | 6 ------
- security/apparmor/include/audit.h | 1 -
- 2 files changed, 7 deletions(-)
+ block/blk-core.c |   10 +++++++++-
+ block/elevator.c |    6 ++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/security/apparmor/audit.c b/security/apparmor/audit.c
-index e32c448..89c7865 100644
---- a/security/apparmor/audit.c
-+++ b/security/apparmor/audit.c
-@@ -111,7 +111,6 @@ static const char *const aa_audit_type[] = {
- static void audit_pre(struct audit_buffer *ab, void *ca)
- {
- 	struct common_audit_data *sa = ca;
--	struct task_struct *tsk = sa->u.tsk ? sa->u.tsk : current;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 93a18d1..2f6275f 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -739,9 +739,17 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
  
- 	if (aa_g_audit_header) {
- 		audit_log_format(ab, "apparmor=");
-@@ -132,11 +131,6 @@ static void audit_pre(struct audit_buffer *ab, void *ca)
+ 	q->sg_reserved_size = INT_MAX;
  
- 	if (sa->aad->profile) {
- 		struct aa_profile *profile = sa->aad->profile;
--		pid_t pid;
--		rcu_read_lock();
--		pid = rcu_dereference(tsk->real_parent)->pid;
--		rcu_read_unlock();
--		audit_log_format(ab, " parent=%d", pid);
- 		if (profile->ns != root_ns) {
- 			audit_log_format(ab, " namespace=");
- 			audit_log_untrustedstring(ab, profile->ns->base.hname);
-diff --git a/security/apparmor/include/audit.h b/security/apparmor/include/audit.h
-index 69d8cae..cf65443 100644
---- a/security/apparmor/include/audit.h
-+++ b/security/apparmor/include/audit.h
-@@ -110,7 +110,6 @@ struct apparmor_audit_data {
- 	void *profile;
- 	const char *name;
- 	const char *info;
--	struct task_struct *tsk;
- 	union {
- 		void *target;
- 		struct {
--- 
-1.8.3.2
-
++	/* Protect q->elevator from elevator_change */
++	mutex_lock(&q->sysfs_lock);
++
+ 	/* init elevator */
+-	if (elevator_init(q, NULL))
++	if (elevator_init(q, NULL)) {
++		mutex_unlock(&q->sysfs_lock);
+ 		return NULL;
++	}
++
++	mutex_unlock(&q->sysfs_lock);
++
+ 	return q;
+ }
+ EXPORT_SYMBOL(blk_init_allocated_queue);
+diff --git a/block/elevator.c b/block/elevator.c
+index 668394d..02d4390 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -186,6 +186,12 @@ int elevator_init(struct request_queue *q, char *name)
+ 	struct elevator_type *e = NULL;
+ 	int err;
+ 
++	/*
++	 * q->sysfs_lock must be held to provide mutual exclusion between
++	 * elevator_switch() and here.
++	 */
++	lockdep_assert_held(&q->sysfs_lock);
++
+ 	if (unlikely(q->elevator))
+ 		return 0;
+ 
 
