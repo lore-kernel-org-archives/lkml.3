@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3H3D6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 23:58:00 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50239 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752536Ab3H3D57 (ORCPT
+	id S1753546Ab3H3EAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 00:00:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:41447 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab3H3EAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 23:57:59 -0400
-X-Sasl-enc: wY3C7XAJ/x1mHPfIon1DKf84ZMh+7EdoI47/76p60hUI 1377835077
-Date: Thu, 29 Aug 2013 21:00:21 -0700
-From: Greg KH <greg@kroah.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        linux-kernel@vger.kernel.org, m.chehab@samsung.com,
-        linux-media@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Dell SP2008WFP
- monitor.
-Message-ID: <20130830040021.GA31290@kroah.com>
-References: <cover.1377781889.git.joseph.salisbury@canonical.com>
- <efa845fedf7b2326c7fe6e82c4f90b15055c4a1c.1377781889.git.joseph.salisbury@canonical.com>
- <3172143.JtUQzMAjLG@avalon>
+	Fri, 30 Aug 2013 00:00:22 -0400
+X-Spam-Score: -100.9
+Message-ID: <52201896.9040309@asianux.com>
+Date: Fri, 30 Aug 2013 11:59:18 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3172143.JtUQzMAjLG@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2]  h8300/kernel/setup.c: add "linux/initrd.h" to pass compiling
+References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com>
+In-Reply-To: <5220177E.709@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 02:41:17AM +0200, Laurent Pinchart wrote:
-> Hi Joseph,
-> 
-> Thank you for the patch.
-> 
-> On Thursday 29 August 2013 11:17:41 Joseph Salisbury wrote:
-> > BugLink: http://bugs.launchpad.net/bugs/1217957
-> > 
-> > Add quirk for Dell SP2008WFP monitor: 05a9:2641
-> > 
-> > Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> > Tested-by: Christopher Townsend <christopher.townsend@canonical.com>
-> > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> > Cc: linux-media@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: stable@vger.kernel.org
-> 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> 
-> I've applied it to my tree. Given that we're too close to the v3.12 merge 
-> window I will push it for v3.13.
+The related error (allmodconfig for h8300):
 
-A quirk has to wait that long?  That's not ok, they should go in much
-sooner than that...
+  arch/h8300/kernel/setup.c: In function 'setup_arch':
+  arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared (first use in this function)
+     initrd_start = memory_start;
+     ^
+  arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier is reported only once for each function it appears in
+  arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared (first use in this function)
+     initrd_end = memory_start += be32_to_cpu(((unsigned long *) (memory_start))[2]);
+     ^
 
-thanks,
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/h8300/kernel/setup.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/arch/h8300/kernel/setup.c b/arch/h8300/kernel/setup.c
+index d0b1607..85639a1 100644
+--- a/arch/h8300/kernel/setup.c
++++ b/arch/h8300/kernel/setup.c
+@@ -47,6 +47,10 @@
+ #include <asm/regs267x.h>
+ #endif
+ 
++#if defined(CONFIG_BLK_DEV_INITRD)
++#include <linux/initrd.h>
++#endif
++
+ #define STUBSIZE 0xc000
+ 
+ unsigned long rom_length;
+-- 
+1.7.7.6
