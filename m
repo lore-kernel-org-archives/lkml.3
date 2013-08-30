@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab3H3OuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:50:09 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43257 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab3H3OuH (ORCPT
+	id S1756458Ab3H3Ouc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:50:32 -0400
+Received: from relay.parallels.com ([195.214.232.42]:59217 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756354Ab3H3Oub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:50:07 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: dm-devel@redhat.com, mpatocka@redhat.com, agk@redhat.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        kernelnewbies@kernelnewbies.org
-Subject: Re: [dm-devel] [RFC] dm-lc: plan to go to staging
-In-Reply-To: Your message of "Fri, 30 Aug 2013 21:33:29 +0900."
-             <52209119.3070907@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <521EA567.1070801@gmail.com> <20130829020555.GA26206@kroah.com> <20130829033023.GH4872@agk-dp.fab.redhat.com> <alpine.LRH.2.02.1308291043410.20142@file01.intranet.prod.int.rdu2.redhat.com>
-            <52209119.3070907@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1377874041_2619P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 30 Aug 2013 10:47:21 -0400
-Message-ID: <50810.1377874041@turing-police.cc.vt.edu>
+	Fri, 30 Aug 2013 10:50:31 -0400
+Message-ID: <5220B12A.1060008@parallels.com>
+Date: Fri, 30 Aug 2013 18:50:18 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: <riel@redhat.com>, Kirill Korotaev <dev@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, <linux-mm@kvack.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
+        <devel@openvz.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu> <51FBD2DF.50506@parallels.com> <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com> <52050474.8040608@parallels.com> <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1377874041_2619P
-Content-Type: text/plain; charset=us-ascii
+Hi Miklos,
 
-On Fri, 30 Aug 2013 21:33:29 +0900, Akira Hayakawa said:
+08/30/2013 02:12 PM, Miklos Szeredi пишет:
+> On Fri, Aug 09, 2013 at 07:02:12PM +0400, Maxim Patlasov wrote:
+>> 08/06/2013 08:25 PM, Miklos Szeredi пишет:
+>>> Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
+>>> do the necessary page fault magic and ->page_mkwrite() will be called.
+>>> At least AFAICS.
+>> Yes, I agree.
+>>
+>>> The page cannot become dirty through a memory mapping without first
+>>> switching the pte from read-only to read-write first.  Page accounting
+>>> logic relies on this too.  The other way the page can become dirty is
+>>> through write(2) on the fs.  But we do get notified about that too.
+>> Yes, that's correct, but I don't understand why you disregard two
+>> other cases of marking page dirty (both related to direct AIO read
+>> from a file to a memory region mmap-ed to a fuse file):
+>>
+>> 1. dio_bio_submit() -->
+>>        bio_set_pages_dirty() -->
+>>          set_page_dirty_lock()
+>>
+>> 2. dio_bio_complete() -->
+>>        bio_check_pages_dirty() -->
+>>           bio_dirty_fn() -->
+>>              bio_set_pages_dirty() -->
+>>                 set_page_dirty_lock()
+>>
+>> As soon as a page became dirty through a memory mapping (exactly as
+>> you explained), nothing would prevent it to be written-back. And
+>> fuse will call end_page_writeback almost immediately after copying
+>> the real page to a temporary one. Then dio_bio_submit may re-dirty
+>> page speculatively w/o notifying fuse. And again, since then nothing
+>> would prevent it to be written-back once more. Hence we can end up
+>> in more then one temporary page in fuse write-back. And similar
+>> concern for dio_bio_complete() re-dirty.
+>>
+>> This make me think that we do need fuse_page_is_writeback() in
+>> fuse_writepages_fill(). But it shouldn't be harmful because it will
+>> no-op practically always due to waiting for fuse writeback in
+>> ->page_mkwrite() and in course of handling write(2).
+> The problem is: if we need it in ->writepages, we need it in ->writepage too.
+> And that's where we can't have it because it would deadlock in reclaim.
 
-> Candidates:
-> 1) logcache
-> Not too long but explaining enough
-> but looks little bit dull to me.
+I thought we're protected from the deadlock by the following chunk (in 
+the very beginning of fuse_writepage):
 
-Descriptive but dull naming is a much underrated quality in software packages.
+> +	if (fuse_page_is_writeback(inode, page->index)) {
+> +		if (wbc->sync_mode != WB_SYNC_ALL) {
+> +			redirty_page_for_writepage(wbc, page);
+> +			return 0;
+> +		}
+> +		fuse_wait_on_page_writeback(inode, page->index);
+> +	}
 
-Consider the package HarfBuzz.
+Because reclaimer will never call us with WB_SYNC_ALL. Did I miss 
+something?
 
-As my daughter put it, "Sounds like a bad coffee name".
+>
+> There's a way to work around this:
+>
+>     - if the request is still in queue, just update it with the contents of the
+>       new page
+>
+>     - if the request already in userspace, create a new reqest, but only let
+>       userspace have it once the previous request for the same page completes, so
+>       the ordering is not messed up
+>
+> But that's a lot of hairy code.
 
-rpm -qi harfbuzz says:
-Description :
-HarfBuzz is an implementation of the OpenType Layout engine.
+Is it exactly how NFS solves similar problem?
 
-(And don't get me started on the people who name packages enca, fros, serd,
-yajl, or yaml.  We aren't using ASR-33's anymore, brevity isn't as crucial :)
+>
+> Any other ideas?
+>
+> The best would be if we could get rid of the ugly temporary page requirement for
+> fuse writeback.  The big blocker has always been direct reclaim: allocation must
+> not wait on fuse writebacks.  AFAICS there's still a wait_on_page_writeback() in
+> relation to memcg.  And it interacts with page migration which also has them.
+> Those are the really difficult ones...
 
-dm-logcache works just fine for me as a name for this.  Or dm-lcache.
+Yes, I agree. I think there are pretty many reasons not to keep original 
+page under writeback for long. And not to make it dependant on userspace 
+process as well.
 
+>
+> The other offender, balance_dirty_pages() is much easier and needs to be tought
+> about fuse behavior anyway.
 
+BTW, strictlimit feature (including its enable for fuse) is already in 
+linux-next.
 
---==_Exmh_1377874041_2619P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUiCweQdmEQWDXROgAQKOJw/+P1nyFNS7Ky5KV+J8glshuUtyp5z48ZDZ
-gJ+bSe3s78ve91qyBXfck9609faVxs9WmgtfHzhZxHYRiUVlOfnywIiOVwB6igvT
-BwzZOFISOMofXVdTOK4vHU+lKOdw3pUdWrhES4keG9j5Gh6t2uAGI1wPQjOmFmng
-BWaR54OVyn+RlRoRf7AD1BePKLMhfYYEdV8F89TUoNazsIk9JjnOPa7pXe9CHis/
-XK+GOl6yuEjBTxAAyQ45tygorVvtWQuCtxHl2drc91JinV0tZGkoeGXUcyZHl/C2
-wH8iI1ncq7REdxlDK76COzab6NoKG67X9DhbVSruT7iijef1ghcBvl5uK6n1aesy
-8IoSGIKwLyLRnH2BJj2KpkvIy5fD+GKr77sWaYPvmDKazjYgyh2aEvVEYzPZvh8M
-iFhjCPb6xW6IH2+akaiJMSrh2R5P2wLCKeqj4VsCPtxJ6Z99YweM9HnS8K1G2Wrg
-LtY04ZK4Puu43mbnSnjtfm32tCNFylr3BnJ+mU00nLNwSkkrdK64qCfRCb+n+5aD
-L3U/nhDZjw0GoG88LpsjAbTb8IZ/araGJkOsJztv5rY7gqw/1rMJA0RTNalkHYKG
-NvZZ+gi4JdUUtwWPKr83qHLwsxRygxHjrdMzQEU/fu4VZbLzneVFuLhfkkrgxJtW
-oynvf+2S8nw=
-=hp9l
------END PGP SIGNATURE-----
-
---==_Exmh_1377874041_2619P--
+Thanks,
+Maxim
