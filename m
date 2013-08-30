@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab3H3SPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 14:15:51 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:55498 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab3H3SPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 14:15:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377878801.559.28.camel@sakura.staff.proxad.net>
-References: <1377878801.559.28.camel@sakura.staff.proxad.net>
-Date: Fri, 30 Aug 2013 11:15:49 -0700
-X-Google-Sender-Auth: YnHnNihO6gOf01YxKTquD2kCAEQ
-Message-ID: <CAGXu5jLfHMw=sd0OBSTjJy5ffqrD8s6BsVv+4iA6=jzUG89dpw@mail.gmail.com>
-Subject: Re: [PATCH] pstore/ram: (really) fix undefined usage of rounddown_pow_of_two
-From: Kees Cook <keescook@chromium.org>
-To: Maxime Bizon <mbizon@freebox.fr>
-Cc: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757030Ab3H3SXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 14:23:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033Ab3H3SX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 14:23:29 -0400
+Date: Fri, 30 Aug 2013 14:23:26 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
+        rgb@redhat.com
+Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
+Message-ID: <20130830142326.79864486@redhat.com>
+In-Reply-To: <20130828160813.e448eee90886310d6640b87d@linux-foundation.org>
+References: <20130828182114.6b67ea90@redhat.com>
+	<20130828153345.55631b3b3f6f8940ef1b7614@linux-foundation.org>
+	<20130828185436.279bc6dd@redhat.com>
+	<20130828160813.e448eee90886310d6640b87d@linux-foundation.org>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 9:06 AM, Maxime Bizon <mbizon@freebox.fr> wrote:
-> Previous attempt to fix was b042e47491ba5f487601b5141a3f1d8582304170
->
-> Suggested use of is_power_of_2() was bogus because is_power_of_2(0) is
-> false (documented behaviour).
->
-> Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+On Wed, 28 Aug 2013 16:08:13 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Yes, excellent point. :)
+> On Wed, 28 Aug 2013 18:54:36 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> 
+> > > Are you really sure that kauditd is stuck in schedule() and doesn't
+> > > come out?
+> > 
+> > No, that's a guess. Inferred from:
+> > 
+> > 1. I tried calling wake_up_interruptible(&kauditd_wait); right
+> >    before wait_for_auditd(). Nothing changes
+> > 
+> > 2. I added this debug printks:
+> > 
+> >   diff --git a/kernel/audit.c b/kernel/audit.c
+> >   index 91e53d0..27448ad 100644
+> >   --- a/kernel/audit.c
+> >   +++ b/kernel/audit.c
+> >   @@ -458,11 +458,14 @@ static int kauditd_thread(void *dummy)
+> >    		set_current_state(TASK_INTERRUPTIBLE);
+> >    		add_wait_queue(&kauditd_wait, &wait);
+> >    
+> >   +		pr_emerg_ratelimited("*** sleeping\n");
+> >   +
+> >    		if (!skb_queue_len(&audit_skb_queue)) {
+> >    			try_to_freeze();
+> >    			schedule();
+> >    		}
+> >    
+> >   +		pr_emerg_ratelimited("*** waking up\n");
+> >    		__set_current_state(TASK_RUNNING);
+> >    		remove_wait_queue(&kauditd_wait, &wait);
+> >    	}
+> > 
+> >  I get several pairs of sleeping/waking up strings right before the
+> >  system begins to shut down. Then it stops (even though we do
+> >  have SKBs queued)
+> 
+> Well.  I assume "*** sleeping" the last thing kauditd prints?  If the
+> last print is "waking up" then obviously kauditd is stuck somewhere
+> else, which makes more sense.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+That's correct. According to crash, here's where it's stuck:
 
-Thanks,
+ #0 [ffff880115511c58] __schedule at ffffffff815361de
+ #1 [ffff880115511cd0] schedule at ffffffff81537039
+ #2 [ffff880115511ce0] schedule_timeout at ffffffff81534524
+ #3 [ffff880115511d90] netlink_attachskb at ffffffff81498c69
+ #4 [ffff880115511df0] netlink_unicast at ffffffff81498d7f
+ #5 [ffff880115511e40] kauditd_send_skb at ffffffff810c254f
+ #6 [ffff880115511e60] kauditd_thread at ffffffff810c26e9
+ #7 [ffff880115511ec0] kthread at ffffffff810693b0
+ #8 [ffff880115511f50] ret_from_fork at ffffffff8154071c
 
--Kees
+I see two possible reasons for this:
 
-> ---
->  fs/pstore/ram.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-> index a6119f9..03325bc 100644
-> --- a/fs/pstore/ram.c
-> +++ b/fs/pstore/ram.c
-> @@ -400,11 +400,11 @@ static int ramoops_probe(struct platform_device *pdev)
->                 goto fail_out;
->         }
->
-> -       if (!is_power_of_2(pdata->record_size))
-> +       if (pdata->record_size && !is_power_of_2(pdata->record_size))
->                 pdata->record_size = rounddown_pow_of_two(pdata->record_size);
-> -       if (!is_power_of_2(pdata->console_size))
-> +       if (pdata->console_size && !is_power_of_2(pdata->console_size))
->                 pdata->console_size = rounddown_pow_of_two(pdata->console_size);
-> -       if (!is_power_of_2(pdata->ftrace_size))
-> +       if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
->                 pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
->
->         cxt->dump_read_cnt = 0;
-> --
-> 1.7.9.5
->
->
-> --
-> Maxime
->
->
+ 1. User-space triggered a NETLINK_CONGESTED condition. If this is
+    the problem, then the fix is to make audit's netlink socket
+    non-blocking and queue SKBs if netlink_unicast() returns -EINVAL
 
+ 2. It's a race condition in the audit code. This bug is only triggered
+    on SMP machines _and_ adding printk()s to kauditd_thread() makes
+    it go away. Also, if I'm not mistaken, there's a number of global
+    variables that are shared between kaudit_thread() and threads
+    calling audit_log(). For example: kaudit_sock, audit_skb_hold_queue,
+	kauditd_wait and others
 
-
--- 
-Kees Cook
-Chrome OS Security
+I can try protecting the global data structures with a mutex but, will
+such a patch be accepted if the bug goes away? :)
