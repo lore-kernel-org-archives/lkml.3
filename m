@@ -1,155 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3H3Mdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:33:40 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:49551 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab3H3Mdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:33:39 -0400
-Message-ID: <52209119.3070907@gmail.com>
-Date: Fri, 30 Aug 2013 21:33:29 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1755499Ab3H3Me2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:34:28 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42804 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754264Ab3H3Me0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:34:26 -0400
+Message-ID: <5220914A.3070107@ti.com>
+Date: Fri, 30 Aug 2013 08:34:18 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: dm-devel@redhat.com
-CC: mpatocka@redhat.com, agk@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
-Subject: Re: [dm-devel] [RFC] dm-lc: plan to go to staging
-References: <521EA567.1070801@gmail.com> <20130829020555.GA26206@kroah.com> <20130829033023.GH4872@agk-dp.fab.redhat.com> <alpine.LRH.2.02.1308291043410.20142@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1308291043410.20142@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: Re: [PATCHv3 0/8] Thermal Framework Enhancements
+References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com> <521FA335.2060309@ti.com> <4D68720C2E767A4AA6A8796D42C8EB59D4D3F8@BGSMSX101.gar.corp.intel.com>
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59D4D3F8@BGSMSX101.gar.corp.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="ofeRa4dfAw9PR8oof7p9qau77gxdQqiVq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your constructive comments,
+--ofeRa4dfAw9PR8oof7p9qau77gxdQqiVq
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I want to first settle an agreement on the new name for current dm-lc
-according to Alasdair's comment:
->> 2) Agree a new and meaningful target name with us so you don't have to
->> change it later.  "lc" means nothing, I'm afraid.
-
-After we agree on this issue, I will start tackling on the design issues.
-Choosing this issue first is because it may change the whole codebase
-and rename the Github repo which can be one of the elements in MAINTAINERS file.
-
-Name is very important.
-
-First of all, let me make a tiny objection:
-1) The name dm-lc does means. lc is the initials from Log-structured Caching.
-2) LC is also the name of my a favorite anime character from "God only knows".
-   I did want to use her name for my creation.
-
-But,
-I can agree on Alasdair's opinion that dm-lc means nothing,
-for the potential future users.
-Abbreviation of some technical word to a software name looks nice
-but the unfortunate is that LC is not widely common like RAID or LFS.
-
-I have three candidates on my mind.
-I am thinking of removing the dm- prefix as bcache and enhanceio do.
-
-The Points are:
-1) The name should not be too long.
-   A name explaining too much about the software is noisy.
-2) Making clear the characteristics and the difference from other targets.
-   The characteristics to note are:
-   a) It writes in-coming writes in log-structured manner.
-   b) It is extremely fast in write.
-   c) It is caching software.
-
-Candidates:
-1) logcache
-Not too long but explaining enough
-but looks little bit dull to me.
-Futhermore, there still is dm-log
-and I feel like duplicating a little bit.
-
-2) lscache
-lscache sounds cool to me.
-But the problem is that there is a preceding one with the same name
-as to caching web-server workload.
-Unique name makes it easy to search for a web documents.
-
-3) writeboost or wboost
-Concentrating on the characteristic b)
-but doesn't mention cache.
-
-Up to this point,
-which do you think the best for the new name?
-or other candidate?
-
-I suppose logcache is an acceptable compromise.
-
-Thanks for reading,
-Akira
-
-On 8/29/13 11:45 PM, Mikulas Patocka wrote:
-> Another idea:
-> 
-> Make the interface of dm-lc (the arguments to constructor, messages and 
-> the status line) the same as dm-cache, so that they can be driven by the 
-> same userspace code.
-> 
-> Mikulas
-> 
-> 
-> On Thu, 29 Aug 2013, Alasdair G Kergon wrote:
-> 
->> On Wed, Aug 28, 2013 at 07:05:55PM -0700, Greg KH wrote:
->>> For staging drivers, I need a TODO file that lists
->>> what needs to be done to the code to get it into a mergable state for
->>> the "real" part of the kernel,
+On 30-08-2013 05:20, R, Durgadoss wrote:
+> Hi Eduardo,
+>=20
+>> -----Original Message-----
+>> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
+>> Sent: Friday, August 30, 2013 1:08 AM
+>> To: R, Durgadoss
+>> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org=
+;
+>> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+>> Subject: Re: [PATCHv3 0/8] Thermal Framework Enhancements
 >>
->> Two simple requirements before putting your proof-of-concept into staging
->> if you want to work that way:
+>> Durga,
 >>
->> 1) Drop the major version number to 0.  Version 1 is reserved for
->> supported modules.
+>> On 05-02-2013 06:46, Durgadoss R wrote:
+>>> This patch set is a v3 of the previous versions submitted here:
+>>> [v2]: http://lwn.net/Articles/531720/
+>>> [v1]: https://lkml.org/lkml/2012/12/18/108
+>>> [RFC]:https://patchwork.kernel.org/patch/1758921/
+>>>
 >>
->> 2) Agree a new and meaningful target name with us so you don't have to
->> change it later.  "lc" means nothing, I'm afraid.
+>> Long time this work is not moving forward. While writing the device tr=
+ee
+>=20
+> I am trying my best to get to this,
+> Will try to refresh in a couple of weeks.
+>=20
+>> parser, I thought of using your work as baseline to see how the multip=
+le
+>> sensor per zone would look like (also in DT).
 >>
->> Then in general terms, you should continue to compare your device-mapper
->> target with the existing targets and where there are differences, either
->> change your target to be like something that already exists, or be ready
->> to explain why that can't or shouldn't be done.
+>> But while checking your code again, I realized that you are actually
+>> creating a new API, that is probably why you named it sysfs-api2. Whil=
+e
+>> I understand the motivation (they are pretty different), I believe thi=
+s
+>> is not a good thing to do. I would suggest making so that we have a
+>> single API.
+>=20
+> As in the sensor APIs ? or the zone level APIs ?
+> The sensor level APIs are anyway new; the zone level ones
+> we have to work out a way for them.
+>=20
+> Is this what you are referring to ? Could you confirm/explain a bit mor=
+e ?
+
+OK. Let's assume that maybe I didn't quite get your proposal then. Let
+me step back and ask you what is the relation between existing
+thermal_zone_device and thermal_zone? Would existing drivers be
+complaint with new API?
+
+>=20
+> Thanks,
+> Durga
+>=20
 >>
->> In particular, the interface and architecture will need substantial
->> changes and working these out should be your highest priority.
+>>> This patch set is based on Rui's -next tree, and is
+>>> tested on a Core-i5 and an Atom netbook.
+>>>
+>>> Changes since v2:
+>>>  * Reworked the map sysfs attributes in patch [5/8]
+>>>  * Dropped configuration for maximum sensors and
+>>>    cooling devices, through Kconfig.
+>>>  * Added __remove_trip_attr method
+>>>  * Renamed __clean_map_entry to __remove_map_entry
+>>>    for consistency in naming.
+>>> Changes Since v1:
+>>>  * Removed kobject creation for thermal_trip and thermal_map
+>>>    nodes as per Greg-KH's comments.
+>>>  * Added ABI Documentation under 'testing'.
+>>>  * Modified the GET_INDEX macro to be more linux-like, thanks
+>>>    to Joe Perches.
+>>>  * Added get_[sensor/cdev]_by_name APIs to thermal.h
+>>>
+>>> This series contains 8 patches:
+>>> Patch 1/8: Creates new sensor level APIs
+>>> Patch 2/8: Creates new zone level APIs. The existing tzd structure is=
+
+>>>            kept as such for clarity and compatibility purposes.
+>>> Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The=
+
+>>>            existing tcd structure need not be modified.
+>>> Patch 4/8: Adds sensorX_trip_[active/passive/hot/critical] sysfs node=
+s,
+>>> 	   under /sys/class/thermal/zoneY/. This exposes various trip
+>>>            points for sensorX present in zoneY.
+>>> Patch 5/8: Adds mapY_* sysfs node. These attributes represent
+>>>            the binding relationship between a sensor and a cdev,
+>>>            within a zone.
+>>> Patch 6/8: Creates Documentation for the new APIs. A new file is
+>>>            created for clarity. Final goal is to merge with the exist=
+ing
+>>>            file or refactor the files, as whatever seems appropriate.=
+
+>>> Patch 7/8: Add ABI documentation for sysfs interfaces introduced in t=
+his patch.
+>>> Patch 8/8: A dummy driver that can be used for testing. This is not f=
+or merge.
+>>>
+>>> Durgadoss R (8):
+>>>   Thermal: Create sensor level APIs
+>>>   Thermal: Create zone level APIs
+>>>   Thermal: Add APIs to bind cdev to new zone structure
+>>>   Thermal: Add trip point sysfs nodes for sensor
+>>>   Thermal: Create Thermal map sysfs attributes for a zone
+>>>   Thermal: Add Documentation to new APIs
+>>>   Thermal: Add ABI Documentation for sysfs interfaces
+>>>   Thermal: Dummy driver used for testing
+>>>
+>>>  Documentation/ABI/testing/sysfs-class-thermal |  137 ++++
+>>>  Documentation/thermal/sysfs-api2.txt          |  247 ++++++
+>>>  drivers/thermal/Kconfig                       |    5 +
+>>>  drivers/thermal/Makefile                      |    2 +
+>>>  drivers/thermal/thermal_sys.c                 |  994 +++++++++++++++=
+++++++++++
+>>>  drivers/thermal/thermal_test.c                |  324 ++++++++
+>>>  include/linux/thermal.h                       |  123 ++-
+>>>  7 files changed, 1831 insertions(+), 1 deletion(-)
+>>>  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
+>>>  create mode 100644 Documentation/thermal/sysfs-api2.txt
+>>>  create mode 100644 drivers/thermal/thermal_test.c
+>>>
 >>
->> For example, you write:
->>
->>   Be careful, you MUST create all the LVs as the destinations of
->>   the dirty blocks on the cache device before this operation.  Otherwise,
->>   the kernel may crash.
->>
->> I read a statement like that as an indication of an interface or
->> architectural problem.  The device-mapper approach is to 'design out'
->> problems, rather than relying on users not doing bad things.
->> Study the existing interfaces used by other targets to understand
->> some approaches that proved successful, then decide which ones
->> come closest to your needs.
->>
->> (Your code also needs many more comments inline to explain what it does
->> and how it works.)
->>
->> The documentation file will eventually need rewriting to follow the same
->> format as the other targets recently added to the kernel.  We document
->> the kernel interface rather than any particular userspace tools, which
->> just have the status of convenient examples.
->>
->> Another little thing I noticed: look into using something like
->> __dm_bless_for_disk() for your metadata and clearly segregate your
->> on-disk structures and document the layout.
->>
->> Alasdair
 >>
 >> --
->> dm-devel mailing list
->> dm-devel@redhat.com
->> https://www.redhat.com/mailman/listinfo/dm-devel
+>> You have got to be excited about what you are doing. (L. Lamport)
 >>
+>> Eduardo Valentin
+>=20
+>=20
+>=20
 
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--ofeRa4dfAw9PR8oof7p9qau77gxdQqiVq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlIgkUoACgkQCXcVR3XQvP3zOQEA3OrMujeYyEyNRWppdOMojIRm
+iOQW0624OLEUrOH+zaMA/2F+qkwxjQn09hh8VABOcmLIxZROyBVc3Wvo641QIAPW
+=PYP2
+-----END PGP SIGNATURE-----
+
+--ofeRa4dfAw9PR8oof7p9qau77gxdQqiVq--
