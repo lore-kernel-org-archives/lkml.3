@@ -1,133 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3H3Rx1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:53:27 -0400
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:44391 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab3H3Rx0 (ORCPT
+	id S1756878Ab3H3RyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:54:23 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42930 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756540Ab3H3RyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:53:26 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: airlied@redhat.com
-Cc: s.hauer@pengutronix.de, gregkh@linuxfoundation.org, daniel.vetter@ffwll.ch,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v3] imx-drm: Fix probe failure
-Date: Fri, 30 Aug 2013 14:53:12 -0300
-Message-Id: <1377885192-22005-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 30 Aug 2013 13:54:21 -0400
+Message-ID: <5220DB5D.9030905@linux.vnet.ibm.com>
+Date: Fri, 30 Aug 2013 23:20:21 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@sr71.net>
+CC: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, riel@redhat.com,
+        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
+        willy@linux.intel.com, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND RFC PATCH v3 00/35] mm: Memory Power Management
+References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <5220B9E4.3040306@sr71.net>
+In-Reply-To: <5220B9E4.3040306@sr71.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083017-9574-0000-0000-000009693126
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On 08/30/2013 08:57 PM, Dave Hansen wrote:
+> On 08/30/2013 06:13 AM, Srivatsa S. Bhat wrote:
+>> Overview of Memory Power Management and its implications to the Linux MM
+>> ========================================================================
+>>
+>> Today, we are increasingly seeing computer systems sporting larger and larger
+>> amounts of RAM, in order to meet workload demands. However, memory consumes a
+>> significant amount of power, potentially upto more than a third of total system
+>> power on server systems[4]. So naturally, memory becomes the next big target
+>> for power management - on embedded systems and smartphones, and all the way
+>> upto large server systems.
+> 
+> Srivatsa, you're sending a huge patch set to a very long cc list of
+> people, but you're leading the description with text that most of us
+> have already read a bunch of times.  Why?
+> 
 
-Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
-failure is seen:
+Well, I had got the impression that with each posting, a fresh set of
+reviewers were taking a look at the patchset for the first time. So I retained
+the leading description. But since you have been familiar with this patchset
+right from the very first posting, I think you found it repetitive and useless.
+Thanks for the tip, I'll curtail the leading text in future versions and
+instead give links to earlier patchsets as reference, for new reviewers.
 
-[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[drm] No driver support for vblank timestamp query.
-[drm] Initialized imx-drm 1.0.0 20120507 on minor 0
-imx-ldb ldb.10: adding encoder failed with -16
-imx-ldb: probe of ldb.10 failed with error -16
-imx-ipuv3 2400000.ipu: IPUv3H probed
-imx-ipuv3 2800000.ipu: IPUv3H probed
-imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
-imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
-imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
+> What changed in this patch from the last round?
 
-The reason for the probe failure is that now 'imxdrm->references' is incremented
-early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
-and imx_drm_add_encoder():
+The fundamental change in this version is the splitting up of the memory
+allocator into a front-end (page-allocator) and a back-end (region-allocator).
+The corresponding code is in patches 18 to 32. Patches 33-35 are some policy
+changes on top of that infrastructure that help further improve the consolidation.
+Overall, this design change has caused considerable improvements in the
+consolidation ratio achieved by the patchset.
 
-	if (imxdrm->references) {
-		ret = -EBUSY;
-		goto err_busy;
-	}
+Minor changes include augmenting /proc/pagetypeinfo to print the statistics
+on a per-region basis, which turns out to be very useful in visualizing the
+fragmentation.
 
-,will always fail.
+And in this version, the experimental results section (which I posted as a
+reply to the cover-letter) has some pretty noticeable numbers. The previous
+postings didn't really have enough numbers/data to prove that the patchset
+actually was much better than mainline. This version addresses that issue,
+from a functional point-of-view.
 
-Instead of manually keeping the references in the imx-drm driver, let's use
-drm->open_count.
+>  Where would you like
+> reviewers to concentrate their time amongst the thousand lines of code?
 
-After this patch, lvds panel is functional on a mx6qsabrelite board.
+I would be grateful if reviewers could comment on the new split-allocator
+design and let me know if they notice any blatant design issues. Some of
+the changes are very bold IMHO, so I'd really appreciate if reviewers could
+let me know if I'm going totally off-track or whether the numbers/data
+justify the huge design changes sufficiently (atleast to know whether to
+continue in that direction or not).
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-This one should go via Dave Airlie's tree instead of Greg's tree because
-b5dc0d10 is in Dave's tree.
+>  What barriers do _you_ see as remaining before this gets merged?
+> 
 
-Changes since v2:
-- Use imxdrm->drm->open_count for checking the references
-Changes since v1:
-- Improved commit log by providing an explanation to the probe failure
-- Cc'ed Dave/Daniel
+I believe that I have showcased all the major design changes that I had
+in mind, in this version and the previous versions. (This version includes
+all of them, except the targeted compaction support (dropped temporarily),
+which was introduced in the last version). What remains is the routine work:
+making this code work with various MM config options etc, and reduce the
+overhead in the hotpaths.
 
- drivers/staging/imx-drm/imx-drm-core.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+So, if the design changes are agreed upon, I can go ahead and address the
+remaining rough edges and make it merge-ready. I assume it would be good
+to add a config option and keep it under Kernel Hacking or such, so that
+people who know their platform characteristics can try it out by giving
+the region-boundaries via kernel command line etc. I think that would be
+a good way to upstream this feature, since it allows the flexibility for
+people to try it out with various usecases on different platforms. (Also,
+that way, we need not wait for firmware support such as ACPI 5.0 to be
+available in order to merge this code).
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 47c5888..a2e52a0 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -41,7 +41,6 @@ struct imx_drm_device {
- 	struct list_head			encoder_list;
- 	struct list_head			connector_list;
- 	struct mutex				mutex;
--	int					references;
- 	int					pipes;
- 	struct drm_fbdev_cma			*fbhelper;
- };
-@@ -241,8 +240,6 @@ struct drm_device *imx_drm_device_get(void)
- 		}
- 	}
- 
--	imxdrm->references++;
--
- 	return imxdrm->drm;
- 
- unwind_crtc:
-@@ -280,8 +277,6 @@ void imx_drm_device_put(void)
- 	list_for_each_entry(enc, &imxdrm->encoder_list, list)
- 		module_put(enc->owner);
- 
--	imxdrm->references--;
--
- 	mutex_unlock(&imxdrm->mutex);
- }
- EXPORT_SYMBOL_GPL(imx_drm_device_put);
-@@ -485,7 +480,7 @@ int imx_drm_add_crtc(struct drm_crtc *crtc,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
-+	if (imxdrm->drm->open_count) {
- 		ret = -EBUSY;
- 		goto err_busy;
- 	}
-@@ -564,7 +559,7 @@ int imx_drm_add_encoder(struct drm_encoder *encoder,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
-+	if (imxdrm->drm->open_count) {
- 		ret = -EBUSY;
- 		goto err_busy;
- 	}
-@@ -709,7 +704,7 @@ int imx_drm_add_connector(struct drm_connector *connector,
- 
- 	mutex_lock(&imxdrm->mutex);
- 
--	if (imxdrm->references) {
-+	if (imxdrm->drm->open_count) {
- 		ret = -EBUSY;
- 		goto err_busy;
- 	}
--- 
-1.8.1.2
+Regards,
+Srivatsa S. Bhat
 
