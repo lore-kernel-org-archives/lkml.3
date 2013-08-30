@@ -1,111 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab3H3NZh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:25:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51985 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755869Ab3H3NZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:25:32 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 24/35] mm: Propagate the sorted-buddy bias for picking
- free regions, to region allocator
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:51:25 +0530
-Message-ID: <20130830132123.4947.26449.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083013-5806-0000-0000-000022964F42
+	id S1756761Ab3H3NYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:24:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab3H3NYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 09:24:09 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=1R76s7W19IUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6Lvr2t5l9BUA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=qkL21ZNwHsC-c7y5T_AA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=7i4g0qeMgeMk3p79:21 a=Csj878MYkEOOqwWo:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130830132403.955140954@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 30 Aug 2013 09:02:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: [RFC][PATCH 1/8] ftrace: Add hash list to save RCU unsafe functions
+References: <20130830130205.504335754@goodmis.org>
+Content-Disposition: inline; filename=0001-ftrace-Add-hash-list-to-save-RCU-unsafe-functions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sorted-buddy page allocator keeps the buddy freelists sorted region-wise,
-and tries to pick lower numbered regions while allocating pages. The idea is
-to allocate regions in the increasing order of region number.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Propagate the same bias to the region allocator as well. That is, make it
-favor lower numbered regions while allocating regions to the page allocator.
-To do this efficiently, add a bitmap to represent the regions in the region
-allocator, and use bitmap operations to manage these regions and to pick the
-lowest numbered free region efficiently.
+Some ftrace function tracing callbacks use RCU (perf), thus if
+it gets called from tracing a function outside of the RCU tracking,
+like in entering or leaving NO_HZ idle/userspace, the RCU read locks
+in the callback are useless.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+As normal function tracing does not use RCU, and function tracing
+happens to help debug RCU, we do not want to limit all callbacks
+from tracing these "unsafe" RCU functions. Instead, we create an
+infrastructure that will let us mark these unsafe RCU functions
+and we will only allow callbacks that explicitly say they do not
+use RCU to be called by these functions.
+
+This patch adds the infrastructure to create the hash of functions
+that are RCU unsafe. This is done with the FTRACE_UNSAFE_RCU()
+macro. It works like EXPORT_SYMBOL() does. Simply place the macro
+under the RCU unsafe function:
+
+void func(void)
+{
+	[...]
+}
+FTRACE_UNSAFE_RCU(func);
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ include/asm-generic/vmlinux.lds.h |   10 ++++
+ include/linux/ftrace.h            |   38 ++++++++++++++
+ kernel/trace/ftrace.c             |  105 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 153 insertions(+)
 
- include/linux/mmzone.h |    1 +
- mm/page_alloc.c        |   19 ++++++++++++++++++-
- 2 files changed, 19 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index c2956dd..8c6e9f1 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -125,6 +125,7 @@ struct mem_region {
- struct region_allocator {
- 	struct mem_region	region[MAX_NR_ZONE_REGIONS];
- 	int			next_region;
-+	DECLARE_BITMAP(ralloc_mask, MAX_NR_ZONE_REGIONS);
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 69732d2..fdfddd2 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -93,6 +93,15 @@
+ #define MCOUNT_REC()
+ #endif
+ 
++#ifdef CONFIG_FUNCTION_TRACER
++#define FTRACE_UNSAFE_RCU()	. = ALIGN(8);				\
++			VMLINUX_SYMBOL(__start_ftrace_unsafe_rcu) = .;	\
++			*(_ftrace_unsafe_rcu)				\
++			VMLINUX_SYMBOL(__stop_ftrace_unsafe_rcu) = .;
++#else
++#define FTRACE_UNSAFE_RCU()
++#endif
++
+ #ifdef CONFIG_TRACE_BRANCH_PROFILING
+ #define LIKELY_PROFILE()	VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
+ 				*(_ftrace_annotated_branch)			      \
+@@ -479,6 +488,7 @@
+ 	MEM_DISCARD(init.data)						\
+ 	KERNEL_CTORS()							\
+ 	MCOUNT_REC()							\
++	FTRACE_UNSAFE_RCU()						\
+ 	*(.init.rodata)							\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9f15c00..1d17a82 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -92,6 +92,9 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
+  * STUB   - The ftrace_ops is just a place holder.
+  * INITIALIZED - The ftrace_ops has already been initialized (first use time
+  *            register_ftrace_function() is called, it will initialized the ops)
++ * RCU_SAFE - The callback uses no rcu type locking. This allows the
++ *            callback to be called in locations that RCU is not active.
++ *            (like going into or coming out of idle NO_HZ)
+  */
+ enum {
+ 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
+@@ -103,6 +106,7 @@ enum {
+ 	FTRACE_OPS_FL_RECURSION_SAFE		= 1 << 6,
+ 	FTRACE_OPS_FL_STUB			= 1 << 7,
+ 	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
++	FTRACE_OPS_FL_RCU_SAFE			= 1 << 9,
  };
  
- struct pglist_data;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 78ae8f6..7e82872a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -934,7 +934,7 @@ static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
- 	struct free_area_region *reg_area;
- 	struct list_head *ralloc_list;
- 	unsigned long nr_pages;
--	int order;
-+	int order, *next_region;
+ struct ftrace_ops {
+@@ -219,6 +223,40 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
+ extern void ftrace_stub(unsigned long a0, unsigned long a1,
+ 			struct ftrace_ops *op, struct pt_regs *regs);
  
- 	if (WARN_ON(list_empty(&free_list->list)))
- 		return;
-@@ -951,6 +951,13 @@ static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
++/*
++ * In order to speed up boot, save both the name and the
++ * address of the function to find to add to hashes. The
++ * list of function mcount addresses are sorted by the address,
++ * but we still need to use the name to find the actual location
++ * as the mcount call is usually not at the address of the
++ * start of the function.
++ */
++struct ftrace_func_finder {
++	const char		*name;
++	unsigned long		ip;
++};
++
++/*
++ * For functions that are called when RCU is not tracking the CPU
++ * (like for entering or leaving NO_HZ mode, and RCU then ignores
++ * the CPU), they need to be marked with FTRACE_UNSAFE_RCU().
++ * This will prevent all function tracing callbacks from calling
++ * this function unless the callback explicitly states that it
++ * doesn't use RCU with the FTRACE_OPS_FL_RCU_SAFE flag.
++ *
++ * The usage of FTRACE_UNSAFE_RCU() is the same as EXPORT_SYMBOL().
++ * Just place the macro underneath the function that is unsafe.
++ */
++#define FTRACE_UNSAFE_RCU(func) \
++	static struct ftrace_func_finder __ftrace_unsafe_rcu_##func	\
++	 __initdata = {							\
++		.name = #func,						\
++		.ip = (unsigned long)func,				\
++	};							\
++	struct ftrace_func_finder *__ftrace_unsafe_rcu_ptr_##func	\
++		  __attribute__((__section__("_ftrace_unsafe_rcu"))) =	\
++		&__ftrace_unsafe_rcu_##func
++
+ #else /* !CONFIG_FUNCTION_TRACER */
+ /*
+  * (un)register_ftrace_function must be a macro since the ops parameter
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index a6d098c..2580cdb 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1486,6 +1486,72 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ 	}
  
- 	WARN_ON(reg_area->nr_free != 0);
- 	reg_area->nr_free += nr_pages;
-+
-+	set_bit(region_id, reg_alloc->ralloc_mask);
-+	next_region = &reg_alloc->next_region;
-+
-+	if ((*next_region < 0) ||
-+			(*next_region > 0 && region_id < *next_region))
-+		*next_region = region_id;
- }
  
- /* Delete freepages from the region allocator and add them to buddy freelists */
-@@ -981,6 +988,16 @@ static int del_from_region_allocator(struct zone *zone, unsigned int order,
- 	reg_area->nr_free -= nr_pages;
- 	WARN_ON(reg_area->nr_free != 0);
++static __init int ftrace_find_ip(const void *a, const void *b)
++{
++	const struct dyn_ftrace *key = a;
++	const struct dyn_ftrace *rec = b;
++
++	if (key->ip == rec->ip)
++		return 0;
++
++	if (key->ip < rec->ip) {
++		/* If previous is less than, then this is our func */
++		rec--;
++		if (rec->ip < key->ip)
++			return 0;
++		return -1;
++	}
++
++	/* All else, we are greater */
++	return 1;
++}
++
++/*
++ * Find the mcount caller location given the ip address of the
++ * function that contains it. As the mcount caller is usually
++ * after the mcount itself.
++ *
++ * Done for just core functions at boot.
++ */
++static __init unsigned long ftrace_mcount_from_func(unsigned long ip)
++{
++	struct ftrace_page *pg, *last_pg = NULL;
++	struct dyn_ftrace *rec;
++	struct dyn_ftrace key;
++
++	key.ip = ip;
++
++	for (pg = ftrace_pages_start; pg; last_pg = pg, pg = pg->next) {
++		if (ip >= (pg->records[pg->index - 1].ip + MCOUNT_INSN_SIZE))
++			break;
++
++		/*
++		 * Do the first record manually, as we need to check
++		 * the previous record from the previous page
++		 */
++		if (ip < pg->records[0].ip) {
++			/* First page? Then we found our record! */
++			if (!last_pg)
++				return pg->records[0].ip;
++
++			rec = &last_pg->records[last_pg->index - 1];
++			if (rec->ip < ip)
++				return pg->records[0].ip;
++
++			/* Not found */
++			return 0;
++		}
++
++		rec = bsearch(&key, pg->records + 1, pg->index - 1,
++			      sizeof(struct dyn_ftrace),
++			      ftrace_find_ip);
++		if (rec)
++			return rec->ip;
++	}
++
++	return 0;
++}
++
+ static int ftrace_cmp_recs(const void *a, const void *b)
+ {
+ 	const struct dyn_ftrace *key = a;
+@@ -4211,6 +4277,43 @@ struct notifier_block ftrace_module_exit_nb = {
+ 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+ };
  
-+	/* Pick a new next_region */
-+	clear_bit(next_region, reg_alloc->ralloc_mask);
-+	next_region = find_first_bit(reg_alloc->ralloc_mask,
-+				     MAX_NR_ZONE_REGIONS);
++extern struct ftrace_func_finder *__start_ftrace_unsafe_rcu[];
++extern struct ftrace_func_finder *__stop_ftrace_unsafe_rcu[];
 +
-+	if (next_region >= MAX_NR_ZONE_REGIONS)
-+		next_region = -1; /* No free regions available */
++static struct ftrace_hash *ftrace_unsafe_rcu;
 +
-+	reg_alloc->next_region = next_region;
++static void __init create_unsafe_rcu_hash(void)
++{
++	struct ftrace_func_finder *finder;
++	struct ftrace_func_finder **p;
++	unsigned long ip;
++	char str[KSYM_SYMBOL_LEN];
++	int count;
 +
- 	return 0;
- }
++	count = __stop_ftrace_unsafe_rcu - __start_ftrace_unsafe_rcu;
++	if (!count)
++		return;
++
++	ftrace_unsafe_rcu = alloc_ftrace_hash(count);
++
++	for (p = __start_ftrace_unsafe_rcu;
++	     p < __stop_ftrace_unsafe_rcu;
++	     p++) {
++		finder = *p;
++
++		ip = ftrace_mcount_from_func(finder->ip);
++		if (WARN_ON_ONCE(!ip))
++			continue;
++
++		/* Make sure this is our ip */
++		kallsyms_lookup(ip, NULL, NULL, NULL, str);
++		if (WARN_ON_ONCE(strcmp(str, finder->name) != 0))
++			continue;
++
++		add_hash_entry(ftrace_unsafe_rcu, ip);
++	}
++}
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
  
+@@ -4250,6 +4353,8 @@ void __init ftrace_init(void)
+ 	if (ret)
+ 		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
++	create_unsafe_rcu_hash();
++
+ 	set_ftrace_early_filters();
+ 
+ 	return;
+-- 
+1.7.10.4
+
 
