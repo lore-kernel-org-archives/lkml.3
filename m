@@ -1,132 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab3H3R6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:58:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29069 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756540Ab3H3R6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:58:50 -0400
-Date: Fri, 30 Aug 2013 20:58:35 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org, Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH v9 00/13] KVM: PPC: IOMMU in-kernel handling of VFIO
-Message-ID: <20130830175835.GF10142@redhat.com>
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
- <5220736E.5050503@ozlabs.ru>
+	id S1756822Ab3H3SFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 14:05:09 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:61634 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756641Ab3H3SFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 14:05:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5220736E.5050503@ozlabs.ru>
+Reply-To: eranian@gmail.com
+In-Reply-To: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+Date: Fri, 30 Aug 2013 20:05:05 +0200
+Message-ID: <CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
+Subject: Re: perf_event: rdpmc self-monitoring overhead issue
+From: Stephane Eranian <eranian@googlemail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 08:26:54PM +1000, Alexey Kardashevskiy wrote:
-> On 08/28/2013 06:37 PM, Alexey Kardashevskiy wrote:
-> > This accelerates VFIO DMA operations on POWER by moving them
-> > into kernel.
-> > 
-> > This depends on VFIO external API patch which is on its way to upstream.
-> > 
-> > Changes:
-> > v9:
-> > * replaced the "link logical bus number to IOMMU group" ioctl to KVM
-> > with a KVM device doing the same thing, i.e. the actual changes are in
-> > these 3 patches:
-> >   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
-> >   KVM: PPC: remove warning from kvmppc_core_destroy_vm
-> >   KVM: PPC: Add support for IOMMU in-kernel handling
-> > 
-> > * moved some VFIO external API bits to a separate patch to reduce the size
-> > of the "KVM: PPC: Add support for IOMMU in-kernel handling" patch
-> > 
-> > * fixed code style problems reported by checkpatch.pl.
-> > 
-> > v8:
-> > * fixed comments about capabilities numbers
-> > 
-> > v7:
-> > * rebased on v3.11-rc3.
-> > * VFIO external user API will go through VFIO tree so it is
-> > excluded from this series.
-> > * As nobody ever reacted on "hashtable: add hash_for_each_possible_rcu_notrace()",
-> > Ben suggested to push it via his tree so I included it to the series.
-> > * realmode_(get|put)_page is reworked.
-> > 
-> > More details in the individual patch comments.
-> > 
-> > Alexey Kardashevskiy (13):
-> >   KVM: PPC: POWERNV: move iommu_add_device earlier
-> >   hashtable: add hash_for_each_possible_rcu_notrace()
-> >   KVM: PPC: reserve a capability number for multitce support
-> >   KVM: PPC: reserve a capability and KVM device type for realmode VFIO
-> 
-> 
-> Hi Gleb!
-> 
-> Could you please review and pick (if they are ok) the two "capability"
-> patches from above?
-> 
-> It would be cool if you also looked at "KVM: PPC: Add support for IOMMU
-> in-kernel handling", the part about KVM device for SPAPR TCE IOMMU table.
-> 
-> Thanks!
-Will do it next week.
+On Fri, Aug 30, 2013 at 7:55 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+> Hello,
+>
+> I've finally found time to track down why perf_event/rdpmc self-monitoring
+> overhead was so bad.
+>
+> To summarize, a test which does:
+>
+>    perf_event_open()
+>    ioctl(PERF_EVENT_IOC_ENABLE)
+>    read() /* either via syscall or  the rdpmc code listed in
+>              include/uapi/linux/perf_event.h */
+>    ioctl(PERF_EVENT_IOC_DISABLE)
+>
+> is done, and the number of cycles for each routine is taken using
+> rdtsc().
+>
+> On a Core2 Processor the results look something like this for read:
+>
+>                               | read time for 1 event
+>                               | median of 1024 runs
+>                               |     (cycles)
+>  -----------------------------|-------------------------
+>    2.6.32-perfctr (rdpmc)     |       133
+>    2.6.30-perfmon2            |      1264
+>    3.10                       |      1482
+>    3.10 (rdpmc)               |      3062
+>
+> As you can see, using the userspace-only rdpmc code is twice as slow as
+> just using the read() syscall.
+>
+>
+> I've tracked down the cause of this, and apparently it's due to
+> the first access to the event's struct perf_event_mmap_page.  If
+> outside of the read timing code I do an unrelated read of the mmap() page
+> to fault it in, then the result is much more believable:
+>
+>   3.10 (rdpmc)                 |      123
+>
+You mean that the high cost in your first example comes from the fact
+that you are averaging over all the iterations and not n-1 (where 1 is
+the first). I don't see a flag in mmap() to fault it in immediately. But
+why not document, that programs should touch the page once before
+starting any timing measurements.
 
-> 
-> 
-> 
-> >   powerpc: Prepare to support kernel handling of IOMMU map/unmap
-> >   powerpc: add real mode support for dma operations on powernv
-> >   KVM: PPC: enable IOMMU_API for KVM_BOOK3S_64 permanently
-> >   KVM: PPC: Add support for multiple-TCE hcalls
-> >   powerpc/iommu: rework to support realmode
-> >   KVM: PPC: remove warning from kvmppc_core_destroy_vm
-> >   KVM: PPC: add trampolines for VFIO external API
-> >   KVM: PPC: Add support for IOMMU in-kernel handling
-> >   KVM: PPC: Add hugepage support for IOMMU in-kernel handling
-> > 
-> >  Documentation/virtual/kvm/api.txt                  |  26 +
-> >  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 ++
-> >  arch/powerpc/include/asm/iommu.h                   |  18 +-
-> >  arch/powerpc/include/asm/kvm_host.h                |  38 ++
-> >  arch/powerpc/include/asm/kvm_ppc.h                 |  16 +-
-> >  arch/powerpc/include/asm/machdep.h                 |  12 +
-> >  arch/powerpc/include/asm/pgtable-ppc64.h           |   2 +
-> >  arch/powerpc/include/uapi/asm/kvm.h                |   8 +
-> >  arch/powerpc/kernel/iommu.c                        | 243 +++++----
-> >  arch/powerpc/kvm/Kconfig                           |   1 +
-> >  arch/powerpc/kvm/book3s_64_vio.c                   | 597 ++++++++++++++++++++-
-> >  arch/powerpc/kvm/book3s_64_vio_hv.c                | 408 +++++++++++++-
-> >  arch/powerpc/kvm/book3s_hv.c                       |  42 +-
-> >  arch/powerpc/kvm/book3s_hv_rmhandlers.S            |   8 +-
-> >  arch/powerpc/kvm/book3s_pr_papr.c                  |  35 ++
-> >  arch/powerpc/kvm/powerpc.c                         |   4 +
-> >  arch/powerpc/mm/init_64.c                          |  50 +-
-> >  arch/powerpc/platforms/powernv/pci-ioda.c          |  57 +-
-> >  arch/powerpc/platforms/powernv/pci-p5ioc2.c        |   2 +-
-> >  arch/powerpc/platforms/powernv/pci.c               |  75 ++-
-> >  arch/powerpc/platforms/powernv/pci.h               |   3 +-
-> >  arch/powerpc/platforms/pseries/iommu.c             |   8 +-
-> >  include/linux/hashtable.h                          |  15 +
-> >  include/linux/kvm_host.h                           |   1 +
-> >  include/linux/mm.h                                 |  14 +
-> >  include/linux/page-flags.h                         |   4 +-
-> >  include/uapi/linux/kvm.h                           |   3 +
-> >  virt/kvm/kvm_main.c                                |   5 +
-> >  28 files changed, 1564 insertions(+), 168 deletions(-)
-> >  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> > 
-> 
-> 
-> -- 
-> Alexey
-
---
-			Gleb.
+> So the question is, why do I have to explicitly in advance fault the
+> page in?  Is there a way to force this to happen automatically?
+>
+> The perfctr code as far as I can tell doesn't touch its mmap page in
+> advance.
+> It uses vm_insert_page() to insert the page rather than the
+> rb tree stuff that perf_event uses.
+>
+> I know part of this overhead is due to the construction of my benchmark
+> and in theory would be mitigated if you were doing a large number
+> of measurements in a program, but at the same time this is also a common
+> pattern when self-monitoring: putting calipers around one chunk of code
+> and taking one measurement (often in a timing-critical area where
+> overhead matters).
+>
+> Vince
