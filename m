@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab3H3J4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:56:34 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:45946 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab3H3J4c (ORCPT
+	id S1755601Ab3H3J4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:56:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49288 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab3H3J4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:56:32 -0400
-From: Mischa Jonker <Mischa.Jonker@synopsys.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Subject: [PATCH] ARC: Fix __udelay calculation
-Date: Fri, 30 Aug 2013 11:56:25 +0200
-Message-Id: <1377856585-11078-1-git-send-email-mjonker@synopsys.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 30 Aug 2013 05:56:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1377800893.559.24.camel@sakura.staff.proxad.net>
+References: <1377800893.559.24.camel@sakura.staff.proxad.net>
+Date: Fri, 30 Aug 2013 17:56:43 +0800
+Message-ID: <CACVXFVM1Xj0edMbDML5t-eigxQCcpZR7OLrYx=4cuzUvOVFM3g@mail.gmail.com>
+Subject: Re: [PATCH] firmware loader: fix pending_fw_head list corruption
+From: Ming Lei <ming.lei@canonical.com>
+To: mbizon@freebox.fr
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cast usecs to u64, to ensure that the (usecs * 4295 * HZ)
-multiplication is 64 bit.
+On Fri, Aug 30, 2013 at 2:28 AM, Maxime Bizon <mbizon@freebox.fr> wrote:
+> Got the following oops just before reboot:
+>
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> [<8028d300>] (__list_del_entry+0x44/0xac)
+> [<802e3320>] (__fw_load_abort.part.13+0x1c/0x50)
+> [<802e337c>] (fw_shutdown_notify+0x28/0x50)
+> [<80034f80>] (notifier_call_chain.isra.1+0x5c/0x9c)
+> [<800350ec>] (__blocking_notifier_call_chain+0x44/0x58)
+> [<80035114>] (blocking_notifier_call_chain+0x14/0x18)
+> [<80035d64>] (kernel_restart_prepare+0x14/0x38)
+> [<80035d94>] (kernel_restart+0xc/0x50)
+>
+> The following race condition triggers here:
+>
+>   _request_firmware_load()
+>   device_create_file(...)
+>   kobject_uevent(...)
+>   (schedule)
+>                                        (resume)
+>                                        firmware_loading_store(1)
+>                                        firmware_loading_store(0)
+>                                        list_del_init(&buf->pending_list)
+>                                        (schedule)
+>   (resume)
+>   list_add(&buf->pending_list, &pending_fw_head);
+>   wait_for_completion(&buf->completion);
+>
+> causing an oops later when walking pending_list after the firmware has
+> been released.
+>
+> The proposed fix is to move the list_add() before sysfs attribute
+> creation.
+>
+> Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+> ---
+>  drivers/base/firmware_class.c |   11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index a439602..c8dac74 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -868,8 +868,15 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>                 goto err_del_dev;
+>         }
+>
+> +       mutex_lock(&fw_lock);
+> +       list_add(&buf->pending_list, &pending_fw_head);
+> +       mutex_unlock(&fw_lock);
+> +
+>         retval = device_create_file(f_dev, &dev_attr_loading);
+>         if (retval) {
+> +               mutex_lock(&fw_lock);
+> +               list_del_init(&buf->pending_list);
+> +               mutex_unlock(&fw_lock);
+>                 dev_err(f_dev, "%s: device_create_file failed\n", __func__);
+>                 goto err_del_bin_attr;
+>         }
+> @@ -884,10 +891,6 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>                 kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+>         }
+>
+> -       mutex_lock(&fw_lock);
+> -       list_add(&buf->pending_list, &pending_fw_head);
+> -       mutex_unlock(&fw_lock);
+> -
+>         wait_for_completion(&buf->completion);
+>
+>         cancel_delayed_work_sync(&fw_priv->timeout_work);
 
-Initially, the (usecs * 4295 * HZ) part was done as a 32 bit
-multiplication, with the result casted to 64 bit. This led to some bits
-falling off, causing a "DMA initialization error" in the stmmac Ethernet
-driver, due to a premature timeout.
+Good catch, thanks.
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
----
- arch/arc/include/asm/delay.h |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Acked-by: Ming Lei <ming.lei@canonical.com>
 
-diff --git a/arch/arc/include/asm/delay.h b/arch/arc/include/asm/delay.h
-index 442ce5d..43de302 100644
---- a/arch/arc/include/asm/delay.h
-+++ b/arch/arc/include/asm/delay.h
-@@ -53,11 +53,10 @@ static inline void __udelay(unsigned long usecs)
- {
- 	unsigned long loops;
- 
--	/* (long long) cast ensures 64 bit MPY - real or emulated
-+	/* (u64) cast ensures 64 bit MPY - real or emulated
- 	 * HZ * 4295 is pre-evaluated by gcc - hence only 2 mpy ops
- 	 */
--	loops = ((long long)(usecs * 4295 * HZ) *
--		 (long long)(loops_per_jiffy)) >> 32;
-+	loops = ((u64) usecs * 4295 * HZ * loops_per_jiffy) >> 32;
- 
- 	__delay(loops);
- }
--- 
-1.7.9.5
-
+Thanks,
+--
+Ming Lei
