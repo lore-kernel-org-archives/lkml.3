@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3H3LNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:13:36 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:46408 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab3H3LNf convert rfc822-to-8bit (ORCPT
+	id S1756189Ab3H3LO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:14:59 -0400
+Received: from gproxy4-pub.mail.unifiedlayer.com ([69.89.23.142]:58318 "HELO
+	gproxy4-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754757Ab3H3LO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:13:35 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Mischa Jonker <Mischa.Jonker@synopsys.com>
-CC: "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARC: Fix __udelay calculation
-Thread-Topic: [PATCH] ARC: Fix __udelay calculation
-Thread-Index: AQHOpWc1gBVbjN4s5EGQ4JJxLczBug==
-Date: Fri, 30 Aug 2013 11:13:31 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075141223@IN01WEMBXA.internal.synopsys.com>
-References: <1377856585-11078-1-git-send-email-mjonker@synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.237]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 30 Aug 2013 07:14:57 -0400
+X-Sender-Id: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.126.21 authed with slava@dubeyko.com}
+Message-ID: <1377860886.4545.5.camel@slavad-ubuntu>
+Subject: Re: [PATCH] add exFAT driver
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+Reply-To: slava@dubeyko.com
+To: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Date: Fri, 30 Aug 2013 15:08:06 +0400
+In-Reply-To: <20130830124622.5f81b7d4@rechenknecht2k7>
+References: <20130830124622.5f81b7d4@rechenknecht2k7>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.126.21 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 03:26 PM, Mischa Jonker wrote:
-> Cast usecs to u64, to ensure that the (usecs * 4295 * HZ)
-> multiplication is 64 bit.
->
-> Initially, the (usecs * 4295 * HZ) part was done as a 32 bit
-> multiplication, with the result casted to 64 bit. This led to some bits
-> falling off, causing a "DMA initialization error" in the stmmac Ethernet
-> driver, due to a premature timeout.
->
-> Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
->
+On Fri, 2013-08-30 at 12:46 +0200, Benjamin Valentin wrote:
+> Samsung released their exFAT (and FAT12/16/32) driver under the GPLv2, it is
+> based on the in-kernel FAT driver and can be obtained from [1].
+> This patch adds version 1.2.4 of the exfat driver, sans the ifdefs for older
+> kernel versions and ported to Linux 3.11.
+> 
+> [1] http://opensource.samsung.com search for exfat
+> 
+> original authors: Joosun Hahn
+> 		  Sung-Kwan Kim
+> 
+> Signed-off-by: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
 
-Applied.
+Why original authors don't participate in submission of driver?
 
-Thx,
--Vineet
+Anyway, it makes sense to prepare patch set instead of one huge patch.
+Could you, please, prepare patch set?
+
+And you should add linux-fsdevel list in CC for any discussion about
+file system drivers.
+
+Thanks,
+Vyacheslav Dubeyko.
+
