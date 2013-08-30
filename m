@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3H3Piw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:38:52 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:62295 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496Ab3H3Piv (ORCPT
+	id S1756773Ab3H3Pjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:39:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46287 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755961Ab3H3Pjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:38:51 -0400
+	Fri, 30 Aug 2013 11:39:41 -0400
+Date: Fri, 30 Aug 2013 08:42:05 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] add exFAT driver
+Message-ID: <20130830154205.GA1411@kroah.com>
+References: <20130830124622.5f81b7d4@rechenknecht2k7>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
-	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
-	<1377751465.4028.20.camel@pasglop>
-	<20130829070012.GC27322@gmail.com>
-	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
-Date: Fri, 30 Aug 2013 17:38:47 +0200
-Message-ID: <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130830124622.5f81b7d4@rechenknecht2k7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 5:34 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Aug 30, 2013 at 2:27 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>
->> Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
->>
->> lockref:  w/o patch | w/ patch
->> ======================
->> Run #1: 2.688.094 | 2.643.004
->> Run #2: 2.678.884 | 2.652.787
->> Run #3: 2.686.450 | 2.650.142
->> Run #4: 2.688.435 | 2.648.409
->> Run #5: 2.693.770 | 2.651.514
->
-> Yes, so this is pretty much expected.
->
-> If you don't have a very high core count (you don't mention your
-> system, but that's pretty - I get ~65 million repetitions in 10
-> seconds on my i5-670), the cmpxchg will not help - because you don't
-> actually see the bad "wait on spinlock" behavior in the first place.
->
-> And a "cmpxchg" is slightly slower than the very optimized spinlocks,
-> and has that annoying "read original value" first issue too. So the
-> patch can make things a bit slower, although it will depends on the
-> microarchitecture (and as mentioned elsewhere, there are other things
-> that can make a bigger difference boot-to-boot - dentry allocation
-> details etc can have "sticky" performance impact).
->
-> So we may take a small hit in order to then *not* have horrible
-> scalability at the high end.
->
+On Fri, Aug 30, 2013 at 12:46:22PM +0200, Benjamin Valentin wrote:
+> Samsung released their exFAT (and FAT12/16/32) driver under the GPLv2, it is
+> based on the in-kernel FAT driver and can be obtained from [1].
+> This patch adds version 1.2.4 of the exfat driver, sans the ifdefs for older
+> kernel versions and ported to Linux 3.11.
+> 
+> [1] http://opensource.samsung.com search for exfat
+> 
+> original authors: Joosun Hahn
+> 		  Sung-Kwan Kim
+> 
+> Signed-off-by: Benjamin Valentin <benpicco@zedat.fu-berlin.de>
 
-A Samsung series-5 ultrabook.
+For staging drivers I need a maintainer that is going to take the time
+to shephard it into the core kernel tree.  See other TODO files for
+how that person is defined.  Are you going to be willing to do this?
 
-$ grep "model name" /proc/cpuinfo | uniq
-model name      : Intel(R) Core(TM) i5-2467M CPU @ 1.60GHz
+If so, can you please resend it with those changes to the TODO file, and
+add a MAINTAINERS file entry?
 
-- Sedat -
+Also, I would really like to get a signed-off-by: from the Samsung
+authors for this patch, can you do that as well please?
+
+thanks,
+
+greg k-h
