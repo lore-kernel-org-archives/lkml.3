@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3H3E3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 00:29:50 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49524 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3H3E3s (ORCPT
+	id S1756090Ab3H3E3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 00:29:55 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55973 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab3H3E3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 00:29:48 -0400
+	Fri, 30 Aug 2013 00:29:51 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
@@ -17,29 +17,34 @@ Cc: devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Grant Likely <grant.likely@linaro.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 0/6] extcon-gpio: Add devicetree support
-Date: Thu, 29 Aug 2013 21:29:32 -0700
-Message-Id: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
+Subject: [PATCH 1/6] extcon-gpio: Do not unnecessarily initialize variables
+Date: Thu, 29 Aug 2013 21:29:33 -0700
+Message-Id: <1377836978-24082-2-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
+In-Reply-To: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
+References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first three patches of this series are either cleanup or add functionality
-unrelated to devicetree support and should hopefully be acceptable as-is or with
-minor modifications.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/extcon/extcon-gpio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Patch 1 of this series is a tiny cleanup patch.
-Patch 2 adds support for hardware debounce. If the gpio chip supports debounce,
-use it instead of software debounce.
-Patch 3 adds support for low-active presence detect signals.
+diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+index 02bec32..77d35a7 100644
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -80,7 +80,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ {
+ 	struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
+ 	struct gpio_extcon_data *extcon_data;
+-	int ret = 0;
++	int ret;
+ 
+ 	if (!pdata)
+ 		return -EBUSY;
+-- 
+1.7.9.7
 
-Patch 4 and 5 add devicetree support. Patch 4 is the actual code and patch 5
-describes devicetree bindings. Both could possibly be merged into a single
-patch.
-
-Patch 6 adds possible properties for connectors supporting multiple cable
-types to the devicetree bindings document. This is purely for discussion
-and would be implemented in a separate patch. While I don't need this code
-for our application, I would be happy to provide it if the community sees
-value in it.
