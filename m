@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab3H3Tee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:34:34 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41550 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3H3Tec (ORCPT
+	id S1756898Ab3H3Te5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:34:57 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50961 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3H3Te4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:34:32 -0400
+	Fri, 30 Aug 2013 15:34:56 -0400
+Message-ID: <5220F3DC.6030604@gmail.com>
+Date: Fri, 30 Aug 2013 20:34:52 +0100
+From: Paul McQuade <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAN+gG=H=r3HH=J+1eMUWSiruEm3F64E6UfH5djjR_Xfk+kmmtQ@mail.gmail.com>
-References: <CABSveYg3gAnx=cKTqN-iqZdypzivXDuvVAJCdKdbCS6fz3gYkw@mail.gmail.com>
- <CAN+gG=H=r3HH=J+1eMUWSiruEm3F64E6UfH5djjR_Xfk+kmmtQ@mail.gmail.com>
-From: Vasily Titskiy <qehgt0@gmail.com>
-Date: Fri, 30 Aug 2013 15:34:11 -0400
-Message-ID: <CABSveYhSMyCxPZS3nqSdiG-UZwAMMTX7UjgFG=emY+L-K60sdQ@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Email-clients:More config Settings for Thunderbird
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>From 1e86f069b7cacdd6d369eac40b4b7aba7a0523a6 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Fri, 30 Aug 2013 20:24:38 +0100
+Subject: [PATCH] Email-clients:More config Settings for Thunderbird
 
-I've re-tested it with HID_QUIRK_NO_INIT_REPORTS parameter. Looks
-fine, still no delays.
+Disable Word Wrap
+Default Charset
 
-Shoud I re-format & re-submit the patch?
-  Vasily Titskiy
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ Documentation/email-clients.txt |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-
-On Fri, Aug 30, 2013 at 3:18 PM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> Hi,
->
-> first, for the next submission, do not forget to add Jiri (the HID
-> maintainer) in CC, otherwise there are huge chances that he will miss
-> your patch.
->
-> On Fri, Aug 30, 2013 at 8:47 PM, Vasily Titskiy <qehgt0@gmail.com> wrote:
->> The DuoSense touchscreen device causes a 10 second timeout. This fix
->> removes the delay.
->>
->> Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
->> ---
->>  drivers/hid/hid-ids.h           |    2 ++
->>  drivers/hid/usbhid/hid-quirks.c |    3 +++
->>  2 files changed, 5 insertions(+)
->>
->> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
->> index 2168885..c3929ea 100644
->> --- a/drivers/hid/hid-ids.h
->> +++ b/drivers/hid/hid-ids.h
->> @@ -898,4 +898,6 @@
->>  #define USB_VENDOR_ID_PRIMAX 0x0461
->>  #define USB_DEVICE_ID_PRIMAX_KEYBOARD 0x4e05
->>
->> +#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
->> +
->
-> Please keep the list sorted. This define should go into the *_NTRIG_* block.
->
->>  #endif
->> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
->> index 19b8360..3fd4dfd 100644
->> --- a/drivers/hid/usbhid/hid-quirks.c
->> +++ b/drivers/hid/usbhid/hid-quirks.c
->> @@ -89,6 +89,9 @@ static const struct hid_blacklist {
->>   { USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
->>   { USB_VENDOR_ID_TPV, USB_DEVICE_ID_TPV_OPTICAL_TOUCHSCREEN, HID_QUIRK_NOGET },
->>   { USB_VENDOR_ID_TURBOX, USB_DEVICE_ID_TURBOX_KEYBOARD, HID_QUIRK_NOGET },
->> +
->
-> extra whitespace
->
->> + { USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NOGET },
->
-> I'm sure we could try here the new quirk
-> HID_QUIRK_NO_INIT_INPUT_REPORTS, this would be more accurate I think.
-> At least can you test if HID_QUIRK_NO_INIT_REPORTS is enough?
-> HID_QUIRK_NOGET prevent all request from the host to the device, which
-> is a little bit too much in many cases.
->
->> +
->
-> extra whitespace too.
->
-> Cheers,
-> Benjamin
->
->
->>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_PF1209,
->> HID_QUIRK_MULTI_INPUT },
->>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_WP4030U,
->> HID_QUIRK_MULTI_INPUT },
->>   { USB_VENDOR_ID_UCLOGIC, USB_DEVICE_ID_UCLOGIC_TABLET_KNA5,
->> HID_QUIRK_MULTI_INPUT },
->> --
->> 1.7.10.4
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+index 860c29a..b0e71c0 100644
+--- a/Documentation/email-clients.txt
++++ b/Documentation/email-clients.txt
+@@ -205,13 +205,17 @@ To beat some sense out of the internal editor, do this:
+   "false".
+ 
+ - Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
+-
+-- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
++  OR Account Settings: Composition & Addressing: Untick "Compose messages in HTML format".
+ 
+ - Enable UTF8: Set "prefs.converted-to-utf8" to "true".
+ 
+-- Install the "toggle wordwrap" extension.  Download the file from:
+-    https://addons.mozilla.org/thunderbird/addon/2351/
++- Default Charset: Set "mailnews.Send_default_charset" to "UTF-8"
++
++- Disable Word Wrap: Set "mailnews.wraplength" to "0".
++
++- You can also use the addon "toggle wordwrap" extension.
++  From:
++  https://addons.mozilla.org/thunderbird/addon/2351/
+   Then go to "tools->add ons", select "install" at the bottom of the screen,
+   and browse to where you saved the .xul file.  This adds an "Enable
+   Wordwrap" entry under the Options menu of the message composer.
+-- 
+1.7.10.4
