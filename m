@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab3H3Qbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:31:44 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:57547 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab3H3Qbm convert rfc822-to-8bit (ORCPT
+	id S1756641Ab3H3QcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:32:06 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:58349 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab3H3QcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:31:42 -0400
+	Fri, 30 Aug 2013 12:32:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	<CA+icZUVbUD1tUa_ORtn_ZZebpp3gXXHGAcNe0NdYPXPMPoABuA@mail.gmail.com>
-	<1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
-	<CA+icZUXgOd=URJBH5MGAZKdvdkMpFt+5mRxtzuDzq_vFHpoc2A@mail.gmail.com>
-	<1372202983.1888.22.camel@buesod1.americas.hpqcorp.net>
-	<521DE5D7.4040305@synopsys.com>
-	<CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
-	<CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
-	<52205597.3090609@synopsys.com>
-	<CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
-	<CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
-Date: Fri, 30 Aug 2013 13:31:41 -0300
-Message-ID: <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
-Subject: Re: ipc-msg broken again on 3.11-rc7?
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>, sedat.dilek@gmail.com,
-        linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+Date: Fri, 30 Aug 2013 09:32:02 -0700
+X-Google-Sender-Auth: jz0Mbe_WHdCX9jDKvErmyPD9Myk
+Message-ID: <CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-> Date: Fri, Aug 30, 2013 at 4:46 AM
-> Subject: Re: ipc-msg broken again on 3.11-rc7?
-> To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
-> Cc: linus Torvalds <torvalds@linux-foundation.org>, Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-next <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>, Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>, Manfred Spraul <manfred@colorfullife.com>, Jonathan Gonzalez <jgonzalez@linets.cl>
+On Fri, Aug 30, 2013 at 8:38 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >
+> A Samsung series-5 ultrabook.
 >
-> On 08/30/2013 01:57 PM, Sedat Dilek wrote:
-> > On Fri, Aug 30, 2013 at 10:19 AM, Vineet Gupta <vineetg76@gmail.com> wrote:
-> >> Ping ?
-> >>
-> >> It seems 3.11 is pretty close to releasing but we stil have LTP msgctl08 causing a
-> >> hang (atleast on ARC) for both linux-next 20130829 as well as Linus tree.
-> >>
-> >> So far, I haven't seemed to have drawn attention of people involved.
-> >>
+> $ grep "model name" /proc/cpuinfo | uniq
+> model name      : Intel(R) Core(TM) i5-2467M CPU @ 1.60GHz
 
-I apologize for the delay, I am on vacations and wasnt interrupting my
-days at the beach by checking email.
+Hmm. Do you have debugging options enabled? Because that CPU should
+have the same core count as mine (two+HT), a slightly smaller cache
+(3M vs 4M) and runs at a noticeably lower frequency (1.6GHz vs 3.5).
+It probably also has slower memory etc, but that should still make it
+maybe half speed of mine. Not 1/20th.
 
-You mention that the msgctl08 test case just hangs, nothing
-interesting in dmesg appart from "msgmni has been set to 479" (which
-is a standard initialization message anyways)?
+As mentioned, I get numbers in the 65M range. Yours are under 2.7M.
+Even with some thermal throttling, I would expect better than that.
 
-After a quick glance, I suspect that the problem might be because we
-are calling security_msg_queue_msgsnd() without taking the lock. This
-is similar to the issue Sedat reported in the original thread with
-find_msg() concerning msgrcv. The rest of the code looks otherwise
-standard. Unfortunately I dont have a computer available to write/test
-such a fix. I think we can move calls to security_msg_queue_msgsnd()
-to be done right before ss_add(), which would simplify the code
-changes, something like:
+My pixel (1.8GHz i5-3427U) should be a *bit* faster that yours. And I
+get 54M iterations on that.
 
-...
+I saw you mentioned CONFIG_CMPXCHG_LOCKREF=y in your .config, so you
+don't have spinlock debugging enabled, but maybe you have some other
+expensive debug option enabled. Like DEBUG_PAGEALLOC etc.
 
-/* queue full, wait: */
-if (msgflg & IPC_NOWAIT) {
-     err = -EAGAIN;
-     goto out_unlock1;
-}
+If you get "perf" compiled, mind doing a
 
-ipc_lock_object(&msq->q_perm);
-err = security_msg_queue_msgsnd(msq, msg, msgflg);
-if (err)
-    goto out_unlock0;
+    perf record -f -e cycles:pp ./a.out
+    perf report
 
-ss_add(msq, &s);
+on it and look what that says?
 
-...
-
-
-Thanks,
-Davidlohr
-
-
-> >
-> > Hi Vineet,
-> >
-> > I remember fakeroot was an another good test-case for me to test this
-> > IPC breakage.
-> > Attached is my build-script for Linux-next (tested with Debian/Ubuntu).
-> > ( Cannot say if you can play with it in your environment. )
->
-> Hi Sedat,
->
-> I have a simpler buildroot based rootfs (initramfs based) and LTP is run off of
-> NFS, although running of a local storage doesn't make a difference.
->
-> For me msgctl08 standalone (w/o hassle of running full LTP) is enough to trigger
-> it consistently.
->
-> P.S. sorry my sender address kept flipping - mailer was broken !
->
-> -Vineet
->
->
+              Linus
