@@ -1,42 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3H3Ljc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:39:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51229 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab3H3Lja (ORCPT
+	id S1754792Ab3H3LoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:44:07 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:49839 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3H3LoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:39:30 -0400
-Date: Fri, 30 Aug 2013 12:39:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Pawel Moll <Pawel.Moll@arm.com>
-Subject: Re: [PATCH RFC v2 14/16] ARM: vexpress: remove custom .init_time
-	hook
-Message-ID: <20130830113918.GV6617@n2100.arm.linux.org.uk>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-15-git-send-email-sebastian.hesselbarth@gmail.com> <201308291535.53005.arnd@arndb.de> <521F901B.3090305@gmail.com> <1377856951.3655.34.camel@linaro1.home>
+	Fri, 30 Aug 2013 07:44:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377856951.3655.34.camel@linaro1.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52207F74.6000702@roeck-us.net>
+References: <521B2E75.1040802@asianux.com>
+	<5220177E.709@asianux.com>
+	<52201896.9040309@asianux.com>
+	<5220254E.3050704@roeck-us.net>
+	<52203CF0.5040600@asianux.com>
+	<52207F74.6000702@roeck-us.net>
+Date: Fri, 30 Aug 2013 13:44:03 +0200
+Message-ID: <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com>
+Subject: Re: [PATCH v2] h8300/kernel/setup.c: add "linux/initrd.h" to pass compiling
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 11:02:31AM +0100, Jon Medhurst (Tixy) wrote:
-> After adding of_clk_init(NULL) to time_init() things boot OK for me with
-> this patch. However, do we know that sched_clock is never going to get
-> read before time_init() has actually started the clock it reads? Are we
-> making things more fragile?
+On Fri, Aug 30, 2013 at 1:18 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 08/29/2013 11:34 PM, Chen Gang wrote:
+>>
+>> On 08/30/2013 12:53 PM, Guenter Roeck wrote:
+>>>
+>>> On 08/29/2013 08:59 PM, Chen Gang wrote:
+>>>>
+>>>> The related error (allmodconfig for h8300):
+>>>>
+>>>>     arch/h8300/kernel/setup.c: In function 'setup_arch':
+>>>>     arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared
+>>>> (first use in this function)
+>>>>        initrd_start = memory_start;
+>>>>        ^
+>>>>     arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier
+>>>> is reported only once for each function it appears in
+>>>>     arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared
+>>>> (first use in this function)
+>>>>        initrd_end = memory_start += be32_to_cpu(((unsigned long *)
+>>>> (memory_start))[2]);
+>>>>        ^
+>>>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>> ---
+>>>
+>>>
+>>> Maybe an odd question, but is there a way to actually compile the h8300
+>>> target
+>>
+>>
+>> Firstly, at least for me, I don't think it is an odd question.  :-)
+>>
+>> For the tool-chain:
+>>
+>>    I compiled the cross-compiler from the gcc and binutils source code.
+>>    GCC has too many bugs to compile kernel with -Os (normal make will
+>> fail).
+>>    If without -Os (no optimization), it can work correctly which is enough
+>> for my goal: "let h8300 pass allmodconfig".  ;-)
+>>
+>>> From building with allmodconfig for h8300:
+>>
+>>
+>>    I can find more chances to provide contributes (both for h8300 and for
+>> others).
+>>    I can learn more in kernel wide.
+>>    I can familiar the gcc and binutils step by step (especially to
+>> familiar with their issues).
+>>
+>> Next:
+>>
+>>    I will communicate/work with the gcc guys for the gcc issues which
+>> found by building kernel.
+>>
+>>    :-)
+>>
+>>
+>>
+>>> in the first place ? The cross compiler on kernel.org doesn't work, nor
+>>> does
+>>> the one available through Ubuntu.
+>>>
+>>> Guenter
+>>>
+>>
+>> For binutils, no release under Ubuntu, and the Fedora17's is incorrect
+>> (can not use), but the binutils-2.22 from gnu is OK.
+>>
+>> For gcc, no release under Ubuntu, for Fedora17's, gcc-4.9, gcc-4.8,
+>> gcc-4.7.4, and gcc-4.4.7 all have bugs for compiling kernel(their bugs
+>> are different too).
+>>
+>> It is really not easy to fix these bugs (gcc guys have too many issues
+>> to fix), even if really find the root cause, it is still difficult to
+>> fix (fix one bug is very easy to cause another more issues).
+>>
+>
+> I have to wonder ... is this all worth it ? It almost looks like no one
+> is using this architecture anymore. Do you have target hardware to test
+> any of your changes ?
 
-As I've been saying for years, sched_clock gets read for the first time
-in sched_init() -> init_idle() which occurs before time_init().
+Chen has to achieve his 10 patches/month quota. :-\
 
-Whether that matters or not is debatable, but the first read should return
-zero, and it will return zero after initialization - so I think all we end
-up losing is some accounting of the time taken in the early kernel boot.
-
-If we wish to talk about correctness, then arguably it isn't correct.
+-- 
+Thanks,
+//richard
