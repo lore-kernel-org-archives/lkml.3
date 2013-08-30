@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103Ab3H3XHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 19:07:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42381 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757062Ab3H3XG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 19:06:58 -0400
-From: Joe Perches <joe@perches.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] i40e: Convert pf_<level> macros to functions
-Date: Fri, 30 Aug 2013 16:06:10 -0700
-Message-Id: <daa992875a6f542adc41069daeb81246e46b7f80.1377903831.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1377903831.git.joe@perches.com>
-References: <cover.1377903831.git.joe@perches.com>
+	id S1755660Ab3H3XKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 19:10:13 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42172 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3H3XKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 19:10:11 -0400
+Message-ID: <5221264F.4070402@linaro.org>
+Date: Fri, 30 Aug 2013 16:10:07 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gerlando Falauto <gerlando.falauto@keymile.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Brunck, Holger" <Holger.Brunck@keymile.com>,
+        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
+        "Bigler, Stefan" <Stefan.Bigler@keymile.com>
+Subject: Re: kernel deadlock
+References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com>
+In-Reply-To: <52212511.9050206@keymile.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduces object size ~10KB by removing "%s: ", __func__
-and using the %pf extension and __builtin_return_address(0)
-to emit the function name.
+On 08/30/2013 04:04 PM, Gerlando Falauto wrote:
+> Hi,
+>
+> sorry, it took me a while to narrow it down...
+>
+> On 08/30/2013 01:45 AM, John Stultz wrote:
+>> On 08/29/2013 01:56 PM, Falauto, Gerlando wrote:
+>>> Hi everyone,
+>>>
+>>> I ran into the deadlock situation reported at the bottom.
+>>> Actually, on my latest 3.10 kernel for some reason I don't get the
+>>> report (the kernel just hangs for some reason), so it took me quite
+>>> some
+>>> time to track it down.
+>>>
+>>> Once I figured the trigger to the machine hanging was adjtimex(), I
+>>> reverted everything (between 3.9 to 3.10) that was touching
+>>> kernel/time/timekeeping/timekeeping.c and kernel/time/ntp.c, I double
+>>> checked that indeed the problem was not happening anymore, and finally
+>>> started bisecting, landing on the following offending commit.
+>>> THEN, and ONLY THEN, did I get the &%""ç+"% deadlock report.
+>>>
+>>> Do you guys have any ideas what could be wrong and how to fix it?
+>>
+>> Thanks for the report!
+>>
+>> What exactly is your process for reproducing the issue?
+>
+> Now (well, now...), it's quite easy.
+>
+> Three ingredients:
+>
+> 1) Kernel 3.10
+>
+> 2) Enable HRTICK
+>
+> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+> index 99399f8..294e3ca 100644
+> --- a/kernel/sched/features.h
+> +++ b/kernel/sched/features.h
+> @@ -41,7 +41,7 @@ SCHED_FEAT(WAKEUP_PREEMPTION, true)
+>   */
+>  SCHED_FEAT(ARCH_POWER, true)
+>
+> -SCHED_FEAT(HRTICK, false)
+> +SCHED_FEAT(HRTICK, true)
+>  SCHED_FEAT(DOUBLE_TICK, false)
+>  SCHED_FEAT(LB_BIAS, true)
+>
+> 3) Run the following:
+>
+> #include <stdio.h>
+> #include <sys/timex.h>
+>
+> int main(void)
+> {
+>     int i;
+>
+>     for (i = 0 ; ; i++) {
+>     struct timex adj = {};
+>     printf("%d\r", i);
+>     fflush(stdout);
+>     adjtimex(&adj);
+>     }
+>     return 0;
+> }
+>
+> Notice how:
+> 1) The original issue (with a bit more complicated scenario) was seen
+> on ARM and PowerPC platforms
+> 2) Under the above test conditions (on ARM) I *don't* get any deadlock
+> report printed, the machine just hangs
+> 3) The offending commit (below) I had found through a weird (manual)
+> process of reverting and re-reverting (where some commits could have
+> been reverted out of order), so I'm not 100% sure you'd come to the
+> same conclusions.
+>
+> commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
+> Author: John Stultz <john.stultz@linaro.org>
+> Date:   Fri Mar 22 11:37:28 2013 -0700
+>
+>      timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
+>
+> I'm not able to perform any further testing at this very moment, but
+> if needed, I can try bisecting again sometime next week, so to make an
+> even more reliable statement.
+>
 
-$ size drivers/net/ethernet/intel/i40e/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 166271	  36043	  50032	 252346	  3d9ba	drivers/net/ethernet/intel/i40e/built-in.o.new
- 177030	  35867	  49936	 262833	  402b1	drivers/net/ethernet/intel/i40e/built-in.o.old
+Thanks so much for the details! I'll take a shot at reproducing this and
+will let you know what comes of it.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/intel/i40e/i40e.h      | 12 ++++----
- drivers/net/ethernet/intel/i40e/i40e_main.c | 45 +++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/i40e/i40e.h b/drivers/net/ethernet/intel/i40e/i40e.h
-index a39d1c6..9e61ce90 100644
---- a/drivers/net/ethernet/intel/i40e/i40e.h
-+++ b/drivers/net/ethernet/intel/i40e/i40e.h
-@@ -565,11 +565,11 @@ void i40e_vlan_stripping_enable(struct i40e_vsi *vsi);
- 
- /* i40e_pf message logging */
- 
--#define pf_err(pf, fmt, ...)						\
--	dev_err(&(pf)->pdev->dev, "%s: " fmt, __func__, ##__VA_ARGS__)
--#define pf_warn(pf, fmt, ...)						\
--	dev_warn(&(pf)->pdev->dev, "%s: " fmt, __func__, ##__VA_ARGS__)
--#define pf_info(pf, fmt, ...)						\
--	dev_info(&(pf)->pdev->dev, "%s: " fmt, __func__, ##__VA_ARGS__)
-+__printf(2, 3)
-+void pf_err(const struct i40e_pf *pf, const char *fmt, ...);
-+__printf(2, 3)
-+void pf_warn(const struct i40e_pf *pf, const char *fmt, ...);
-+__printf(2, 3)
-+void pf_info(const struct i40e_pf *pf, const char *fmt, ...);
- 
- #endif /* _I40E_H_ */
-diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-index d1f6744..4366de3 100644
---- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-@@ -7340,3 +7340,48 @@ static void __exit i40e_exit_module(void)
- 	i40e_dbg_exit();
- }
- module_exit(i40e_exit_module);
-+
-+__printf(2, 3)
-+void pf_err(const struct i40e_pf *pf, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	dev_err(&pf->pdev->dev, "%pf: %pV",
-+		__builtin_return_address(0), &vaf);
-+
-+	va_end(args);
-+}
-+
-+__printf(2, 3)
-+void pf_warn(const struct i40e_pf *pf, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	dev_warn(&pf->pdev->dev, "%pf: %pV",
-+		 __builtin_return_address(0), &vaf);
-+
-+	va_end(args);
-+}
-+
-+__printf(2, 3)
-+void pf_info(const struct i40e_pf *pf, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	dev_info(&pf->pdev->dev, "%pf: %pV",
-+		 __builtin_return_address(0), &vaf);
-+
-+	va_end(args);
-+}
--- 
-1.8.1.2.459.gbcd45b4.dirty
+thanks
+-john
 
