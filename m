@@ -1,102 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab3H3J4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:56:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49288 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab3H3J4q (ORCPT
+	id S1755096Ab3H3J60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:58:26 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:33773 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab3H3J6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:56:46 -0400
+	Fri, 30 Aug 2013 05:58:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1377800893.559.24.camel@sakura.staff.proxad.net>
-References: <1377800893.559.24.camel@sakura.staff.proxad.net>
-Date: Fri, 30 Aug 2013 17:56:43 +0800
-Message-ID: <CACVXFVM1Xj0edMbDML5t-eigxQCcpZR7OLrYx=4cuzUvOVFM3g@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: fix pending_fw_head list corruption
-From: Ming Lei <ming.lei@canonical.com>
-To: mbizon@freebox.fr
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
+References: <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<20130830094857.GA14502@gmail.com>
+	<CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
+Date: Fri, 30 Aug 2013 11:58:22 +0200
+Message-ID: <CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 2:28 AM, Maxime Bizon <mbizon@freebox.fr> wrote:
-> Got the following oops just before reboot:
+On Fri, Aug 30, 2013 at 11:56 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Aug 30, 2013 at 11:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>> * Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>>> On Fri, Aug 30, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> > On Fri, Aug 30, 2013 at 5:54 AM, Linus Torvalds
+>>> > <torvalds@linux-foundation.org> wrote:
+>>> >> On Thu, Aug 29, 2013 at 8:12 PM, Waiman Long <waiman.long@hp.com> wrote:
+>>> >>> On 08/29/2013 07:42 PM, Linus Torvalds wrote:
+>>> >>>>
+>>> >>>> Waiman? Mind looking at this and testing? Linus
+>>> >>>
+>>> >>> Sure, I will try out the patch tomorrow morning and see how it works out for
+>>> >>> my test case.
+>>> >>
+>>> >> Ok, thanks, please use this slightly updated patch attached here.
+>>> >>
+>>> >> It improves on the previous version in actually handling the
+>>> >> "unlazy_walk()" case with native lockref handling, which means that
+>>> >> one other not entirely odd case (symlink traversal) avoids the d_lock
+>>> >> contention.
+>>> >>
+>>> >> It also refactored the __d_rcu_to_refcount() to be more readable, and
+>>> >> adds a big comment about what the heck is going on. The old code was
+>>> >> clever, but I suspect not very many people could possibly understand
+>>> >> what it actually did. Plus it used nested spinlocks because it wanted
+>>> >> to avoid checking the sequence count twice. Which is stupid, since
+>>> >> nesting locks is how you get really bad contention, and the sequence
+>>> >> count check is really cheap anyway. Plus the nesting *really* didn't
+>>> >> work with the whole lockref model.
+>>> >>
+>>> >> With this, my stupid thread-lookup thing doesn't show any spinlock
+>>> >> contention even for the "look up symlink" case.
+>>> >>
+>>> >> It also avoids the unnecessary aligned u64 for when we don't actually
+>>> >> use cmpxchg at all.
+>>> >>
+>>> >> It's still one single patch, since I was working on lots of small
+>>> >> cleanups. I think it's pretty close to done now (assuming your testing
+>>> >> shows it performs fine - the powerpc numbers are promising, though),
+>>> >> so I'll split it up into proper chunks rather than random commit
+>>> >> points. But I'm done for today at least.
+>>> >>
+>>> >> NOTE NOTE NOTE! My test coverage really has been pretty pitiful. You
+>>> >> may hit cases I didn't test. I think it should be *stable*, but maybe
+>>> >> there's some other d_lock case that your tuned waiting hid, and that
+>>> >> my "fastpath only for unlocked case" version ends up having problems
+>>> >> with.
+>>> >>
+>>> >
+>>> > Following this thread with half an eye... Was that "unsigned" stuff
+>>> > fixed (someone pointed to it).
+>>> > How do you call that test-patch (subject)?
+>>> > I would like to test it on my SNB ultrabook with your test-case script.
+>>> >
+>>>
+>>> Here on Ubuntu/precise v12.04.3 AMD64 I get these numbers for total loops:
+>>>
+>>> lockref:  w/o patch | w/ patch
+>>> ======================
+>>> Run #1: 2.688.094 | 2.643.004
+>>> Run #2: 2.678.884 | 2.652.787
+>>> Run #3: 2.686.450 | 2.650.142
+>>> Run #4: 2.688.435 | 2.648.409
+>>> Run #5: 2.693.770 | 2.651.514
+>>>
+>>> Average: 2687126,6 VS. 2649171,2 ( ???37955,4 )
+>>
+>> For precise stddev numbers you can run it like this:
+>>
+>>    perf stat --null --repeat 5 ./test
+>>
+>> and it will measure time only and print the stddev in percentage:
+>>
+>>  Performance counter stats for './test' (5 runs):
+>>
+>>        1.001008928 seconds time elapsed                                          ( +-  0.00% )
+>>
 >
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [<8028d300>] (__list_del_entry+0x44/0xac)
-> [<802e3320>] (__fw_load_abort.part.13+0x1c/0x50)
-> [<802e337c>] (fw_shutdown_notify+0x28/0x50)
-> [<80034f80>] (notifier_call_chain.isra.1+0x5c/0x9c)
-> [<800350ec>] (__blocking_notifier_call_chain+0x44/0x58)
-> [<80035114>] (blocking_notifier_call_chain+0x14/0x18)
-> [<80035d64>] (kernel_restart_prepare+0x14/0x38)
-> [<80035d94>] (kernel_restart+0xc/0x50)
+> Hi Ingo,
 >
-> The following race condition triggers here:
+> that sounds really good :-).
 >
->   _request_firmware_load()
->   device_create_file(...)
->   kobject_uevent(...)
->   (schedule)
->                                        (resume)
->                                        firmware_loading_store(1)
->                                        firmware_loading_store(0)
->                                        list_del_init(&buf->pending_list)
->                                        (schedule)
->   (resume)
->   list_add(&buf->pending_list, &pending_fw_head);
->   wait_for_completion(&buf->completion);
+> AFAICS 'make deb-pkg' does not have support to build linux-tools
+> Debian package where perf is included.
+> Can I run an older version of perf or should I / have to try with the
+> one shipped in Linux v3.11-rc7+ sources?
+> How can I build perf standalone, out of my sources?
 >
-> causing an oops later when walking pending_list after the firmware has
-> been released.
->
-> The proposed fix is to move the list_add() before sysfs attribute
-> creation.
->
-> Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
-> ---
->  drivers/base/firmware_class.c |   11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index a439602..c8dac74 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -868,8 +868,15 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
->                 goto err_del_dev;
->         }
->
-> +       mutex_lock(&fw_lock);
-> +       list_add(&buf->pending_list, &pending_fw_head);
-> +       mutex_unlock(&fw_lock);
-> +
->         retval = device_create_file(f_dev, &dev_attr_loading);
->         if (retval) {
-> +               mutex_lock(&fw_lock);
-> +               list_del_init(&buf->pending_list);
-> +               mutex_unlock(&fw_lock);
->                 dev_err(f_dev, "%s: device_create_file failed\n", __func__);
->                 goto err_del_bin_attr;
->         }
-> @@ -884,10 +891,6 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
->                 kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
->         }
->
-> -       mutex_lock(&fw_lock);
-> -       list_add(&buf->pending_list, &pending_fw_head);
-> -       mutex_unlock(&fw_lock);
-> -
->         wait_for_completion(&buf->completion);
->
->         cancel_delayed_work_sync(&fw_priv->timeout_work);
 
-Good catch, thanks.
+Hmm, I installed linux-tools-common (3.2.0-53.81).
 
-Acked-by: Ming Lei <ming.lei@canonical.com>
+$ perf stat --null --repeat 5 ./t_lockref_from-linus
+perf_3.11.0-rc7 not found
+You may need to install linux-tools-3.11.0-rc7
 
-Thanks,
---
-Ming Lei
+- Sedat -
