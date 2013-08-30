@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab3H3Ina (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 04:43:30 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:11182 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab3H3InX (ORCPT
+	id S1755081Ab3H3Inf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 04:43:35 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:11692 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab3H3Inb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 04:43:23 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-59-52205b29f4ab
+	Fri, 30 Aug 2013 04:43:31 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-dd-52205b305c9f
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
@@ -18,101 +18,103 @@ Cc: Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCH 0/4] mm: migrate zbud pages
-Date: Fri, 30 Aug 2013 10:42:52 +0200
-Message-id: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFC PATCH 2/4] mm: use mapcount for identifying zbud pages
+Date: Fri, 30 Aug 2013 10:42:54 +0200
+Message-id: <1377852176-30970-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e/4VV3NaIUgg1PTuC3mrF/DZrFxxnpW
-	i65TU1ksPr18wGjx+oWhxdmmN+wWl3fNYbO4t+Y/q8XaI3fZLSa/e8Zosezre3aLQ/tWsTvw
-	eCze85LJY9OqTjaPTZ8msXucmPGbxePBoc0sHh+f3mLx6NuyitFj8+lqj8+b5AI4o7hsUlJz
-	MstSi/TtErgyNn3ezV5wR6zi4c6ZbA2Ms4S6GDk5JARMJF6e/8kOYYtJXLi3nq2LkYtDSGAp
-	o0TngumsEE4fk8SieQ+ZQKrYBIwlNi9fwgZiiwj0MUpMumwBUsQscIZJ4tqS/2CjhAX0Jdae
-	ugJWxCKgKrFwwmVmEJtXwF1i6tV1QFM5gNYpSMyZZDOBkXsBI8MqRtHU0uSC4qT0XCO94sTc
-	4tK8dL3k/NxNjJDg+7qDcekxq0OMAhyMSjy8HYHyQUKsiWXFlbmHGCU4mJVEeAV0FYKEeFMS
-	K6tSi/Lji0pzUosPMTJxcEo1MBalrPzz95vAny8GfXdT/SK8vtrxJmd3y8RXBNRW/JYObX/N
-	8dN71VRmi/Kqquyq+et2c3JF3HX5FnPmWJfVgeVzVGXXZuU+s62UVeb8d7mz6sUWCy2OQwxn
-	quWUL1UcDe08evnL97lP46xWrjOuDTx3Z0Pl7H+t07n8Qtez7p2r0GudJC5zRomlOCPRUIu5
-	qDgRAOskp3AcAgAA
+In-reply-to: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
+References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xq7oG0QpBBkvm81nMWb+GzWLjjPWs
+	Fl2nprJYfHr5gNHi9QtDi7NNb9gtLu+aw2Zxb81/Vou1R+6yW0x+94zRYtnX9+wWh/atYnfg
+	8Vi85yWTx6ZVnWwemz5NYvc4MeM3i8eDQ5tZPD4+vcXi0bdlFaPH5tPVHp83yQVwRnHZpKTm
+	ZJalFunbJXBlPPnVxlIwR7BiUsN85gbGaXxdjJwcEgImEg0t11khbDGJC/fWs4HYQgJLGSUm
+	XNeHsPuYJCbf9wax2QSMJTYvXwJWIyLQxygx6bJFFyMXB7PAGSaJa0v+s4MkhAVcJP6t/swI
+	YrMIqEo8f9wOtoBXwF3i5bZPzF2MHEDLFCTmTLIBCXMKeEi0vTjHBLHLXWLa/J1MExh5FzAy
+	rGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICdQvOxgXH7M6xCjAwajEw/sgWD5IiDWxrLgy
+	9xCjBAezkgivgK5CkBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGlVHBJkyH1ln2zmTgcUjRvtQp
+	ZSkaoOc+der3adfmfbWvMmRKmxSwRZS99FC3tpJ2Y4D1k8lLJ++UfC1zbU1N7HN7PdP1C6LN
+	n1uL2/o2JJrI54ndPmX1xL5g/qOY84fms95ewMYg4v/6m/8OwxD5gsetz7y/ZjF/O3w0RUe1
+	/QLrpNtNGtVKLMUZiYZazEXFiQBbJTZnMgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently zbud pages do not have any flags set so it is not possible to
+identify them during migration or compaction.
 
-Currently zbud pages are not movable and they cannot be allocated from CMA
-region. These patches add migration of zbud pages.
+Implement PageZbud() by comparing page->_mapcount to -127 to distinguish
+pages allocated by zbud. Just like PageBuddy() is implemented.
 
-The zbud migration code utilizes mapping so many exceptions to migrate
-code was added. It can be replaced for example with pin page
-control subsystem:
-http://article.gmane.org/gmane.linux.kernel.mm/105308
-In such case the zbud migration code (zbud_migrate_page()) can be safely
-re-used.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ include/linux/mm.h |   23 +++++++++++++++++++++++
+ mm/zbud.c          |    4 ++++
+ 2 files changed, 27 insertions(+)
 
-
-Patch "[PATCH 3/4] mm: use indirect zbud handle and radix tree" changes zbud
-handle to support migration. Now the handle is an index in radix tree and
-zbud_map() maps it to proper virtual address. This exposes race conditions,
-some of them are discussed already here:
-http://article.gmane.org/gmane.linux.kernel.mm/105988
-
-Races are fixed by adding internal map count for each zbud handle.
-The map count is increased on zbud_map() call.
-
-Some races between writeback and invalidate still exist. In such case a message
-can be seen in logs:
-  zbud: error: could not lookup handle 13810 in tree
-Patches from discussion above may resolve it.
-
-I have considered using "pgoff_t offset" as handle but it prevented storing
-duplicate pages in zswap.
-
-
-Patch "[PATCH 2/4] mm: use mapcount for identifying zbud pages" introduces
-PageZbud() function which identifies zbud pages by page->_mapcount.
-Dave Hansen proposed aliasing PG_zbud=PG_slab but in such case patch
-would be more intrusive.
-
-Any ideas for a better solution are welcome.
-
-
-This patch set is based on v3.11-rc7-30-g41615e8.
-
-
-This is continuation of my previous work: reclaiming zbud pages on migration
-and compaction. However it current solution is completely different so I am not
-attaching previous changelog.
-Previous patches can be found here:
- * [RFC PATCH v2 0/4] mm: reclaim zbud pages on migration and compaction
-   http://article.gmane.org/gmane.linux.kernel.mm/105153
- * [RFC PATCH 0/4] mm: reclaim zbud pages on migration and compaction
-   http://article.gmane.org/gmane.linux.kernel.mm/104801
-
-One patch from previous work is re-used along with minor changes:
-"[PATCH 1/4] zbud: use page ref counter for zbud pages"
- * Add missing spin_unlock in zbud_reclaim_page().
- * Decrease pool->pages_nr in zbud_free(), not when putting page. This also
-removes the need of holding lock while call to put_zbud_page().
-
-
-Best regards,
-Krzysztof Kozlowski
-
-
-Krzysztof Kozlowski (4):
-  zbud: use page ref counter for zbud pages
-  mm: use mapcount for identifying zbud pages
-  mm: use indirect zbud handle and radix tree
-  mm: migrate zbud pages
-
- include/linux/mm.h   |   23 +++
- include/linux/zbud.h |    3 +-
- mm/compaction.c      |    7 +
- mm/migrate.c         |   17 +-
- mm/zbud.c            |  552 +++++++++++++++++++++++++++++++++++++++++---------
- mm/zswap.c           |   28 ++-
- 6 files changed, 525 insertions(+), 105 deletions(-)
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f022460..b9ae6f2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -440,6 +440,7 @@ static inline void init_page_count(struct page *page)
+  * efficiently by most CPU architectures.
+  */
+ #define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
++#define PAGE_ZBUD_MAPCOUNT_VALUE (-127)
+ 
+ static inline int PageBuddy(struct page *page)
+ {
+@@ -458,6 +459,28 @@ static inline void __ClearPageBuddy(struct page *page)
+ 	atomic_set(&page->_mapcount, -1);
+ }
+ 
++#ifdef CONFIG_ZBUD
++static inline int PageZbud(struct page *page)
++{
++	return atomic_read(&page->_mapcount) == PAGE_ZBUD_MAPCOUNT_VALUE;
++}
++
++static inline void SetPageZbud(struct page *page)
++{
++	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
++	atomic_set(&page->_mapcount, PAGE_ZBUD_MAPCOUNT_VALUE);
++}
++
++static inline void ClearPageZbud(struct page *page)
++{
++	VM_BUG_ON(!PageZbud(page));
++	atomic_set(&page->_mapcount, -1);
++}
++#else
++PAGEFLAG_FALSE(Zbud)
++#endif
++
++
+ void put_page(struct page *page);
+ void put_pages_list(struct list_head *pages);
+ 
+diff --git a/mm/zbud.c b/mm/zbud.c
+index aa9a15c..9267cd9 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -197,7 +197,10 @@ static void get_zbud_page(struct zbud_header *zhdr)
+ static int put_zbud_page(struct zbud_header *zhdr)
+ {
+ 	struct page *page = virt_to_page(zhdr);
++	VM_BUG_ON(!PageZbud(page));
++
+ 	if (put_page_testzero(page)) {
++		ClearPageZbud(page);
+ 		free_hot_cold_page(page, 0);
+ 		return 1;
+ 	}
+@@ -307,6 +310,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 	 * don't increase the page count.
+ 	 */
+ 	zhdr = init_zbud_page(page);
++	SetPageZbud(page);
+ 	bud = FIRST;
+ 
+ found:
 -- 
 1.7.9.5
 
