@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3H3UgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 16:36:07 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:6946 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3H3UgF (ORCPT
+	id S1755381Ab3H3UhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 16:37:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52447 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab3H3UhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 16:36:05 -0400
-Message-ID: <52210225.60805@hp.com>
-Date: Fri, 30 Aug 2013 16:35:49 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 30 Aug 2013 16:37:18 -0400
+Message-ID: <52210275.8040601@canonical.com>
+Date: Fri, 30 Aug 2013 13:37:09 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-References: <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com> <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com> <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com> <52200DAE.2020303@hp.com> <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com> <5220E56A.80603@hp.com> <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com> <5220F090.5050908@hp.com> <20130830194059.GC13318@ZenIV.linux.org.uk> <5220F811.9060902@hp.com> <20130830202608.GD13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130830202608.GD13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Richard Guy Briggs <rgb@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
+References: <cover.1377032086.git.rgb@redhat.com> <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com> <20130827172155.GC29147@redhat.com> <20130830195646.GJ21110@madcap2.tricolour.ca>
+In-Reply-To: <20130830195646.GJ21110@madcap2.tricolour.ca>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 04:26 PM, Al Viro wrote:
-> On Fri, Aug 30, 2013 at 03:52:49PM -0400, Waiman Long wrote:
->
->> So it is the mnput_no_expire() function that is doing all the
->> lg_global_lock() calls.
-> Interesting...  So you are getting a lot of mntput() with ->mnt_ns being
-> NULL?  I wonder which type it is...  Note that anything mounted will
-> have non-NULL ->mnt_ns until umount and anything obtained via
-> kern_mount/kern_mount_data will also have a non-NULL ->mnt_ns - until
-> kern_unmount().
->
-> Could you try to gather stats of that sort?  Normally that path should
-> be only hit by fput() when we have a lazy-unmounted fs and close an opened
-> file on it...
->
-> I see one potential stupidity in that area (simple_pin_fs() ought to set
-> ->mnt_ns, with simple_release_fs() clearing it), but there's not a lot
-> of fs types that would use the damn thing...
+On 08/30/2013 12:56 PM, Richard Guy Briggs wrote:
+> On Tue, Aug 27, 2013 at 07:21:55PM +0200, Oleg Nesterov wrote:
+>> On 08/20, Richard Guy Briggs wrote:
+>>>
+>>> Added the functions
+>>>         task_ppid()
+>>>         task_ppid_nr_ns()
+>>>         task_ppid_nr_init_ns()
+>>> to safely abstract the lookup of the PPID
+>>
+>> but it is not safe.
+>>
+>>> +static inline struct pid *task_ppid(struct task_struct *task)
+>>> +{
+>>> +	return task_tgid(rcu_dereference(current->real_parent));
+>>                                          ^^^^^^^
+>> task?
+> 
+> Yup, thanks for those two catches.
+> 
+>>> +	rcu_read_unlock();
+>>
+>> And why this is safe?
+>>
+>> rcu_read_lock() can't help if tsk was already dead _before_ it takes
+>> the rcu lock. ->real_parent can point the already freed/reused/unmapped
+>> memory.
+> 
+> Does it not bump a refcount if it is holding a pointer to it?  So the
+> parent task might be dead, but it won't cause a pointer dereference
+> issue.
+> 
+>> This is safe if, for example, the caller alredy holds rcu_read_lock()
+>> and tsk was found by find_task_by*(), or tsk is current.
+> 
+> Fair enough, I'll have a more careful look at this.  Thanks.
+> 
+> Most of the instances are current, but the one called from apparmour is
+> stored.  I've just learned that this is bad and someone else just chimed
+> in that they have a patch to remove it...
 
-The AIM7 test was run on a set of 16 ramdisk formated with ext3 
-filesystem with the following mount options: 
-barrier=0,async,noatime,nodiratime. Maybe that is a factor.
+the apparmor case isn't actually stored long term. The stored task will be
+a parameter that was passed into an lsm hook and the buffer that it is
+stored in dies before the hook is done. Its temporarily stored in the
+struct so that it can be passed into the lsm_audit fn, and printed into an
+allocated audit buffer. The text version in the audit buffer is what will
+exist beyond the hook.
 
-Regards,
-Longman
+There are three patches, I'll reply them below once I have finished rebasing
+them to apply to the current tree instead of my dev tree.
+
