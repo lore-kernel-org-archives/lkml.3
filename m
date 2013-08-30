@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab3H3Sfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 14:35:52 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:51641 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756354Ab3H3Sfu (ORCPT
+	id S1757005Ab3H3Smh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 14:42:37 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:47934 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab3H3Smg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 14:35:50 -0400
-Message-ID: <5220E606.8010008@cogentembedded.com>
-Date: Fri, 30 Aug 2013 22:35:50 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 14:42:36 -0400
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: mst@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 4/6] vhost_net: determine whether or not to use zerocopy
- at one time
-References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-5-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1377836962-49780-5-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130830121227.3915ffb3@gandalf.local.home>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<20130830121227.3915ffb3@gandalf.local.home>
+Date: Fri, 30 Aug 2013 11:42:35 -0700
+X-Google-Sender-Auth: AAdH6ybb7aIIjzgiAqujuAIWg5Y
+Message-ID: <CA+55aFzjrBpa-YhC5tFKqS-sYjoJ=PcebeVfz1PUqXz1_eEVjA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Waiman Long <waiman.long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 08/30/2013 08:29 AM, Jason Wang wrote:
-
-> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
-> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
-> later. This could be avoided by determine zerocopy once by checking all
-> conditions at one time before.
-
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->   drivers/vhost/net.c |   46 +++++++++++++++++++---------------------------
->   1 files changed, 19 insertions(+), 27 deletions(-)
-
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 8a6dd0d..ff60c2a 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -404,43 +404,35 @@ static void handle_tx(struct vhost_net *net)
->   			       iov_length(nvq->hdr, s), hdr_size);
->   			break;
->   		}
-> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
-> -				       nvq->upend_idx != nvq->done_idx);
-> +
-> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
-> +			&& (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
-> +			&& vhost_net_tx_select_zcopy(net);
-
-    Could you leave && on a first of two lines, matching the previous style?
-
+On Fri, Aug 30, 2013 at 9:12 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
->   		/* use msg_control to pass vhost zerocopy ubuf info to skb */
->   		if (zcopy_used) {
-> +			struct ubuf_info *ubuf;
-> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
-> +
->   			vq->heads[nvq->upend_idx].id = head;
-[...]
-> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
-> +			ubuf->callback = vhost_zerocopy_callback;
-> +			ubuf->ctx = nvq->ubufs;
-> +			ubuf->desc = nvq->upend_idx;
-> +			msg.msg_control = ubuf;
-> +			msg.msg_controllen = sizeof(ubuf);
+> Now I know this isn't going to be popular, but I'll suggest it anyway.
+> What about only implementing the lockref locking when CPUs are greater
+> than 7, 7 or less will still use the normal optimized spinlocks.
 
-    'sizeof(ubuf)' where 'ubuf' is a pointer? Are you sure it shouldn't be 
-'sizeof(*ubuf)'?
+I considered it. It's not hugely difficult to do, in that we could
+make it a static key thing, but I'd actually rather make it depend on
+some actual user-settable thing than on some arbitrary number of
+cpu's.
 
-WBR, Sergei
+See the CMPXCHG_LOOP() macro in lib/lockref.c: it would be easy to
+just enclose the whole thing in a
 
+    if (static_key_enabled(&cmpxchg_lockref)) { .. }
+
+and then it could be enabled/disabled at will with very little
+performance downside. And I don't think it's necessarily a bad idea.
+The code has a very natural "fall back to spinlock" model.
+
+THAT SAID.
+
+Even though uncontended spinlocks are faster than a cmpxchg, under any
+real normal load I don't think you can necessarily measure the
+difference. Remember: this particular benchmark does absolutely
+*nothing* but pathname lookups, and even then it's pretty close to
+noise. And the biggest disadvantage of cmpxchg - the fact that you
+have to read the cache line before you do the r-m-w cycle, and thus
+might have an extra cache coherency cycle - shouldn't be an issue for
+the dentry use when you don't try to hit the same dentry over and over
+again, because the code has already read the dentry hash etc.
+
+So I'm not sure it's really worth it. It might be interesting to try
+that static_key approach simply for benchmarking, though. That way you
+could benchmark the exact same boot with pretty much the exact same
+dentry population, just switch the static key around and run a few
+path-intensive benchmarks.
+
+If anybody is willing to write the patch and do the benchmarking (I
+would suggest *not* using my idiotic test-program for this), and then
+send it to me with numbers, that would be interesting...
+
+                   Linus
