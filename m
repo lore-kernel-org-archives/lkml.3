@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab3H3Qx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:53:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46852 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457Ab3H3Qx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:53:26 -0400
-Date: Fri, 30 Aug 2013 09:55:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
-Message-ID: <20130830165550.GA8151@kroah.com>
-References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756731Ab3H3Q62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:58:28 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:49773 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756309Ab3H3Q61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 12:58:27 -0400
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robin Holt <robinmholt@gmail.com>, Alex Thorlton <athorlton@sgi.com>,
+        linux-mm@kvack.org
+Subject: [RFC PATCH] Increase locking granularity in THP page fault code
+Date: Fri, 30 Aug 2013 11:58:16 -0500
+Message-Id: <1377881897-138063-1-git-send-email-athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 09:40:35AM -0700, Guenter Roeck wrote:
-> H8/300 has been dead for several years, the kernel for it has
-> not compiled for ages, and recent versions of gcc for it are broken.
-> It is time to drop support for it.
-> 
-> Yes, I understand it is not that simple to drop an architecture,
-> and it may need some discussion, but someone has to put a stake
-> into the ground. Keeping a virtually dead architecture on life support
-> takes resources which are better spent elsewhere.
+We have a threaded page fault scaling test that is performing very
+poorly due to the use of the page_table_lock in the THP fault code
+path. By replacing the page_table_lock with the ptl on the pud_page
+(need CONFIG_SPLIT_PTLOCKS for this to work), we're able to increase
+the granularity of the locking here by a factor of 512, i.e. instead
+of locking all 256TB of addressable memory, we only lock the 512GB that
+is handled by a single pud_page.
 
-If this doesn't build, and no one is using it anymore, I agree, it
-should be removed.  If someone wants to revive it, 'git revert' works
-just fine.
+The test I'm running creates 512 threads, pins each thread to a cpu, has
+the threads allocate 512mb of memory each and then touch the first byte
+of each 4k chunk of the allocated memory.  Here are the timings from
+this test on 3.11-rc7, clean, THP on:
 
-You can put my:
+real	22m50.904s
+user	15m26.072s
+sys	11430m19.120s
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+And here are the timings with my modified kernel, THP on:
 
-on these patches, unless someone steps up to be the active maintainer of
-the arch and gets it building/working again.
+real	0m37.018s
+user	21m39.164s
+sys	155m9.132s
 
-thanks,
+As you can see, we get a huge performance boost by locking a more
+targeted chunk of memory instead of locking the whole page table.  At
+this point, I'm comfortable saying that there are obvious benefits to
+increasing the granularity of the locking, but I'm not sure that I've
+done this in the best way possible.  Mainly, I'm not positive that using
+the pud_page lock actually protects everything that we're concerned
+about locking here.  I'm hoping that everyone can provide some input
+on whether or not this seems like a reasonable move to make and, if so,
+confirm that I've locked things appropriately.
 
-greg k-h
+As a side note, we still have some pretty significant scaling issues
+with this test, both with THP on, and off.  I'm cleaning up the locking
+here first as this is causing the biggest performance hit.
+
+Alex Thorlton (1):
+  Change THP code to use pud_page(pud)->ptl lock instead of
+    page_table_lock
+
+ mm/huge_memory.c | 4 ++--
+ mm/memory.c      | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+1.7.12.4
+
