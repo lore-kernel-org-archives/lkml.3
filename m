@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab3H3Lw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:52:27 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44635 "EHLO hydra.sisk.pl"
+	id S1756023Ab3H3Lwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:52:54 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44640 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab3H3LwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:52:25 -0400
+	id S1754438Ab3H3Lww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 07:52:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Cc: Len Brown <lenb@kernel.org>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / cpuidle: remove superfluous pr == NULL checks
-Date: Fri, 30 Aug 2013 14:03:11 +0200
-Message-ID: <4642597.rqCVoqqdF0@vostro.rjw.lan>
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] intel_idle: shrink states tables
+Date: Fri, 30 Aug 2013 14:03:38 +0200
+Message-ID: <6073210.Ddg7QEoeOl@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5858980.cRdNx0rNzu@amdc1032>
-References: <5858980.cRdNx0rNzu@amdc1032>
+In-Reply-To: <2945985.mxvmQoz8DY@amdc1032>
+References: <2945985.mxvmQoz8DY@amdc1032>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,85 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 30, 2013 12:30:51 PM Bartlomiej Zolnierkiewicz wrote:
-> The only acpi_processor_get_power_info_fadt() user
-> (acpi_processor_get_power_info()) dereferences pr before calling
-> the function.
+On Friday, August 30, 2013 12:25:10 PM Bartlomiej Zolnierkiewicz wrote:
+> There is no reason to define CPUIDLE_STATE_MAX (currently 10) entries
+> in states tables if the driver always stops iterating over table when
+> it encounters first .enter == NULL entry.
 > 
-> The only acpi_processor_hotplug() user (acpi_cpu_soft_notify())
-> checks for pr == NULL before calling the function.
-> 
-> The only acpi_processor_cst_has_changed() user (acpi_processor_notify())
-> checks for pr == NULL before calling the function.
-> 
-> The only acpi_processor_power_init() user (__acpi_processor_start())
-> dereferences pr before calling the function.
-> 
-> Thus remove superfluous pr == NULL checks from affected functions.
-> 
-> Also:
-> 
-> While at it remove redundant brackets from acpi_processor_hotplug().
+> $ size drivers/idle/intel_idle.o.*
+>    text    data     bss     dec     hex filename
+>    2886    5440      32    8358    20a6 drivers/idle/intel_idle.o.before
+>    2886    3752      32    6670    1a0e drivers/idle/intel_idle.o.after
 > 
 > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > Cc: Len Brown <lenb@kernel.org>
 
-Thanks, I'll queue this up for 3.13.
+Thanks, I'll queue this series up for 3.13.
 
 
 > ---
->  drivers/acpi/processor_idle.c | 15 +--------------
->  1 file changed, 1 insertion(+), 14 deletions(-)
+>  drivers/idle/intel_idle.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index f98dd00..35c8f2b 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -272,9 +272,6 @@ static void tsc_check_state(int state) { return; }
->  static int acpi_processor_get_power_info_fadt(struct acpi_processor *pr)
->  {
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index fa6964d..9c97fbb42 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -123,7 +123,7 @@ static struct cpuidle_state *cpuidle_state_table;
+>   * which is also the index into the MWAIT hint array.
+>   * Thus C0 is a dummy.
+>   */
+> -static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
+> +static struct cpuidle_state nehalem_cstates[] = {
+>  	{
+>  		.name = "C1-NHM",
+>  		.desc = "MWAIT 0x00",
+> @@ -156,7 +156,7 @@ static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
+>  		.enter = NULL }
+>  };
 >  
-> -	if (!pr)
-> -		return -EINVAL;
-> -
->  	if (!pr->pblk)
->  		return -ENODEV;
+> -static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
+> +static struct cpuidle_state snb_cstates[] = {
+>  	{
+>  		.name = "C1-SNB",
+>  		.desc = "MWAIT 0x00",
+> @@ -196,7 +196,7 @@ static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
+>  		.enter = NULL }
+>  };
 >  
-> @@ -1076,12 +1073,8 @@ int acpi_processor_hotplug(struct acpi_processor *pr)
->  	if (disabled_by_idle_boot_param())
->  		return 0;
+> -static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
+> +static struct cpuidle_state ivb_cstates[] = {
+>  	{
+>  		.name = "C1-IVB",
+>  		.desc = "MWAIT 0x00",
+> @@ -236,7 +236,7 @@ static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
+>  		.enter = NULL }
+>  };
 >  
-> -	if (!pr)
-> -		return -EINVAL;
-> -
-> -	if (nocst) {
-> +	if (nocst)
->  		return -ENODEV;
-> -	}
+> -static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
+> +static struct cpuidle_state hsw_cstates[] = {
+>  	{
+>  		.name = "C1-HSW",
+>  		.desc = "MWAIT 0x00",
+> @@ -297,7 +297,7 @@ static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
+>  		.enter = NULL }
+>  };
 >  
->  	if (!pr->flags.power_setup_done)
->  		return -ENODEV;
-> @@ -1108,9 +1101,6 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
->  	if (disabled_by_idle_boot_param())
->  		return 0;
+> -static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
+> +static struct cpuidle_state atom_cstates[] = {
+>  	{
+>  		.name = "C1E-ATM",
+>  		.desc = "MWAIT 0x00",
+> @@ -628,7 +628,7 @@ static int intel_idle_cpu_init(int cpu)
+>  		int num_substates, mwait_hint, mwait_cstate, mwait_substate;
 >  
-> -	if (!pr)
-> -		return -EINVAL;
-> -
->  	if (nocst)
->  		return -ENODEV;
+>  		if (cpuidle_state_table[cstate].enter == NULL)
+> -			continue;
+> +			break;
 >  
-> @@ -1183,9 +1173,6 @@ int acpi_processor_power_init(struct acpi_processor *pr)
->  		first_run++;
->  	}
->  
-> -	if (!pr)
-> -		return -EINVAL;
-> -
->  	if (acpi_gbl_FADT.cst_control && !nocst) {
->  		status =
->  		    acpi_os_write_port(acpi_gbl_FADT.smi_command, acpi_gbl_FADT.cst_control, 8);
+>  		if (cstate + 1 > max_cstate) {
+>  			printk(PREFIX "max_cstate %d reached\n", max_cstate);
 > 
 -- 
 I speak only for myself.
