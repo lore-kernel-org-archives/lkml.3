@@ -1,93 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3H3AO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 20:14:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47128 "EHLO gate.crashing.org"
+	id S1754693Ab3H3ATK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 20:19:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34863 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751752Ab3H3AOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 20:14:55 -0400
-Message-ID: <1377821644.4028.41.camel@pasglop>
-Subject: Re: Memory synchronization vs. interrupt handlers
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        David Howells <dhowells@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        arnd.bergmann@linaro.org, olof@lixom.net
-Date: Fri, 30 Aug 2013 10:14:04 +1000
-In-Reply-To: <20130829235136.GX3871@linux.vnet.ibm.com>
-References: <Pine.LNX.4.44L0.1308281501000.1541-100000@iolanthe.rowland.org>
-	 <521E5D58.5070708@zytor.com> <20130829235136.GX3871@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751752Ab3H3ATI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 20:19:08 -0400
+Date: Thu, 29 Aug 2013 17:18:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Libin <huawei.libin@huawei.com>
+Cc: akpm@linux-foundation.org, tj@kernel.org, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, tglx@linutronix.de, rusty@rustcorp.com.au,
+        ebiederm@xmission.com, john.stultz@linaro.org, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        jovi.zhangwei@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, wangyijing@huawei.com
+Subject: Re: [PATCH 00/14] Fix bug about invalid wake up problem
+Message-ID: <20130830001841.GY3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083000-7182-0000-0000-0000083FB208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 16:51 -0700, Paul E. McKenney wrote:
-> On Wed, Aug 28, 2013 at 01:28:08PM -0700, H. Peter Anvin wrote:
-> > On 08/28/2013 12:16 PM, Alan Stern wrote:
-> > > Russell, Peter, and Ingo:
-> > > 
-> > > Can you folks enlighten us regarding this issue for some common 
-> > > architectures?
-> > 
-> > On x86, IRET is a serializing instruction; it guarantees hard
-> > serialization of absolutely everything.
+On Thu, Aug 29, 2013 at 09:57:35PM +0800, Libin wrote:
+> 1)Problem Description:
+> The prototype of invalid wakeup problem is as follows:
+> ========================================================================
+> ----------------------------
+> Consumer Thread
+> ----------------------------
+> ...
+> if (list_empty(&list)){
+> 	//location a 
+> 	set_current_state(TASK_INTERRUPTIBLE);
+
+You need the list_empty() test here, not above.  Or you at least need
+to retest here.
+
+The reason for this is that set_current_state() has a memory
+barrier following the assignment, which matches the memory barrier in
+try_to_wake_up().  This means that if the test at this point sees the
+list as empty, then the checks in try_to_wake_up() must see the task in
+TASK_INTERRUPTIBLE state and must therefore wake it up.
+
+							Thanx, Paul
+
+> 	schedule();
+> }
+> ...
+> ----------------------------
+> Producer Thread
+> ----------------------------
+> ...
+> list_add_tail(&item, &list);
+> wake_up_process(A);
+> ...
+> ========================================================================
 > 
-> So a second interrupt from this same device could not appear to happen
-> before the IRET, no matter what device and/or I/O bus?  Or is IRET
-> defined to synchronize all the way out to the whatever device is
-> generating the next interrupt?
+> Invalid wakeup problem occurs in preemptable kernel environment. The list
+> is empty initially, if consumer is preempted after condition validated at
+> location a, and at this time producer is woken up, adding a node to the
+> list and calling wake_up_process to wake up consumer. After that when
+> consumer being scheduled by scheduler, it calls set_current_state to set
+> itself as state TASK_INTERRUPTIBLE, and calling schedule() to request
+> scheduled. After consumer being scheduled out, it has no condition to be
+> woken up, and causing invalid wakeup problem.
 > 
-> > I would expect architectures that have weak memory ordering to put
-> > appropriate barriers in the IRQ entry/exit code.
-
-Not sure why you would expect that, there is no reason to do such a
-thing.
-
-> Adding a few on CC.  Also restating the question as I understand it:
+> In most cases, the kernel codes use a form similar to the following:
+> --------------------------------------------
+>  ...
+>  //location a
+>  ...
+>  set_current_state(TASK_INTERRUPTIBLE);
+>  //location b
+>  while (list_empty(&product_list)){
+> 	schedule();	//location c
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> 	//location d
+> }
+> __set_current_state(TASK_RUNNING);
+> ...
+> --------------------------------------------
+> At location a, consumer is preempted, and producer is scheduled,
+> adding item to product_list and waking up consumer. After consumer is
+> re-scheduled, calling set_current_state to set itself as state
+> TASK_INTERRUPTIBLE, if it is preempted again before __set_current_state(TASK_RUNNING),
+> also trigger the invalid wakeup problem that the consumer will not be scheduled
+> and the item be added by producer can't be consumed.
 > 
-> 	Suppose that a given device generates an interrupt on CPU 0,
-> 	but that before CPU 0's interrupt handler completes, this device
-> 	wants to generate a second interrupt on CPU 1.  This can happen
-> 	as soon as CPU 0's handler does an EOI or equivalent.
-
-By "interrupt handler" are you talking about the general handling of all
-interrupts in the kernel or the device specific interrupt handler ?
-
-Typically the EOI is done after the later has run.
-
-> 	Can CPU 1's interrupt handler assume that all the in-memory effects
-> 	of CPU 0's interrupt handler will be visible, even if neither
-> 	interrupt handler uses locking or memory barriers?
-
-We don't formally provide such a guarantee no. There is a spin_lock on
-the way back from the device handler and before the EOI but not an
-unlock so we don't have a full ordering here (see handle_irq_event).
-
-At least on powerpc, the EOI will generally be an MMIO which will
-however synchronize everything because we have a sync before the store
-in our MMIO accessors, but that might not be true when running under the
-pHyp hypervisor, as we do a hypercall there and I don't think that
-includes a sync instruction inside the hypervisor.
-
-So I'd say that as-is, no, we don't provide that guarantee.
-
-Cheers,
-Ben.
-
+> The following circumstance will also trigger this issue:
+> At location c, consumer is scheduled out, and be preempted after calling
+> set_current_state(TASK_INTERRUPTIBLE) when it be re-schdeuled.
 > 
-> 							Thanx, Paul
+> 2)Test:
+> I have written a test module to trigger the problem by adding some
+> synchronization condition. I will post it in the form of an attachment soon.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+> Test result as follows:
+> [103135.332683] wakeup_test: create two kernel threads - producer & consumer
+> [103135.332686] wakeup_test: module loaded successfully
+> [103135.332692] wakeup_test: kthread producer try to wake up the kthread consumer
+> [103165.299865] wakeup_test: kthread consumer have waited for 30s, indicating
+> trigger an invalid wakeup problem!
+> 
+> 3)Solution:
+> Using preempt_disable() to bound the operaion that setting the task state
+> and the conditions(set by the wake thread) validation.
+> 
+> ----------------------------------------------
+> ...
+> preempt_disable();
+> set_current_state(TASK_INTERRUPTIBLE);
+> while (list_empty(&product_list)){
+> 	preempt_enable();
+> 	schedule();
+> 	preempt_disable();
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> }
+> __set_current_state(TASK_RUNNING);
+> preempt_enable();
+> ...
+> ----------------------------------------------
+> And it also can be solved as follows:
+> ----------------------------------------------
+> ...
+> preempt_disable();
+> while (list_empty(&product_list)){
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> 	preempt_enable();
+> 	schedule();
+> 	preempt_disable();	
+> }
+> preempt_enable();
+> ...
+> ----------------------------------------------
+> 
+> Libin (14):
+>   kthread: Fix invalid wakeup in kthreadd
+>   audit: Fix invalid wakeup in kauditd_thread
+>   audit: Fix invalid wakeup in wait_for_auditd
+>   exit: Fix invalid wakeup in do_wait
+>   hrtimer: Fix invalid wakeup in do_nanosleep
+>   irq: Fix invalid wakeup in irq_wait_for_interrupt
+>   module: Fix invalid wakeup in wait_for_zero_refcount
+>   namespace: Fix invalid wakeup in zap_pid_ns_processes
+>   rcutree: Fix invalid wakeup in rcu_wait
+>   time: Fix invalid wakeup in alarmtimer_do_nsleep
+>   trace: Fix invalid wakeup in wait_to_die
+>   trace: Fix invalid wakeup in ring_buffer_consumer_thread
+>   workqueue: Fix invalid wakeup in rescuer_thread
+>   klist: Fix invalid wakeup in klist_remove
+> 
+>  kernel/audit.c                       | 11 ++++-
+>  kernel/exit.c                        |  7 ++-
+>  kernel/hrtimer.c                     |  7 ++-
+>  kernel/irq/manage.c                  |  5 ++
+>  kernel/kthread.c                     |  7 ++-
+>  kernel/module.c                      |  6 ++-
+>  kernel/pid_namespace.c               |  4 ++
+>  kernel/rcutree.h                     |  4 ++
+>  kernel/time/alarmtimer.c             |  7 ++-
+>  kernel/trace/ring_buffer_benchmark.c | 14 ++++++
+>  kernel/workqueue.c                   | 92 +++++++++++++++++++-----------------
+>  lib/klist.c                          |  4 ++
+>  12 files changed, 118 insertions(+), 50 deletions(-)
+> 
+> -- 
+> 1.8.2.1
+> 
+> 
 
