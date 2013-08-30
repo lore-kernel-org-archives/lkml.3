@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3H3TGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:06:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11898 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab3H3TGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:06:49 -0400
-Date: Fri, 30 Aug 2013 15:06:46 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-Subject: audit looks unmaintained? [was: Re: [PATCH 11/12] pid: rewrite task
- helper functions avoiding task->pid and task->tgid]
-Message-ID: <20130830190646.GA30331@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
- <20130822200555.GN31370@twins.programming.kicks-ass.net>
- <20130822214347.GB21110@madcap2.tricolour.ca>
- <20130823192807.GA6504@redhat.com>
- <20130827030448.GE21110@madcap2.tricolour.ca>
- <20130827171134.GB29147@redhat.com>
+	id S1756735Ab3H3TLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:11:53 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:52963 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab3H3TLv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 15:11:51 -0400
+Date: Fri, 30 Aug 2013 12:11:46 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
+Message-ID: <20130830191146.GA12090@roeck-us.net>
+References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
+ <20130830184611.GA27455@spo001.leaseweb.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130827171134.GB29147@redhat.com>
+In-Reply-To: <20130830184611.GA27455@spo001.leaseweb.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 07:11:34PM +0200, Oleg Nesterov wrote:
-> Btw. audit looks unmaintained... if you are going to take care of
-> this code, perhaps you can look at
+On Fri, Aug 30, 2013 at 08:46:11PM +0200, Wim Van Sebroeck wrote:
+> Hi Guenter,
 > 
-> 	http://marc.info/?l=linux-kernel&m=137589907108485
-> 	http://marc.info/?l=linux-kernel&m=137590271809664
+> > H8/300 has been dead for several years, the kernel for it has
+> > not compiled for ages, and recent versions of gcc for it are broken.
+> > It is time to drop support for it.
+> > 
+> > Yes, I understand it is not that simple to drop an architecture,
+> > and it may need some discussion, but someone has to put a stake
+> > into the ground. Keeping a virtually dead architecture on life support
+> > takes resources which are better spent elsewhere.
+> 
+> Agree. You may add my Acked-by.
+> How do you plan to get this upstream? Do I need to take the watchdog in my tree or do you plan to keep the set of patches together in one tree?
+> 
+My plan is create a branch on my repository on kernel.org, ask Stephen
+to add it to linux-next, and then ask Linus to pull it after one
+release cycle (ie for 3.13). This should give people enough time
+to find out about it and complain, and give everyone else enough time
+to find any missing pieces.
 
-(I don't want to lose these refs...  First I've seen these.)
+I would not mind if Linus would agree to pull it right away for 3.12,
+but that seems to be a bit on the fast side.
 
-Why do you say this?  Could you elaborate?  Due to the state of the code
-itself, or the lack of response from audit folks?  (Like most, I'm not
-subscribed to that firehose, so I don't have archives that show
-addressees.)  Most of the kernel audit folks are on
-linux-audit@redhat.com list.
-
-> Oleg.
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+Thanks,
+Guenter
