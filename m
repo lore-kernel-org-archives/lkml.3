@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3H3TAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:00:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45601 "EHLO
+	id S1757241Ab3H3TAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:00:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45602 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3H3S7Q (ORCPT
+	with ESMTP id S1756890Ab3H3S7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Aug 2013 14:59:16 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/15] perf trace: Add option to analyze events in a file versus live
-Date: Fri, 30 Aug 2013 15:58:56 -0300
-Message-Id: <1377889138-8793-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/15] perf tools: Remove references to struct ip_event
+Date: Fri, 30 Aug 2013 15:58:47 -0300
+Message-Id: <1377889138-8793-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1377889138-8793-1-git-send-email-acme@infradead.org>
 References: <1377889138-8793-1-git-send-email-acme@infradead.org>
@@ -28,186 +29,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Allows capture of raw_syscall:* events and analyzed at a later time.
+The ip_event struct assumes fixed positions for ip, pid and tid.  That
+is no longer true with the addition of PERF_SAMPLE_IDENTIFIER.  The
+information is anyway in struct sample, so use that instead.
 
-v2: change -i option from inherit to input name for consistency with
-    other perf commands
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377750593-48046-3-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1377591794-30553-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt |  4 ++
- tools/perf/builtin-trace.c              | 98 ++++++++++++++++++++++++++++++++-
- 2 files changed, 100 insertions(+), 2 deletions(-)
+ tools/perf/builtin-inject.c   |  4 ++--
+ tools/perf/builtin-kmem.c     |  4 ++--
+ tools/perf/builtin-mem.c      |  2 +-
+ tools/perf/builtin-script.c   |  4 ++--
+ tools/perf/builtin-top.c      | 11 ++++++-----
+ tools/perf/tests/hists_link.c | 20 ++++++++------------
+ tools/perf/util/build-id.c    |  8 ++++----
+ tools/perf/util/event.c       |  6 +++---
+ tools/perf/util/event.h       | 11 -----------
+ tools/perf/util/evsel.c       |  4 ++--
+ tools/perf/util/session.c     |  8 +++++---
+ 11 files changed, 35 insertions(+), 47 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index fe19811..daccd2c 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -74,6 +74,10 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- --sched:
- 	Accrue thread runtime and provide a summary at the end of the session.
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 0d4ae1d..ffacd46 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
  
-+-i
-+--input
-+	Process events from a given perf data file.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 88387c5..2a6ebe1 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -4,6 +4,7 @@
- #include "util/debug.h"
- #include "util/evlist.h"
- #include "util/machine.h"
-+#include "util/session.h"
- #include "util/thread.h"
- #include "util/parse-options.h"
- #include "util/strlist.h"
-@@ -652,6 +653,36 @@ out_dump:
- 	return 0;
- }
+ 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
  
-+static int trace__process_sample(struct perf_tool *tool,
-+				 union perf_event *event __maybe_unused,
-+				 struct perf_sample *sample,
-+				 struct perf_evsel *evsel,
-+				 struct machine *machine __maybe_unused)
-+{
-+	struct trace *trace = container_of(tool, struct trace, tool);
-+	int err = 0;
-+
-+	tracepoint_handler handler = evsel->handler.func;
-+
-+	if (trace->base_time == 0)
-+		trace->base_time = sample->time;
-+
-+	if (handler)
-+		handler(trace, evsel, sample);
-+
-+	return err;
-+}
-+
-+static bool
-+perf_session__has_tp(struct perf_session *session, const char *name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	evsel = perf_evlist__find_tracepoint_by_name(session->evlist, name);
-+
-+	return evsel != NULL;
-+}
-+
- static int trace__run(struct trace *trace, int argc, const char **argv)
+-	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
++	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+@@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+ 	}
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+-			      event->ip.ip, &al);
++			      sample->ip, &al);
+ 
+ 	if (al.map != NULL) {
+ 		if (!al.map->dso->hit) {
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index c324778..c2dff9c 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -305,8 +305,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct perf_evsel *evsel,
+ 				struct machine *machine)
  {
- 	struct perf_evlist *evlist = perf_evlist__new();
-@@ -791,6 +822,65 @@ out:
- 	return err;
- }
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+-							event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, sample->pid,
++							sample->pid);
  
-+static int trace__replay(struct trace *trace)
-+{
-+	const struct perf_evsel_str_handler handlers[] = {
-+		{ "raw_syscalls:sys_enter",  trace__sys_enter, },
-+		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
-+	};
-+
-+	struct perf_session *session;
-+	int err = -1;
-+
-+	trace->tool.sample	  = trace__process_sample;
-+	trace->tool.mmap	  = perf_event__process_mmap;
-+	trace->tool.comm	  = perf_event__process_comm;
-+	trace->tool.exit	  = perf_event__process_exit;
-+	trace->tool.fork	  = perf_event__process_fork;
-+	trace->tool.attr	  = perf_event__process_attr;
-+	trace->tool.tracing_data = perf_event__process_tracing_data;
-+	trace->tool.build_id	  = perf_event__process_build_id;
-+
-+	trace->tool.ordered_samples = true;
-+	trace->tool.ordering_requires_timestamps = true;
-+
-+	/* add tid to output */
-+	trace->multiple_threads = true;
-+
-+	if (symbol__init() < 0)
-+		return -1;
-+
-+	session = perf_session__new(input_name, O_RDONLY, 0, false,
-+				    &trace->tool);
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	err = perf_session__set_tracepoints_handlers(session, handlers);
-+	if (err)
-+		goto out;
-+
-+	if (!perf_session__has_tp(session, "raw_syscalls:sys_enter")) {
-+		pr_err("Data file does not have raw_syscalls:sys_enter events\n");
-+		goto out;
-+	}
-+
-+	if (!perf_session__has_tp(session, "raw_syscalls:sys_exit")) {
-+		pr_err("Data file does not have raw_syscalls:sys_exit events\n");
-+		goto out;
-+	}
-+
-+	setup_pager();
-+
-+	err = perf_session__process_events(session, &trace->tool);
-+	if (err)
-+		pr_err("Failed to process events, error %d", err);
-+
-+out:
-+	perf_session__delete(session);
-+
-+	return err;
-+}
-+
- static size_t trace__fprintf_threads_header(FILE *fp)
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index 706a1fa..791b432 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -94,7 +94,7 @@ dump_raw_samples(struct perf_tool *tool,
+ 		symbol_conf.field_sep,
+ 		sample->tid,
+ 		symbol_conf.field_sep,
+-		event->ip.ip,
++		sample->ip,
+ 		symbol_conf.field_sep,
+ 		sample->addr,
+ 		symbol_conf.field_sep,
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index d82712f..93a34ce 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -501,8 +501,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct machine *machine)
  {
- 	size_t printed;
-@@ -892,6 +982,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('e', "expr", &ev_qualifier_str, "expr",
- 		    "list of events to trace"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
-+	OPT_STRING('i', "input", &input_name, "file", "Analyze events in file"),
- 	OPT_STRING('p', "pid", &trace.opts.target.pid, "pid",
- 		    "trace events on existing process id"),
- 	OPT_STRING('t', "tid", &trace.opts.target.tid, "tid",
-@@ -900,7 +991,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "system-wide collection from all CPUs"),
- 	OPT_STRING('C', "cpu", &trace.opts.target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
--	OPT_BOOLEAN('i', "no-inherit", &trace.opts.no_inherit,
-+	OPT_BOOLEAN(0, "no-inherit", &trace.opts.no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_UINTEGER('m', "mmap-pages", &trace.opts.mmap_pages,
- 		     "number of mmap data pages"),
-@@ -958,7 +1049,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!argc && perf_target__none(&trace.opts.target))
- 		trace.opts.target.system_wide = true;
+ 	struct addr_location al;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+-							event->ip.tid);
++	struct thread *thread = machine__findnew_thread(machine, sample->pid,
++							sample->tid);
  
--	err = trace__run(&trace, argc, argv);
-+	if (input_name)
-+		err = trace__replay(&trace);
-+	else
-+		err = trace__run(&trace, argc, argv);
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e37521f..2122141 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -689,7 +689,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ {
+ 	struct perf_top *top = container_of(tool, struct perf_top, tool);
+ 	struct symbol *parent = NULL;
+-	u64 ip = event->ip.ip;
++	u64 ip = sample->ip;
+ 	struct addr_location al;
+ 	int err;
  
- 	if (trace.sched && !err)
- 		trace__fprintf_thread_summary(&trace, trace.output);
+@@ -699,10 +699,10 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		if (!seen)
+ 			seen = intlist__new(NULL);
+ 
+-		if (!intlist__has_entry(seen, event->ip.pid)) {
++		if (!intlist__has_entry(seen, sample->pid)) {
+ 			pr_err("Can't find guest [%d]'s kernel information\n",
+-				event->ip.pid);
+-			intlist__add(seen, event->ip.pid);
++				sample->pid);
++			intlist__add(seen, sample->pid);
+ 		}
+ 		return;
+ 	}
+@@ -836,7 +836,8 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 			break;
+ 		case PERF_RECORD_MISC_GUEST_KERNEL:
+ 			++top->guest_kernel_samples;
+-			machine = perf_session__find_machine(session, event->ip.pid);
++			machine = perf_session__find_machine(session,
++							     sample.pid);
+ 			break;
+ 		case PERF_RECORD_MISC_GUEST_USER:
+ 			++top->guest_us_samples;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 87f9f72..4228ffc 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -211,15 +211,13 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		for (k = 0; k < ARRAY_SIZE(fake_common_samples); k++) {
+ 			const union perf_event event = {
+-				.ip = {
+-					.header = {
+-						.misc = PERF_RECORD_MISC_USER,
+-					},
+-					.pid = fake_common_samples[k].pid,
+-					.ip  = fake_common_samples[k].ip,
++				.header = {
++					.misc = PERF_RECORD_MISC_USER,
+ 				},
+ 			};
+ 
++			sample.pid = fake_common_samples[k].pid;
++			sample.ip = fake_common_samples[k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+ 				goto out;
+@@ -235,15 +233,13 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 
+ 		for (k = 0; k < ARRAY_SIZE(fake_samples[i]); k++) {
+ 			const union perf_event event = {
+-				.ip = {
+-					.header = {
+-						.misc = PERF_RECORD_MISC_USER,
+-					},
+-					.pid = fake_samples[i][k].pid,
+-					.ip  = fake_samples[i][k].ip,
++				.header = {
++					.misc = PERF_RECORD_MISC_USER,
+ 				},
+ 			};
+ 
++			sample.pid = fake_samples[i][k].pid;
++			sample.ip = fake_samples[i][k].ip;
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+ 							  &sample) < 0)
+ 				goto out;
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 0f9d27a..fb58409 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -18,14 +18,14 @@
+ 
+ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 			   union perf_event *event,
+-			   struct perf_sample *sample __maybe_unused,
++			   struct perf_sample *sample,
+ 			   struct perf_evsel *evsel __maybe_unused,
+ 			   struct machine *machine)
+ {
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+-							event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, sample->pid,
++							sample->pid);
+ 
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+@@ -34,7 +34,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ 	}
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+-			      event->ip.ip, &al);
++			      sample->ip, &al);
+ 
+ 	if (al.map != NULL)
+ 		al.map->dso->hit = 1;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 61cecf9..8d51f21 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -686,8 +686,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 				  struct perf_sample *sample)
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+-							event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, sample->pid,
++							sample->pid);
+ 
+ 	if (thread == NULL)
+ 		return -1;
+@@ -709,7 +709,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 		machine__create_kernel_maps(machine);
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+-			      event->ip.ip, al);
++			      sample->ip, al);
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 15db071..19d911c 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -8,16 +8,6 @@
+ #include "map.h"
+ #include "build-id.h"
+ 
+-/*
+- * PERF_SAMPLE_IP | PERF_SAMPLE_TID | *
+- */
+-struct ip_event {
+-	struct perf_event_header header;
+-	u64 ip;
+-	u32 pid, tid;
+-	unsigned char __more_data[];
+-};
+-
+ struct mmap_event {
+ 	struct perf_event_header header;
+ 	u32 pid, tid;
+@@ -166,7 +156,6 @@ struct tracing_data_event {
+ 
+ union perf_event {
+ 	struct perf_event_header	header;
+-	struct ip_event			ip;
+ 	struct mmap_event		mmap;
+ 	struct comm_event		comm;
+ 	struct fork_event		fork;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9a5fb23..7e328c4 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1185,7 +1185,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		return -EFAULT;
+ 
+ 	if (type & PERF_SAMPLE_IP) {
+-		data->ip = event->ip.ip;
++		data->ip = *array;
+ 		array++;
+ 	}
+ 
+@@ -1397,7 +1397,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 	array = event->sample.array;
+ 
+ 	if (type & PERF_SAMPLE_IP) {
+-		event->ip.ip = sample->ip;
++		*array = sample->ip;
+ 		array++;
+ 	}
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 07590c3..c3ac483 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -840,7 +840,8 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ static struct machine *
+ 	perf_session__find_machine_for_cpumode(struct perf_session *session,
+-					       union perf_event *event)
++					       union perf_event *event,
++					       struct perf_sample *sample)
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+@@ -852,7 +853,7 @@ static struct machine *
+ 		if (event->header.type == PERF_RECORD_MMAP)
+ 			pid = event->mmap.pid;
+ 		else
+-			pid = event->ip.pid;
++			pid = sample->pid;
+ 
+ 		return perf_session__findnew_machine(session, pid);
+ 	}
+@@ -958,7 +959,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 		hists__inc_nr_events(&evsel->hists, event->header.type);
+ 	}
+ 
+-	machine = perf_session__find_machine_for_cpumode(session, event);
++	machine = perf_session__find_machine_for_cpumode(session, event,
++							 sample);
+ 
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_SAMPLE:
 -- 
 1.8.1.4
 
