@@ -1,43 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3H3I7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 04:59:17 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:45697 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab3H3I7P (ORCPT
+	id S1754490Ab3H3JBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:01:46 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51073 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab3H3JBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 04:59:15 -0400
+	Fri, 30 Aug 2013 05:01:45 -0400
+Message-ID: <52205F37.7080002@huawei.com>
+Date: Fri, 30 Aug 2013 17:00:39 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <1377819852.2355.28.camel@perseus.fritz.box>
-References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
-	<20130821054055.GN27005@ZenIV.linux.org.uk>
-	<1377748272.9297.47.camel@tucsk.piliscsaba.szeredi.hu>
-	<1377818677.2355.25.camel@perseus.fritz.box>
-	<1377819852.2355.28.camel@perseus.fritz.box>
-Date: Fri, 30 Aug 2013 10:59:11 +0200
-Message-ID: <CAJfpegv18PCygsnpYXNLv6mD+Lff9dbVwtoV4OCbzjftc8HVAA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] [RFC v2] safely drop directory dentry on failed revalidate
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ian Kent <raven@themaw.net>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ric Wheeler <rwheeler@redhat.com>, Anand Avati <avati@redhat.com>,
-        Brian Foster <bfoster@redhat.com>, David Howells <dhowells@redhat.com>,
-        Eric Paris <eparis@redhat.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <zhangyanfei@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/vmalloc: use help function to get vmalloc area size
+References: <52205B09.4020800@huawei.com> <52205cb9.ca112b0a.0544.ffff8988SMTPIN_ADDED_BROKEN@mx.google.com>
+In-Reply-To: <52205cb9.ca112b0a.0544.ffff8988SMTPIN_ADDED_BROKEN@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 1:44 AM, Ian Kent <raven@themaw.net> wrote:
+On 2013/8/30 16:49, Wanpeng Li wrote:
 
->> The check in waitq.c above "is" used to validate the need to callback to
->> the daemon to request a mount.
+> On Fri, Aug 30, 2013 at 04:42:49PM +0800, Jianguo Wu wrote:
+>> Use get_vm_area_size() to get vmalloc area's actual size without guard page.
+>>
+> 
+> Do you see this?
+> 
+> http://marc.info/?l=linux-mm&m=137698172417316&w=2
+> 
 
-Okay.  But then shouldn't the check be  "if (d_mountpoint(dentry)) valid = 0;" ?
+Hi Wanpeng,
+Sorry for not notice your post, please ignore this patch.
 
-Thanks,
-Miklos
+Thanks.
+
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>> ---
+>> mm/vmalloc.c |   12 ++++++------
+>> 1 files changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+>> index 13a5495..abe13bc 100644
+>> --- a/mm/vmalloc.c
+>> +++ b/mm/vmalloc.c
+>> @@ -1263,7 +1263,7 @@ void unmap_kernel_range(unsigned long addr, unsigned long size)
+>> int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
+>> {
+>> 	unsigned long addr = (unsigned long)area->addr;
+>> -	unsigned long end = addr + area->size - PAGE_SIZE;
+>> +	unsigned long end = addr + get_vm_area_size(area);
+>> 	int err;
+>>
+>> 	err = vmap_page_range(addr, end, prot, *pages);
+>> @@ -1558,7 +1558,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+>> 	unsigned int nr_pages, array_size, i;
+>> 	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
+>>
+>> -	nr_pages = (area->size - PAGE_SIZE) >> PAGE_SHIFT;
+>> +	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
+>> 	array_size = (nr_pages * sizeof(struct page *));
+>>
+>> 	area->nr_pages = nr_pages;
+>> @@ -1990,7 +1990,7 @@ long vread(char *buf, char *addr, unsigned long count)
+>>
+>> 		vm = va->vm;
+>> 		vaddr = (char *) vm->addr;
+>> -		if (addr >= vaddr + vm->size - PAGE_SIZE)
+>> +		if (addr >= vaddr + get_vm_area_size(vm))
+>> 			continue;
+>> 		while (addr < vaddr) {
+>> 			if (count == 0)
+>> @@ -2000,7 +2000,7 @@ long vread(char *buf, char *addr, unsigned long count)
+>> 			addr++;
+>> 			count--;
+>> 		}
+>> -		n = vaddr + vm->size - PAGE_SIZE - addr;
+>> +		n = vaddr + get_vm_area_size(vm) - addr;
+>> 		if (n > count)
+>> 			n = count;
+>> 		if (!(vm->flags & VM_IOREMAP))
+>> @@ -2072,7 +2072,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
+>>
+>> 		vm = va->vm;
+>> 		vaddr = (char *) vm->addr;
+>> -		if (addr >= vaddr + vm->size - PAGE_SIZE)
+>> +		if (addr >= vaddr + get_vm_area_size(vm))
+>> 			continue;
+>> 		while (addr < vaddr) {
+>> 			if (count == 0)
+>> @@ -2081,7 +2081,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
+>> 			addr++;
+>> 			count--;
+>> 		}
+>> -		n = vaddr + vm->size - PAGE_SIZE - addr;
+>> +		n = vaddr + get_vm_area_size(vm) - addr;
+>> 		if (n > count)
+>> 			n = count;
+>> 		if (!(vm->flags & VM_IOREMAP)) {
+>> -- 
+>> 1.7.1
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+
+
