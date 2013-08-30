@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3H3RR3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:17:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43756 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab3H3RR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:17:27 -0400
-Date: Fri, 30 Aug 2013 19:17:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130830171707.GV31370@twins.programming.kicks-ass.net>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
- <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
- <1377751465.4028.20.camel@pasglop>
- <20130829070012.GC27322@gmail.com>
- <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1756849Ab3H3RTe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:19:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755340Ab3H3RTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 13:19:32 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        kirill.shutemov@linux.intel.com,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2 v2] split page table lock for hugepage
+Date: Fri, 30 Aug 2013 13:18:38 -0400
+Message-Id: <1377883120-5280-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 09:43:07AM -0700, Linus Torvalds wrote:
+Hi,
 
-> We'll see. The real problem is that I'm not sure if I can even see the
-> scalability issue on any machine I actually personally want to use
-> (read: silent). On my current  system I can only get up to 15%
-> _raw_spin_lock by just stat'ing the same file over and over and over
-> again from lots of threads.
+I revised the split page table lock patch (v1 is [1]), and got some numbers
+to confirm the performance improvement.
 
-Yeah, silent basically limits you to i7 single socket systems and sadly
-Intel doesn't seem to want to make those with more than 4 cores on :/
+This patchset simply replaces all of locking/unlocking of mm->page_table_lock
+in hugepage context with page->ptl when USE_SPLIT_PTLOCKS is true, which
+breaks single mm wide locking into multiple small (pmd/pte sized) address
+range locking, so we can clearly expect better performance when many threads
+access to virtual memory of a process simultaneously.
 
-I've got a i7-K part (SNB iirc) with a _huge_ scythe cooler and a high
-efficiency fanless PSU for a system that's near noiseless -- as in my
-Thinkpad actually makes more noise.
+Here is the result of my testing [2], where I measured the time (in seconds)
+taken to execute a specific workload in various conditions. So the smaller
+number means the better performance. The workload is like this:
+  1) allocate N hugepages/thps and touch them once,
+  2) create T threads with pthread_create(), and
+  3) each thread accesses to the whole pages sequentially 10 times.
+
+           |             hugetlb             |               thp               |
+ N      T  |   v3.11-rc3    |    patched     |   v3.11-rc3    |    patched     |
+100    100 |  0.13 (+-0.04) |  0.07 (+-0.01) |  0.10 (+-0.01) |  0.08 (+-0.03) |
+100   3000 | 11.67 (+-0.47) |  6.54 (+-0.38) | 11.21 (+-0.28) |  6.44 (+-0.26) |
+6000   100 |  2.87 (+-0.07) |  2.79 (+-0.06) |  3.21 (+-0.06) |  3.10 (+-0.06) |
+6000  3000 | 18.76 (+-0.50) | 13.68 (+-0.35) | 19.44 (+-0.78) | 14.03 (+-0.43) |
+
+  * Numbers are the averages (and stddev) of 20 testing respectively.
+
+This result shows that for both of hugetlb/thp patched kernel provides better
+results, so patches works fine. The performance gain is larger for larger T.
+Interestingly, in more detailed analysis the improvement mostly comes from 2).
+I got a little improvement for 3), but no visible improvement for 1).
+
+[1] http://thread.gmane.org/gmane.linux.kernel.mm/100856/focus=100858
+[2] https://github.com/Naoya-Horiguchi/test_split_page_table_lock_for_hugepage
+
+Naoya Horiguchi (2):
+      hugetlbfs: support split page table lock
+      thp: support split page table lock
+
+ arch/powerpc/mm/hugetlbpage.c |   6 +-
+ arch/powerpc/mm/pgtable_64.c  |   8 +-
+ arch/s390/mm/pgtable.c        |   4 +-
+ arch/sparc/mm/tlb.c           |   4 +-
+ arch/tile/mm/hugetlbpage.c    |   6 +-
+ fs/proc/task_mmu.c            |  17 +++--
+ include/linux/huge_mm.h       |  11 +--
+ include/linux/hugetlb.h       |  20 +++++
+ include/linux/mm.h            |   3 +
+ mm/huge_memory.c              | 170 +++++++++++++++++++++++++-----------------
+ mm/hugetlb.c                  |  92 ++++++++++++++---------
+ mm/memcontrol.c               |  14 ++--
+ mm/memory.c                   |  15 ++--
+ mm/mempolicy.c                |   5 +-
+ mm/migrate.c                  |  12 +--
+ mm/mprotect.c                 |   5 +-
+ mm/pgtable-generic.c          |  10 +--
+ mm/rmap.c                     |  13 ++--
+ 18 files changed, 251 insertions(+), 164 deletions(-)
+
+Thanks,
+Naoya Horiguchi
