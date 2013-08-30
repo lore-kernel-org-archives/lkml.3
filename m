@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3H3M0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:26:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6987 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab3H3M0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:26:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,990,1367996400"; 
-   d="scan'208";a="394500571"
-Date: Fri, 30 Aug 2013 14:26:42 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: wwang <wei_wang@realsil.com.cn>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 0/3] Fix sd3.0 issues for Realtek card reader
-Message-ID: <20130830122642.GJ20329@zurbaran>
-References: <cover.1377049122.git.wei_wang@realsil.com.cn>
- <521C0F2E.9050904@realsil.com.cn>
- <86ppswc4u6.fsf@void.printf.net>
+	id S1755447Ab3H3M1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:27:21 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3602 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab3H3M1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:27:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 30 Aug 2013 05:27:19 -0700
+From: Daniel Fu <danifu@nvidia.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johnny Qiu <joqiu@nvidia.com>
+Date: Fri, 30 Aug 2013 20:26:34 +0800
+Subject: RE: [PATCH] cpuidle: Check cpuidle driver before add refcount
+Thread-Topic: [PATCH] cpuidle: Check cpuidle driver before add refcount
+Thread-Index: Ac6ldwNh+K3U/P3JRd6meJU5PctIZgAAOWLg
+Message-ID: <D9A2FA38A1E15B4E832469E5FE40C7ABFB5833359F@HKMAIL01.nvidia.com>
+References: <1377863302-22465-1-git-send-email-danifu@nvidia.com>
+ <2041584.4YznqfT0Od@vostro.rjw.lan>
+In-Reply-To: <2041584.4YznqfT0Od@vostro.rjw.lan>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <86ppswc4u6.fsf@void.printf.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Language: en-US
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7UCRPcB023955
 
-Hi Chris,
+X-NVConfidentiality: public
 
-On Fri, Aug 30, 2013 at 03:03:45AM +0100, Chris Ball wrote:
-> Hi,
-> 
-> On Tue, Aug 27 2013, wwang wrote:
-> > äº 2013å¹´08æœˆ21æ—¥ 09:46, wei_wang@realsil.com.cn å†™é“:
-> >> From: Wei WANG <wei_wang@realsil.com.cn>
-> >>
-> >> Wei WANG (3):
-> >>   mfd:mmc:rtsx: Change default tx phase
-> >>   mmc:rtsx:Clear SD_CLK toggle enable bit if switching voltage fail
-> >>   mmc:memstick:rtsx: Modify copyright comments
-> >>
-> >>  drivers/memstick/host/rtsx_pci_ms.c |    3 +-
-> >>  drivers/mfd/rtl8411.c               |    4 ++
-> >>  drivers/mfd/rts5209.c               |    2 +
-> >>  drivers/mfd/rts5227.c               |    2 +
-> >>  drivers/mfd/rts5229.c               |    2 +
-> >>  drivers/mfd/rts5249.c               |    2 +
-> >>  drivers/mmc/host/rtsx_pci_sdmmc.c   |   70 +++++++++++++++++++++++++----------
-> >>  include/linux/mfd/rtsx_pci.h        |   15 ++++++++
-> >>  8 files changed, 79 insertions(+), 21 deletions(-)
-> >>
-> >
-> > Can you help to review this patchset? I want to submit it to 3.12 kernel.
-> > And Lee Jones has acked the MFD parts.
-> 
-> The patchset looks fine, but it depends on MFD changes that aren't in
-> my mmc-next tree, and I don't want to invalidate my mmc-next testing
-> by updating my tree.  Maybe the MFD maintainer could take it with my Ack?
-> 
-> If so:
-> 
->    Acked-by: Chris Ball <cjb@laptop.org>
-Thanks. I applied this patchset through the MFD tree, with Lee and your ACKs.
+In SMP, When doing the cpuidle driver registration. There maybe only 1 cpu have register cpuidle(CPU0), 
+but In the process of registration cpuidle driver, the scheduler maybe schedule the process to the other CPU (eg. CPU0 have heay load, migrate to CPU1) 
+cpuidle_get_driver() --> get_cpu() , will get CPU1, if CPU1 didn't register cpuidle driver, Will get NULL.
 
-Cheers,
-Samuel.
+I know we should prevent the registration migrate to the other CPU, but we should check drv before add refcount to prevent kernel panic at least, Right?
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Best Regards,
+Daniel
+
+-----Original Message-----
+From: Rafael J. Wysocki [mailto:rjw@sisk.pl] 
+Sent: 2013å¹´8æœˆ30æ—¥ 20:01
+To: Daniel Fu
+Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Johnny Qiu
+Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+
+On Friday, August 30, 2013 07:48:22 PM Daniel Fu wrote:
+> If the current CPU has no cpuidle driver, drv will be NULL.
+> Check if we get drv successfully before add refount to prevent Kernel 
+> panic.
+
+What is the actual scenario that may lead to this panic?
+
+Rafael
+
+
+> Signed-off-by: Daniel Fu <danifu@nvidia.com>
+> ---
+>  drivers/cpuidle/driver.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c index 
+> 3ac499d..6e11701 100644
+> --- a/drivers/cpuidle/driver.c
+> +++ b/drivers/cpuidle/driver.c
+> @@ -331,7 +331,8 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
+>  	spin_lock(&cpuidle_driver_lock);
+>  
+>  	drv = cpuidle_get_driver();
+> -	drv->refcnt++;
+> +	if (drv)
+> +		drv->refcnt++;
+>  
+>  	spin_unlock(&cpuidle_driver_lock);
+>  	return drv;
+> 
+--
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
