@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3H3EZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 00:25:49 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47328 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753201Ab3H3EZl (ORCPT
+	id S1755979Ab3H3E2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 00:28:00 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:36208 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab3H3E17 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 00:25:41 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Cc: eranian@google.com, acme@redhat.com, michael.neuling@au1.ibm.com,
-        ellerman@au1.ibm.com, svaidy@linux.vnet.ibm.com,
-        sukadev@linux.vnet.ibm.com
-Subject: [PATCH V2 2/6] powerpc, perf: Enable conditional branch filter for POWER8
-Date: Fri, 30 Aug 2013 09:54:46 +0530
-Message-Id: <1377836690-32710-3-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083004-2674-0000-0000-00000A7177C8
+	Fri, 30 Aug 2013 00:27:59 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Dave Hansen <dave.hansen@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for ARC
+Thread-Topic: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
+ ARC
+Thread-Index: AQHOov/erDeR0JeI70CghkAjOCB3Tg==
+Date: Fri, 30 Aug 2013 04:25:18 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514113D@IN01WEMBXA.internal.synopsys.com>
+References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
+ <521F662F.4050003@intel.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.15.84.232]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables conditional branch filter support for POWER8
-utilizing MMCRA register based filter and also invalidates
-a BHRB branch filter combination involving conditional
-branches.
+On 08/29/2013 08:48 PM, Dave Hansen wrote:
+>
+> I assume you're sending this my way since getmaintainer.pl has me tagged
+> I moved a bunch of code in there. :)
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/power8-pmu.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Indeed :-)
 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index 2ee4a70..6e28587 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -580,11 +580,21 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		return -1;
- 
-+	/* Invalid branch filter combination - HW does not support */
-+	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
-+			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
-+		return -1;
-+
- 	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
- 		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
- 		return pmu_bhrb_filter;
- 	}
- 
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
-+		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
-+		return pmu_bhrb_filter;
-+	}
-+
- 	/* Every thing else is unsupported */
- 	return -1;
- }
--- 
-1.7.11.7
+> The Kconfig.debug stuff has no real maintainer.  It would probably be OK
+> if you just stick this in your architecture's next git pull request.
 
+Will do, thx.
+
+> Although, it would be nice if someone, at some point, actually
+> abstracted that out so that the individual architectures could take care
+> of this without editing the main files:
+>
+> # Kconfig.debug:
+>
+> config ARCH_FRAME_POINTER_UNAVAILABLE
+> 	def_bool y
+
+def_bool n
+
+> ...
+> select FRAME_POINTER if !ARCH_FRAME_POINTER_UNAVAILABLE
+>
+> # arch/.../Kconfig
+>
+> select ARCH_FRAME_POINTER_UNAVAILABLE
+
+Sure, I was thinking the same. I'll send out a patchset soon, although next week
+is gonna be tight due to upcoming merge window.
+
+-Vineet
