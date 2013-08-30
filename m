@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab3H3Thr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 15:37:47 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52551 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab3H3Thn (ORCPT
+	id S1756786Ab3H3Tky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 15:40:54 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45556 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755412Ab3H3Tkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 15:37:43 -0400
-Date: Fri, 30 Aug 2013 12:37:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
-Message-ID: <20130830193740.GA13101@roeck-us.net>
-References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
- <20130830184611.GA27455@spo001.leaseweb.com>
- <20130830191146.GA12090@roeck-us.net>
- <CA+55aFyxHsKhtqqz9jTDYo89bCNqCWhjHGJ4HzFrHnJ0yxLXjQ@mail.gmail.com>
+	Fri, 30 Aug 2013 15:40:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Fu <danifu@nvidia.com>
+Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johnny Qiu <joqiu@nvidia.com>
+Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+Date: Fri, 30 Aug 2013 21:51:35 +0200
+Message-ID: <5922282.AsA87j7ngC@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <D9A2FA38A1E15B4E832469E5FE40C7ABFB583335A4@HKMAIL01.nvidia.com>
+References: <1377863302-22465-1-git-send-email-danifu@nvidia.com> <1725801.dn2z0gQifB@vostro.rjw.lan> <D9A2FA38A1E15B4E832469E5FE40C7ABFB583335A4@HKMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyxHsKhtqqz9jTDYo89bCNqCWhjHGJ4HzFrHnJ0yxLXjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 12:14:20PM -0700, Linus Torvalds wrote:
-> On Fri, Aug 30, 2013 at 12:11 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >
-> > I would not mind if Linus would agree to pull it right away for 3.12,
-> > but that seems to be a bit on the fast side.
-> 
-> I'm ok with code deletion patches, I don't think that would be a
-> problem. I didn't check them, but I assume this is all literally just
-> removing code that is conditional on h8/300 config options?
-> 
-Yes.
+On Friday, August 30, 2013 09:39:27 PM Daniel Fu wrote:
+> Yes, I saw it. 
+> Thanks. found one case when  Find PM domain and connect cpuidle to it , in when Kernel booting ,opening early prink testing
+> pm_genpd_name_attach_cpuidle()->cpuidle_driver_ref().
 
-I found a couple more since I sent the series, but nothing significant.
-
-What is your preference - keep it until 3.13, or prepare it now and send you
-a pull request for 3.12 ?
+I see. OK, I'll queue it up for the second part of the 3.12 merge window.
 
 Thanks,
-Guenter
+Rafael
+
+
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl] 
+> Sent: 2013年8月30日 21:26
+> To: Daniel Fu
+> Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Johnny Qiu
+> Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+> 
+> On Friday, August 30, 2013 08:26:34 PM Daniel Fu wrote:
+> > X-NVConfidentiality: public
+> > 
+> > In SMP, When doing the cpuidle driver registration. There maybe only 1 
+> > cpu have register cpuidle(CPU0), but In the process of registration 
+> > cpuidle driver, the scheduler maybe schedule the process to the other 
+> > CPU (eg. CPU0 have heay load, migrate to CPU1)
+> > cpuidle_get_driver() --> get_cpu() , will get CPU1, if CPU1 didn't register cpuidle driver, Will get NULL.
+> > 
+> > I know we should prevent the registration migrate to the other CPU, but we should check drv before add refcount to prevent kernel panic at least, Right?
+> 
+> Well, cpuidle_driver_ref() has only one caller, which is not the registration.
+> 
+> However, the caller apparently assumes that that function may return NULL and
+> cpuidle_driver_unref() check drv against NULL too, so cpuidle_driver_ref() should do that either.
+> 
+> Did you see that problem in testing or just through code inspection?
+> 
+> Rafael
+> 
+> 
+> > -----Original Message-----
+> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> > Sent: 2013年8月30日 20:01
+> > To: Daniel Fu
+> > Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; 
+> > linux-kernel@vger.kernel.org; Johnny Qiu
+> > Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+> > 
+> > On Friday, August 30, 2013 07:48:22 PM Daniel Fu wrote:
+> > > If the current CPU has no cpuidle driver, drv will be NULL.
+> > > Check if we get drv successfully before add refount to prevent 
+> > > Kernel panic.
+> > 
+> > What is the actual scenario that may lead to this panic?
+> > 
+> > Rafael
+> > 
+> > 
+> > > Signed-off-by: Daniel Fu <danifu@nvidia.com>
+> > > ---
+> > >  drivers/cpuidle/driver.c | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c 
+> > > index
+> > > 3ac499d..6e11701 100644
+> > > --- a/drivers/cpuidle/driver.c
+> > > +++ b/drivers/cpuidle/driver.c
+> > > @@ -331,7 +331,8 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
+> > >  	spin_lock(&cpuidle_driver_lock);
+> > >  
+> > >  	drv = cpuidle_get_driver();
+> > > -	drv->refcnt++;
+> > > +	if (drv)
+> > > +		drv->refcnt++;
+> > >  
+> > >  	spin_unlock(&cpuidle_driver_lock);
+> > >  	return drv;
+> > > 
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
+> > 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
