@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3H3N1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:27:47 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:34291 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3H3N1o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:27:44 -0400
+	id S1756918Ab3H3N1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:27:55 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57362 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756581Ab3H3N1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 09:27:53 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 30/35] mm: Provide a mechanism to check if a given page
- is in the region allocator
+Subject: [RFC PATCH v3 31/35] mm: Add a way to request pages of a particular
+ region from the region allocator
 To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
         tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
         riel@redhat.com, arjan@linux.intel.com,
@@ -21,8 +20,8 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
         kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:53:31 +0530
-Message-ID: <20130830132329.4947.99949.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 30 Aug 2013 18:53:50 +0530
+Message-ID: <20130830132348.4947.96111.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
 References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,63 +30,100 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083013-4834-0000-0000-00000A99548D
+x-cbid: 13083013-0320-0000-0000-000000D858B8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of the region allocator, a freepage can be either
-in one of the buddy freelists or in the region allocator. In cases where we
-want to move freepages to a given migratetype's freelists, we will need to
-know where they were originally located. So provide a helper to distinguish
-whether the freepage resides in the region allocator or the buddy freelists.
+When moving freepages from one migratetype to another (using move_freepages()
+or equivalent), we might encounter situations in which we would like to move
+pages that are in the region allocator. In such cases, we need a way to
+request pages of a particular region from the region allocator.
+
+We already have the code to perform the heavy-lifting of actually moving the
+pages of a region from the region allocator to a requested freelist or
+migratetype. So just reorganize that code in such a way that we can also
+pin-point a region and specify that we want the region allocator to allocate
+pages from that particular region.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/page_alloc.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ mm/page_alloc.c |   40 ++++++++++++++++++++++++----------------
+ 1 file changed, 24 insertions(+), 16 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a62730b..3f49ca8 100644
+index 3f49ca8..fc530ff 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1047,6 +1047,37 @@ static int del_from_region_allocator(struct zone *zone, unsigned int order,
+@@ -1002,24 +1002,18 @@ static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
+ 		*next_region = region_id;
  }
  
- /*
-+ * Return 1 if the page is in the region allocator, else return 0
-+ * (which usually means that the page is in the buddy freelists).
-+ */
-+static int page_in_region_allocator(struct page *page)
-+{
-+	struct region_allocator *reg_alloc;
-+	struct free_area_region *reg_area;
-+	int order, region_id;
-+
-+	/* We keep only MAX_ORDER-1 pages in the region allocator */
-+	order = page_order(page);
-+	if (order != MAX_ORDER-1)
-+		return 0;
-+
-+	/*
-+	 * It is sufficient to check if (any of) the pages belonging to
-+	 * that region are in the region allocator, because a page resides
-+	 * in the region allocator if and only if all the pages of that
-+	 * region are also in the region allocator.
-+	 */
-+	region_id = page_zone_region_id(page);
-+	reg_alloc = &page_zone(page)->region_allocator;
+-/* Delete freepages from the region allocator and add them to buddy freelists */
+-static int del_from_region_allocator(struct zone *zone, unsigned int order,
+-				     int migratetype)
++static void __del_from_region_allocator(struct zone *zone, unsigned int order,
++					int migratetype, int region_id)
+ {
+ 	struct region_allocator *reg_alloc;
+ 	struct free_area_region *reg_area;
+ 	struct list_head *ralloc_list;
+ 	struct free_list *free_list;
+ 	unsigned long nr_pages;
+-	int next_region;
++	struct page *page;
+ 
+ 	reg_alloc = &zone->region_allocator;
+-
+-	next_region = reg_alloc->next_region;
+-	if (next_region < 0)
+-		return -ENOMEM;
+-
+-	reg_area = &reg_alloc->region[next_region].region_area[order];
 +	reg_area = &reg_alloc->region[region_id].region_area[order];
+ 	ralloc_list = &reg_area->list;
+ 
+ 	list_for_each_entry(page, ralloc_list, lru)
+@@ -1028,20 +1022,34 @@ static int del_from_region_allocator(struct zone *zone, unsigned int order,
+ 	free_list = &zone->free_area[order].free_list[migratetype];
+ 
+ 	nr_pages = add_to_freelist_bulk(ralloc_list, free_list, order,
+-					next_region);
++					region_id);
+ 
+ 	reg_area->nr_free -= nr_pages;
+ 	WARN_ON(reg_area->nr_free != 0);
+ 
+ 	/* Pick a new next_region */
+-	clear_bit(next_region, reg_alloc->ralloc_mask);
+-	next_region = find_first_bit(reg_alloc->ralloc_mask,
++	clear_bit(region_id, reg_alloc->ralloc_mask);
++	region_id = find_first_bit(reg_alloc->ralloc_mask,
+ 				     MAX_NR_ZONE_REGIONS);
+ 
+-	if (next_region >= MAX_NR_ZONE_REGIONS)
+-		next_region = -1; /* No free regions available */
++	if (region_id >= MAX_NR_ZONE_REGIONS)
++		region_id = -1; /* No free regions available */
 +
-+	if (reg_area->nr_free)
-+		return 1;
-+
-+	return 0;
++	reg_alloc->next_region = region_id;
 +}
 +
-+/*
-  * Freeing function for a buddy system allocator.
-  *
-  * The concept of a buddy system is to maintain direct-mapped table
++/* Delete freepages from the region allocator and add them to buddy freelists */
++static int del_from_region_allocator(struct zone *zone, unsigned int order,
++				     int migratetype)
++{
++	int next_region;
++
++	next_region = zone->region_allocator.next_region;
++
++	if (next_region < 0)
++		return -ENOMEM;
+ 
+-	reg_alloc->next_region = next_region;
++	__del_from_region_allocator(zone, order, migratetype, next_region);
+ 
+ 	return 0;
+ }
 
