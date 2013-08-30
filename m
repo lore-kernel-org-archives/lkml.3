@@ -1,320 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3H2X5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:57:01 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53820 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab3H2X47 (ORCPT
+	id S1753525Ab3H3AET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 20:04:19 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57539 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3H3AES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:56:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>
-References: <87ob8gys0d.fsf@xmission.com>
-Date: Thu, 29 Aug 2013 16:56:50 -0700
-In-Reply-To: <87ob8gys0d.fsf@xmission.com> (Eric W. Biederman's message of
-	"Thu, 29 Aug 2013 16:52:18 -0700")
-Message-ID: <871u5cyrst.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 29 Aug 2013 20:04:18 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH v4] gpio: pcf857x: Add OF support
+Date: Fri, 30 Aug 2013 02:05:41 +0200
+Message-ID: <32047086.JjfkHtWF69@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CACRpkdZuODowd6V9WcCes6znT15C105y_kfYynhien4ZCCaoOA@mail.gmail.com>
+References: <1377524753-4027-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CACRpkdZuODowd6V9WcCes6znT15C105y_kfYynhien4ZCCaoOA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19kEQBVBSmdqlDe3eIvLat7rbeCswc1ejc=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1106]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 5/5] userns:  Kill nsown_capable it makes the wrong thing easy
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-nsown_capable is a special case of ns_capable essentially for just CAP_SETUID and
-CAP_SETGID.  For the existing users it doesn't noticably simplify things and
-from the suggested patches I have seen it encourages people to do the wrong
-thing.  So remove nsown_capable.
+On Thursday 29 August 2013 14:16:59 Linus Walleij wrote:
+> On Mon, Aug 26, 2013 at 3:45 PM, Laurent Pinchart wrote:
+> > Add DT bindings for the pcf857x-compatible chips and parse the device
+> > tree node in the driver.
+> > 
+> > Signed-off-by: Laurent Pinchart
+> > <laurent.pinchart+renesas@ideasonboard.com>
+> 
+> First: can I get an ACK from some DT-bindings maintainer?
+> 
+> I think you may need to CC them all individually to get some response.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/namespace.c             |    4 ++--
- fs/open.c                  |    2 +-
- include/linux/capability.h |    1 -
- ipc/namespace.c            |    2 +-
- kernel/capability.c        |   12 ------------
- kernel/groups.c            |    2 +-
- kernel/pid_namespace.c     |    2 +-
- kernel/sys.c               |   20 ++++++++++----------
- kernel/uid16.c             |    2 +-
- kernel/utsname.c           |    2 +-
- net/core/net_namespace.c   |    2 +-
- net/core/scm.c             |    4 ++--
- 12 files changed, 21 insertions(+), 34 deletions(-)
+I'll make sure to get an ACK for v6 (or a more recent version). Reviewers are 
+probably busy with the merge window about to open, delaying this patch to 
+v3.13 should help.
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 877e427..dc519a1 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2929,8 +2929,8 @@ static int mntns_install(struct nsproxy *nsproxy, void *ns)
- 	struct path root;
- 
- 	if (!ns_capable(mnt_ns->user_ns, CAP_SYS_ADMIN) ||
--	    !nsown_capable(CAP_SYS_CHROOT) ||
--	    !nsown_capable(CAP_SYS_ADMIN))
-+	    !ns_capable(current_user_ns(), CAP_SYS_CHROOT) ||
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	if (fs->users != 1)
-diff --git a/fs/open.c b/fs/open.c
-index 9156cb0..2a57580 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -443,7 +443,7 @@ retry:
- 		goto dput_and_out;
- 
- 	error = -EPERM;
--	if (!nsown_capable(CAP_SYS_CHROOT))
-+	if (!ns_capable(current_user_ns(), CAP_SYS_CHROOT))
- 		goto dput_and_out;
- 	error = security_path_chroot(&path);
- 	if (error)
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d9a4f7f..a6ee1f9 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -210,7 +210,6 @@ extern bool has_ns_capability_noaudit(struct task_struct *t,
- 				      struct user_namespace *ns, int cap);
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
--extern bool nsown_capable(int cap);
- extern bool inode_capable(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 7ee61bf..4be6581 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -171,7 +171,7 @@ static int ipcns_install(struct nsproxy *nsproxy, void *new)
- {
- 	struct ipc_namespace *ns = new;
- 	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
--	    !nsown_capable(CAP_SYS_ADMIN))
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	/* Ditch state from the old ipc namespace */
-diff --git a/kernel/capability.c b/kernel/capability.c
-index f6c2ce5..6fc1c8a 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -433,18 +433,6 @@ bool capable(int cap)
- EXPORT_SYMBOL(capable);
- 
- /**
-- * nsown_capable - Check superior capability to one's own user_ns
-- * @cap: The capability in question
-- *
-- * Return true if the current task has the given superior capability
-- * targeted at its own user namespace.
-- */
--bool nsown_capable(int cap)
--{
--	return ns_capable(current_user_ns(), cap);
--}
--
--/**
-  * inode_capable - Check superior capability over inode
-  * @inode: The inode in question
-  * @cap: The capability in question
-diff --git a/kernel/groups.c b/kernel/groups.c
-index 6b2588d..90cf1c3 100644
---- a/kernel/groups.c
-+++ b/kernel/groups.c
-@@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!nsown_capable(CAP_SETGID))
-+	if (!ns_capable(current_user_ns(), CAP_SETGID))
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 6917e8e..ee1f6bb 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -329,7 +329,7 @@ static int pidns_install(struct nsproxy *nsproxy, void *ns)
- 	struct pid_namespace *ancestor, *new = ns;
- 
- 	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
--	    !nsown_capable(CAP_SYS_ADMIN))
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	/*
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 771129b..c18ecca 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -337,7 +337,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 	if (rgid != (gid_t) -1) {
- 		if (gid_eq(old->gid, krgid) ||
- 		    gid_eq(old->egid, krgid) ||
--		    nsown_capable(CAP_SETGID))
-+		    ns_capable(old->user_ns, CAP_SETGID))
- 			new->gid = krgid;
- 		else
- 			goto error;
-@@ -346,7 +346,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 		if (gid_eq(old->gid, kegid) ||
- 		    gid_eq(old->egid, kegid) ||
- 		    gid_eq(old->sgid, kegid) ||
--		    nsown_capable(CAP_SETGID))
-+		    ns_capable(old->user_ns, CAP_SETGID))
- 			new->egid = kegid;
- 		else
- 			goto error;
-@@ -387,7 +387,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (nsown_capable(CAP_SETGID))
-+	if (ns_capable(old->user_ns, CAP_SETGID))
- 		new->gid = new->egid = new->sgid = new->fsgid = kgid;
- 	else if (gid_eq(kgid, old->gid) || gid_eq(kgid, old->sgid))
- 		new->egid = new->fsgid = kgid;
-@@ -471,7 +471,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		new->uid = kruid;
- 		if (!uid_eq(old->uid, kruid) &&
- 		    !uid_eq(old->euid, kruid) &&
--		    !nsown_capable(CAP_SETUID))
-+		    !ns_capable(old->user_ns, CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -480,7 +480,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		if (!uid_eq(old->uid, keuid) &&
- 		    !uid_eq(old->euid, keuid) &&
- 		    !uid_eq(old->suid, keuid) &&
--		    !nsown_capable(CAP_SETUID))
-+		    !ns_capable(old->user_ns, CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -534,7 +534,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (nsown_capable(CAP_SETUID)) {
-+	if (ns_capable(old->user_ns, CAP_SETUID)) {
- 		new->suid = new->uid = kuid;
- 		if (!uid_eq(kuid, old->uid)) {
- 			retval = set_user(new);
-@@ -591,7 +591,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!nsown_capable(CAP_SETUID)) {
-+	if (!ns_capable(old->user_ns, CAP_SETUID)) {
- 		if (ruid != (uid_t) -1        && !uid_eq(kruid, old->uid) &&
- 		    !uid_eq(kruid, old->euid) && !uid_eq(kruid, old->suid))
- 			goto error;
-@@ -673,7 +673,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!nsown_capable(CAP_SETGID)) {
-+	if (!ns_capable(old->user_ns, CAP_SETGID)) {
- 		if (rgid != (gid_t) -1        && !gid_eq(krgid, old->gid) &&
- 		    !gid_eq(krgid, old->egid) && !gid_eq(krgid, old->sgid))
- 			goto error;
-@@ -744,7 +744,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
- 
- 	if (uid_eq(kuid, old->uid)  || uid_eq(kuid, old->euid)  ||
- 	    uid_eq(kuid, old->suid) || uid_eq(kuid, old->fsuid) ||
--	    nsown_capable(CAP_SETUID)) {
-+	    ns_capable(old->user_ns, CAP_SETUID)) {
- 		if (!uid_eq(kuid, old->fsuid)) {
- 			new->fsuid = kuid;
- 			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
-@@ -783,7 +783,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
- 
- 	if (gid_eq(kgid, old->gid)  || gid_eq(kgid, old->egid)  ||
- 	    gid_eq(kgid, old->sgid) || gid_eq(kgid, old->fsgid) ||
--	    nsown_capable(CAP_SETGID)) {
-+	    ns_capable(old->user_ns, CAP_SETGID)) {
- 		if (!gid_eq(kgid, old->fsgid)) {
- 			new->fsgid = kgid;
- 			goto change_okay;
-diff --git a/kernel/uid16.c b/kernel/uid16.c
-index f6c83d7..602e5bb 100644
---- a/kernel/uid16.c
-+++ b/kernel/uid16.c
-@@ -176,7 +176,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!nsown_capable(CAP_SETGID))
-+	if (!ns_capable(current_user_ns(), CAP_SETGID))
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index 2fc8576..fd39312 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -114,7 +114,7 @@ static int utsns_install(struct nsproxy *nsproxy, void *new)
- 	struct uts_namespace *ns = new;
- 
- 	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
--	    !nsown_capable(CAP_SYS_ADMIN))
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	get_uts_ns(ns);
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index f9765203..81d3a9a 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -651,7 +651,7 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
- 	struct net *net = ns;
- 
- 	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN) ||
--	    !nsown_capable(CAP_SYS_ADMIN))
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	put_net(nsproxy->net_ns);
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 03795d0..c346f58 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -56,9 +56,9 @@ static __inline__ int scm_check_creds(struct ucred *creds)
- 	if ((creds->pid == task_tgid_vnr(current) ||
- 	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
- 	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
--	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
-+	      uid_eq(uid, cred->suid)) || ns_capable(cred->user_ns, CAP_SETUID)) &&
- 	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
--	      gid_eq(gid, cred->sgid)) || nsown_capable(CAP_SETGID))) {
-+	      gid_eq(gid, cred->sgid)) || ns_capable(cred->user_ns, CAP_SETGID))) {
- 	       return 0;
- 	}
- 	return -EPERM;
+I'll post v6 after receiving your answer to the comment below, as well as to 
+the issue raised by Tomasz on v5.
+
+> > +++ b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
+> > @@ -0,0 +1,71 @@
+> > +* PCF857x-compatible I/O expanders
+> > +
+> > +The PCF857x-compatible chips have "quasi-bidirectional" I/O pins that can
+> > be +driven high by a pull-up current source or driven low to ground. This
+> > combines +the direction and output level into a single bit per pin, which
+> > can't be read +back. We can't actually know at initialization time
+> > whether a pin is configured +(a) as output and driving the signal
+> > low/high, or (b) as input and reporting a +low/high value, without
+> > knowing the last value written since the chip came out +of reset (if
+> > any). The only reliable solution for setting up pin direction is +thus to
+> > do it explicitly.
+> 
+> Nitpick: I prefer that wrt gpio we talk about "lines" rather than "pins"
+> to separate it from the pin control concept. Just
+> s/pin/line/g
+
+OK.
+
+> (...)
+> 
+> > +Optional Properties:
+> > +
+> > +  - pins-initial-state: Bitmask that specifies the initial state of each
+> > pin. +  When a bit is set to zero, the corresponding pin will be
+> > initialized to the +  input (pulled-up) state. When the  bit is set to
+> > one, the pin will be +  initialized the the low-level output state. If
+> > the property is not specified +  all pins will be initialized to the
+> > input state.
+> 
+> Name this lines-initial-states (pluralis).
+
+OK.
+
+> Don't we want to do this generic if we shall do it?
+> 
+> Like for *any* GPIO chips we provide lines-initial state in the device
+> tree and some code in the gpiochip with a callback in struct gpio_chip
+> that can be called by the gpiolib core to set this up? Then we don't
+> have to reimplement this for every GPIO controller that needs it.
+
+Most GPIO chips will provide a way to read back the current state. The initial 
+state only needs to be provided for write-only chips. This is (luckily) rather 
+an exception, so I don't think we should implement it in the core, at least 
+not yet. We can always refactor the code later if needed, the proposed DT 
+binding is generic enough.
+
+> Sorry for not noticing this earlier...
+
+No worries.
+
 -- 
-1.7.5.4
+Regards,
+
+Laurent Pinchart
 
