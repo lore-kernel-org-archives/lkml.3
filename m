@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3H3XBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 19:01:11 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:34265 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3H3XBI (ORCPT
+	id S1756273Ab3H3XEJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 19:04:09 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:36938 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3H3XEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 19:01:08 -0400
-Message-ID: <52212435.2040808@cogentembedded.com>
-Date: Sat, 31 Aug 2013 03:01:09 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 19:04:07 -0400
+Date: Sat, 31 Aug 2013 01:04:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130830230402.GA14760@somewhere>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/7] Drop support for Renesys H8/300 (h8300) architecture
-References: <1377880842-6835-1-git-send-email-linux@roeck-us.net> <1377880842-6835-2-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1377880842-6835-2-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821153957.GA2969@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Aug 21, 2013 at 06:39:57PM +0300, Sergey Senozhatsky wrote:
+> On (08/20/13 17:42), Frederic Weisbecker wrote:
+> > On Tue, Aug 20, 2013 at 06:35:50PM +0300, Sergey Senozhatsky wrote:
+> > > On (08/20/13 17:15), Frederic Weisbecker wrote:
+> > > > On Tue, Aug 20, 2013 at 02:14:26PM +0300, Sergey Senozhatsky wrote:
+> > > > Hello,
+> > > > 
+> > > > Please upload your config.
+> > > > 
+> > > > I'm adding Stanislaw in Cc in case it relates to cputime scaling.
+> > > >
+> > > 
+> > > please find attached.
+> > > 
+> > > 	-ss
+> > 
+> > > #
+> > > # CPU/Task time and stats accounting
+> > > #
+> > > CONFIG_VIRT_CPU_ACCOUNTING=y
+> > > CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+> > 
+> > So it happens with full dynticks cputime accounting.
+> > How reproducable is this? Does it always happen?
+> > Does it happen with CONFIG_TICK_CPU_ACCOUNTING as well? (you'll
+> > need to deactivate full dynticks.)
+> 
+> in cputime_adjust() `stime' is greater than `rtime', so `utime = rtime - stime'
+> sets wrong value.
 
-On 08/30/2013 08:40 PM, Guenter Roeck wrote:
+But stime should always be below rtime due to the calculation done by scale_stime()
+which roughly sums up to:
 
-    Subject typo: it's Renesas, not Renesys, according to the MAINTAINERS entry.
+      stime = (stime / stime + utime) * rtime
 
-> H8/300 has been dead for several years, and the kernel for it
-> has not compiled for ages. Drop support for it.
+So this shouldn't happen.
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+I couldn't manage to reproduce it though. Can you still trigger it with latest -next?
 
-WBR, Sergei
-
+Thanks.
