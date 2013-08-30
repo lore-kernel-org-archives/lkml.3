@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab3H3Dlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 23:41:50 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:20549 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab3H3Dlt (ORCPT
+	id S1755512Ab3H3DmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 23:42:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:39376 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab3H3DmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 23:41:49 -0400
-Message-ID: <5220143A.808@huawei.com>
-Date: Fri, 30 Aug 2013 11:40:42 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 29 Aug 2013 23:42:13 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, <laijs@cn.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, <davem@davemloft.net>,
-        <ben@decadent.org.uk>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] mm/vmemmap: use N_MEMORY instead of N_HIGH_MEMORY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+In-Reply-To: <521fdad0.e8a4420a.5b3b.ffff8bd3SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <521faf12.9JwU9Jt+2QNWkPCZ%akpm@linux-foundation.org>
+	<CAE9FiQWHeip7XWF+-mCt3gXsESpr52Fb71fbrJbRSJyeHCAMeQ@mail.gmail.com>
+	<521fdad0.e8a4420a.5b3b.ffff8bd3SMTPIN_ADDED_BROKEN@mx.google.com>
+Date: Thu, 29 Aug 2013 20:42:12 -0700
+X-Google-Sender-Auth: 75HbuxSwtKcsRUV9syxxY-P92vg
+Message-ID: <CAE9FiQVFJvaTGTejvs9Bd9akCj5pX-TT9eKy9bB5CDZ4d0iQbw@mail.gmail.com>
+Subject: Re: + mm-sparse-introduce-alloc_usemap_and_memmap-fix-2.patch added
+ to -mm tree
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 8219fc48a(mm: node_states: introduce N_MEMORY),
-we introduced N_MEMORY, now N_MEMORY stands for the nodes that has any memory,
-and N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+On Thu, Aug 29, 2013 at 4:35 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
 
-The code here need to handle with the nodes which have memory,
-we should use N_MEMORY instead.
+> On Thu, Aug 29, 2013 at 01:44:18PM -0700, Yinghai Lu wrote:
+>>>  mm/sparse.c |   41 +++++++++++++++--------------------------
+>>>  1 file changed, 15 insertions(+), 26 deletions(-)
+>>>
+>>> diff -puN mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2 mm/sparse.c
+>>> --- a/mm/sparse.c~mm-sparse-introduce-alloc_usemap_and_memmap-fix-2
+>>> +++ a/mm/sparse.c
+>>> @@ -339,13 +339,14 @@ static void __init check_usemap_section_
+>>>  }
+>>>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+>>>
+>>> -static void __init sparse_early_usemaps_alloc_node(unsigned long**usemap_map,
+>>> +static void __init sparse_early_usemaps_alloc_node(void **data,
+>>>                                  unsigned long pnum_begin,
+>>>                                  unsigned long pnum_end,
+>>>                                  unsigned long usemap_count, int nodeid)
+>>>  {
+>>>         void *usemap;
+>>>         unsigned long pnum;
+>>> +       unsigned long **usemap_map = (unsigned long **)data;
+>>
+>>Can you check if (void *data) will work?
+>>
+>>void ** looks strange.
+>
+> The original patch you give me has (void *data), however, there is compile warning.
+>
+> mm/sparse.c: In function  $B!F (Bsparse_init $B!G (B: mm/sparse.c:552:8: warning: passing argument 1 of  $B!F (Balloc_usemap_and_memmap $B!G (B
+> from incompatible pointer type [enabled by default]
+> mm/sparse.c:469:20: note: expected  $B!F (Bvoid (*)(void **, long unsigned int, long unsigned int,  long unsigned int,  int) $B!G (B
+> but argument is of type  $B!F (Bvoid (*)(void *, long unsigned int,  long unsigned int,  long unsigned int,  int) $B!G (B
+>
+> The void ** fix it. ;-)
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
----
- mm/sparse-vmemmap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+should change both to void *
 
-diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
-index 27eeab3..ca8f46b 100644
---- a/mm/sparse-vmemmap.c
-+++ b/mm/sparse-vmemmap.c
-@@ -52,7 +52,7 @@ void * __meminit vmemmap_alloc_block(unsigned long size, int node)
- 	if (slab_is_available()) {
- 		struct page *page;
- 
--		if (node_state(node, N_HIGH_MEMORY))
-+		if (node_state(node, N_MEMORY))
- 			page = alloc_pages_node(
- 				node, GFP_KERNEL | __GFP_ZERO | __GFP_REPEAT,
- 				get_order(size));
--- 
-1.7.1
-
-
+Yinghai
