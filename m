@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab3H2XzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 19:55:13 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53431 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3H2XzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 19:55:10 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-References: <87ob8gys0d.fsf@xmission.com>
-Date: Thu, 29 Aug 2013 16:55:01 -0700
-In-Reply-To: <87ob8gys0d.fsf@xmission.com> (Eric W. Biederman's message of
-	"Thu, 29 Aug 2013 16:52:18 -0700")
-Message-ID: <87a9k0yrvu.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756436Ab3H2Xza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 19:55:30 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43272 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab3H2Xz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 19:55:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
+        gregkh@linuxfoundation.org, benh@kernel.crashing.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, bp@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 0/4] Unify CPU hotplug lock interface
+Date: Fri, 30 Aug 2013 02:06:09 +0200
+Message-ID: <21553065.6VHCMzStpF@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1377796510.10300.868.camel@misato.fc.hp.com>
+References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com> <1449558.tneKXFMIWE@vostro.rjw.lan> <1377796510.10300.868.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19wiWvBIH0MFIB9zeAQfAIuN/wr3HHhp3I=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0124]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 3/5] pidns: Don't have unshare(CLONE_NEWPID) imply CLONE_THREAD
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, August 29, 2013 11:15:10 AM Toshi Kani wrote:
+> On Sun, 2013-08-18 at 03:02 +0200, Rafael J. Wysocki wrote:
+> > On Saturday, August 17, 2013 01:46:55 PM Toshi Kani wrote:
+> > > lock_device_hotplug() was recently introduced to serialize CPU & Memory
+> > > online/offline and hotplug operations, along with sysfs online interface
+> > > restructure (commit 4f3549d7).  With this new locking scheme,
+> > > cpu_hotplug_driver_lock() is redundant and is no longer necessary.
+> > > 
+> > > This patchset makes sure that lock_device_hotplug() covers all CPU online/
+> > > offline interfaces, and then removes cpu_hotplug_driver_lock().
+> > > 
+> > > The patchset is based on Linus's tree, 3.11.0-rc5.
+> > 
+> > Nice series, thanks a lot for taking care of this!
+> 
+> Hi Rafael,
+> 
+> Per the recent your changes in lock_device_hotplug(), do you think it
+> makes sense to integrate this patchset into your tree?  I am also
+> considering to add one more patch to use lock_device_hotplug_sysfs() in
+> cpu_probe_store().  I will rebase to your tree and send them today if it
+> makes sense to you.
 
-I goofed when I made unshare(CLONE_NEWPID) only work in a
-single-threaded process.  There is no need for that requirement and in
-fact I analyzied things right for setns.  The hard requirement
-is for tasks that share a VM to all be in the pid namespace and
-we properly prevent that in do_fork.
+Yes, it does to me.
 
-Just to be certain I took a look through do_wait and
-forget_original_parent and there are no cases that make it any harder
-for children to be in the multiple pid namespaces than it is for
-children to be in the same pid namespace.  I also performed a check to
-see if there were in uses of task->nsproxy_pid_ns I was not familiar
-with, but it is only used when allocating a new pid for a new task,
-and in checks to prevent craziness from happening.
+Thanks,
+Rafael
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- kernel/fork.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 66635c8..eb45f1d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1818,11 +1818,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- 	if (unshare_flags & CLONE_NEWUSER)
- 		unshare_flags |= CLONE_THREAD | CLONE_FS;
- 	/*
--	 * If unsharing a pid namespace must also unshare the thread.
--	 */
--	if (unshare_flags & CLONE_NEWPID)
--		unshare_flags |= CLONE_THREAD;
--	/*
- 	 * If unsharing a thread from a thread group, must also unshare vm.
- 	 */
- 	if (unshare_flags & CLONE_THREAD)
+> > > ---
+> > > Toshi Kani (4):
+> > >   hotplug, x86: Fix online state in cpu0 debug interface
+> > >   hotplug, x86: Add hotplug lock to missing places
+> > >   hotplug, x86: Disable ARCH_CPU_PROBE_RELEASE on x86
+> > >   hotplug, powerpc, x86: Remove cpu_hotplug_driver_lock()
+> > > 
+> > > ---
+> > >  arch/powerpc/kernel/smp.c              | 12 ----------
+> > >  arch/powerpc/platforms/pseries/dlpar.c | 40 +++++++++++++---------------------
+> > >  arch/x86/Kconfig                       |  4 ----
+> > >  arch/x86/kernel/smpboot.c              | 21 ------------------
+> > >  arch/x86/kernel/topology.c             | 11 ++++++----
+> > >  drivers/base/cpu.c                     | 26 ++++++++++++----------
+> > >  include/linux/cpu.h                    | 13 -----------
+> > >  7 files changed, 37 insertions(+), 90 deletions(-)
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 -- 
-1.7.5.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
