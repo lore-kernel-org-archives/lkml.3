@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab3H3Of2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:35:28 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	id S1756554Ab3H3Oga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:36:30 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752822Ab3H3Of0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:35:26 -0400
-Message-ID: <5220ADA6.5050708@nod.at>
-Date: Fri, 30 Aug 2013 16:35:18 +0200
+	id S1755373Ab3H3Og1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 10:36:27 -0400
+Message-ID: <5220ADE7.1010502@nod.at>
+Date: Fri, 30 Aug 2013 16:36:23 +0200
 From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Subject: Acceptance of proprietary kernel modules
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [uml-devel] Issues with a rather unusual configured NFS server
+References: <52075E01.7030506@gmx.de> <20130812143640.GF4596@quack.suse.cz> <20130813215313.GH17781@fieldses.org> <20130827180655.GE14809@fieldses.org> <521E318C.7040401@gmx.de> <CAFLxGvyK5+nB9TgW1uPho9KGwQrWQHx=wEpj+o-mZcN92bWAOg@mail.gmail.com> <20130829133010.GA14773@fieldses.org> <5220A7E2.1070704@gmx.de>
+In-Reply-To: <5220A7E2.1070704@gmx.de>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 30.08.2013 16:10, schrieb Toralf Förster:
+> On 08/29/2013 03:30 PM, J. Bruce Fields wrote:
+>> On Thu, Aug 29, 2013 at 11:57:45AM +0200, richard -rw- weinberger wrote:
+>>> On Wed, Aug 28, 2013 at 7:21 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+>>>> On 08/27/2013 08:06 PM, J. Bruce Fields wrote:
+>>>>> On Tue, Aug 13, 2013 at 05:53:14PM -0400, bfields wrote:
+>>>>>> On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
+>>>>>>> On Sun 11-08-13 11:48:49, Toralf Förster wrote:
+>>>>>>>> so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
+>>>>>>>> - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
+>>>>>>>>
+>>>>>>>> It can re reproduced, if
+>>>>>>>>    - the NFS share is an EXT3 or EXT4 directory
+>>>>>>>>    - and it is created at file located at tempfs and mounted via loop device
+>>>>>>>>    - and the NFS server is forced to umount the NFS share
+>>>>>>>>    - and the server forced to restart the NSF service afterwards
+>>>>>>>>    - and trinity is used
+>>>>>>>>
+>>>>>>>> I could find a scenario for an automated bisect. 2 times it brought this commit
+>>>>>>>> commit 68a3396178e6688ad7367202cdf0af8ed03c8727
+>>>>>>>> Author: J. Bruce Fields <bfields@redhat.com>
+>>>>>>>> Date:   Thu Mar 21 11:21:50 2013 -0400
+>>>>>>>>
+>>>>>>>>     nfsd4: shut down more of delegation earlier
+>>>>>>
+>>>>>> Thanks for the report.  I think I see the problem--after this commit
+>>>>>> nfs4_set_delegation() failures result in nfs4_put_delegation being
+>>>>>> called, but nfs4_put_delegation doesn't free the nfs4_file that has
+>>>>>> already been set by alloc_init_deleg().
+>>>>>>
+>>>>>> Let me think about how to fix that....
+>>>>>
+>>>>> Sorry for the slow response--can you check whether this fixes the
+>>>>> problem?
+>>>>>
+>>>> Yes.
+>>>>
+>>>> With the attached patch the problem can't be reproduced any longer with
+>>>> the prepared test case and current git kernels.
+>>>
+>>> BTW: Is nobody else fuzz testing NFS?
+>>
+>> I don't know.  Toralf's reports are the only ones I recall off the top
+>> of my head, but I may have forgotten others.
+>>
+> 
+> well, 7255e71 and 3c50ba8 I'd say.
+> 
+>>> Or are these bugs just more likely to hit on UML?
+> 
+> This definitely not. I observed at a real system EXT4 corruptions/
+> issues but reported them to the EXT4 mailing list.
+> It just took me a longer time to figure out a reliable configuration
+> with 2 UML machiens to automatic bisect it.
+> 
+> 
+>> That's also possible.
+>>
+>>> This is not the first NFS issue found by Toralf using UML and Trinity.
+>>
+>> Yep.  The testing is definitely appreciated.
+> 
+> Thx - in the mean while although my UML bisect scripts are working fine
+> and trinity is stable enough even in UML environments to be trust worth.
 
-over the last  months I've reviewed lot's of Linux based products, mostly networking related
-devices like firewalls, WiFi access points, DSL routers, IPMI, etc...
-The vast majority of them had proprietary kernel modules loaded.
-I'm not talking about single self contained device drivers. In the wild you'll find whole kernel
-subsystems such as complete firewalling stacks, deep packet inspection, IPsec implementations, anti virus scanners, network introduction detection systems (yes, in kernel!),
-protocol implementations like MPLS, in-kernel VNC servers, and so on as proprietary kernel modules.
-
-Of course, all of them use EXPORT_SYMBOL() symbols only, but nobody can tell me that
-these modules are self contained and not a derived work of the kernel.
-One vendor even applied a patch on the kernel which did a s/EXPORT_SYMBOL_GPL/ EXPORT_SYMBOL/g on a few files, but that's a different story.
-Reading the disassembly of said modules showed that most of them are clearly designed to run only on Linux. (e.g. every single function references a random Linux kernel symbol).
-It's not like NVIDIA's GPU driver which clearly is designed to work on many operating systems and Linux is one of that.
-I have the feeling that such doubtful modules are no longer isolated cases, they are the common case.
-
-This leads me to one question.
-Have we reached a state where proprietary kernel modules are just accepted and nobody cares?
+That's good to know.
+Thanks you and trinity we got rid of some nasty UML bugs.
 
 Thanks,
 //richard
 
-P.s: My goal is not to start a GPL-violator witch-hunt.
