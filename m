@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab3H3Iuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 04:50:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44298 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab3H3Iua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 04:50:30 -0400
-Message-ID: <1377852564.3978.0.camel@pasglop>
-Subject: Re: [Query] CPUFreq: Does these machines have separate clock
- domains for CPUs?
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Miller <davem@davemloft.net>, Eric Miao <eric.y.miao@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, linux-cris-kernel@axis.com,
-        linux-sh@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        sparclinux@vger.kernel.org, Miao Steven <realmz6@gmail.com>,
-        Dave Jones <davej@redhat.com>
-Date: Fri, 30 Aug 2013 18:49:24 +1000
-In-Reply-To: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754915Ab3H3Iur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 04:50:47 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:57478 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab3H3Iuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 04:50:44 -0400
+X-IronPort-AV: E=Sophos;i="4.89,989,1367971200"; 
+   d="scan'208";a="46726579"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: <devicetree@vger.kernel.or>, Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] MAINTAINERS: change my DT related maintainer address
+Date: Fri, 30 Aug 2013 09:50:42 +0100
+Message-ID: <1377852642-25950-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 15:45 +0530, Viresh Kumar wrote:
-> drivers/cpufreq/pmac32-cpufreq.c
+Filtering capabilities on my work email are pretty much non-existent and this
+has turned out to be something of a firehose...
 
-This is always UP.
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cheers,
-Ben.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8197fbd..b140c81 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6066,7 +6066,7 @@ M:	Rob Herring <rob.herring@calxeda.com>
+ M:	Pawel Moll <pawel.moll@arm.com>
+ M:	Mark Rutland <mark.rutland@arm.com>
+ M:	Stephen Warren <swarren@wwwdotorg.org>
+-M:	Ian Campbell <ian.campbell@citrix.com>
++M:	Ian Campbell <ijc+devicetree@hellion.org.uk>
+ L:	devicetree@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/devicetree/
+-- 
+1.7.2.5
 
