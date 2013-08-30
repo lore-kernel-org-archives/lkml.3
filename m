@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab3H3Uos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 16:44:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8500 "EHLO mga14.intel.com"
+	id S1756250Ab3H3Uqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 16:46:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54871 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143Ab3H3Uor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 16:44:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,993,1367996400"; 
-   d="scan'208";a="289059092"
-Date: Fri, 30 Aug 2013 13:44:45 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org, acme@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] perf, x86: Avoid checkpointed counters causing
- excessive TSX aborts v4
-Message-ID: <20130830204445.GF16724@tassilo.jf.intel.com>
-References: <1377128846-977-1-git-send-email-andi@firstfloor.org>
- <1377128846-977-2-git-send-email-andi@firstfloor.org>
- <20130830160215.GU31370@twins.programming.kicks-ass.net>
+	id S1753079Ab3H3Uqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 16:46:43 -0400
+Message-ID: <522104A6.5000700@zytor.com>
+Date: Fri, 30 Aug 2013 13:46:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130830160215.GU31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, keescook@chromium.org
+Subject: Re: [PATCH V2 10/10] Add option to automatically enforce module signatures
+ when in Secure Boot mode
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com> <1376933171-9854-11-git-send-email-matthew.garrett@nebula.com> <20130829183713.GT20828@hansolo.jdub.homelinux.org>
+In-Reply-To: <20130829183713.GT20828@hansolo.jdub.homelinux.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 06:02:15PM +0200, Peter Zijlstra wrote:
-> On Wed, Aug 21, 2013 at 04:47:23PM -0700, Andi Kleen wrote:
-> > @@ -1224,6 +1240,15 @@ again:
-> >  		x86_pmu.drain_pebs(regs);
-> >  	}
-> >  
-> > +	/*
-> > +	 * To avoid spurious interrupts with perf stat always reset checkpointed
-> > +	 * counters.
-> > +	 *
-> > +	 * XXX move somewhere else.
-> > +	 */
-> > +	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
-> > +		status |= (1ULL << 2);
-> > +
-> >  	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
-> >  		struct perf_event *event = cpuc->events[bit];
-> >  
+On 08/29/2013 11:37 AM, Josh Boyer wrote:
+>>  	setup_efi_pci(boot_params);
+>> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+>> index c15ddaf..d35da96 100644
+>> --- a/arch/x86/include/uapi/asm/bootparam.h
+>> +++ b/arch/x86/include/uapi/asm/bootparam.h
+>> @@ -131,7 +131,8 @@ struct boot_params {
+>>  	__u8  eddbuf_entries;				/* 0x1e9 */
+>>  	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
+>>  	__u8  kbd_status;				/* 0x1eb */
+>> -	__u8  _pad5[3];					/* 0x1ec */
+>> +	__u8  secure_boot;				/* 0x1ec */
+>> +	__u8  _pad5[2];					/* 0x1ec */
+>>  	/*
+>>  	 * The sentinel is set to a nonzero value (0xff) in header.S.
+>>  	 *
 > 
-> I'm sure I commented on that XXX thing.. 
+> You need to include the following chunk of code with this, otherwise the
+> secure_boot variable gets cleared.
 > 
-> Yep, right here:
 
-Ok.
+Not really.
 
-> 
->   http://marc.info/?l=linux-kernel&m=137638980210140
-> 
-> Sup?
+There are three cases:
 
-I originally thought about precomputing the mask somewhere,
-but it's not really that bad a place.
+1. Boot stub only.  Here we do the right thing with the bootparams.
+2. Boot loader bypasses the boot stub completely.  Here we MUST NOT do
+   what you suggest above.
+3. Boot stub with a boot_params structure passed in.  Here we should
+   run sanitize_boot_params() (an inline for a reason) in the boot
+   stub, before we set the secure_boot field.  Once that is done, we
+   again don't need that modification.
 
-So can just drop the XXX comment. Ok?
+	-hpa
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
