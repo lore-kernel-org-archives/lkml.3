@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3H3Mkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:40:41 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42939 "EHLO e8.ny.us.ibm.com"
+	id S1756357Ab3H3MlN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:41:13 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:43227 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755599Ab3H3MkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:40:25 -0400
+	id S1756321Ab3H3MlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:41:11 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 07/35] mm: Add data-structures to describe memory
- regions within the zones' freelists
+Subject: [RFC PATCH v3 09/35] mm: Track the freepage migratetype of pages
+ accurately
 To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
         tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
         riel@redhat.com, arjan@linux.intel.com,
@@ -20,8 +20,8 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
         kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:06:23 +0530
-Message-ID: <20130830123545.24352.10470.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 30 Aug 2013 18:07:01 +0530
+Message-ID: <20130830123655.24352.97744.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
 References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,174 +30,45 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083012-0320-0000-0000-000000D836EF
+x-cbid: 13083012-0320-0000-0000-000000D83793
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to influence page allocation decisions (i.e., to make page-allocation
-region-aware), we need to be able to distinguish pageblocks belonging to
-different zone memory regions within the zones' (buddy) freelists.
+Due to the region-wise ordering of the pages in the buddy allocator's
+free lists, whenever we want to delete a free pageblock from a free list
+(for ex: when moving blocks of pages from one list to the other), we need
+to be able to tell the buddy allocator exactly which migratetype it belongs
+to. For that purpose, we can use the page's freepage migratetype (which is
+maintained in the page's ->index field).
 
-So, within every freelist in a zone, provide pointers to describe the
-boundaries of zone memory regions and counters to track the number of free
-pageblocks within each region.
-
-Also, fixup the references to the freelist's list_head inside struct free_area.
+So, while splitting up higher order pages into smaller ones as part of buddy
+operations, keep the new head pages updated with the correct freepage
+migratetype information (because we depend on tracking this info accurately,
+as outlined above).
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/mmzone.h |   17 ++++++++++++++++-
- mm/compaction.c        |    2 +-
- mm/page_alloc.c        |   23 ++++++++++++-----------
- mm/vmstat.c            |    2 +-
- 4 files changed, 30 insertions(+), 14 deletions(-)
+ mm/page_alloc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 76d9ed2..201ab42 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -83,8 +83,23 @@ static inline int get_pageblock_migratetype(struct page *page)
- 	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
- }
- 
-+struct mem_region_list {
-+	struct list_head	*page_block;
-+	unsigned long		nr_free;
-+};
-+
-+struct free_list {
-+	struct list_head	list;
-+
-+	/*
-+	 * Demarcates pageblocks belonging to different regions within
-+	 * this freelist.
-+	 */
-+	struct mem_region_list	mr_list[MAX_NR_ZONE_REGIONS];
-+};
-+
- struct free_area {
--	struct list_head	free_list[MIGRATE_TYPES];
-+	struct free_list	free_list[MIGRATE_TYPES];
- 	unsigned long		nr_free;
- };
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 05ccb4c..13912f5 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -858,7 +858,7 @@ static int compact_finished(struct zone *zone,
- 		struct free_area *area = &zone->free_area[order];
- 
- 		/* Job done if page is free of the right migratetype */
--		if (!list_empty(&area->free_list[cc->migratetype]))
-+		if (!list_empty(&area->free_list[cc->migratetype].list))
- 			return COMPACT_PARTIAL;
- 
- 		/* Job done if allocation would set block type */
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8ffd47b..fd6436d0 100644
+index 398b62c..b4b1275 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -602,12 +602,13 @@ static inline void __free_one_page(struct page *page,
- 		higher_buddy = higher_page + (buddy_idx - combined_idx);
- 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
- 			list_add_tail(&page->lru,
--				&zone->free_area[order].free_list[migratetype]);
-+				&zone->free_area[order].free_list[migratetype].list);
- 			goto out;
- 		}
- 	}
- 
--	list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
-+	list_add(&page->lru,
-+		&zone->free_area[order].free_list[migratetype].list);
- out:
- 	zone->free_area[order].nr_free++;
- }
-@@ -829,7 +830,7 @@ static inline void expand(struct zone *zone, struct page *page,
- 			continue;
- 		}
- #endif
--		list_add(&page[size].lru, &area->free_list[migratetype]);
-+		list_add(&page[size].lru, &area->free_list[migratetype].list);
+@@ -947,6 +947,13 @@ static inline void expand(struct zone *zone, struct page *page,
+ 		add_to_freelist(&page[size], &area->free_list[migratetype]);
  		area->nr_free++;
  		set_page_order(&page[size], high);
- 	}
-@@ -891,10 +892,10 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
- 	/* Find a page of the appropriate size in the preferred list */
- 	for (current_order = order; current_order < MAX_ORDER; ++current_order) {
- 		area = &(zone->free_area[current_order]);
--		if (list_empty(&area->free_list[migratetype]))
-+		if (list_empty(&area->free_list[migratetype].list))
- 			continue;
- 
--		page = list_entry(area->free_list[migratetype].next,
-+		page = list_entry(area->free_list[migratetype].list.next,
- 							struct page, lru);
- 		list_del(&page->lru);
- 		rmv_page_order(page);
-@@ -966,7 +967,7 @@ int move_freepages(struct zone *zone,
- 
- 		order = page_order(page);
- 		list_move(&page->lru,
--			  &zone->free_area[order].free_list[migratetype]);
-+			  &zone->free_area[order].free_list[migratetype].list);
- 		set_freepage_migratetype(page, migratetype);
- 		page += 1 << order;
- 		pages_moved += 1 << order;
-@@ -1073,10 +1074,10 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
- 				break;
- 
- 			area = &(zone->free_area[current_order]);
--			if (list_empty(&area->free_list[migratetype]))
-+			if (list_empty(&area->free_list[migratetype].list))
- 				continue;
- 
--			page = list_entry(area->free_list[migratetype].next,
-+			page = list_entry(area->free_list[migratetype].list.next,
- 					struct page, lru);
- 			area->nr_free--;
- 
-@@ -1320,7 +1321,7 @@ void mark_free_pages(struct zone *zone)
- 		}
- 
- 	for_each_migratetype_order(order, t) {
--		list_for_each(curr, &zone->free_area[order].free_list[t]) {
-+		list_for_each(curr, &zone->free_area[order].free_list[t].list) {
- 			unsigned long i;
- 
- 			pfn = page_to_pfn(list_entry(curr, struct page, lru));
-@@ -3146,7 +3147,7 @@ void show_free_areas(unsigned int filter)
- 
- 			types[order] = 0;
- 			for (type = 0; type < MIGRATE_TYPES; type++) {
--				if (!list_empty(&area->free_list[type]))
-+				if (!list_empty(&area->free_list[type].list))
- 					types[order] |= 1 << type;
- 			}
- 		}
-@@ -4002,7 +4003,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
- {
- 	int order, t;
- 	for_each_migratetype_order(order, t) {
--		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
-+		INIT_LIST_HEAD(&zone->free_area[order].free_list[t].list);
- 		zone->free_area[order].nr_free = 0;
++
++		/*
++		 * Freepage migratetype is tracked using the index field of the
++		 * first page of the block. So we need to update the new first
++		 * page, when changing the page order.
++		 */
++		set_freepage_migratetype(&page[size], migratetype);
  	}
  }
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 20c2ef4..0451957 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -862,7 +862,7 @@ static void pagetypeinfo_showfree_print(struct seq_file *m,
  
- 			area = &(zone->free_area[order]);
- 
--			list_for_each(curr, &area->free_list[mtype])
-+			list_for_each(curr, &area->free_list[mtype].list)
- 				freecount++;
- 			seq_printf(m, "%6lu ", freecount);
- 		}
 
