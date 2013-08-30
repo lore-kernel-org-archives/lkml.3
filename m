@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3H3KB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:01:29 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42602 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754102Ab3H3KB2 (ORCPT
+	id S1755679Ab3H3KCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:02:18 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:37570 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3H3KCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:01:28 -0400
-Date: Fri, 30 Aug 2013 11:01:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-Message-ID: <20130830100105.GF25628@mudshark.cambridge.arm.com>
-References: <20130828193457.140443630@linux.com>
- <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com>
+	Fri, 30 Aug 2013 06:02:16 -0400
+From: Nix <nix@esperi.org.uk>
+To: Bernd Schubert <bernd.schubert@fastmail.fm>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
+        stable@vger.kernel.org, Douglas Gilbert <dgilbert@interlog.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] scsi disk: Use its own buffer for the vpd request
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
+	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
+	<87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
+	<51F80167.1080004@fastmail.fm> <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
+	<51F94E8D.5040908@fastmail.fm> <51F95A2E.60805@fastmail.fm>
+	<51FA71E2.6010501@fastmail.fm>
+Emacs: the answer to the world surplus of CPU cycles.
+Date: Fri, 30 Aug 2013 11:01:56 +0100
+In-Reply-To: <51FA71E2.6010501@fastmail.fm> (Bernd Schubert's message of "Thu,
+	01 Aug 2013 16:34:10 +0200")
+Message-ID: <871u5b7azv.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=8 Fuz1=8 Fuz2=8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On 1 Aug 2013, Bernd Schubert said:
 
-Sorry for the delay in looking at this, I've been on holiday for a week.
-Comments inline.
+> Once I noticed that scsi_get_vpd_page() works fine from other function
+> calls and that it is not 0x89, but already 0x0 that fails fixing it became
+> easy.
+>
+> Nix, any chance you could verify it also works for you?
 
-On Wed, Aug 28, 2013 at 08:48:23PM +0100, Christoph Lameter wrote:
-> Transformations done to __get_cpu_var()
-> 
-> 
-> 1. Determine the address of the percpu instance of the current processor.
-> 
->         DEFINE_PER_CPU(int, y);
->         int *x = &__get_cpu_var(y);
-> 
->     Converts to
-> 
->         int *x = this_cpu_ptr(&y);
-> 
-> 
-> 2. Same as #1 but this time an array structure is involved.
-> 
->         DEFINE_PER_CPU(int, y[20]);
->         int *x = __get_cpu_var(y);
-> 
->     Converts to
-> 
->         int *x = this_cpu_ptr(y);
+As an aside, this commit does indeed fix the bug I reported, but it
+doesn't seem to have gone anywhere, not even into -stable.
 
-This is the flavour we have for ARM's hw_breakpoint code, where we have an
-array of perf_event * instead of int...
+Is it held up somehow?
 
-> Index: linux/arch/arm/kernel/hw_breakpoint.c
-> ===================================================================
-> --- linux.orig/arch/arm/kernel/hw_breakpoint.c  2013-08-26 13:48:40.956794980 -0500
-> +++ linux/arch/arm/kernel/hw_breakpoint.c       2013-08-26 13:48:40.952795024 -0500
-> @@ -344,13 +344,13 @@ int arch_install_hw_breakpoint(struct pe
->                 /* Breakpoint */
->                 ctrl_base = ARM_BASE_BCR;
->                 val_base = ARM_BASE_BVR;
-> -               slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
-> +               slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
+(stable has
 
-...so I don't think this is quite right, and indeed, we get a bunch of errors
-from GCC:
+commit 0ac10bd036f0f3b8ce7ac2390446eab9531c72eb
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Tue Jul 30 22:58:34 2013 -0400
 
-arch/arm/kernel/hw_breakpoint.c: In function ‘arch_install_hw_breakpoint’:
-arch/arm/kernel/hw_breakpoint.c:347:33: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
+    SCSI: Don't attempt to send extended INQUIRY command if skip_vpd_pages is set
 
-changing to match your recipe still doesn't work, however:
+which IIRC was eventually found not to be necessary, because this fix
+works fine instead?)
 
-arch/arm/kernel/hw_breakpoint.c: In function ‘arch_install_hw_breakpoint’:
-arch/arm/kernel/hw_breakpoint.c:347:33: error: cast specifies array type
+Possibly I'm misremembering the order of month-old events and Martin's
+fix was eventually considered better... in which case, sorry for the noise.
 
-> Index: linux/arch/arm64/kernel/debug-monitors.c
-> ===================================================================
-> --- linux.orig/arch/arm64/kernel/debug-monitors.c       2013-08-26 13:48:40.956794980 -0500
-> +++ linux/arch/arm64/kernel/debug-monitors.c    2013-08-26 13:48:40.952795024 -0500
-> @@ -98,11 +98,11 @@ void enable_debug_monitors(enum debug_el
-> 
->         WARN_ON(preemptible());
-> 
-> -       if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
-> +       if (this_cpu_inc_return(mde_ref_count) == 1)
->                 enable = DBG_MDSCR_MDE;
-
-I'm not sure that this is safe. We rely on local_inc_return to be atomic
-with respect to the current CPU, which will end up being a wrapper around
-atomic64_inc_return. However, this_cpu_inc_return simply uses a lock, so
-other people accessing the count in a different manner (local_dec_and_test
-below) may break local atomicity unless we start disabling interrupts or
-something horrible like that.
- 
->         if (el == DBG_ACTIVE_EL1 &&
-> -           local_inc_return(&__get_cpu_var(kde_ref_count)) == 1)
-> +           this_cpu_inc_return(kde_ref_count) == 1)
->                 enable |= DBG_MDSCR_KDE;
-> 
->         if (enable && debug_enabled) {
-> @@ -118,11 +118,11 @@ void disable_debug_monitors(enum debug_e
-> 
->         WARN_ON(preemptible());
-> 
-> -       if (local_dec_and_test(&__get_cpu_var(mde_ref_count)))
-> +       if (local_dec_and_test(this_cpu_ptr(&mde_ref_count)))
->                 disable = ~DBG_MDSCR_MDE;
-> 
->         if (el == DBG_ACTIVE_EL1 &&
-> -           local_dec_and_test(&__get_cpu_var(kde_ref_count)))
-> +           local_dec_and_test(this_cpu_ptr(&kde_ref_count)))
->                 disable &= ~DBG_MDSCR_KDE;
-> 
->         if (disable) {
-
-Will
+-- 
+NULL && (void)
