@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab3H3BZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 21:25:58 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33876 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab3H3BZ5 (ORCPT
+	id S1754286Ab3H3B37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 21:29:59 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35355 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab3H3B36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 21:25:57 -0400
-Message-ID: <521FF494.6000504@huawei.com>
-Date: Fri, 30 Aug 2013 09:25:40 +0800
+	Thu, 29 Aug 2013 21:29:58 -0400
+Message-ID: <521FF57A.8080702@huawei.com>
+Date: Fri, 30 Aug 2013 09:29:30 +0800
 From: Jianguo Wu <wujianguo@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, <lenb@kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] mm/acpi: use NUMA_NO_NODE
+To: Andrew Morton <akpm@linux-foundation.org>, <tglx@linutronix.de>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>, <mingo@redhat.com>
+Subject: [PATCH 3/4] x86/srat: use NUMA_NO_NODE
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.74.216]
@@ -25,49 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more appropriate NUMA_NO_NODE instead of -1
+setup_node() return NUMA_NO_NODE or valid node id(>=0), So use more appropriate
+"if (node == NUMA_NO_NODE)" instead of "if (node < 0)"
 
 Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 ---
- drivers/acpi/acpi_memhotplug.c |    2 +-
- drivers/acpi/numa.c            |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/mm/srat.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 999adb5..c00a3a7 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -281,7 +281,7 @@ static void acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- 		if (!info->enabled)
- 			continue;
- 
--		if (nid < 0)
-+		if (nid == NUMA_NO_NODE)
- 			nid = memory_add_physaddr_to_nid(info->start_addr);
- 
- 		acpi_unbind_memory_blocks(info, handle);
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index 33e609f..09f79a2 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -73,7 +73,7 @@ int acpi_map_pxm_to_node(int pxm)
- {
- 	int node = pxm_to_node_map[pxm];
- 
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index cdd0da9..97fea4e 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -76,7 +76,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 		return;
+ 	}
+ 	node = setup_node(pxm);
 -	if (node < 0) {
 +	if (node == NUMA_NO_NODE) {
- 		if (nodes_weight(nodes_found_map) >= MAX_NUMNODES)
- 			return NUMA_NO_NODE;
- 		node = first_unset_node(nodes_found_map);
-@@ -334,7 +334,7 @@ int acpi_get_pxm(acpi_handle h)
+ 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+ 		bad_srat();
+ 		return;
+@@ -112,7 +112,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 	if (acpi_srat_revision >= 2)
+ 		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
+ 	node = setup_node(pxm);
+-	if (node < 0) {
++	if (node == NUMA_NO_NODE) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+ 		bad_srat();
+ 		return;
+@@ -164,7 +164,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		pxm &= 0xff;
  
- int acpi_get_node(acpi_handle *handle)
- {
--	int pxm, node = -1;
-+	int pxm, node = NUMA_NO_NODE;
- 
- 	pxm = acpi_get_pxm(handle);
- 	if (pxm >= 0 && pxm < MAX_PXM_DOMAINS)
+ 	node = setup_node(pxm);
+-	if (node < 0) {
++	if (node == NUMA_NO_NODE) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+ 		goto out_err_bad_srat;
+ 	}
 -- 
 1.7.1
 
