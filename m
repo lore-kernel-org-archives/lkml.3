@@ -1,108 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3H3HsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 03:48:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54933 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab3H3HsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 03:48:10 -0400
-Message-ID: <52204E28.3000604@ti.com>
-Date: Fri, 30 Aug 2013 10:47:52 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754187Ab3H3Hsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 03:48:39 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36053 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab3H3Hsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 03:48:37 -0400
+Message-ID: <52204E4D.3030602@synopsys.com>
+Date: Fri, 30 Aug 2013 13:18:29 +0530
+From: Vineet Gupta <vineetg76@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Peter Jones <pjones@redhat.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Release efifb's colormap in efifb_destroy()
-References: <CAHkRjk4Ansh+Xr+cPQNacwx=aOb65_hW_MNRx5QVtatJCz5tqg@mail.gmail.com> <1374767291-2874-1-git-send-email-pjones@redhat.com>
-In-Reply-To: <1374767291-2874-1-git-send-email-pjones@redhat.com>
+To: Dave Hansen <dave.hansen@intel.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Michel Lespinasse <walken@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
+ ARC
+References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com> <521F662F.4050003@intel.com>
+In-Reply-To: <521F662F.4050003@intel.com>
 X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="jEbQdJPnd2iBBlkqJWKEcPOSxORi3UAT7"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---jEbQdJPnd2iBBlkqJWKEcPOSxORi3UAT7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+[+linux-arch and other arch maintainers]
 
-On 25/07/13 18:48, Peter Jones wrote:
-> This was found by Alexandra Kossovsky, who noted this traceback from
-> kmemleak:
->=20
->> unreferenced object 0xffff880216fcfe00 (size 512):
->>   comm "swapper/0", pid 1, jiffies 4294895429 (age 1415.320s)
->>   hex dump (first 32 bytes):
->>     00 00 00 00 00 00 00 00 aa aa aa aa aa aa aa aa  ................
->>     55 55 55 55 55 55 55 55 ff ff ff ff ff ff ff ff  UUUUUUUU........
->>   backtrace:
->>     [<ffffffff813e415c>] kmemleak_alloc+0x21/0x3e
->>     [<ffffffff8111c17f>]
->>     kmemleak_alloc_recursive.constprop.57+0x16/0x18
->>     [<ffffffff8111e63b>] __kmalloc+0xf9/0x144
->>     [<ffffffff8123d9cf>] fb_alloc_cmap_gfp+0x47/0xe1
->>     [<ffffffff8123da77>] fb_alloc_cmap+0xe/0x10
->>     [<ffffffff81aff40a>] efifb_probe+0x3e9/0x48f
->>     [<ffffffff812c566f>] platform_drv_probe+0x34/0x5e
->>     [<ffffffff812c3e6d>] driver_probe_device+0x98/0x1b4
->>     [<ffffffff812c3fd7>] __driver_attach+0x4e/0x6f
->>     [<ffffffff812c25bf>] bus_for_each_dev+0x57/0x8a
->>     [<ffffffff812c3984>] driver_attach+0x19/0x1b
->>     [<ffffffff812c362b>] bus_add_driver+0xde/0x201
->>     [<ffffffff812c453f>] driver_register+0x8c/0x110
->>     [<ffffffff812c510d>] platform_driver_register+0x41/0x43
->>     [<ffffffff812c5127>] platform_driver_probe+0x18/0x8a
->>     [<ffffffff81aff002>] efifb_init+0x276/0x295
-> ---
->  drivers/video/efifb.c | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-> index 390b61b..1f3eab3 100644
-> --- a/drivers/video/efifb.c
-> +++ b/drivers/video/efifb.c
-> @@ -289,6 +289,7 @@ static void efifb_destroy(struct fb_info *info)
->  	if (request_mem_succeeded)
->  		release_mem_region(info->apertures->ranges[0].base,
->  				   info->apertures->ranges[0].size);
-> +	fb_dealloc_cmap(&info->cmap);
->  	framebuffer_release(info);
->  }
-> =20
+On 08/29/2013 08:48 PM, Dave Hansen wrote:
+> On 08/27/2013 01:31 AM, Vineet Gupta wrote:
+>> Frame pointer on ARC doesn't serve the conventional purpose of stack
+>> unwinding due to the typical way ABI designates it's usage.
+>> Thus it's explicit usage on ARC is discouraged (gcc is free to use it,
+>> for some tricky stack frames even if -fomit-frame-pointer)
+> ...
+>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+>> index 1501aa5..c971f3a 100644
+>> --- a/lib/Kconfig.debug
+>> +++ b/lib/Kconfig.debug
+>> @@ -908,7 +908,7 @@ config LOCKDEP
+>>  	bool
+>>  	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+>>  	select STACKTRACE
+>> -	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE
+>> +	select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE && !ARC
+>>  	select KALLSYMS
+>>  	select KALLSYMS_ALL
+> 
+> I assume you're sending this my way since getmaintainer.pl has me tagged
+> I moved a bunch of code in there. :)
+> 
+> The Kconfig.debug stuff has no real maintainer.  It would probably be OK
+> if you just stick this in your architecture's next git pull request.
+> 
+> Although, it would be nice if someone, at some point, actually
+> abstracted that out so that the individual architectures could take care
+> of this without editing the main files:
+> 
+> # Kconfig.debug:
+> 
+> config ARCH_FRAME_POINTER_UNAVAILABLE
+> 	def_bool y
+> ...
+> select FRAME_POINTER if !ARCH_FRAME_POINTER_UNAVAILABLE
+> 
+> # arch/.../Kconfig
+> 
+> select ARCH_FRAME_POINTER_UNAVAILABLE
+> 
+> 
 
-Thanks, queued for 3.12.
+I thought about this a bit. So adding ARCH_FRAME_POINTER_UNAVAILABLE does help
+cleanup the anti-dependency list for say LATENCY_TOP for (MIPS, PPC, S390,
+MICROBLAZE, ARM_UNWIND, ARC), but we are still stuck with keeping both
+ARCH_WANT_FRAME_POINTERS and ARCH_FRAME_POINTER_UNAVAILABLE.
 
- Tomi
+If we had ARCH_FRAME_POINTER_UNAVAILABLE (def_bool n), we could potentially remove
+ARCH_FRAME_POINTER too:
 
+1. arches which explicitly select ARCH_FRAME_POINTER (xtensa, parisc, arm64, x86,
+unicore32, tile) could just drop that select.
 
+2. Others which add themselves to config FRAME_POINTER depends on (CRIS, M68K,
+FRV, UML, AVR32, SUPERH, BLACKFIN, MN10300, METAG) can simply be removed form that
+list.
 
+3. Other who want to inhibit FP obviously select it (MIPS, PPC, S390, MICROBLAZE,
+ARM_UNWIND, ARC)
 
---jEbQdJPnd2iBBlkqJWKEcPOSxORi3UAT7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+The issue is some (sparc, c6x...) which are neither in #1 or #2, and not present
+in anti-dependency list either. e.g. With sparc64_defconfig FP is not present, but
+if I enable LATENCY_TOP, FP is enabled. For such cases, what do we make default ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+This seemed so trivial to do to begin with :-)
 
-iQIcBAEBAgAGBQJSIE4oAAoJEPo9qoy8lh71quAP/R/10Id1ARySk2m4B3gV3ico
-xHDJZ2dmayMnjNVQgBhuVfReTwGq/xlc2mI3Cxf9Seqxltan5BGOML0Ixf+BRxtZ
-BA2CIr/bTmGD2sKc7g5Uyyx+G68n3slv0RQ7kq7739awepQiijYMa4cP+C0iqQqV
-ft6qFEjFIWiziAW3Me/kBsYtp7J48C1jLpni8iRQhb7/1qWrWOH6qq4sEkoqaAGK
-U2OILzPC/SDJXaTUCgvN4ejsU/T1phdhxT29jtBcCUT1oAeWX7hvCOKSSoePWYJD
-jv4dabsg+hueyI/mhb8rFFjc5hvD3N3ekuHXQPG/I+1zfDiAEGVby8sbcappUH77
-KO7zMUrRcKSwYblDj9kZcKkg0KAtIHpE8N73F0xreO5YMxeGzYY2VUnY/j+kyhuG
-oBUa5x8N7cxbM5LjhGRHbHV6+ONeDQbgyXoXzjT+PpK9irufY3riLUQxusHRiOki
-npEvbl38+oTDznhpIyoj21sUjXgAIRrA380hZK3i4SiEOQlLD+KflqIZM40swhqL
-0mPrblkUyoIEqWa4PlJsgbaZz944LhEdT9k9kMqCePZ4siRgoj8Ywyem7P9pbicz
-qezjxHK3O6s1CouBPctQaJzHQSruRcCtrJdq3pOgeFCNR8ZYE/PmcnlOS1A1Vppz
-6fu51sJh++05QSB788KT
-=roR3
------END PGP SIGNATURE-----
-
---jEbQdJPnd2iBBlkqJWKEcPOSxORi3UAT7--
+-Vineet
