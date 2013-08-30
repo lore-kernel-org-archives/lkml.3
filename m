@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab3H3LtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:49:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14992 "EHLO mx1.redhat.com"
+	id S1755605Ab3H3LuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:50:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44628 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635Ab3H3LtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:49:06 -0400
-Date: Fri, 30 Aug 2013 13:49:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: perf: callchain feature on ARM - question about libunwind
- API
-Message-ID: <20130830114903.GC1023@krava.brq.redhat.com>
-References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
- <CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
- <521CCFD8.90201@gmail.com>
- <20130829135216.GA1032@krava.brq.redhat.com>
- <CAFrcx1=U8SapYd=Hw8YaAnKNggJMuY4r03zYeevc0Ttq5hFr7Q@mail.gmail.com>
+	id S1752466Ab3H3LuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 07:50:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Fu <danifu@nvidia.com>
+Cc: daniel.lezcano@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joqiu@nvidia.com
+Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+Date: Fri, 30 Aug 2013 14:01:02 +0200
+Message-ID: <2041584.4YznqfT0Od@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1377863302-22465-1-git-send-email-danifu@nvidia.com>
+References: <1377863302-22465-1-git-send-email-danifu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1=U8SapYd=Hw8YaAnKNggJMuY4r03zYeevc0Ttq5hFr7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 07:15:00PM +0200, Jean Pihet wrote:
+On Friday, August 30, 2013 07:48:22 PM Daniel Fu wrote:
+> If the current CPU has no cpuidle driver, drv will be NULL.
+> Check if we get drv successfully before add refount
+> to prevent Kernel panic.
 
-SNIP
+What is the actual scenario that may lead to this panic?
 
+Rafael
+
+
+> Signed-off-by: Daniel Fu <danifu@nvidia.com>
+> ---
+>  drivers/cpuidle/driver.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> The problem is that it is slow as hell (couple of minutes to report
-> the callchain from a simple test app ;-|). I will look at the sampling
-> rate and the caching next.
-
-FYI there's elfutils alternative grewing now via libdw providing
-API to do the 'remote unwind' as in libunwind. I'm not completely
-sure, but I think it should support both .eh_frames and .debug_frames.
-
-check:
-git://git.fedorahosted.org/git/elfutils.git branch jankratochvil/unwindx86
-
-the 'tests/backtrace-data.c' should be an example of what we want in perf
-
-somewhere I should have perf changes to support this in
-early version which no longer relevant.. but I recall it
-was substantially faster due to some libdw inner caching
-
-it's on my long term TODO list, so any help is welcome! ;-)
-
-jirka
+> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+> index 3ac499d..6e11701 100644
+> --- a/drivers/cpuidle/driver.c
+> +++ b/drivers/cpuidle/driver.c
+> @@ -331,7 +331,8 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
+>  	spin_lock(&cpuidle_driver_lock);
+>  
+>  	drv = cpuidle_get_driver();
+> -	drv->refcnt++;
+> +	if (drv)
+> +		drv->refcnt++;
+>  
+>  	spin_unlock(&cpuidle_driver_lock);
+>  	return drv;
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
