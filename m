@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3H3QE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:04:56 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33950 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab3H3QEy (ORCPT
+	id S1756836Ab3H3QGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:06:11 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:48691 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab3H3QGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:04:54 -0400
-Message-ID: <5220C2A2.1020502@linaro.org>
-Date: Fri, 30 Aug 2013 09:04:50 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 12:06:10 -0400
+Date: Fri, 30 Aug 2013 18:06:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: suspicious RCU usage (perf)
+Message-ID: <20130830160602.GC10875@somewhere>
+References: <20130826145838.GA8377@redhat.com>
+ <20130826162928.GQ3871@linux.vnet.ibm.com>
+ <20130826133041.3d750b1b@gandalf.local.home>
+ <20130826175012.GA25202@redhat.com>
+ <20130826141814.54dcaa89@gandalf.local.home>
+ <20130826182907.GB25202@redhat.com>
+ <20130826150304.090a1025@gandalf.local.home>
+ <20130827121629.GE10002@twins.programming.kicks-ass.net>
+ <20130830155242.GB10875@somewhere>
+ <20130830155936.GT31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/2] time: allow changing the timekeeper clock frequency
-References: <201308081953.r78Jrt0Z029523@farm-0021.internal.tilera.com> <CALAqxLX8zkzofgGSdEVsP4wdnejd25iSFHyhBwp7nRVgEnqNrA@mail.gmail.com> <520BF6EC.8070006@tilera.com> <521F95BB.2060600@tilera.com> <521FA13F.5040204@linaro.org> <5220AEF1.7080808@tilera.com>
-In-Reply-To: <5220AEF1.7080808@tilera.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130830155936.GT31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 07:40 AM, Chris Metcalf wrote:
-> On 8/29/2013 3:30 PM, John Stultz wrote:
->> On 08/29/2013 11:40 AM, Chris Metcalf wrote:
->>> Ping!  I have this work queued up to push as part of the linux-tile tree for the
->>> merge window.  Is that acceptable to the timekeeping/clocksource folks?
->>> Should I hold it back pending further review?  Or does it make sense to
->>> push it as-is and think about further improvements, if any, for a later release?
->>>
->>> https://lkml.org/lkml/2013/8/9/497
->>> https://lkml.org/lkml/2013/8/9/499
->> Oh right! Sorry for the slow response here! I originally replied while I
->> was on vacation and didn't flag the thread to follow up on.
->>
->> Few comments below.
-> Thanks for the feedback. It does sound like too much to take on before
-> the 3.12 merge window opens, so we will plan to look into this as time
-> permits over the next little while. I've filed a bug internally to
-> track this for us.
->
-> It sounds like the most straightforward thing for us to do may be to adopt
-> your original approach of making our clocksource driver internally convert
-> the variable frequency clocksource to a fixed frequency; the overhead
-> shouldn't be too bad and it seems like it should moot all the other
-> concerns you raised in your email.
-Yea, so most of my concerns would also apply to having the clocksource
-driver hide the frequency changes (since there still will be latency
-error, and variable freq error), but I do prefer having it as a
-clocksource specific hack, rather then in the timekeeping core so we can
-avoid seemingly condoning wide use of freq changing clocksources. If it
-does go in the core, I'm sure a few years down the line, someone will
-notice a problem with their freq changing clocksource and demand the
-bugs be fixed!
+On Fri, Aug 30, 2013 at 05:59:36PM +0200, Peter Zijlstra wrote:
+> On Fri, Aug 30, 2013 at 05:52:43PM +0200, Frederic Weisbecker wrote:
+> > On Tue, Aug 27, 2013 at 02:16:29PM +0200, Peter Zijlstra wrote:
+> > > On Mon, Aug 26, 2013 at 03:03:04PM -0400, Steven Rostedt wrote:
+> > > > > Is there some path through sys_perf_open_event that might be
+> > > > > missing a capability check perhaps ?
+> > > > > 
+> > > > 
+> > > > That's a question for Ingo, Peter or Jiri.
+> > > 
+> > > Its not something I've looked at recently, git blames Jiri and fweisbec
+> > > for most of that code.
+> > > 
+> > > Permission checks appear to live in
+> > > kernel/trace/trace_event_perf.c:perf_trace_event_perm().
+> > 
+> > Actually the following condition is weird:
+> > 
+> > 	 /* The ftrace function trace is allowed only for root. */
+> > 	 if (ftrace_event_is_function(tp_event) &&
+> > 	     perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> >      			    return -EPERM;
+> > 
+> 
+> That says: If its its a function-event and we're paranoid but we don't
+> have root, bail.
 
-That said, I'm still open to further discussing your current approach
-for the next cycle. Since its possible the latency and freq errors
-really are small enough to not matter, avoiding the inefficiencies of
-hiding the changes in the clocksource driver might be worth it.
+Right, I misunderstood and thought we messed up general tracepoint permissions
+with function events.
 
-thanks
--john
+> 
+> > We probably intended to do:
+> > 
+> >    /* The ftrace function trace is allowed only for root. */
+> >    if (ftrace_event_is_function(tp_event) ||
+> >        perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> >        			      return -EPERM;
+> > 
+> > Can somebody confirm?
+> 
+> That would always disallow function-events, no?
 
+Yeah, sorry, returning from holidays require more dense coffee.
