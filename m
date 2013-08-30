@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab3H3Pwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:52:47 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:51765 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab3H3Pwq (ORCPT
+	id S1756532Ab3H3P7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:59:11 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:55436 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab3H3P7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:52:46 -0400
-Date: Fri, 30 Aug 2013 17:52:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        paulmck@linux.vnet.ibm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: suspicious RCU usage (perf)
-Message-ID: <20130830155242.GB10875@somewhere>
-References: <20130826145838.GA8377@redhat.com>
- <20130826162928.GQ3871@linux.vnet.ibm.com>
- <20130826133041.3d750b1b@gandalf.local.home>
- <20130826175012.GA25202@redhat.com>
- <20130826141814.54dcaa89@gandalf.local.home>
- <20130826182907.GB25202@redhat.com>
- <20130826150304.090a1025@gandalf.local.home>
- <20130827121629.GE10002@twins.programming.kicks-ass.net>
+	Fri, 30 Aug 2013 11:59:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827121629.GE10002@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJ_BOiBubn61odZ51eqDw+-eaAhs5ZnuPESnudcaP8KZr2h8YA@mail.gmail.com>
+References: <CAJ_BOiB6E4D-Y45VZTOGqhYMs_FG8UTpGnNdzjdj3nEP13A=3g@mail.gmail.com>
+	<CAJ_BOiBubn61odZ51eqDw+-eaAhs5ZnuPESnudcaP8KZr2h8YA@mail.gmail.com>
+Date: Fri, 30 Aug 2013 21:29:09 +0530
+Message-ID: <CAJ_BOiCV50yzx4WhW=wVzNmq3PoZRP0e7Qqb5byGiG53tr0JVg@mail.gmail.com>
+Subject: Re: wakeup tracer not able to capture traces on 3.4 kernel
+From: Prabhat Kumar Ravi <prabhatravi09@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 02:16:29PM +0200, Peter Zijlstra wrote:
-> On Mon, Aug 26, 2013 at 03:03:04PM -0400, Steven Rostedt wrote:
-> > > Is there some path through sys_perf_open_event that might be
-> > > missing a capability check perhaps ?
-> > > 
-> > 
-> > That's a question for Ingo, Peter or Jiri.
-> 
-> Its not something I've looked at recently, git blames Jiri and fweisbec
-> for most of that code.
-> 
-> Permission checks appear to live in
-> kernel/trace/trace_event_perf.c:perf_trace_event_perm().
+Thanks to all, I got solution, this issue is due to lack of proper
+timer implementation.
 
-Actually the following condition is weird:
+On Thu, Aug 29, 2013 at 8:42 PM, Prabhat Kumar Ravi
+<prabhatravi09@gmail.com> wrote:
+> On Thu, Aug 29, 2013 at 7:41 PM, Prabhat Kumar Ravi
+> <prabhatravi09@gmail.com> wrote:
+>> Hi,
+>>
+>> I trying to capture traces through wakeup tracer, but not able to
+>> capture it on 3.4 kernel with cortex A9 processor, armv7.
+>> {{{
+>> / # mount -t debugfs nodev /debug
+>> / # sysctl kernel.ftrace_enabled=1
+>> kernel.ftrace_enabled = 1
+>> / # echo wakeup > /debug/tracing/current_tracer
+>> / # echo latency-format > /debug/tracing/trace_options
+>> / # echo 0 > /debug/tracing/tracing_max_latency
+>> / # echo 1 > /debug/tracing/tracing_on
+>> / # sleep 10
+>> / # echo 0 > /debug/tracing/tracing_on
+>> / # cat /debug/tracing/trace
+>> # tracer: wakeup
+>> #
+>> }}}
+>
+> My target board is xilinx-zc702,
+> here in kernel/trace/trace.c:
+> void tracing_record_cmdline(struct task_struct *tsk)
+> {
+> if (atomic_read(&trace_record_cmdline_disabled) || !tracer_enabled ||
+>    !tracing_is_on())
+> -------------------------------> it not coming here at all.
+> return;
+>
+> trace_save_cmdline(tsk);
+> }
 
-	 /* The ftrace function trace is allowed only for root. */
-	 if (ftrace_event_is_function(tp_event) &&
-	     perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-     			    return -EPERM;
-
-We probably intended to do:
-
-   /* The ftrace function trace is allowed only for root. */
-   if (ftrace_event_is_function(tp_event) ||
-       perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-       			      return -EPERM;
-
-Can somebody confirm?
+ Regards,
+ Prabhat
