@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab3H3Pkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:40:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46359 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab3H3Pkq (ORCPT
+	id S1756819Ab3H3PlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:41:23 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:50207 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756458Ab3H3PlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:40:46 -0400
-Date: Fri, 30 Aug 2013 16:40:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130830154041.GA12809@sirena.org.uk>
-References: <1377872024.10551.1.camel@phoenix>
+	Fri, 30 Aug 2013 11:41:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-In-Reply-To: <1377872024.10551.1.camel@phoenix>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: lp872x: Make REGULATOR_LP872X depend on I2C
- rather than I2C=y
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <CAE9FiQVXri56BzLviVjSPnqQvo25Q36AA26V_28kfy_=9EunjA@mail.gmail.com>
+References: <CAErSpo4cC7XKQn+2Pg9r+VDrcqKP4M4KQFRqQAvegTbnkUWf+A@mail.gmail.com>
+ <CAE9FiQX9gU-S9X_eeB=JwqS8130CONKgrv+mGj1cEgShmxgS-Q@mail.gmail.com>
+ <CAErSpo4qEPQq==rmzy+8a2FHgaKmWbG7BvopKqbBZC551kgdcg@mail.gmail.com> <CAE9FiQVXri56BzLviVjSPnqQvo25Q36AA26V_28kfy_=9EunjA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 30 Aug 2013 09:41:00 -0600
+Message-ID: <CAErSpo69TBOz6FJv8gPoAA9GFdJLuxyZWPy6gPHRbBAZKN047Q@mail.gmail.com>
+Subject: Re: [PATCH v8 6/6] PCI: update device mps when doing pci hotplug
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Yijing Wang <wangyijing@huawei.com>, Jon Mason <jdmason@kudzu.us>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Jin Feng <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 29, 2013 at 4:46 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Aug 29, 2013 at 3:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> Note that I think Linux *should* eventually actively manage MPS, and
+>> when it does, case 3 should "just work".  I just don't understand what
+>> the point of the BIOS using case 3 is.
+>>
+>> I suppose other OSes must get better performance in this "auto" mode?
+>
+> Yes.
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My take on this is that "auto" mode really means "Windows" mode,
+because it's a BIOS workaround for shortcomings in Windows.  It's
+tailored to do system-wide MPS configuration that Windows doesn't do,
+while relying on Windows to do minimal reconfiguration after a
+hot-plug.  I don't feel any particular urgency to make Linux work with
+that.
 
-On Fri, Aug 30, 2013 at 10:13:44PM +0800, Axel Lin wrote:
-> lp872x regulator driver can be built a module after commit 631a1fc
-> "regulator: build: Allow most regulators to be built as modules".
-> Make REGULATOR_LP872X depend on I2C to allow building lp872x module when I2C=m.
+In my opinion, a BIOS should configure the machine in the safest
+possible way.  Then everything works, and if we boot an OS that is
+smart enough to reconfigure it in a more optimal way, that's great,
+but it's not required.  For MPS, I think that means configuring the
+machine as I outlined in case 1 (MPS=128 always) or case 2 (larger MPS
+allowed on non-hotplug paths if the BIOS knows the root complex splits
+packets).
 
-Applied, thanks.
+>> (What exactly is that mode, anyway?)  That means the other OS must be
+>> smart enough to deal with hotplug device replacement, but not smart
+>> enough to configure MPS all by itself starting from scratch.  I don't
+>> know what rules would tell us "this MPS must be configured by the BIOS
+>> and the OS should leave it alone" and "the OS must configure MPS on
+>> this device for hotplug."  How can we make sense out of that?
+>
+> So my suggestion:
+> We scan mps of in the bridges to find out if any is set to other than 128.
+> if there is any bridge that mps is not 128 and it is hotplug slot.
+> We change to PCI_BUS_TUNE_PERF for that system.
 
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+That seems too arbitrary and magic to me.  I don't really want to set
+modes based on what we discover in the machine.  If we're going to do
+MPS config, we should just do it right and do it everywhere.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+This discussion is not really going anywhere because we don't have any
+concrete changes on the table, so I'm going to try to resist
+continuing this thread :)
 
-iQIcBAEBAgAGBQJSILz2AAoJELSic+t+oim97eAP/RNlK0mHE6ZlvlneCDr79Lhg
-H9H5iJnT3SRYkXPPVGKXD43Z2jk8nKaeZ5iWbt8C+BEw6Bsprhq9cDLul3mqAqgE
-sppK5G7J3prsDW11JPcUaCppYnTiv7W3Ps7h5AtJgxdjk6sIQD2uARlHCHDi8O/g
-3l3Sb3Kk4HbmBTS+esF5PaWiz1gjK45+Bd65HoKdEQ1V0Xvh2U3TMjBuKRChHvjx
-TETRFMGWOwleq23DrS6m80PyqYE1gf904Ksud8LMVnZCzFrzb1SJguugIDZhh8MZ
-br45OJpn9UCNirV8JScLXiuD9sDWuioBJP3Du1GaSkFj/PNxbjkyb6QEFnRiSsV9
-kGO0yHiFC1IxJfIUQIJwYYJiorI7QYnOFiszDBrKn56ZlVrxiLpm8sVmyqBFiyEw
-4QLUREi3Vxm3LA9FbLq4s6isTCFVOqPVAP/G1Fpx1O+15Wwaps5ZENUCLSBVOX2w
-e1P+fMEhYj1kizaij5qpYBEDtrXXVvOy/oc7RT1apCIuK9tll1cs71EkWvrMAExf
-0S+knkX2ZVroKn72cm9BdpooJy6P2HAYWXpaiABeWbgoB3K4C6Ug/pFXbSMkSeAM
-sn/MmPJfP3+QO9ZAqJZoSXp8tzM9JVlHgY2+gfSQOZRe3H92kkDeytzwdDznNPgZ
-oGV+YAqfPwdQsuyJbM8b
-=Ju59
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+Bjorn
