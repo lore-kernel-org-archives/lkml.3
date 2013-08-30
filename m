@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3H3WrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 18:47:23 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:35640 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3H3WrW (ORCPT
+	id S1756712Ab3H3Wsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 18:48:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49959 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab3H3Wse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 18:47:22 -0400
-Subject: [PATCH v2 2/2] elevator: acquire q->sysfs_lock in elevator_change()
-To: linux-kernel@vger.kernel.org
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Cc: axboe@kernel.dk, tj@kernel.org, seiji.aguchi@hds.com, vgoyal@redhat.com,
-        majianpeng@gmail.com
-Date: Fri, 30 Aug 2013 18:47:16 -0400
-Message-ID: <20130830224716.21812.99333.stgit@hds.com>
-In-Reply-To: <20130830224707.21812.63516.stgit@hds.com>
-References: <20130830224707.21812.63516.stgit@hds.com>
-User-Agent: StGit/0.16
+	Fri, 30 Aug 2013 18:48:34 -0400
+Message-ID: <52212128.3000100@infradead.org>
+Date: Fri, 30 Aug 2013 15:48:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        bernie@develer.com
+Subject: Re: do_div() silently truncates "base" to 32bit
+References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com> <52210D34.5030807@infradead.org> <CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com>
+In-Reply-To: <CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-08-30_09:2013-08-30,2013-08-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=1
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1308300162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add locking of q->sysfs_lock into elevator_change() (an exported function)
-to ensure it is held to protect q->elevator from elevator_init(), even if
-elevator_change() is called from non-sysfs paths.
-sysfs path (elv_iosched_store) uses __elevator_change(), non-locking
-version, as the lock is already taken by elv_iosched_store().
+On 08/30/13 15:14, Anatol Pomozov wrote:
+> Hi
+> 
+> On Fri, Aug 30, 2013 at 2:23 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 08/30/13 10:21, Anatol Pomozov wrote:
+>>> Hi,
+>>>
+>>>
+>>> I was debugging weird "zero divide" problem in CFQ code below
+>>>
+>>>
+>>> static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
+>>>       struct blkg_policy_data *pd, int off)
+>>> {
+>>>     struct cfq_group *cfqg = pd_to_cfqg(pd);
+>>>     u64 samples = blkg_stat_read(&cfqg->stats.avg_queue_size_samples);
+>>>     u64 v = 0;
+>>>
+>>>     if (samples) {
+>>>         v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
+>>>         do_div(v, samples);
+>>>     }
+>>>     __blkg_prfill_u64(sf, pd, v);
+>>>     return 0;
+>>> }
+>>>
+>>>
+>>> do_div() crashes says "zero divide". It is weird because just a few
+>>> lines above we check divider for zero.
+>>>
+>>>
+>>> The problem comes from include/asm-generic/div64.h file that
+>>> implements do_div() as macros:
+>>>
+>>> # define do_div(n,base) ({ \
+>>>     uint32_t __base = (base); \
+>>>     uint32_t __rem; \
+>>>     __rem = ((uint64_t)(n)) % __base; \
+>>>     (n) = ((uint64_t)(n)) / __base; \
+>>>     __rem; \
+>>>  })
+>>>
+>>>
+>>> Do you see the problem?
+>>>
+>>> The problem here is that "base" argument is truncated to 32bit, but in
+>>> the function above "sample" is 64bit variable. If sample's 32 low bits
+>>> are zero - we have a crash. in fact we have incorrect behavior any
+>>> time when high 32bits are non-zero.
+>>>
+>>>
+>>> My question is why the base is 32bit? Why not to use 64bit arguments?
+>>
+>> Maybe performance related?
+>>
+>> If you want 64-bit values, don't use do_div() from asm-generic/div64.h.
+>>
+>> Instead look at linux/math64.h and use div_u64_rem() et al
+>> or the recently posted div64_u64_rem().
+>> [posted by Mike Snitzer on Aug. 21 2013]
+>>
+>> I.e., use exactly the function(s) that you need to use.
+>>
+>> Does that fix the problem?
+> 
+> It definitely fixes the crash. I've already sent a patch to CFQ
+> maillist http://news.gmane.org/gmane.linux.kernel.cgroups
+> 
+> But another question still remains: why compiler does not warn that
+> size truncation happens? How to prevent bugs like CFQ one in the
+> future? Should we add a compile-time assert to do_div() to prevent
+> passing 64 numbers in "base" macro parameter?
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
----
- block/elevator.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/block/elevator.c b/block/elevator.c
-index 02d4390..6d765f7 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -965,7 +965,7 @@ fail_init:
- /*
-  * Switch this queue to the given IO scheduler.
-  */
--int elevator_change(struct request_queue *q, const char *name)
-+static int __elevator_change(struct request_queue *q, const char *name)
- {
- 	char elevator_name[ELV_NAME_MAX];
- 	struct elevator_type *e;
-@@ -987,6 +987,18 @@ int elevator_change(struct request_queue *q, const char *name)
- 
- 	return elevator_switch(q, e);
- }
-+
-+int elevator_change(struct request_queue *q, const char *name)
-+{
-+	int ret;
-+
-+	/* Protect q->elevator from elevator_init() */
-+	mutex_lock(&q->sysfs_lock);
-+	ret = __elevator_change(q, name);
-+	mutex_unlock(&q->sysfs_lock);
-+
-+	return ret;
-+}
- EXPORT_SYMBOL(elevator_change);
- 
- ssize_t elv_iosched_store(struct request_queue *q, const char *name,
-@@ -997,7 +1009,7 @@ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
- 	if (!q->elevator)
- 		return count;
- 
--	ret = elevator_change(q, name);
-+	ret = __elevator_change(q, name);
- 	if (!ret)
- 		return count;
- 
+That sounds like a fine idea to me.
 
+-- 
+~Randy
