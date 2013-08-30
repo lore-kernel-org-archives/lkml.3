@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3H3LU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:20:26 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60316 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3H3LUX (ORCPT
+	id S1754320Ab3H3L2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:28:05 -0400
+Received: from [213.199.154.184] ([213.199.154.184]:46804 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752048Ab3H3L2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:20:23 -0400
-Date: Fri, 30 Aug 2013 07:20:13 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v4] ACPI: Fix osc flag setup ordering to allow pcie
- hotplug use when available
-Message-ID: <20130830112013.GA1142@hmsreliant.think-freely.org>
-References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
- <1377807425-27423-1-git-send-email-nhorman@tuxdriver.com>
- <20130829234052.GA22252@google.com>
+	Fri, 30 Aug 2013 07:28:03 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v9 0/3] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Fri, 30 Aug 2013 19:26:17 +0800
+Message-ID: <1377861980-7027-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130829234052.GA22252@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 05:40:52PM -0600, Bjorn Helgaas wrote:
-> On Thu, Aug 29, 2013 at 04:17:05PM -0400, Neil Horman wrote:
-> > This is a fix for:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=60736
-> > 
-> > During the 3.8 devel cycle:
-> > 
-> > commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6
-> > Author: Taku Izumi <izumi.taku@jp.fujitsu.com>
-> > Date:   Tue Oct 30 15:27:13 2012 +0900
-> > 
-> >     PCI/ACPI: Request _OSC control before scanning PCI root bus
-> > 
-> > went in to allow us to query the pcie hotplug flags during the acpi bus scan.
-> > It however caused problems with the disabling of pcie aspm, and so:
-> > commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
-> > Author: Bjorn Helgaas <bhelgaas@google.com>
-> > Date:   Mon Apr 1 15:47:39 2013 -0600
-> > 
-> >     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
-> > 
-> > Backed it out.  This of course brought back the problem in which acpi took over
-> > hotplug ports that were meant to be controlled by pcie.
-> > 
-> > This patch gives us both items.  It lets us request _OSC control before scanning
-> > the pci root bus, but defers any disabling of aspm until after the scan is
-> > complete, allowing us to properly handle old pcie 1.1 devices aspm settings
-> > properly, as b8178f130e documents.
-> > 
-> > Tested successfully by myself.
-> > 
-> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > CC: Len Brown <lenb@kernel.org>
-> > CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > CC: linux-acpi@vger.kernel.org
-> > CC: linux-pci@vger.kernel.org
-> 
-> I added Yinghai's ack and a stable tag and put this in pci/misc
-> for v3.12.  Thanks!
-> 
-> I reworked the changelog because I think the actual cause of the
-> regression was 3b63aaa70e, not the _OSC commits you mentioned:
-> 
-> 8c33f51df4 ("PCI/ACPI: Request _OSC control before scanning PCI root bus")
-> appeared in v3.8 and broke ASPM but not acpiphp.
-> 
-> b8178f130e ('Revert "PCI/ACPI: Request _OSC control before scanning PCI
-> root bus"') appeared in v3.9 and fixed ASPM, leaving acpiphp working.
-> 
-> 3b63aaa70e ("PCI: acpiphp: Do not use ACPI PCI subdriver mechanism")
-> appeared in v3.10, and I believe this is what actually broke acpiphp
-> because it moved the acpiphp initialization earlier, into the bus scan.
-> 
-> in v3.8:
->     acpi_pci_root_add
->       acpi_pci_osc_control_set          # request OS control
->       pci_acpi_scan_root                # scan bus
->     acpi_pci_root_start
->       add_bridge                        # acpi_pci_driver .add method
->         ...
->           device_is_managed_by_native_pciehp	# OK
-> 
-> in v3.9:
->     acpi_pci_root_add
->       pci_acpi_scan_root                # scan bus
->       acpi_pci_osc_control_set          # request OS control
->       add_bridge                        # acpi_pci_driver .add method
->         ...
->           device_is_managed_by_native_pciehp	# OK
-> 
-> in v3.10:
->     acpi_pci_root_add
->       pci_acpi_scan_root                # scan bus
->         ...
->           acpiphp_enumerate_slots
->             ...
->               device_is_managed_by_native_pciehp	# PROBLEM
->       acpi_pci_osc_control_set          # request OS control
-> 
-> So I added a stable tag for v3.10+ only.  I'll ask Linus to merge it
-> directly during the merge window for v3.12, and hopefully it will be
-> backported to the v3.10 and v3.11 stable trees soon after that.
-> 
-> Bjorn
-> 
-Copy that, thanks!
-Neil
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+
+Hi DMA and DT maintainers, please have a look at these V9 patches.
+
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
+
+V8->V9 changes:
+- add "Acked-by: Mark Rutland <mark.rutland@arm.com>" into patch [1/3]
+- update reg entry <0x100300 0x4 0x100600 0x4> to two seperate ones
+  <0x100300 0x4>, <0x100600 0x4> in patch [2/3]
+- and also use "QorIQ Elo3 DMA" to mention previous "QorIQ DMA" in [2/3]
+
+V7->V8 changes:
+- change the word "mapping" to "specifier" for reg and interrupts description
+
+V6->V7 changes:
+- only remove unnecessary "CHIP-dma" explanations in [1/3]
+
+V5->V6 changes:
+- minor updates of descriptions in binding document and Kconfig
+- remove [4/4], that should be another patch in future
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used currently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  129 ++++++++++++++------
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   82 +++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   82 +++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 274 insertions(+), 47 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+
+-- 
+1.7.9.5
+
+
 
