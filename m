@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3H3AZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 20:25:26 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:53873 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3H3AXv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 20:23:51 -0400
-Date: Thu, 29 Aug 2013 17:23:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Libin <huawei.libin@huawei.com>
-Cc: akpm@linux-foundation.org, tj@kernel.org, viro@zeniv.linux.org.uk,
-        eparis@redhat.com, tglx@linutronix.de, rusty@rustcorp.com.au,
-        ebiederm@xmission.com, john.stultz@linaro.org, mingo@redhat.com,
-        peterz@infradead.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        jovi.zhangwei@huawei.com, guohanjun@huawei.com,
-        zhangdianfang@huawei.com, wangyijing@huawei.com
-Subject: Re: [PATCH 09/14] rcutree: Fix invalid wakeup in rcu_wait
-Message-ID: <20130830002327.GA3871@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com>
- <1377784669-28140-10-git-send-email-huawei.libin@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377784669-28140-10-git-send-email-huawei.libin@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083000-7164-0000-0000-000001227589
+	id S1754239Ab3H3A2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 20:28:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44468 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751752Ab3H3A2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Aug 2013 20:28:21 -0400
+Message-ID: <1377822408.4028.44.camel@pasglop>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Michael Neuling <michael.neuling@au1.ibm.com>
+Date: Fri, 30 Aug 2013 10:26:48 +1000
+In-Reply-To: <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	 <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	 <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	 <1377751465.4028.20.camel@pasglop> <20130829070012.GC27322@gmail.com>
+	 <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	 <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	 <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 09:57:44PM +0800, Libin wrote:
-> If thread is preempted before calling set_current_state(TASK_INTERRUPTIBLE),
-> and the other thread set the condition followed with wake_up_process. After
-> that when this thread is re-scheduled, calling set_current_state to set itself
-> as state TASK_INTERRUPTIBLE, if it is preempted again after that and before
-> __set_current_state(TASK_RUNNING), it triggers the invalid wakeup problem.
-> 
-> To solve this problem, using preempt_disable() to bound the operaion that
-> setting the task state and the conditions(set by the wake thread) validation.
-> 
-> Signed-off-by: Libin <huawei.libin@huawei.com>
-> ---
->  kernel/rcutree.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index b383258..e3f1278 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -357,13 +357,17 @@ struct rcu_data {
-> 
->  #define rcu_wait(cond)							\
->  do {									\
-> +	preempt_disable();					\
->  	for (;;) {							\
->  		set_current_state(TASK_INTERRUPTIBLE);			\
->  		if (cond)						\
->  			break;						\
+On Thu, 2013-08-29 at 16:42 -0700, Linus Torvalds wrote:
 
-Here also the condition check follows the call to set_current_state(),
-so this patch should not be needed.
-
-Again, if you are seeing lost wakeups on this exact code path, please
-let me know.
-
-Please re-check your other patches.  If they really do follow the
-buggy pattern you called out in your patch 0, namely the test preceding
-the call to set_current_state(), please send patches that restore the
-correct ordering.
-
-Your use of preemption is not fixing anything.  It is at best hiding
-the problem by making it less likely to occur.
-
-							Thanx, Paul
-
-> +		preempt_enable();				\
->  		schedule();						\
-> +		preempt_disable();				\
->  	}								\
->  	__set_current_state(TASK_RUNNING);				\
-> +	preempt_enable();				\
->  } while (0)
+> For architecture people (ie Ben, if you want to try this on ppc64),
+> the thing that it needs from an architecture:
 > 
->  /*
-> -- 
-> 1.8.2.1
-> 
-> 
+>  - the raw_spinlock_t and the "unsigned long" needs to fit in a u64.
+
+I assume you mean unsigned int ? :-)
+
+ .../...
+
+>  - the architecture needs to implement a simple
+> "arch_spin_value_unlocked()" macro, which takes a raw_spinlock_t value
+> and says whether it is unlocked or not.
+
+What's wrong with the existing arch_spin_is_locked() ?
+
+BTW. Do you have your test case at hand ?
+
+Cheers,
+Ben.
 
