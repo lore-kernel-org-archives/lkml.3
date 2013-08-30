@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab3H3Lsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:48:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51237 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478Ab3H3Lsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:48:39 -0400
-Date: Fri, 30 Aug 2013 12:43:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v6 0/5] ARM/ARM64 architected timer updates
-Message-ID: <20130830114309.GW6617@n2100.arm.linux.org.uk>
-References: <1377788142-21388-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <52206EE0.5020907@arm.com>
+	id S1755967Ab3H3LtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 07:49:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14992 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab3H3LtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 07:49:06 -0400
+Date: Fri, 30 Aug 2013 13:49:03 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: perf: callchain feature on ARM - question about libunwind
+ API
+Message-ID: <20130830114903.GC1023@krava.brq.redhat.com>
+References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
+ <CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
+ <521CCFD8.90201@gmail.com>
+ <20130829135216.GA1032@krava.brq.redhat.com>
+ <CAFrcx1=U8SapYd=Hw8YaAnKNggJMuY4r03zYeevc0Ttq5hFr7Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52206EE0.5020907@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAFrcx1=U8SapYd=Hw8YaAnKNggJMuY4r03zYeevc0Ttq5hFr7Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 11:07:28AM +0100, Sudeep KarkadaNagesha wrote:
-> On 29/08/13 15:55, Sudeep KarkadaNagesha wrote:
-> > From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> > 
-> > This patch series adds support to configure the rate and enable the
-> > event stream for architected timer. The event streams can be used to
-> > impose a timeout on a wfe, to safeguard against any programming error
-> > in case an expected event is not generated or even to implement
-> > wfe-based timeouts for userspace locking implementations. This feature
-> > can be disabled(enabled by default).
-> > 
-> > Since the timer control register is reset to zero on warm boot, CPU
-> > PM notifier is added to save and restore the value.
-> > 
-> Hi Russell,
-> 
-> Can you have a look at this series ?
-> If you are OK, can I have your ACK on arm specific changes(PATCH 2/5) ?
+On Thu, Aug 29, 2013 at 07:15:00PM +0200, Jean Pihet wrote:
 
-I think it would be more value to have someone from ARM Ltd ack it,
-because they will know the code much better than I do.
+SNIP
+
+> 
+> The problem is that it is slow as hell (couple of minutes to report
+> the callchain from a simple test app ;-|). I will look at the sampling
+> rate and the caching next.
+
+FYI there's elfutils alternative grewing now via libdw providing
+API to do the 'remote unwind' as in libunwind. I'm not completely
+sure, but I think it should support both .eh_frames and .debug_frames.
+
+check:
+git://git.fedorahosted.org/git/elfutils.git branch jankratochvil/unwindx86
+
+the 'tests/backtrace-data.c' should be an example of what we want in perf
+
+somewhere I should have perf changes to support this in
+early version which no longer relevant.. but I recall it
+was substantially faster due to some libdw inner caching
+
+it's on my long term TODO list, so any help is welcome! ;-)
+
+jirka
