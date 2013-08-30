@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab3H3N3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:29:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2253 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722Ab3H3NYI (ORCPT
+	id S1756480Ab3H3N3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:29:19 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39072 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab3H3N3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:24:08 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4o756hj-upQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zy9lOwxDnZMA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=ac4SS_tiFSPT9NLxd24A:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130830132404.701584703@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 30 Aug 2013 09:02:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Dave Jones <davej@redhat.com>
-Subject: [RFC][PATCH 6/8] ftrace: Add rcu_unsafe_filter_functions file
-References: <20130830130205.504335754@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-Add-rcu_unsafe_filter_functions-file.patch
+	Fri, 30 Aug 2013 09:29:15 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 35/35] mm: Use a cache between page-allocator and
+ region-allocator
+To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 30 Aug 2013 18:54:59 +0530
+Message-ID: <20130830132456.4947.67600.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
+References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083013-4834-0000-0000-00000A9956A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Currently, whenever the page allocator notices that it has all the freepages
+of a given memory region, it attempts to return it back to the region
+allocator. This strategy is needlessly aggressive and can cause a lot of back
+and forth between the page-allocator and the region-allocator.
 
-Since the RCU unsafe functions are no longer displayed by the
-available_filter_functions, we still need a way to see these
-functions in order to trace them. Create a new file that lists
-the functions that were declared RCU unsafe.
+More importantly, it can potentially completely wreck the benefits of having
+a region allocator in the first place - if the buddy allocator immediately
+returns freepages of memory regions to the region allocator, it goes back to
+the generic pool of pages. So, in future, depending on when the next allocation
+request arrives for this particular migratetype, the region allocator might not
+have any free regions to hand out, and hence we might end up falling back
+to freepages of other migratetypes. Instead, if the page allocator retains
+a few regions as a cache for every migratetype, we will have higher chances
+of avoiding fallbacks to other migratetypes.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+So, don't return all free memory regions (in the page allocator) to the
+region allocator. Keep atleast one region as a cache, for future use.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- include/linux/ftrace.h |    1 +
- kernel/trace/ftrace.c  |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 4709264..4752764 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -412,6 +412,7 @@ enum {
- 	FTRACE_ITER_HASH	= (1 << 4),
- 	FTRACE_ITER_ENABLED	= (1 << 5),
- 	FTRACE_ITER_NO_UNSAFE	= (1 << 6),
-+	FTRACE_ITER_UNSAFE_ONLY	= (1 << 7),
- };
+ mm/page_alloc.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1312546..55e8e65 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -639,9 +639,11 @@ static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
+ 				    int region_id);
  
- void arch_ftrace_update_code(int command);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 6550f72..e2dc641 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2636,6 +2636,9 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		    ((iter->flags & FTRACE_ITER_ENABLED) &&
- 		     !(rec->flags & FTRACE_FL_ENABLED)) ||
  
-+		    ((iter->flags & FTRACE_ITER_UNSAFE_ONLY) &&
-+		     !ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip)) ||
+-static inline int can_return_region(struct mem_region_list *region, int order)
++static inline int can_return_region(struct mem_region_list *region, int order,
++				    struct free_list *free_list)
+ {
+ 	struct zone_mem_region *zone_region;
++	struct page *prev_page, *next_page;
+ 
+ 	zone_region = region->zone_region;
+ 
+@@ -659,6 +661,16 @@ static inline int can_return_region(struct mem_region_list *region, int order)
+ 	if (likely(order != MAX_ORDER-1))
+ 		return 0;
+ 
++	/*
++	 * Don't return all the regions; retain atleast one region as a
++	 * cache for future use.
++	 */
++	prev_page = container_of(free_list->list.prev , struct page, lru);
++	next_page = container_of(free_list->list.next , struct page, lru);
 +
- 		    ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
- 		     ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
++	if (page_zone_region_id(prev_page) == page_zone_region_id(next_page))
++		return 0; /* There is only one region in this freelist */
++
+ 	if (region->nr_free * (1 << order) == zone_region->nr_free)
+ 		return 1;
  
-@@ -2773,6 +2776,24 @@ ftrace_avail_open(struct inode *inode, struct file *file)
+@@ -728,7 +740,7 @@ try_return_region:
+ 	 * Try to return the freepages of a memory region to the region
+ 	 * allocator, if possible.
+ 	 */
+-	if (can_return_region(region, order))
++	if (can_return_region(region, order, free_list))
+ 		add_to_region_allocator(page_zone(page), free_list, region_id);
  }
  
- static int
-+ftrace_rcu_unsafe_open(struct inode *inode, struct file *file)
-+{
-+	struct ftrace_iterator *iter;
-+
-+	if (unlikely(ftrace_disabled))
-+		return -ENODEV;
-+
-+	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
-+	if (iter) {
-+		iter->pg = ftrace_pages_start;
-+		iter->flags = FTRACE_ITER_UNSAFE_ONLY;
-+		iter->ops = &global_ops;
-+	}
-+
-+	return iter ? 0 : -ENOMEM;
-+}
-+
-+static int
- ftrace_enabled_open(struct inode *inode, struct file *file)
- {
- 	struct ftrace_iterator *iter;
-@@ -3824,6 +3845,13 @@ static const struct file_operations ftrace_avail_fops = {
- 	.release = seq_release_private,
- };
- 
-+static const struct file_operations ftrace_rcu_unsafe_fops = {
-+	.open = ftrace_rcu_unsafe_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+};
-+
- static const struct file_operations ftrace_enabled_fops = {
- 	.open = ftrace_enabled_open,
- 	.read = seq_read,
-@@ -4060,6 +4088,9 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
- 	trace_create_file("available_filter_functions", 0444,
- 			d_tracer, NULL, &ftrace_avail_fops);
- 
-+	trace_create_file("rcu_unsafe_filter_functions", 0444,
-+			d_tracer, NULL, &ftrace_rcu_unsafe_fops);
-+
- 	trace_create_file("enabled_functions", 0444,
- 			d_tracer, NULL, &ftrace_enabled_fops);
- 
--- 
-1.7.10.4
-
 
