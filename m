@@ -1,126 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3H3XKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 19:10:13 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:42172 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab3H3XKL (ORCPT
+	id S1756721Ab3H3XM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 19:12:27 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:33900 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab3H3XMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 19:10:11 -0400
-Message-ID: <5221264F.4070402@linaro.org>
-Date: Fri, 30 Aug 2013 16:10:07 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 19:12:25 -0400
 MIME-Version: 1.0
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>
-Subject: Re: kernel deadlock
-References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com>
-In-Reply-To: <52212511.9050206@keymile.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130830133902.AEA7A3E102A@localhost>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+	<1376090777-20090-13-git-send-email-roy.franz@linaro.org>
+	<20130830133902.AEA7A3E102A@localhost>
+Date: Fri, 30 Aug 2013 16:12:24 -0700
+Message-ID: <CAFECyb-J4gTiAQkKVT8qt94Tk6-_jVdX=sNM7VkXkyvPdEeZFA@mail.gmail.com>
+Subject: Re: [PATCH 12/16] Fix types in EFI calls to match EFI function definitions.
+From: Roy Franz <roy.franz@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>, matt.fleming@intel.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Dave Martin <dave.martin@arm.com>, Mark Salter <msalter@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 04:04 PM, Gerlando Falauto wrote:
-> Hi,
->
-> sorry, it took me a while to narrow it down...
->
-> On 08/30/2013 01:45 AM, John Stultz wrote:
->> On 08/29/2013 01:56 PM, Falauto, Gerlando wrote:
->>> Hi everyone,
->>>
->>> I ran into the deadlock situation reported at the bottom.
->>> Actually, on my latest 3.10 kernel for some reason I don't get the
->>> report (the kernel just hangs for some reason), so it took me quite
->>> some
->>> time to track it down.
->>>
->>> Once I figured the trigger to the machine hanging was adjtimex(), I
->>> reverted everything (between 3.9 to 3.10) that was touching
->>> kernel/time/timekeeping/timekeeping.c and kernel/time/ntp.c, I double
->>> checked that indeed the problem was not happening anymore, and finally
->>> started bisecting, landing on the following offending commit.
->>> THEN, and ONLY THEN, did I get the &%""ç+"% deadlock report.
->>>
->>> Do you guys have any ideas what could be wrong and how to fix it?
+On Fri, Aug 30, 2013 at 6:39 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Fri,  9 Aug 2013 16:26:13 -0700, Roy Franz <roy.franz@linaro.org> wrote:
+>> EFI calls can made directly on ARM, so the function pointers
+>> are directly invoked.  This allows types to be checked at
+>> compile time, so here we ensure that the parameters match
+>> the function signature.
 >>
->> Thanks for the report!
+>> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+>> ---
+>>  drivers/firmware/efi/efi-stub-helper.c |   15 +++++++++------
+>>  1 file changed, 9 insertions(+), 6 deletions(-)
 >>
->> What exactly is your process for reproducing the issue?
+>> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+>> index b707a9f..4bb542f 100644
+>> --- a/drivers/firmware/efi/efi-stub-helper.c
+>> +++ b/drivers/firmware/efi/efi-stub-helper.c
+>> @@ -321,7 +321,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>>       status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+>>                               EFI_LOADER_DATA,
+>>                               nr_files * sizeof(*files),
+>> -                             &files);
+>> +                             (void **)&files);
+>>       if (status != EFI_SUCCESS) {
+>>               efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
+>>               goto fail;
+>> @@ -372,7 +372,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>>                       boottime = sys_table_arg->boottime;
+>>
+>>                       status = efi_call_phys3(boottime->handle_protocol,
+>> -                                     image->device_handle, &fs_proto, &io);
+>> +                                     image->device_handle, &fs_proto,
+>> +                                             (void **)&io);
+>>                       if (status != EFI_SUCCESS) {
+>>                               efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
+>>                               goto free_files;
+>> @@ -406,7 +407,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>>
+>>  grow:
+>>               status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+>> -                                     EFI_LOADER_DATA, info_sz, &info);
+>> +                                     EFI_LOADER_DATA, info_sz,
+>> +                                     (void **)&info);
+>>               if (status != EFI_SUCCESS) {
+>>                       efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
+>>                       goto close_handles;
+>> @@ -456,18 +458,19 @@ grow:
+>>
+>>               addr = file_addr;
+>>               for (j = 0; j < nr_files; j++) {
+>> -                     u64 size;
+>> +                     unsigned long size;
+>>
+>>                       size = files[j].size;
+>>                       while (size) {
+>> -                             u64 chunksize;
+>> +                             unsigned long chunksize;
+>>                               if (size > EFI_READ_CHUNK_SIZE)
+>>                                       chunksize = EFI_READ_CHUNK_SIZE;
+>>                               else
+>>                                       chunksize = size;
+>>                               status = efi_call_phys3(fh->read,
+>>                                                       files[j].handle,
+>> -                                                     &chunksize, addr);
+>> +                                                     &chunksize,
+>> +                                                     (void *)addr);
 >
-> Now (well, now...), it's quite easy.
->
-> Three ingredients:
->
-> 1) Kernel 3.10
->
-> 2) Enable HRTICK
->
-> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-> index 99399f8..294e3ca 100644
-> --- a/kernel/sched/features.h
-> +++ b/kernel/sched/features.h
-> @@ -41,7 +41,7 @@ SCHED_FEAT(WAKEUP_PREEMPTION, true)
->   */
->  SCHED_FEAT(ARCH_POWER, true)
->
-> -SCHED_FEAT(HRTICK, false)
-> +SCHED_FEAT(HRTICK, true)
->  SCHED_FEAT(DOUBLE_TICK, false)
->  SCHED_FEAT(LB_BIAS, true)
->
-> 3) Run the following:
->
-> #include <stdio.h>
-> #include <sys/timex.h>
->
-> int main(void)
-> {
->     int i;
->
->     for (i = 0 ; ; i++) {
->     struct timex adj = {};
->     printf("%d\r", i);
->     fflush(stdout);
->     adjtimex(&adj);
->     }
->     return 0;
-> }
->
-> Notice how:
-> 1) The original issue (with a bit more complicated scenario) was seen
-> on ARM and PowerPC platforms
-> 2) Under the above test conditions (on ARM) I *don't* get any deadlock
-> report printed, the machine just hangs
-> 3) The offending commit (below) I had found through a weird (manual)
-> process of reverting and re-reverting (where some commits could have
-> been reverted out of order), so I'm not 100% sure you'd come to the
-> same conclusions.
->
-> commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
-> Author: John Stultz <john.stultz@linaro.org>
-> Date:   Fri Mar 22 11:37:28 2013 -0700
->
->      timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
->
-> I'm not able to perform any further testing at this very moment, but
-> if needed, I can try bisecting again sometime next week, so to make an
-> even more reliable statement.
->
+> I think you need some description in the commit text about why the type
+> of chunksize is changing. It's not clear why you're making this change.
+> It is a bug fix?
 
-Thanks so much for the details! I'll take a shot at reproducing this and
-will let you know what comes of it.
+The type was changed to match the EFI_FILE_PROTOCOL specification -
+chunk size is
+defined as a native width unsigned integer.  So yes, this is a bug in
+that this is wrong for
+ia32, since that really should be a u32 in that case.
+Since the x86 wrappers break type checking by the compiler these types
+were never checked at compile time
+before.  chunksize is the the only change that isn't a cast to a type
+of void pointer.
 
-thanks
--john
+I can break this change out as a separate patch if desired.
 
+Matt - would you like me to split the chunksize type change into a
+separate patch from the arm EFI stub series?
+
+Roy
+
+
+
+>
+> g.
