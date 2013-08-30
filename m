@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3H3NYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:24:09 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47568 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755424Ab3H3NYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:24:03 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 20/35] mm: Provide a mechanism to delete pages from
- buddy freelists in bulk
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:50:01 +0530
-Message-ID: <20130830131959.4947.91045.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083013-7182-0000-0000-0000084105A2
+	id S1755407Ab3H3NYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:24:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11464 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756726Ab3H3NYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 09:24:08 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=xAoD5wKN60MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=csyViu0xLpQA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=gHYbNLmMVl-5XKnJ_VgA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130830132404.396264912@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 30 Aug 2013 09:02:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: [RFC][PATCH 4/8] ftrace: Add test for ops against unsafe RCU functions in callback
+References: <20130830130205.504335754@goodmis.org>
+Content-Disposition: inline; filename=0004-ftrace-Add-test-for-ops-against-unsafe-RCU-functions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the buddy allocator releases excess free memory to the region
-allocator, it does it at a region granularity - that is, it releases
-all the freepages of that region to the region allocator, at once.
-So, in order to make this efficient, we need a way to delete all those
-pages from the buddy freelists in one shot. Add this support, and also
-take care to update the nr-free statistics properly.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+When more than one ftrace_ops is registered, the list function is
+is used to call all registered functions. It uses the filter and
+notrace hashes from the ftrace_ops to determine if the corresponding
+callback should be called or not.
+
+Currently, it does not take into account for RCU unsafe functions.
+If multiple functions are registered, and an RCU safe callback is
+used on a RCU unsafe function, and the RCU unsafe callback says to
+trace all functions, it will end up tracing this RCU unsafe function
+and still suffer the problems when using RCU when RCU tracing is
+off.
+
+Add a test to the multiple ops list function to test if the ops in
+question can use an RCU unsafe function or not, and if the function
+being traced happens to be an RCU unsafe function.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ kernel/trace/ftrace.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- mm/page_alloc.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 3761663..c7ef936 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1471,7 +1471,9 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ 	if ((ftrace_hash_empty(filter_hash) ||
+ 	     ftrace_lookup_ip(filter_hash, ip)) &&
+ 	    (ftrace_hash_empty(notrace_hash) ||
+-	     !ftrace_lookup_ip(notrace_hash, ip)))
++	     !ftrace_lookup_ip(notrace_hash, ip)) &&
++	    (ops->flags & FTRACE_OPS_FL_RCU_SAFE ||
++	     !ftrace_lookup_ip(ftrace_unsafe_rcu, ip)))
+ 		ret = 1;
+ 	else
+ 		ret = 0;
+-- 
+1.7.10.4
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b66ddff..5227ac3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -853,6 +853,61 @@ page_found:
- 	}
- }
- 
-+/*
-+ * Delete all freepages belonging to the region 'region_id' from 'free_list'
-+ * and move them to 'list'. Using suitable list-manipulation tricks, we move
-+ * the pages between the lists in one shot.
-+ */
-+static void del_from_freelist_bulk(struct list_head *list,
-+				   struct free_list *free_list, int order,
-+				   int region_id)
-+{
-+	struct mem_region_list *region, *prev_region;
-+	unsigned long nr_pages = 0;
-+	struct free_area *area;
-+	struct list_head *cur;
-+	struct page *page;
-+	int prev_region_id;
-+
-+	region = &free_list->mr_list[region_id];
-+
-+	/*
-+	 * Perform bulk movement of all pages of the region to the new list,
-+	 * except the page pointed to by region->pageblock.
-+	 */
-+	prev_region_id = find_prev_region(region_id, free_list);
-+	if (prev_region_id < 0) {
-+		/* This is the first region on the list */
-+		list_cut_position(list, &free_list->list,
-+				  region->page_block->prev);
-+	} else {
-+		prev_region = &free_list->mr_list[prev_region_id];
-+		list_cut_position(list, prev_region->page_block,
-+				  region->page_block->prev);
-+	}
-+
-+	list_for_each(cur, list)
-+		nr_pages++;
-+
-+	region->nr_free -= nr_pages;
-+
-+	/*
-+	 * Now delete the page pointed to by region->page_block using
-+	 * del_from_freelist(), so that it sets up the region related
-+	 * data-structures of the freelist properly.
-+	 */
-+	page = list_entry(region->page_block, struct page, lru);
-+	del_from_freelist(page, free_list, order);
-+
-+	list_add_tail(&page->lru, list);
-+
-+	area = &(page_zone(page)->free_area[order]);
-+	area->nr_free -= nr_pages + 1;
-+
-+	/* Fix up the zone region stats, since del_from_freelist() altered it */
-+	region->zone_region->nr_free += 1 << order;
-+}
-+
- /**
-  * Move a given page from one freelist to another.
-  */
 
