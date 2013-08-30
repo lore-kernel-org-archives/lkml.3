@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab3H3HWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 03:22:43 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:42779 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab3H3HWm (ORCPT
+	id S1755712Ab3H3HWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 03:22:50 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:55534 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab3H3HWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 03:22:42 -0400
+	Fri, 30 Aug 2013 03:22:48 -0400
+From: Rui Xiang <rui.xiang@huawei.com>
+To: Ian Kent <raven@themaw.net>
+CC: <autofs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 1/2] autofs: fix the return value of autofs4_fill_super
+Date: Fri, 30 Aug 2013 15:22:17 +0800
+Message-ID: <1377847338-51032-1-git-send-email-rui.xiang@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-In-Reply-To: <1377809816-22477-1-git-send-email-simon.guinot@sequanux.org>
-References: <1377809816-22477-1-git-send-email-simon.guinot@sequanux.org>
-Date: Fri, 30 Aug 2013 09:22:41 +0200
-Message-ID: <CACRpkdaUDezKCWK74QhzdtqFkPBGfz3HJLbB9i1bL0OJ2K__BA@mail.gmail.com>
-Subject: Re: [PATCH v4] gpio: add GPIO support for F71882FG and F71889F
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 10:56 PM, Simon Guinot
-<simon.guinot@sequanux.org> wrote:
+While kzallocing sbi/ino fails, it should return -ENOMEM.
 
-> This patch adds support for the GPIOs found on the Fintek super-I/O
-> chips F71882FG and F71889F.
->
-> A super-I/O is a legacy I/O controller embedded on x86 motherboards. It
-> is used to connect the low-bandwidth devices. Among others functions the
-> F71882FG/F71889F provides: a parallel port, two serial ports, a keyboard
-> controller, an hardware monitoring controller and some GPIO pins.
->
-> Note that this super-I/Os are embedded on some Atom-based LaCie NASes.
-> The GPIOs are used to control the LEDs and the hard drive power.
->
-> Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-> ---
-> Linus,
->
-> Here is a v4 for the driver gpio-f7188x. It fixes an issue noticed by
-> Guenter: the driver needs to use request_muxed_region in order to
-> synchronize with the hwmon and watchdog drivers for the same chip.
->
-> I should have sent this update earlier but I was waiting for more
-> changes (ACPI support)... All my apologies for the inconvenience.
->
-> Please drop the v3 and apply this one.
+And it should return the err value from autofs_prepare_pipe.
 
-OK dropped the v3 and applied this v4 instead...
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+---
+ fs/autofs4/inode.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-Any further changes -> incremental patches.
+diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+index b104726..fe390ed 100644
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -211,10 +211,11 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	int pipefd;
+ 	struct autofs_sb_info *sbi;
+ 	struct autofs_info *ino;
++	int ret = -EINVAL;
+ 
+ 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+ 	if (!sbi)
+-		goto fail_unlock;
++		return -ENOMEM;
+ 	DPRINTK("starting up, sbi = %p",sbi);
+ 
+ 	s->s_fs_info = sbi;
+@@ -248,8 +249,10 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	 * Get the root inode and dentry, but defer checking for errors.
+ 	 */
+ 	ino = autofs4_new_ino(sbi);
+-	if (!ino)
++	if (!ino) {
++		ret = -ENOMEM;
+ 		goto fail_free;
++	}
+ 	root_inode = autofs4_get_inode(s, S_IFDIR | 0755);
+ 	root = d_make_root(root_inode);
+ 	if (!root)
+@@ -296,7 +299,8 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 		printk("autofs: could not open pipe file descriptor\n");
+ 		goto fail_dput;
+ 	}
+-	if (autofs_prepare_pipe(pipe) < 0)
++	ret = autofs_prepare_pipe(pipe);
++	if (ret < 0)
+ 		goto fail_fput;
+ 	sbi->pipe = pipe;
+ 	sbi->pipefd = pipefd;
+@@ -323,8 +327,7 @@ fail_ino:
+ fail_free:
+ 	kfree(sbi);
+ 	s->s_fs_info = NULL;
+-fail_unlock:
+-	return -EINVAL;
++	return ret;
+ }
+ 
+ struct inode *autofs4_get_inode(struct super_block *sb, umode_t mode)
+-- 
+1.8.2.2
 
-Yours,
-Linus Walleij
+
