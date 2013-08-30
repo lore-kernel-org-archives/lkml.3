@@ -1,210 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3H3Mbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:31:40 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:60031 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab3H3Mbj (ORCPT
+	id S1754790Ab3H3Mdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:33:40 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:49551 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab3H3Mdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:31:39 -0400
+	Fri, 30 Aug 2013 08:33:39 -0400
+Message-ID: <52209119.3070907@gmail.com>
+Date: Fri, 30 Aug 2013 21:33:29 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 30 Aug 2013 14:31:37 +0200
-Message-ID: <CA+icZUWNrZQgjuXX+7JFgRKfCjYR_fSkfeRxHot_=xpLSaNaxg@mail.gmail.com>
-Subject: [3.11-rc7] Building perf-only the "official" way seems to be BROKEN?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: dm-devel@redhat.com
+CC: mpatocka@redhat.com, agk@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+Subject: Re: [dm-devel] [RFC] dm-lc: plan to go to staging
+References: <521EA567.1070801@gmail.com> <20130829020555.GA26206@kroah.com> <20130829033023.GH4872@agk-dp.fab.redhat.com> <alpine.LRH.2.02.1308291043410.20142@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1308291043410.20142@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Thank you for your constructive comments,
 
-[ INTRO ]
+I want to first settle an agreement on the new name for current dm-lc
+according to Alasdair's comment:
+>> 2) Agree a new and meaningful target name with us so you don't have to
+>> change it later.  "lc" means nothing, I'm afraid.
 
-I build all my Linux-kernels nowadays with 'make deb-pkg' which
-generates Debian packages for me.
-Currently, there is no mechanism to build a linux-tools package.
-In the Debian/Ubuntu world linux-tools package ships binaries and docs
-for perf tool.
-Some people sent patches to generate a linux-tools package via 'make
-deb-pkg' to the linux-kbuild ML.
-But since this is not in upstream, someone like me has to build perf manually!
+After we agree on this issue, I will start tackling on the design issues.
+Choosing this issue first is because it may change the whole codebase
+and rename the Github repo which can be one of the elements in MAINTAINERS file.
 
-This issue came up when I wanted to try the spinlock-lockref
-improvements in Linux v3.11-rc7+ and run the test-case "t.c" (renamed
-to "t_lockref_from-linus.c") from Linus.
+Name is very important.
 
-Ingo suggested for easier benchmarking to use perf...
+First of all, let me make a tiny objection:
+1) The name dm-lc does means. lc is the initials from Log-structured Caching.
+2) LC is also the name of my a favorite anime character from "God only knows".
+   I did want to use her name for my creation.
 
-   $ perf stat --null --repeat 5
+But,
+I can agree on Alasdair's opinion that dm-lc means nothing,
+for the potential future users.
+Abbreviation of some technical word to a software name looks nice
+but the unfortunate is that LC is not widely common like RAID or LFS.
 
-WARNING: You require the perf-version fitting for your kernel-version!
+I have three candidates on my mind.
+I am thinking of removing the dm- prefix as bcache and enhanceio do.
 
-   $ perf stat --null --repeat 5 ./t_lockref_from-linus
+The Points are:
+1) The name should not be too long.
+   A name explaining too much about the software is noisy.
+2) Making clear the characteristics and the difference from other targets.
+   The characteristics to note are:
+   a) It writes in-coming writes in log-structured manner.
+   b) It is extremely fast in write.
+   c) It is caching software.
 
-[ OUTPUT ]
-perf_3.11.0-rc7 not found
-You may need to install linux-tools-3.11.0-rc7
-[ /OUTPUT ]
+Candidates:
+1) logcache
+Not too long but explaining enough
+but looks little bit dull to me.
+Futhermore, there still is dm-log
+and I feel like duplicating a little bit.
 
-Please, for more details see also this thread on LKML...
-"[PATCH v7 1/4] spinlock: A new lockref structure for lockless update
-of refcount"
+2) lscache
+lscache sounds cool to me.
+But the problem is that there is a preceding one with the same name
+as to caching web-server workload.
+Unique name makes it easy to search for a web documents.
 
+3) writeboost or wboost
+Concentrating on the characteristic b)
+but doesn't mention cache.
 
-[ SOLVE BUILD-DEPENDS ON UBUNTU/PRECISE ]
+Up to this point,
+which do you think the best for the new name?
+or other candidate?
 
-Before building perf, you need to solve the build-depends (which means
-"get the missing required packages to build perf").
-Normally, you should only do on a Debian-like system (like pointed out
-by Peter Z.)...
+I suppose logcache is an acceptable compromise.
 
-   $ apt-get build-dep linux-tools
+Thanks for reading,
+Akira
 
-...but with a Ubuntu-kernel v3.2.x and corresponding "ancient"
-linux-tools in the repositories you can't!
+On 8/29/13 11:45 PM, Mikulas Patocka wrote:
+> Another idea:
+> 
+> Make the interface of dm-lc (the arguments to constructor, messages and 
+> the status line) the same as dm-cache, so that they can be driven by the 
+> same userspace code.
+> 
+> Mikulas
+> 
+> 
+> On Thu, 29 Aug 2013, Alasdair G Kergon wrote:
+> 
+>> On Wed, Aug 28, 2013 at 07:05:55PM -0700, Greg KH wrote:
+>>> For staging drivers, I need a TODO file that lists
+>>> what needs to be done to the code to get it into a mergable state for
+>>> the "real" part of the kernel,
+>>
+>> Two simple requirements before putting your proof-of-concept into staging
+>> if you want to work that way:
+>>
+>> 1) Drop the major version number to 0.  Version 1 is reserved for
+>> supported modules.
+>>
+>> 2) Agree a new and meaningful target name with us so you don't have to
+>> change it later.  "lc" means nothing, I'm afraid.
+>>
+>> Then in general terms, you should continue to compare your device-mapper
+>> target with the existing targets and where there are differences, either
+>> change your target to be like something that already exists, or be ready
+>> to explain why that can't or shouldn't be done.
+>>
+>> In particular, the interface and architecture will need substantial
+>> changes and working these out should be your highest priority.
+>>
+>> For example, you write:
+>>
+>>   Be careful, you MUST create all the LVs as the destinations of
+>>   the dirty blocks on the cache device before this operation.  Otherwise,
+>>   the kernel may crash.
+>>
+>> I read a statement like that as an indication of an interface or
+>> architectural problem.  The device-mapper approach is to 'design out'
+>> problems, rather than relying on users not doing bad things.
+>> Study the existing interfaces used by other targets to understand
+>> some approaches that proved successful, then decide which ones
+>> come closest to your needs.
+>>
+>> (Your code also needs many more comments inline to explain what it does
+>> and how it works.)
+>>
+>> The documentation file will eventually need rewriting to follow the same
+>> format as the other targets recently added to the kernel.  We document
+>> the kernel interface rather than any particular userspace tools, which
+>> just have the status of convenient examples.
+>>
+>> Another little thing I noticed: look into using something like
+>> __dm_bless_for_disk() for your metadata and clearly segregate your
+>> on-disk structures and document the layout.
+>>
+>> Alasdair
+>>
+>> --
+>> dm-devel mailing list
+>> dm-devel@redhat.com
+>> https://www.redhat.com/mailman/listinfo/dm-devel
+>>
 
-I ended up with this line by looking at the warnings from 'make -C
-tools/ perf_install'...
-
-   $ sudo apt-get install libelf-dev libdw-dev libunwind7-dev
-libslang2-dev libnuma-dev
-
-
-[ BUILD PERF-ONLY ]
-
-So, I have finished a Linux-kernel build and wanted to build perf
-(from tools-dir) ONLY!
-
-I followed the advices (I am a "good" guy) seen for example in the
-"tools/Makefile" file.
-
-[ tools/Makefile ]
-...
-        @echo 'You can do:'
-        @echo ' $$ make -C tools/ <tool>_install' <--- NOTE THIS ONE!
-        @echo ''
-        @echo '  from the kernel command line to build and install one of'
-        @echo '  the tools above'
-        @echo ''
-        @echo '  $$ make tools/install'
-        @echo ''
-        @echo '  installs all tools.'
-...
-
-OK, so I did this for a perf-only build...
-
-
-   $ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../build-perf.txt
-
-...this breaks like this...
-
-...
-make[2]: Entering directory
-`/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
-make[2]: Leaving directory
-`/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
-    LINK perf
-gcc: error: /home/wearefam/src/linux-kernel/linux/tools/lib/lk/liblk.a:
-No such file or directory
-make[1]: *** [perf] Error 1
-make[1]: Leaving directory `/home/wearefam/src/linux-kernel/linux/tools/perf'
-make: *** [perf_install] Error 2
-
-
-[ WHY IS LIBLK NOT BUILT? ]
-
-NO, indeed there exists no liblk.a!
-
-   $ LANG=C LC_ALL=C ll tools/lib/lk/
-
-[ OUTPUT ]
-total 20
-drwxr-xr-x 2 wearefam wearefam 4096 Aug 30 12:11 ./
-drwxr-xr-x 4 wearefam wearefam 4096 Jul 11 19:42 ../
--rw-r--r-- 1 wearefam wearefam 1430 Aug 30 09:56 Makefile
--rw-r--r-- 1 wearefam wearefam 2144 Jul 11 19:42 debugfs.c
--rw-r--r-- 1 wearefam wearefam  619 Jul 11 19:42 debugfs.h
-[ /OUTPUT ]
-
-Why is liblk not built?
-
-Let's have a look into some Makefiles...
-
-[ linux/tools/Makefile ]
-
-41:liblk: FORCE
-44:perf: liblk FORCE
-
-As you can see from the order of building, liblk should be built
-before perf and liblk is FORCE(d) for perf.
-Maybe, the perf experts can help here?
-( Cannot say, if linux/tools/perf/Makefile needs some massage for a
-perf-only build? )
-
-
-[ WORKAROUND ]
-
-Doing these 3 steps let me build perf (with docs etc.)...
-
-   $ sudo apt-get install libelf-dev libdw-dev libunwind7-dev
-libslang2-dev libnuma-dev
-
-   $ LANG=C LC_ALL=C make -C tools/ liblk
-
-   $ LANG=C LC_ALL=C make -C tools/ perf_install
-
-
-[ YES, IT WORKED ]
-
-   $ ~/src/linux-kernel/linux/tools/perf/perf --version
-
-[ OUTPUT ]
- perf version 3.11.rc7.ga7370
-[ /OUTPUT ]
-
-   $ ~/src/linux-kernel/linux/tools/perf/perf stat --null --repeat 5
-
-[ OUTPUT ]
-./t_lockref_from-linus
-Total loops: 2652351
-Total loops: 2604876
-Total loops: 2649696
-Total loops: 2651417
-Total loops: 2644068
-
- Performance counter stats for './t_lockref_from-linus' (5 runs):
-
-      10,002926693 seconds time elapsed
-          ( +-  0,00% )
-[ /OUTPUT ]
-
-   $ cat /proc/version
-
-[ OUTPUT ]
-Linux version 3.11.0-rc7-1-lockref-small
-(sedat.dilek@gmail.com@fambox) (gcc version 4.6.3 (Ubuntu/Linaro
-4.6.3-1ubuntu5) ) #1 SMP Fri Aug 30 10:23:19 CEST 2013
-[ /OUTPUT ]
-
-Please, have a look at this!
-
-Thanks in advance.
-
-Regards,
-- Sedat -
-
-P.S.: Cleanup perf-only build (for the sake of completeness).
-
-[ CLEANUP PERF-ONLY BUILD (WORKAROUND) ]
-
-   $ LANG=C LC_ALL=C make -C tools/ liblk_clean
-
-   $ LANG=C LC_ALL=C make -C tools/ perf_clean
-
-- EOT -
