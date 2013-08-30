@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3H3JBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:01:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51073 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab3H3JBp (ORCPT
+	id S1754115Ab3H3JLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:11:06 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:12789 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab3H3JLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:01:45 -0400
-Message-ID: <52205F37.7080002@huawei.com>
-Date: Fri, 30 Aug 2013 17:00:39 +0800
+	Fri, 30 Aug 2013 05:11:04 -0400
+Message-ID: <5220616D.6030403@huawei.com>
+Date: Fri, 30 Aug 2013 17:10:05 +0800
 From: Jianguo Wu <wujianguo@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
+To: Andrew Morton <akpm@linux-foundation.org>, <laijs@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>, <zhangyanfei@cn.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/vmalloc: use help function to get vmalloc area size
-References: <52205B09.4020800@huawei.com> <52205cb9.ca112b0a.0544.ffff8988SMTPIN_ADDED_BROKEN@mx.google.com>
-In-Reply-To: <52205cb9.ca112b0a.0544.ffff8988SMTPIN_ADDED_BROKEN@mx.google.com>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/5] mm/vmalloc: use N_MEMORY instead of N_HIGH_MEMORY
+References: <5220133E.4030204@huawei.com>
+In-Reply-To: <5220133E.4030204@huawei.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.74.216]
@@ -30,102 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/30 16:49, Wanpeng Li wrote:
+On 2013/8/30 11:36, Jianguo Wu wrote:
 
-> On Fri, Aug 30, 2013 at 04:42:49PM +0800, Jianguo Wu wrote:
->> Use get_vm_area_size() to get vmalloc area's actual size without guard page.
->>
+> Since commit 8219fc48a(mm: node_states: introduce N_MEMORY),
+> we introduced N_MEMORY, now N_MEMORY stands for the nodes that has any memory,
+> and N_HIGH_MEMORY stands for the nodes that has normal or high memory.
 > 
-> Do you see this?
-> 
-> http://marc.info/?l=linux-mm&m=137698172417316&w=2
+> The code here need to handle with the nodes which have memory,
+> we should use N_MEMORY instead.
 > 
 
-Hi Wanpeng,
-Sorry for not notice your post, please ignore this patch.
+As Michal pointed out in http://marc.info/?l=linux-kernel&m=137784852720861&w=2,
+N_HIGH_MEMORY should be kept in these places, please ignore this series.
+
+Sorry for the noise.
 
 Thanks.
 
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> ---
->> mm/vmalloc.c |   12 ++++++------
->> 1 files changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
->> index 13a5495..abe13bc 100644
->> --- a/mm/vmalloc.c
->> +++ b/mm/vmalloc.c
->> @@ -1263,7 +1263,7 @@ void unmap_kernel_range(unsigned long addr, unsigned long size)
->> int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
->> {
->> 	unsigned long addr = (unsigned long)area->addr;
->> -	unsigned long end = addr + area->size - PAGE_SIZE;
->> +	unsigned long end = addr + get_vm_area_size(area);
->> 	int err;
->>
->> 	err = vmap_page_range(addr, end, prot, *pages);
->> @@ -1558,7 +1558,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
->> 	unsigned int nr_pages, array_size, i;
->> 	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
->>
->> -	nr_pages = (area->size - PAGE_SIZE) >> PAGE_SHIFT;
->> +	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
->> 	array_size = (nr_pages * sizeof(struct page *));
->>
->> 	area->nr_pages = nr_pages;
->> @@ -1990,7 +1990,7 @@ long vread(char *buf, char *addr, unsigned long count)
->>
->> 		vm = va->vm;
->> 		vaddr = (char *) vm->addr;
->> -		if (addr >= vaddr + vm->size - PAGE_SIZE)
->> +		if (addr >= vaddr + get_vm_area_size(vm))
->> 			continue;
->> 		while (addr < vaddr) {
->> 			if (count == 0)
->> @@ -2000,7 +2000,7 @@ long vread(char *buf, char *addr, unsigned long count)
->> 			addr++;
->> 			count--;
->> 		}
->> -		n = vaddr + vm->size - PAGE_SIZE - addr;
->> +		n = vaddr + get_vm_area_size(vm) - addr;
->> 		if (n > count)
->> 			n = count;
->> 		if (!(vm->flags & VM_IOREMAP))
->> @@ -2072,7 +2072,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
->>
->> 		vm = va->vm;
->> 		vaddr = (char *) vm->addr;
->> -		if (addr >= vaddr + vm->size - PAGE_SIZE)
->> +		if (addr >= vaddr + get_vm_area_size(vm))
->> 			continue;
->> 		while (addr < vaddr) {
->> 			if (count == 0)
->> @@ -2081,7 +2081,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
->> 			addr++;
->> 			count--;
->> 		}
->> -		n = vaddr + vm->size - PAGE_SIZE - addr;
->> +		n = vaddr + get_vm_area_size(vm) - addr;
->> 		if (n > count)
->> 			n = count;
->> 		if (!(vm->flags & VM_IOREMAP)) {
->> -- 
->> 1.7.1
->>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> ---
+>  mm/vmalloc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 13a5495..1152947 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2573,7 +2573,7 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
+>  		for (nr = 0; nr < v->nr_pages; nr++)
+>  			counters[page_to_nid(v->pages[nr])]++;
+>  
+> -		for_each_node_state(nr, N_HIGH_MEMORY)
+> +		for_each_node_state(nr, N_MEMORY)
+>  			if (counters[nr])
+>  				seq_printf(m, " N%u=%u", nr, counters[nr]);
+>  	}
 
 
 
