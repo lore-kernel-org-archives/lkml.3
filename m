@@ -1,190 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab3H3NYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:24:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2253 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab3H3NYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:24:12 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=izoPm2vcUwwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Vx7YpH9LMYgA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=SM_D5HyUISvE93M-rdQA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130830132404.872203364@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 30 Aug 2013 09:02:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Dave Jones <davej@redhat.com>
-Subject: [RFC][PATCH 7/8] ftrace: Add selftest to check if RCU unsafe functions are filtered
- properly
-References: <20130830130205.504335754@goodmis.org>
-Content-Disposition: inline; filename=0007-ftrace-Add-selftest-to-check-if-RCU-unsafe-functions.patch
+	id S1756080Ab3H3NYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:24:43 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59833 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755798Ab3H3NYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 09:24:40 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 21/35] mm: Provide a mechanism to release free memory
+ to the region allocator
+To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 30 Aug 2013 18:50:27 +0530
+Message-ID: <20130830132015.4947.83016.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
+References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083013-0320-0000-0000-000000D85654
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Implement helper functions to release freepages from the buddy freelists to
+the region allocator.
 
-Add a boot time start up test that has a RCU safe ftrace_ops as well
-as an unsafe one. Make sure the RCU safe ops can trace RCU unsafe
-functions while the unsafe ftrace_ops can not.
+For simplicity, all operations related to the region allocator are performed
+at the granularity of entire memory regions. That is, when we release freepages
+to the region allocator, we free all the pages belonging to that region.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- kernel/trace/trace.h                  |    2 +
- kernel/trace/trace_selftest.c         |   94 +++++++++++++++++++++++++++++++++
- kernel/trace/trace_selftest_dynamic.c |    7 +++
- 3 files changed, 103 insertions(+)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 502fed7..3578be6 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -648,6 +648,8 @@ extern unsigned long ftrace_update_tot_cnt;
- extern int DYN_FTRACE_TEST_NAME(void);
- #define DYN_FTRACE_TEST_NAME2 trace_selftest_dynamic_test_func2
- extern int DYN_FTRACE_TEST_NAME2(void);
-+#define DYN_FTRACE_TEST_RCU_UNSAFE trace_selftest_dynamic_test_rcu_unsafe
-+extern int DYN_FTRACE_TEST_RCU_UNSAFE(void);
- 
- extern bool ring_buffer_expanded;
- extern bool tracing_selftest_disabled;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index a7329b7..24b790a 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -185,6 +185,97 @@ static void reset_counts(void)
- 	trace_selftest_test_dyn_cnt = 0;
+ mm/page_alloc.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5227ac3..d407caf 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -918,6 +918,26 @@ static void move_page_freelist(struct page *page, struct free_list *old_list,
+ 	add_to_freelist(page, new_list, order);
  }
  
-+static struct ftrace_ops ftrace_rcu_safe = {
-+	.func		= trace_selftest_test_probe1_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_RCU_SAFE,
-+};
-+
-+static struct ftrace_ops ftrace_rcu_unsafe = {
-+	.func		= trace_selftest_test_probe2_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE,
-+};
-+
-+static int test_rcu_safe_unsafe(void)
++/* Add pages from the given buddy freelist to the region allocator */
++static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
++				    int region_id)
 +{
-+	int save_ftrace_enabled = ftrace_enabled;
-+	char *func_name;
-+	int len;
-+	int ret = 0;
++	struct region_allocator *reg_alloc;
++	struct list_head *ralloc_list;
++	int order;
 +
-+	printk(KERN_CONT "PASSED\n");
-+	pr_info("Testing ftrace rcu safe unsafe: ");
++	if (WARN_ON(list_empty(&free_list->list)))
++		return;
 +
-+	ftrace_enabled = 1;
++	order = page_order(list_first_entry(&free_list->list,
++					    struct page, lru));
 +
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
++	reg_alloc = &z->region_allocator;
++	ralloc_list = &reg_alloc->region[region_id].region_area[order].list;
 +
-+	func_name = "*" __stringify(DYN_FTRACE_TEST_RCU_UNSAFE);
-+	len = strlen(func_name);
-+
-+	ftrace_set_filter(&ftrace_rcu_safe, func_name, len, 1);
-+	ftrace_set_filter(&ftrace_rcu_unsafe, func_name, len, 1);
-+
-+	/* Do single registrations first */
-+	register_ftrace_function(&ftrace_rcu_safe);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_safe);
-+
-+	if (trace_selftest_test_probe1_cnt != 1) {
-+		printk(KERN_CONT "rcu_safe expected 1 call but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	register_ftrace_function(&ftrace_rcu_unsafe);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe);
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	/* Run both together, which uses the list op */
-+
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+
-+	register_ftrace_function(&ftrace_rcu_safe);
-+	register_ftrace_function(&ftrace_rcu_unsafe);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe);
-+	unregister_ftrace_function(&ftrace_rcu_safe);
-+
-+
-+	if (trace_selftest_test_probe1_cnt != 3) {
-+		printk(KERN_CONT "rcu_safe expected 3 calls but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	ret = 0;
-+ out:
-+	ftrace_enabled = save_ftrace_enabled;
-+
-+	return ret;
++	del_from_freelist_bulk(ralloc_list, free_list, order, region_id);
 +}
 +
- static int trace_selftest_ops(int cnt)
- {
- 	int save_ftrace_enabled = ftrace_enabled;
-@@ -401,6 +492,9 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 	if (!ret)
- 		ret = trace_selftest_ops(2);
- 
-+	if (!ret)
-+		ret = test_rcu_safe_unsafe();
-+
- 	return ret;
- }
- 
-diff --git a/kernel/trace/trace_selftest_dynamic.c b/kernel/trace/trace_selftest_dynamic.c
-index b4c475a..5eefa56 100644
---- a/kernel/trace/trace_selftest_dynamic.c
-+++ b/kernel/trace/trace_selftest_dynamic.c
-@@ -11,3 +11,10 @@ int DYN_FTRACE_TEST_NAME2(void)
- 	/* used to call mcount */
- 	return 0;
- }
-+
-+int trace_selftest_dynamic_test_rcu_unsafe(void)
-+{
-+	/* used to call mcount */
-+	return 0;
-+}
-+FTRACE_UNSAFE_RCU(trace_selftest_dynamic_test_rcu_unsafe);
--- 
-1.7.10.4
-
+ /*
+  * Freeing function for a buddy system allocator.
+  *
 
