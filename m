@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3H3NMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:12:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46806 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab3H3NMP convert rfc822-to-8bit (ORCPT
+	id S1755407Ab3H3NOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:14:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44879 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329Ab3H3NOr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:12:15 -0400
-Message-ID: <1377868330.3342.10.camel@hornet>
-Subject: Re: [PATCH RFC v2 14/16] ARM: vexpress: remove custom .init_time
- hook
-From: Pawel Moll <pawel.moll@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+	Fri, 30 Aug 2013 09:14:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Fu <danifu@nvidia.com>
+Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 30 Aug 2013 14:12:10 +0100
-In-Reply-To: <1377856951.3655.34.camel@linaro1.home>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	 <1377638890-371-15-git-send-email-sebastian.hesselbarth@gmail.com>
-	 <201308291535.53005.arnd@arndb.de> <521F901B.3090305@gmail.com>
-	 <1377856951.3655.34.camel@linaro1.home>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 30 Aug 2013 13:12:10.0965 (UTC) FILETIME=[89637050:01CEA582]
-X-MC-Unique: 113083014121200701
-Content-Type: text/plain; charset=UTF-8
+        Johnny Qiu <joqiu@nvidia.com>
+Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+Date: Fri, 30 Aug 2013 15:25:32 +0200
+Message-ID: <1725801.dn2z0gQifB@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <D9A2FA38A1E15B4E832469E5FE40C7ABFB5833359F@HKMAIL01.nvidia.com>
+References: <1377863302-22465-1-git-send-email-danifu@nvidia.com> <2041584.4YznqfT0Od@vostro.rjw.lan> <D9A2FA38A1E15B4E832469E5FE40C7ABFB5833359F@HKMAIL01.nvidia.com>
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-30 at 11:02 +0100, Jon Medhurst (Tixy) wrote:
-> On Thu, 2013-08-29 at 20:16 +0200, Sebastian Hesselbarth wrote:
-> > On 08/29/13 15:35, Arnd Bergmann wrote:
-> > > On Tuesday 27 August 2013, Sebastian Hesselbarth wrote:
-> > >> @@ -422,16 +419,8 @@ void __init v2m_dt_init_early(void)
-> > >>                          pr_warning("vexpress: DT HBI (%x) is not matching "
-> > >>                                          "hardware (%x)!\n", dt_hbi, hbi);
-> > >>          }
-> > >> -}
-> > >> -
-> > >> -static void __init v2m_dt_timer_init(void)
-> > >> -{
-> > >> -       of_clk_init(NULL);
-> > >>
-> > >> -       clocksource_of_init();
-> > >> -
-> > >> -       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(),
-> > >> -                               24000000);
-> > >> +       versatile_sched_clock_init(vexpress_get_24mhz_clock_base(), 24000000);
-> > >>   }
-> > >
-> > > You are moving versatile_sched_clock_init() ahead of clocksource_of_init(), which I suspect
-> > > won't work. Have you checked this?
-> > 
-> > "Checked" as in "Tested", no I haven't.
-> > 
-> > But non-DT v2m has it in v2m_init_early also, while v2m_sp804_init()
-> > is called in v2m_timer_init().
-> > 
-> > That matches the above approach taken for DT v2m where
-> > versatile_sched_clock_init() is now called from v2m_dt_init_early()
-> > and clocksource_of_init() called from arch-wide .timer_init.
-> > 
-> > get_maintainer.pl did not spit out any additional maintainer except
-> > Russell of course. You know someone who can test the above?
+On Friday, August 30, 2013 08:26:34 PM Daniel Fu wrote:
+> X-NVConfidentiality: public
 > 
-> After adding of_clk_init(NULL) to time_init() things boot OK for me with
-> this patch. However, do we know that sched_clock is never going to get
-> read before time_init() has actually started the clock it reads? Are we
-> making things more fragile?
+> In SMP, When doing the cpuidle driver registration. There maybe only 1 cpu have register cpuidle(CPU0), 
+> but In the process of registration cpuidle driver, the scheduler maybe schedule the process to the other CPU (eg. CPU0 have heay load, migrate to CPU1) 
+> cpuidle_get_driver() --> get_cpu() , will get CPU1, if CPU1 didn't register cpuidle driver, Will get NULL.
+> 
+> I know we should prevent the registration migrate to the other CPU, but we should check drv before add refcount to prevent kernel panic at least, Right?
 
-The versatile_sched_clock_init() is currently completely independent of
-the clocksource infrastructure, so no harm should be done at all by
-moving it.
+Well, cpuidle_driver_ref() has only one caller, which is not the registration.
 
-Paweł
+However, the caller apparently assumes that that function may return NULL and
+cpuidle_driver_unref() check drv against NULL too, so cpuidle_driver_ref()
+should do that either.
+
+Did you see that problem in testing or just through code inspection?
+
+Rafael
 
 
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl] 
+> Sent: 2013年8月30日 20:01
+> To: Daniel Fu
+> Cc: daniel.lezcano@linaro.org; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Johnny Qiu
+> Subject: Re: [PATCH] cpuidle: Check cpuidle driver before add refcount
+> 
+> On Friday, August 30, 2013 07:48:22 PM Daniel Fu wrote:
+> > If the current CPU has no cpuidle driver, drv will be NULL.
+> > Check if we get drv successfully before add refount to prevent Kernel 
+> > panic.
+> 
+> What is the actual scenario that may lead to this panic?
+> 
+> Rafael
+> 
+> 
+> > Signed-off-by: Daniel Fu <danifu@nvidia.com>
+> > ---
+> >  drivers/cpuidle/driver.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c index 
+> > 3ac499d..6e11701 100644
+> > --- a/drivers/cpuidle/driver.c
+> > +++ b/drivers/cpuidle/driver.c
+> > @@ -331,7 +331,8 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
+> >  	spin_lock(&cpuidle_driver_lock);
+> >  
+> >  	drv = cpuidle_get_driver();
+> > -	drv->refcnt++;
+> > +	if (drv)
+> > +		drv->refcnt++;
+> >  
+> >  	spin_unlock(&cpuidle_driver_lock);
+> >  	return drv;
+> > 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
