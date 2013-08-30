@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3H3L4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 07:56:53 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44650 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab3H3L4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 07:56:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jianguo Wu <wujianguo@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm/acpi: use NUMA_NO_NODE
-Date: Fri, 30 Aug 2013 14:07:37 +0200
-Message-ID: <1489693.CsKFcLgBvu@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <521FF494.6000504@huawei.com>
-References: <521FF494.6000504@huawei.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754790Ab3H3MCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:02:17 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34607 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab3H3MCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:02:14 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-64-522089c4de4b
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: m.chehab@samsung.com
+Cc: kyungmin.park@samsung.com, t.stanislaws@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Subject: [PATCH v4 0/2] media: s5p-tv: clean-up and fixes
+Date: Fri, 30 Aug 2013 14:01:59 +0200
+Message-id: <1377864121-19587-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t9jAd0jnQpBBtf2mFmcbXrDbrHp8TVW
+	i8u75rBZ9GzYympxcZ28xek1p5gt5rW/ZHVg99i8pN7j4Ls9TB59W1YxenzeJBfAEsVlk5Ka
+	k1mWWqRvl8CV0TZhMWPBLraKS6d3sTYwTmXtYuTkkBAwkVg+ay87hC0mceHeerYuRi4OIYFF
+	jBInr99nAkkICbQzSZxucQex2QTMJSY+28QCYosISEjcX/2MDcRmFjjPKHHuUnwXIweHsICl
+	xNVtYSBhFgFVicafH8Hm8wr4Sfz/vYcFYpeCxM/LJ9gmMHIvYGRYxSiaWpBcUJyUnmukV5yY
+	W1yal66XnJ+7iREcFM+kdzCuarA4xCjAwajEw9swVT5IiDWxrLgy9xCjBAezkghvRapCkBBv
+	SmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQbGyDsPmneLWZns
+	Kkj6teNwl1J4S/rzT20b+lskBQ6cYa9q9W6VSOGrzt17mKd/1Zf9ik6sy5b+MXNm+qZ89ZjP
+	p9/Lapp+RTIVeyxuL2O/+aaiS7Lzy5Vn/mln373ynf7GvpQhjdFfJcQt77qL6d/qb0cb/pie
+	320s5nw17mt8dsacCcJfJkcqsRRnJBpqMRcVJwIAC/Q/WAYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 30, 2013 09:25:40 AM Jianguo Wu wrote:
-> Use more appropriate NUMA_NO_NODE instead of -1
-> 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+This patch series add restoring previous vpll rate after driver offs stream 
+or recives error.
+It also replace mxr_info, mxr_dbg, mxr_warn and mxr_err macro 
+by generic solution.
 
-I'll queue this up for 3.13.
+Mateusz Krawczuk (2):
+  media: s5p-tv: Replace mxr_ macro by default dev_
+  media: s5p-tv: Restore vpll clock rate
 
-Thanks,
-Rafael
+ drivers/media/platform/s5p-tv/mixer.h           |  12 ---
+ drivers/media/platform/s5p-tv/mixer_drv.c       |  47 ++++++-----
+ drivers/media/platform/s5p-tv/mixer_grp_layer.c |   2 +-
+ drivers/media/platform/s5p-tv/mixer_reg.c       |   6 +-
+ drivers/media/platform/s5p-tv/mixer_video.c     | 100 ++++++++++++------------
+ drivers/media/platform/s5p-tv/mixer_vp_layer.c  |   2 +-
+ drivers/media/platform/s5p-tv/sdo_drv.c         |  25 +++++-
+ 7 files changed, 101 insertions(+), 93 deletions(-)
 
-
-> ---
->  drivers/acpi/acpi_memhotplug.c |    2 +-
->  drivers/acpi/numa.c            |    4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 999adb5..c00a3a7 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -281,7 +281,7 @@ static void acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->  		if (!info->enabled)
->  			continue;
->  
-> -		if (nid < 0)
-> +		if (nid == NUMA_NO_NODE)
->  			nid = memory_add_physaddr_to_nid(info->start_addr);
->  
->  		acpi_unbind_memory_blocks(info, handle);
-> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-> index 33e609f..09f79a2 100644
-> --- a/drivers/acpi/numa.c
-> +++ b/drivers/acpi/numa.c
-> @@ -73,7 +73,7 @@ int acpi_map_pxm_to_node(int pxm)
->  {
->  	int node = pxm_to_node_map[pxm];
->  
-> -	if (node < 0) {
-> +	if (node == NUMA_NO_NODE) {
->  		if (nodes_weight(nodes_found_map) >= MAX_NUMNODES)
->  			return NUMA_NO_NODE;
->  		node = first_unset_node(nodes_found_map);
-> @@ -334,7 +334,7 @@ int acpi_get_pxm(acpi_handle h)
->  
->  int acpi_get_node(acpi_handle *handle)
->  {
-> -	int pxm, node = -1;
-> +	int pxm, node = NUMA_NO_NODE;
->  
->  	pxm = acpi_get_pxm(handle);
->  	if (pxm >= 0 && pxm < MAX_PXM_DOMAINS)
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.2
+
