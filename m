@@ -1,155 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3H3WMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 18:12:47 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:53923 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3H3WMp (ORCPT
+	id S1755606Ab3H3WOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 18:14:50 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:40218 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab3H3WOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 18:12:45 -0400
+	Fri, 30 Aug 2013 18:14:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130830130131.D7CE63E102A@localhost>
-References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
-	<1376090777-20090-5-git-send-email-roy.franz@linaro.org>
-	<20130830130131.D7CE63E102A@localhost>
-Date: Fri, 30 Aug 2013 15:12:44 -0700
-Message-ID: <CAFECyb_FkxzmbFJhMO8L1T2ZKV1OOru3uqpQOfou6NwugF3+tg@mail.gmail.com>
-Subject: Re: [PATCH 04/16] Add minimum address parameter to efi_low_alloc()
-From: Roy Franz <roy.franz@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Martin <dave.martin@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>
+In-Reply-To: <52210D34.5030807@infradead.org>
+References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
+	<52210D34.5030807@infradead.org>
+Date: Fri, 30 Aug 2013 15:14:47 -0700
+Message-ID: <CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com>
+Subject: Re: do_div() silently truncates "base" to 32bit
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        bernie@develer.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 6:01 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri,  9 Aug 2013 16:26:05 -0700, Roy Franz <roy.franz@linaro.org> wrote:
->> This allows allocations to be made low in memory while
->> avoiding allocations at the base of memory.
->
-> Your commit message should include /why/ the change is needed. From the
-> above I understand what the patch does, but I don't understand why it is
-> necessary.
+Hi
 
-This was used to avoid relocating the zImage so low in memory that it
-would conflict
-with memory range that it was decompressed into.  This is now handled
-by allocating
-the memory for the decompressed kernel, so the lower limit is no
-longer required.
-I'll remove it, as it is not necessary any more.
+On Fri, Aug 30, 2013 at 2:23 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 08/30/13 10:21, Anatol Pomozov wrote:
+>> Hi,
+>>
+>>
+>> I was debugging weird "zero divide" problem in CFQ code below
+>>
+>>
+>> static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
+>>       struct blkg_policy_data *pd, int off)
+>> {
+>>     struct cfq_group *cfqg = pd_to_cfqg(pd);
+>>     u64 samples = blkg_stat_read(&cfqg->stats.avg_queue_size_samples);
+>>     u64 v = 0;
+>>
+>>     if (samples) {
+>>         v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
+>>         do_div(v, samples);
+>>     }
+>>     __blkg_prfill_u64(sf, pd, v);
+>>     return 0;
+>> }
+>>
+>>
+>> do_div() crashes says "zero divide". It is weird because just a few
+>> lines above we check divider for zero.
+>>
+>>
+>> The problem comes from include/asm-generic/div64.h file that
+>> implements do_div() as macros:
+>>
+>> # define do_div(n,base) ({ \
+>>     uint32_t __base = (base); \
+>>     uint32_t __rem; \
+>>     __rem = ((uint64_t)(n)) % __base; \
+>>     (n) = ((uint64_t)(n)) / __base; \
+>>     __rem; \
+>>  })
+>>
+>>
+>> Do you see the problem?
+>>
+>> The problem here is that "base" argument is truncated to 32bit, but in
+>> the function above "sample" is 64bit variable. If sample's 32 low bits
+>> are zero - we have a crash. in fact we have incorrect behavior any
+>> time when high 32bits are non-zero.
+>>
+>>
+>> My question is why the base is 32bit? Why not to use 64bit arguments?
+>
+> Maybe performance related?
+>
+> If you want 64-bit values, don't use do_div() from asm-generic/div64.h.
+>
+> Instead look at linux/math64.h and use div_u64_rem() et al
+> or the recently posted div64_u64_rem().
+> [posted by Mike Snitzer on Aug. 21 2013]
+>
+> I.e., use exactly the function(s) that you need to use.
+>
+> Does that fix the problem?
 
->
-> The patch looks fine to me, but it would be worth investigating merging
-> alloc_low and alloc_high. It looks like they both do pretty close to the
-> same calculations. A single core function could do both, could have both
-> minimum and maximum constraints, and could have a flag to determine if
-> low or high addresses should be preferred.
->
-> g.
->
-> Reviewed-by: Grant Likely <grant.likely@linaro.org>
->
->>
->> Signed-off-by: Roy Franz <roy.franz@linaro.org>
->> ---
->>  arch/x86/boot/compressed/eboot.c       |   11 ++++++-----
->>  drivers/firmware/efi/efi-stub-helper.c |    7 +++++--
->>  2 files changed, 11 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
->> index 2a4430a..f44ef2f 100644
->> --- a/arch/x86/boot/compressed/eboot.c
->> +++ b/arch/x86/boot/compressed/eboot.c
->> @@ -458,7 +458,7 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
->>       }
->>
->>       status = efi_low_alloc(sys_table, 0x4000, 1,
->> -                            (unsigned long *)&boot_params);
->> +                            (unsigned long *)&boot_params, 0);
->>       if (status != EFI_SUCCESS) {
->>               efi_printk(sys_table, "Failed to alloc lowmem for boot params\n");
->>               return NULL;
->> @@ -505,7 +505,7 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
->>                       options_size++; /* NUL termination */
->>
->>                       status = efi_low_alloc(sys_table, options_size, 1,
->> -                                        &cmdline);
->> +                                        &cmdline, 0);
->>                       if (status != EFI_SUCCESS) {
->>                               efi_printk(sys_table, "Failed to alloc mem for cmdline\n");
->>                               goto fail;
->> @@ -563,7 +563,8 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
->>  again:
->>       size += sizeof(*mem_map) * 2;
->>       _size = size;
->> -     status = efi_low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
->> +     status = efi_low_alloc(sys_table, size, 1,
->> +                            (unsigned long *)&mem_map, 0);
->>       if (status != EFI_SUCCESS)
->>               return status;
->>
->> @@ -697,7 +698,7 @@ static efi_status_t relocate_kernel(struct setup_header *hdr)
->>                               nr_pages, &start);
->>       if (status != EFI_SUCCESS) {
->>               status = efi_low_alloc(sys_table, hdr->init_size,
->> -                                hdr->kernel_alignment, &start);
->> +                                hdr->kernel_alignment, &start, 0);
->>               if (status != EFI_SUCCESS)
->>                       efi_printk(sys_table, "Failed to alloc mem for kernel\n");
->>       }
->> @@ -745,7 +746,7 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
->>
->>       gdt->size = 0x800;
->>       status = efi_low_alloc(sys_table, gdt->size, 8,
->> -                        (unsigned long *)&gdt->address);
->> +                        (unsigned long *)&gdt->address, 0);
->>       if (status != EFI_SUCCESS) {
->>               efi_printk(sys_table, "Failed to alloc mem for gdt\n");
->>               goto fail;
->> diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
->> index 0218d535..40cd16e 100644
->> --- a/drivers/firmware/efi/efi-stub-helper.c
->> +++ b/drivers/firmware/efi/efi-stub-helper.c
->> @@ -163,11 +163,11 @@ fail:
->>  }
->>
->>  /*
->> - * Allocate at the lowest possible address.
->> + * Allocate at the lowest possible address, that is not below min.
->>   */
->>  static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
->>                             unsigned long size, unsigned long align,
->> -                           unsigned long *addr)
->> +                           unsigned long *addr, unsigned long min)
->>  {
->>       unsigned long map_size, desc_size;
->>       efi_memory_desc_t *map;
->> @@ -204,6 +204,9 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
->>               if (start == 0x0)
->>                       start += 8;
->>
->> +             if (start < min)
->> +                     start = min;
->> +
->>               start = round_up(start, align);
->>               if ((start + size) > end)
->>                       continue;
->> --
->> 1.7.10.4
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+It definitely fixes the crash. I've already sent a patch to CFQ
+maillist http://news.gmane.org/gmane.linux.kernel.cgroups
+
+But another question still remains: why compiler does not warn that
+size truncation happens? How to prevent bugs like CFQ one in the
+future? Should we add a compile-time assert to do_div() to prevent
+passing 64 numbers in "base" macro parameter?
