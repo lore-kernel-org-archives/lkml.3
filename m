@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab3H3QtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:49:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50078 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab3H3QtN (ORCPT
+	id S1756792Ab3H3QwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:52:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49559 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab3H3QwS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:49:13 -0400
-Date: Fri, 30 Aug 2013 18:49:05 +0200
-From: Robert Richter <rric@kernel.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] tools: perf: Fix liblk not built when using perf_install
- target
-Message-ID: <20130830164905.GA31061@rric.localhost>
-References: <1377875916-5208-1-git-send-email-sedat.dilek@gmail.com>
+	Fri, 30 Aug 2013 12:52:18 -0400
+Message-ID: <5220CDD8.6090903@arm.com>
+Date: Fri, 30 Aug 2013 17:52:40 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377875916-5208-1-git-send-email-sedat.dilek@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Sudeep.KarkadaNagesha@arm.com
+Subject: [GIT PULL] ARM/ARM64 architected timer updates for v3.12, take 2
+X-OriginalArrivalTime: 30 Aug 2013 16:52:15.0752 (UTC) FILETIME=[480E0880:01CEA5A1]
+X-MC-Unique: 113083017521604401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.08.13 17:18:36, Sedat Dilek wrote:
-> So, I tried to build perf the "official" way:
-> 
->    $ make -C tools/ perf_install
-> 
-> Unfortunately, my build breaks like this:
-> ...
-> make[2]: Entering directory
-> `~/src/linux-kernel/linux/tools/lib/traceevent'
-> make[2]: Leaving directory
-> `~/src/linux-kernel/linux/tools/lib/traceevent'
->     LINK perf
-> gcc: error: ~/src/linux-kernel/linux/tools/lib/lk/liblk.a: No such file or directory
-> make[1]: *** [perf] Error 1
-> make[1]: Leaving directory `~/src/linux-kernel/linux/tools/perf'
-> make: *** [perf_install] Error 2
-> 
-> After some discussion on IRC with peterz and acme and a closer look at
-> the targets in "tools/Makefile", I have noticed that the perf_install
-> target misses liblk to be built beforehand.
+Hi Daniel,
 
-There are no build prerequisites on purpose for install targets.
-Install targets are intended to be run with root permissions. We don't
-want to create/overwrite files in the build directory as root while
-running install rules. Thus, you always need to run:
+These are the ARM/ARM64 arch timer updates for v3.12.
+I have re-based the changes on tip/timers/core as there are conflicts
+with memory mapped arch_timers support queued recently.
+Since this series adds CPU PM notifiers for arch_timers, it is required
+to enable ARM bL cpuidle drivers(already queued for v3.12)
 
- $ make -C tools/ perf
+Russell said he wants someone from ARM to ack it, Will did the same.
+For ARM64, Catalin acked. I have updated the branch accordingly.
+If not too late, please do consider it for v3.12
 
-or similar first.
+Regards,
+Sudeep
 
-> On the contrary the perf_clean target invokes to clean liblk when perf
-> is cleaned.
-> 
-> [ tools/Makefile ]
-> ...
-> perf_clean: liblk_clean
-> 	$(call descend,$(@:_clean=),clean)
-> ...
-> 
-> Fix this by adding liblk target to perf_install target.
+The following changes since commit cfb6d656d569510ac9239583ce09e4c92ad54719:
 
-So no, this is not the proper fix.
+  Merge branch 'timers/clockevents-next' of
+git://git.linaro.org/people/dlezcano/clockevents into timers/core
+(2013-08-21 14:59:23 +0200)
 
-Before installing you *need* to build. You might want to fix the
-documenation...
+are available in the git repository at:
 
--Robert
+
+  git://linux-arm.org/linux-skn.git timer_evtstrm
+
+for you to fetch changes up to c213e17db6904bb593fd26894091103554eaca09:
+
+  drivers: clocksource: add CPU PM notifier for ARM architected timer
+(2013-08-30 17:40:26 +0100)
+
+----------------------------------------------------------------
+Sudeep KarkadaNagesha (4):
+  ARM/ARM64: arch_timer: add macros for bits in control register
+  ARM: arch_timer: add support to configure and enable event stream
+  ARM64: arch_timer: add support to configure and enable event stream
+  drivers: clocksource: add CPU PM notifier for ARM architected timer
+
+Will Deacon (1):
+  drivers: clocksource: add support for ARM architected timer event stream
+
+ arch/arm/include/asm/arch_timer.h    | 36 +++++++++++--
+ arch/arm/include/uapi/asm/hwcap.h    |  1 +
+ arch/arm/kernel/setup.c              |  1 +
+ arch/arm64/include/asm/arch_timer.h  | 42 +++++++++++++---
+ arch/arm64/include/asm/hwcap.h       | 11 ++--
+ arch/arm64/include/uapi/asm/hwcap.h  |  1 +
+ arch/arm64/kernel/setup.c            | 11 ++++
+ drivers/clocksource/Kconfig          | 15 ++++++
+ drivers/clocksource/arm_arch_timer.c | 49 ++++++++++++++++++
+ include/clocksource/arm_arch_timer.h | 10 ++++
+ 10 files changed, 161 insertions(+), 16 deletions(-)
+
