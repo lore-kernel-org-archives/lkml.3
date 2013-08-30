@@ -1,68 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3H3JLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:11:06 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:12789 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab3H3JLE (ORCPT
+	id S1754288Ab3H3JNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:13:50 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:25640 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab3H3JNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:11:04 -0400
-Message-ID: <5220616D.6030403@huawei.com>
-Date: Fri, 30 Aug 2013 17:10:05 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 30 Aug 2013 05:13:48 -0400
+X-Spam-Score: -100.9
+Message-ID: <52206202.8050001@asianux.com>
+Date: Fri, 30 Aug 2013 17:12:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, <laijs@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <zhangyanfei@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 1/5] mm/vmalloc: use N_MEMORY instead of N_HIGH_MEMORY
-References: <5220133E.4030204@huawei.com>
-In-Reply-To: <5220133E.4030204@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
+References: <521B2AF7.6070806@asianux.com> <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com> <521B3514.305@asianux.com> <521C26FA.8050208@asianux.com>
+In-Reply-To: <521C26FA.8050208@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/30 11:36, Jianguo Wu wrote:
-
-> Since commit 8219fc48a(mm: node_states: introduce N_MEMORY),
-> we introduced N_MEMORY, now N_MEMORY stands for the nodes that has any memory,
-> and N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+On 08/27/2013 12:11 PM, Chen Gang wrote:
+> On 08/26/2013 06:59 PM, Chen Gang wrote:
+>> On 08/26/2013 06:21 PM, Geert Uytterhoeven wrote:
+>>> On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>> Need add default "gpio.h" for h8300, or can not pass compiling.
+>>>>
+>>>> The related error (allmodconfig for h8300):
+>>>>
+>>>>   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
+>>>>    #include <asm/gpio.h>
+>>>>                         ^
+>>>
+>>> I this include needed at all? Perhaps it can just be removed?
+>>>
+>>
+>> Pardon ?  Do you mean, only removing it  will be OK ?
+>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>> ---
+>>>>  arch/h8300/include/asm/Kbuild |    1 +
+>>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
+>>>> index 8ada3cf..4c627aa 100644
+>>>> --- a/arch/h8300/include/asm/Kbuild
+>>>> +++ b/arch/h8300/include/asm/Kbuild
+>>>> @@ -1,6 +1,7 @@
+>>>>
+>>>>  generic-y += clkdev.h
+>>>>  generic-y += exec.h
+>>>> +generic-y += gpio.h
+>>>>  generic-y += linkage.h
+>>>>  generic-y += mmu.h
+>>>>  generic-y += module.h
+>>>
+>>> The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
+>>>
+>>> EXPORT_SYMBOL(h8300_reserved_gpio);
+>>> EXPORT_SYMBOL(h8300_free_gpio);
+>>> EXPORT_SYMBOL(h8300_set_gpio_dir);
+>>>
+>>> and these are definitely not provided by asm-generic/gpio.h.
+>>>
+>>
+>> Yeah, I will try to remove "#include <asm/gpio.h>" to see whether can
+>> pass compiling, tomorrow.  :-)
+>>
+>> And now, I feel (just guess), it will not, for h8300 really need gpio
+>> (it has "gpio-internal.h"), commonly it will need "asm/gpio.h" too.
+>>
+>> Tomorrow, I will try to prove whether my guess is correct or not.  ;-).
+>>
 > 
-> The code here need to handle with the nodes which have memory,
-> we should use N_MEMORY instead.
+> After reading the related code (search "gpio.h" in root source tree),
+> it seems what you said is correct, my guess is incorrect.  :-(
+> 
+> Hmm... but better to get final conclusion after finish allmodconfig
+> compiling.
+> 
+> Now, I am compiling, and excuse me, I can not finish today because of
+> some issues (mainly for 'gcc 4.8.0', part for 'ld 2.22', and part for
+> kernel), I will 'process' them, hope can finish before 2013-08-31.
 > 
 
-As Michal pointed out in http://marc.info/?l=linux-kernel&m=137784852720861&w=2,
-N_HIGH_MEMORY should be kept in these places, please ignore this series.
+Oh, sorry, I can not finish allmodconfig today, I have to delay the
+schedule.
 
-Sorry for the noise.
+The excuse is "it is too many issues (both for h8000 and for other sub
+systems) than I guessed originally".
+
+I should try to finish it within next week (2013-09-06).
+
+
+BTW: I disable the '-Os' for allmodconfig under h8300, or gcc will cause
+many various bugs (disable '-Os' doesn't matter with our goal, and I
+will continue for gcc issues with gcc guys, next).
+
 
 Thanks.
 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> ---
->  mm/vmalloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 13a5495..1152947 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -2573,7 +2573,7 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
->  		for (nr = 0; nr < v->nr_pages; nr++)
->  			counters[page_to_nid(v->pages[nr])]++;
->  
-> -		for_each_node_state(nr, N_HIGH_MEMORY)
-> +		for_each_node_state(nr, N_MEMORY)
->  			if (counters[nr])
->  				seq_printf(m, " N%u=%u", nr, counters[nr]);
->  	}
+> Welcome additional suggestions or completions.
+> 
+> Thanks.
+> 
+>>
+>> Thanks.
+>>
+>>> Gr{oetje,eeting}s,
+>>>
+>>>                         Geert
+>>>
+>>> --
+>>> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>>
+>>> In personal conversations with technical people, I call myself a hacker. But
+>>> when I'm talking to journalists I just say "programmer" or something like that.
+>>>                                 -- Linus Torvalds
+>>>
+>>>
+>>
+>>
+> 
+> 
 
 
-
+-- 
+Chen Gang
