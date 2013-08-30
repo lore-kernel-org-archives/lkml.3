@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab3H3Qmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:42:50 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46396 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab3H3QlK (ORCPT
+	id S1757129Ab3H3QoB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:44:01 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:34292 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756612Ab3H3Qn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:41:10 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, netdev@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 6/7] Drop MAINTAINERS entry for H8/300
-Date: Fri, 30 Aug 2013 09:40:41 -0700
-Message-Id: <1377880842-6835-7-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
-References: <1377880842-6835-1-git-send-email-linux@roeck-us.net>
+	Fri, 30 Aug 2013 12:43:59 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Greg KH <greg@kroah.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        linux-kernel@vger.kernel.org, m.chehab@samsung.com,
+        linux-media@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Dell SP2008WFP monitor.
+Date: Fri, 30 Aug 2013 18:45:22 +0200
+Message-ID: <3315071.bviZFKW3Se@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130830163958.GA7556@kroah.com>
+References: <cover.1377781889.git.joseph.salisbury@canonical.com> <1985123.qJiQ0PhVD2@avalon> <20130830163958.GA7556@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The architecture is gone.
+Hi Greg,
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- MAINTAINERS |    8 --------
- 1 file changed, 8 deletions(-)
+On Friday 30 August 2013 09:39:58 Greg KH wrote:
+> On Fri, Aug 30, 2013 at 12:28:16PM +0200, Laurent Pinchart wrote:
+> > On Thursday 29 August 2013 21:00:21 Greg KH wrote:
+> > > On Fri, Aug 30, 2013 at 02:41:17AM +0200, Laurent Pinchart wrote:
+> > > > On Thursday 29 August 2013 11:17:41 Joseph Salisbury wrote:
+> > > > > BugLink: http://bugs.launchpad.net/bugs/1217957
+> > > > > 
+> > > > > Add quirk for Dell SP2008WFP monitor: 05a9:2641
+> > > > > 
+> > > > > Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+> > > > > Tested-by: Christopher Townsend <christopher.townsend@canonical.com>
+> > > > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > > > Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> > > > > Cc: linux-media@vger.kernel.org
+> > > > > Cc: linux-kernel@vger.kernel.org
+> > > > > Cc: stable@vger.kernel.org
+> > > > 
+> > > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > > 
+> > > > I've applied it to my tree. Given that we're too close to the v3.12
+> > > > merge window I will push it for v3.13.
+> > > 
+> > > A quirk has to wait that long?  That's not ok, they should go in much
+> > > sooner than that...
+> > 
+> > Can such a patch get merged during the -rc phase ? If so I will push it to
+> > v3.12.
+> 
+> Yes it can,
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8197fbd..62e513e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8482,14 +8482,6 @@ S:	Maintained
- F:	arch/m68k/*/*_no.*
- F:	arch/m68k/include/asm/*_no.*
- 
--UCLINUX FOR RENESAS H8/300 (H8300)
--M:	Yoshinori Sato <ysato@users.sourceforge.jp>
--W:	http://uclinux-h8.sourceforge.jp/
--S:	Supported
--F:	arch/h8300/
--F:	drivers/ide/ide-h8300.c
--F:	drivers/net/ethernet/8390/ne-h8300.c
--
- UDF FILESYSTEM
- M:	Jan Kara <jack@suse.cz>
- S:	Maintained
+OK, I'll send a pull request to Mauro right after the v3.12 merge window 
+closes, as he's pretty busy with pending pull requests for v3.12 at the 
+moment.
+
+> and it should also be merged to stable releases, as the cc: stable shows.
+
+Sure, that was my plan.
+
 -- 
-1.7.9.7
+Regards,
+
+Laurent Pinchart
 
