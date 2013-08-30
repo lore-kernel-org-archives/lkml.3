@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3H3FsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 01:48:01 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60016 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3H3Fr7 (ORCPT
+	id S1754300Ab3H3FvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 01:51:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:8880 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab3H3FvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 01:47:59 -0400
-From: Bob Liu <lliubbo@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, hpa@linux.intel.com, yinghai@kernel.org,
-        jacob.shin@amd.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
-        Bob Liu <bob.liu@oracle.com>
-Subject: [PATCH] x86: e820: fix memmap kernel boot parameter
-Date: Fri, 30 Aug 2013 13:47:53 +0800
-Message-Id: <1377841673-17361-1-git-send-email-bob.liu@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 30 Aug 2013 01:51:10 -0400
+X-Spam-Score: -100.9
+Message-ID: <52203283.4020701@asianux.com>
+Date: Fri, 30 Aug 2013 13:49:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2]  h8300/kernel/setup.c: add "linux/initrd.h" to pass
+ compiling
+References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <52202045.1050506@roeck-us.net>
+In-Reply-To: <52202045.1050506@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel boot parameter memmap=nn[KMG]$ss[KMG] is used to mark specific memory as
-reserved. Region of memory to be used is from ss to ss+nn.
+On 08/30/2013 12:32 PM, Guenter Roeck wrote:
+> On 08/29/2013 08:59 PM, Chen Gang wrote:
+>> The related error (allmodconfig for h8300):
+>>
+>>    arch/h8300/kernel/setup.c: In function 'setup_arch':
+>>    arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared
+>> (first use in this function)
+>>       initrd_start = memory_start;
+>>       ^
+>>    arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier
+>> is reported only once for each function it appears in
+>>    arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared
+>> (first use in this function)
+>>       initrd_end = memory_start += be32_to_cpu(((unsigned long *)
+>> (memory_start))[2]);
+>>       ^
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>   arch/h8300/kernel/setup.c |    4 ++++
+>>   1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/h8300/kernel/setup.c b/arch/h8300/kernel/setup.c
+>> index d0b1607..85639a1 100644
+>> --- a/arch/h8300/kernel/setup.c
+>> +++ b/arch/h8300/kernel/setup.c
+>> @@ -47,6 +47,10 @@
+>>   #include <asm/regs267x.h>
+>>   #endif
+>>
+>> +#if defined(CONFIG_BLK_DEV_INITRD)
+>> +#include <linux/initrd.h>
+>> +#endif
+>> +
+> 
+> Is the #ifdef/#endif really needed ? If not you should drop it.
+> 
 
-But I found the action of this parameter is not as expected.
-I tried on two machines.
-Machine1: bootcmdline in grub.cfg "memmap=800M$0x60bfdfff", but the result of
-"cat /proc/cmdline" changed to "memmap=800M/bin/bashx60bfdfff" after system
-booted.
+"linux/initrd.h" is needed by 'initrd_start' and 'initrd_end' when
+BLK_DEV_INITRD enabled.
 
-Machine2: bootcmdline in grub.cfg "memmap=0x77ffffff$0x880000000", the result of
-"cat /proc/cmdline" changed to "memmap=0x77ffffffx880000000".
+'memory_start' is defined within this file, and also only one place may
+use "linux/initrd.h" within this file.
 
-I didn't find the root cause, I think maybe grub reserved "$0" as something
-special.
-Replace '$' with '%' in kernel boot parameter can fix this issue.
+So if BLK_DEV_INITRD disabled, do not need "linux/initrd.h" either.
 
-Signed-off-by: Bob Liu <bob.liu@oracle.com>
----
- Documentation/kernel-parameters.txt |    6 +++---
- arch/x86/kernel/e820.c              |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7f9d4f5..a96c7b1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1604,13 +1604,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			[KNL,ACPI] Mark specific memory as ACPI data.
- 			Region of memory to be used, from ss to ss+nn.
- 
--	memmap=nn[KMG]$ss[KMG]
-+	memmap=nn[KMG]%ss[KMG]
- 			[KNL,ACPI] Mark specific memory as reserved.
- 			Region of memory to be used, from ss to ss+nn.
- 			Example: Exclude memory from 0x18690000-0x1869ffff
--			         memmap=64K$0x18690000
-+			         memmap=64K%0x18690000
- 			         or
--			         memmap=0x10000$0x18690000
-+			         memmap=0x10000%0x18690000
- 
- 	memory_corruption_check=0/1 [X86]
- 			Some BIOSes seem to corrupt the first 64k of
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index d32abea..8483d45 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -869,7 +869,7 @@ static int __init parse_memmap_one(char *p)
- 	} else if (*p == '#') {
- 		start_at = memparse(p+1, &p);
- 		e820_add_region(start_at, mem_size, E820_ACPI);
--	} else if (*p == '$') {
-+	} else if (*p == '%') {
- 		start_at = memparse(p+1, &p);
- 		e820_add_region(start_at, mem_size, E820_RESERVED);
- 	} else
+Please reference the code in "arch/h8300/kernel/setup.c" below.
+
+102 void __init setup_arch(char **cmdline_p)
+103 {
+104         int bootmap_size;
+105 
+106         memory_start = (unsigned long) &_ramstart;
+107 
+108         /* allow for ROMFS on the end of the kernel */
+109         if (memcmp((void *)memory_start, "-rom1fs-", 8) == 0) {
+110 #if defined(CONFIG_BLK_DEV_INITRD)
+111                 initrd_start = memory_start;
+112                 initrd_end = memory_start += be32_to_cpu(((unsigned long *) (memory_start))[2]);
+113 #else
+114                 memory_start += be32_to_cpu(((unsigned long *) memory_start)[2]);
+115 #endif
+116         }
+
+
+
+> Thanks,
+> Guenter
+> 
+> 
+> 
+
+Thanks.
 -- 
-1.7.10.4
-
+Chen Gang
