@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3H3FvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 01:51:11 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:8880 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3H3FvK (ORCPT
+	id S1755034Ab3H3Fy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 01:54:29 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:52215 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3H3Fy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 01:51:10 -0400
-X-Spam-Score: -100.9
-Message-ID: <52203283.4020701@asianux.com>
-Date: Fri, 30 Aug 2013 13:49:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 30 Aug 2013 01:54:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1844wO7YIHutG60mB04U3ZB
+Date: Thu, 29 Aug 2013 22:54:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Tero Kristo <t-kristo@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 3/5] clk: dt: binding for basic multiplexer clock
+Message-ID: <20130830055422.GS7656@atomide.com>
+References: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
+ <1377150793-27864-4-git-send-email-mturquette@linaro.org>
+ <2A930389-012E-45C3-93EB-6B4A41DB2EF5@codeaurora.org>
+ <20130829011425.8231.78802@quantum>
+ <521EF109.3010500@ti.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2]  h8300/kernel/setup.c: add "linux/initrd.h" to pass
- compiling
-References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <52202045.1050506@roeck-us.net>
-In-Reply-To: <52202045.1050506@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521EF109.3010500@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 12:32 PM, Guenter Roeck wrote:
-> On 08/29/2013 08:59 PM, Chen Gang wrote:
->> The related error (allmodconfig for h8300):
->>
->>    arch/h8300/kernel/setup.c: In function 'setup_arch':
->>    arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared
->> (first use in this function)
->>       initrd_start = memory_start;
->>       ^
->>    arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier
->> is reported only once for each function it appears in
->>    arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared
->> (first use in this function)
->>       initrd_end = memory_start += be32_to_cpu(((unsigned long *)
->> (memory_start))[2]);
->>       ^
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>   arch/h8300/kernel/setup.c |    4 ++++
->>   1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/h8300/kernel/setup.c b/arch/h8300/kernel/setup.c
->> index d0b1607..85639a1 100644
->> --- a/arch/h8300/kernel/setup.c
->> +++ b/arch/h8300/kernel/setup.c
->> @@ -47,6 +47,10 @@
->>   #include <asm/regs267x.h>
->>   #endif
->>
->> +#if defined(CONFIG_BLK_DEV_INITRD)
->> +#include <linux/initrd.h>
->> +#endif
->> +
+* Tero Kristo <t-kristo@ti.com> [130829 00:06]:
+> On 08/29/2013 04:14 AM, Mike Turquette wrote:
+> >
+> >The mux-clock binding covers a quite a few platforms that have similar
+> >mux-clock programming requirements. If the DT binding is verbose enough
+> >then the basic mux clock driver is sufficient to initialize all of the
+> >mux clocks from DT: no new platform-specific clock driver with a bunch
+> >of data is necessary.
+> >
+> >On the other hand if we rely on tables in C to define how mux-clock
+> >parents are selected then every platform will have to write their own
+> >clock driver just to define their clock data.
+> >
+> >Having drivers written for the sole purpose of listing out a bunch of
+> >data sounds like something that DT was meant to solve, even if this
+> >isn't at the board level and is at the SoC level.
 > 
-> Is the #ifdef/#endif really needed ? If not you should drop it.
-> 
+> +1. For my work this helps quite a bit at least.
 
-"linux/initrd.h" is needed by 'initrd_start' and 'initrd_end' when
-BLK_DEV_INITRD enabled.
+Yes this is the way to do it. Please don't do drivers where the index
+to some data table is passed in device tree. That's going to be a
+nightmare in the long run.
 
-'memory_start' is defined within this file, and also only one place may
-use "linux/initrd.h" within this file.
+The binding should describe a type of hardware like a dpll or a mux,
+and then you just define as many instances of those as needed in the
+.dts files.
 
-So if BLK_DEV_INITRD disabled, do not need "linux/initrd.h" either.
+Regards,
 
-
-Please reference the code in "arch/h8300/kernel/setup.c" below.
-
-102 void __init setup_arch(char **cmdline_p)
-103 {
-104         int bootmap_size;
-105 
-106         memory_start = (unsigned long) &_ramstart;
-107 
-108         /* allow for ROMFS on the end of the kernel */
-109         if (memcmp((void *)memory_start, "-rom1fs-", 8) == 0) {
-110 #if defined(CONFIG_BLK_DEV_INITRD)
-111                 initrd_start = memory_start;
-112                 initrd_end = memory_start += be32_to_cpu(((unsigned long *) (memory_start))[2]);
-113 #else
-114                 memory_start += be32_to_cpu(((unsigned long *) memory_start)[2]);
-115 #endif
-116         }
-
-
-
-> Thanks,
-> Guenter
-> 
-> 
-> 
-
-Thanks.
--- 
-Chen Gang
+Tony
