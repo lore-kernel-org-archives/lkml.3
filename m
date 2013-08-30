@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3H3VEC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 17:04:02 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:35493 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab3H3VEA (ORCPT
+	id S1755389Ab3H3VKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 17:10:30 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:43096 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab3H3VK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 17:04:00 -0400
+	Fri, 30 Aug 2013 17:10:28 -0400
+Message-ID: <1377881073.2065.10.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH V2 5/6] vhost_net: poll vhost queue after marking DMA
+ is done
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: <mst@redhat.com>, <kvm@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1377836962-49780-6-git-send-email-jasowang@redhat.com>
+References: <1377836962-49780-1-git-send-email-jasowang@redhat.com>
+	 <1377836962-49780-6-git-send-email-jasowang@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Aug 2013 17:44:33 +0100
 MIME-Version: 1.0
-In-Reply-To: <20130830205404.GF13318@ZenIV.linux.org.uk>
-References: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
-	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
-	<52200DAE.2020303@hp.com>
-	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
-	<5220E56A.80603@hp.com>
-	<CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
-	<5220F090.5050908@hp.com>
-	<CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
-	<5220FD51.2010709@hp.com>
-	<CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
-	<20130830205404.GF13318@ZenIV.linux.org.uk>
-Date: Fri, 30 Aug 2013 14:03:59 -0700
-X-Google-Sender-Auth: Be9SiIRfzB-xTmM2p_TFijSizN0
-Message-ID: <CA+55aFwwKEaTBX9Uoexpote7dOHBq+TiJ=RifzTpVL_jh24A9w@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20114.005
+X-TM-AS-Result: No--15.732400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 1:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Not really.  Sure, you'll retry it if you race with d_move(); that's not
-> the real problem - access past the end of the object containing ->d_name.name
-> would screw you and that's what ->d_lock is preventing there.  Delayed freeing
-> of what ->d_name is pointing into is fine, but it's not the only way to get
-> hurt there...
+On Fri, 2013-08-30 at 12:29 +0800, Jason Wang wrote:
+> We used to poll vhost queue before making DMA is done, this is racy if vhost
+> thread were waked up before marking DMA is done which can result the signal to
+> be missed. Fix this by always poll the vhost thread before DMA is done.
 
-Umm? We follow d->d_name.name without d_lock under RCU all the time -
-that's what the pathname lookup is all about, after all.
+Does this bug only exist in net-next or is it older?  Should the fix go
+to net and stable branches?
 
-Yes, yes, you haev to be careful and cannot just blindly trust the
-length: you also have to check for NUL character as you are copying it
-and stop if you hit it. But that's trivial.
+Ben.
 
-Why would d_prepend be any different?
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/net.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index ff60c2a..d09c17c 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>  	struct vhost_virtqueue *vq = ubufs->vq;
+>  	int cnt = atomic_read(&ubufs->kref.refcount);
+>  
+> +	/* set len to mark this desc buffers done DMA */
+> +	vq->heads[ubuf->desc].len = success ?
+> +		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+> +	vhost_net_ubuf_put(ubufs);
+> +
+>  	/*
+>  	 * Trigger polling thread if guest stopped submitting new buffers:
+>  	 * in this case, the refcount after decrement will eventually reach 1
+> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>  	 */
+>  	if (cnt <= 2 || !(cnt % 16))
+>  		vhost_poll_queue(&vq->poll);
+> -	/* set len to mark this desc buffers done DMA */
+> -	vq->heads[ubuf->desc].len = success ?
+> -		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+> -	vhost_net_ubuf_put(ubufs);
+>  }
+>  
+>  /* Expects to be always run from workqueue - which acts as
 
-            Linus
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
