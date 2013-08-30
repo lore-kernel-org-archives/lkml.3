@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab3H3RmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:42:04 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:49851 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab3H3RmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:42:03 -0400
-Date: Fri, 30 Aug 2013 13:42:01 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: Re: linux-next: build failure after merge of the aio tree
-Message-ID: <20130830174201.GM13330@kvack.org>
-References: <20130830175509.39d7fbfd96a4e726ba739d26@canb.auug.org.au> <CA+55aFwfaW0zZJ5_5Yhyq7+wickG0A3MPzseZ922fy56dJNAAg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwfaW0zZJ5_5Yhyq7+wickG0A3MPzseZ922fy56dJNAAg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1753096Ab3H3Rsn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:48:43 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:44207 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755786Ab3H3Rsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 13:48:41 -0400
+Date: Fri, 30 Aug 2013 13:55:25 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
+Subject: perf_event: rdpmc self-monitoring overhead issue
+Message-ID: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 10:38:25AM -0700, Linus Torvalds wrote:
-> On Fri, Aug 30, 2013 at 12:55 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > -                       aio_ring_file->f_path.dentry->d_count,
-> > +                       aio_ring_file->f_path.dentry->d_lockref.count,
-> 
-> This is wrong. If you really want the dentry count (which I doubt, I
-> don't see why this code would care _even_ just for a debug printout),
-> you should use
+Hello,
 
-Agreed -- it was just debugging code from initial development of the code, 
-so I just ended up deleting it instead.
+I've finally found time to track down why perf_event/rdpmc self-monitoring 
+overhead was so bad.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+To summarize, a test which does:
+
+   perf_event_open()
+   ioctl(PERF_EVENT_IOC_ENABLE)
+   read() /* either via syscall or  the rdpmc code listed in 
+             include/uapi/linux/perf_event.h */
+   ioctl(PERF_EVENT_IOC_DISABLE)
+
+is done, and the number of cycles for each routine is taken using
+rdtsc().
+
+On a Core2 Processor the results look something like this for read:
+
+                              | read time for 1 event
+                              | median of 1024 runs
+                              |     (cycles)
+ -----------------------------|-------------------------
+   2.6.32-perfctr (rdpmc)     |       133
+   2.6.30-perfmon2            |      1264
+   3.10                       |      1482
+   3.10 (rdpmc)               |      3062
+
+As you can see, using the userspace-only rdpmc code is twice as slow as 
+just using the read() syscall.
+
+
+I've tracked down the cause of this, and apparently it's due to
+the first access to the event's struct perf_event_mmap_page.  If 
+outside of the read timing code I do an unrelated read of the mmap() page
+to fault it in, then the result is much more believable:
+
+  3.10 (rdpmc)                 |      123
+
+So the question is, why do I have to explicitly in advance fault the
+page in?  Is there a way to force this to happen automatically?
+
+The perfctr code as far as I can tell doesn't touch its mmap page in 
+advance.
+It uses vm_insert_page() to insert the page rather than the
+rb tree stuff that perf_event uses.
+
+I know part of this overhead is due to the construction of my benchmark
+and in theory would be mitigated if you were doing a large number
+of measurements in a program, but at the same time this is also a common
+pattern when self-monitoring: putting calipers around one chunk of code
+and taking one measurement (often in a timing-critical area where
+overhead matters).
+
+Vince
