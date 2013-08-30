@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab3H3QCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 12:02:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42168 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756278Ab3H3QCV (ORCPT
+	id S1756334Ab3H3QE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 12:04:56 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:33950 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab3H3QEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 12:02:21 -0400
-Date: Fri, 30 Aug 2013 18:02:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, acme@infradead.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/4] perf, x86: Avoid checkpointed counters causing
- excessive TSX aborts v4
-Message-ID: <20130830160215.GU31370@twins.programming.kicks-ass.net>
-References: <1377128846-977-1-git-send-email-andi@firstfloor.org>
- <1377128846-977-2-git-send-email-andi@firstfloor.org>
+	Fri, 30 Aug 2013 12:04:54 -0400
+Message-ID: <5220C2A2.1020502@linaro.org>
+Date: Fri, 30 Aug 2013 09:04:50 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377128846-977-2-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/2] time: allow changing the timekeeper clock frequency
+References: <201308081953.r78Jrt0Z029523@farm-0021.internal.tilera.com> <CALAqxLX8zkzofgGSdEVsP4wdnejd25iSFHyhBwp7nRVgEnqNrA@mail.gmail.com> <520BF6EC.8070006@tilera.com> <521F95BB.2060600@tilera.com> <521FA13F.5040204@linaro.org> <5220AEF1.7080808@tilera.com>
+In-Reply-To: <5220AEF1.7080808@tilera.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 04:47:23PM -0700, Andi Kleen wrote:
-> @@ -1224,6 +1240,15 @@ again:
->  		x86_pmu.drain_pebs(regs);
->  	}
->  
-> +	/*
-> +	 * To avoid spurious interrupts with perf stat always reset checkpointed
-> +	 * counters.
-> +	 *
-> +	 * XXX move somewhere else.
-> +	 */
-> +	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
-> +		status |= (1ULL << 2);
-> +
->  	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
->  		struct perf_event *event = cpuc->events[bit];
->  
+On 08/30/2013 07:40 AM, Chris Metcalf wrote:
+> On 8/29/2013 3:30 PM, John Stultz wrote:
+>> On 08/29/2013 11:40 AM, Chris Metcalf wrote:
+>>> Ping!  I have this work queued up to push as part of the linux-tile tree for the
+>>> merge window.  Is that acceptable to the timekeeping/clocksource folks?
+>>> Should I hold it back pending further review?  Or does it make sense to
+>>> push it as-is and think about further improvements, if any, for a later release?
+>>>
+>>> https://lkml.org/lkml/2013/8/9/497
+>>> https://lkml.org/lkml/2013/8/9/499
+>> Oh right! Sorry for the slow response here! I originally replied while I
+>> was on vacation and didn't flag the thread to follow up on.
+>>
+>> Few comments below.
+> Thanks for the feedback. It does sound like too much to take on before
+> the 3.12 merge window opens, so we will plan to look into this as time
+> permits over the next little while. I've filed a bug internally to
+> track this for us.
+>
+> It sounds like the most straightforward thing for us to do may be to adopt
+> your original approach of making our clocksource driver internally convert
+> the variable frequency clocksource to a fixed frequency; the overhead
+> shouldn't be too bad and it seems like it should moot all the other
+> concerns you raised in your email.
+Yea, so most of my concerns would also apply to having the clocksource
+driver hide the frequency changes (since there still will be latency
+error, and variable freq error), but I do prefer having it as a
+clocksource specific hack, rather then in the timekeeping core so we can
+avoid seemingly condoning wide use of freq changing clocksources. If it
+does go in the core, I'm sure a few years down the line, someone will
+notice a problem with their freq changing clocksource and demand the
+bugs be fixed!
 
-I'm sure I commented on that XXX thing.. 
+That said, I'm still open to further discussing your current approach
+for the next cycle. Since its possible the latency and freq errors
+really are small enough to not matter, avoiding the inefficiencies of
+hiding the changes in the clocksource driver might be worth it.
 
-Yep, right here:
+thanks
+-john
 
-  http://marc.info/?l=linux-kernel&m=137638980210140
-
-Sup?
