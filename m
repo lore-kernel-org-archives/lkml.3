@@ -1,138 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3H3JNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 05:13:50 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25640 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab3H3JNs (ORCPT
+	id S1754440Ab3H3JNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 05:13:53 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:58189 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3H3JNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 05:13:48 -0400
-X-Spam-Score: -100.9
-Message-ID: <52206202.8050001@asianux.com>
-Date: Fri, 30 Aug 2013 17:12:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 30 Aug 2013 05:13:50 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
-References: <521B2AF7.6070806@asianux.com> <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com> <521B3514.305@asianux.com> <521C26FA.8050208@asianux.com>
-In-Reply-To: <521C26FA.8050208@asianux.com>
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <CAJfpegszfc9_ZkGGHg84VvOdmWz1=zWCnHRDbVOWf6_c-oJAXA@mail.gmail.com>
+References: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
+	<20130816112854.5630.1907.stgit@maximpc.sw.ru>
+	<20130829154110.GB19636@tucsk.piliscsaba.szeredi.hu>
+	<521F7672.7050407@parallels.com>
+	<20130829163744.GC19636@tucsk.piliscsaba.szeredi.hu>
+	<CAJfpegszfc9_ZkGGHg84VvOdmWz1=zWCnHRDbVOWf6_c-oJAXA@mail.gmail.com>
+Date: Fri, 30 Aug 2013 11:13:48 +0200
+Message-ID: <CAJfpegueaj7dF1SL68=pKSTO-q6RnbD-D=C65B8RGEPC4_DMfQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate() -v2
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 12:11 PM, Chen Gang wrote:
-> On 08/26/2013 06:59 PM, Chen Gang wrote:
->> On 08/26/2013 06:21 PM, Geert Uytterhoeven wrote:
->>> On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
->>>> Need add default "gpio.h" for h8300, or can not pass compiling.
->>>>
->>>> The related error (allmodconfig for h8300):
->>>>
->>>>   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
->>>>    #include <asm/gpio.h>
->>>>                         ^
->>>
->>> I this include needed at all? Perhaps it can just be removed?
->>>
->>
->> Pardon ?  Do you mean, only removing it  will be OK ?
->>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  arch/h8300/include/asm/Kbuild |    1 +
->>>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
->>>> index 8ada3cf..4c627aa 100644
->>>> --- a/arch/h8300/include/asm/Kbuild
->>>> +++ b/arch/h8300/include/asm/Kbuild
->>>> @@ -1,6 +1,7 @@
->>>>
->>>>  generic-y += clkdev.h
->>>>  generic-y += exec.h
->>>> +generic-y += gpio.h
->>>>  generic-y += linkage.h
->>>>  generic-y += mmu.h
->>>>  generic-y += module.h
->>>
->>> The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
->>>
->>> EXPORT_SYMBOL(h8300_reserved_gpio);
->>> EXPORT_SYMBOL(h8300_free_gpio);
->>> EXPORT_SYMBOL(h8300_set_gpio_dir);
->>>
->>> and these are definitely not provided by asm-generic/gpio.h.
->>>
->>
->> Yeah, I will try to remove "#include <asm/gpio.h>" to see whether can
->> pass compiling, tomorrow.  :-)
->>
->> And now, I feel (just guess), it will not, for h8300 really need gpio
->> (it has "gpio-internal.h"), commonly it will need "asm/gpio.h" too.
->>
->> Tomorrow, I will try to prove whether my guess is correct or not.  ;-).
->>
-> 
-> After reading the related code (search "gpio.h" in root source tree),
-> it seems what you said is correct, my guess is incorrect.  :-(
-> 
-> Hmm... but better to get final conclusion after finish allmodconfig
-> compiling.
-> 
-> Now, I am compiling, and excuse me, I can not finish today because of
-> some issues (mainly for 'gcc 4.8.0', part for 'ld 2.22', and part for
-> kernel), I will 'process' them, hope can finish before 2013-08-31.
-> 
+On Thu, Aug 29, 2013 at 6:41 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> BTW, isn't it enough to do the filemap_write_and_wait() *plus* the
+> fuse_set_nowrite()?
 
-Oh, sorry, I can not finish allmodconfig today, I have to delay the
-schedule.
+Thought about it a bit and I think this should do fine.
 
-The excuse is "it is too many issues (both for h8000 and for other sub
-systems) than I guessed originally".
+Any writes before the fallocate will go trough before the fallocate.
+i_mutex guarantees that only one instance of fuse_set_nowrite() is
+running.  Any mmaped writes during the fallocate() will go after the
+fallocate request and the page cache truncation and that's fine too.
+Page cache is consistent since it doens't contain pages for those
+writes to the hole.  Subsequent reads to that area will fill them in.
 
-I should try to finish it within next week (2013-09-06).
+Any other concerns?
 
-
-BTW: I disable the '-Os' for allmodconfig under h8300, or gcc will cause
-many various bugs (disable '-Os' doesn't matter with our goal, and I
-will continue for gcc issues with gcc guys, next).
-
-
-Thanks.
-
-> 
-> Welcome additional suggestions or completions.
-> 
-> Thanks.
-> 
->>
->> Thanks.
->>
->>> Gr{oetje,eeting}s,
->>>
->>>                         Geert
->>>
->>> --
->>> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->>>
->>> In personal conversations with technical people, I call myself a hacker. But
->>> when I'm talking to journalists I just say "programmer" or something like that.
->>>                                 -- Linus Torvalds
->>>
->>>
->>
->>
-> 
-> 
-
-
--- 
-Chen Gang
+Thanks,
+Miklos
