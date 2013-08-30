@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab3H3UME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 16:12:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41148 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3H3UMB (ORCPT
+	id S1755045Ab3H3UPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 16:15:32 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:2102 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3H3UPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 16:12:01 -0400
-Message-ID: <5220FC8C.90908@wwwdotorg.org>
-Date: Fri, 30 Aug 2013 14:11:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 16:15:31 -0400
+Message-ID: <5220FD51.2010709@hp.com>
+Date: Fri, 30 Aug 2013 16:15:13 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
-        thierry.reding@gmail.com, grant.likely@linaro.org,
-        linux@arm.linux.org.uk, rob@landley.net, ian.campbell@citrix.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale
- FTM PWM
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com> <5EFBF478-CFCC-4E66-A279-25F4A338B05B@kernel.crashing.org>
-In-Reply-To: <5EFBF478-CFCC-4E66-A279-25F4A338B05B@kernel.crashing.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com> <1375758759-29629-2-git-send-email-Waiman.Long@hp.com> <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com> <1377751465.4028.20.camel@pasglop> <20130829070012.GC27322@gmail.com> <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com> <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com> <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com> <52200DAE.2020303@hp.com> <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com> <5220E56A.80603@hp.com> <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com> <5220F090.5050908@hp.com> <CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
+In-Reply-To: <CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 01:19 PM, Kumar Gala wrote:
-> Should have at least something w/regards to a commit message.
-> 
-> On Aug 20, 2013, at 10:07 PM, Xiubo Li wrote:
-> 
->> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
->> ---
->> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52 ++++++++++++++++++++++
->> 1 file changed, 52 insertions(+)
->> create mode 100644 Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
->>
->> diff --git a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
->> new file mode 100644
->> index 0000000..698965b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
->> @@ -0,0 +1,52 @@
->> +Freescale FTM PWM controller
->> +
->> +Required properties:
->> +- compatible: should be "fsl,vf610-ftm-pwm"
->> +- reg: physical base address and length of the controller's registers
->> +- #pwm-cells: Should be 3. Number of cells being used to specify PWM property.
->> +  First cell specifies the per-chip channel index of the PWM to use, the
->> +  second cell is the period in nanoseconds and bit 0 in the third cell is
->> +  used to encode the polarity of PWM output. Set bit 0 of the third in PWM
->> +  specifier to 1 for inverse polarity & set to 0 for normal polarity.
->> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by 2^n(n = 0 ~ 7).
->> +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
-> 
-> Should describe this in more detail, what does the value actually mean for what modes there are?
+On 08/30/2013 03:33 PM, Linus Torvalds wrote:
+> On Fri, Aug 30, 2013 at 12:20 PM, Waiman Long<waiman.long@hp.com>  wrote:
+>> Below is the perf data of my short workloads run in an 80-core DL980:
+> Ok, that doesn't look much like d_lock any more. Sure, there's a small
+> amount of spinlocking going on with lockref being involved, but on the
+> whole even that looks more like getcwd and other random things.
 
-Assuming "CPWM" is clearly explained in the HW documentation for this
-chip (I have no idea if that's actually the case), then is it still
-necessary to explain what this means in *detail*? Perhaps simply "see
-section XXX in the TRM" or "see register XXX, bit YYY in the HW
-documentation" would be enough?
+Yes, d_lock contention isn't a major one in the perf profile. However, 
+sometimes a small improvement can lead to a noticeable improvement in 
+performance.
+> I do agree that getcwd() can probably be hugely optimized. Nobody has
+> ever bothered, because it's never really performance-critical, and I
+> think AIM7 ends up just doing something really odd. I bet we could fix
+> it entirely if we cared enough.
+The prepend_path() isn't all due to getcwd. The correct profile should be
+
+
+|--12.81%-- prepend_path
+                          |          |
+                          |          |--67.35%-- d_path
+                          |          |          |
+                          |          |          |--60.72%-- 
+proc_pid_readlink
+                          |          |          |          sys_readlinkat
+                          |          |          |          sys_readlink
+                          |          |          |          
+system_call_fastpath
+                          |          |          |          __GI___readlink
+                          |          |          |          0x302f64662f666c
+                          |          |          |
+                          |          |           --39.28%-- 
+perf_event_mmap_event
+                          |          |
+                          |           --32.65%-- sys_getcwd
+                          |                     system_call_fastpath
+                          |                     __getcwd
+
+Yes, the perf subsystem itself can contribute a sizeable portion of the 
+spinlock contention. In fact, I have also applied my seqlock patch that 
+was sent a while ago to the test kernel in order to get a more accurate 
+perf profile. The seqlock patch will allow concurrent d_path() calls 
+without one blocking the others. In the 240-core prototype machine, it 
+was not possible to get an accurate perf profile for some workloads 
+because more than 50% of the time was spent in spinlock contention due 
+to the use of perf. An accurate perf profile can only be obtained in 
+those cases by applying my lockref and seqlock patches. I hope someone 
+will have the time to review my seqlock patch to see what additional 
+changes will be needed. I really like to see it merged in some form to 
+3.12.
+
+> I just wonder if it's even worth it (I assume AIM7 is something HP
+> uses internally, because I've never really heard of anybody else
+> caring)
+
+Our performance group is actually pretty new. It was formed 2 years ago 
+and we began actively participating in the Linux kernel development just 
+in the past year.
+
+We use the AIM7 benchmark internally primarily because it is easy to run 
+and cover quite a lot of different areas in the kernel. We are also 
+using specJBB and SwingBench for performance benchmarking problem. We 
+are also trying to look for more benchmarks to use in the future.
+
+Regards,
+Longman
