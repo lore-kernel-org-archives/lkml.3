@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3H3PUv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:20:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9456 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab3H3PUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:20:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,991,1367996400"; 
-   d="scan'208";a="353890163"
-Message-ID: <5220B83A.6070709@intel.com>
-Date: Fri, 30 Aug 2013 08:20:26 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756431Ab3H3PYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:24:49 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:47455 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab3H3PYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 11:24:47 -0400
 MIME-Version: 1.0
-To: Vineet Gupta <vineetg76@gmail.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Michel Lespinasse <walken@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
- ARC
-References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com> <521F662F.4050003@intel.com> <52204E4D.3030602@synopsys.com>
-In-Reply-To: <52204E4D.3030602@synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUUyiZXwjBkEtzHGW0sN0fvVDx_wrt5NT2Wuy5hNODk7Ow@mail.gmail.com>
+References: <CA+icZUWNrZQgjuXX+7JFgRKfCjYR_fSkfeRxHot_=xpLSaNaxg@mail.gmail.com>
+	<CA+icZUWNoq2+y511Mk8j_Vmo1_CdTmaG=2nLDz8oh6QPDqr_+A@mail.gmail.com>
+	<CA+icZUUyiZXwjBkEtzHGW0sN0fvVDx_wrt5NT2Wuy5hNODk7Ow@mail.gmail.com>
+Date: Fri, 30 Aug 2013 17:24:46 +0200
+Message-ID: <CA+icZUXBMOH9s+ybTXWo1R1YOp+AbsouGLoz_OwcCV6-MbkdUw@mail.gmail.com>
+Subject: Re: [3.11-rc7] Building perf-only the "official" way seems to be BROKEN?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 12:48 AM, Vineet Gupta wrote:
-> If we had ARCH_FRAME_POINTER_UNAVAILABLE (def_bool n), we could potentially remove
-> ARCH_FRAME_POINTER too:
-> 
-> 1. arches which explicitly select ARCH_FRAME_POINTER (xtensa, parisc, arm64, x86,
-> unicore32, tile) could just drop that select.
-> 
-> 2. Others which add themselves to config FRAME_POINTER depends on (CRIS, M68K,
-> FRV, UML, AVR32, SUPERH, BLACKFIN, MN10300, METAG) can simply be removed form that
-> list.
-> 
-> 3. Other who want to inhibit FP obviously select it (MIPS, PPC, S390, MICROBLAZE,
-> ARM_UNWIND, ARC)
+On Fri, Aug 30, 2013 at 4:54 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Aug 30, 2013 at 4:28 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> [...]
+>>
+>>> [ BUILD PERF-ONLY ]
+>>>
+>>> So, I have finished a Linux-kernel build and wanted to build perf
+>>> (from tools-dir) ONLY!
+>>>
+>>> I followed the advices (I am a "good" guy) seen for example in the
+>>> "tools/Makefile" file.
+>>>
+>>> [ tools/Makefile ]
+>>> ...
+>>>         @echo 'You can do:'
+>>>         @echo ' $$ make -C tools/ <tool>_install' <--- NOTE THIS ONE!
+>>>         @echo ''
+>>>         @echo '  from the kernel command line to build and install one of'
+>>>         @echo '  the tools above'
+>>>         @echo ''
+>>>         @echo '  $$ make tools/install'
+>>>         @echo ''
+>>>         @echo '  installs all tools.'
+>>> ...
+>>>
+>>> OK, so I did this for a perf-only build...
+>>>
+>>>
+>>>    $ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../build-perf.txt
+>>>
+>>> ...this breaks like this...
+>>>
+>>> ...
+>>> make[2]: Entering directory
+>>> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+>>> make[2]: Leaving directory
+>>> `/home/wearefam/src/linux-kernel/linux/tools/lib/traceevent'
+>>>     LINK perf
+>>> gcc: error: /home/wearefam/src/linux-kernel/linux/tools/lib/lk/liblk.a:
+>>> No such file or directory
+>>> make[1]: *** [perf] Error 1
+>>> make[1]: Leaving directory `/home/wearefam/src/linux-kernel/linux/tools/perf'
+>>> make: *** [perf_install] Error 2
+>>>
+>>
+>> [ From #linux-rt (OFTC) ]
+>>
+>> [16:17] <acme> dileks_webchat, there are many, many ways to build the tools
+>> [16:17] <acme> the one I use is:
+>> [16:17] <acme> make O=/tmp/build/perf -C tools/perf install
+>> [16:19] <dileks_webchat> acme:  make -C tools/perf install works as
+>> expected. interesting :-)
+>>
+>
+> Attached patch seems to fix the issue when building perf this way...
+>
+>    $ make -C tools/ perf_install
+>
 
-That all seems sane to me.
+I have sent a patch ("[PATCH] tools: perf: Fix liblk not built when
+using perf_install target") in [1].
 
-> The issue is some (sparc, c6x...) which are neither in #1 or #2, and not present
-> in anti-dependency list either. e.g. With sparc64_defconfig FP is not present, but
-> if I enable LATENCY_TOP, FP is enabled. For such cases, what do we make default ?
+- Sedat -
 
-You can list multiple defaults if you want, or have them depend on other
-config variables:
-
-config FOO
-	default BAR
-
-or
-
-config FOO
-	default y if BAR
-	default n if BAZ
-
-ARCH_FRAME_POINTER_UNAVAILABLE doesn't make much sense if
-FRAME_POINTER=n, right?  You can have it just plain depend on
-FRAME_POINTER, I think.
+[1] http://marc.info/?l=linux-kernel&m=137787594331047&w=2
