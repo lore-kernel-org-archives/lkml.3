@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3H3Ouc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 10:50:32 -0400
-Received: from relay.parallels.com ([195.214.232.42]:59217 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756354Ab3H3Oub (ORCPT
+	id S1756499Ab3H3Oxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 10:53:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:44915 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab3H3Oxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 10:50:31 -0400
-Message-ID: <5220B12A.1060008@parallels.com>
-Date: Fri, 30 Aug 2013 18:50:18 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <riel@redhat.com>, Kirill Korotaev <dev@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>, <linux-mm@kvack.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <devel@openvz.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu> <51FBD2DF.50506@parallels.com> <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com> <52050474.8040608@parallels.com> <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+	Fri, 30 Aug 2013 10:53:36 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-e8-5220b1ee2af2
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH v6 0/5] clk: clock deregistration support
+Date: Fri, 30 Aug 2013 16:53:17 +0200
+Message-id: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAd13GxWCDPauUrJ4v3Eek0XPn0qL
+	s01v2C06Jy5ht9j0+BqrxeVdc9gsJkydxG4x588UZovbl3ktnk64yGZxu3EFm8XhN+2sFutn
+	vGZx4PVoae5h8/jwMc5jdsdMVo871/aweRxduZbJY/OSeo/dX5sYPfq2rGL0+LxJLoAzissm
+	JTUnsyy1SN8ugSuj9cwlpoL/vBVXZr5kaWB8wNXFyMkhIWAi8f/FdHYIW0ziwr31bF2MXBxC
+	AosYJXonrWGEcDqYJN72TmQDqWITMJToPdrHCGKLCGhITOl6zA5SxCxwmUli05cusFHCApYS
+	ZzdtYAGxWQRUJfacbwFr4BVwlfi8ah9TFyMH0DoFiTmTbCYwci9gZFjFKJpakFxQnJSea6RX
+	nJhbXJqXrpecn7uJERyCz6R3MK5qsDjEKMDBqMTDu3O5QpAQa2JZcWXuIUYJDmYlEd6Pi4FC
+	vCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGGMNts4pUVqw
+	7/FXg8ykzD/l309Iqc2tkb/2KbKq03ZRRsn9RU731oRueWSxTLioY1bFXMHj6fsFr6hlzSir
+	fRYS3C/Kv5Lznkd5UeCyupKw7AQ2tkNTbxXM3jKj9bHcMSHXJJe9T059nqgiyvnh8Mq4Sf8j
+	1K+tdT6qJGLVvXVnqHTnsnyhtUosxRmJhlrMRcWJAN6W2tg9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+This patch series implements clock deregistration in the common clock
+framework. Comparing to v5 it only includes further corrections of NULL
+clock handling.
 
-08/30/2013 02:12 PM, Miklos Szeredi пишет:
-> On Fri, Aug 09, 2013 at 07:02:12PM +0400, Maxim Patlasov wrote:
->> 08/06/2013 08:25 PM, Miklos Szeredi пишет:
->>> Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
->>> do the necessary page fault magic and ->page_mkwrite() will be called.
->>> At least AFAICS.
->> Yes, I agree.
->>
->>> The page cannot become dirty through a memory mapping without first
->>> switching the pte from read-only to read-write first.  Page accounting
->>> logic relies on this too.  The other way the page can become dirty is
->>> through write(2) on the fs.  But we do get notified about that too.
->> Yes, that's correct, but I don't understand why you disregard two
->> other cases of marking page dirty (both related to direct AIO read
->> from a file to a memory region mmap-ed to a fuse file):
->>
->> 1. dio_bio_submit() -->
->>        bio_set_pages_dirty() -->
->>          set_page_dirty_lock()
->>
->> 2. dio_bio_complete() -->
->>        bio_check_pages_dirty() -->
->>           bio_dirty_fn() -->
->>              bio_set_pages_dirty() -->
->>                 set_page_dirty_lock()
->>
->> As soon as a page became dirty through a memory mapping (exactly as
->> you explained), nothing would prevent it to be written-back. And
->> fuse will call end_page_writeback almost immediately after copying
->> the real page to a temporary one. Then dio_bio_submit may re-dirty
->> page speculatively w/o notifying fuse. And again, since then nothing
->> would prevent it to be written-back once more. Hence we can end up
->> in more then one temporary page in fuse write-back. And similar
->> concern for dio_bio_complete() re-dirty.
->>
->> This make me think that we do need fuse_page_is_writeback() in
->> fuse_writepages_fill(). But it shouldn't be harmful because it will
->> no-op practically always due to waiting for fuse writeback in
->> ->page_mkwrite() and in course of handling write(2).
-> The problem is: if we need it in ->writepages, we need it in ->writepage too.
-> And that's where we can't have it because it would deadlock in reclaim.
+Changes since v5:
+ - fixed NULL clock handling in __clk_get(), __clk_put (patch 5/5).
 
-I thought we're protected from the deadlock by the following chunk (in 
-the very beginning of fuse_writepage):
+Changes since v4:
+ - removed stray struct module forward declaration in patch 3/5.
 
-> +	if (fuse_page_is_writeback(inode, page->index)) {
-> +		if (wbc->sync_mode != WB_SYNC_ALL) {
-> +			redirty_page_for_writepage(wbc, page);
-> +			return 0;
-> +		}
-> +		fuse_wait_on_page_writeback(inode, page->index);
-> +	}
+Changes since v3:
+ - replaced WARN_ON() with WARN_ON_ONCE() in clk_nodrv_disable_unprepare()
+   callback.
 
-Because reclaimer will never call us with WB_SYNC_ALL. Did I miss 
-something?
+Changes since v2:
+ - reordered the patches so the race condition is fixed before it can
+   actually cause any issues,
+ - fixed handling of NULL clock pointers in __clk_get(), __clk_put(),
+ - added patch adding actual asignment of clk->owner; more details are
+   discussed in that specific patch.
 
->
-> There's a way to work around this:
->
->     - if the request is still in queue, just update it with the contents of the
->       new page
->
->     - if the request already in userspace, create a new reqest, but only let
->       userspace have it once the previous request for the same page completes, so
->       the ordering is not messed up
->
-> But that's a lot of hairy code.
+Changes since v1:
+ - moved of_clk_{lock, unlock}, __of_clk_get_from_provider() function
+   declaractions to a local header,
+ - renamed clk_dummy_* to clk_nodrv_*.
 
-Is it exactly how NFS solves similar problem?
+Sylwester Nawrocki (5):
+  clk: Provide not locked variant of of_clk_get_from_provider()
+  clkdev: Fix race condition in clock lookup from device tree
+  clk: Add common __clk_get(), __clk_put() implementations
+  clk: Assign module owner of a clock being registered
+  clk: Implement clk_unregister
 
->
-> Any other ideas?
->
-> The best would be if we could get rid of the ugly temporary page requirement for
-> fuse writeback.  The big blocker has always been direct reclaim: allocation must
-> not wait on fuse writebacks.  AFAICS there's still a wait_on_page_writeback() in
-> relation to memcg.  And it interacts with page migration which also has them.
-> Those are the really difficult ones...
+ arch/arm/include/asm/clkdev.h      |    2 +
+ arch/blackfin/include/asm/clkdev.h |    2 +
+ arch/mips/include/asm/clkdev.h     |    2 +
+ arch/sh/include/asm/clkdev.h       |    2 +
+ drivers/clk/clk.c                  |  188 +++++++++++++++++++++++++++++++++---
+ drivers/clk/clk.h                  |   16 +++
+ drivers/clk/clkdev.c               |   12 ++-
+ include/linux/clk-private.h        |    5 +
+ include/linux/clkdev.h             |    5 +
+ 9 files changed, 221 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/clk/clk.h
 
-Yes, I agree. I think there are pretty many reasons not to keep original 
-page under writeback for long. And not to make it dependant on userspace 
-process as well.
+--
+1.7.9.5
 
->
-> The other offender, balance_dirty_pages() is much easier and needs to be tought
-> about fuse behavior anyway.
-
-BTW, strictlimit feature (including its enable for fuse) is already in 
-linux-next.
-
-Thanks,
-Maxim
