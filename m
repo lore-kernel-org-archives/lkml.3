@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3H3RZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 13:25:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23398 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab3H3RZ1 (ORCPT
+	id S1756928Ab3H3R0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 13:26:11 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:40449 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab3H3R0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 13:25:27 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDI8IL8UnGoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BKUXQ1-ENX0A:10 a=oGMlB6cnAAAA:8 a=hWRw3zX9oAgcfF12R1EA:9 a=CjuIK1q_8ugA:10 a=G398i41hw38A:10 a=CY6gl2JlH4YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 30 Aug 2013 13:25:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Fenghua Yu <fenghua.yu@intel.com>,
+	Fri, 30 Aug 2013 13:26:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUWtEHy3CLadSQBKT5++UOxJuV-uxFf=UdAZLqysfourzw@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+	<CA+icZUWtEHy3CLadSQBKT5++UOxJuV-uxFf=UdAZLqysfourzw@mail.gmail.com>
+Date: Fri, 30 Aug 2013 10:26:07 -0700
+X-Google-Sender-Auth: 3wE6KFWn0Whf1eUC02QqTmObWA8
+Message-ID: <CA+55aFzV-S+bxBQN52wgT8vPwNjXHgkUYOnQi9cEeoUYoQnmVA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled
- DYNAMIC_FTRACE
-Message-ID: <20130830132525.06a944e8@gandalf.local.home>
-In-Reply-To: <5220D350.7030008@zytor.com>
-References: <5217908E.2040702@siemens.com>
-	<5220BC1A.3030108@zytor.com>
-	<20130830115142.1ee4c825@gandalf.local.home>
-	<5220C9C6.5020808@zytor.com>
-	<20130830130331.1e260e85@gandalf.local.home>
-	<5220D350.7030008@zytor.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Aug 2013 10:16:00 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
- 
-> > Who uses static tracing? I only use it to test that it still works ;-)
-> 
-> Can we get rid of it?
-> 
+On Fri, Aug 30, 2013 at 10:11 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+> There is no -f option for record but for report, so I swapped them:
 
-I've though about it. But as some archs only have static tracing
-available (I need to revisit to make sure that's still the case), I
-kept it because I only test static tracing on x86.
+That's odd. "perf record -f" very much works for me, and I use it all
+the time to make sure that I don't mix perf data from older runs..
 
-I'm not sure if people still use it for x86 or not.
+[ Time passes. I check current 'perf'. Dammit. This has changed. I
+seldom rebuild "perf", so I never noticed. It was removed in commit
+4a4d371a4dfb, apparently because the old "append" mode no longer even
+exists ]
 
-Jan, you use static tracing on x86?
+But never mind, that doesn't matter for your numbers:
 
--- Steve
+> $ sudo ~/src/linux-kernel/linux/tools/perf/perf report -f
+>
+> Samples: 159K of event 'cycles:pp', Event count (approx.): 76535356682
+>  84,10%  t_lockref_from-  [kernel.kallsyms]     [k] check_poison_obj
+>   5,22%  t_lockref_from-  [kernel.kallsyms]     [k] memset
+>   1,15%  t_lockref_from-  [kernel.kallsyms]     [k] irq_return
+>   0,45%  t_lockref_from-  [kernel.kallsyms]     [k] kmem_cache_alloc
+>   0,44%  t_lockref_from-  [kernel.kallsyms]     [k] kmem_cache_free
+
+You're wasting all the time in slab debugging, probably due to the
+object debug option.
+
+None of the rest is even remotely interesting, and the spinlock hits
+you do have are more likely to come from the same object debug code
+than from pathname lookup.
+
+                Linus
