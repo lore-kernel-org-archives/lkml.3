@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab3H3PiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 11:38:05 -0400
-Received: from smtp-out-137.synserver.de ([212.40.185.137]:1378 "EHLO
-	smtp-out-137.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab3H3PiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 11:38:03 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 6029
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Bard Liao <bardliao@realtek.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] ASoC: dapm: Fix auto-disable for inverted controls
-Date: Fri, 30 Aug 2013 17:39:33 +0200
-Message-Id: <1377877173-16987-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S1756716Ab3H3PiC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 11:38:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52294 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756657Ab3H3PiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 11:38:00 -0400
+Message-ID: <5220BC1A.3030108@zytor.com>
+Date: Fri, 30 Aug 2013 08:36:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
+References: <5217908E.2040702@siemens.com>
+In-Reply-To: <5217908E.2040702@siemens.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to make sure that the control's cached value is initialized to the same
-value as the control's widget->on_val. Otherwise updates might be lost.
+On 08/23/2013 09:40 AM, Jan Kiszka wrote:
+> Hi all,
+> 
+> 32-bit kernels currently crash/reboot in early microcode loading when
+> non-dynamic function tracing is enabled. Several functions in that path
+> get instrumented with mcount, but its non-dynamic implementation does
+> not work before paging is enabled (it accesses global variables at wrong
+> addresses).
+> 
+> Below some hunks to get it working again - at least in the absence of
+> any microcode in the initrd. Marking all involved functions as __init is
+> another option (as __init implies notrace). But I bet there is more
+> hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger the
+> issue as well if we hit the error it reports (btw. printing at this
+> point of the boot should not work anyway, should it?).
+> 
+> Better ideas?
+> 
+> Jan
+> 
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- sound/soc/soc-dapm.c | 2 ++
- 1 file changed, 2 insertions(+)
+A better idea would be for the mcount/__fentry__ function to simply
+return until the function tracing stuff is actually ready.
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index 548b1c9..c17c14c 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -229,6 +229,8 @@ static int dapm_kcontrol_data_alloc(struct snd_soc_dapm_widget *widget,
- 			template.id = snd_soc_dapm_kcontrol;
- 			template.name = kcontrol->id.name;
- 
-+			data->value = template.on_val;
-+
- 			data->widget = snd_soc_dapm_new_control(widget->dapm,
- 				&template);
- 			if (!data->widget) {
--- 
-1.8.0
+	-hpa
+
 
