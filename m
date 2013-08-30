@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3H3N3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 09:29:19 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39072 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab3H3N3P (ORCPT
+	id S1757017Ab3H3N3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 09:29:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756712Ab3H3NYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 09:29:15 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 35/35] mm: Use a cache between page-allocator and
- region-allocator
-To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
-        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
-        riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 18:54:59 +0530
-Message-ID: <20130830132456.4947.67600.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083013-4834-0000-0000-00000A9956A0
+	Fri, 30 Aug 2013 09:24:07 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=NcZZzMeBTngA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DDoHWo0lehQA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=_whD2MN1g3_tR11PCDsA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130830132404.252080304@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 30 Aug 2013 09:02:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: [RFC][PATCH 3/8] ftrace: Set ftrace internal function tracing RCU safe
+References: <20130830130205.504335754@goodmis.org>
+Content-Disposition: inline; filename=0003-ftrace-Set-ftrace-internal-function-tracing-RCU-safe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, whenever the page allocator notices that it has all the freepages
-of a given memory region, it attempts to return it back to the region
-allocator. This strategy is needlessly aggressive and can cause a lot of back
-and forth between the page-allocator and the region-allocator.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-More importantly, it can potentially completely wreck the benefits of having
-a region allocator in the first place - if the buddy allocator immediately
-returns freepages of memory regions to the region allocator, it goes back to
-the generic pool of pages. So, in future, depending on when the next allocation
-request arrives for this particular migratetype, the region allocator might not
-have any free regions to hand out, and hence we might end up falling back
-to freepages of other migratetypes. Instead, if the page allocator retains
-a few regions as a cache for every migratetype, we will have higher chances
-of avoiding fallbacks to other migratetypes.
+Since none of the internal ftrace function tracing uses RCU in
+their callbacks, it is OK to set the global_ops (the one that
+they all use) to RCU safe.
 
-So, don't return all free memory regions (in the page allocator) to the
-region allocator. Keep atleast one region as a cache, for future use.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ kernel/trace/ftrace.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- mm/page_alloc.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index dc11951..3761663 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1146,7 +1146,9 @@ static struct ftrace_ops global_ops = {
+ 	.func			= ftrace_stub,
+ 	.notrace_hash		= EMPTY_HASH,
+ 	.filter_hash		= EMPTY_HASH,
+-	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
++	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
++				  FTRACE_OPS_FL_INITIALIZED |
++				  FTRACE_OPS_FL_RCU_SAFE,
+ 	INIT_REGEX_LOCK(global_ops)
+ };
+ 
+-- 
+1.7.10.4
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1312546..55e8e65 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -639,9 +639,11 @@ static void add_to_region_allocator(struct zone *z, struct free_list *free_list,
- 				    int region_id);
- 
- 
--static inline int can_return_region(struct mem_region_list *region, int order)
-+static inline int can_return_region(struct mem_region_list *region, int order,
-+				    struct free_list *free_list)
- {
- 	struct zone_mem_region *zone_region;
-+	struct page *prev_page, *next_page;
- 
- 	zone_region = region->zone_region;
- 
-@@ -659,6 +661,16 @@ static inline int can_return_region(struct mem_region_list *region, int order)
- 	if (likely(order != MAX_ORDER-1))
- 		return 0;
- 
-+	/*
-+	 * Don't return all the regions; retain atleast one region as a
-+	 * cache for future use.
-+	 */
-+	prev_page = container_of(free_list->list.prev , struct page, lru);
-+	next_page = container_of(free_list->list.next , struct page, lru);
-+
-+	if (page_zone_region_id(prev_page) == page_zone_region_id(next_page))
-+		return 0; /* There is only one region in this freelist */
-+
- 	if (region->nr_free * (1 << order) == zone_region->nr_free)
- 		return 1;
- 
-@@ -728,7 +740,7 @@ try_return_region:
- 	 * Try to return the freepages of a memory region to the region
- 	 * allocator, if possible.
- 	 */
--	if (can_return_region(region, order))
-+	if (can_return_region(region, order, free_list))
- 		add_to_region_allocator(page_zone(page), free_list, region_id);
- }
- 
 
