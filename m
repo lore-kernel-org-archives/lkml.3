@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3H3HDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 03:03:53 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:53287 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab3H3HDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 03:03:52 -0400
-From: navin patidar <navinp@cdac.in>
-To: gregkh@linuxfoundation.org
-Cc: klmckinney1@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navinp@cdac.in>
-Subject: [PATCH] staging: bcm: remove Version.h file.
-Date: Fri, 30 Aug 2013 12:31:51 +0530
-Message-Id: <1377846111-25543-1-git-send-email-navinp@cdac.in>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755798Ab3H3HGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 03:06:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52657 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754310Ab3H3HGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 03:06:07 -0400
+Message-ID: <5220443E.3050205@ti.com>
+Date: Fri, 30 Aug 2013 10:05:34 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Matt Sealey <neko@bakuhatsu.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 0/5] clk: dt: bindings for mux, divider & gate clocks
+References: <1377150793-27864-1-git-send-email-mturquette@linaro.org> <521F91B0.6030204@ti.com>
+In-Reply-To: <521F91B0.6030204@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-many of the macros defined in Version.h are not being used,
-so we can remove the file.
+On 08/29/2013 09:23 PM, Santosh Shilimkar wrote:
+> Mike,
+>
+> On Thursday 22 August 2013 01:53 AM, Mike Turquette wrote:
+>> This series introduces binding definitions for common register-mapped
+>> clock multiplexer, divider and gate IP blocks along with the
+>> corresponding setup functions for matching DT data.  The bindings are
+>> similar to the struct definitions but please don't hold that against the
+>> binding: the struct definitions closely model the hardware register
+>> layout.
+>>
+>> The delta from v3 is very small and only consists of cosmetic changes
+>> and one functional change for better error handling.
+>>
+>> Changes since v3:
+>> * added Tested-by & Reviewed-by from Heiko
+>> * replaced underscores with dashes in DT property names
+>> * bail from of clock setup function early if of_iomap fails
+>> * removed unecessary explict cast
+>>
+>> Mike Turquette (5):
+>>    clk: divider: replace bitfield width with mask
+>>    clk: of: helper for determining number of parent clocks
+>>    clk: dt: binding for basic multiplexer clock
+>>    clk: dt: binding for basic divider clock
+>>    clk: dt: binding for basic gate clock
+>>
+> I have used $subject series as the base for the Keystone
+> ccf support and tested these patches on Keystone EVM. Will
+> post those patches soon on the lists.
+>
+> For the series if you need more tested-by tags, feel free to
+> add,
+> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+>
 
-Signed-off-by: navin patidar <navinp@cdac.in>
----
- drivers/staging/bcm/Bcmchar.c |    4 ++--
- drivers/staging/bcm/Version.h |   29 -----------------------------
- drivers/staging/bcm/headers.h |    3 +--
- 3 files changed, 3 insertions(+), 33 deletions(-)
- delete mode 100644 drivers/staging/bcm/Version.h
+Oh yea, same for my set I posted yesterday. Used this as basis for 
+O3/O4/O5/DRA7/AM335x tests, so you can also add my Tested-by tag if you 
+need one.
 
-diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index f67a225..f91bc1f 100644
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1004,9 +1004,9 @@ cntrlEnd:
- 		if (copy_from_user(&IoBuffer, argp, sizeof(struct bcm_ioctl_buffer)))
- 			return -EFAULT;
- 
--		len = min_t(ulong, IoBuffer.OutputLength, strlen(VER_FILEVERSION_STR) + 1);
-+		len = min_t(ulong, IoBuffer.OutputLength, strlen(DRV_VERSION) + 1);
- 
--		if (copy_to_user(IoBuffer.OutputBuffer, VER_FILEVERSION_STR, len))
-+		if (copy_to_user(IoBuffer.OutputBuffer, DRV_VERSION, len))
- 			return -EFAULT;
- 		Status = STATUS_SUCCESS;
- 		break;
-diff --git a/drivers/staging/bcm/Version.h b/drivers/staging/bcm/Version.h
-deleted file mode 100644
-index f1cb9de..0000000
---- a/drivers/staging/bcm/Version.h
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*Copyright (c) 2005 Beceem Communications Inc.
--
--Module Name:
--
--  Version.h
--
--Abstract:
--
--
----*/
--
--#ifndef VERSION_H
--#define VERSION_H
--
--
--#define VER_FILETYPE                VFT_DRV
--#define VER_FILESUBTYPE             VFT2_DRV_NETWORK
--
--#define VER_FILEVERSION             5.2.45
--#define VER_FILEVERSION_STR         "5.2.45"
--
--#undef VER_PRODUCTVERSION
--#define VER_PRODUCTVERSION          VER_FILEVERSION
--
--#undef VER_PRODUCTVERSION_STR
--#define VER_PRODUCTVERSION_STR      VER_FILEVERSION_STR
--
--
--#endif /* VERSION_H */
-diff --git a/drivers/staging/bcm/headers.h b/drivers/staging/bcm/headers.h
-index da47db8..7fd21c6 100644
---- a/drivers/staging/bcm/headers.h
-+++ b/drivers/staging/bcm/headers.h
-@@ -38,7 +38,6 @@
- #include <net/ip.h>
- 
- #include "Typedefs.h"
--#include "Version.h"
- #include "Macros.h"
- #include "HostMIBSInterface.h"
- #include "cntrl_SignalingInterface.h"
-@@ -71,7 +70,7 @@
- #define DEV_NAME	"tarang"
- #define DRV_DESCRIPTION "Beceem Communications Inc. WiMAX driver"
- #define DRV_COPYRIGHT	"Copyright 2010. Beceem Communications Inc"
--#define DRV_VERSION	VER_FILEVERSION_STR
-+#define DRV_VERSION	"5.2.45"
- #define PFX		DRV_NAME " "
- 
- extern struct class *bcm_class;
--- 
-1.7.10.4
+-Tero
 
