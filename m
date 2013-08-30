@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3H3Ml0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 08:41:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5083 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288Ab3H3MlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 08:41:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,990,1367996400"; 
-   d="scan'208";a="388819068"
-Date: Fri, 30 Aug 2013 15:41:19 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, airlied@redhat.com,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH 0/2] vgaarb: Fixes for partial VGA opt-out
-Message-ID: <20130830124119.GH11428@intel.com>
-References: <20130815222835.27642.15330.stgit@bling.home>
+	id S1756449Ab3H3Mle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 08:41:34 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44719 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab3H3Mlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 08:41:31 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 10/35] mm: Use the correct migratetype during buddy
+ merging
+To: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 30 Aug 2013 18:07:28 +0530
+Message-ID: <20130830123715.24352.33969.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+References: <20130830123303.24352.18732.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130815222835.27642.15330.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083012-1542-0000-0000-000000FD2CC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 04:37:47PM -0600, Alex Williamson wrote:
-> I'm trying to add support for VGA arbitration on newer Intel graphics
-> devices.  The existing code attempts to do this, but appear to have
-> not been updated since GMCH devices roamed the Earth.  On newer
-> devices like Haswell, we can disable VGA memory through an MSR on the
-> device, but we rely on the VGA arbiter to manage VGA IO using the PCI
-> COMMAND register.  In trying to unregister legacy VGA memory, I found
-> that the VGA arbiter still wanted to disable both memory and IO on
-> the device and that it forgot to actually program the device to
-> disable IO when the decoding is updated.  This series attempts to fix
-> both of those.  Thanks,
+While merging buddy free pages of a given order to make a higher order page,
+the buddy allocator might coalesce pages belonging to *two* *different*
+migratetypes of that order!
 
-The series looks good to me.
+So, don't assume that both the buddies come from the same freelist;
+instead, explicitly find out the migratetype info of the buddy page and use
+it while merging the buddies.
 
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Also, set the freepage migratetype of the buddy to the new one.
 
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (2):
->       vgaarb: Don't disable resources that are not owned
->       vgaarb: Fix VGA decodes changes
-> 
-> 
->  drivers/gpu/vga/vgaarb.c |   50 ++++++++++++++++++++--------------------------
->  1 file changed, 22 insertions(+), 28 deletions(-)
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
--- 
-Ville Syrjälä
-Intel OTC
+ mm/page_alloc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b4b1275..07ac019 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -681,10 +681,14 @@ static inline void __free_one_page(struct page *page,
+ 			__mod_zone_freepage_state(zone, 1 << order,
+ 						  migratetype);
+ 		} else {
++			int mt;
++
+ 			area = &zone->free_area[order];
+-			del_from_freelist(buddy, &area->free_list[migratetype]);
++			mt = get_freepage_migratetype(buddy);
++			del_from_freelist(buddy, &area->free_list[mt]);
+ 			area->nr_free--;
+ 			rmv_page_order(buddy);
++			set_freepage_migratetype(buddy, migratetype);
+ 		}
+ 		combined_idx = buddy_idx & page_idx;
+ 		page = page + (combined_idx - page_idx);
+
