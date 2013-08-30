@@ -1,96 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3H3VX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 17:23:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48936 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab3H3VX0 (ORCPT
+	id S1755889Ab3H3VZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 17:25:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38024 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab3H3VZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 17:23:26 -0400
-Message-ID: <52210D34.5030807@infradead.org>
-Date: Fri, 30 Aug 2013 14:23:00 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 17:25:54 -0400
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'Subhash Jadavani'" <subhashj@codeaurora.org>,
+        "'Dolev Raviv'" <draviv@codeaurora.org>
+Cc: <linux-scsi@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1377427016-28469-1-git-send-email-draviv@codeaurora.org> <521C6155.9080207@codeaurora.org> <521C6A5C.4050202@codeaurora.org>
+In-Reply-To: <521C6A5C.4050202@codeaurora.org>
+Subject: RE: [PATCH] scsi: ufs: read door bell register after clearing interrupt aggregation
+Date: Sat, 31 Aug 2013 00:25:47 +0300
+Message-ID: <000001cea5c7$81945520$84bcff60$@codeaurora.org>
 MIME-Version: 1.0
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        bernie@develer.com
-Subject: Re: do_div() silently truncates "base" to 32bit
-References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
-In-Reply-To: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKR1ELWp1JOzliGqquAbPZfAi/g3wDPoUJoAgq5homYEROMkA==
+Content-language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/13 10:21, Anatol Pomozov wrote:
-> Hi,
-> 
-> 
-> I was debugging weird "zero divide" problem in CFQ code below
-> 
-> 
-> static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
->       struct blkg_policy_data *pd, int off)
-> {
->     struct cfq_group *cfqg = pd_to_cfqg(pd);
->     u64 samples = blkg_stat_read(&cfqg->stats.avg_queue_size_samples);
->     u64 v = 0;
-> 
->     if (samples) {
->         v = blkg_stat_read(&cfqg->stats.avg_queue_size_sum);
->         do_div(v, samples);
->     }
->     __blkg_prfill_u64(sf, pd, v);
->     return 0;
-> }
-> 
-> 
-> do_div() crashes says "zero divide". It is weird because just a few
-> lines above we check divider for zero.
-> 
-> 
-> The problem comes from include/asm-generic/div64.h file that
-> implements do_div() as macros:
-> 
-> # define do_div(n,base) ({ \
->     uint32_t __base = (base); \
->     uint32_t __rem; \
->     __rem = ((uint64_t)(n)) % __base; \
->     (n) = ((uint64_t)(n)) / __base; \
->     __rem; \
->  })
-> 
-> 
-> Do you see the problem?
-> 
-> The problem here is that "base" argument is truncated to 32bit, but in
-> the function above "sample" is 64bit variable. If sample's 32 low bits
-> are zero - we have a crash. in fact we have incorrect behavior any
-> time when high 32bits are non-zero.
-> 
-> 
-> My question is why the base is 32bit? Why not to use 64bit arguments?
+Tested-by: Yaniv Gardi <ygardi@codeaurora.org>
 
-Maybe performance related?
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Subhash Jadavani
+Sent: Tuesday, August 27, 2013 11:59 AM
+To: Dolev Raviv
+Cc: linux-scsi@vger.kernel.org; linux-arm-msm@vger.kernel.org; open list
+Subject: Re: [PATCH] scsi: ufs: read door bell register after clearing
+interrupt aggregation
 
-If you want 64-bit values, don't use do_div() from asm-generic/div64.h.
+On 8/27/2013 1:50 PM, Subhash Jadavani wrote:
+>
+>
+> Looks good to me.
+> Reviewed-by: Subhash Jadavani <subhashj@codeaurora.org>
+>
+> On 8/25/2013 4:06 PM, Dolev Raviv wrote:
+>> In interrupt context, after reading and comparing the UTRLDBR to
+>> hba->outstanding_request and before resetting the interrupt 
+>> hba->aggregation,
+>> there might be completion of another transfer request (TR). Such TRs 
+>> might get stuck, pending, until the next interrupt is generated.
+>>
+>> The fix reads the UTRLDBR after resetting the interrupt aggregation 
+>> and handles completed TRs.
+>>
+>> Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+>>
+>> diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c 
+>> index 4dca9b4..30c84d8 100644
+>> --- a/drivers/scsi/ufs/ufshcd.c
+>> +++ b/drivers/scsi/ufs/ufshcd.c
+>> @@ -1915,6 +1915,13 @@ static void ufshcd_uic_cmd_compl(struct 
+>> ufs_hba *hba)
+>>   /**
+>>    * ufshcd_transfer_req_compl - handle SCSI and query command 
+>> completion
+>>    * @hba: per adapter instance
+>> + *
+>> + * Resetting interrupt aggregation counters first and reading the
+>> DOOR_BELL
+>> + * afterward , allows us to handle all the completed requests.
+>> + * In order to prevent other interrupts starvation the DB is read 
+>> + once
+>> + * after reset. The down side of this solution is the possibility of
+>> false
+>> + * interrupt if device completes another request after resetting
+>> aggregation
+>> + * and before reading the DB.
+>>    */
+>>   static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+>>   {
+>> @@ -1924,47 +1931,36 @@ static void ufshcd_transfer_req_compl(struct 
+>> ufs_hba *hba)
+>>       u32 tr_doorbell;
+>>       int result;
+>>       int index;
+>> -    bool int_aggr_reset = false;
+>> +
+>> +    /* Reset interrupt aggregation counters */
+>> +    ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
 
-Instead look at linux/math64.h and use div_u64_rem() et al
-or the recently posted div64_u64_rem().
-[posted by Mike Snitzer on Aug. 21 2013]
+You may have to rebase your change on top of "[PATCH v3 2/6] scsi: ufs: 
+fix the setting interrupt aggregation counter" patch. Once you do that, you
+will be calling ufshcd_reset_intr_aggr() (instead of
+ufshscd_config_int_aggr()) to reset the interrupt aggregation counters.
 
-I.e., use exactly the function(s) that you need to use.
-
-Does that fix the problem?
-
-
-> Ideally if this macros is converted to a function so compiler will
-> warn us about unexpected truncation like this. But in this case it
-> will be hard to do as "n" parameter both input and output.
+>>         tr_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+>>       completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
+>>   -    for (index = 0; index < hba->nutrs; index++) {
+>> -        if (test_bit(index, &completed_reqs)) {
+>> -            lrbp = &hba->lrb[index];
+>> -            cmd = lrbp->cmd;
+>> -            /*
+>> -             * Don't skip resetting interrupt aggregation counters
+>> -             * if a regular command is present.
+>> -             */
+>> -            int_aggr_reset |= !lrbp->intr_cmd;
+>> -
+>> -            if (cmd) {
+>> -                result = ufshcd_transfer_rsp_status(hba, lrbp);
+>> -                scsi_dma_unmap(cmd);
+>> -                cmd->result = result;
+>> -                /* Mark completed command as NULL in LRB */
+>> -                lrbp->cmd = NULL;
+>> -                clear_bit_unlock(index, &hba->lrb_in_use);
+>> -                /* Do not touch lrbp after scsi done */
+>> -                cmd->scsi_done(cmd);
+>> -            } else if (lrbp->command_type ==
+>> -                    UTP_CMD_TYPE_DEV_MANAGE) {
+>> -                if (hba->dev_cmd.complete)
+>> -                    complete(hba->dev_cmd.complete);
+>> -            }
+>> -        } /* end of if */
+>> -    } /* end of for */
+>> +    for_each_set_bit(index, &completed_reqs, hba->nutrs) {
+>> +        lrbp = &hba->lrb[index];
+>> +        cmd = lrbp->cmd;
+>> +        if (cmd) {
+>> +            result = ufshcd_transfer_rsp_status(hba, lrbp);
+>> +            scsi_dma_unmap(cmd);
+>> +            cmd->result = result;
+>> +            /* Mark completed command as NULL in LRB */
+>> +            lrbp->cmd = NULL;
+>> +            clear_bit_unlock(index, &hba->lrb_in_use);
+>> +            /* Do not touch lrbp after scsi done */
+>> +            cmd->scsi_done(cmd);
+>> +        } else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
+>> +            if (hba->dev_cmd.complete)
+>> +                complete(hba->dev_cmd.complete);
+>> +        }
+>> +    } /* end of for_each_set_bit */
+>>         /* clear corresponding bits of completed commands */
+>>       hba->outstanding_reqs ^= completed_reqs;
+>>         /* we might have free'd some tags above */
+>>       wake_up(&hba->dev_cmd.tag_wq);
+>> -
+>> -    /* Reset interrupt aggregation counters */
+>> -    if (int_aggr_reset)
+>> -        ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
+>>   }
+>>     /**
+>> @@ -2569,6 +2565,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+>>       int poll_cnt;
+>>       u8 resp = 0xF;
+>>       struct ufshcd_lrb *lrbp;
+>> +    u32 reg;
+>>         host = cmd->device->host;
+>>       hba = shost_priv(host);
+>> @@ -2578,6 +2575,13 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+>>       if (!(test_bit(tag, &hba->outstanding_reqs)))
+>>           goto out;
+>>   +    reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+>> +    if (!(reg & (1 << tag))) {
+>> +        dev_err(hba->dev,
+>> +        "%s: cmd was completed, but without a notifying intr, tag =
+>> %d",
+>> +        __func__, tag);
+>> +    }
+>> +
+>>       lrbp = &hba->lrb[tag];
+>>       for (poll_cnt = 100; poll_cnt; poll_cnt--) {
+>>           err = ufshcd_issue_tm_cmd(hba, lrbp->lun, lrbp->task_tag, 
+>> @@ -2586,8 +2590,6 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+>>               /* cmd pending in the device */
+>>               break;
+>>           } else if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
+>> -            u32 reg;
+>> -
+>>               /*
+>>                * cmd not pending in the device, check if it is
+>>                * in transition.
+>
 > --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" 
+> in the body of a message to majordomo@vger.kernel.org More majordomo 
+> info at  http://vger.kernel.org/majordomo-info.html
 
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+body of a message to majordomo@vger.kernel.org More majordomo info at
+http://vger.kernel.org/majordomo-info.html
 
--- 
-~Randy
