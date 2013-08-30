@@ -1,118 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3H3Kjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 06:39:41 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:49831 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab3H3Kjk (ORCPT
+	id S1755611Ab3H3Koc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 06:44:32 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:37014 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab3H3Kob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 06:39:40 -0400
+	Fri, 30 Aug 2013 06:44:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1464891.8oCRh2189n@amdc1032>
-References: <1464891.8oCRh2189n@amdc1032>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 30 Aug 2013 11:39:19 +0100
-X-Google-Sender-Auth: d9io4RWgZ9786RP407LPAC57tKU
-Message-ID: <CACxGe6u_O4JxZo6rmzwHX1LibD5vbtjdj8QBzwF5Bjizo0bUiQ@mail.gmail.com>
-Subject: Re: [PATCH] of/platform: add error reporting to of_amba_device_create()
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130830103633.GG10002@twins.programming.kicks-ass.net>
+References: <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<20130830094857.GA14502@gmail.com>
+	<CA+icZUX5F8NtZkc1WsFZC8ggs0K7O=dk2iyhwCDi7FQz+7cHeQ@mail.gmail.com>
+	<CA+icZUVKkVuOCf1h-g8-XZ=Kjt6aLF7Yh9Mt90hbNa7q0jsvQA@mail.gmail.com>
+	<CA+icZUVnfVcYdc7XHyM9oA5GF-HG35JghWNabE4pgvBvTh1E0g@mail.gmail.com>
+	<20130830103633.GG10002@twins.programming.kicks-ass.net>
+Date: Fri, 30 Aug 2013 12:44:29 +0200
+Message-ID: <CA+icZUWYNGWYeVfGZy13wdrXgJaC_ZNS6ZkSMW5Ger3MkPkXSw@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 11:11 AM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> Add error reporting to of_amba_device_create() so the user knows
-> when (and why) some device tree nodes fail to initialize.
+On Fri, Aug 30, 2013 at 12:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Aug 30, 2013 at 12:29:34PM +0200, Sedat Dilek wrote:
+>> [ Sorry for being off-topic ]
+>>
+>> Hey Ingo,
+>>
+>> can you help, please?
+>>
+>> I installed so far all missing -dev packages...
+>>
+>> $ sudo apt-get install libelf-dev libdw-dev libunwind7-dev libslang2-dev
 >
-> Also while at it fix the function to return an error value on error.
+> It seems to me the easier way is:
 >
-> [ The issue was spotted on Universal C210 board (using revision 0 of
->   ARM Exynos4210 SoC) on which initialization was silently failing
->   for PL330 MDMA1 device tree node (it was using the wrong addres
->   resulting in amba_device_add() returning -ENODEV). ]
+>  $ apt-get build-dep linux-tools
 >
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/of/platform.c | 25 +++++++++++++++++++------
->  1 file changed, 19 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index b0d1ff8..cab4d0a 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -264,8 +264,11 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->                 return NULL;
->
->         dev = amba_device_alloc(NULL, 0, 0);
-> -       if (!dev)
-> -               return NULL;
-> +       if (!dev) {
-> +               pr_err("%s(): amba_device_alloc() failed for %s\n",
-> +                      __func__, node->full_name);
-> +               return ERR_PTR(-ENOMEM);
 
-Don't change the return value here. This function does not use the
-ERR_PTR() pattern. The message to the kernel log is sufficient.
+NO, se B-Ds for Ubuntu-kernel v3.2:
 
-> +       }
->
->         /* setup generic device info */
->         dev->dev.coherent_dma_mask = ~0;
-> @@ -290,18 +293,24 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->                 dev->irq[i] = irq_of_parse_and_map(node, i);
->
->         ret = of_address_to_resource(node, 0, &dev->res);
-> -       if (ret)
-> +       if (ret) {
-> +               pr_err("%s(): of_address_to_resource() failed (%d) for %s\n",
-> +                      __func__, ret, node->full_name);
->                 goto err_free;
-> +       }
->
->         ret = amba_device_add(dev, &iomem_resource);
-> -       if (ret)
-> +       if (ret) {
-> +               pr_err("%s(): amba_device_add() failed (%d) for %s\n",
-> +                      __func__, ret, node->full_name);
->                 goto err_free;
-> +       }
->
->         return dev;
->
->  err_free:
->         amba_device_put(dev);
-> -       return NULL;
-> +       return ERR_PTR(ret);
+Build-Depends: dpkg (>= 1.13.19), debhelper (>= 5), gawk
 
-Ditto here. Don't change the pattern. Otherwise this patch looks okay.
-If you respin it then I can pick it up for v3.12
+http://archive.ubuntu.com/ubuntu/pool/main/l/linux-meta/linux-meta_3.2.0.52.62.dsc
 
->  }
->  #else /* CONFIG_ARM_AMBA */
->  static struct amba_device *of_amba_device_create(struct device_node *node,
-> @@ -374,7 +383,11 @@ static int of_platform_bus_create(struct device_node *bus,
->         }
+>> ...and then want a perf-only build...
+>>
+>> [ See tools/Makefile ]
+>>
+>> $ LANG=C LC_ALL=C make -C tools/ perf_install 2>&1 | tee ../perf_install-log.txt
 >
->         if (of_device_is_compatible(bus, "arm,primecell")) {
-> -               of_amba_device_create(bus, bus_id, platform_data, parent);
-> +               /*
-> +                * Don't return an error here to keep compatibility with older
-> +                * device tree files.
-> +                */
-> +               (void)of_amba_device_create(bus, bus_id, platform_data, parent);
+> The way I always build that stuff is simply:
+>
+> $ cd tools/perf
+> $ make -j
+> $ cp perf `which perf`
+> $ cd -
+>
 
-Adding he comment is fine, but why is this line being changed?
+Please, see advices in 'tools/Makefile':
 
->                 return 0;
->         }
+        @echo 'You can do:'
+        @echo ' $$ make -C tools/ <tool>_install'
+        @echo ''
+        @echo '  from the kernel command line to build and install one of'
+        @echo '  the tools above'
+        @echo ''
+        @echo '  $$ make tools/install'
+        @echo ''
+        @echo '  installs all tools.'
+
+
+> No idea about liblk though, never had that issue but maybe something
+> like:
 >
-> --
-> 1.8.2.3
+> $ cd tools/lib/lk/
+> $ make clean
+> $ make
 >
->
+> will get you a more useful error. dunno, its a fairly trivial little
+> library, only a single .c file.
+
+If looked quickly over diverse Makefile one was saying liblk FORCE, so
+it should be built, but is NOT!
+
+Thanks anyway, Peter for all the hints!
+
+If you tell me where you discuss perf issues I can describe the problem.
+
+- Sedat -
