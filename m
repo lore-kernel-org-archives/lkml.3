@@ -1,58 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab3H3BLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Aug 2013 21:11:51 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:37084 "HELO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751995Ab3H3BLu (ORCPT
+	id S1754321Ab3H3BOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Aug 2013 21:14:16 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:40549
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754119Ab3H3BOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Aug 2013 21:11:50 -0400
+	Thu, 29 Aug 2013 21:14:15 -0400
+Date: Fri, 30 Aug 2013 01:14:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW][PATCH 5/5] userns:  Kill nsown_capable it makes the
+ wrong thing easy
+Message-ID: <20130830011414.GB12720@mail.hallyn.com>
+References: <87ob8gys0d.fsf@xmission.com>
+ <871u5cyrst.fsf@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <20130829.181001.145658561677052552.davem@davemloft.net>
-References: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
- <CAEP_g=-XvRiHPzSAp2rgC9Hxdd+pGEHvSTEJ1A1SkWnk1-6xZA@mail.gmail.com> <20130829.181001.145658561677052552.davem@davemloft.net>
-From: Jesse Gross <jesse@nicira.com>
-Date: Thu, 29 Aug 2013 18:11:25 -0700
-Message-ID: <CAEP_g=-XxgK9HVxvcaW3RS2zfa+77pB4cqfLFC0rcV7QJc+2BQ@mail.gmail.com>
-Subject: Re: [-next] openvswitch BUILD_BUG_ON failed
-To: David Miller <davem@davemloft.net>
-Cc: geert@linux-m68k.org, Andy Zhou <azhou@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u5cyrst.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 3:10 PM, David Miller <davem@davemloft.net> wrote:
-> From: Jesse Gross <jesse@nicira.com>
-> Date: Thu, 29 Aug 2013 14:42:22 -0700
->
->> On Thu, Aug 29, 2013 at 2:21 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> However, I have some doubts about other alignment "enforcements":
->>>
->>> "__aligned(__alignof__(long))" makes the whole struct aligned to the
->>> alignment rule for "long":
->>>    1. This is only 2 bytes on m68k, i.e. != sizeof(long).
->>>    2. This is 4 bytes on many 32-bit platforms, which may be less than the
->>>       default alignment for "__be64" (cfr. some members of struct
->>>       ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
->>
->> Do any of those 32-bit architectures actually care about alignment of
->> 64 bit values? On 32-bit x86, a long is 32 bits but the alignment
->> requirement of __be64 is also 32 bit.
->
-> All except x86-32 do, it is in fact the odd man out with respect to this
-> issue.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> nsown_capable is a special case of ns_capable essentially for just CAP_SETUID and
+> CAP_SETGID.  For the existing users it doesn't noticably simplify things and
+> from the suggested patches I have seen it encourages people to do the wrong
+> thing.  So remove nsown_capable.
+> 
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Thanks, good to know.
+Yeah I've had the same thought before.  You rarely want nsown_capable, and
+it wants to be mis-used.
 
-Andy, do you want to modify your patch to just drop the alignment
-specification as Geert suggested (but definitely keep the new build
-assert that you added)? It's probably better to just send the patch to
-netdev (against net-next) as well since you'll likely get better
-comments there and we can fix this faster if you cut out the
-middleman.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+> ---
+>  fs/namespace.c             |    4 ++--
+>  fs/open.c                  |    2 +-
+>  include/linux/capability.h |    1 -
+>  ipc/namespace.c            |    2 +-
+>  kernel/capability.c        |   12 ------------
+>  kernel/groups.c            |    2 +-
+>  kernel/pid_namespace.c     |    2 +-
+>  kernel/sys.c               |   20 ++++++++++----------
+>  kernel/uid16.c             |    2 +-
+>  kernel/utsname.c           |    2 +-
+>  net/core/net_namespace.c   |    2 +-
+>  net/core/scm.c             |    4 ++--
+>  12 files changed, 21 insertions(+), 34 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 877e427..dc519a1 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -2929,8 +2929,8 @@ static int mntns_install(struct nsproxy *nsproxy, void *ns)
+>  	struct path root;
+>  
+>  	if (!ns_capable(mnt_ns->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_CHROOT) ||
+> -	    !nsown_capable(CAP_SYS_ADMIN))
+> +	    !ns_capable(current_user_ns(), CAP_SYS_CHROOT) ||
+> +	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (fs->users != 1)
+> diff --git a/fs/open.c b/fs/open.c
+> index 9156cb0..2a57580 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -443,7 +443,7 @@ retry:
+>  		goto dput_and_out;
+>  
+>  	error = -EPERM;
+> -	if (!nsown_capable(CAP_SYS_CHROOT))
+> +	if (!ns_capable(current_user_ns(), CAP_SYS_CHROOT))
+>  		goto dput_and_out;
+>  	error = security_path_chroot(&path);
+>  	if (error)
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index d9a4f7f..a6ee1f9 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -210,7 +210,6 @@ extern bool has_ns_capability_noaudit(struct task_struct *t,
+>  				      struct user_namespace *ns, int cap);
+>  extern bool capable(int cap);
+>  extern bool ns_capable(struct user_namespace *ns, int cap);
+> -extern bool nsown_capable(int cap);
+>  extern bool inode_capable(const struct inode *inode, int cap);
+>  extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
+>  
+> diff --git a/ipc/namespace.c b/ipc/namespace.c
+> index 7ee61bf..4be6581 100644
+> --- a/ipc/namespace.c
+> +++ b/ipc/namespace.c
+> @@ -171,7 +171,7 @@ static int ipcns_install(struct nsproxy *nsproxy, void *new)
+>  {
+>  	struct ipc_namespace *ns = new;
+>  	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_ADMIN))
+> +	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	/* Ditch state from the old ipc namespace */
+> diff --git a/kernel/capability.c b/kernel/capability.c
+> index f6c2ce5..6fc1c8a 100644
+> --- a/kernel/capability.c
+> +++ b/kernel/capability.c
+> @@ -433,18 +433,6 @@ bool capable(int cap)
+>  EXPORT_SYMBOL(capable);
+>  
+>  /**
+> - * nsown_capable - Check superior capability to one's own user_ns
+> - * @cap: The capability in question
+> - *
+> - * Return true if the current task has the given superior capability
+> - * targeted at its own user namespace.
+> - */
+> -bool nsown_capable(int cap)
+> -{
+> -	return ns_capable(current_user_ns(), cap);
+> -}
+> -
+> -/**
+>   * inode_capable - Check superior capability over inode
+>   * @inode: The inode in question
+>   * @cap: The capability in question
+> diff --git a/kernel/groups.c b/kernel/groups.c
+> index 6b2588d..90cf1c3 100644
+> --- a/kernel/groups.c
+> +++ b/kernel/groups.c
+> @@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!nsown_capable(CAP_SETGID))
+> +	if (!ns_capable(current_user_ns(), CAP_SETGID))
+>  		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index 6917e8e..ee1f6bb 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -329,7 +329,7 @@ static int pidns_install(struct nsproxy *nsproxy, void *ns)
+>  	struct pid_namespace *ancestor, *new = ns;
+>  
+>  	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_ADMIN))
+> +	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	/*
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 771129b..c18ecca 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -337,7 +337,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
+>  	if (rgid != (gid_t) -1) {
+>  		if (gid_eq(old->gid, krgid) ||
+>  		    gid_eq(old->egid, krgid) ||
+> -		    nsown_capable(CAP_SETGID))
+> +		    ns_capable(old->user_ns, CAP_SETGID))
+>  			new->gid = krgid;
+>  		else
+>  			goto error;
+> @@ -346,7 +346,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
+>  		if (gid_eq(old->gid, kegid) ||
+>  		    gid_eq(old->egid, kegid) ||
+>  		    gid_eq(old->sgid, kegid) ||
+> -		    nsown_capable(CAP_SETGID))
+> +		    ns_capable(old->user_ns, CAP_SETGID))
+>  			new->egid = kegid;
+>  		else
+>  			goto error;
+> @@ -387,7 +387,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (nsown_capable(CAP_SETGID))
+> +	if (ns_capable(old->user_ns, CAP_SETGID))
+>  		new->gid = new->egid = new->sgid = new->fsgid = kgid;
+>  	else if (gid_eq(kgid, old->gid) || gid_eq(kgid, old->sgid))
+>  		new->egid = new->fsgid = kgid;
+> @@ -471,7 +471,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
+>  		new->uid = kruid;
+>  		if (!uid_eq(old->uid, kruid) &&
+>  		    !uid_eq(old->euid, kruid) &&
+> -		    !nsown_capable(CAP_SETUID))
+> +		    !ns_capable(old->user_ns, CAP_SETUID))
+>  			goto error;
+>  	}
+>  
+> @@ -480,7 +480,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
+>  		if (!uid_eq(old->uid, keuid) &&
+>  		    !uid_eq(old->euid, keuid) &&
+>  		    !uid_eq(old->suid, keuid) &&
+> -		    !nsown_capable(CAP_SETUID))
+> +		    !ns_capable(old->user_ns, CAP_SETUID))
+>  			goto error;
+>  	}
+>  
+> @@ -534,7 +534,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (nsown_capable(CAP_SETUID)) {
+> +	if (ns_capable(old->user_ns, CAP_SETUID)) {
+>  		new->suid = new->uid = kuid;
+>  		if (!uid_eq(kuid, old->uid)) {
+>  			retval = set_user(new);
+> @@ -591,7 +591,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (!nsown_capable(CAP_SETUID)) {
+> +	if (!ns_capable(old->user_ns, CAP_SETUID)) {
+>  		if (ruid != (uid_t) -1        && !uid_eq(kruid, old->uid) &&
+>  		    !uid_eq(kruid, old->euid) && !uid_eq(kruid, old->suid))
+>  			goto error;
+> @@ -673,7 +673,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (!nsown_capable(CAP_SETGID)) {
+> +	if (!ns_capable(old->user_ns, CAP_SETGID)) {
+>  		if (rgid != (gid_t) -1        && !gid_eq(krgid, old->gid) &&
+>  		    !gid_eq(krgid, old->egid) && !gid_eq(krgid, old->sgid))
+>  			goto error;
+> @@ -744,7 +744,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
+>  
+>  	if (uid_eq(kuid, old->uid)  || uid_eq(kuid, old->euid)  ||
+>  	    uid_eq(kuid, old->suid) || uid_eq(kuid, old->fsuid) ||
+> -	    nsown_capable(CAP_SETUID)) {
+> +	    ns_capable(old->user_ns, CAP_SETUID)) {
+>  		if (!uid_eq(kuid, old->fsuid)) {
+>  			new->fsuid = kuid;
+>  			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
+> @@ -783,7 +783,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
+>  
+>  	if (gid_eq(kgid, old->gid)  || gid_eq(kgid, old->egid)  ||
+>  	    gid_eq(kgid, old->sgid) || gid_eq(kgid, old->fsgid) ||
+> -	    nsown_capable(CAP_SETGID)) {
+> +	    ns_capable(old->user_ns, CAP_SETGID)) {
+>  		if (!gid_eq(kgid, old->fsgid)) {
+>  			new->fsgid = kgid;
+>  			goto change_okay;
+> diff --git a/kernel/uid16.c b/kernel/uid16.c
+> index f6c83d7..602e5bb 100644
+> --- a/kernel/uid16.c
+> +++ b/kernel/uid16.c
+> @@ -176,7 +176,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+>  	struct group_info *group_info;
+>  	int retval;
+>  
+> -	if (!nsown_capable(CAP_SETGID))
+> +	if (!ns_capable(current_user_ns(), CAP_SETGID))
+>  		return -EPERM;
+>  	if ((unsigned)gidsetsize > NGROUPS_MAX)
+>  		return -EINVAL;
+> diff --git a/kernel/utsname.c b/kernel/utsname.c
+> index 2fc8576..fd39312 100644
+> --- a/kernel/utsname.c
+> +++ b/kernel/utsname.c
+> @@ -114,7 +114,7 @@ static int utsns_install(struct nsproxy *nsproxy, void *new)
+>  	struct uts_namespace *ns = new;
+>  
+>  	if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_ADMIN))
+> +	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	get_uts_ns(ns);
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index f9765203..81d3a9a 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -651,7 +651,7 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
+>  	struct net *net = ns;
+>  
+>  	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN) ||
+> -	    !nsown_capable(CAP_SYS_ADMIN))
+> +	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	put_net(nsproxy->net_ns);
+> diff --git a/net/core/scm.c b/net/core/scm.c
+> index 03795d0..c346f58 100644
+> --- a/net/core/scm.c
+> +++ b/net/core/scm.c
+> @@ -56,9 +56,9 @@ static __inline__ int scm_check_creds(struct ucred *creds)
+>  	if ((creds->pid == task_tgid_vnr(current) ||
+>  	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
+>  	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
+> -	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
+> +	      uid_eq(uid, cred->suid)) || ns_capable(cred->user_ns, CAP_SETUID)) &&
+>  	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
+> -	      gid_eq(gid, cred->sgid)) || nsown_capable(CAP_SETGID))) {
+> +	      gid_eq(gid, cred->sgid)) || ns_capable(cred->user_ns, CAP_SETGID))) {
+>  	       return 0;
+>  	}
+>  	return -EPERM;
+> -- 
+> 1.7.5.4
