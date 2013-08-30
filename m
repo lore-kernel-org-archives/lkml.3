@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3H3GA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 02:00:29 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40249 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752786Ab3H3GA1 (ORCPT
+	id S1754143Ab3H3GOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 02:14:22 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:34023 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab3H3GOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 02:00:27 -0400
-X-Sasl-enc: FoRC+UU7IL/NBvunIVdGvMJtWql0/qWAJhhqw5trXcx6 1377842426
-Date: Thu, 29 Aug 2013 23:02:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        David Graham White <dgwhite11@gmail.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the pm tree
-Message-ID: <20130830060250.GB19251@kroah.com>
-References: <20130830152640.33496a2559431eb1c10b6f8e@canb.auug.org.au>
+	Fri, 30 Aug 2013 02:14:21 -0400
+Date: Fri, 30 Aug 2013 09:14:15 +0300
+From: Dan Aloni <alonid@stratoscale.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hpa@linux.intel.com, yinghai@kernel.org, jacob.shin@amd.com,
+        konrad.wilk@oracle.com, linux-mm@kvack.org,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH] x86: e820: fix memmap kernel boot parameter
+Message-ID: <20130830061413.GA29949@gmail.com>
+References: <1377841673-17361-1-git-send-email-bob.liu@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130830152640.33496a2559431eb1c10b6f8e@canb.auug.org.au>
+In-Reply-To: <1377841673-17361-1-git-send-email-bob.liu@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 03:26:40PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Fri, Aug 30, 2013 at 01:47:53PM +0800, Bob Liu wrote:
+>[..]
+> Machine2: bootcmdline in grub.cfg "memmap=0x77ffffff$0x880000000", the result of
+> "cat /proc/cmdline" changed to "memmap=0x77ffffffx880000000".
 > 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> drivers/base/core.c between commit 5e33bc4165f3 ("driver core / ACPI:
-> Avoid device hot remove locking issues") from the  tree and commit
-> 86df26870569 ("drivers:base:core: Moved sym export macros to respective
-> functions") from the driver-core tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> I didn't find the root cause, I think maybe grub reserved "$0" as something
+> special.
+> Replace '$' with '%' in kernel boot parameter can fix this issue.
 
-Merge looks great, thanks.
+You are correct with the root cause, however I don't think the patch is needed.
 
-greg k-h
+In order to bypass grub's variable evaluation you can simply use escaping 
+and replace $ with \$ in your grub config.
+
+-- 
+Dan Aloni
