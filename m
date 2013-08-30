@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab3H3I4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 04:56:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59905 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab3H3Iz5 (ORCPT
+	id S1754300Ab3H3I7R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 04:59:17 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45697 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3H3I7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 04:55:57 -0400
-Date: Fri, 30 Aug 2013 10:55:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf_swevent_add warn_on.
-Message-ID: <20130830085552.GB10002@twins.programming.kicks-ass.net>
-References: <20130830035716.GA3713@redhat.com>
+	Fri, 30 Aug 2013 04:59:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130830035716.GA3713@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <1377819852.2355.28.camel@perseus.fritz.box>
+References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
+	<20130821054055.GN27005@ZenIV.linux.org.uk>
+	<1377748272.9297.47.camel@tucsk.piliscsaba.szeredi.hu>
+	<1377818677.2355.25.camel@perseus.fritz.box>
+	<1377819852.2355.28.camel@perseus.fritz.box>
+Date: Fri, 30 Aug 2013 10:59:11 +0200
+Message-ID: <CAJfpegv18PCygsnpYXNLv6mD+Lff9dbVwtoV4OCbzjftc8HVAA@mail.gmail.com>
+Subject: Re: [PATCH 0/9] [RFC v2] safely drop directory dentry on failed revalidate
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ian Kent <raven@themaw.net>
+Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ric Wheeler <rwheeler@redhat.com>, Anand Avati <avati@redhat.com>,
+        Brian Foster <bfoster@redhat.com>, David Howells <dhowells@redhat.com>,
+        Eric Paris <eparis@redhat.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 11:57:16PM -0400, Dave Jones wrote:
-> WARNING: CPU: 2 PID: 7498 at kernel/events/core.c:5485 perf_swevent_add+0x18d/0x1a0()
-> Modules linked in: snd_seq_dummy 8021q garp stp fuse tun rfcomm hidp nfnetlink ipt_ULOG nfc caif_socket caif af_802154 phonet af_rxrpc bnep bluetooth can_bcm rfkill can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt scsi_transport_iscsi rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd e1000e usb_debug ptp soundcore pps_core pcspkr
-> CPU: 2 PID: 7498 Comm: trinity-child1 Not tainted 3.11.0-rc7+ #32 
->  ffffffff81a228d4 ffff88022ea55a70 ffffffff816fa71e 0000000000000000
->  ffff88022ea55aa8 ffffffff81052ebd ffff88022d147000 ffff88024d9cf3e0
->  0000000000000003 0000000000000001 0000000009527bd7 ffff88022ea55ab8
-> Call Trace:
->  [<ffffffff816fa71e>] dump_stack+0x54/0x74
->  [<ffffffff81052ebd>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff81052f9a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff8113ea2d>] perf_swevent_add+0x18d/0x1a0
->  [<ffffffff8113f4e7>] event_sched_in.isra.75+0x87/0x1c0
->  [<ffffffff8114035a>] group_sched_in+0x6a/0x1c0
->  [<ffffffff81140f21>] ctx_sched_in+0x101/0x290
->  [<ffffffff81141110>] perf_event_sched_in+0x60/0x90
->  [<ffffffff81144c0b>] perf_event_context_sched_in+0x7b/0xc0
->  [<ffffffff81145777>] __perf_event_task_sched_in+0x477/0x490
->  [<ffffffff81098c74>] ? arch_vtime_task_switch+0x94/0xa0
->  [<ffffffff8108cb70>] finish_task_switch+0xf0/0x130
->  [<ffffffff817015fd>] __schedule+0x34d/0x970
->  [<ffffffff81701c49>] schedule+0x29/0x70
->  [<ffffffff810831b4>] do_cpu_nanosleep+0x154/0x250
->  [<ffffffff8108316b>] ? do_cpu_nanosleep+0x10b/0x250
->  [<ffffffff810833c9>] posix_cpu_nsleep+0x69/0x120
->  [<ffffffff81083493>] process_cpu_nsleep+0x13/0x20
->  [<ffffffff8107feaa>] SyS_clock_nanosleep+0x9a/0x110
->  [<ffffffff8170ded4>] tracesys+0xdd/0xe2
-> ---[ end trace 809ae0fc0cbb6fcc ]---
-> 
-> 
-> 5484         head = find_swevent_head(swhash, event);
-> 5485         if (WARN_ON_ONCE(!head))
-> 5486                 return -EINVAL;
-> 5487 
-> 
+On Fri, Aug 30, 2013 at 1:44 AM, Ian Kent <raven@themaw.net> wrote:
 
-Does
-http://lkml.kernel.org/r/1377355554-8934-1-git-send-email-jolsa@redhat.com
-help with that?
+>> The check in waitq.c above "is" used to validate the need to callback to
+>> the daemon to request a mount.
+
+Okay.  But then shouldn't the check be  "if (d_mountpoint(dentry)) valid = 0;" ?
+
+Thanks,
+Miklos
