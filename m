@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab3H3Xxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 19:53:42 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:42932 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab3H3XwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756415Ab3H3XwP (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Aug 2013 19:52:15 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:46395 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab3H3XwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 19:52:10 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-ide@vger.kernel.org, netdev@vger.kernel.org,
@@ -21,9 +21,9 @@ Cc: linux-ide@vger.kernel.org, netdev@vger.kernel.org,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 7/8] Drop remaining references to H8/300 architecture
-Date: Fri, 30 Aug 2013 16:51:33 -0700
-Message-Id: <1377906694-9578-8-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 5/8] watchdog: Drop references to H8300 architecture
+Date: Fri, 30 Aug 2013 16:51:31 -0700
+Message-Id: <1377906694-9578-6-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1377906694-9578-1-git-send-email-linux@roeck-us.net>
 References: <1377906694-9578-1-git-send-email-linux@roeck-us.net>
@@ -31,40 +31,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the architecture gone, any references to it are no longer needed.
+Architecture is gone.
 
 Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
 Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- include/uapi/linux/audit.h  |    1 -
- include/uapi/linux/elf-em.h |    1 -
- 2 files changed, 2 deletions(-)
+ drivers/watchdog/Kconfig  |    2 --
+ drivers/watchdog/Makefile |    2 --
+ 2 files changed, 4 deletions(-)
 
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 75cef3f..db0b825 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -329,7 +329,6 @@ enum {
- #define AUDIT_ARCH_ARMEB	(EM_ARM)
- #define AUDIT_ARCH_CRIS		(EM_CRIS|__AUDIT_ARCH_LE)
- #define AUDIT_ARCH_FRV		(EM_FRV)
--#define AUDIT_ARCH_H8300	(EM_H8_300)
- #define AUDIT_ARCH_I386		(EM_386|__AUDIT_ARCH_LE)
- #define AUDIT_ARCH_IA64		(EM_IA_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
- #define AUDIT_ARCH_M32R		(EM_M32R)
-diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-index 8e2b7ba..dcca7ed 100644
---- a/include/uapi/linux/elf-em.h
-+++ b/include/uapi/linux/elf-em.h
-@@ -30,7 +30,6 @@
- #define EM_CRIS		76	/* Axis Communications 32-bit embedded processor */
- #define EM_V850		87	/* NEC v850 */
- #define EM_M32R		88	/* Renesas M32R */
--#define EM_H8_300	46	/* Renesas H8/300,300H,H8S */
- #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
- #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
- #define EM_TI_C6000	140	/* TI C6X DSPs */
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 362085d..08a8a4d 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -408,8 +408,6 @@ config BFIN_WDT
+ 
+ # FRV Architecture
+ 
+-# H8300 Architecture
+-
+ # X86 (i386 + ia64 + x86_64) Architecture
+ 
+ config ACQUIRE_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 2f26a0b..3989d3e 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -65,8 +65,6 @@ obj-$(CONFIG_BFIN_WDT) += bfin_wdt.o
+ 
+ # FRV Architecture
+ 
+-# H8300 Architecture
+-
+ # X86 (i386 + ia64 + x86_64) Architecture
+ obj-$(CONFIG_ACQUIRE_WDT) += acquirewdt.o
+ obj-$(CONFIG_ADVANTECH_WDT) += advantechwdt.o
 -- 
 1.7.9.7
 
