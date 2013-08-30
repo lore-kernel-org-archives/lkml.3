@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab3H3WZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 18:25:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49381 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3H3WZ0 (ORCPT
+	id S1755709Ab3H3WaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 18:30:18 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:45158 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3H3WaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 18:25:26 -0400
+	Fri, 30 Aug 2013 18:30:15 -0400
 MIME-Version: 1.0
-From: Vasily Titskiy <qehgt0@gmail.com>
-Date: Fri, 30 Aug 2013 18:25:04 -0400
-Message-ID: <CABSveYikpdAy9rUDfVrL=jAj7OCqFXyPd7GsvjTnhH3K=u--Zg@mail.gmail.com>
-Subject: [PATCH v2] HID: usbhid: quirk for N-Trig DuoSense Touch Screen
-To: linux-kernel@vger.kernel.org
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130830214452.GH13318@ZenIV.linux.org.uk>
+References: <52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<5220E56A.80603@hp.com>
+	<CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
+	<5220F090.5050908@hp.com>
+	<CA+55aFzqJ5So9Hj1H0C86e4s13FuEEC_n6ubgJ6SexEDB5rYHg@mail.gmail.com>
+	<5220FD51.2010709@hp.com>
+	<CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
+	<20130830205404.GF13318@ZenIV.linux.org.uk>
+	<CA+55aFwwKEaTBX9Uoexpote7dOHBq+TiJ=RifzTpVL_jh24A9w@mail.gmail.com>
+	<20130830214452.GH13318@ZenIV.linux.org.uk>
+Date: Fri, 30 Aug 2013 15:30:14 -0700
+X-Google-Sender-Auth: oOc_BAfD_hw6Giz0vi0Ms84KVC8
+Message-ID: <CA+55aFyyrihbLyMRSW9ahviNFiwi-NBKbcjeKW6fouWUW8fj6g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DuoSense touchscreen device causes a 10 second timeout. This fix
-removes the delay.
+On Fri, Aug 30, 2013 at 2:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Point...  Actually, I wonder if _that_ could be a solution for ->d_name.name
+> printk races as well.  Remember that story?  You objected against taking
+> spinlocks in printk, no matter how specialized and how narrow the area
+> over which those are taken, but rcu_read_lock/rcu_read_unlock should be
+> OK...  Something like %pd expecting dentry pointer and producing dentry
+> name.  Sure, we still get garbage if we race with d_move(), but at least
+> it's a contained garbage that way...
 
-Signed-off-by: Vasily Titskiy <qehgt0@gmail.com>
----
- drivers/hid/hid-ids.h           |    1 +
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 2 insertions(+)
+Yes, that sounds quite reasonable. For printk, we'd probably want to
+limit the max size and depth to something fairly small (32 bytes, max
+four deep or something), and we cannot take cwd/root into account
+since it can happen from interrupts, but other than that it doesn't
+sound horrible.
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 2168885..376170e 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -646,6 +646,7 @@
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16   0x0012
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17   0x0013
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18   0x0014
-+#define USB_DEVICE_ID_NTRIG_DUOSENSE 0x1500
-
- #define USB_VENDOR_ID_ONTRAK 0x0a07
- #define USB_DEVICE_ID_ONTRAK_ADU100 0x0064
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 19b8360..1671b47 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -109,6 +109,7 @@ static const struct hid_blacklist {
-  { USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD,
-HID_QUIRK_NO_INIT_REPORTS },
-  { USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X,
-HID_QUIRK_MULTI_INPUT },
-  { USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
-+ { USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE,
-HID_QUIRK_NO_INIT_REPORTS },
-  { 0, 0 }
- };
-
--- 
-1.7.10.4
+           Linus
