@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3HaFRM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:17:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17351 "EHLO
+	id S1756521Ab3HaFRK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:17:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32184 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab3HaFRD (ORCPT
+	with ESMTP id S1753647Ab3HaFRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 31 Aug 2013 01:17:03 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=uDI3RM8CAjQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=mPQ3Dgj11gYA:10 a=BKBK9F9Kas-9isosNxoA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=QXkJwfv0mFkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YfsKVHR3R-sA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=JZYXgP7PDSWMtFAQ7SMA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130831051117.884125230@goodmis.org>
+Message-Id: <20130831051701.256486055@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 31 Aug 2013 01:11:17 -0400
+Date: Sat, 31 Aug 2013 01:11:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,77 +21,66 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 00/18 v2] ftrace/rcu: Handle unsafe RCU functions and ftrace callbacks
+Subject: [RFC][PATCH 05/18 v2] ftrace: Do not display non safe RCU functions in
+ available_filter_functions
+References: <20130831051117.884125230@goodmis.org>
+Content-Disposition: inline; filename=0005-ftrace-Do-not-display-non-safe-RCU-functions-in-avai.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my final draft of the patches. I'm starting to run them
-through my formal tests now. They may change depending on the outcome
-of the tests.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I'm also a bit tired, and I added the change logs last. Thus I may
-need to go back and fix the change logs up too. But the code was done
-when I was rather spunky. But that doesn't mean I didn't break anything.
+As available_filter_functions file displays functions that are generally
+available for tracing, do not show the ones that are RCU unsafe. Otherwise
+it may be confusing for perf users to see these functions in this file but
+not be able to trace them.
 
-Anyway, let me know what you think. I'm going to need acks for the
-places I added the FTRACE_UNSAFE_RCU() annotations.
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h |    1 +
+ kernel/trace/ftrace.c  |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
-I added a checker that traces all functions with the non RCU safe
-settings, and did a rcu_read_lock() with PROVE_RCU enabled. This caught
-several functions that needed to be annotated. There may be more, but
-the test gives us a way to find out.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 1d17a82..4709264 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -411,6 +411,7 @@ enum {
+ 	FTRACE_ITER_DO_HASH	= (1 << 3),
+ 	FTRACE_ITER_HASH	= (1 << 4),
+ 	FTRACE_ITER_ENABLED	= (1 << 5),
++	FTRACE_ITER_NO_UNSAFE	= (1 << 6),
+ };
+ 
+ void arch_ftrace_update_code(int command);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 06504b2..be87ac9 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2645,7 +2645,10 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+ 		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
+ 
+ 		    ((iter->flags & FTRACE_ITER_ENABLED) &&
+-		     !(rec->flags & FTRACE_FL_ENABLED))) {
++		     !(rec->flags & FTRACE_FL_ENABLED)) ||
++
++		    ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
++		     ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
+ 
+ 			rec = NULL;
+ 			goto retry;
+@@ -2773,6 +2776,7 @@ ftrace_avail_open(struct inode *inode, struct file *file)
+ 	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
+ 	if (iter) {
+ 		iter->pg = ftrace_pages_start;
++		iter->flags = FTRACE_ITER_NO_UNSAFE;
+ 		iter->ops = &global_ops;
+ 	}
+ 
+-- 
+1.7.10.4
 
-There's some improvements that can be done to these patches, but for
-3.12, I think this version is good enough. We can do the improvements
-for 3.13.
 
-Well, enjoy.
-
--- Steve
-
-
-Steven Rostedt (Red Hat) (18):
-      ftrace: Add hash list to save RCU unsafe functions
-      ftrace: Do not set ftrace records for unsafe RCU when not allowed
-      ftrace: Set ftrace internal function tracing RCU safe
-      ftrace: Add test for ops against unsafe RCU functions in callback
-      ftrace: Do not display non safe RCU functions in available_filter_functions
-      ftrace: Add rcu_unsafe_filter_functions file
-      ftrace: Add selftest to check if RCU unsafe functions are filtered properly
-      ftrace/rcu: Do not trace debug_lockdep_rcu_enabled()
-      ftrace: Fix a slight race in modifying what function callback gets traced
-      ftrace: Create a RCU unsafe checker
-      ftrace: Adde infrastructure to stop RCU unsafe checker from checking
-      ftrace: Disable RCU unsafe checker when function graph is enabled
-      ftrace: Disable the RCU unsafe checker when irqsoff is enabled
-      ftrace/lockdep: Have the RCU lockdep splat show what function triggered
-      ftrace/rcu: Mark functions that are RCU unsafe
-      rcu/irq/x86: Mark functions that are RCU unsafe
-      ftrace/cpuidle/x86: Mark functions that are RCU unsafe
-      ftrace/sched: Mark functions that are RCU unsafe
-
-----
- arch/x86/kernel/apic/apic.c           |    2 +
- arch/x86/kernel/irq.c                 |    1 +
- arch/x86/kernel/irq_work.c            |    3 +
- arch/x86/kernel/process.c             |    2 +
- arch/x86/kernel/smp.c                 |    8 ++
- drivers/cpuidle/cpuidle.c             |    2 +
- include/asm-generic/vmlinux.lds.h     |   10 ++
- include/linux/ftrace.h                |   46 +++++++
- kernel/cpu/idle.c                     |    2 +
- kernel/lockdep.c                      |    2 +
- kernel/rcupdate.c                     |    2 +-
- kernel/rcutiny.c                      |    1 +
- kernel/rcutree.c                      |    7 +
- kernel/sched/core.c                   |    2 +
- kernel/softirq.c                      |    2 +
- kernel/trace/Kconfig                  |   22 ++++
- kernel/trace/ftrace.c                 |  231 +++++++++++++++++++++++++++++++--
- kernel/trace/trace.h                  |   11 ++
- kernel/trace/trace_functions.c        |   76 ++++++++++-
- kernel/trace/trace_irqsoff.c          |   16 ++-
- kernel/trace/trace_selftest.c         |   94 ++++++++++++++
- kernel/trace/trace_selftest_dynamic.c |    7 +
- 22 files changed, 532 insertions(+), 17 deletions(-)
