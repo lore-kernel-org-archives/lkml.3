@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab3HaLlW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 07:41:22 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59013 "EHLO
+	id S1756251Ab3HaLmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 07:42:25 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:39378 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753364Ab3HaLlT (ORCPT
+	by vger.kernel.org with ESMTP id S1753169Ab3HaLmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 07:41:19 -0400
-X-Sasl-enc: 0xT5thvF7bA3mm2QAMKilyB2uEmJMxruEMcmNxH+7NS/ 1377949277
+	Sat, 31 Aug 2013 07:42:24 -0400
+X-Sasl-enc: jOUj4xoAw0q39PqRsWgz9nJdUYIKi9ArlDQOXkRTTh4E 1377949342
 Subject: [PATCH 00/10] autofs4 - rename autofs4 to autofs
+To: linux-next@vger.kernel.org
 From: Ian Kent <raven@themaw.net>
 Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         autofs mailing list <autofs@vger.kernel.org>,
         Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 31 Aug 2013 19:41:14 +0800
-Message-ID: <20130831114013.11672.78330.stgit@perseus.themaw.net>
+Date: Sat, 31 Aug 2013 19:42:20 +0800
+Message-ID: <20130831114133.11807.35953.stgit@perseus.themaw.net>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
