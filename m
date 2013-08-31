@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3HaSV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 14:21:29 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2835 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237Ab3HaSV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 14:21:27 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <5222341B.4070205@broadcom.com>
-Date: Sat, 31 Aug 2013 20:21:15 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
- rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1755537Ab3HaSW2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 14:22:28 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:55565 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab3HaSW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 14:22:26 -0400
 MIME-Version: 1.0
-To: "Geert Uytterhoeven" <geert@linux-m68k.org>
-cc: "Randy Dunlap" <rdunlap@infradead.org>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list@broadcom.com,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 30 (brcmfmac)
-References: <20130829200013.d9dde1eb64686a32c661b5d3@canb.auug.org.au>
- <52210AB9.2090104@infradead.org>
- <CAMuHMdXFmWyiUJF+4HbD=6oGPVXHBAVx=rOC7u=motTQFCKn7g@mail.gmail.com>
-In-Reply-To: <CAMuHMdXFmWyiUJF+4HbD=6oGPVXHBAVx=rOC7u=motTQFCKn7g@mail.gmail.com>
-X-WSS-ID: 7E3CECBE0UO2710840-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1376687844-19857-4-git-send-email-andi@firstfloor.org>
+References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+	<1376687844-19857-4-git-send-email-andi@firstfloor.org>
+Date: Sat, 31 Aug 2013 20:22:23 +0200
+X-Google-Sender-Auth: T-ysyZ25Tvkrn2eH_uj43X3cCJA
+Message-ID: <CAMuHMdU-EJdS2epcLUKXThSdGcQd56aXyPH5TyyhGZeiDtZBxQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] tree-sweep: Include linux/sched.h for might_sleep users
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/13 19:37, Geert Uytterhoeven wrote:
-> On Fri, Aug 30, 2013 at 11:12 PM, Randy Dunlap<rdunlap@infradead.org>  wrote:
->> This bool kconfig symbol:
->>
->> config BRCMFMAC_SDIO
->>          bool "SDIO bus interface support for FullMAC driver"
->>          depends on MMC
->>
->> allows BRCMFMAC_SDIO to be y even when MMC=m.
->>
->> Is there a reasonable solution to this?
+On Fri, Aug 16, 2013 at 11:17 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> might_sleep is moving from linux/kernel.h to linux/sched.h, so any users
+> need to include linux/sched.h
 
-Actually, BRCMFMAC should be built in same form as the MMC and/or USB, 
-but only when BRCMFMAC_SDIO or BRCMFMAC_USB are selected.
+Really? <linux/sched.h> is the worst choice w.r.t. include hell.
 
-So valid combinations are:
-MMC=m, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m
-MMC=m, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m|y
-MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m|y
-MMC=y, USB=m, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m
-MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m|y
-MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m|y
-MMC=y, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m|y
+> This was done with a mechanistic script and some uses may be redundant
+> (already included in some other include file). However it's good practice
+> to always include any needed symbols from the top level .c file.
+>
+> Tested with x86-64 allyesconfig. I used to do a x86-32 allyesconfig
+> on a old kernel, but since that is broken now I didn't retest.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Not sure how to express the above.
+> diff --git a/arch/mn10300/include/asm/uaccess.h b/arch/mn10300/include/asm/uaccess.h
+> index 5372787..274c9c2 100644
+> --- a/arch/mn10300/include/asm/uaccess.h
+> +++ b/arch/mn10300/include/asm/uaccess.h
+> @@ -14,6 +14,7 @@
+>  /*
+>   * User space memory access functions
+>   */
+> +#include <linux/sched.h>
+>  #include <linux/thread_info.h>
+>  #include <linux/kernel.h>
+>  #include <asm/page.h>
 
-Gr. AvS
+This part breaks mn10300:
 
-> In order of preference:
-> 1. Make it tristate
-> 2. depends on MMC=y
->
-> However, the first solution cannot be used as there are several
-> "#ifdef CONFIG_BRCMFMAC_SDIO" in the code itself.
->
-> Note that there's a similar issue with BRCMFMAC_USB and USB.
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
+  CC      init/version.o
+In file included from linux-next/include/linux/timex.h:56:0,
+                 from linux-next/include/linux/sched.h:17,
+                 from linux-next/arch/mn10300/include/asm/uaccess.h:17,
+                 from linux-next/arch/mn10300/include/asm/processor.h:21,
+                 from linux-next/include/linux/spinlock_up.h:8,
+                 from linux-next/include/linux/spinlock.h:89,
+                 from linux-next/include/linux/seqlock.h:29,
+                 from linux-next/include/linux/time.h:5,
+                 from linux-next/include/linux/stat.h:18,
+                 from linux-next/include/linux/module.h:10,
+                 from linux-next/init/version.c:10:
+linux-next/include/uapi/linux/timex.h:76:17: error: field 'time' has
+incomplete type
 
+http://kisskb.ellerman.id.au/kisskb/buildresult/9424440/
+http://kisskb.ellerman.id.au/kisskb/buildresult/9424438/
 
+Note that it doesn't use might_sleep(). It does use might_fault(), but only from
+a macro, not from a C inline function.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
