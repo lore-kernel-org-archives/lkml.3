@@ -1,67 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3HaN4w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 09:56:52 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57518 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab3HaN4t (ORCPT
+	id S1756197Ab3HaN5S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 09:57:18 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:42261 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066Ab3HaN5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 09:56:49 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5221F61D.60009@roeck-us.net>
-Date: Sat, 31 Aug 2013 06:56:45 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Sat, 31 Aug 2013 09:57:01 -0400
+Date: Sat, 31 Aug 2013 09:56:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/9] cgroup: css iterations and css_from_dir() are safe
+ under cgroup_mutex
+Message-ID: <20130831135657.GA26539@htj.dyndns.org>
+References: <1377723829-22814-1-git-send-email-tj@kernel.org>
+ <1377723829-22814-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 0/7] Drop support for Renesys H8/300 architecture
-References: <1377880842-6835-1-git-send-email-linux@roeck-us.net> <20130830184611.GA27455@spo001.leaseweb.com> <20130830191146.GA12090@roeck-us.net> <CA+55aFyxHsKhtqqz9jTDYo89bCNqCWhjHGJ4HzFrHnJ0yxLXjQ@mail.gmail.com> <20130830193740.GA13101@roeck-us.net> <CAMuHMdW6KcHbpR_KzbTg9V_FJ8XvQAWQOB-2jXQxG5fo1wWg1A@mail.gmail.com>
-In-Reply-To: <CAMuHMdW6KcHbpR_KzbTg9V_FJ8XvQAWQOB-2jXQxG5fo1wWg1A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377723829-22814-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 11:44 PM, Geert Uytterhoeven wrote:
-> On Fri, Aug 30, 2013 at 9:37 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On Fri, Aug 30, 2013 at 12:14:20PM -0700, Linus Torvalds wrote:
->>> On Fri, Aug 30, 2013 at 12:11 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>
->>>> I would not mind if Linus would agree to pull it right away for 3.12,
->>>> but that seems to be a bit on the fast side.
->>>
->>> I'm ok with code deletion patches, I don't think that would be a
->>> problem. I didn't check them, but I assume this is all literally just
->>> removing code that is conditional on h8/300 config options?
->>>
->> Yes.
->>
->> I found a couple more since I sent the series, but nothing significant.
->>
->> What is your preference - keep it until 3.13, or prepare it now and send you
->> a pull request for 3.12 ?
->
-> It would be nice to check with Sato-san, who wanted to attend Kernel
-> Summit as a hobbyist architecture maintainer, and see what are his plans
-> and opinions.
->
+Currently, all css iterations and css_from_dir() require RCU read lock
+whether the caller is holding cgroup_mutex or not, which is
+unnecessarily restrictive.  They are all safe to use under
+cgroup_mutex without holding RCU read lock.
 
-Yes, of course. My bad that my send script dropped him of all people from the
-original e-mail :(. I fixed that in version 2.
+Factor out cgroup_assert_mutex_or_rcu_locked() from css_from_id() and
+apply it to all css iteration functions and css_from_dir().
 
-Guenter
+v2: cgroup_assert_mutex_or_rcu_locked() definition doesn't need to be
+    inside CONFIG_PROVE_RCU ifdef as rcu_lockdep_assert() is always
+    defined and conditionalized.  Move it outside of the ifdef block.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c |   56 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 30 insertions(+), 26 deletions(-)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -88,6 +88,11 @@ static DEFINE_MUTEX(cgroup_mutex);
+ 
+ static DEFINE_MUTEX(cgroup_root_mutex);
+ 
++#define cgroup_assert_mutex_or_rcu_locked()				\
++	rcu_lockdep_assert(rcu_read_lock_held() ||			\
++			   lockdep_is_held(&cgroup_mutex),		\
++			   "cgroup_mutex or RCU read lock required");
++
+ /*
+  * Generate an array of cgroup subsystem pointers. At boot time, this is
+  * populated with the built in subsystems, and modular subsystems are
+@@ -3036,9 +3041,9 @@ static void cgroup_enable_task_cg_lists(
+  * @parent_css: css whose children to walk
+  *
+  * This function returns the next child of @parent_css and should be called
+- * under RCU read lock.  The only requirement is that @parent_css and
+- * @pos_css are accessible.  The next sibling is guaranteed to be returned
+- * regardless of their states.
++ * under either cgroup_mutex or RCU read lock.  The only requirement is
++ * that @parent_css and @pos_css are accessible.  The next sibling is
++ * guaranteed to be returned regardless of their states.
+  */
+ struct cgroup_subsys_state *
+ css_next_child(struct cgroup_subsys_state *pos_css,
+@@ -3048,7 +3053,7 @@ css_next_child(struct cgroup_subsys_stat
+ 	struct cgroup *cgrp = parent_css->cgroup;
+ 	struct cgroup *next;
+ 
+-	WARN_ON_ONCE(!rcu_read_lock_held());
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	/*
+ 	 * @pos could already have been removed.  Once a cgroup is removed,
+@@ -3095,10 +3100,10 @@ EXPORT_SYMBOL_GPL(css_next_child);
+  * to visit for pre-order traversal of @root's descendants.  @root is
+  * included in the iteration and the first node to be visited.
+  *
+- * While this function requires RCU read locking, it doesn't require the
+- * whole traversal to be contained in a single RCU critical section.  This
+- * function will return the correct next descendant as long as both @pos
+- * and @root are accessible and @pos is a descendant of @root.
++ * While this function requires cgroup_mutex or RCU read locking, it
++ * doesn't require the whole traversal to be contained in a single critical
++ * section.  This function will return the correct next descendant as long
++ * as both @pos and @root are accessible and @pos is a descendant of @root.
+  */
+ struct cgroup_subsys_state *
+ css_next_descendant_pre(struct cgroup_subsys_state *pos,
+@@ -3106,7 +3111,7 @@ css_next_descendant_pre(struct cgroup_su
+ {
+ 	struct cgroup_subsys_state *next;
+ 
+-	WARN_ON_ONCE(!rcu_read_lock_held());
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	/* if first iteration, visit @root */
+ 	if (!pos)
+@@ -3137,17 +3142,17 @@ EXPORT_SYMBOL_GPL(css_next_descendant_pr
+  * is returned.  This can be used during pre-order traversal to skip
+  * subtree of @pos.
+  *
+- * While this function requires RCU read locking, it doesn't require the
+- * whole traversal to be contained in a single RCU critical section.  This
+- * function will return the correct rightmost descendant as long as @pos is
+- * accessible.
++ * While this function requires cgroup_mutex or RCU read locking, it
++ * doesn't require the whole traversal to be contained in a single critical
++ * section.  This function will return the correct rightmost descendant as
++ * long as @pos is accessible.
+  */
+ struct cgroup_subsys_state *
+ css_rightmost_descendant(struct cgroup_subsys_state *pos)
+ {
+ 	struct cgroup_subsys_state *last, *tmp;
+ 
+-	WARN_ON_ONCE(!rcu_read_lock_held());
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	do {
+ 		last = pos;
+@@ -3183,10 +3188,11 @@ css_leftmost_descendant(struct cgroup_su
+  * to visit for post-order traversal of @root's descendants.  @root is
+  * included in the iteration and the last node to be visited.
+  *
+- * While this function requires RCU read locking, it doesn't require the
+- * whole traversal to be contained in a single RCU critical section.  This
+- * function will return the correct next descendant as long as both @pos
+- * and @cgroup are accessible and @pos is a descendant of @cgroup.
++ * While this function requires cgroup_mutex or RCU read locking, it
++ * doesn't require the whole traversal to be contained in a single critical
++ * section.  This function will return the correct next descendant as long
++ * as both @pos and @cgroup are accessible and @pos is a descendant of
++ * @cgroup.
+  */
+ struct cgroup_subsys_state *
+ css_next_descendant_post(struct cgroup_subsys_state *pos,
+@@ -3194,7 +3200,7 @@ css_next_descendant_post(struct cgroup_s
+ {
+ 	struct cgroup_subsys_state *next;
+ 
+-	WARN_ON_ONCE(!rcu_read_lock_held());
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	/* if first iteration, visit the leftmost descendant */
+ 	if (!pos) {
+@@ -5698,16 +5704,16 @@ EXPORT_SYMBOL_GPL(css_lookup);
+  * @dentry: directory dentry of interest
+  * @ss: subsystem of interest
+  *
+- * Must be called under RCU read lock.  The caller is responsible for
+- * pinning the returned css if it needs to be accessed outside the RCU
+- * critical section.
++ * Must be called under cgroup_mutex or RCU read lock.  The caller is
++ * responsible for pinning the returned css if it needs to be accessed
++ * outside the critical section.
+  */
+ struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
+ 					 struct cgroup_subsys *ss)
+ {
+ 	struct cgroup *cgrp;
+ 
+-	WARN_ON_ONCE(!rcu_read_lock_held());
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	/* is @dentry a cgroup dir? */
+ 	if (!dentry->d_inode ||
+@@ -5730,9 +5736,7 @@ struct cgroup_subsys_state *css_from_id(
+ {
+ 	struct cgroup *cgrp;
+ 
+-	rcu_lockdep_assert(rcu_read_lock_held() ||
+-			   lockdep_is_held(&cgroup_mutex),
+-			   "css_from_id() needs proper protection");
++	cgroup_assert_mutex_or_rcu_locked();
+ 
+ 	cgrp = idr_find(&ss->root->cgroup_idr, id);
+ 	if (cgrp)
