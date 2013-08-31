@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab3HaVAm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 17:00:42 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37561 "EHLO e9.ny.us.ibm.com"
+	id S1755276Ab3HaVTf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 17:19:35 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:44969 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753916Ab3HaVAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 17:00:41 -0400
-Date: Sat, 31 Aug 2013 14:00:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.9-rt5
-Message-ID: <20130831210027.GD3871@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130822182127.GA7606@linutronix.de>
- <20130822182423.GA8685@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822182423.GA8685@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083121-7182-0000-0000-000008434A80
+	id S1753950Ab3HaVTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 17:19:33 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Herton Ronaldo Krzesinski <herton@canonical.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] rtl8187: fix use after free on failure path in rtl8187_init_urbs()
+Date: Sun,  1 Sep 2013 00:18:48 +0300
+Message-Id: <1377983928-2440-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 08:24:23PM +0200, Sebastian Andrzej Siewior wrote:
-> * Sebastian Andrzej Siewior | 2013-08-22 20:21:27 [+0200]:
-> 
-> >Changes since v3.10.9-rt4
-> >- swait fixes from Steven. It fixed the issues with CONFIG_RCU_NOCB_CPU
-> >  where the system suddenly froze and RCU wasn't doing its job 
-> 
-> Also a big thanks to Carsten Emde and Paul E. McKenney for finding and
-> debugging the problem.
+In case of __dev_alloc_skb() failure rtl8187_init_urbs()
+calls usb_free_urb(entry) where 'entry' can points to urb
+allocated at the previous iteration. That means refcnt will be
+decremented incorrectly and the urb can be used after memory
+deallocation.
 
-And Clark Williams as well!
+The patch fixes the issue and implements error handling of init_urbs
+in rtl8187_start().
 
-							Thanx, Paul
+Found by Linux Driver Verification project (linuxtesting.org).
 
-> Sebastian
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/wireless/rtl818x/rtl8187/dev.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/rtl818x/rtl8187/dev.c b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+index f49220e..e83d53c 100644
+--- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
++++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+@@ -438,17 +438,16 @@ static int rtl8187_init_urbs(struct ieee80211_hw *dev)
+ 		skb_queue_tail(&priv->rx_queue, skb);
+ 		usb_anchor_urb(entry, &priv->anchored);
+ 		ret = usb_submit_urb(entry, GFP_KERNEL);
++		usb_free_urb(entry);
+ 		if (ret) {
+ 			skb_unlink(skb, &priv->rx_queue);
+ 			usb_unanchor_urb(entry);
+ 			goto err;
+ 		}
+-		usb_free_urb(entry);
+ 	}
+ 	return ret;
+ 
+ err:
+-	usb_free_urb(entry);
+ 	kfree_skb(skb);
+ 	usb_kill_anchored_urbs(&priv->anchored);
+ 	return ret;
+@@ -956,8 +955,12 @@ static int rtl8187_start(struct ieee80211_hw *dev)
+ 				  (RETRY_COUNT << 8  /* short retry limit */) |
+ 				  (RETRY_COUNT << 0  /* long retry limit */) |
+ 				  (7 << 21 /* MAX TX DMA */));
+-		rtl8187_init_urbs(dev);
+-		rtl8187b_init_status_urb(dev);
++		ret = rtl8187_init_urbs(dev);
++		if (ret)
++			goto rtl8187_start_exit;
++		ret = rtl8187b_init_status_urb(dev);
++		if (ret)
++			usb_kill_anchored_urbs(&priv->anchored);
+ 		goto rtl8187_start_exit;
+ 	}
+ 
+@@ -966,7 +969,9 @@ static int rtl8187_start(struct ieee80211_hw *dev)
+ 	rtl818x_iowrite32(priv, &priv->map->MAR[0], ~0);
+ 	rtl818x_iowrite32(priv, &priv->map->MAR[1], ~0);
+ 
+-	rtl8187_init_urbs(dev);
++	ret = rtl8187_init_urbs(dev);
++	if (ret)
++		goto rtl8187_start_exit;
+ 
+ 	reg = RTL818X_RX_CONF_ONLYERLPKT |
+ 	      RTL818X_RX_CONF_RX_AUTORESETPHY |
+-- 
+1.8.1.2
 
