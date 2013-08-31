@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3HaUBi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 16:01:38 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33530 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab3HaUBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 16:01:37 -0400
-Date: Sat, 31 Aug 2013 13:01:24 -0700
+	id S1756852Ab3HaUCM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 16:02:12 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46420 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756120Ab3HaUCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 16:02:11 -0400
+Date: Sat, 31 Aug 2013 13:01:58 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 16/18 v2] rcu/irq/x86: Mark functions that are RCU
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 18/18 v2] ftrace/sched: Mark functions that are RCU
  unsafe
-Message-ID: <20130831200124.GV3871@linux.vnet.ibm.com>
+Message-ID: <20130831200158.GW3871@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20130831051117.884125230@goodmis.org>
- <20130831051703.080790826@goodmis.org>
+ <20130831051703.390216483@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130831051703.080790826@goodmis.org>
+In-Reply-To: <20130831051703.390216483@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13083120-9332-0000-0000-00000144904C
+x-cbid: 13083120-7182-0000-0000-00000843430E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 01:11:33AM -0400, Steven Rostedt wrote:
+On Sat, Aug 31, 2013 at 01:11:35AM -0400, Steven Rostedt wrote:
 > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
 > Some callbacks of the function tracer use rcu_read_lock(). This means that
@@ -43,168 +41,35 @@ On Sat, Aug 31, 2013 at 01:11:33AM -0400, Steven Rostedt wrote:
 > Thes functions need to be marked so that callbacks that use RCU do not
 > trace them.
 > 
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 > ---
->  arch/x86/kernel/apic/apic.c |    2 ++
->  arch/x86/kernel/irq.c       |    1 +
->  arch/x86/kernel/irq_work.c  |    3 +++
->  arch/x86/kernel/smp.c       |    8 ++++++++
->  kernel/softirq.c            |    2 ++
->  5 files changed, 16 insertions(+)
+>  kernel/sched/core.c |    2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index eca89c5..91af16b 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -931,6 +931,7 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
-> 
->  	set_irq_regs(old_regs);
->  }
-> +FTRACE_UNSAFE_RCU(smp_apic_timer_interrupt);
-> 
->  void __irq_entry smp_trace_apic_timer_interrupt(struct pt_regs *regs)
->  {
-> @@ -952,6 +953,7 @@ void __irq_entry smp_trace_apic_timer_interrupt(struct pt_regs *regs)
-> 
->  	set_irq_regs(old_regs);
->  }
-> +FTRACE_UNSAFE_RCU(smp_trace_apic_timer_interrupt);
-> 
->  int setup_profiling_timer(unsigned int multiplier)
->  {
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-> index 3a8185c..fccd0d1 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -203,6 +203,7 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
->  	set_irq_regs(old_regs);
->  	return 1;
->  }
-> +FTRACE_UNSAFE_RCU(do_IRQ);
-> 
->  /*
->   * Handler for X86_PLATFORM_IPI_VECTOR.
-> diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-> index 636a55e..a2199c2 100644
-> --- a/arch/x86/kernel/irq_work.c
-> +++ b/arch/x86/kernel/irq_work.c
-> @@ -7,6 +7,7 @@
->  #include <linux/kernel.h>
->  #include <linux/irq_work.h>
->  #include <linux/hardirq.h>
-> +#include <linux/ftrace.h>
->  #include <asm/apic.h>
->  #include <asm/trace/irq_vectors.h>
-> 
-> @@ -28,6 +29,7 @@ void smp_irq_work_interrupt(struct pt_regs *regs)
->  	__smp_irq_work_interrupt();
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_irq_work_interrupt);
-> 
->  void smp_trace_irq_work_interrupt(struct pt_regs *regs)
->  {
-> @@ -37,6 +39,7 @@ void smp_trace_irq_work_interrupt(struct pt_regs *regs)
->  	trace_irq_work_exit(IRQ_WORK_VECTOR);
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_trace_irq_work_interrupt);
-> 
->  void arch_irq_work_raise(void)
->  {
-> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-> index cdaa347..3d702ef 100644
-> --- a/arch/x86/kernel/smp.c
-> +++ b/arch/x86/kernel/smp.c
-> @@ -23,6 +23,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/cpu.h>
->  #include <linux/gfp.h>
-> +#include <linux/ftrace.h>
-> 
->  #include <asm/mtrr.h>
->  #include <asm/tlbflush.h>
-> @@ -175,6 +176,7 @@ asmlinkage void smp_reboot_interrupt(void)
->  	stop_this_cpu(NULL);
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b7c32cb..9bd2aea 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1440,6 +1440,7 @@ void scheduler_ipi(void)
+>  	}
 >  	irq_exit();
 >  }
-> +FTRACE_UNSAFE_RCU(smp_reboot_interrupt);
+> +FTRACE_UNSAFE_RCU(scheduler_ipi);
 > 
->  static void native_stop_other_cpus(int wait)
+>  static void ttwu_queue_remote(struct task_struct *p, int cpu)
 >  {
-> @@ -264,6 +266,7 @@ void smp_reschedule_interrupt(struct pt_regs *regs)
->  	 * KVM uses this interrupt to force a cpu out of guest mode
->  	 */
+> @@ -3222,6 +3223,7 @@ int idle_cpu(int cpu)
+> 
+>  	return 1;
 >  }
-> +FTRACE_UNSAFE_RCU(smp_reschedule_interrupt);
+> +FTRACE_UNSAFE_RCU(idle_cpu);
 > 
->  static inline void smp_entering_irq(void)
->  {
-> @@ -288,6 +291,7 @@ void smp_trace_reschedule_interrupt(struct pt_regs *regs)
->  	 * KVM uses this interrupt to force a cpu out of guest mode
->  	 */
->  }
-> +FTRACE_UNSAFE_RCU(smp_trace_reschedule_interrupt);
-> 
->  static inline void __smp_call_function_interrupt(void)
->  {
-> @@ -301,6 +305,7 @@ void smp_call_function_interrupt(struct pt_regs *regs)
->  	__smp_call_function_interrupt();
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_call_function_interrupt);
-> 
->  void smp_trace_call_function_interrupt(struct pt_regs *regs)
->  {
-> @@ -310,6 +315,7 @@ void smp_trace_call_function_interrupt(struct pt_regs *regs)
->  	trace_call_function_exit(CALL_FUNCTION_VECTOR);
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_trace_call_function_interrupt);
-> 
->  static inline void __smp_call_function_single_interrupt(void)
->  {
-> @@ -323,6 +329,7 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
->  	__smp_call_function_single_interrupt();
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_call_function_single_interrupt);
-> 
->  void smp_trace_call_function_single_interrupt(struct pt_regs *regs)
->  {
-> @@ -332,6 +339,7 @@ void smp_trace_call_function_single_interrupt(struct pt_regs *regs)
->  	trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR);
->  	exiting_irq();
->  }
-> +FTRACE_UNSAFE_RCU(smp_trace_call_function_single_interrupt);
-> 
->  static int __init nonmi_ipi_setup(char *str)
->  {
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index be3d351..7960e70 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -325,6 +325,7 @@ void irq_enter(void)
-> 
->  	__irq_enter();
->  }
-> +FTRACE_UNSAFE_RCU(irq_enter);
-> 
->  static inline void invoke_softirq(void)
->  {
-> @@ -367,6 +368,7 @@ void irq_exit(void)
->  	tick_irq_exit();
->  	rcu_irq_exit();
->  }
-> +FTRACE_UNSAFE_RCU(irq_exit);
-> 
->  /*
->   * This function must run with irqs disabled!
+>  /**
+>   * idle_task - return the idle task for a given cpu.
 > -- 
 > 1.7.10.4
 > 
