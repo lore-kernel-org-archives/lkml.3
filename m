@@ -1,95 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3HaWEc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 18:04:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56455 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753181Ab3HaWEb (ORCPT
+	id S1756106Ab3HaWYp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 18:24:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47007 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3HaWYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 18:04:31 -0400
-Message-ID: <1377986658.21578.5.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH][v3.2.y]  inetpeer: Invalidate the inetpeer tree along
- with the routing cache
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>, stable@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Eric Dumazet <edumazet@google.com>
-Date: Sat, 31 Aug 2013 23:04:18 +0100
-In-Reply-To: <5213A8BB.5070309@canonical.com>
-References: <5213A8BB.5070309@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-N9/V2Bzc3Bj8e19dL5xk"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 31 Aug 2013 18:24:44 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jakub Schmidtke <sjakub@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] staging: asus_oled: Create device attributes automatically
+Date: Sat, 31 Aug 2013 15:24:36 -0700
+Message-Id: <1377987876-2837-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 'enable' and 'picture' attributes are created for all oled_class devices.
+They can be created automatically when creating the oled_class device.
+This simplifies the code and ensures that the attributes exist when the
+udev event announcing device registration is generated.
 
---=-N9/V2Bzc3Bj8e19dL5xk
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+The class 'version' attribute could be created in a similar fashion, but that
+would mean not using the existing class ABI defines and function to create
+a class attribute displaying a fixed string. Since this is true for pretty much
+every driver using CLASS_ATTR_STRING, a more generic solution might be better.
 
-On Tue, 2013-08-20 at 13:34 -0400, Joseph Salisbury wrote:
-> Hello,
->=20
-> Please consider including mainline commit 5faa5df in the next v3.2.y
-> release.  It was included in the mainline tree as of v3.3-rc7.  It has
-> been tested and confirmed to resolve
-> http://bugs.launchpad.net/bugs/1205741 .
->=20
->=20
-> commit 5faa5df1fa2024bd750089ff21dcc4191798263d
-> Author: Steffen Klassert <steffen.klassert@secunet.com>
-> Date:   Tue Mar 6 21:20:26 2012 +0000
->=20
->     inetpeer: Invalidate the inetpeer tree along with the routing cache
->=20
->=20
-> Also note that commit 5faa5df introduced a race condition that is fixed
-> by mainline commit 55432d2, so that commit would also be required:
->=20
-> commit 55432d2b543a4b6dfae54f5c432a566877a85d90
-> Author: Eric Dumazet <edumazet@google.com>
-> Date:   Tue Jun 5 03:00:18 2012 +0000
->=20
->     inetpeer: fix a race in inetpeer_gc_worker()
+Compile tested only.
 
-David, could you ack/nak these for 3.2 (maybe 3.0 as well?).
+ drivers/staging/asus_oled/asus_oled.c |   58 +++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 35 deletions(-)
 
-Ben.
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 3654dc3..afe91b6 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -59,7 +59,6 @@ MODULE_DESCRIPTION("Asus OLED Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(ASUS_OLED_VERSION);
+ 
+-static struct class *oled_class;
+ static int oled_num;
+ 
+ static uint start_off;
+@@ -625,9 +624,18 @@ static DEVICE_ATTR(asus_oled_enabled, S_IWUSR | S_IRUGO,
+ 		   get_enabled, set_enabled);
+ static DEVICE_ATTR(asus_oled_picture, S_IWUSR , NULL, set_picture);
+ 
+-static DEVICE_ATTR(enabled, S_IWUSR | S_IRUGO,
+-		   class_get_enabled, class_set_enabled);
+-static DEVICE_ATTR(picture, S_IWUSR, NULL, class_set_picture);
++static struct device_attribute oled_dev_attributes[] = {
++	__ATTR(enabled, S_IWUSR | S_IRUGO, class_get_enabled,
++	       class_set_enabled),
++	__ATTR(picture, S_IWUSR, NULL, class_set_picture),
++	{ }
++};
++
++static struct class oled_class = {
++	.owner = THIS_MODULE,
++	.name = ASUS_OLED_UNDERSCORE_NAME,
++	.dev_attrs = oled_dev_attributes,
++};
+ 
+ static int asus_oled_probe(struct usb_interface *interface,
+ 			   const struct usb_device_id *id)
+@@ -693,24 +701,13 @@ static int asus_oled_probe(struct usb_interface *interface,
+ 	if (retval)
+ 		goto err_files;
+ 
+-	odev->dev = device_create(oled_class, &interface->dev, MKDEV(0, 0),
+-				  NULL, "oled_%d", ++oled_num);
+-
++	odev->dev = device_create(&oled_class, &interface->dev, MKDEV(0, 0),
++				  odev, "oled_%d", ++oled_num);
+ 	if (IS_ERR(odev->dev)) {
+ 		retval = PTR_ERR(odev->dev);
+ 		goto err_files;
+ 	}
+ 
+-	dev_set_drvdata(odev->dev, odev);
+-
+-	retval = device_create_file(odev->dev, &dev_attr_enabled);
+-	if (retval)
+-		goto err_class_enabled;
+-
+-	retval = device_create_file(odev->dev, &dev_attr_picture);
+-	if (retval)
+-		goto err_class_picture;
+-
+ 	dev_info(&interface->dev,
+ 		 "Attached Asus OLED device: %s [width %u, pack_mode %d]\n",
+ 		 desc, odev->dev_width, odev->pack_mode);
+@@ -720,13 +717,6 @@ static int asus_oled_probe(struct usb_interface *interface,
+ 
+ 	return 0;
+ 
+-err_class_picture:
+-	device_remove_file(odev->dev, &dev_attr_picture);
+-
+-err_class_enabled:
+-	device_remove_file(odev->dev, &dev_attr_enabled);
+-	device_unregister(odev->dev);
+-
+ err_files:
+ 	device_remove_file(&interface->dev, &ASUS_OLED_DEVICE_ATTR(enabled));
+ 	device_remove_file(&interface->dev, &ASUS_OLED_DEVICE_ATTR(picture));
+@@ -745,8 +735,6 @@ static void asus_oled_disconnect(struct usb_interface *interface)
+ 	odev = usb_get_intfdata(interface);
+ 	usb_set_intfdata(interface, NULL);
+ 
+-	device_remove_file(odev->dev, &dev_attr_picture);
+-	device_remove_file(odev->dev, &dev_attr_enabled);
+ 	device_unregister(odev->dev);
+ 
+ 	device_remove_file(&interface->dev, &ASUS_OLED_DEVICE_ATTR(picture));
+@@ -807,15 +795,15 @@ static CLASS_ATTR_STRING(version, S_IRUGO,
+ 
+ static int __init asus_oled_init(void)
+ {
+-	int retval = 0;
+-	oled_class = class_create(THIS_MODULE, ASUS_OLED_UNDERSCORE_NAME);
++	int retval;
+ 
+-	if (IS_ERR(oled_class)) {
+-		pr_err("Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
+-		return PTR_ERR(oled_class);
++	retval = class_register(&oled_class);
++	if (retval) {
++		pr_err("Error registering " ASUS_OLED_UNDERSCORE_NAME " class\n");
++		return retval;
+ 	}
+ 
+-	retval = class_create_file(oled_class, &class_attr_version.attr);
++	retval = class_create_file(&oled_class, &class_attr_version.attr);
+ 	if (retval) {
+ 		pr_err("Error creating class version file\n");
+ 		goto error;
+@@ -831,15 +819,15 @@ static int __init asus_oled_init(void)
+ 	return retval;
+ 
+ error:
+-	class_destroy(oled_class);
++	class_unregister(&oled_class);
+ 	return retval;
+ }
+ 
+ static void __exit asus_oled_exit(void)
+ {
+ 	usb_deregister(&oled_driver);
+-	class_remove_file(oled_class, &class_attr_version.attr);
+-	class_destroy(oled_class);
++	class_remove_file(&oled_class, &class_attr_version.attr);
++	class_unregister(&oled_class);
+ }
+ 
+ module_init(asus_oled_init);
+-- 
+1.7.9.7
 
---=20
-Ben Hutchings
-If God had intended Man to program,
-we'd have been born with serial I/O ports.
-
---=-N9/V2Bzc3Bj8e19dL5xk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIVAwUAUiJoYue/yOyVhhEJAQrk6BAAzdYpSoV7QjvEsg376PWmHhYJuCvqeGjW
-E/2HgvZDMfnn8oMKjKKQgSjb8nZf76tEKeRgOPHg/ZU7NAG1THgphSmst+64Tl0f
-lW6e4j8GYZfSGIa1kuTtbQLn96uLN70GOZR6+GBrEcujxJQEiQsB7t7dvsGBzYQ7
-jpMAeT9lBBGCv4jKjioX6mGkBmCU1KpgBuaDD0kUxV/qwyI6tKsCg1XrjAcYscJ6
-M595R0Z+FKQIKHIbuysQz9rISRirJj7tvetWVL+Q9L9Nd08QuaykJg8+qiIJshH2
-37hmcBf9VamAEmah/QGjAXIC9ZmuiRCcEpZYaoEGOpHQtlwKvSaOBnKf2BxpQvQO
-9Q5Ad4SmB/JWMjfuZhfsT9m5GfGjXzoaBnFkBVJdee8b1qwz3PxRMSIWOuTgmwfb
-rzgvjoF/+8YRkESMmZ0nA8R+VSTYqCEdlv09AqKb2KfbscZRJpZPcTborY3CoHFF
-k1PadPlnM9FMSAplELcdh+H6P6OER5aBu7M9P54SWyU7Iy62J2bQW/wkBZSiGCJ8
-RlqoMJTCnuqKYfB90MDjn4Vlfo8rmpTHj89mno5Mk4Fe0Drufwpp+UI27flnuAZU
-UWIxTB83ApK7bDiTkBkYDDDGbwsNJrxPb11Ule7jbFQLW0uUJXBGs386RoTWJ92P
-nyFPBKWQt2o=
-=5kOe
------END PGP SIGNATURE-----
-
---=-N9/V2Bzc3Bj8e19dL5xk--
