@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab3HaL3w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 07:29:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40162 "EHLO
+	id S1756917Ab3HaL37 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 07:29:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40096 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3HaL3u (ORCPT
+	with ESMTP id S1756531Ab3HaL3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 07:29:50 -0400
+	Sat, 31 Aug 2013 07:29:55 -0400
 From: Mark Brown <broonie@kernel.org>
 To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Sat, 31 Aug 2013 12:29:22 +0100
-Message-Id: <1377948564-8383-7-git-send-email-broonie@kernel.org>
+Date: Sat, 31 Aug 2013 12:29:17 +0100
+Message-Id: <1377948564-8383-2-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1377948564-8383-1-git-send-email-broonie@kernel.org>
 References: <1377948564-8383-1-git-send-email-broonie@kernel.org>
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 07/11] regulator: wm831x-isink: Convert to devm_regulator_register()
+Subject: [PATCH 02/11] regulator: arizona-ldo1: Convert to devm_regulator_register()
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,55 +29,40 @@ From: Mark Brown <broonie@linaro.org>
 
 Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- drivers/regulator/wm831x-isink.c | 17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+ drivers/regulator/arizona-ldo1.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
-index 841cb52..0339b88 100644
---- a/drivers/regulator/wm831x-isink.c
-+++ b/drivers/regulator/wm831x-isink.c
-@@ -194,7 +194,8 @@ static int wm831x_isink_probe(struct platform_device *pdev)
- 	config.init_data = pdata->isink[id];
- 	config.driver_data = isink;
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 81d8681..4f6c205 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -226,7 +226,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	else
+ 		config.init_data = &ldo1->init_data;
  
--	isink->regulator = regulator_register(&isink->desc, &config);
-+	isink->regulator = devm_regulator_register(&pdev->dev, &isink->desc,
-+						   &config);
- 	if (IS_ERR(isink->regulator)) {
- 		ret = PTR_ERR(isink->regulator);
- 		dev_err(wm831x->dev, "Failed to register ISINK%d: %d\n",
-@@ -210,31 +211,19 @@ static int wm831x_isink_probe(struct platform_device *pdev)
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request ISINK IRQ %d: %d\n",
- 			irq, ret);
--		goto err_regulator;
-+		goto err;
- 	}
- 
- 	platform_set_drvdata(pdev, isink);
- 
+-	ldo1->regulator = regulator_register(desc, &config);
++	ldo1->regulator = devm_regulator_register(&pdev->dev, desc, &config);
+ 	if (IS_ERR(ldo1->regulator)) {
+ 		ret = PTR_ERR(ldo1->regulator);
+ 		dev_err(arizona->dev, "Failed to register LDO1 supply: %d\n",
+@@ -239,18 +239,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
  	return 0;
- 
--err_regulator:
--	regulator_unregister(isink->regulator);
- err:
- 	return ret;
  }
  
--static int wm831x_isink_remove(struct platform_device *pdev)
+-static int arizona_ldo1_remove(struct platform_device *pdev)
 -{
--	struct wm831x_isink *isink = platform_get_drvdata(pdev);
+-	struct arizona_ldo1 *ldo1 = platform_get_drvdata(pdev);
 -
--	regulator_unregister(isink->regulator);
+-	regulator_unregister(ldo1->regulator);
 -
 -	return 0;
 -}
 -
- static struct platform_driver wm831x_isink_driver = {
- 	.probe = wm831x_isink_probe,
--	.remove = wm831x_isink_remove,
+ static struct platform_driver arizona_ldo1_driver = {
+ 	.probe = arizona_ldo1_probe,
+-	.remove = arizona_ldo1_remove,
  	.driver		= {
- 		.name	= "wm831x-isink",
+ 		.name	= "arizona-ldo1",
  		.owner	= THIS_MODULE,
 -- 
 1.8.4.rc3
