@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3HaCMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 22:12:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46252 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504Ab3HaCMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 22:12:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,996,1367996400"; 
-   d="asc'?scan'208";a="371377472"
-Message-ID: <1377915156.2030.40.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] i40e: Fix 32 bit shift compilation warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Aug 2013 19:12:36 -0700
-In-Reply-To: <1377913655.2070.45.camel@joe-AO722>
-References: <cover.1377903831.git.joe@perches.com>
-	 <daa992875a6f542adc41069daeb81246e46b7f80.1377903831.git.joe@perches.com>
-	 <1377913655.2070.45.camel@joe-AO722>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-yWD5AuySMOPFe8A/Z+ip"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1753418Ab3HaCfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 22:35:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35789 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab3HaCfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 22:35:42 -0400
+Date: Sat, 31 Aug 2013 03:35:16 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130831023516.GI13318@ZenIV.linux.org.uk>
+References: <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+ <5220E56A.80603@hp.com>
+ <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com>
+ <5220F090.5050908@hp.com>
+ <20130830194059.GC13318@ZenIV.linux.org.uk>
+ <5220F811.9060902@hp.com>
+ <20130830202608.GD13318@ZenIV.linux.org.uk>
+ <52210225.60805@hp.com>
+ <20130830204852.GE13318@ZenIV.linux.org.uk>
+ <52214EBC.90100@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52214EBC.90100@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 30, 2013 at 10:02:36PM -0400, Waiman Long wrote:
 
---=-yWD5AuySMOPFe8A/Z+ip
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> I slapped in the code segment, and the following was logged:
+> 
+> [  340.871590] type = tmpfs
+> [  340.871712]  [<ffffffff8116c5bd>] __fput+0x23d/0x270
+> [  340.871715]  [<ffffffff8116c699>] ____fput+0x9/0x10
+> [  340.871719]  [<ffffffff81068ae1>] task_work_run+0xb1/0xe0
+> [  340.871724]  [<ffffffff81002990>] do_notify_resume+0x80/0x1b0
+> [  340.871728]  [<ffffffff811ed120>] ? ipc_lock+0x30/0x50
+> [  340.871732]  [<ffffffff8113a356>] ? remove_vma+0x56/0x60
+> [  340.871736]  [<ffffffff8113c1bf>] ? do_munmap+0x34f/0x380
+> [  340.871741]  [<ffffffff814a5fda>] int_signal+0x12/0x17
+> [  340.871744] ---[ end trace aafa6c45f3388d65 ]---
 
-On Fri, 2013-08-30 at 18:47 -0700, Joe Perches wrote:
-> When dma_addr_t is a 32 bit value, >> 32 emits compiler warnings
-> Use ((addr>>16) >>16) to avoid this.
->=20
-> I presume the macro should actually use the kernel.h
-> macro upper_32_bits() eventually.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/ethernet/intel/i40e/i40e_hmc.h  | 2 +-
->  drivers/net/ethernet/intel/i40e/i40e_type.h | 4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
+Aha...  OK, I see what's going on.  We end up with shm_mnt *not* marked
+as long-living vfsmount, even though it lives forever.  See if the
+following helps; if it does (and I very much expect it to), we want to
+put it in -stable.  As it is, you get slow path in mntput() each time
+a file created by shmem_file_setup() gets closed.  For no reason whatsoever...
 
-Thanks again, I will add this patch as well to my queue.
-
---=-yWD5AuySMOPFe8A/Z+ip
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAABCgAGBQJSIVEUAAoJEOVv75VaS+3OdKkP/AiKMeYIwZK7igp+wtZn+w7J
-v965VK6eRu+SSDdZVLF/Clm6iA3he7zZUUNKbDrh1E+6X/w05/JpTPpcfPQXtWUy
-STAodePK7Ui18RY1UZpyYZucROGxxuuswqZOfwCYduu3NazH7Ch8HwPVuBDv+Anz
-ljXltQbkJl6AiZfjr5qZdFl2V7TuGHYi49FghCdKzj4oXz3SGtULJKGAVDO1syKY
-DUdrK2fNRumnEy+GcUjsvgTBAedrU+JssHzR5Cx4x08aoTZ+TEInBKJ7X7SnFe92
-Iq5ZcDZDExiKPxkXJHgXBEzFjZYu09ucBfjdNbVDfhJJiAVIUsf/m6nVNpmIw3/6
-wc6JDKlT7sOODQsQ7xg26xBy0T/e8t32cOAkyiKEzYqREIbogYrVn5Z82S6R1yvg
-9E5ArAn9vQs7Wfcc+g1AU8g6BKchvHWhhPfFdFw+nYpd1bG+PhdfHb3H49JhRzyO
-4dhQP2xBGH4992U5ZwwFcu0PqrTqTtIiZxqrlKijiyHn1mFehKq+WOK2tAkx6Usn
-p4hfHMlH89K8Q2fpPVzc4UP6ku6fLPwMAiijWGCKj/PoEuErG+CAkFx93OuEcr6s
-PVg86JG4u3llZ+0L3lbRblpgxSuSisxgiWPKHNoGhCMsbaEaIV4AJRUd3aECJkvf
-RqmYXxg9U7DNFtC4+RNN
-=mWdb
------END PGP SIGNATURE-----
-
---=-yWD5AuySMOPFe8A/Z+ip--
-
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/mm/shmem.c b/mm/shmem.c
+index e43dc55..445162c 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2615,7 +2615,7 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * tmpfs instance, limiting inodes to one per page of lowmem;
+ 	 * but the internal instance is left unlimited.
+ 	 */
+-	if (!(sb->s_flags & MS_NOUSER)) {
++	if (!(sb->s_flags & MS_KERNMOUNT)) {
+ 		sbinfo->max_blocks = shmem_default_max_blocks();
+ 		sbinfo->max_inodes = shmem_default_max_inodes();
+ 		if (shmem_parse_options(data, sbinfo, false)) {
+@@ -2831,8 +2831,7 @@ int __init shmem_init(void)
+ 		goto out2;
+ 	}
+ 
+-	shm_mnt = vfs_kern_mount(&shmem_fs_type, MS_NOUSER,
+-				 shmem_fs_type.name, NULL);
++	shm_mnt = kern_mount(&shmem_fs_type);
+ 	if (IS_ERR(shm_mnt)) {
+ 		error = PTR_ERR(shm_mnt);
+ 		printk(KERN_ERR "Could not kern_mount tmpfs\n");
