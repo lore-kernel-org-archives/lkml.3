@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab3HaIPt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 04:15:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59739 "EHLO
+	id S1757196Ab3HaIP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 04:15:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59744 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757091Ab3HaIPm (ORCPT
+	with ESMTP id S1757124Ab3HaIPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 04:15:42 -0400
-Date: Sat, 31 Aug 2013 01:15:06 -0700
+	Sat, 31 Aug 2013 04:15:48 -0400
+Date: Sat, 31 Aug 2013 01:15:36 -0700
 From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-a2f2804a7142b043dafd39f21b86777840e1a78c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1377750593-48046-2-git-send-email-dsahern@gmail.com>
-References: <1377750593-48046-2-git-send-email-dsahern@gmail.com>
+Message-ID: <tip-nd0d7rbajgm8k6tah3xv34v1@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Add tracepoint lookup by name
-Git-Commit-ID: a2f2804a7142b043dafd39f21b86777840e1a78c
+Subject: [tip:perf/core] perf trace: Handle missing HUGEPAGE defines
+Git-Commit-ID: f2935f3e585226b8203ec3861907e1cb16ad3d6a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,74 +25,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:15:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:15:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a2f2804a7142b043dafd39f21b86777840e1a78c
-Gitweb:     http://git.kernel.org/tip/a2f2804a7142b043dafd39f21b86777840e1a78c
+Commit-ID:  f2935f3e585226b8203ec3861907e1cb16ad3d6a
+Gitweb:     http://git.kernel.org/tip/f2935f3e585226b8203ec3861907e1cb16ad3d6a
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 28 Aug 2013 22:29:51 -0600
+AuthorDate: Tue, 27 Aug 2013 10:50:40 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 29 Aug 2013 17:41:02 -0300
+CommitDate: Fri, 30 Aug 2013 15:43:28 -0300
 
-perf evlist: Add tracepoint lookup by name
+perf trace: Handle missing HUGEPAGE defines
 
-Will be used by upcoming perf-trace replay option.
+Needed for compile on Fedora 12 which goes back to the 2.6.32 kernel.
+Might be needed for RHEL6. I use F12 to compile static binaries for
+Wind River Linux 4.3.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377750593-48046-2-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/n/tip-nd0d7rbajgm8k6tah3xv34v1@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 15 +++++++++++++++
- tools/perf/util/evlist.h |  4 ++++
- 2 files changed, 19 insertions(+)
+ tools/perf/builtin-trace.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 6a629af..5df4ca9 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -208,6 +208,21 @@ perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id)
- 	return NULL;
- }
- 
-+struct perf_evsel *
-+perf_evlist__find_tracepoint_by_name(struct perf_evlist *evlist,
-+				     const char *name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if ((evsel->attr.type == PERF_TYPE_TRACEPOINT) &&
-+		    (strcmp(evsel->name, name) == 0))
-+			return evsel;
-+	}
-+
-+	return NULL;
-+}
-+
- int perf_evlist__add_newtp(struct perf_evlist *evlist,
- 			   const char *sys, const char *name, void *handler)
- {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index ab95d72..841a394 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -74,6 +74,10 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter);
- struct perf_evsel *
- perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id);
- 
-+struct perf_evsel *
-+perf_evlist__find_tracepoint_by_name(struct perf_evlist *evlist,
-+				     const char *name);
-+
- void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id);
- 
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 845facc..69a065e 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -71,7 +71,9 @@ static size_t syscall_arg__scnprintf_mmap_flags(char *bf, size_t size, unsigned
+ 	P_MMAP_FLAG(FILE);
+ 	P_MMAP_FLAG(FIXED);
+ 	P_MMAP_FLAG(GROWSDOWN);
++#ifdef MAP_HUGETLB
+ 	P_MMAP_FLAG(HUGETLB);
++#endif
+ 	P_MMAP_FLAG(LOCKED);
+ 	P_MMAP_FLAG(NONBLOCK);
+ 	P_MMAP_FLAG(NORESERVE);
+@@ -110,8 +112,12 @@ static size_t syscall_arg__scnprintf_madvise_behavior(char *bf, size_t size, uns
+ #endif
+ 	P_MADV_BHV(MERGEABLE);
+ 	P_MADV_BHV(UNMERGEABLE);
++#ifdef MADV_HUGEPAGE
+ 	P_MADV_BHV(HUGEPAGE);
++#endif
++#ifdef MADV_NOHUGEPAGE
+ 	P_MADV_BHV(NOHUGEPAGE);
++#endif
+ #ifdef MADV_DONTDUMP
+ 	P_MADV_BHV(DONTDUMP);
+ #endif
