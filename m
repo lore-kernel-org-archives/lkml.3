@@ -1,368 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3HaNiU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 09:38:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10849 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754989Ab3HaNhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 09:37:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,997,1367996400"; 
-   d="scan'208";a="354215357"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/4] perf, tools: Add perf stat --transaction v5
-Date: Sat, 31 Aug 2013 06:37:06 -0700
-Message-Id: <1377956226-18594-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1377956226-18594-1-git-send-email-andi@firstfloor.org>
-References: <1377956226-18594-1-git-send-email-andi@firstfloor.org>
+	id S1756984Ab3HaNjL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 09:39:11 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:58835 "EHLO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756891Ab3HaNjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 09:39:09 -0400
+Message-ID: <5221F1D9.9030001@gmail.com>
+Date: Sat, 31 Aug 2013 15:38:33 +0200
+From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+MIME-Version: 1.0
+To: Dan Aloni <alonid@stratoscale.com>, akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH linux-next] Prevent a coredump with a large vm_map_count
+ from Oopsing
+References: <20130830065707.GA31940@gmail.com> <1377930042-32442-1-git-send-email-alonid@stratoscale.com>
+In-Reply-To: <1377930042-32442-1-git-send-email-alonid@stratoscale.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi Dan,
+  thank you for your work on my issue. I would like to test it on 3.10.9 where
+I faced the problem initially.
 
-Add support to perf stat to print the basic transactional execution statistics:
-Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-using the in_tx and in_tx_checkpoint qualifiers.
-Transaction Starts and Elision Starts, to compute the average transaction
-length.
+linux-3.10.9 # patch -p1 < ../patches/vm_map_count.patch
+patching file fs/binfmt_elf.c
+Hunk #1 succeeded at 1415 (offset -14 lines).
+Hunk #2 succeeded at 1430 (offset -14 lines).
+Hunk #3 succeeded at 1487 (offset -14 lines).
+Hunk #4 succeeded at 1609 (offset -14 lines).
+Hunk #5 succeeded at 1689 (offset -14 lines).
+Hunk #6 FAILED at 1737.
+Hunk #7 succeeded at 1810 (offset -14 lines).
+Hunk #8 succeeded at 1854 (offset -14 lines).
+Hunk #9 succeeded at 1902 (offset -14 lines).
+Hunk #10 succeeded at 1970 (offset -14 lines).
+Hunk #11 FAILED at 2068.
+2 out of 11 hunks FAILED -- saving rejects to file fs/binfmt_elf.c.rej
+#
 
-This is a reasonable overview over the success of the transactions.
 
-Also support architectures that have a transaction aborted cycles
-counter like POWER8. Since that is awkward to handle in the kernel
-abstract handle both cases here.
+Thank you.
 
-Enable with a new --transaction / -T option.
+Dan Aloni wrote:
+> A high setting of max_map_count, and a process core-dumping with
+> a large enough vm_map_count could result in an NT_FILE note not
+> being written, and the kernel crashing immediately later because
+> it has assumed otherwise.
+> 
+> Reproduction of the bug described here:
+> 
+>     https://lkml.org/lkml/2013/8/30/50
+> 
+> Issue originating in 2aa362c49 (from Oct 4, 2012).
+> 
+> This patch make that section optional in that case.
+> fill_files_note() should signify the error, and also let the info
+> struct in elf_core_dump() be zero-initialized so that we can check
+> for the optionally written note.
+> 
+> Cc'ed original signers.
+> 
+> Cc'ed Al Viro because it is trivially relies on his linux-next
+> tree changes.
+> 
+> Signed-off-by: Dan Aloni <alonid@stratoscale.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Denys Vlasenko <vda.linux@googlemail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> ---
+>  fs/binfmt_elf.c | 33 +++++++++++++++++++++------------
+>  1 file changed, 21 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index dc82279..e1a323a 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -1429,7 +1429,7 @@ static void fill_siginfo_note(struct memelfnote *note, user_siginfo_t *csigdata,
+>   *   long file_ofs
+>   * followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+>   */
+> -static void fill_files_note(struct memelfnote *note)
+> +static int fill_files_note(struct memelfnote *note)
+>  {
+>  	struct vm_area_struct *vma;
+>  	unsigned count, size, names_ofs, remaining, n;
+> @@ -1444,11 +1444,11 @@ static void fill_files_note(struct memelfnote *note)
+>  	names_ofs = (2 + 3 * count) * sizeof(data[0]);
+>   alloc:
+>  	if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
+> -		goto err;
+> +		return -E2BIG;
+>  	size = round_up(size, PAGE_SIZE);
+>  	data = vmalloc(size);
+>  	if (!data)
+> -		goto err;
+> +		return -ENOMEM;
+>  
+>  	start_end_ofs = data + 2;
+>  	name_base = name_curpos = ((char *)data) + names_ofs;
+> @@ -1501,7 +1501,7 @@ static void fill_files_note(struct memelfnote *note)
+>  
+>  	size = name_curpos - (char *)data;
+>  	fill_note(note, "CORE", NT_FILE, size, data);
+> - err: ;
+> +	return 0;
+>  }
+>  
+>  #ifdef CORE_DUMP_USE_REGSET
+> @@ -1623,6 +1623,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+>  	struct elf_prpsinfo *psinfo;
+>  	struct core_thread *ct;
+>  	unsigned int i;
+> +	int ret;
+>  
+>  	info->size = 0;
+>  	info->thread = NULL;
+> @@ -1702,8 +1703,9 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+>  	fill_auxv_note(&info->auxv, current->mm);
+>  	info->size += notesize(&info->auxv);
+>  
+> -	fill_files_note(&info->files);
+> -	info->size += notesize(&info->files);
+> +	ret = fill_files_note(&info->files);
+> +	if (!ret)
+> +		info->size += notesize(&info->files);
+>  
+>  	return 1;
+>  }
+> @@ -1735,7 +1737,7 @@ static int write_note_info(struct elf_note_info *info,
+>  			return 0;
+>  		if (first && !writenote(&info->auxv, cprm))
+>  			return 0;
+> -		if (first && !writenote(&info->files, cprm))
+> +		if (first && info->files.data && !writenote(&info->files, cprm))
+>  			return 0;
+>  
+>  		for (i = 1; i < info->thread_notes; ++i)
+> @@ -1822,6 +1824,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
+>  
+>  struct elf_note_info {
+>  	struct memelfnote *notes;
+> +	struct memelfnote *notes_files;
+>  	struct elf_prstatus *prstatus;	/* NT_PRSTATUS */
+>  	struct elf_prpsinfo *psinfo;	/* NT_PRPSINFO */
+>  	struct list_head thread_list;
+> @@ -1865,6 +1868,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+>  			  siginfo_t *siginfo, struct pt_regs *regs)
+>  {
+>  	struct list_head *t;
+> +	int ret;
+>  
+>  	if (!elf_note_info_init(info))
+>  		return 0;
+> @@ -1912,9 +1916,13 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+>  
+>  	fill_siginfo_note(info->notes + 2, &info->csigdata, siginfo);
+>  	fill_auxv_note(info->notes + 3, current->mm);
+> -	fill_files_note(info->notes + 4);
+> +	info->numnote = 4;
+>  
+> -	info->numnote = 5;
+> +	ret = fill_files_note(info->notes + info->numnote);
+> +	if (!ret) {
+> +		info->notes_files = info->notes + info->numnote;
+> +		info->numnote++;
+> +	}
+>  
+>  	/* Try to dump the FPU. */
+>  	info->prstatus->pr_fpvalid = elf_core_copy_task_fpregs(current, regs,
+> @@ -1976,8 +1984,9 @@ static void free_note_info(struct elf_note_info *info)
+>  		kfree(list_entry(tmp, struct elf_thread_status, list));
+>  	}
+>  
+> -	/* Free data allocated by fill_files_note(): */
+> -	vfree(info->notes[4].data);
+> +	/* Free data possibly allocated by fill_files_note(): */
+> +	if (info->notes_files)
+> +		vfree(info->notes_files->data);
+>  
+>  	kfree(info->prstatus);
+>  	kfree(info->psinfo);
+> @@ -2059,7 +2068,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+>  	struct vm_area_struct *vma, *gate_vma;
+>  	struct elfhdr *elf = NULL;
+>  	loff_t offset = 0, dataoff;
+> -	struct elf_note_info info;
+> +	struct elf_note_info info = {0, };
+>  	struct elf_phdr *phdr4note = NULL;
+>  	struct elf_shdr *shdr4extnum = NULL;
+>  	Elf_Half e_phnum;
+> 
 
-This requires measuring these events in a group, since they depend on each
-other.
-
-This is implemented by using TM sysfs events exported by the kernel
-
-v2: Only print the extended statistics when the option is enabled.
-This avoids negative output when the user specifies the -T events
-in separate groups.
-v3: Port to latest tree
-v4: Remove merge error. Avoid linear walks for comparisons. Check
-transaction_run earlier. Minor fixes.
-v5: Move option to avoid conflict. Improve description.
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-stat.txt |   5 ++
- tools/perf/builtin-stat.c              | 144 ++++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.h                |   6 ++
- tools/perf/util/pmu.c                  |  16 ++++
- tools/perf/util/pmu.h                  |   1 +
- 5 files changed, 171 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 2fe87fb..40bc65a 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -132,6 +132,11 @@ is a useful mode to detect imbalance between physical cores.  To enable this mod
- use --per-core in addition to -a. (system-wide).  The output includes the
- core number and the number of online logical processors on that physical processor.
- 
-+-T::
-+--transaction::
-+
-+Print statistics of transactional execution if supported.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 352fbd7..6bd90e4 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -46,6 +46,7 @@
- #include "util/util.h"
- #include "util/parse-options.h"
- #include "util/parse-events.h"
-+#include "util/pmu.h"
- #include "util/event.h"
- #include "util/evlist.h"
- #include "util/evsel.h"
-@@ -70,6 +71,41 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
- static void print_counter(struct perf_evsel *counter, char *prefix);
- static void print_aggr(char *prefix);
- 
-+/* Default events used for perf stat -T */
-+static const char * const transaction_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/tx-start/,"
-+	"cpu/el-start/,"
-+	"cpu/cycles-ct/"
-+	"}"
-+};
-+
-+/* More limited version when the CPU does not have all events. */
-+static const char * const transaction_limited_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/tx-start/"
-+	"}"
-+};
-+
-+/* must match transaction_attrs and the beginning limited_attrs */
-+enum {
-+	T_TASK_CLOCK,
-+	T_INSTRUCTIONS,
-+	T_CYCLES,
-+	T_CYCLES_IN_TX,
-+	T_TRANSACTION_START,
-+	T_ELISION_START,
-+	T_CYCLES_IN_TX_CP,
-+};
-+
- static struct perf_evlist	*evsel_list;
- 
- static struct perf_target	target = {
-@@ -90,6 +126,7 @@ static enum aggr_mode		aggr_mode			= AGGR_GLOBAL;
- static volatile pid_t		child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-+static bool			transaction_run;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
- static const char		*csv_sep			= NULL;
-@@ -213,7 +250,10 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
- static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
-+static struct stats runtime_transaction_stats[MAX_NR_CPUS];
-+static struct stats runtime_elision_stats[MAX_NR_CPUS];
- 
- static void perf_stat__reset_stats(struct perf_evlist *evlist)
- {
-@@ -235,6 +275,11 @@ static void perf_stat__reset_stats(struct perf_evlist *evlist)
- 	memset(runtime_ll_cache_stats, 0, sizeof(runtime_ll_cache_stats));
- 	memset(runtime_itlb_cache_stats, 0, sizeof(runtime_itlb_cache_stats));
- 	memset(runtime_dtlb_cache_stats, 0, sizeof(runtime_dtlb_cache_stats));
-+	memset(runtime_cycles_in_tx_stats, 0,
-+			sizeof(runtime_cycles_in_tx_stats));
-+	memset(runtime_transaction_stats, 0,
-+		sizeof(runtime_transaction_stats));
-+	memset(runtime_elision_stats, 0, sizeof(runtime_elision_stats));
- 	memset(&walltime_nsecs_stats, 0, sizeof(walltime_nsecs_stats));
- }
- 
-@@ -272,6 +317,29 @@ static inline int nsec_counter(struct perf_evsel *evsel)
- 	return 0;
- }
- 
-+static struct perf_evsel *nth_evsel(int n)
-+{
-+	static struct perf_evsel **array;
-+	static int array_len;
-+	struct perf_evsel *ev;
-+	int j;
-+
-+	/* Assumes this only called when evsel_list does not change anymore. */
-+	if (!array) {
-+		list_for_each_entry(ev, &evsel_list->entries, node)
-+			array_len++;
-+		array = malloc(array_len * sizeof(void *));
-+		if (!array)
-+			exit(ENOMEM);
-+		j = 0;
-+		list_for_each_entry(ev, &evsel_list->entries, node)
-+			array[j++] = ev;
-+	}
-+	if (n < array_len)
-+		return array[n];
-+	return NULL;
-+}
-+
- /*
-  * Update various tracking values we maintain to print
-  * more semantic information such as miss/hit ratios,
-@@ -283,6 +351,15 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
- 		update_stats(&runtime_cycles_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
-+		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
-+		update_stats(&runtime_transaction_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
-+		update_stats(&runtime_elision_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
- 		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
-@@ -807,7 +884,7 @@ static void print_ll_cache_misses(int cpu,
- 
- static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
--	double total, ratio = 0.0;
-+	double total, ratio = 0.0, total2;
- 	const char *fmt;
- 
- 	if (csv_output)
-@@ -903,6 +980,43 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 			ratio = 1.0 * avg / total;
- 
- 		fprintf(output, " # %8.3f GHz                    ", ratio);
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% transactional cycles   ",
-+				100.0 * (avg / total));
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+		if (total2 < avg)
-+			total2 = avg;
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% aborted cycles         ",
-+				100.0 * ((total2-avg) / total));
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_in_tx_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / transaction   ", ratio);
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_in_tx_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / elision       ", ratio);
- 	} else if (runtime_nsecs_stats[cpu].n != 0) {
- 		char unit = 'M';
- 
-@@ -1216,6 +1330,16 @@ static int perf_stat_init_aggr_mode(void)
- 	return 0;
- }
- 
-+static int setup_events(const char * const *attrs, unsigned len)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (parse_events(evsel_list, attrs[i]))
-+			return -1;
-+	}
-+	return 0;
-+}
- 
- /*
-  * Add default attributes, if there were no attributes specified or
-@@ -1334,6 +1458,22 @@ static int add_default_attributes(void)
- 	if (null_run)
- 		return 0;
- 
-+	if (transaction_run) {
-+		int err;
-+		if (pmu_have_event("cpu", "cycles-ct") &&
-+		    pmu_have_event("cpu", "el-start"))
-+			err = setup_events(transaction_attrs,
-+					ARRAY_SIZE(transaction_attrs));
-+		else
-+			err = setup_events(transaction_limited_attrs,
-+				 ARRAY_SIZE(transaction_limited_attrs));
-+		if (err < 0) {
-+			fprintf(stderr, "Cannot set up transaction events\n");
-+			return -1;
-+		}
-+		return 0;
-+	}
-+
- 	if (!evsel_list->nr_entries) {
- 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
- 			return -1;
-@@ -1368,6 +1508,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	int output_fd = 0;
- 	const char *output_name	= NULL;
- 	const struct option options[] = {
-+	OPT_BOOLEAN('T', "transaction", &transaction_run,
-+		    "hardware transaction statistics"),
- 	OPT_CALLBACK('e', "event", &evsel_list, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 3f156cc..2f3dc86 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -180,6 +180,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
- 	       (e1->attr.config == e2->attr.config);
- }
- 
-+#define perf_evsel__cmp(a, b)			\
-+	((a) &&					\
-+	 (b) &&					\
-+	 (a)->attr.type == (b)->attr.type &&	\
-+	 (a)->attr.config == (b)->attr.config)
-+
- int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 			      int cpu, int thread, bool scale);
- 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index bc9d806..64362fe 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -637,3 +637,19 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 		printf("\n");
- 	free(aliases);
- }
-+
-+bool pmu_have_event(const char *pname, const char *name)
-+{
-+	struct perf_pmu *pmu;
-+	struct perf_pmu_alias *alias;
-+
-+	pmu = NULL;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-+		if (strcmp(pname, pmu->name))
-+			continue;
-+		list_for_each_entry(alias, &pmu->aliases, list)
-+			if (!strcmp(alias->name, name))
-+				return true;
-+	}
-+	return false;
-+}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 6b2cbe2..1179b26 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -42,6 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
- struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
- 
- void print_pmu_events(const char *event_glob, bool name_only);
-+bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
- #endif /* __PMU_H */
 -- 
-1.8.3.1
-
+Martin Mokrejs, Ph.D.
+Bioinformatics
+Donovalska 1658
+149 00 Prague
+Czech Republic
+http://www.iresite.org
+http://www.iresite.org/~mmokrejs
