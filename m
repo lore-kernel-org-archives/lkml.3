@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3HaFTU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:19:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19912 "EHLO
+	id S1757233Ab3HaFTS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:19:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7090 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3HaFRF (ORCPT
+	with ESMTP id S1755660Ab3HaFRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 31 Aug 2013 01:17:05 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=gCBdNJojLL8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=v-ezhdLJ7_EA:10 a=s1CHMtKVOpMdRrh2RDUA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Gxg810s-2EQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ESKT_2k1mnEA:10 a=VnNF1IyMAAAA:8 a=ADIRIkwvCkhWOhZfK5QA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130831051701.925046398@goodmis.org>
+Message-Id: <20130831051701.767976027@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 31 Aug 2013 01:11:26 -0400
+Date: Sat, 31 Aug 2013 01:11:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,66 +21,42 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 09/18 v2] ftrace: Fix a slight race in modifying what function callback gets
- traced
+Subject: [RFC][PATCH 08/18 v2] ftrace/rcu: Do not trace debug_lockdep_rcu_enabled()
 References: <20130831051117.884125230@goodmis.org>
-Content-Disposition: inline; filename=0009-ftrace-Fix-a-slight-race-in-modifying-what-function-.patch
+Content-Disposition: inline; filename=0008-ftrace-rcu-Do-not-trace-debug_lockdep_rcu_enabled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-There's a slight race when going from a list function to a non list
-function. That is, when only one callback is registered to the function
-tracer, it gets called directly by the mcount trampoline. But if this
-function has filters, it may be called by the wrong functions.
+The function debug_lockdep_rcu_enabled() is part of the RCU lockdep
+debugging, and is called very frequently. I found that if I enable
+a lot of debugging and run the function graph tracer, this
+function can cause a live lock of the system.
 
-As the list ops callback that handles multiple callbacks that are
-registered to ftrace, it also handles what functions they call. While
-the transaction is taking place, use the list function always, and
-after all the updates are finished (only the functions that should be
-traced are being traced), then we can update the trampoline to call
-the function directly.
+We don't usually trace lockdep infrastructure, no need to trace
+this either.
 
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ kernel/rcupdate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a3e4b71..33e4890 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2076,12 +2076,27 @@ int __weak ftrace_arch_code_modify_post_process(void)
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index cce6ba8..4f20c6c 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -122,7 +122,7 @@ struct lockdep_map rcu_sched_lock_map =
+ 	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock_sched", &rcu_sched_lock_key);
+ EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
  
- void ftrace_modify_all_code(int command)
+-int debug_lockdep_rcu_enabled(void)
++int notrace debug_lockdep_rcu_enabled(void)
  {
-+	int update = command & FTRACE_UPDATE_TRACE_FUNC;
-+
-+	/*
-+	 * If the ftrace_caller calls a ftrace_ops func directly,
-+	 * we need to make sure that it only traces functions it
-+	 * expects to trace. When doing the switch of functions,
-+	 * we need to update to the ftrace_ops_list_func first
-+	 * before the transition between old and new calls are set,
-+	 * as the ftrace_ops_list_func will check the ops hashes
-+	 * to make sure the ops are having the right functions
-+	 * traced.
-+	 */
-+	if (update)
-+		ftrace_update_ftrace_func(ftrace_ops_list_func);
-+
- 	if (command & FTRACE_UPDATE_CALLS)
- 		ftrace_replace_code(1);
- 	else if (command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
- 
--	if (command & FTRACE_UPDATE_TRACE_FUNC)
-+	if (update && ftrace_trace_function != ftrace_ops_list_func)
- 		ftrace_update_ftrace_func(ftrace_trace_function);
- 
- 	if (command & FTRACE_START_FUNC_RET)
+ 	return rcu_scheduler_active && debug_locks &&
+ 	       current->lockdep_recursion == 0;
 -- 
 1.7.10.4
 
