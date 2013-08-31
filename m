@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab3HaUjE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 16:39:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56169 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752997Ab3HaUjB (ORCPT
+	id S1756224Ab3HaUkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 16:40:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25202 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab3HaUkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 16:39:01 -0400
-Message-ID: <1377981493.9792.42.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: stable: a59f4e079d19464eebb9b06513a1d4f55fdae5ba needs backport
- ?
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, gaoyang.zyh@taobao.com,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Date: Sat, 31 Aug 2013 21:38:13 +0100
-In-Reply-To: <20130802111455.GA29304@gmail.com>
-References: <51FB7DF5.8030600@huawei.com> <20130802111455.GA29304@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-TSmKRLMrP82bimTTUHds"
-X-Mailer: Evolution 3.4.4-3 
+	Sat, 31 Aug 2013 16:40:11 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=ZnFBpunljT8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=QYmdpx3kvKkA:10 a=VnNF1IyMAAAA:8 a=hCKiQadejs-moRHCX5cA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Subject: Re: [RFC][PATCH 11/18 v2] ftrace: Adde infrastructure to stop RCU
+ unsafe checker from checking
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+In-Reply-To: <20130831195258.GQ3871@linux.vnet.ibm.com>
+References: <20130831051117.884125230@goodmis.org>
+	 <20130831051702.253028770@goodmis.org>
+	 <20130831195258.GQ3871@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 31 Aug 2013 16:40:04 -0400
+Message-ID: <1377981604.26624.4.camel@pippen.local.home>
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-08-31 at 12:52 -0700, Paul E. McKenney wrote:
+> On Sat, Aug 31, 2013 at 01:11:28AM -0400, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > This is a light weight way to keep the rcu checker from checking
+> > RCU safety. It adds a ftrace_unsafe_rcu_checker_disable/enable()
+> > that increments or decrements a counter respectively. When the
+> > counter is set, the RCU unsafe checker callback does not run the
+> > tests to see if RCU is safe or not.
+> 
+> Please add something saying what we do instead of testing RCU safety.
+> Looks to me like it skips not only the tests, but also invoking the
+> callback, but I could easily be wrong.
 
---=-TSmKRLMrP82bimTTUHds
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yeah, the change log sucks. I wrote the change logs after 1am and was
+half asleep. I see I wrote "Add" as "Adde" ;-)
 
-On Fri, 2013-08-02 at 13:14 +0200, Ingo Molnar wrote:
-> * Li Zefan <lizefan@huawei.com> wrote:
->=20
-> > commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba
-> > Author: Zhu Yanhai <gaoyang.zyh@taobao.com>
-> > Date:   Tue Jan 8 12:56:52 2013 +0800
-> >=20
-> >     sched: Fix the broken sched_rr_get_interval()
-> >=20
-> > Without this patch, syscall sched_rr_get_interval() can return wrong
-> > value, and the bug was introduced in 2.6.24, so this looks like a
-> > candidate for stable kernel.
-> >=20
-> > The concern for backporting is that this might break some userspace
-> > programs? As the changelog says:
-> >=20
-> >     [ Since this is an ABI and an old bug, we'll test this via a
-> >       slow upstream route, to hopefully discover any app breakage. ]
->=20
-> It appears to have caused no trouble.
->=20
-> So I'm fine with backporting it to older -stable kernels:
->=20
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+> 
+> > This is required by the graph tracer because the checks can cause
+> > the graph tracer to live lock the system by its own calls.
+> > 
+> > It's also needed by the irqsoff tracer, because it may be called
+> > in RCU unsafe regions and if its internal functions get traced
+> > then the RCU unsafe checker may have some false positives.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> With the augmented commit log as noted above:
+> 
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
 
-I've queued this up for 3.2, thanks.
+Thanks, come Tuesday, I'll update the logs.
 
-Ben.
+-- Steve
 
---=20
-Ben Hutchings
-If God had intended Man to program,
-we'd have been born with serial I/O ports.
+> > ---
+> >  kernel/trace/trace.h           |   12 +++++++++---
+> >  kernel/trace/trace_functions.c |   15 +++++++++++++++
+> >  2 files changed, 24 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> > index e551316..58e4c37 100644
+> > --- a/kernel/trace/trace.h
+> > +++ b/kernel/trace/trace.h
+> > @@ -760,9 +760,6 @@ static inline int ftrace_graph_addr(unsigned long addr)
 
---=-TSmKRLMrP82bimTTUHds
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIVAwUAUiJUNee/yOyVhhEJAQqOzw/+MzNT+sno5RVzXwphMPNC9pDW0dyQ934h
-S4pQ57ZPJ/d6hdKK///Ui7Np/W6Jljv5OvTBD0FgezLNwHTLxz1tsvRO+sKE9Mwu
-jZORti2W8YomE8dpj1FLL/1o3tJx1/H6bg6D566WR74lR+vJvPHexxnQEaVboevp
-O8/u3fQX9qd1XPqL7Vde0doEY3tsQ6fLCwBySs+MGlcAw3cCTzGIx13OTaOibgNh
-6krGdrtDv0dgD5BSClugB9rAsEGATpZtHgPKPxzdnt4n9LoojHmZkc3fD9EsWeEx
-1u3OS7YKpZXGGWvH+fMGpX0qbTmw/wB0+/mTCXb0pfgkmGkVWAnEMi5iCTYDQbv6
-LffykdVTJZs07h2HMnSTYaUN/8Jc18grK6GJ31AnW4p/az2x8imhK5328/Yq/uai
-C0ClKUjEd3D0A4n/7huTZQTfrDaz2TrGcWMCpRf49wV4mow9M2qAialC4uE7J09m
-e8ysuCb9NceuARsled+WW1lx3Q43iFcKq1zlDfJYyvfCP6drhsy+xftQvIuSuUtC
-Z233rXW7PEIvHTDdwoJfmKKuFUGbETLcfGRJ8cHp1m+vtkkNOkOB6JQL7fDWYnjX
-wwOdW9KS/duV8pGq38JRNdHjuUsOMKeky0Dia4oi+TcE361rRINQ01dx4rE+0fCG
-zc/hDNWS8Mk=
-=kU+N
------END PGP SIGNATURE-----
-
---=-TSmKRLMrP82bimTTUHds--
