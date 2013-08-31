@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3HaQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 12:53:09 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49048 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754026Ab3HaQxH (ORCPT
+	id S1754513Ab3HaRQz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 13:16:55 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:34064 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab3HaRQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 12:53:07 -0400
-Message-ID: <1377967985.2149.5.camel@dabdike.int.hansenpartnership.com>
-Subject: [GIT PULL] SCSI fixes for 3.11-rc7
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 31 Aug 2013 09:53:05 -0700
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Aug 2013 13:16:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130831030633.28455.qmail@science.horizon.com>
+References: <20130831030633.28455.qmail@science.horizon.com>
+Date: Sat, 31 Aug 2013 10:16:52 -0700
+X-Google-Sender-Auth: ZeurL6RMxyZaD0nxedwKLwHljkg
+Message-ID: <CA+55aFz7k5zUvJdZxpZgCgfx_-PT+f-9J50hnC1i3x=8_dXkBw@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <waiman.long@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a bug fix for the pm80xx driver.  It turns out that when the new
-hardware support was added in 3.10 the IO command size was kept at the
-old hard coded value.  This means that the driver attaches to some new
-cards and then simply hangs the system.
+On Fri, Aug 30, 2013 at 8:06 PM, George Spelvin <linux@horizon.com> wrote:
+> Just noticing that you are adding several functions that return a boolean
+> value as an int.  And a "gotref" local variable.
+>
+> Is that just not wanting to bother with thse newfangled C99 innovations,
+> or do you dislike the "bool" type for some reason?
 
-The patch is available here:
+I don't use "bool" in code I write. I don't think it adds any actual
+value, and I think the data type is badly designed and of dubious
+value in C. It has very few actual advantages.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+That said, it's not like I *hate* the type, and I won't remove bool
+from code other people write. I just think it's superfluous and
+stupid, and another case of C++ people thinking too much "this is a
+cool feature" without then actually doing it well. The C people then
+picked it up because it was less onerous than some other C++ features,
+and all the compilers had the logic anyway.
 
-The short changelog is:
+If "bool" had real advantages (like having a dense array
+representation, for example), that would be one thing. It doesn't.
+Sure, now you can take an address of a bool (which you couldn't
+generally do efficiently if it really was a bit array), but it also
+means that in practice, "bool" is normally nothing but "char" with
+some really odd and special implicit type casting rules.
 
-Hans Verkuil (1):
-      pm80xx: fix Adaptec 71605H hang
+I doubt most people really even understand how "bool" casting works.
 
-And the diffstat
+And bool is actually really *dangerous* to use if you don't understand
+it. There are people who use "bool", but then because they want to be
+portable, they have a compatibility #ifdef or other configuration
+thing that does something like
 
- drivers/scsi/pm8001/pm8001_hwi.c | 4 ++--
- drivers/scsi/pm8001/pm80xx_hwi.c | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+   typedef int bool;
+   #define true 1
+   #define false 0
 
-With full diff attached below.
+and it will actually work. Most of the time. And then the semantic
+differences from a _real_ C compiler that supports the C99 _Bool/bool
+type are really really subtle.
 
-James
+IOW, bool has very few real upsides, and it has a real downside: it's
+subtle, and people really never even seem to _realize_ just how subtle
+it is.  I suspect that if you ask ten random average C programmers if
+the above is equivalent to stdbool.h, nine of them will say "sure".
 
----
+And they'd be *COMPLETELY* wrong.
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 5456f5c..4a21957 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -221,7 +221,7 @@ static void init_default_table_values(struct pm8001_hba_info *pm8001_ha)
- 	pm8001_ha->main_cfg_tbl.pm8001_tbl.fatal_err_interrupt		= 0x01;
- 	for (i = 0; i < PM8001_MAX_INB_NUM; i++) {
- 		pm8001_ha->inbnd_q_tbl[i].element_pri_size_cnt	=
--			PM8001_MPI_QUEUE | (64 << 16) | (0x00<<30);
-+			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x00<<30);
- 		pm8001_ha->inbnd_q_tbl[i].upper_base_addr	=
- 			pm8001_ha->memoryMap.region[IB + i].phys_addr_hi;
- 		pm8001_ha->inbnd_q_tbl[i].lower_base_addr	=
-@@ -247,7 +247,7 @@ static void init_default_table_values(struct pm8001_hba_info *pm8001_ha)
- 	}
- 	for (i = 0; i < PM8001_MAX_OUTB_NUM; i++) {
- 		pm8001_ha->outbnd_q_tbl[i].element_size_cnt	=
--			PM8001_MPI_QUEUE | (64 << 16) | (0x01<<30);
-+			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x01<<30);
- 		pm8001_ha->outbnd_q_tbl[i].upper_base_addr	=
- 			pm8001_ha->memoryMap.region[OB + i].phys_addr_hi;
- 		pm8001_ha->outbnd_q_tbl[i].lower_base_addr	=
-diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c b/drivers/scsi/pm8001/pm80xx_hwi.c
-index 7f77210..9f91030 100644
---- a/drivers/scsi/pm8001/pm80xx_hwi.c
-+++ b/drivers/scsi/pm8001/pm80xx_hwi.c
-@@ -275,7 +275,7 @@ static void init_default_table_values(struct pm8001_hba_info *pm8001_ha)
- 
- 	for (i = 0; i < PM8001_MAX_SPCV_INB_NUM; i++) {
- 		pm8001_ha->inbnd_q_tbl[i].element_pri_size_cnt	=
--			PM8001_MPI_QUEUE | (64 << 16) | (0x00<<30);
-+			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x00<<30);
- 		pm8001_ha->inbnd_q_tbl[i].upper_base_addr	=
- 			pm8001_ha->memoryMap.region[IB + i].phys_addr_hi;
- 		pm8001_ha->inbnd_q_tbl[i].lower_base_addr	=
-@@ -301,7 +301,7 @@ static void init_default_table_values(struct pm8001_hba_info *pm8001_ha)
- 	}
- 	for (i = 0; i < PM8001_MAX_SPCV_OUTB_NUM; i++) {
- 		pm8001_ha->outbnd_q_tbl[i].element_size_cnt	=
--			PM8001_MPI_QUEUE | (64 << 16) | (0x01<<30);
-+			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x01<<30);
- 		pm8001_ha->outbnd_q_tbl[i].upper_base_addr	=
- 			pm8001_ha->memoryMap.region[OB + i].phys_addr_hi;
- 		pm8001_ha->outbnd_q_tbl[i].lower_base_addr	=
+So no. I'm definitely not a fan of bool. I think there are better
+types, and I think there are better ways to document things.
 
-
+                     Linus
