@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3HaPzd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 11:55:33 -0400
-Received: from forward16.mail.yandex.net ([95.108.253.141]:55492 "EHLO
-	forward16.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab3HaPzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 11:55:32 -0400
-X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Aug 2013 11:55:31 EDT
-From: Evgeniy Polyakov <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <002e01cea537$c9b15730$5d140590$%han@samsung.com>
-References: <002e01cea537$c9b15730$5d140590$%han@samsung.com>
-Subject: Re: [PATCH 1/2] w1: w1-gpio: use dev_get_platdata()
-MIME-Version: 1.0
-Message-Id: <158441377964182@web28g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 31 Aug 2013 19:49:42 +0400
+	id S1754582Ab3HaQEM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 12:04:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41843 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753674Ab3HaQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 12:04:10 -0400
+Message-ID: <1377965049.2054.15.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch:  Add test for positional misuse of section
+ specifiers like __initdata
+From: Joe Perches <joe@perches.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Date: Sat, 31 Aug 2013 09:04:09 -0700
+In-Reply-To: <20130831143123.GC19750@two.firstfloor.org>
+References: <1377655732.3619.19.camel@joe-AO722>
+	 <20130831143123.GC19750@two.firstfloor.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, 2013-08-31 at 16:31 +0200, Andi Kleen wrote:
+> > A similar patch was suggested by Andi Kleen
+> > https://lkml.org/lkml/2013/8/5/648
+> 
+> My patch checked for const <-> initdata / non const initconst  mistakes.
+> 
+> I don't think your patch does that?
 
-30.08.2013, 08:17, "Jingoo Han" <jg1.han@samsung.com>:
-> Use the wrapper function for retrieving the platform data instead of
-> accessing dev->platform_data directly. This is a cosmetic change
-> to make the code simpler and enhance the readability.
+Hi Andi.
 
-Both patches look good, thank you
+No it doesn't.
 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+This patch is just warning when using
+	struct __initdata foo bar;
+instead of
+	struct foo bar __initdata;
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+I'll get around to adding tests for your
+cases soonish.
+
+cheers, Joe
+
