@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3HaGp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 02:45:56 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:34238 "EHLO
+	id S1757208Ab3HaGqK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 02:46:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:34376 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab3HaGps (ORCPT
+	with ESMTP id S1754512Ab3HaGqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 02:45:48 -0400
-Message-ID: <522190F1.3010103@huawei.com>
-Date: Sat, 31 Aug 2013 14:45:05 +0800
+	Sat, 31 Aug 2013 02:46:08 -0400
+Message-ID: <522190E9.9000007@huawei.com>
+Date: Sat, 31 Aug 2013 14:44:57 +0800
 From: Libo Chen <clbchenlibo.chen@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: <dmitry.torokhov@gmail.com>
-CC: Bill Pemberton <wfp5p@virginia.edu>, <peter.ujfalusi@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <javier@dowhile0.org>,
-        <linux-input@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
+CC: <peter.ujfalusi@ti.com>, Bill Pemberton <wfp5p@virginia.edu>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH 3/3] driver: input: twl6040-vibra: fix missing of_node_put
+Subject: [PATCH 1/3] driver: input: 88pm860x-ts: fix missing of_node_put
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.72.158]
@@ -28,43 +27,59 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-decrease twl6040_core_node device_node refcount after task completion
-
-There are two ways to implement the function of_node_put through
-the marco CONFIG_OF_DYNAMIC, so it is save to call directly.
+decrease np device_node refcount after task completion
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/input/misc/twl6040-vibra.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/input/touchscreen/88pm860x-ts.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 0c2dfc8..f16193a 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -271,12 +271,14 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- #endif
-
- 	if (!pdata && !twl6040_core_node) {
-+		of_node_put(twl6040_core_node);
- 		dev_err(&pdev->dev, "platform_data not available\n");
- 		return -EINVAL;
+diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
+index f7de14a..4a2fd46 100644
+--- a/drivers/input/touchscreen/88pm860x-ts.c
++++ b/drivers/input/touchscreen/88pm860x-ts.c
+@@ -142,14 +142,18 @@ static int pm860x_touch_dt_init(struct platform_device *pdev,
+ 		data |= (n << 7) & PM8607_GPADC_SW_CAL_MASK;
+ 	if (data) {
+ 		ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
+-		if (ret < 0)
+-			return -EINVAL;
++		if (ret < 0) {
++			ret = -EINVAL;
++			goto err;
++		}
  	}
-
- 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
- 	if (!info) {
-+		of_node_put(twl6040_core_node);
- 		dev_err(&pdev->dev, "couldn't allocate memory\n");
- 		return -ENOMEM;
+ 	/* set tsi prebias time */
+ 	if (!of_property_read_u32(np, "marvell,88pm860x-tsi-prebias", &data)) {
+ 		ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
+-		if (ret < 0)
+-			return -EINVAL;
++		if (ret < 0) {
++			ret = -EINVAL;
++			goto err;
++		}
  	}
-@@ -304,6 +306,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 				     &vddvibl_uV);
- 		of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV",
- 				     &vddvibr_uV);
-+		of_node_put(twl6040_core_node);
+ 	/* set prebias & prechg time of pen detect */
+ 	data = 0;
+@@ -159,11 +163,15 @@ static int pm860x_touch_dt_init(struct platform_device *pdev,
+ 		data |= n & PM8607_PD_PRECHG_MASK;
+ 	if (data) {
+ 		ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
+-		if (ret < 0)
+-			return -EINVAL;
++		if (ret < 0) {
++			ret = -EINVAL;
++			goto err;
++		}
  	}
-
- 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
+ 	of_property_read_u32(np, "marvell,88pm860x-resistor-X", res_x);
+-	return 0;
++err:
++	of_node_put(np);
++	return ret;
+ }
+ #else
+ #define pm860x_touch_dt_init(x, y, z)	(-1)
 -- 
 1.7.1
 
