@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3HaSks (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 14:40:48 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:57257 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415Ab3HaSkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 14:40:46 -0400
-Message-ID: <522238A1.3080008@hauke-m.de>
-Date: Sat, 31 Aug 2013 20:40:33 +0200
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list@broadcom.com,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 30 (brcmfmac)
-References: <20130829200013.d9dde1eb64686a32c661b5d3@canb.auug.org.au> <52210AB9.2090104@infradead.org> <CAMuHMdXFmWyiUJF+4HbD=6oGPVXHBAVx=rOC7u=motTQFCKn7g@mail.gmail.com> <5222341B.4070205@broadcom.com>
-In-Reply-To: <5222341B.4070205@broadcom.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755698Ab3HaSo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 14:44:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30755 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753390Ab3HaSo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 14:44:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,998,1367996400"; 
+   d="scan'208";a="289335843"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V2 0/3] perf: add a dummy software event to keep tracking
+Date: Sat, 31 Aug 2013 21:50:50 +0300
+Message-Id: <1377975053-3811-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2013 08:21 PM, Arend van Spriel wrote:
-> On 08/31/13 19:37, Geert Uytterhoeven wrote:
->> On Fri, Aug 30, 2013 at 11:12 PM, Randy Dunlap<rdunlap@infradead.org> 
->> wrote:
->>> This bool kconfig symbol:
->>>
->>> config BRCMFMAC_SDIO
->>>          bool "SDIO bus interface support for FullMAC driver"
->>>          depends on MMC
->>>
->>> allows BRCMFMAC_SDIO to be y even when MMC=m.
->>>
->>> Is there a reasonable solution to this?
-> 
-> Actually, BRCMFMAC should be built in same form as the MMC and/or USB,
-> but only when BRCMFMAC_SDIO or BRCMFMAC_USB are selected.
-> 
-> So valid combinations are:
-> MMC=m, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-> MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-> MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m
-> MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m
-> MMC=m, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m|y
-> MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m|y
-> MMC=y, USB=m, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m
-> MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y => BRCMFMAC=m|y
-> MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n => BRCMFMAC=m|y
-> MMC=y, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y => BRCMFMAC=m|y
-> 
-> Not sure how to express the above.
+Hi
 
-This should be expressed with this Kconfig:
+This is (version 2 of) an alternative to the 'keep tracking' flag patch
+which is here:
 
-config BRCMFMAC_USB
-	bool "USB bus interface support for FullMAC driver"
-	depends on (USB = y || USB = BRCMFMAC)
-	depends on BRCMFMAC
+	http://marc.info/?l=linux-kernel&m=137242545521246&w=2
 
-config BRCMFMAC_SDIO
-	bool "SDIO bus interface support for FullMAC driver"
-	depends on (MMC = y || MMC = BRCMFMAC)
-	depends on BRCMFMAC
-	select FW_LOADER
+perf tools is updated and a test added to demonstrate the
+new event.
 
-I haven't tested it, but we had a similar problem in b43 and fixed it
-like this.
+Changes in V2:
 
-Hauke
+	perf: add a dummy software event to keep tracking
+		Add Peter's Ack
+	perf tools: add support for PERF_COUNT_SW_DUMMY
+		Fix missing "dummy" in perf_evsel__sw_names
+	perf tools: add 'keep tracking' test
+		Let the test pass and print "not supported" if
+		there is no "dummy" event
+
+Adrian Hunter (3):
+      perf: add a dummy software event to keep tracking
+      perf tools: add support for PERF_COUNT_SW_DUMMY
+      perf tools: add 'keep tracking' test
+
+ include/uapi/linux/perf_event.h  |   1 +
+ tools/perf/Makefile              |   1 +
+ tools/perf/tests/builtin-test.c  |   4 ++
+ tools/perf/tests/keep-tracking.c | 150 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h         |   1 +
+ tools/perf/util/evlist.c         |  42 ++++++++++-
+ tools/perf/util/evlist.h         |   5 ++
+ tools/perf/util/parse-events.c   |   4 ++
+ tools/perf/util/parse-events.l   |   1 +
+ tools/perf/util/python.c         |   1 +
+ 10 files changed, 208 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/tests/keep-tracking.c
+
+Regards
+Adrian
+
