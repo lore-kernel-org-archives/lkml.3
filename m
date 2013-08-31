@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3HaFUP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:20:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32184 "EHLO
+	id S1757284Ab3HaFUO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:20:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17351 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab3HaFRE (ORCPT
+	with ESMTP id S1754801Ab3HaFRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 31 Aug 2013 01:17:04 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=nUKkknrJVZUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Me3eSO6gD6sA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=1N1UImZtlF93Ckg_JSIA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=lg7xcWd3iwsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=2SfXdHNypsIA:10 a=Hg4I13Rm0uD_RGvEMn4A:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130831051701.613445493@goodmis.org>
+Message-Id: <20130831051702.253028770@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 31 Aug 2013 01:11:24 -0400
+Date: Sat, 31 Aug 2013 01:11:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,169 +21,94 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 07/18 v2] ftrace: Add selftest to check if RCU unsafe functions are filtered
- properly
+Subject: [RFC][PATCH 11/18 v2] ftrace: Adde infrastructure to stop RCU unsafe checker from checking
 References: <20130831051117.884125230@goodmis.org>
-Content-Disposition: inline; filename=0007-ftrace-Add-selftest-to-check-if-RCU-unsafe-functions.patch
+Content-Disposition: inline; filename=0011-ftrace-Adde-infrastructure-to-stop-RCU-unsafe-checke.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add a boot time start up test that has a RCU safe ftrace_ops as well
-as an unsafe one. Make sure the RCU safe ops can trace RCU unsafe
-functions while the unsafe ftrace_ops can not.
+This is a light weight way to keep the rcu checker from checking
+RCU safety. It adds a ftrace_unsafe_rcu_checker_disable/enable()
+that increments or decrements a counter respectively. When the
+counter is set, the RCU unsafe checker callback does not run the
+tests to see if RCU is safe or not.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This is required by the graph tracer because the checks can cause
+the graph tracer to live lock the system by its own calls.
+
+It's also needed by the irqsoff tracer, because it may be called
+in RCU unsafe regions and if its internal functions get traced
+then the RCU unsafe checker may have some false positives.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h                  |    2 +
- kernel/trace/trace_selftest.c         |   94 +++++++++++++++++++++++++++++++++
- kernel/trace/trace_selftest_dynamic.c |    7 +++
- 3 files changed, 103 insertions(+)
+ kernel/trace/trace.h           |   12 +++++++++---
+ kernel/trace/trace_functions.c |   15 +++++++++++++++
+ 2 files changed, 24 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 502fed7..3578be6 100644
+index e551316..58e4c37 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -648,6 +648,8 @@ extern unsigned long ftrace_update_tot_cnt;
- extern int DYN_FTRACE_TEST_NAME(void);
- #define DYN_FTRACE_TEST_NAME2 trace_selftest_dynamic_test_func2
- extern int DYN_FTRACE_TEST_NAME2(void);
-+#define DYN_FTRACE_TEST_RCU_UNSAFE trace_selftest_dynamic_test_rcu_unsafe
-+extern int DYN_FTRACE_TEST_RCU_UNSAFE(void);
+@@ -760,9 +760,6 @@ static inline int ftrace_graph_addr(unsigned long addr)
  
- extern bool ring_buffer_expanded;
- extern bool tracing_selftest_disabled;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index a7329b7..eeacb47 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -185,6 +185,97 @@ static void reset_counts(void)
- 	trace_selftest_test_dyn_cnt = 0;
- }
- 
-+static struct ftrace_ops ftrace_rcu_safe_ops = {
-+	.func		= trace_selftest_test_probe1_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_RCU_SAFE,
-+};
-+
-+static struct ftrace_ops ftrace_rcu_unsafe_ops = {
-+	.func		= trace_selftest_test_probe2_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE,
-+};
-+
-+static int test_rcu_safe_unsafe(void)
-+{
-+	int save_ftrace_enabled = ftrace_enabled;
-+	char *func_name;
-+	int len;
-+	int ret = 0;
-+
-+	printk(KERN_CONT "PASSED\n");
-+	pr_info("Testing ftrace rcu safe unsafe: ");
-+
-+	ftrace_enabled = 1;
-+
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+
-+	func_name = "*" __stringify(DYN_FTRACE_TEST_RCU_UNSAFE);
-+	len = strlen(func_name);
-+
-+	ftrace_set_filter(&ftrace_rcu_safe_ops, func_name, len, 1);
-+	ftrace_set_filter(&ftrace_rcu_unsafe_ops, func_name, len, 1);
-+
-+	/* Do single registrations first */
-+	register_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+	if (trace_selftest_test_probe1_cnt != 1) {
-+		printk(KERN_CONT "rcu_safe expected 1 call but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	register_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	/* Run both together, which uses the list op */
-+
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+
-+	register_ftrace_function(&ftrace_rcu_safe_ops);
-+	register_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe_ops);
-+	unregister_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+
-+	if (trace_selftest_test_probe1_cnt != 3) {
-+		printk(KERN_CONT "rcu_safe expected 3 calls but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	ret = 0;
-+ out:
-+	ftrace_enabled = save_ftrace_enabled;
-+
-+	return ret;
-+}
-+
- static int trace_selftest_ops(int cnt)
- {
- 	int save_ftrace_enabled = ftrace_enabled;
-@@ -401,6 +492,9 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 	if (!ret)
- 		ret = trace_selftest_ops(2);
- 
-+	if (!ret)
-+		ret = test_rcu_safe_unsafe();
-+
- 	return ret;
- }
- 
-diff --git a/kernel/trace/trace_selftest_dynamic.c b/kernel/trace/trace_selftest_dynamic.c
-index b4c475a..5eefa56 100644
---- a/kernel/trace/trace_selftest_dynamic.c
-+++ b/kernel/trace/trace_selftest_dynamic.c
-@@ -11,3 +11,10 @@ int DYN_FTRACE_TEST_NAME2(void)
- 	/* used to call mcount */
  	return 0;
  }
+-#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
+-extern bool ftrace_rcu_unsafe(unsigned long addr);
+-#endif
+ #else
+ static inline int ftrace_graph_addr(unsigned long addr)
+ {
+@@ -1061,4 +1058,13 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ #define perf_ftrace_event_register NULL
+ #endif
+ 
++#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
++extern bool ftrace_rcu_unsafe(unsigned long addr);
++extern void ftrace_unsafe_rcu_checker_disable(void);
++extern void ftrace_unsafe_rcu_checker_enable(void);
++#else
++static inline void ftrace_unsafe_rcu_checker_disable(void) { }
++static inline void ftrace_unsafe_rcu_checker_enable(void) { }
++#endif
 +
-+int trace_selftest_dynamic_test_rcu_unsafe(void)
+ #endif /* _LINUX_KERNEL_TRACE_H */
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 9dd4627..1d5f951 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -560,12 +560,27 @@ static inline int init_func_cmd_traceon(void)
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
+ #ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
++static atomic_t ftrace_unsafe_rcu_disabled;
++
++void ftrace_unsafe_rcu_checker_disable(void)
 +{
-+	/* used to call mcount */
-+	return 0;
++	atomic_inc(&ftrace_unsafe_rcu_disabled);
 +}
-+FTRACE_UNSAFE_RCU(trace_selftest_dynamic_test_rcu_unsafe);
++
++void ftrace_unsafe_rcu_checker_enable(void)
++{
++	atomic_dec(&ftrace_unsafe_rcu_disabled);
++}
++
+ static void
+ ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+ 		       struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
+ 	int bit;
+ 
++	if (atomic_read(&ftrace_unsafe_rcu_disabled))
++		return;
++
+ 	preempt_disable_notrace();
+ 
+ 	bit = trace_test_and_set_recursion(TRACE_FTRACE_START, TRACE_FTRACE_MAX);
 -- 
 1.7.10.4
 
