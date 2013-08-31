@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3HaTk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 15:40:29 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38405 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab3HaTk2 (ORCPT
+	id S1756083Ab3HaToo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 15:44:44 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40164 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab3HaTon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 15:40:28 -0400
-Date: Sat, 31 Aug 2013 20:40:18 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	Sat, 31 Aug 2013 15:44:43 -0400
+Date: Sat, 31 Aug 2013 12:44:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lennox Wu <lennox.wu@gmail.com>, Chen Liqin <liqin.chen@sunplusct.com>,
-        Liqin Chen <liqin299@gmail.com>
-Subject: Re: [PATCH] Remove support for score architecture
-Message-ID: <20130831194018.GM13318@ZenIV.linux.org.uk>
-References: <1377914435-24206-1-git-send-email-linux@roeck-us.net>
- <201308312055.17209.arnd@arndb.de>
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 03/18 v2] ftrace: Set ftrace internal function
+ tracing RCU safe
+Message-ID: <20130831194431.GK3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130831051117.884125230@goodmis.org>
+ <20130831051700.928372852@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201308312055.17209.arnd@arndb.de>
+In-Reply-To: <20130831051700.928372852@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13083119-7606-0000-0000-00000EC190A7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 08:55:16PM +0200, Arnd Bergmann wrote:
-
-> > Maybe this removal request is a bit early, but architecture support seems
-> > to have vanished entirely. At the very least this puts interested parties
-> > (if there are any) on notice.
+On Sat, Aug 31, 2013 at 01:11:20AM -0400, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> AFAICT, this is the least maintained architecture we have at the moment,
-> and your analysis is correct.
+> Since none of the internal ftrace function tracing uses RCU in
+> their callbacks, it is OK to set the global_ops (the one that
+> they all use) to RCU safe.
 > 
-> I think it can be removed unless we the maintainers have plans to become
-> more active in the future or someone else steps up to maintain the
-> architecture.
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-AFAICS, the architecture is stillborn - they planned to use it in game
-consoles and stuff like that, but recession has hit the fan just as they
-were about to do that.  Maintainers are not employed there anymore, gcc
-had a commit updating maintainer address, but the new address is of
-form ...+gcc@... and no corresponding update of address in the kernel
-tree has happened.  In such situation I would really hesitate to put
-the new address into MAINTAINERS...
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-IOW, this is an ex-parrot.
+> ---
+>  kernel/trace/ftrace.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index d61f431..a45deaa 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1146,7 +1146,9 @@ static struct ftrace_ops global_ops = {
+>  	.func			= ftrace_stub,
+>  	.notrace_hash		= EMPTY_HASH,
+>  	.filter_hash		= EMPTY_HASH,
+> -	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
+> +	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
+> +				  FTRACE_OPS_FL_INITIALIZED |
+> +				  FTRACE_OPS_FL_RCU_SAFE,
+>  	INIT_REGEX_LOCK(global_ops)
+>  };
+> 
+> -- 
+> 1.7.10.4
+> 
+> 
+
