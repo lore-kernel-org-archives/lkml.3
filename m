@@ -1,156 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3HaAs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 20:48:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49722 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab3HaAs4 (ORCPT
+	id S1756868Ab3HaAuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 20:50:18 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42375 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab3HaAuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 20:48:56 -0400
-Message-ID: <52213D76.3030304@codeaurora.org>
-Date: Fri, 30 Aug 2013 17:48:54 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 30 Aug 2013 20:50:17 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>
-Subject: Re: kernel deadlock
-References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com> <5221264F.4070402@linaro.org>
-In-Reply-To: <5221264F.4070402@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377905319.2070.38.camel@joe-AO722>
+References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
+	<52210D34.5030807@infradead.org>
+	<CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com>
+	<52212128.3000100@infradead.org>
+	<1377905319.2070.38.camel@joe-AO722>
+Date: Fri, 30 Aug 2013 17:50:14 -0700
+Message-ID: <CAOMFOmVrNu2ZDrBrm7Rt_p-C3Po0d6HmyCQ2HvJSVT=cx+OjOw@mail.gmail.com>
+Subject: Re: do_div() silently truncates "base" to 32bit
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, bernie@develer.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/13 16:10, John Stultz wrote:
-> On 08/30/2013 04:04 PM, Gerlando Falauto wrote:
->> Hi,
->>
->> sorry, it took me a while to narrow it down...
->>
->> On 08/30/2013 01:45 AM, John Stultz wrote:
->>> On 08/29/2013 01:56 PM, Falauto, Gerlando wrote:
->>>> Hi everyone,
->>>>
->>>> I ran into the deadlock situation reported at the bottom.
->>>> Actually, on my latest 3.10 kernel for some reason I don't get the
->>>> report (the kernel just hangs for some reason), so it took me quite
->>>> some
->>>> time to track it down.
->>>>
->>>> Once I figured the trigger to the machine hanging was adjtimex(), I
->>>> reverted everything (between 3.9 to 3.10) that was touching
->>>> kernel/time/timekeeping/timekeeping.c and kernel/time/ntp.c, I double
->>>> checked that indeed the problem was not happening anymore, and finally
->>>> started bisecting, landing on the following offending commit.
->>>> THEN, and ONLY THEN, did I get the &%""ç+"% deadlock report.
->>>>
->>>> Do you guys have any ideas what could be wrong and how to fix it?
->>> Thanks for the report!
->>>
->>> What exactly is your process for reproducing the issue?
->> Now (well, now...), it's quite easy.
->>
->> Three ingredients:
->>
->> 1) Kernel 3.10
->>
->> 2) Enable HRTICK
->>
->> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
->> index 99399f8..294e3ca 100644
->> --- a/kernel/sched/features.h
->> +++ b/kernel/sched/features.h
->> @@ -41,7 +41,7 @@ SCHED_FEAT(WAKEUP_PREEMPTION, true)
->>   */
->>  SCHED_FEAT(ARCH_POWER, true)
->>
->> -SCHED_FEAT(HRTICK, false)
->> +SCHED_FEAT(HRTICK, true)
->>  SCHED_FEAT(DOUBLE_TICK, false)
->>  SCHED_FEAT(LB_BIAS, true)
->>
->> 3) Run the following:
->>
->> #include <stdio.h>
->> #include <sys/timex.h>
->>
->> int main(void)
->> {
->>     int i;
->>
->>     for (i = 0 ; ; i++) {
->>     struct timex adj = {};
->>     printf("%d\r", i);
->>     fflush(stdout);
->>     adjtimex(&adj);
->>     }
->>     return 0;
->> }
->>
->> Notice how:
->> 1) The original issue (with a bit more complicated scenario) was seen
->> on ARM and PowerPC platforms
->> 2) Under the above test conditions (on ARM) I *don't* get any deadlock
->> report printed, the machine just hangs
->> 3) The offending commit (below) I had found through a weird (manual)
->> process of reverting and re-reverting (where some commits could have
->> been reverted out of order), so I'm not 100% sure you'd come to the
->> same conclusions.
->>
->> commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
->> Author: John Stultz <john.stultz@linaro.org>
->> Date:   Fri Mar 22 11:37:28 2013 -0700
->>
->>      timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
->>
->> I'm not able to perform any further testing at this very moment, but
->> if needed, I can try bisecting again sometime next week, so to make an
->> even more reliable statement.
->>
->>
+Hi, Joe
 
-Just curious. Do you have this patch from 3.11 applied to your 3.10
-kernel tree?
+On Fri, Aug 30, 2013 at 4:28 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2013-08-30 at 15:48 -0700, Randy Dunlap wrote:
+>> On 08/30/13 15:14, Anatol Pomozov wrote:
+>> > But another question still remains: why compiler does not warn that
+>> > size truncation happens? How to prevent bugs like CFQ one in the
+>> > future? Should we add a compile-time assert to do_div() to prevent
+>> > passing 64 numbers in "base" macro parameter?
+>> That sounds like a fine idea to me.
+>
+> Geert thought so too and submitted a patch
+>
+> http://www.spinics.net/lists/linux-btrfs/msg26788.html
 
-commit 971ee28cbd1ccd87b3164facd9359a534c1d2892
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Fri Jun 28 11:18:53 2013 +0200
+Thanks it works!
 
-    sched: Fix HRTICK
-   
-    David reported that the HRTICK sched feature was borken; which was
-enough
-    motivation for me to finally fix it ;-)
-   
-    We should not allow hrtimer code to do softirq wakeups while holding
-schedul
-er
-    locks. The hrtimer code only needs this when we accidentally try to
-program
-an
-    expired time. We don't much care about those anyway since we have
-the regula
-r
-    tick to fall back to.
-   
-    Reported-by: David Ahern <dsahern@gmail.com>
-    Tested-by: David Ahern <dsahern@gmail.com>
-    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-    Link:
-http://lkml.kernel.org/r/20130628091853.GE29209@dyad.programming.kicks
--ass.net
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
+block/cfq-iosched.c: In function 'cfqg_prfill_avg_queue_size':
+block/cfq-iosched.c:4423:3: error: size of unnamed array is negative
+make[2]: *** [block/gfq-iosched.s] Error 1
+make[1]: *** [block/gfq-iosched.s] Error 2
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
 
+
+I see a number of other truncation errors. We need to fix them as well.
