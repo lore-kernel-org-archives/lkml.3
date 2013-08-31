@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3HaFUO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:20:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17351 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab3HaFRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 01:17:04 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=lg7xcWd3iwsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=2SfXdHNypsIA:10 a=Hg4I13Rm0uD_RGvEMn4A:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130831051702.253028770@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sat, 31 Aug 2013 01:11:28 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 11/18 v2] ftrace: Adde infrastructure to stop RCU unsafe checker from checking
-References: <20130831051117.884125230@goodmis.org>
-Content-Disposition: inline; filename=0011-ftrace-Adde-infrastructure-to-stop-RCU-unsafe-checke.patch
+	id S1756816Ab3HaFWq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:22:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37878 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753597Ab3HaFWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 01:22:44 -0400
+Date: Sat, 31 Aug 2013 07:22:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, vgoyal@redhat.com, akpm@linux-foundation.org,
+        hpa@linux.intel.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, jingbai.ma@hp.com
+Subject: Re: [PATCH 2/2] x86, apic: Disable BSP if boot cpu is AP
+Message-ID: <20130831052252.GC12617@x1.alien8.de>
+References: <20130829092458.5476.10277.stgit@localhost6.localdomain6>
+ <20130829092804.5476.95588.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130829092804.5476.95588.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Aug 29, 2013 at 06:28:04PM +0900, HATAYAMA Daisuke wrote:
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 66cab35..fd969d1 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -2113,13 +2113,29 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+>  	apic_write(APIC_LVT1, value);
+>  }
+>  
+> -void generic_processor_info(int apicid, int version)
+> +void generic_processor_info(int apicid, bool isbsp, int version)
+>  {
+>  	int cpu, max = nr_cpu_ids;
+>  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
+>  				phys_cpu_present_map);
+>  
+>  	/*
+> +	 * If boot cpu is AP, we now don't have any way to initialize
+> +	 * BSP. To save memory consumed, we disable BSP this case and
 
-This is a light weight way to keep the rcu checker from checking
-RCU safety. It adds a ftrace_unsafe_rcu_checker_disable/enable()
-that increments or decrements a counter respectively. When the
-counter is set, the RCU unsafe checker callback does not run the
-tests to see if RCU is safe or not.
+I don't think we disable the BSP just so that we save memory and rather
+because we hang in the kdump kernel otherwise, right?
 
-This is required by the graph tracer because the checks can cause
-the graph tracer to live lock the system by its own calls.
+> +	 * use (N-1)-cpus.
+> +	 */
+> +	if (isbsp && !boot_cpu_is_bsp) {
 
-It's also needed by the irqsoff tracer, because it may be called
-in RCU unsafe regions and if its internal functions get traced
-then the RCU unsafe checker may have some false positives.
+This variable naming looks confusing, IMHO. It would probably be more
+understandable if 'isbsp' was called 'boot_cpu' to denote that this is
+the CPU we're booting on currently. The comment above it then explains
+that it is an AP and it might also refer to the issue why we're doing
+that.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.h           |   12 +++++++++---
- kernel/trace/trace_functions.c |   15 +++++++++++++++
- 2 files changed, 24 insertions(+), 3 deletions(-)
+> +		int thiscpu = num_processors + disabled_cpus;
+> +
+> +		pr_warning("ACPI: The boot cpu is not BSP. "
+> +			   "The BSP Processor %d/0x%x ignored.\n",
+> +			   thiscpu, apicid);
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index e551316..58e4c37 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -760,9 +760,6 @@ static inline int ftrace_graph_addr(unsigned long addr)
- 
- 	return 0;
- }
--#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
--extern bool ftrace_rcu_unsafe(unsigned long addr);
--#endif
- #else
- static inline int ftrace_graph_addr(unsigned long addr)
- {
-@@ -1061,4 +1058,13 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
- #define perf_ftrace_event_register NULL
- #endif
- 
-+#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
-+extern bool ftrace_rcu_unsafe(unsigned long addr);
-+extern void ftrace_unsafe_rcu_checker_disable(void);
-+extern void ftrace_unsafe_rcu_checker_enable(void);
-+#else
-+static inline void ftrace_unsafe_rcu_checker_disable(void) { }
-+static inline void ftrace_unsafe_rcu_checker_enable(void) { }
-+#endif
-+
- #endif /* _LINUX_KERNEL_TRACE_H */
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 9dd4627..1d5f951 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -560,12 +560,27 @@ static inline int init_func_cmd_traceon(void)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
- #ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
-+static atomic_t ftrace_unsafe_rcu_disabled;
-+
-+void ftrace_unsafe_rcu_checker_disable(void)
-+{
-+	atomic_inc(&ftrace_unsafe_rcu_disabled);
-+}
-+
-+void ftrace_unsafe_rcu_checker_enable(void)
-+{
-+	atomic_dec(&ftrace_unsafe_rcu_disabled);
-+}
-+
- static void
- ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
- 		       struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	int bit;
- 
-+	if (atomic_read(&ftrace_unsafe_rcu_disabled))
-+		return;
-+
- 	preempt_disable_notrace();
- 
- 	bit = trace_test_and_set_recursion(TRACE_FTRACE_START, TRACE_FTRACE_MAX);
+Visible comment, so needs a bit of correcting:
+
+	"ACPI: We're not booting on the BSP; BSP %d/0x%x ignored."
+
+> +
+> +		disabled_cpus++;
+> +		return;
+> +	}
+> +
+> +	/*
+>  	 * If boot cpu has not been detected yet, then only allow upto
+>  	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
+>  	 */
+
+Thanks.
+
 -- 
-1.7.10.4
-
-
+Regards/Gruss,
+Boris.
