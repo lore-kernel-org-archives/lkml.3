@@ -1,143 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab3HaU0w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 16:26:52 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:44336 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3HaU0u (ORCPT
+	id S1754829Ab3HaUbY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 16:31:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15696 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab3HaUbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 16:26:50 -0400
-Date: Sat, 31 Aug 2013 21:26:37 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+	Sat, 31 Aug 2013 16:31:23 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=ScsRa3LQXiAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oRCXbKhWxsoA:10 a=VnNF1IyMAAAA:8 a=xa5-QLw5uhaX3KhGc6EA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Subject: Re: [RFC][PATCH 08/18 v2] ftrace/rcu: Do not trace
+ debug_lockdep_rcu_enabled()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
- /proc/*/{syscall,stack,personality}
-Message-ID: <20130831202637.GA6013@dztty>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
- <871u5gqtw3.fsf@xmission.com>
- <20130826172054.GE27005@ZenIV.linux.org.uk>
- <20130827172406.GA2664@dztty>
- <20130828201141.GA21455@dztty>
- <CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
- <20130828211116.GA22184@dztty>
- <87sixt735b.fsf@xmission.com>
- <20130829091127.GA2635@dztty>
- <CAGXu5jJtiji1KPPLSr5SXKXGwBbb8McWZY3DqCZFWXKtP=KEzA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJtiji1KPPLSr5SXKXGwBbb8McWZY3DqCZFWXKtP=KEzA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+In-Reply-To: <20130831192101.GG3871@linux.vnet.ibm.com>
+References: <20130831051117.884125230@goodmis.org>
+	 <20130831051701.767976027@goodmis.org>
+	 <20130831192101.GG3871@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 31 Aug 2013 16:31:14 -0400
+Message-ID: <1377981074.26624.0.camel@pippen.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry for my late response)
-
-On Thu, Aug 29, 2013 at 03:14:32PM -0700, Kees Cook wrote:
-> On Thu, Aug 29, 2013 at 2:11 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> > Hi Eric,
-> >
-> > On Wed, Aug 28, 2013 at 05:26:56PM -0700, Eric W. Biederman wrote:
-> >>
-> >> I have take a moment and read this thread, and have been completely
-> >> unenlightend.  People are upset but it is totally unclear why.
-> >>
-> >> There is no explanation why it is ok to ignore the suid-exec case, as
-> >> the posted patches do.  Which ultimately means the patches provide
-> > Please, did you take a look at the patches ?
-> > -       INF("syscall",    S_IRUGO, proc_pid_syscall),
-> > +       INF("syscall",    S_IRUSR, proc_pid_syscall),
-> >
-> > Can you please tell me how did you come to the conclusion that the
-> > patches "ignore the suid-exec case as the posted patches do" ?
+On Sat, 2013-08-31 at 12:21 -0700, Paul E. McKenney wrote:
+> On Sat, Aug 31, 2013 at 01:11:25AM -0400, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > The function debug_lockdep_rcu_enabled() is part of the RCU lockdep
+> > debugging, and is called very frequently. I found that if I enable
+> > a lot of debugging and run the function graph tracer, this
+> > function can cause a live lock of the system.
+> > 
+> > We don't usually trace lockdep infrastructure, no need to trace
+> > this either.
+> > 
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> There are a few conditions that need to be handled. The original fix
-> that Al landed was to stop this:
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> create IPC
-> fork child
-> child opens /proc/self/syscall
-> child sends fd to parent over IPC
-> child execs setuid process
-> parent reads setuid process's "syscall" file
+> Or I can just take it, if you would rather.  (If so, 3.12 or 3.13?)
 > 
-> The solution was to check perms of reader (in this case parent wasn't
-> privileged, so it gets denied).
-Yes, of course
+
+Feel free to take it and I'll remove it from my queue. 3.12 please.
+
+I'll just need to remember to turn off function graph tracing when
+testing these patches again.
+
+-- Steve
 
 
-> The new problem is:
-> 
-> open /proc/$target/syscall
-> dup to stdin
-> exec setuid process that reports contents of stdin
-> 
-> So, changing perms to 0400 doesn't actually fix what we want to fix,
-> since it can still by bypassed under more limited situations:
-> 
-> open /proc/self/syscall
-> dup to stdin
-> exec setuid process that reports contents of stdin
-> 
-> So, changing to 0400 means only setuid programs that aren't already
-> running will have their ASLR leaked.
-Yes I do realize. That change was only to block leaks against already
-running processes and *restore* the old permissions.
-
-
-> [...] 
-> Maybe I'm lacking imagination, but changing to 0400 does reduce the
-> scope of the leak from all processes to "just" what was execed. This
-> still needs to be addressed, but I don't see a way to handle this
-> without explicitly invalidating the /proc handle across exec.
-Yes Kees,
-
-I did try a year ago to adapt the exec_id from grsecurity and failed
-(and failed again to resend - not enough resources):
-https://lkml.org/lkml/2012/3/10/174
-
-
-Kees IMHO the right solution is to invalidate the fd across exec as
-you suggest
-
-Alan Cox's thread which describe the problem correctly:
-https://lkml.org/lkml/2012/1/29/35
-
-Alan suggested to revoke() the file handles.
-
-
-
-So:
-There are more of these /proc files with 0444 and without appropriate
-ptrace protections that allow ASLR leaks, and doing 0400 will not
-totally fix it, not to mention that 0400 on /proc/pid/maps can break
-glibc, etc.
-
-
-A solution would be to implement the per-cpu exec_id used in grsecurity
-and also suggested here:
-https://lkml.org/lkml/2012/3/11/23
-
-grsecurity uses the current (reader) exec_id to track if this is still
-the same reader. We can use the target exec_id instead of the reader to
-bind all these files to their exec_id target task + ptrace checkes at
-open(), read(), write()...
-
-Can we consider this some sort of a revoke() for these special files?
-
-
-Thanks
-
--- 
-Djalal Harouni
-http://opendz.org
