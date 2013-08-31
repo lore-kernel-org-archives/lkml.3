@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab3HaISj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 04:18:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59647 "EHLO
+	id S1757346Ab3HaISg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 04:18:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59649 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab3HaIOq (ORCPT
+	with ESMTP id S1753689Ab3HaIOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 31 Aug 2013 04:14:46 -0400
-Date: Sat, 31 Aug 2013 01:13:40 -0700
+Date: Sat, 31 Aug 2013 01:13:30 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-ef89325f773bc9f2f4e6019bd7f3d968ba85df9a@git.kernel.org>
+Message-ID: <tip-07940293ba7a43070cdebda952b0e6025d80a383@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
@@ -20,11 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
         namhyung@gmail.com, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1377591794-30553-5-git-send-email-adrian.hunter@intel.com>
-References: <1377591794-30553-5-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1377591794-30553-4-git-send-email-adrian.hunter@intel.com>
+References: <1377591794-30553-4-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove references to struct ip_event
-Git-Commit-ID: ef89325f773bc9f2f4e6019bd7f3d968ba85df9a
+Subject: [tip:perf/core] perf callchain: Remove unnecessary validation
+Git-Commit-ID: 07940293ba7a43070cdebda952b0e6025d80a383
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,23 +33,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:13:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:13:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ef89325f773bc9f2f4e6019bd7f3d968ba85df9a
-Gitweb:     http://git.kernel.org/tip/ef89325f773bc9f2f4e6019bd7f3d968ba85df9a
+Commit-ID:  07940293ba7a43070cdebda952b0e6025d80a383
+Gitweb:     http://git.kernel.org/tip/07940293ba7a43070cdebda952b0e6025d80a383
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 27 Aug 2013 11:23:06 +0300
+AuthorDate: Tue, 27 Aug 2013 11:23:05 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 29 Aug 2013 15:29:28 -0300
+CommitDate: Thu, 29 Aug 2013 15:11:29 -0300
 
-perf tools: Remove references to struct ip_event
+perf callchain: Remove unnecessary validation
 
-The ip_event struct assumes fixed positions for ip, pid and tid.  That
-is no longer true with the addition of PERF_SAMPLE_IDENTIFIER.  The
-information is anyway in struct sample, so use that instead.
+Now that the sample parsing correctly checks data sizes there is no
+reason for it to be done again for callchains.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
@@ -62,304 +61,84 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377591794-30553-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1377591794-30553-4-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c   |  4 ++--
- tools/perf/builtin-kmem.c     |  4 ++--
- tools/perf/builtin-mem.c      |  2 +-
- tools/perf/builtin-script.c   |  4 ++--
- tools/perf/builtin-top.c      | 11 ++++++-----
- tools/perf/tests/hists_link.c | 20 ++++++++------------
- tools/perf/util/build-id.c    |  8 ++++----
- tools/perf/util/event.c       |  6 +++---
- tools/perf/util/event.h       | 11 -----------
- tools/perf/util/evsel.c       |  4 ++--
- tools/perf/util/session.c     |  8 +++++---
- 11 files changed, 35 insertions(+), 47 deletions(-)
+ tools/perf/util/callchain.c |  8 --------
+ tools/perf/util/callchain.h |  5 -----
+ tools/perf/util/session.c   | 20 --------------------
+ 3 files changed, 33 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 0d4ae1d..ffacd46 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 4fee33b..482f680 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -21,14 +21,6 @@
  
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ __thread struct callchain_cursor callchain_cursor;
  
--	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
-+	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
- 		       event->header.type);
-@@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al);
-+			      sample->ip, &al);
- 
- 	if (al.map != NULL) {
- 		if (!al.map->dso->hit) {
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index c324778..c2dff9c 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -305,8 +305,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 706a1fa..791b432 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -94,7 +94,7 @@ dump_raw_samples(struct perf_tool *tool,
- 		symbol_conf.field_sep,
- 		sample->tid,
- 		symbol_conf.field_sep,
--		event->ip.ip,
-+		sample->ip,
- 		symbol_conf.field_sep,
- 		sample->addr,
- 		symbol_conf.field_sep,
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index d82712f..93a34ce 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -501,8 +501,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct machine *machine)
- {
- 	struct addr_location al;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.tid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e37521f..2122141 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -689,7 +689,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- {
- 	struct perf_top *top = container_of(tool, struct perf_top, tool);
- 	struct symbol *parent = NULL;
--	u64 ip = event->ip.ip;
-+	u64 ip = sample->ip;
- 	struct addr_location al;
- 	int err;
- 
-@@ -699,10 +699,10 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		if (!seen)
- 			seen = intlist__new(NULL);
- 
--		if (!intlist__has_entry(seen, event->ip.pid)) {
-+		if (!intlist__has_entry(seen, sample->pid)) {
- 			pr_err("Can't find guest [%d]'s kernel information\n",
--				event->ip.pid);
--			intlist__add(seen, event->ip.pid);
-+				sample->pid);
-+			intlist__add(seen, sample->pid);
- 		}
- 		return;
- 	}
-@@ -836,7 +836,8 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			break;
- 		case PERF_RECORD_MISC_GUEST_KERNEL:
- 			++top->guest_kernel_samples;
--			machine = perf_session__find_machine(session, event->ip.pid);
-+			machine = perf_session__find_machine(session,
-+							     sample.pid);
- 			break;
- 		case PERF_RECORD_MISC_GUEST_USER:
- 			++top->guest_us_samples;
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 87f9f72..4228ffc 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -211,15 +211,13 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		for (k = 0; k < ARRAY_SIZE(fake_common_samples); k++) {
- 			const union perf_event event = {
--				.ip = {
--					.header = {
--						.misc = PERF_RECORD_MISC_USER,
--					},
--					.pid = fake_common_samples[k].pid,
--					.ip  = fake_common_samples[k].ip,
-+				.header = {
-+					.misc = PERF_RECORD_MISC_USER,
- 				},
- 			};
- 
-+			sample.pid = fake_common_samples[k].pid;
-+			sample.ip = fake_common_samples[k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
- 							  &sample) < 0)
- 				goto out;
-@@ -235,15 +233,13 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 
- 		for (k = 0; k < ARRAY_SIZE(fake_samples[i]); k++) {
- 			const union perf_event event = {
--				.ip = {
--					.header = {
--						.misc = PERF_RECORD_MISC_USER,
--					},
--					.pid = fake_samples[i][k].pid,
--					.ip  = fake_samples[i][k].ip,
-+				.header = {
-+					.misc = PERF_RECORD_MISC_USER,
- 				},
- 			};
- 
-+			sample.pid = fake_samples[i][k].pid;
-+			sample.ip = fake_samples[i][k].ip;
- 			if (perf_event__preprocess_sample(&event, machine, &al,
- 							  &sample) < 0)
- 				goto out;
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 0f9d27a..fb58409 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -18,14 +18,14 @@
- 
- int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 			   union perf_event *event,
--			   struct perf_sample *sample __maybe_unused,
-+			   struct perf_sample *sample,
- 			   struct perf_evsel *evsel __maybe_unused,
- 			   struct machine *machine)
- {
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
-@@ -34,7 +34,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al);
-+			      sample->ip, &al);
- 
- 	if (al.map != NULL)
- 		al.map->dso->hit = 1;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 61cecf9..8d51f21 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -686,8 +686,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 				  struct perf_sample *sample)
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL)
- 		return -1;
-@@ -709,7 +709,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 		machine__create_kernel_maps(machine);
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, al);
-+			      sample->ip, al);
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 15db071..19d911c 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -8,16 +8,6 @@
- #include "map.h"
- #include "build-id.h"
- 
--/*
-- * PERF_SAMPLE_IP | PERF_SAMPLE_TID | *
-- */
--struct ip_event {
--	struct perf_event_header header;
--	u64 ip;
--	u32 pid, tid;
--	unsigned char __more_data[];
--};
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event)
+-{
+-	unsigned int chain_size = event->header.size;
+-	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
+-	return chain->nr * sizeof(u64) <= chain_size;
+-}
 -
- struct mmap_event {
- 	struct perf_event_header header;
- 	u32 pid, tid;
-@@ -166,7 +156,6 @@ struct tracing_data_event {
+ #define chain_for_each_child(child, parent)	\
+ 	list_for_each_entry(child, &parent->children, siblings)
  
- union perf_event {
- 	struct perf_event_header	header;
--	struct ip_event			ip;
- 	struct mmap_event		mmap;
- 	struct comm_event		comm;
- 	struct fork_event		fork;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 9a5fb23..7e328c4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1185,7 +1185,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		return -EFAULT;
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 812d5a0..2b585bc 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -109,11 +109,6 @@ int callchain_append(struct callchain_root *root,
+ int callchain_merge(struct callchain_cursor *cursor,
+ 		    struct callchain_root *dst, struct callchain_root *src);
  
- 	if (type & PERF_SAMPLE_IP) {
--		data->ip = event->ip.ip;
-+		data->ip = *array;
- 		array++;
- 	}
- 
-@@ -1397,7 +1397,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 	array = event->sample.array;
- 
- 	if (type & PERF_SAMPLE_IP) {
--		event->ip.ip = sample->ip;
-+		*array = sample->ip;
- 		array++;
- 	}
- 
+-struct ip_callchain;
+-union perf_event;
+-
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event);
+ /*
+  * Initialize a cursor before adding entries inside, but keep
+  * the previously allocated entries as a cache.
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 07590c3..c3ac483 100644
+index 57b6f38..07590c3 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -840,7 +840,8 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+@@ -997,22 +997,6 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 	}
+ }
  
- static struct machine *
- 	perf_session__find_machine_for_cpumode(struct perf_session *session,
--					       union perf_event *event)
-+					       union perf_event *event,
-+					       struct perf_sample *sample)
+-static int perf_session__preprocess_sample(struct perf_session *session,
+-					   union perf_event *event, struct perf_sample *sample)
+-{
+-	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_CALLCHAIN))
+-		return 0;
+-
+-	if (!ip_callchain__valid(sample->callchain, event)) {
+-		pr_debug("call-chain problem with event, skipping it.\n");
+-		++session->stats.nr_invalid_chains;
+-		session->stats.total_invalid_chains += sample->period;
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
  {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+@@ -1075,10 +1059,6 @@ static int perf_session__process_event(struct perf_session *session,
+ 	if (ret)
+ 		return ret;
  
-@@ -852,7 +853,7 @@ static struct machine *
- 		if (event->header.type == PERF_RECORD_MMAP)
- 			pid = event->mmap.pid;
- 		else
--			pid = event->ip.pid;
-+			pid = sample->pid;
- 
- 		return perf_session__findnew_machine(session, pid);
- 	}
-@@ -958,7 +959,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 		hists__inc_nr_events(&evsel->hists, event->header.type);
- 	}
- 
--	machine = perf_session__find_machine_for_cpumode(session, event);
-+	machine = perf_session__find_machine_for_cpumode(session, event,
-+							 sample);
- 
- 	switch (event->header.type) {
- 	case PERF_RECORD_SAMPLE:
+-	/* Preprocess sample records - precheck callchains */
+-	if (perf_session__preprocess_sample(session, event, &sample))
+-		return 0;
+-
+ 	if (tool->ordered_samples) {
+ 		ret = perf_session_queue_event(session, event, &sample,
+ 					       file_offset);
