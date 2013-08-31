@@ -1,94 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3HaKBa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 06:01:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39865 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab3HaKB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 06:01:29 -0400
-Date: Sat, 31 Aug 2013 12:01:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: 3.11-rc2: unpriviledged user crashes kernel using bluetooth
-Message-ID: <20130831100127.GA6711@amd.pavel.ucw.cz>
+	id S1753594Ab3HaKHG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 06:07:06 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:33960 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab3HaKHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 06:07:04 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Message-ID: <21025.49202.207730.949120@pilspetsen.it.uu.se>
+Date: Sat, 31 Aug 2013 12:06:42 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: eranian@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: perf_event: rdpmc self-monitoring overhead issue
+In-Reply-To: <alpine.DEB.2.10.1308301426070.19485@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+	<CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
+	<alpine.DEB.2.10.1308301426070.19485@vincent-weaver-1.um.maine.edu>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Vince Weaver writes:
+ > On Fri, 30 Aug 2013, Stephane Eranian wrote:
+ > > >
+ > > You mean that the high cost in your first example comes from the fact
+ > > that you are averaging over all the iterations and not n-1 (where 1 is
+ > > the first). I don't see a flag in mmap() to fault it in immediately. But
+ > > why not document, that programs should touch the page once before
+ > > starting any timing measurements.
+ > 
+ > I was just curious why perfctr didn't need to do this, but possibly
+ > I'm just missing the mmap page being touched.  Though the code is pretty
+ > small and I'm not seeing any such access.
 
-While trying to set up serial bluetooth connection between two
-machines, the server machine died rather hard.
-
-This is what I got on ssh:
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD8WW (2.19 )
- 03/31/2011
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:task: e6d6a670 ti: e8fd8000 task.ti: e8fd8000
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Stack:
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Call Trace:
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Code: 66 ff ff ff eb b9 ba 79 c9 b6 c0 89 d8 e8 58 ff ff ff eb
- a0 8d b6 00 00 00 00 55 89 e5 83 ec 10 89 5d f4 89 c3 89 75 f8 89 7d
- fc <81> 78 04 ad 4e ad de 0f 85 11 01 00 00 64 a1 4c 87 d2 c0 39 43
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:EIP: [<c04621f1>] do_raw_spin_lock+0x11/0x140 SS:ESP
- 0068:e8fd9e0c
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:CPU: 0 PID: 3822 Comm: modem-manager Tainted: G      D W
- 3.11.0-rc2+ #306
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD8WW (2.19 )
- 03/31/2011
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:task: e6d9a670 ti: e6d4e000 task.ti: e6d4e000
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Stack:
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Call Trace:
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:Code: 66 ff ff ff eb b9 ba 79 c9 b6 c0 89 d8 e8 58 ff ff ff eb
- a0 8d b6 00 00 00 00 55 89 e5 83 ec 10 89 5d f4 89 c3 89 75 f8 89 7d
- fc <81> 78 04 ad 4e ad de 0f 85 11 01 00 00 64 a1 4c 87 d2 c0 39 43
-
-Message from syslogd@duo at Aug 31 11:50:07 ...
- kernel:EIP: [<c04621f1>] do_raw_spin_lock+0x11/0x140 SS:ESP
- 0068:e6d4fe0c
-
-. Python sources for client/server are at 
-
-http://tui.cvs.sourceforge.net/viewvc/tui/tui/liveview/
-
-. My kernels like to warn about
-
-Aug 31 11:46:37 duo kernel: WARNING: CPU: 1 PID: 1 at
-net/wireless/reg.c:423 regulatory_init+0x92/0xff()
-Aug 31 11:46:37 duo kernel: db.txt is empty, you should update it...
-
-. 3.10 does not seem to be affected.
-										Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+perfctr's ->mmap() actively inserts the counters page into the calling
+process' mm, so it's available immediately.  The other model is to wait
+for the first page fault on that page before inserting it; apparently
+the other performance counter frameworks do that instead.
