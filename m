@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3HaKVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 06:21:18 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:59499 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab3HaKVP (ORCPT
+	id S1754512Ab3HaKml (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 06:42:41 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40504 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab3HaKmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 06:21:15 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH 6/6] ACPI / processor: Remove outdated comments
-Date: Sat, 31 Aug 2013 18:16:01 +0800
-Message-Id: <1377944162-18574-6-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1377944162-18574-1-git-send-email-hanjun.guo@linaro.org>
-References: <1377944162-18574-1-git-send-email-hanjun.guo@linaro.org>
+	Sat, 31 Aug 2013 06:42:40 -0400
+Date: Sat, 31 Aug 2013 12:42:38 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.11-rc7: unpriviledged user crashes kernel using bluetooth
+Message-ID: <20130831104238.GA7767@amd.pavel.ucw.cz>
+References: <20130831100127.GA6711@amd.pavel.ucw.cz>
+ <20130831100933.GA7029@amd.pavel.ucw.cz>
+ <20130831101451.GC7029@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130831101451.GC7029@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_get_processor_id() can be find nowhere, and the acpi id
-is synchronized to APIC id when acpi_get_cpuid() is called, so
-the comments can be removed.
+On Sat 2013-08-31 12:14:51, Pavel Machek wrote:
+> On Sat 2013-08-31 12:09:33, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > . Python sources for client/server are at 
+> > > 
+> > > http://tui.cvs.sourceforge.net/viewvc/tui/tui/liveview/
+> > > 
+> > > . My kernels like to warn about
+> > System is debian stable with gnome2.
+> 
+> And no, it is not fixed in 3.11-rc7.
 
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- drivers/acpi/acpi_processor.c |    5 -----
- 1 file changed, 5 deletions(-)
+2.6.32-5-686 from debian seems to work.
 
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index d1cabe5..fa2412e 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -240,11 +240,6 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 			return -ENODEV;
- 		}
- 
--		/*
--		 * TBD: Synch processor ID (via LAPIC/LSAPIC structures) on SMP.
--		 *      >>> 'acpi_get_processor_id(acpi_id, &id)' in
--		 *      arch/xxx/acpi.c
--		 */
- 		pr->acpi_id = object.processor.proc_id;
- 	} else {
- 		/*
+Notice that I probably have modemmanager fighting with my own
+server, that is experiencing problem described in
+http://ubuntuforums.org/showthread.php?t=2056285 . That still should
+not allow me to crash the kernel.
+								Pavel
+
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
