@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3HaFWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:22:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37878 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab3HaFWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 01:22:44 -0400
-Date: Sat, 31 Aug 2013 07:22:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, vgoyal@redhat.com, akpm@linux-foundation.org,
-        hpa@linux.intel.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, jingbai.ma@hp.com
-Subject: Re: [PATCH 2/2] x86, apic: Disable BSP if boot cpu is AP
-Message-ID: <20130831052252.GC12617@x1.alien8.de>
-References: <20130829092458.5476.10277.stgit@localhost6.localdomain6>
- <20130829092804.5476.95588.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130829092804.5476.95588.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756958Ab3HaFXb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:23:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6567 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab3HaFXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Aug 2013 01:23:30 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDI8IL8UnGoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BKUXQ1-ENX0A:10 a=oGMlB6cnAAAA:8 a=lymH9lD9naPdF7IIVwwA:9 a=CjuIK1q_8ugA:10 a=1JvJEtVdGvUA:10 a=CY6gl2JlH4YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Sat, 31 Aug 2013 01:23:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: x86-32: Early microcode loading stumbles over disabled
+ DYNAMIC_FTRACE
+Message-ID: <20130831012327.22813171@gandalf.local.home>
+In-Reply-To: <20130831050737.GB12617@x1.alien8.de>
+References: <5217908E.2040702@siemens.com>
+	<5220BC1A.3030108@zytor.com>
+	<20130830115142.1ee4c825@gandalf.local.home>
+	<5220C9C6.5020808@zytor.com>
+	<20130830130331.1e260e85@gandalf.local.home>
+	<52210537.2070805@zytor.com>
+	<20130830201741.07fea07f@gandalf.local.home>
+	<20130831050737.GB12617@x1.alien8.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 06:28:04PM +0900, HATAYAMA Daisuke wrote:
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 66cab35..fd969d1 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -2113,13 +2113,29 @@ void disconnect_bsp_APIC(int virt_wire_setup)
->  	apic_write(APIC_LVT1, value);
->  }
->  
-> -void generic_processor_info(int apicid, int version)
-> +void generic_processor_info(int apicid, bool isbsp, int version)
->  {
->  	int cpu, max = nr_cpu_ids;
->  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
->  				phys_cpu_present_map);
->  
->  	/*
-> +	 * If boot cpu is AP, we now don't have any way to initialize
-> +	 * BSP. To save memory consumed, we disable BSP this case and
+On Sat, 31 Aug 2013 07:07:37 +0200
+Borislav Petkov <bp@alien8.de> wrote:
 
-I don't think we disable the BSP just so that we save memory and rather
-because we hang in the kdump kernel otherwise, right?
+> On Fri, Aug 30, 2013 at 08:17:41PM -0400, Steven Rostedt wrote:
+> > On Fri, 30 Aug 2013 13:48:55 -0700
+> > "H. Peter Anvin" <hpa@zytor.com> wrote:
+> > 
+> > > >> You *could* bail out of the calling address is < PAGE_OFFSET.
+> > > 
+> > > Anyway... can we add this to the static tracing code?  It is two
+> > > instructions and is only needed on x86-32.  For performance, use dynamic.
+> > 
+> > Sure, do you want to add it ?
+> 
+> Another, simpler option could be to make static tracing depend on
+> !MICROCODE until the first has been removed.
+> 
 
-> +	 * use (N-1)-cpus.
-> +	 */
-> +	if (isbsp && !boot_cpu_is_bsp) {
+Might be trickier than you think. Static tracing is the default.
+Dynamic tracing is the extension. By making static tracing depend
+on !MICROCODE, you basically made function tracing depend on !MICROCODE.
 
-This variable naming looks confusing, IMHO. It would probably be more
-understandable if 'isbsp' was called 'boot_cpu' to denote that this is
-the CPU we're booting on currently. The comment above it then explains
-that it is an AP and it might also refer to the issue why we're doing
-that.
+I guess you could make MICROCODE select DYNAMIC_FTRACE, but that could
+get messy.
 
-> +		int thiscpu = num_processors + disabled_cpus;
-> +
-> +		pr_warning("ACPI: The boot cpu is not BSP. "
-> +			   "The BSP Processor %d/0x%x ignored.\n",
-> +			   thiscpu, apicid);
-
-Visible comment, so needs a bit of correcting:
-
-	"ACPI: We're not booting on the BSP; BSP %d/0x%x ignored."
-
-> +
-> +		disabled_cpus++;
-> +		return;
-> +	}
-> +
-> +	/*
->  	 * If boot cpu has not been detected yet, then only allow upto
->  	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
->  	 */
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+-- Steve
