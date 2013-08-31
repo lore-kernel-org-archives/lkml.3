@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab3HaFUT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 01:20:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7090 "EHLO
+	id S1757318Ab3HaFUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 01:20:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23824 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab3HaFRE (ORCPT
+	with ESMTP id S1754393Ab3HaFRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 31 Aug 2013 01:17:04 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=jNP3OkI5QL0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=OlPmlbCOKaoA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=ac4SS_tiFSPT9NLxd24A:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=EzP5xR4ZXSYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XdHNiPHiZPIA:10 a=F7sj4GA4NglSa3_kcFAA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130831051701.452903571@goodmis.org>
+Message-Id: <20130831051702.596618450@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 31 Aug 2013 01:11:23 -0400
+Date: Sat, 31 Aug 2013 01:11:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,102 +21,76 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 06/18 v2] ftrace: Add rcu_unsafe_filter_functions file
+Subject: [RFC][PATCH 13/18 v2] ftrace: Disable the RCU unsafe checker when irqsoff is enabled
 References: <20130831051117.884125230@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-Add-rcu_unsafe_filter_functions-file.patch
+Content-Disposition: inline; filename=0013-ftrace-Disable-the-RCU-unsafe-checker-when-irqsoff-i.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Since the RCU unsafe functions are no longer displayed by the
-available_filter_functions, we still need a way to see these
-functions in order to trace them. Create a new file that lists
-the functions that were declared RCU unsafe.
+The irqsoff tracer can be called during some of the RCU unsafe
+regions. The proble is that some of the internal calls that it
+makes may also be traced. For example, it uses spin locks. But if
+the spin lock gets traced and the RCU unsafe checker runs, it will
+trigger that RCU is not safe to use. But the only reason a spin lock
+is being used in an RCU unsafe region is because the irqsoff trace
+uses it, and causes a false positive.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Disable the unsafe RCU checker when irqsoff is enabled.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    1 +
- kernel/trace/ftrace.c  |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+ kernel/trace/trace_irqsoff.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 4709264..4752764 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -412,6 +412,7 @@ enum {
- 	FTRACE_ITER_HASH	= (1 << 4),
- 	FTRACE_ITER_ENABLED	= (1 << 5),
- 	FTRACE_ITER_NO_UNSAFE	= (1 << 6),
-+	FTRACE_ITER_UNSAFE_ONLY	= (1 << 7),
- };
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 2aefbee..62d603c 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -584,9 +584,14 @@ static int start_irqsoff_tracer(struct trace_array *tr, int graph)
  
- void arch_ftrace_update_code(int command);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index be87ac9..a3e4b71 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2647,6 +2647,9 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		    ((iter->flags & FTRACE_ITER_ENABLED) &&
- 		     !(rec->flags & FTRACE_FL_ENABLED)) ||
+ 	ret = register_irqsoff_function(graph, 0);
  
-+		    ((iter->flags & FTRACE_ITER_UNSAFE_ONLY) &&
-+		     !ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip)) ||
+-	if (!ret && tracing_is_enabled())
++	if (!ret && tracing_is_enabled()) {
++		/*
++		 * irqsoff tracer can cause unsafe rcu checker
++		 * to have false positives.
++		 */
++		ftrace_unsafe_rcu_checker_disable();
+ 		tracer_enabled = 1;
+-	else
++	} else
+ 		tracer_enabled = 0;
+ 
+ 	return ret;
+@@ -594,6 +599,9 @@ static int start_irqsoff_tracer(struct trace_array *tr, int graph)
+ 
+ static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
+ {
++	if (tracer_enabled)
++		ftrace_unsafe_rcu_checker_enable();
 +
- 		    ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
- 		     ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
+ 	tracer_enabled = 0;
  
-@@ -2784,6 +2787,24 @@ ftrace_avail_open(struct inode *inode, struct file *file)
+ 	unregister_irqsoff_function(graph);
+@@ -630,11 +638,15 @@ static void irqsoff_tracer_reset(struct trace_array *tr)
+ 
+ static void irqsoff_tracer_start(struct trace_array *tr)
+ {
++	if (!tracer_enabled)
++		ftrace_unsafe_rcu_checker_disable();
+ 	tracer_enabled = 1;
  }
  
- static int
-+ftrace_rcu_unsafe_open(struct inode *inode, struct file *file)
-+{
-+	struct ftrace_iterator *iter;
-+
-+	if (unlikely(ftrace_disabled))
-+		return -ENODEV;
-+
-+	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
-+	if (iter) {
-+		iter->pg = ftrace_pages_start;
-+		iter->flags = FTRACE_ITER_UNSAFE_ONLY;
-+		iter->ops = &global_ops;
-+	}
-+
-+	return iter ? 0 : -ENOMEM;
-+}
-+
-+static int
- ftrace_enabled_open(struct inode *inode, struct file *file)
+ static void irqsoff_tracer_stop(struct trace_array *tr)
  {
- 	struct ftrace_iterator *iter;
-@@ -3835,6 +3856,13 @@ static const struct file_operations ftrace_avail_fops = {
- 	.release = seq_release_private,
- };
- 
-+static const struct file_operations ftrace_rcu_unsafe_fops = {
-+	.open = ftrace_rcu_unsafe_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+};
-+
- static const struct file_operations ftrace_enabled_fops = {
- 	.open = ftrace_enabled_open,
- 	.read = seq_read,
-@@ -4071,6 +4099,9 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
- 	trace_create_file("available_filter_functions", 0444,
- 			d_tracer, NULL, &ftrace_avail_fops);
- 
-+	trace_create_file("rcu_unsafe_filter_functions", 0444,
-+			d_tracer, NULL, &ftrace_rcu_unsafe_fops);
-+
- 	trace_create_file("enabled_functions", 0444,
- 			d_tracer, NULL, &ftrace_enabled_fops);
++	if (tracer_enabled)
++		ftrace_unsafe_rcu_checker_enable();
+ 	tracer_enabled = 0;
+ }
  
 -- 
 1.7.10.4
