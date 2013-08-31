@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab3HaIOx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 04:14:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59645 "EHLO
+	id S1756875Ab3HaIPH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 04:15:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59669 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab3HaIOp (ORCPT
+	with ESMTP id S1756577Ab3HaIPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 04:14:45 -0400
-Date: Sat, 31 Aug 2013 01:13:49 -0700
+	Sat, 31 Aug 2013 04:15:00 -0400
+Date: Sat, 31 Aug 2013 01:14:14 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-ff3d527cebc1fa3707c617bfe9e74f53fcfb0955@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        eranian@google.com, hpa@zytor.com, mingo@kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+Message-ID: <tip-75562573bab35b129cfd342fc2bcf89da84a6644@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1377591794-30553-6-git-send-email-adrian.hunter@intel.com>
-References: <1377591794-30553-6-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1377591794-30553-8-git-send-email-adrian.hunter@intel.com>
+References: <1377591794-30553-8-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: make events stream always parsable
-Git-Commit-ID: ff3d527cebc1fa3707c617bfe9e74f53fcfb0955
+Subject: [tip:perf/core] perf tools:
+  Add support for PERF_SAMPLE_IDENTIFIER
+Git-Commit-ID: 75562573bab35b129cfd342fc2bcf89da84a6644
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,42 +34,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:13:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 31 Aug 2013 01:14:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ff3d527cebc1fa3707c617bfe9e74f53fcfb0955
-Gitweb:     http://git.kernel.org/tip/ff3d527cebc1fa3707c617bfe9e74f53fcfb0955
+Commit-ID:  75562573bab35b129cfd342fc2bcf89da84a6644
+Gitweb:     http://git.kernel.org/tip/75562573bab35b129cfd342fc2bcf89da84a6644
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 27 Aug 2013 11:23:07 +0300
+AuthorDate: Tue, 27 Aug 2013 11:23:09 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 29 Aug 2013 15:40:03 -0300
+CommitDate: Thu, 29 Aug 2013 16:09:31 -0300
 
-perf: make events stream always parsable
+perf tools: Add support for PERF_SAMPLE_IDENTIFIER
 
-The event stream is not always parsable because the format of a sample
-is dependent on the sample_type of the selected event.  When there is
-more than one selected event and the sample_types are not the same then
-parsing becomes problematic.  A sample can be matched to its selected
-event using the ID that is allocated when the event is opened.
-Unfortunately, to get the ID from the sample means first parsing it.
-
-This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
-the ID at a fixed position so that the ID can be retrieved without
-parsing the sample.  For sample events, that is the first position
-immediately after the header.  For non-sample events, that is the last
-position.
-
-In this respect parsing samples requires that the sample_type and ID
-values are recorded.  For example, perf tools records struct
-perf_event_attr and the IDs within the perf.data file.  Those must be
-read first before it is possible to parse samples found later in the
-perf.data file.
+Enable parsing of samples with sample format bit PERF_SAMPLE_IDENTIFIER.
+In addition, if the kernel supports it, prefer it to selecting
+PERF_SAMPLE_ID thereby allowing non-matching sample types.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Tested-by: Stephane Eranian <eranian@google.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -78,114 +62,621 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377591794-30553-6-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1377591794-30553-8-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
- kernel/events/core.c            | 11 ++++++++++-
- 2 files changed, 30 insertions(+), 8 deletions(-)
+ tools/perf/builtin-report.c   |   2 +-
+ tools/perf/tests/mmap-basic.c |   2 +-
+ tools/perf/util/event.h       |   3 +-
+ tools/perf/util/evlist.c      | 111 +++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/evlist.h      |   8 ++-
+ tools/perf/util/evsel.c       | 101 ++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/evsel.h       |  14 +++++-
+ tools/perf/util/record.c      |  89 +++++++++++++++++++++++++++++++--
+ tools/perf/util/session.c     |   2 +-
+ 9 files changed, 310 insertions(+), 22 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 62c25a2..42cb7b6 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -134,8 +134,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
-+	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 958a56a..9725aa3 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -365,7 +365,7 @@ static int process_read_event(struct perf_tool *tool,
+ static int perf_report__setup_sample_type(struct perf_report *rep)
+ {
+ 	struct perf_session *self = rep->session;
+-	u64 sample_type = perf_evlist__sample_type(self->evlist);
++	u64 sample_type = perf_evlist__combined_sample_type(self->evlist);
  
--	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
- };
+ 	if (!self->fd_pipe && !(sample_type & PERF_SAMPLE_CALLCHAIN)) {
+ 		if (sort__has_parent) {
+diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+index 5b1b5ab..c4185b9 100644
+--- a/tools/perf/tests/mmap-basic.c
++++ b/tools/perf/tests/mmap-basic.c
+@@ -72,7 +72,7 @@ int test__basic_mmap(void)
+ 		}
  
- /*
-@@ -492,12 +493,12 @@ enum perf_event_type {
- 	/*
- 	 * If perf_event_attr.sample_id_all is set then all event types will
- 	 * have the sample_type selected fields related to where/when
--	 * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
--	 * described in PERF_RECORD_SAMPLE below, it will be stashed just after
--	 * the perf_event_header and the fields already present for the existing
--	 * fields, i.e. at the end of the payload. That way a newer perf.data
--	 * file will be supported by older perf tools, with these new optional
--	 * fields being ignored.
-+	 * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
-+	 * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
-+	 * just after the perf_event_header and the fields already present for
-+	 * the existing fields, i.e. at the end of the payload. That way a newer
-+	 * perf.data file will be supported by older perf tools, with these new
-+	 * optional fields being ignored.
- 	 *
- 	 * struct sample_id {
- 	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
-@@ -505,7 +506,12 @@ enum perf_event_type {
- 	 * 	{ u64			id;       } && PERF_SAMPLE_ID
- 	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
- 	 * } && perf_event_attr::sample_id_all
-+	 *
-+	 * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
-+	 * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
-+	 * relative to header.size.
- 	 */
+ 		evsels[i]->attr.wakeup_events = 1;
+-		perf_evsel__set_sample_id(evsels[i]);
++		perf_evsel__set_sample_id(evsels[i], false);
  
- 	/*
-@@ -594,6 +600,13 @@ enum perf_event_type {
- 	 * struct {
- 	 *	struct perf_event_header	header;
- 	 *
-+	 *	#
-+	 *	# Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
-+	 *	# The advantage of PERF_SAMPLE_IDENTIFIER is that its position
-+	 *	# is fixed relative to header.
-+	 *	#
-+	 *
-+	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
- 	 *	{ u64			ip;	  } && PERF_SAMPLE_IP
- 	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
- 	 *	{ u64			time;     } && PERF_SAMPLE_TIME
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 928fae7..15d0f24 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1213,6 +1213,9 @@ static void perf_event__id_header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_TIME)
- 		size += sizeof(data->time);
+ 		perf_evlist__add(evlist, evsels[i]);
  
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		size += sizeof(data->id);
-+
- 	if (sample_type & PERF_SAMPLE_ID)
- 		size += sizeof(data->id);
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 19d911c..4913339 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -53,7 +53,8 @@ struct read_event {
+ 	(PERF_SAMPLE_IP | PERF_SAMPLE_TID |		\
+ 	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR |		\
+ 	PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |	\
+-	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
++	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD |		\
++	 PERF_SAMPLE_IDENTIFIER)
  
-@@ -4280,7 +4283,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_TIME)
- 		data->time = perf_clock();
- 
--	if (sample_type & PERF_SAMPLE_ID)
-+	if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
- 		data->id = primary_event_id(event);
- 
- 	if (sample_type & PERF_SAMPLE_STREAM_ID)
-@@ -4319,6 +4322,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
- 
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		perf_output_put(handle, data->cpu_entry);
-+
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		perf_output_put(handle, data->id);
+ struct sample_event {
+ 	struct perf_event_header        header;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 9d682e5..6a629af 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -49,6 +49,21 @@ struct perf_evlist *perf_evlist__new(void)
+ 	return evlist;
  }
  
- void perf_event__output_id_sample(struct perf_event *event,
-@@ -4432,6 +4438,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 
- 	perf_output_put(handle, *header);
- 
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		perf_output_put(handle, data->id);
++/**
++ * perf_evlist__set_id_pos - set the positions of event ids.
++ * @evlist: selected event list
++ *
++ * Events with compatible sample types all have the same id_pos
++ * and is_pos.  For convenience, put a copy on evlist.
++ */
++void perf_evlist__set_id_pos(struct perf_evlist *evlist)
++{
++	struct perf_evsel *first = perf_evlist__first(evlist);
 +
- 	if (sample_type & PERF_SAMPLE_IP)
- 		perf_output_put(handle, data->ip);
++	evlist->id_pos = first->id_pos;
++	evlist->is_pos = first->is_pos;
++}
++
+ static void perf_evlist__purge(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos, *n;
+@@ -79,15 +94,20 @@ void perf_evlist__delete(struct perf_evlist *evlist)
+ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
+ {
+ 	list_add_tail(&entry->node, &evlist->entries);
+-	++evlist->nr_entries;
++	if (!evlist->nr_entries++)
++		perf_evlist__set_id_pos(evlist);
+ }
  
+ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 				   struct list_head *list,
+ 				   int nr_entries)
+ {
++	bool set_id_pos = !evlist->nr_entries;
++
+ 	list_splice_tail(list, &evlist->entries);
+ 	evlist->nr_entries += nr_entries;
++	if (set_id_pos)
++		perf_evlist__set_id_pos(evlist);
+ }
+ 
+ void __perf_evlist__set_leader(struct list_head *list)
+@@ -349,6 +369,55 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
+ 	return NULL;
+ }
+ 
++static int perf_evlist__event2id(struct perf_evlist *evlist,
++				 union perf_event *event, u64 *id)
++{
++	const u64 *array = event->sample.array;
++	ssize_t n;
++
++	n = (event->header.size - sizeof(event->header)) >> 3;
++
++	if (event->header.type == PERF_RECORD_SAMPLE) {
++		if (evlist->id_pos >= n)
++			return -1;
++		*id = array[evlist->id_pos];
++	} else {
++		if (evlist->is_pos > n)
++			return -1;
++		n -= evlist->is_pos;
++		*id = array[n];
++	}
++	return 0;
++}
++
++static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist *evlist,
++						   union perf_event *event)
++{
++	struct hlist_head *head;
++	struct perf_sample_id *sid;
++	int hash;
++	u64 id;
++
++	if (evlist->nr_entries == 1)
++		return perf_evlist__first(evlist);
++
++	if (perf_evlist__event2id(evlist, event, &id))
++		return NULL;
++
++	/* Synthesized events have an id of zero */
++	if (!id)
++		return perf_evlist__first(evlist);
++
++	hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
++	head = &evlist->heads[hash];
++
++	hlist_for_each_entry(sid, head, node) {
++		if (sid->id == id)
++			return sid->evsel;
++	}
++	return NULL;
++}
++
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+ {
+ 	struct perf_mmap *md = &evlist->mmap[idx];
+@@ -659,20 +728,40 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
+ 
+ bool perf_evlist__valid_sample_type(struct perf_evlist *evlist)
+ {
+-	struct perf_evsel *first = perf_evlist__first(evlist), *pos = first;
++	struct perf_evsel *pos;
+ 
+-	list_for_each_entry_continue(pos, &evlist->entries, node) {
+-		if (first->attr.sample_type != pos->attr.sample_type)
++	if (evlist->nr_entries == 1)
++		return true;
++
++	if (evlist->id_pos < 0 || evlist->is_pos < 0)
++		return false;
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		if (pos->id_pos != evlist->id_pos ||
++		    pos->is_pos != evlist->is_pos)
+ 			return false;
+ 	}
+ 
+ 	return true;
+ }
+ 
+-u64 perf_evlist__sample_type(struct perf_evlist *evlist)
++u64 __perf_evlist__combined_sample_type(struct perf_evlist *evlist)
+ {
+-	struct perf_evsel *first = perf_evlist__first(evlist);
+-	return first->attr.sample_type;
++	struct perf_evsel *evsel;
++
++	if (evlist->combined_sample_type)
++		return evlist->combined_sample_type;
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		evlist->combined_sample_type |= evsel->attr.sample_type;
++
++	return evlist->combined_sample_type;
++}
++
++u64 perf_evlist__combined_sample_type(struct perf_evlist *evlist)
++{
++	evlist->combined_sample_type = 0;
++	return __perf_evlist__combined_sample_type(evlist);
+ }
+ 
+ bool perf_evlist__valid_read_format(struct perf_evlist *evlist)
+@@ -727,6 +816,9 @@ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist)
+ 
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		size += sizeof(data->cpu) * 2;
++
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		size += sizeof(data->id);
+ out:
+ 	return size;
+ }
+@@ -885,7 +977,10 @@ int perf_evlist__start_workload(struct perf_evlist *evlist)
+ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
+ 			      struct perf_sample *sample)
+ {
+-	struct perf_evsel *evsel = perf_evlist__first(evlist);
++	struct perf_evsel *evsel = perf_evlist__event2evsel(evlist, event);
++
++	if (!evsel)
++		return -EFAULT;
+ 	return perf_evsel__parse_sample(evsel, event, sample);
+ }
+ 
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 327abab..ab95d72 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -32,6 +32,9 @@ struct perf_evlist {
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+ 	int		 mmap_len;
++	int		 id_pos;
++	int		 is_pos;
++	u64		 combined_sample_type;
+ 	struct {
+ 		int	cork_fd;
+ 		pid_t	pid;
+@@ -85,6 +88,8 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
+ int perf_evlist__open(struct perf_evlist *evlist);
+ void perf_evlist__close(struct perf_evlist *evlist);
+ 
++void perf_evlist__set_id_pos(struct perf_evlist *evlist);
++bool perf_can_sample_identifier(void);
+ void perf_evlist__config(struct perf_evlist *evlist,
+ 			 struct perf_record_opts *opts);
+ 
+@@ -121,7 +126,8 @@ void __perf_evlist__set_leader(struct list_head *list);
+ void perf_evlist__set_leader(struct perf_evlist *evlist);
+ 
+ u64 perf_evlist__read_format(struct perf_evlist *evlist);
+-u64 perf_evlist__sample_type(struct perf_evlist *evlist);
++u64 __perf_evlist__combined_sample_type(struct perf_evlist *evlist);
++u64 perf_evlist__combined_sample_type(struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(struct perf_evlist *evlist);
+ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7e328c4..db4e431 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -31,7 +31,7 @@ static struct {
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ 
+-static int __perf_evsel__sample_size(u64 sample_type)
++int __perf_evsel__sample_size(u64 sample_type)
+ {
+ 	u64 mask = sample_type & PERF_SAMPLE_MASK;
+ 	int size = 0;
+@@ -47,6 +47,72 @@ static int __perf_evsel__sample_size(u64 sample_type)
+ 	return size;
+ }
+ 
++/**
++ * __perf_evsel__calc_id_pos - calculate id_pos.
++ * @sample_type: sample type
++ *
++ * This function returns the position of the event id (PERF_SAMPLE_ID or
++ * PERF_SAMPLE_IDENTIFIER) in a sample event i.e. in the array of struct
++ * sample_event.
++ */
++static int __perf_evsel__calc_id_pos(u64 sample_type)
++{
++	int idx = 0;
++
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		return 0;
++
++	if (!(sample_type & PERF_SAMPLE_ID))
++		return -1;
++
++	if (sample_type & PERF_SAMPLE_IP)
++		idx += 1;
++
++	if (sample_type & PERF_SAMPLE_TID)
++		idx += 1;
++
++	if (sample_type & PERF_SAMPLE_TIME)
++		idx += 1;
++
++	if (sample_type & PERF_SAMPLE_ADDR)
++		idx += 1;
++
++	return idx;
++}
++
++/**
++ * __perf_evsel__calc_is_pos - calculate is_pos.
++ * @sample_type: sample type
++ *
++ * This function returns the position (counting backwards) of the event id
++ * (PERF_SAMPLE_ID or PERF_SAMPLE_IDENTIFIER) in a non-sample event i.e. if
++ * sample_id_all is used there is an id sample appended to non-sample events.
++ */
++static int __perf_evsel__calc_is_pos(u64 sample_type)
++{
++	int idx = 1;
++
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		return 1;
++
++	if (!(sample_type & PERF_SAMPLE_ID))
++		return -1;
++
++	if (sample_type & PERF_SAMPLE_CPU)
++		idx += 1;
++
++	if (sample_type & PERF_SAMPLE_STREAM_ID)
++		idx += 1;
++
++	return idx;
++}
++
++void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
++{
++	evsel->id_pos = __perf_evsel__calc_id_pos(evsel->attr.sample_type);
++	evsel->is_pos = __perf_evsel__calc_is_pos(evsel->attr.sample_type);
++}
++
+ void hists__init(struct hists *hists)
+ {
+ 	memset(hists, 0, sizeof(*hists));
+@@ -63,6 +129,7 @@ void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
+ 	if (!(evsel->attr.sample_type & bit)) {
+ 		evsel->attr.sample_type |= bit;
+ 		evsel->sample_size += sizeof(u64);
++		perf_evsel__calc_id_pos(evsel);
+ 	}
+ }
+ 
+@@ -72,12 +139,19 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
+ 	if (evsel->attr.sample_type & bit) {
+ 		evsel->attr.sample_type &= ~bit;
+ 		evsel->sample_size -= sizeof(u64);
++		perf_evsel__calc_id_pos(evsel);
+ 	}
+ }
+ 
+-void perf_evsel__set_sample_id(struct perf_evsel *evsel)
++void perf_evsel__set_sample_id(struct perf_evsel *evsel,
++			       bool can_sample_identifier)
+ {
+-	perf_evsel__set_sample_bit(evsel, ID);
++	if (can_sample_identifier) {
++		perf_evsel__reset_sample_bit(evsel, ID);
++		perf_evsel__set_sample_bit(evsel, IDENTIFIER);
++	} else {
++		perf_evsel__set_sample_bit(evsel, ID);
++	}
+ 	evsel->attr.read_format |= PERF_FORMAT_ID;
+ }
+ 
+@@ -90,6 +164,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
+ 	INIT_LIST_HEAD(&evsel->node);
+ 	hists__init(&evsel->hists);
+ 	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
++	perf_evsel__calc_id_pos(evsel);
+ }
+ 
+ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+@@ -509,7 +584,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		 * We need ID even in case of single event, because
+ 		 * PERF_SAMPLE_READ process ID specific data.
+ 		 */
+-		perf_evsel__set_sample_id(evsel);
++		perf_evsel__set_sample_id(evsel, false);
+ 
+ 		/*
+ 		 * Apply group format only if we belong to group
+@@ -1088,6 +1163,11 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 	array += ((event->header.size -
+ 		   sizeof(event->header)) / sizeof(u64)) - 1;
+ 
++	if (type & PERF_SAMPLE_IDENTIFIER) {
++		sample->id = *array;
++		array--;
++	}
++
+ 	if (type & PERF_SAMPLE_CPU) {
+ 		u.val64 = *array;
+ 		if (swapped) {
+@@ -1184,6 +1264,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+ 		return -EFAULT;
+ 
++	data->id = -1ULL;
++	if (type & PERF_SAMPLE_IDENTIFIER) {
++		data->id = *array;
++		array++;
++	}
++
+ 	if (type & PERF_SAMPLE_IP) {
+ 		data->ip = *array;
+ 		array++;
+@@ -1214,7 +1300,6 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
+ 	}
+ 
+-	data->id = -1ULL;
+ 	if (type & PERF_SAMPLE_ID) {
+ 		data->id = *array;
+ 		array++;
+@@ -1396,6 +1481,11 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 
+ 	array = event->sample.array;
+ 
++	if (type & PERF_SAMPLE_IDENTIFIER) {
++		*array = sample->id;
++		array++;
++	}
++
+ 	if (type & PERF_SAMPLE_IP) {
+ 		*array = sample->ip;
+ 		array++;
+@@ -1584,6 +1674,7 @@ static int sample_type__fprintf(FILE *fp, bool *first, u64 value)
+ 		bit_name(READ), bit_name(CALLCHAIN), bit_name(ID), bit_name(CPU),
+ 		bit_name(PERIOD), bit_name(STREAM_ID), bit_name(RAW),
+ 		bit_name(BRANCH_STACK), bit_name(REGS_USER), bit_name(STACK_USER),
++		bit_name(IDENTIFIER),
+ 		{ .name = NULL, }
+ 	};
+ #undef bit_name
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 532a5f9..4a7bdc7 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -48,6 +48,12 @@ struct perf_sample_id {
+  * @name - Can be set to retain the original event name passed by the user,
+  *         so that when showing results in tools such as 'perf stat', we
+  *         show the name used, not some alias.
++ * @id_pos: the position of the event id (PERF_SAMPLE_ID or
++ *          PERF_SAMPLE_IDENTIFIER) in a sample event i.e. in the array of
++ *          struct sample_event
++ * @is_pos: the position (counting backwards) of the event id (PERF_SAMPLE_ID or
++ *          PERF_SAMPLE_IDENTIFIER) in a non-sample event i.e. if sample_id_all
++ *          is used there is an id sample appended to non-sample events
+  */
+ struct perf_evsel {
+ 	struct list_head	node;
+@@ -74,6 +80,8 @@ struct perf_evsel {
+ 	} handler;
+ 	struct cpu_map		*cpus;
+ 	unsigned int		sample_size;
++	int			id_pos;
++	int			is_pos;
+ 	bool 			supported;
+ 	bool 			needs_swap;
+ 	/* parse modifier helper */
+@@ -104,6 +112,9 @@ void perf_evsel__delete(struct perf_evsel *evsel);
+ void perf_evsel__config(struct perf_evsel *evsel,
+ 			struct perf_record_opts *opts);
+ 
++int __perf_evsel__sample_size(u64 sample_type);
++void perf_evsel__calc_id_pos(struct perf_evsel *evsel);
++
+ bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
+ 
+ #define PERF_EVSEL__MAX_ALIASES 8
+@@ -142,7 +153,8 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
+ #define perf_evsel__reset_sample_bit(evsel, bit) \
+ 	__perf_evsel__reset_sample_bit(evsel, PERF_SAMPLE_##bit)
+ 
+-void perf_evsel__set_sample_id(struct perf_evsel *evsel);
++void perf_evsel__set_sample_id(struct perf_evsel *evsel,
++			       bool use_sample_identifier);
+ 
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter);
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index 9b5ef79..18d73aa 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -1,11 +1,83 @@
+ #include "evlist.h"
+ #include "evsel.h"
+ #include "cpumap.h"
++#include "parse-events.h"
++
++typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
++
++static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
++{
++	struct perf_evlist *evlist;
++	struct perf_evsel *evsel;
++	int err = -EAGAIN, fd;
++
++	evlist = perf_evlist__new();
++	if (!evlist)
++		return -ENOMEM;
++
++	if (parse_events(evlist, str))
++		goto out_delete;
++
++	evsel = perf_evlist__first(evlist);
++
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	if (fd < 0)
++		goto out_delete;
++	close(fd);
++
++	fn(evsel);
++
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	if (fd < 0) {
++		if (errno == EINVAL)
++			err = -EINVAL;
++		goto out_delete;
++	}
++	close(fd);
++	err = 0;
++
++out_delete:
++	perf_evlist__delete(evlist);
++	return err;
++}
++
++static bool perf_probe_api(setup_probe_fn_t fn)
++{
++	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock", NULL};
++	struct cpu_map *cpus;
++	int cpu, ret, i = 0;
++
++	cpus = cpu_map__new(NULL);
++	if (!cpus)
++		return false;
++	cpu = cpus->map[0];
++	cpu_map__delete(cpus);
++
++	do {
++		ret = perf_do_probe_api(fn, cpu, try[i++]);
++		if (!ret)
++			return true;
++	} while (ret == -EAGAIN && try[i]);
++
++	return false;
++}
++
++static void perf_probe_sample_identifier(struct perf_evsel *evsel)
++{
++	evsel->attr.sample_type |= PERF_SAMPLE_IDENTIFIER;
++}
++
++bool perf_can_sample_identifier(void)
++{
++	return perf_probe_api(perf_probe_sample_identifier);
++}
+ 
+ void perf_evlist__config(struct perf_evlist *evlist,
+ 			struct perf_record_opts *opts)
+ {
+ 	struct perf_evsel *evsel;
++	bool use_sample_identifier = false;
++
+ 	/*
+ 	 * Set the evsel leader links before we configure attributes,
+ 	 * since some might depend on this info.
+@@ -16,10 +88,21 @@ void perf_evlist__config(struct perf_evlist *evlist,
+ 	if (evlist->cpus->map[0] < 0)
+ 		opts->no_inherit = true;
+ 
+-	list_for_each_entry(evsel, &evlist->entries, node) {
++	list_for_each_entry(evsel, &evlist->entries, node)
+ 		perf_evsel__config(evsel, opts);
+ 
+-		if (evlist->nr_entries > 1)
+-			perf_evsel__set_sample_id(evsel);
++	if (evlist->nr_entries > 1) {
++		struct perf_evsel *first = perf_evlist__first(evlist);
++
++		list_for_each_entry(evsel, &evlist->entries, node) {
++			if (evsel->attr.sample_type == first->attr.sample_type)
++				continue;
++			use_sample_identifier = perf_can_sample_identifier();
++			break;
++		}
++		list_for_each_entry(evsel, &evlist->entries, node)
++			perf_evsel__set_sample_id(evsel, use_sample_identifier);
+ 	}
++
++	perf_evlist__set_id_pos(evlist);
+ }
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index c3ac483..07642a7 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -739,7 +739,7 @@ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+ {
+-	u64 sample_type = perf_evlist__sample_type(session->evlist);
++	u64 sample_type = __perf_evlist__combined_sample_type(session->evlist);
+ 
+ 	if (event->header.type != PERF_RECORD_SAMPLE &&
+ 	    !perf_evlist__sample_id_all(session->evlist)) {
