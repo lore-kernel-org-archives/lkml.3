@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3HaMWx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 08:22:53 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51445 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab3HaMWv (ORCPT
+	id S1754327Ab3HaNHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 09:07:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44760 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3HaNHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 08:22:51 -0400
-Date: Sat, 31 Aug 2013 13:17:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, devicetree@vger.kernel.org,
+	Sat, 31 Aug 2013 09:07:52 -0400
+Date: Sat, 31 Aug 2013 14:07:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: Dove: Add the audio device to the Cubox DT
-Message-ID: <20130831121705.GE6617@n2100.arm.linux.org.uk>
-References: <20130828113521.35c53365@armhf> <521DCD80.9010105@gmail.com> <20130831125128.0e3a23c7@armhf> <20130831112430.GD6617@n2100.arm.linux.org.uk> <20130831135519.6ab0e163@armhf>
+Message-ID: <20130831130741.GG18608@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YH9Qf6Fh2G5kB/85"
 Content-Disposition: inline
-In-Reply-To: <20130831135519.6ab0e163@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 01:55:19PM +0200, Jean-Francois Moine wrote:
-> The last case was "when using the two audio controllers with different
-> sample rates" (I should have added "in the set [44.1, 48, 96 kHz]").
-> Then, with or without the availability of external clocks, both
-> controllers will set the unique DCO to two different rates.
 
-Ah, yes.  The documentation is rather confusing too.  In one part, it
-does indeed say that there is only one DCO which is shared between the
-two blocks.
+--YH9Qf6Fh2G5kB/85
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-However, each block has its own DCO register which allows it to be set
-to a different frequency - maybe it accesses the same physical register.
+This patch series removes the use of the ASoC-level read and write
+functions from the cq93vc driver as part of a wider push to remove them
+completely and just use regmap for all register I/O.  Since the driver
+is essentially doing what regmap-mmio is doing this is done by adding a
+MMIO regmap to the core device and using that.  This is compile tested
+only, I don't have any hardware to run on.
 
-In which case, it probably would be better that we use the external clock
-for everything when it is available - Rabeeh's kernel already does that,
-as does the kernel which I run on my Cubox.  I'll pull that patch over to
-the series for mainline later today:
+Since I anticipate doing more cleanups over the CODEC drivers during the
+next release cycle it'd be good to merge via ASoC, though there
+shouldn't be any overlap with the first patch.
 
-a402fa7 ASoC: kirkwood: prefer external clock over internal clock
+Mark Brown (5):
+      mfd: davinci_voicecodec: Remove unused read and write functions
+      mfd: davinci_voicecodec: Provide a regmap for register I/O
+      ASoC: cq93vc: Use core I/O functions
+      ASoC: cq93vc: Don't use control data for core driver data
+      ASoC: cq93vc: Use regmap for I/O
 
-(This is copy'n'pasted with gpm, so is white-space damaged).
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index 1c8177b..92cd467 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -222,20 +222,20 @@ static void kirkwood_set_rate(struct snd_soc_dai *dai,
- {
-        uint32_t clks_ctrl;
+ drivers/mfd/davinci_voicecodec.c       | 23 +++++++++++--------
+ include/linux/mfd/davinci_voicecodec.h |  3 +++
+ sound/soc/codecs/cq93vc.c              | 42 +++++++++++-----------------------
+ 3 files changed, 29 insertions(+), 39 deletions(-)
 
--       if (rate == 44100 || rate == 48000 || rate == 96000) {
--               /* use internal dco for supported rates */
--               dev_dbg(dai->dev, "%s: dco set rate = %lu\n",
--                       __func__, rate);
--               kirkwood_set_dco(priv->io, rate);
--
--               clks_ctrl = KIRKWOOD_MCLK_SOURCE_DCO;
--       } else if (!IS_ERR(priv->extclk)) {
-+       if (!IS_ERR(priv->extclk)) {
-                /* use optional external clk for other rates */
-                dev_dbg(dai->dev, "%s: extclk set rate = %lu -> %lu\n",
-                        __func__, rate, 256 * rate);
-                clk_set_rate(priv->extclk, 256 * rate);
 
-                clks_ctrl = KIRKWOOD_MCLK_SOURCE_EXTCLK;
-+       } else if (rate == 44100 || rate == 48000 || rate == 96000) {
-+               /* use internal dco for supported rates */
-+               dev_dbg(dai->dev, "%s: dco set rate = %lu\n",
-+                       __func__, rate);
-+               kirkwood_set_dco(priv->io, rate);
-+
-+               clks_ctrl = KIRKWOOD_MCLK_SOURCE_DCO;
-        }
-        writel(clks_ctrl, priv->io + KIRKWOOD_CLOCKS_CTRL);
- }
+--YH9Qf6Fh2G5kB/85
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSIeqaAAoJELSic+t+oim9g0kQAJqC4LjvgDuA0CCBWMDiu1t1
+9mMl8fTqQmk+IWRTkKMgkEWz4+k5LIaCDp9y4ITS65J7YbaHZrOQJmrnRtXJUL3f
+qQPPstoIcnn88cyEXI3ssw65lY6A3G4+fG7b2lDqGfkqsUwpzkGaPm69w6TXyFsj
++b5ZWqAQgSbpVHrtwL9VCYepHsCIWUEd/OaAvDl2a0ygfj3A1NPiYl8Clpe8fEKy
+0nhBVkYZwqqPGRY4yWaNh2t/8EWhy9ZmLxOsx+/I2jRrKp64LxeTu+Sr3ZBQxcJj
+/DW2P25EoUTFhlXSTQbgFjuzQovZTAFB3VoVOvs43vJGML5oq1jZJ7YO75aRKien
+azvGo4IjXpiStmiGHw+e2/aQ+AD9mz0txyoFHQJfLKpQT0YdVk+d1dBxFwl53wZw
+Cbx8pe1OQRjqT0ZrLuwRADqMWw9r3vZ44DEPHe6CdwsD+gS50b1MGbeMTMtkV1Y2
+FlTC1EsnSTEq+uIjUNF8d7eU+BgQNLywcyPJC+CKaYntKDnEDC08eYR+tNReDqQL
+k+OQE4bZeiyrL+bLXiNOH/VfyE05AvwBF3qzkzvUuSnY+a/VgC6tRUSTda03DQjx
+Gc7jkAHSdjOjGUOdz1GpEA6UaGere0sJUhyPMf5Q2We1C7iYDqmUpuOi4e7eg1Q0
+K2tW0WHuxedUy6a8aFks
+=Bh88
+-----END PGP SIGNATURE-----
+
+--YH9Qf6Fh2G5kB/85--
