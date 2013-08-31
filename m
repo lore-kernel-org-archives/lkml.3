@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab3HaAJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 20:09:23 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:62890 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3HaAJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 20:09:22 -0400
-Message-ID: <52213433.5070603@cogentembedded.com>
-Date: Sat, 31 Aug 2013 04:09:23 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754969Ab3HaANk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 20:13:40 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45968 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751896Ab3HaANj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Aug 2013 20:13:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>, hpa@linux.intel.com
+Cc: mingo@redhat.com, tglx@linutronix.de, gregkh@linuxfoundation.org,
+        benh@kernel.crashing.org, linux-acpi@vger.kernel.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        nfont@linux.vnet.ibm.com, fenghua.yu@intel.com, bp@suse.de,
+        srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH v2 1/4] hotplug, x86: Fix online state in cpu0 debug interface
+Date: Sat, 31 Aug 2013 02:24:22 +0200
+Message-ID: <2774711.qY7OXM5Wgn@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1377822129-4143-2-git-send-email-toshi.kani@hp.com>
+References: <1377822129-4143-1-git-send-email-toshi.kani@hp.com> <1377822129-4143-2-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
-To: vinod.koul@intel.com
-CC: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        max.filippov@cogentembedded.com
-Subject: Re: [PATCH v3] dma: add driver for R-Car HPB-DMAC
-References: <201308250033.24936.sergei.shtylyov@cogentembedded.com>
-In-Reply-To: <201308250033.24936.sergei.shtylyov@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Peter,
 
-On 08/25/2013 12:33 AM, Sergei Shtylyov wrote:
+Any objections here?
 
-> From: Max Filippov <max.filippov@cogentembedded.com>
-
-> Add support for HPB-DMAC found in Renesas R-Car SoCs, using 'shdma-base' DMA
-> driver framework.
-
-> Based on the original patch by Phil Edworthy <phil.edworthy@renesas.com>.
-
-> Signed-off-by: Max Filippov <max.filippov@cogentembedded.com>
-> [Sergei: removed useless #include, sorted #include's, fixed HPB_DMA_TCR_MAX,
-> fixed formats and removed line breaks in the dev_dbg() calls, rephrased and
-> added IRQ # to the shdma_request_irq() failure message, added MODULE_AUTHOR(),
-> removed '__init'/'__exit' annotations from the probe()/remove() methods, removed
-> '__initdata' annotation from 'hpb_dmae_driver', fixed guard macro name in the
-> header file, fixed #define ASYNCRSTR_ASRST20, added #define ASYNCRSTR_ASRST24,
-> added the necessary runtime PM calls to the probe() and remove() methods,
-> handled errors returned by dma_async_device_register(), beautified comments
-> and #define's.]
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-
-    Vinod, we've posted the updated patch almost a week ago. Is there any hope 
-to get it into 3.12?
-
-WBR, Sergei
-
+On Thursday, August 29, 2013 06:22:06 PM Toshi Kani wrote:
+> _debug_hotplug_cpu() is a debug interface that puts cpu0 offline during
+> boot-up when CONFIG_DEBUG_HOTPLUG_CPU0 is set.  After cpu0 is put offline
+> in this interface, however, /sys/devices/system/cpu/cpu0/online still
+> shows 1 (online).
+> 
+> This patch fixes _debug_hotplug_cpu() to update dev->offline when CPU
+> online/offline operation succeeded.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  arch/x86/kernel/topology.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+> index 6e60b5f..5823bbd 100644
+> --- a/arch/x86/kernel/topology.c
+> +++ b/arch/x86/kernel/topology.c
+> @@ -72,16 +72,19 @@ int __ref _debug_hotplug_cpu(int cpu, int action)
+>  		ret = cpu_down(cpu);
+>  		if (!ret) {
+>  			pr_info("CPU %u is now offline\n", cpu);
+> +			dev->offline = true;
+>  			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+>  		} else
+>  			pr_debug("Can't offline CPU%d.\n", cpu);
+>  		break;
+>  	case 1:
+>  		ret = cpu_up(cpu);
+> -		if (!ret)
+> +		if (!ret) {
+> +			dev->offline = false;
+>  			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+> -		else
+> +		} else {
+>  			pr_debug("Can't online CPU%d.\n", cpu);
+> +		}
+>  		break;
+>  	default:
+>  		ret = -EINVAL;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
