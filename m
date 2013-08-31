@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3HaARp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Aug 2013 20:17:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25840 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3HaARo (ORCPT
+	id S1756011Ab3HaATM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Aug 2013 20:19:12 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:30356 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab3HaATK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Aug 2013 20:17:44 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDI8IL8UnGoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BKUXQ1-ENX0A:10 a=oGMlB6cnAAAA:8 a=wOi4EB80K7dENFIYKtwA:9 a=CjuIK1q_8ugA:10 a=CY6gl2JlH4YA:10 a=cF139LqdMeMA:10 a=hZlwetKCklQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 30 Aug 2013 20:17:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled
- DYNAMIC_FTRACE
-Message-ID: <20130830201741.07fea07f@gandalf.local.home>
-In-Reply-To: <52210537.2070805@zytor.com>
-References: <5217908E.2040702@siemens.com>
-	<5220BC1A.3030108@zytor.com>
-	<20130830115142.1ee4c825@gandalf.local.home>
-	<5220C9C6.5020808@zytor.com>
-	<20130830130331.1e260e85@gandalf.local.home>
-	<52210537.2070805@zytor.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Fri, 30 Aug 2013 20:19:10 -0400
+Message-ID: <1377908257.10300.896.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/3] ACPI / scan: Change ordering of locks for device
+ hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org
+Date: Fri, 30 Aug 2013 18:17:37 -0600
+In-Reply-To: <1752041.76DW3TEE1A@vostro.rjw.lan>
+References: <9589253.Co8jZpnWdd@vostro.rjw.lan>
+	 <1752041.76DW3TEE1A@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Aug 2013 13:48:55 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> >> You *could* bail out of the calling address is < PAGE_OFFSET.
+On Thu, 2013-08-29 at 23:15 +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Anyway... can we add this to the static tracing code?  It is two
-> instructions and is only needed on x86-32.  For performance, use dynamic.
+> Change the ordering of device hotplug locks in scan.c so that
+> acpi_scan_lock is always acquired after device_hotplug_lock.
+> 
+> This will make it possible to use device_hotplug_lock around some
+> code paths that acquire acpi_scan_lock safely (most importantly
+> system suspend and hibernation).  Apart from that, acpi_scan_lock
+> is platform-specific and device_hotplug_lock is general, so the
+> new ordering appears to be more appropriate from the overall
+> design viewpoint.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Sure, do you want to add it ?
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
--- Steve
+Thanks,
+-Toshi
+
 
