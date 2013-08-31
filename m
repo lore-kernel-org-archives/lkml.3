@@ -1,140 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab3HaLHg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 07:07:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4514 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753602Ab3HaLHf convert rfc822-to-8bit (ORCPT
+	id S1754059Ab3HaL3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 07:29:35 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40088 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3HaL3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 07:07:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,997,1367996400"; 
-   d="scan'208";a="396364073"
-From: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-To: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "mingo@kernel.org" <mingo@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "jolsa@redhat.com" <jolsa@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Subject: RE: [RFC][PATCH 17/18 v2] ftrace/cpuidle/x86: Mark functions that
- are RCU unsafe
-Thread-Topic: [RFC][PATCH 17/18 v2] ftrace/cpuidle/x86: Mark functions that
- are RCU unsafe
-Thread-Index: AQHOpglW5XYR6imBrky9yFcyCnwDFJmvKH4O
-Date: Sat, 31 Aug 2013 11:07:29 +0000
-Message-ID: <niy9r1aodpxs3r912ut902gi.1377947166977@email.android.com>
-References: <20130831051117.884125230@goodmis.org>,<20130831051703.241036187@goodmis.org>
-In-Reply-To: <20130831051703.241036187@goodmis.org>
-Reply-To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
+	Sat, 31 Aug 2013 07:29:33 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Sat, 31 Aug 2013 12:29:16 +0100
+Message-Id: <1377948564-8383-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 01/11] regulator: core: Provide managed regulator registration
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Mark Brown <broonie@linaro.org>
 
+Many regulator drivers have a remove function that consists solely of
+calling regulator_unregister() so provide a devm_regulator_register()
+in order to allow this repeated code to be removed and help eliminate
+error handling code.
 
-
-
-Sent from a tablet, I apologize for formatting issues.
-
-Steven Rostedt <rostedt@goodmis.org> wrote:
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-
-Some callbacks of the function tracer use rcu_read_lock(). This means that
-there's places that can not be traced because RCU is not tracking the CPU
-for various reasons (like NO_HZ_FULL and coming back from userspace).
-
-Thes functions need to be marked so that callbacks that use RCU do not
-trace them.
-
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- arch/x86/kernel/process.c |    2 ++
- drivers/cpuidle/cpuidle.c |    2 ++
- kernel/cpu/idle.c         |    2 ++
- 3 files changed, 6 insertions(+)
+ drivers/regulator/core.c         | 66 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/regulator/driver.h |  5 +++
+ 2 files changed, 71 insertions(+)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 83369e5..18739cd 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -17,6 +17,7 @@
- #include <linux/stackprotector.h>
- #include <linux/tick.h>
- #include <linux/cpuidle.h>
-+#include <linux/ftrace.h>
- #include <trace/events/power.h>
- #include <linux/hw_breakpoint.h>
- #include <asm/cpu.h>
-@@ -316,6 +317,7 @@ void default_idle(void)
- #ifdef CONFIG_APM_MODULE
- EXPORT_SYMBOL(default_idle);
- #endif
-+FTRACE_UNSAFE_RCU(default_idle);
-
- #ifdef CONFIG_XEN
- bool xen_set_default_idle(void)
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index fdc432f..9515457 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -19,6 +19,7 @@
- #include <linux/ktime.h>
- #include <linux/hrtimer.h>
- #include <linux/module.h>
-+#include <linux/ftrace.h>
- #include <trace/events/power.h>
-
- #include "cpuidle.h"
-@@ -168,6 +169,7 @@ int cpuidle_idle_call(void)
-
-         return 0;
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index a01b8b3..5f995d2 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3492,6 +3492,44 @@ clean:
  }
-+FTRACE_UNSAFE_RCU(cpuidle_idle_call);
-
+ EXPORT_SYMBOL_GPL(regulator_register);
+ 
++static void devm_rdev_release(struct device *dev, void *res)
++{
++	regulator_unregister(*(struct regulator_dev **)res);
++}
++
++/**
++ * devm_regulator_register - Resource managed regulator_register()
++ * @regulator_desc: regulator to register
++ * @config: runtime configuration for regulator
++ *
++ * Called by regulator drivers to register a regulator.  Returns a
++ * valid pointer to struct regulator_dev on success or an ERR_PTR() on
++ * error.  The regulator will automaticall be released when the device
++ * is unbound.
++ */
++struct regulator_dev *devm_regulator_register(struct device *dev,
++				  const struct regulator_desc *regulator_desc,
++				  const struct regulator_config *config)
++{
++	struct regulator_dev **ptr, *rdev;
++
++	ptr = devres_alloc(devm_rdev_release, sizeof(*ptr),
++			   GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	rdev = regulator_register(regulator_desc, config);
++	if (!IS_ERR(rdev)) {
++		*ptr = rdev;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return rdev;
++}
++EXPORT_SYMBOL_GPL(devm_regulator_register);
++
  /**
-  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index e695c0a..d9d290f 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -5,6 +5,7 @@
- #include <linux/cpu.h>
- #include <linux/tick.h>
- #include <linux/mm.h>
-+#include <linux/ftrace.h>
- #include <linux/stackprotector.h>
-
- #include <asm/tlb.h>
-@@ -61,6 +62,7 @@ void __weak arch_cpu_idle(void)
-         cpu_idle_force_poll = 1;
-         local_irq_enable();
+  * regulator_unregister - unregister regulator
+  * @rdev: regulator to unregister
+@@ -3521,6 +3559,34 @@ void regulator_unregister(struct regulator_dev *rdev)
  }
-+FTRACE_UNSAFE_RCU(arch_cpu_idle);
-
- /*
-  * Generic idle loop implementation
---
-1.7.10.4
-
-
----------------------------------------------------------------------
-Intel Technology Poland sp. z o.o.
-ul. Slowackiego 173 | 80-298 Gdansk | Sad Rejonowy Gdansk Polnoc | VII Wydzial Gospodarczy Krajowego Rejestru Sadowego - KRS 101882 | NIP 957-07-52-316 | Kapital zakladowy 200.000 PLN.
-
-Ta wiadomosc wraz z zalacznikami jest przeznaczona dla okreslonego adresata i moze zawierac informacje poufne. W razie przypadkowego otrzymania tej wiadomosci, prosimy o powiadomienie nadawcy oraz trwale jej usuniecie; jakiekolwiek przegladanie lub rozpowszechnianie jest zabronione.
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). If you are not the intended recipient, please contact the sender and delete all copies; any review or distribution by others is strictly prohibited.
+ EXPORT_SYMBOL_GPL(regulator_unregister);
+ 
++static int devm_rdev_match(struct device *dev, void *res, void *data)
++{
++	struct regulator_dev **r = res;
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++	return *r == data;
++}
++
++/**
++ * devm_regulator_unregister - Resource managed regulator_unregister()
++ * @regulator: regulator to free
++ *
++ * Unregister a regulator registered with devm_regulator_register().
++ * Normally this function will not need to be called and the resource
++ * management code will ensure that the resource is freed.
++ */
++void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev)
++{
++	int rc;
++
++	rc = devres_release(dev, devm_rdev_release, devm_rdev_match, rdev);
++	if (rc != 0)
++		WARN_ON(rc);
++}
++EXPORT_SYMBOL_GPL(devm_regulator_unregister);
++
+ /**
+  * regulator_suspend_prepare - prepare regulators for system wide suspend
+  * @state: system suspend state
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 67e13aa..8474c7f 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -334,7 +334,12 @@ struct regulator_dev {
+ struct regulator_dev *
+ regulator_register(const struct regulator_desc *regulator_desc,
+ 		   const struct regulator_config *config);
++struct regulator_dev *
++devm_regulator_register(struct device *dev,
++			const struct regulator_desc *regulator_desc,
++			const struct regulator_config *config);
+ void regulator_unregister(struct regulator_dev *rdev);
++void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev);
+ 
+ int regulator_notifier_call_chain(struct regulator_dev *rdev,
+ 				  unsigned long event, void *data);
+-- 
+1.8.4.rc3
 
