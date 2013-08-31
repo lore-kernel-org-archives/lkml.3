@@ -1,213 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3HaW40 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 18:56:26 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51803 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913Ab3HaW4Z (ORCPT
+	id S1754937Ab3HaXHi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 19:07:38 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59776 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3HaXHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 18:56:25 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] staging: dgrp: Convert to use device_create_with_groups
-Date: Sat, 31 Aug 2013 15:56:06 -0700
-Message-Id: <1377989766-7462-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sat, 31 Aug 2013 19:07:36 -0400
+Message-ID: <1377990885.32763.335.camel@haakon3.risingtidesystems.com>
+Subject: Re: [GIT PULL -v2] target fixes for v3.11
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>, CAD <cad.ext@larioja.org>
+Date: Sat, 31 Aug 2013 16:14:45 -0700
+In-Reply-To: <1377921190.32763.327.camel@haakon3.risingtidesystems.com>
+References: <1377921190.32763.327.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use device_create_with_groups to create sysfs attributes together with device.
-Also create class attribute together with class registration.
-This simplifies the code and ensures that attribute files exist when udev
-events are generated.
+Hi again Linus,
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-I suspect that the 'register_with_sysfs' attribute exists to work around
-the problem solved with this patch. It doesn't make much sense otherwise.
-Can it be removed ?
+On Fri, 2013-08-30 at 20:53 -0700, Nicholas A. Bellinger wrote:
+> Hi Linus,
+> 
+> Here is a -v2 PULL request for the current set of target-pending fixes
+> for v3.11.  These fixes have not hit mainline yet, so I'm resending them
+> now to be sure they hit v3.11 before the merge window opens.  Please let
+> me know if you have any concerns with the series.
+> 
+> The original PULL request from last Saturday is here:
+> 
+> http://marc.info/?l=linux-kernel&m=137737916904812&w=2
+> 
+> Please go ahead and pull from:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+> 
+> The first patch is to address a long standing issue where INQUIRY vendor
+> + model response data was not correctly padded with ASCII spaces,
+> causing MSFT and Falconstor multipath stacks to not function with our
+> LUNs.
+> 
+> The remaining patches are additional iscsi-target regression fixes for
+> the post >= v3.10 iser-target changes.  The second and third are failure
+> cases that have appeared during further testing, and the forth is only
+> reproducible with malformed NOP packets.
+> 
+> The last three patches are CC'ed to stable, and the first one will be
+> sent to Greg-KH separately.
+> 
 
-Compile tested only.
+One more late v3.11 specific regression fix has been pushed into
+target-pending/master for this series.
 
- drivers/staging/dgrp/dgrp_sysfs.c |   97 +++++++++++++++----------------------
- 1 file changed, 39 insertions(+), 58 deletions(-)
+The updated diffstat should read:
 
-diff --git a/drivers/staging/dgrp/dgrp_sysfs.c b/drivers/staging/dgrp/dgrp_sysfs.c
-index 8cee9c8..b65fa83 100644
---- a/drivers/staging/dgrp/dgrp_sysfs.c
-+++ b/drivers/staging/dgrp/dgrp_sysfs.c
-@@ -31,7 +31,6 @@
- #define SERIAL_TYPE_XPRINT      3
+Nicholas Bellinger (5):
+  target: Fix trailing ASCII space usage in INQUIRY vendor+model
+  iscsi-target: Fix ImmediateData=Yes failure regression in >= v3.10
+  iscsi-target: Fix iscsit_transport reference leak during NP thread
+    reset
+  iscsi-target: Fix potential NULL pointer in solicited NOPOUT reject
+  target: Fix se_cmd->state_list leak regression during WRITE failure
+
+ drivers/target/iscsi/iscsi_target.c       |   17 ++++++++++-------
+ drivers/target/iscsi/iscsi_target_login.c |    9 ++++-----
+ drivers/target/target_core_spc.c          |    9 ++++++---
+ drivers/target/target_core_transport.c    |   11 +++++++++++
+ 4 files changed, 31 insertions(+), 15 deletions(-)
+
+The full diff is included below.
+
+Please PULL.
+
+Thank you,
+
+--nab
+
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index f73da43..3a17930 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1086,7 +1086,6 @@ int iscsit_process_scsi_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+                if (cmd->reject_reason)
+                        return 0;
  
+-               target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+                return 1;
+        }
+        /*
+@@ -1124,14 +1123,10 @@ after_immediate_data:
+                 */
+                cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd,
+                                        (unsigned char *)hdr, hdr->cmdsn);
+-               if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
++               if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+                        return -1;
+-               } else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+-                       target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+-                       return 0;
+-               }
  
--static struct class *dgrp_class;
- static struct device *dgrp_class_nodes_dev;
- static struct device *dgrp_class_global_settings_dev;
+-               if (cmd->sense_reason) {
++               if (cmd->sense_reason || cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+                        int rc;
  
-@@ -41,8 +40,17 @@ static ssize_t dgrp_class_version_show(struct class *class,
- {
- 	return snprintf(buf, PAGE_SIZE, "%s\n", DIGI_VERSION);
- }
--static CLASS_ATTR(driver_version, 0400, dgrp_class_version_show, NULL);
- 
-+struct class_attribute dgrp_class_attrs[] = {
-+	__ATTR(driver_version, 0400, dgrp_class_version_show, NULL),
-+	{ }
-+};
+                        rc = iscsit_dump_data_payload(cmd->conn,
+@@ -1527,6 +1522,10 @@ int iscsit_setup_nop_out(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+        if (hdr->itt == RESERVED_ITT && !(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
+                pr_err("NOPOUT ITT is reserved, but Immediate Bit is"
+                        " not set, protocol error.\n");
++               if (!cmd)
++                       return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++                                                (unsigned char *)hdr);
 +
-+static struct class dgrp_class = {
-+	.owner = THIS_MODULE,
-+	.name = "digi_realport",
-+	.class_attrs = dgrp_class_attrs,
-+};
+                return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR,
+                                         (unsigned char *)hdr);
+        }
+@@ -1536,6 +1535,10 @@ int iscsit_setup_nop_out(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+                        " greater than MaxXmitDataSegmentLength: %u, protocol"
+                        " error.\n", payload_length,
+                        conn->conn_ops->MaxXmitDataSegmentLength);
++               if (!cmd)
++                       return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++                                                (unsigned char *)hdr);
++
+                return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR,
+                                         (unsigned char *)hdr);
+        }
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index 3402241..bc788c5 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1163,12 +1163,11 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
+                if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+                        spin_unlock_bh(&np->np_thread_lock);
+                        complete(&np->np_restart_comp);
+-                       if (ret == -ENODEV) {
+-                               iscsit_put_transport(conn->conn_transport);
+-                               kfree(conn);
+-                               conn = NULL;
++                       iscsit_put_transport(conn->conn_transport);
++                       kfree(conn);
++                       conn = NULL;
++                       if (ret == -ENODEV)
+                                goto out;
+-                       }
+                        /* Get another socket */
+                        return 1;
+                }
+diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
+index 4cb667d..9fabbf7 100644
+--- a/drivers/target/target_core_spc.c
++++ b/drivers/target/target_core_spc.c
+@@ -97,9 +97,12 @@ spc_emulate_inquiry_std(struct se_cmd *cmd, unsigned char *buf)
  
- static ssize_t dgrp_class_register_with_sysfs_show(struct device *c,
- 						   struct device_attribute *attr,
-@@ -83,51 +91,41 @@ static struct attribute_group dgrp_global_settings_attribute_group = {
- 	.attrs = dgrp_sysfs_global_settings_entries,
- };
+        buf[7] = 0x2; /* CmdQue=1 */
  
--
-+static const struct attribute_group *dgrp_global_settings_attribute_groups[] = {
-+	&dgrp_global_settings_attribute_group,
-+	NULL
-+};
+-       snprintf(&buf[8], 8, "LIO-ORG");
+-       snprintf(&buf[16], 16, "%s", dev->t10_wwn.model);
+-       snprintf(&buf[32], 4, "%s", dev->t10_wwn.revision);
++       memcpy(&buf[8], "LIO-ORG ", 8);
++       memset(&buf[16], 0x20, 16);
++       memcpy(&buf[16], dev->t10_wwn.model,
++              min_t(size_t, strlen(dev->t10_wwn.model), 16));
++       memcpy(&buf[32], dev->t10_wwn.revision,
++              min_t(size_t, strlen(dev->t10_wwn.revision), 4));
+        buf[4] = 31; /* Set additional length to 31 */
  
- int dgrp_create_class_sysfs_files(void)
+        return 0;
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 7172d00..d8e49d7 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2134,6 +2134,7 @@ static void transport_write_pending_qf(struct se_cmd *cmd)
+ 
+ int transport_generic_free_cmd(struct se_cmd *cmd, int wait_for_tasks)
  {
--	int ret = 0;
-+	int ret;
- 	int max_majors = 1U << (32 - MINORBITS);
++       unsigned long flags;
+        int ret = 0;
  
--	dgrp_class = class_create(THIS_MODULE, "digi_realport");
--	if (IS_ERR(dgrp_class))
--		return PTR_ERR(dgrp_class);
--	ret = class_create_file(dgrp_class, &class_attr_driver_version);
-+	ret = class_register(&dgrp_class);
- 	if (ret)
--		goto err_class;
-+		return ret;
+        if (!(cmd->se_cmd_flags & SCF_SE_LUN_CMD)) {
+@@ -2144,6 +2145,16 @@ int transport_generic_free_cmd(struct se_cmd *cmd, int wait_for_tasks)
+        } else {
+                if (wait_for_tasks)
+                        transport_wait_for_tasks(cmd);
++               /*
++                * Handle WRITE failure case where transport_generic_new_cmd()
++                * has already added se_cmd to state_list, but fabric has
++                * failed command before I/O submission.
++                */
++               if (cmd->state_active) {
++                       spin_lock_irqsave(&cmd->t_state_lock, flags);
++                       target_remove_from_state_list(cmd);
++                       spin_unlock_irqrestore(&cmd->t_state_lock, flags);
++               }
  
--	dgrp_class_global_settings_dev = device_create(dgrp_class, NULL,
--		MKDEV(0, max_majors + 1), NULL, "driver_settings");
-+	dgrp_class_global_settings_dev =
-+	  device_create_with_groups(&dgrp_class, NULL, MKDEV(0, max_majors + 1),
-+				    NULL, dgrp_global_settings_attribute_groups,
-+				    "driver_settings");
- 	if (IS_ERR(dgrp_class_global_settings_dev)) {
- 		ret = PTR_ERR(dgrp_class_global_settings_dev);
--		goto err_file;
--	}
--	ret = sysfs_create_group(&dgrp_class_global_settings_dev->kobj,
--		&dgrp_global_settings_attribute_group);
--	if (ret) {
--		pr_alert("%s: failed to create sysfs global settings device attributes.\n",
--			__func__);
--		goto err_dev1;
-+		goto err_class;
- 	}
- 
--	dgrp_class_nodes_dev = device_create(dgrp_class, NULL,
-+	dgrp_class_nodes_dev = device_create(&dgrp_class, NULL,
- 		MKDEV(0, max_majors + 2), NULL, "nodes");
- 	if (IS_ERR(dgrp_class_nodes_dev)) {
- 		ret = PTR_ERR(dgrp_class_nodes_dev);
--		goto err_group;
-+		goto err_dev1;
- 	}
- 
- 	return 0;
--err_group:
--	sysfs_remove_group(&dgrp_class_global_settings_dev->kobj,
--		&dgrp_global_settings_attribute_group);
- err_dev1:
--	device_destroy(dgrp_class, MKDEV(0, max_majors + 1));
--err_file:
--	class_remove_file(dgrp_class, &class_attr_driver_version);
-+	device_destroy(&dgrp_class, MKDEV(0, max_majors + 1));
- err_class:
--	class_destroy(dgrp_class);
-+	class_unregister(&dgrp_class);
- 	return ret;
- }
- 
-@@ -140,14 +138,9 @@ void dgrp_remove_class_sysfs_files(void)
- 	list_for_each_entry(nd, &nd_struct_list, list)
- 		dgrp_remove_node_class_sysfs_files(nd);
- 
--	sysfs_remove_group(&dgrp_class_global_settings_dev->kobj,
--		&dgrp_global_settings_attribute_group);
--
--	class_remove_file(dgrp_class, &class_attr_driver_version);
--
--	device_destroy(dgrp_class, MKDEV(0, max_majors + 1));
--	device_destroy(dgrp_class, MKDEV(0, max_majors + 2));
--	class_destroy(dgrp_class);
-+	device_destroy(&dgrp_class, MKDEV(0, max_majors + 1));
-+	device_destroy(&dgrp_class, MKDEV(0, max_majors + 2));
-+	class_unregister(&dgrp_class);
- }
- 
- static ssize_t dgrp_node_state_show(struct device *c,
-@@ -261,10 +254,13 @@ static struct attribute_group dgrp_node_attribute_group = {
- 	.attrs = dgrp_sysfs_node_entries,
- };
- 
-+static const struct attribute_group *dgrp_node_attribute_groups[] = {
-+	&dgrp_node_attribute_group,
-+	NULL
-+};
- 
- void dgrp_create_node_class_sysfs_files(struct nd_struct *nd)
- {
--	int ret;
- 	char name[10];
- 
- 	if (nd->nd_ID)
-@@ -272,32 +268,17 @@ void dgrp_create_node_class_sysfs_files(struct nd_struct *nd)
- 	else
- 		sprintf(name, "node%ld", nd->nd_major);
- 
--	nd->nd_class_dev = device_create(dgrp_class, dgrp_class_nodes_dev,
--		MKDEV(0, nd->nd_major), NULL, "%s", name);
--
--	ret = sysfs_create_group(&nd->nd_class_dev->kobj,
--				 &dgrp_node_attribute_group);
--
--	if (ret) {
--		pr_alert("%s: failed to create sysfs node device attributes.\n",
--			__func__);
--		sysfs_remove_group(&nd->nd_class_dev->kobj,
--				   &dgrp_node_attribute_group);
--		return;
--	}
--
--	dev_set_drvdata(nd->nd_class_dev, nd);
--
-+	nd->nd_class_dev =
-+	  device_create_with_groups(&dgrp_class, dgrp_class_nodes_dev,
-+				    MKDEV(0, nd->nd_major), nd,
-+				    dgrp_node_attribute_groups,
-+				    "%s", name);
- }
- 
--
- void dgrp_remove_node_class_sysfs_files(struct nd_struct *nd)
- {
- 	if (nd->nd_class_dev) {
--		sysfs_remove_group(&nd->nd_class_dev->kobj,
--				   &dgrp_node_attribute_group);
--
--		device_destroy(dgrp_class, MKDEV(0, nd->nd_major));
-+		device_destroy(&dgrp_class, MKDEV(0, nd->nd_major));
- 		nd->nd_class_dev = NULL;
- 	}
- }
--- 
-1.7.9.7
+                if (cmd->se_lun)
+                        transport_lun_remove_cmd(cmd);
 
