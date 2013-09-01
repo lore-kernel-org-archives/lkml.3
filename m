@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab3IAMcO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 08:32:14 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:56122 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab3IAMcK (ORCPT
+	id S1757407Ab3IAMom (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 08:44:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60671 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab3IAMok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 08:32:10 -0400
+	Sun, 1 Sep 2013 08:44:40 -0400
+Date: Sun, 1 Sep 2013 13:44:33 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130901124433.GD3084@sirena.org.uk>
+References: <1378009191.25863.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <52205056.8080908@ti.com>
-References: <1377779724-30648-1-git-send-email-marek@goldelico.com>
-	<52205056.8080908@ti.com>
-Date: Sun, 1 Sep 2013 14:32:05 +0200
-Message-ID: <CAAfyv35ViR6PxTAs-Q2OUHWn93RsX8eep-ew8m-AN1SjS-V80g@mail.gmail.com>
-Subject: Re: [PATCH] omap2: panel-generic: Added panel parameters for
- ortus-com37h3m05dtc/99dtc and sharp-lq070y3dg3b.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UnaWdueM1EBWVRzC"
+Content-Disposition: inline
+In-Reply-To: <1378009191.25863.1.camel@phoenix>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: da9063: Statize da9063_ldo_lim_event
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
 
-On Fri, Aug 30, 2013 at 9:57 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 29/08/13 15:35, Marek Belisko wrote:
->> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
->> Signed-off-by: Marek Belisko <marek@goldelico.com>
->> ---
->>  drivers/video/omap2/displays/panel-generic-dpi.c | 53 ++++++++++++++++++++++++
->>  1 file changed, 53 insertions(+)
->>
->> diff --git a/drivers/video/omap2/displays/panel-generic-dpi.c b/drivers/video/omap2/displays/panel-generic-dpi.c
->> index bebebd4..d573291 100644
->> --- a/drivers/video/omap2/displays/panel-generic-dpi.c
->> +++ b/drivers/video/omap2/displays/panel-generic-dpi.c
->> @@ -107,6 +107,33 @@ static struct panel_config generic_dpi_panels[] = {
->>               .name                   = "sharp_ls",
->>       },
->
-> The drivers in drivers/video/omap2/displays/ are on their way out, and
-> will probably be removed for 3.12. Please look at the new one at
-> drivers/video/omap2/displays-new/panel-dpi.c.
-I've probably miss series (OMAPDSS: remove old panel model code)
-and in time when sent patch it wasn't in linux-next yes. AFAIU generic
-panel settings
-was moved to board files which is not case for our patch as gta04
-(other) board with panel isn't yes mainlined.
->
->  Tomi
->
->
+--UnaWdueM1EBWVRzC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
+On Sun, Sep 01, 2013 at 12:19:51PM +0800, Axel Lin wrote:
+> da9063_ldo_lim_event() is only referenced in this driver, make it static.
 
-marek
+Applied, thanks.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+--UnaWdueM1EBWVRzC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSIzauAAoJELSic+t+oim91p0P/0QBijgzKVQ6qm0EUdBiyBaZ
+33cOVEq0mf69GqkybhP5NhExotsxwpqn4lxg7MNXRZwuPvinwBdrS6o+1oEEaiio
+75ekSAxv9mkEf7v3FiufVgjv7A40oQc+V9ToSInddJ1FTxt35Su89SsOIg9zu8xP
+pTeOYNHKYeVqClzVfF7i4EWZayahm/uyhqxHMSJeU5hJhMoJRsCH6x+hA+MBXX4Q
+HQKHRWcHSSUJP10/Q9wFmjIJoxi+UJ/rVYYFsdmYgkkc34SqMxQHLF04BrkSEXb6
+Vgoq5Phkv1w2liLcy/aTvUlsMXigpRsCI7gZaZoL2GxcQUhqzhl3pDt8L0DlG/RC
+jQgqdnysI7CVkVAxZUD+7Bn5GNuuNUBFmV4TBiTrrHllcHYn37uClh4IEZsoy0JD
+YZpJvPUfzFkAJfxJU5Acjk6AMipjkPKkZ66TqdYPwG2LWdjAVKLauMMIK1twJ8Z7
+STqRU6jt74t63UU/gPXqK3eNZFWde7utKZ6ffznb+9x674zAFfgQmGyPRl894xp7
+5DjAc2NZGiHl7DblsYL3K8W7aCAAUOUoXy+uRBlfPVaPUT2uqady5+S7BL4hjcOd
+XADuVaEHWz8bsOS1ybf11sVCed0iZGj8LWpgr+L4h0d45GXMTAYyYKzbSEAEuRxb
+qoAjNrEBbLl37VvTVWtd
+=v4Or
+-----END PGP SIGNATURE-----
+
+--UnaWdueM1EBWVRzC--
