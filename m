@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3IALHY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 07:07:24 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:46129 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab3IALHU (ORCPT
+	id S1757263Ab3IALHW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 07:07:22 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:51195 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab3IALHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 07:07:20 -0400
+	Sun, 1 Sep 2013 07:07:18 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk, dmitry.torokhov@gmail.com
 Cc: linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
         gregkh@linuxfoundation.org, zubair.lutfullah@gmail.com
-Subject: =?UTF-8?q?=5BPATCH=201/2=5D=20input=3A=20ti=5Fam335x=5Ftsc=3A=20Enable=20shared=20IRQ=20for=20TSC?=
-Date: Sun,  1 Sep 2013 12:07:12 +0100
-Message-Id: <1378033633-26301-2-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH V7 0/2] iio: input: ti_am335x_tscadc: Add continuous sampling support to adc
+Date: Sun,  1 Sep 2013 12:07:11 +0100
+Message-Id: <1378033633-26301-1-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378033633-26301-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1378033633-26301-1-git-send-email-zubair.lutfullah@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable shared IRQ to allow ADC to share IRQ line from
-parent MFD core. Only FIFO0 IRQs are for TSC and handled
-on the TSC side.
+Round 7 updates
+- Fixes to error handling path for trigger register
 
-Step mask would be updated from cached variable only previously.
-In rare cases when both TSC and ADC are used, the cached
-variable gets mixed up.
-The step mask is written with the required mask every time.
+- Optimization of step enable calculations based 
+on input from Sebastian
 
-Rachna Patil (TI) laid ground work for shared IRQ.
+- trigger unregister added to remove section. was missing
 
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/input/touchscreen/ti_am335x_tsc.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+- missing entry in Kconfig for triggered buffer support. added
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index e1c5300..24e625c 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -52,6 +52,7 @@ struct titsc {
- 	u32			config_inp[4];
- 	u32			bit_xp, bit_xn, bit_yp, bit_yn;
- 	u32			inp_xp, inp_xn, inp_yp, inp_yn;
-+	u32			step_mask;
- };
- 
- static unsigned int titsc_readl(struct titsc *ts, unsigned int reg)
-@@ -196,7 +197,8 @@ static void titsc_step_config(struct titsc *ts_dev)
- 
- 	/* The steps1 … end and bit 0 for TS_Charge */
- 	stepenable = (1 << (end_step + 2)) - 1;
--	am335x_tsc_se_set(ts_dev->mfd_tscadc, stepenable);
-+	ts_dev->step_mask = stepenable;
-+	am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
- }
- 
- static void titsc_read_coordinates(struct titsc *ts_dev,
-@@ -260,6 +262,10 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 	unsigned int fsm;
- 
- 	status = titsc_readl(ts_dev, REG_IRQSTATUS);
-+	/*
-+	 * ADC and touchscreen share the IRQ line.
-+	 * FIFO1 interrupts are used by ADC. Handle FIFO0 IRQs here only
-+	 */
- 	if (status & IRQENB_FIFO0THRES) {
- 
- 		titsc_read_coordinates(ts_dev, &x, &y, &z1, &z2);
-@@ -316,7 +322,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 
- 	if (irqclr) {
- 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
--		am335x_tsc_se_update(ts_dev->mfd_tscadc);
-+		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
- 		return IRQ_HANDLED;
- 	}
- 	return IRQ_NONE;
-@@ -389,7 +395,7 @@ static int titsc_probe(struct platform_device *pdev)
- 	}
- 
- 	err = request_irq(ts_dev->irq, titsc_irq,
--			  0, pdev->dev.driver->name, ts_dev);
-+			  IRQF_SHARED, pdev->dev.driver->name, ts_dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to allocate irq.\n");
- 		goto err_free_mem;
+- TSC/ADC IRQ handling was based on wierd ack system. not required. removed.
+each irq handler deals with its own stuff *only*
+
+Thanks for all the input 
+
+Regards
+Zubair Lutfullah Kakakhel
+
+Zubair Lutfullah (2):
+  input: ti_am335x_tsc: Enable shared IRQ for TSC
+  iio: ti_am335x_adc: Add continuous sampling support
+
+ drivers/iio/adc/Kconfig                   |    1 +
+ drivers/iio/adc/ti_am335x_adc.c           |  243 ++++++++++++++++++++++++++---
+ drivers/input/touchscreen/ti_am335x_tsc.c |   12 +-
+ include/linux/mfd/ti_am335x_tscadc.h      |   13 ++
+ 4 files changed, 246 insertions(+), 23 deletions(-)
+
 -- 
 1.7.9.5
 
