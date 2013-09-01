@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3IAKhZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:37:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58082 "EHLO mx1.redhat.com"
+	id S1757384Ab3IAKhd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7511 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab3IAKhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:21 -0400
+	id S1754691Ab3IAKha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:30 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,19 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 10/25] perf tools: Introduce swap_features function
-Date: Sun,  1 Sep 2013 12:36:21 +0200
-Message-Id: <1378031796-17892-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 13/25] perf tools: Using evlist as a holder for event_desc feature
+Date: Sun,  1 Sep 2013 12:36:24 +0200
+Message-Id: <1378031796-17892-14-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing swap_features function to make the swapping
-code more clear and extensible.
+Using evlist as a holder for events stored via event_desc
+feature. The event_desc events data is same as the one
+stored via main header. We will use event_desc data to
+replace the main header data source in next patches.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,96 +39,182 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/header.c | 69 ++++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 34 deletions(-)
+ tools/perf/util/header.c | 84 ++++++++++++++++++++++--------------------------
+ 1 file changed, 38 insertions(+), 46 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index bcded62..164510e 100644
+index 3f58a3f..e43879e 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -2515,6 +2515,39 @@ do {								\
- 	return -1;
+@@ -1208,28 +1208,11 @@ static void print_cpu_topology(struct perf_header *ph, int fd __maybe_unused,
+ 	}
  }
  
-+static void swap_features(unsigned long *adds_features)
-+{
-+	/*
-+	 * feature bitmap is declared as an array of unsigned longs --
-+	 * not good since its size can differ between the host that
-+	 * generated the data file and the host analyzing the file.
-+	 *
-+	 * We need to handle endianness, but we don't know the size of
-+	 * the unsigned long where the file was generated. Take a best
-+	 * guess at determining it: try 64-bit swap first (ie., file
-+	 * created on a 64-bit host), and check if the hostname feature
-+	 * bit is set (this feature bit is forced on as of fbe96f2).
-+	 * If the bit is not, undo the 64-bit swap and try a 32-bit
-+	 * swap. If the hostname bit is still not set (e.g., older data
-+	 * file), punt and fallback to the original behavior --
-+	 * clearing all feature bits and setting buildid.
-+	 */
-+	mem_bswap_64(adds_features, BITS_TO_U64(HEADER_FEAT_BITS));
-+
-+	if (!test_bit(HEADER_HOSTNAME, adds_features)) {
-+		/* unswap as u64 */
-+		mem_bswap_64(adds_features, BITS_TO_U64(HEADER_FEAT_BITS));
-+
-+		/* unswap as u32 */
-+		mem_bswap_32(adds_features, BITS_TO_U32(HEADER_FEAT_BITS));
-+	}
-+
-+	if (!test_bit(HEADER_HOSTNAME, adds_features)) {
-+		bitmap_zero(adds_features, HEADER_FEAT_BITS);
-+		set_bit(HEADER_BUILD_ID, adds_features);
-+	}
-+}
-+
- int perf_file_header__read(struct perf_file_header *header,
- 			   struct perf_header *ph, int fd)
- {
-@@ -2543,40 +2576,8 @@ int perf_file_header__read(struct perf_file_header *header,
- 			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
- 		else
- 			return -1;
--	} else if (ph->needs_swap) {
--		/*
--		 * feature bitmap is declared as an array of unsigned longs --
--		 * not good since its size can differ between the host that
--		 * generated the data file and the host analyzing the file.
--		 *
--		 * We need to handle endianness, but we don't know the size of
--		 * the unsigned long where the file was generated. Take a best
--		 * guess at determining it: try 64-bit swap first (ie., file
--		 * created on a 64-bit host), and check if the hostname feature
--		 * bit is set (this feature bit is forced on as of fbe96f2).
--		 * If the bit is not, undo the 64-bit swap and try a 32-bit
--		 * swap. If the hostname bit is still not set (e.g., older data
--		 * file), punt and fallback to the original behavior --
--		 * clearing all feature bits and setting buildid.
--		 */
--		mem_bswap_64(&header->adds_features,
--			    BITS_TO_U64(HEADER_FEAT_BITS));
+-static void free_event_desc(struct perf_evsel *events)
+-{
+-	struct perf_evsel *evsel;
 -
--		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
--			/* unswap as u64 */
--			mem_bswap_64(&header->adds_features,
--				    BITS_TO_U64(HEADER_FEAT_BITS));
+-	if (!events)
+-		return;
 -
--			/* unswap as u32 */
--			mem_bswap_32(&header->adds_features,
--				    BITS_TO_U32(HEADER_FEAT_BITS));
--		}
--
--		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
--			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
--			set_bit(HEADER_BUILD_ID, header->adds_features);
--		}
+-	for (evsel = events; evsel->attr.size; evsel++) {
+-		if (evsel->name)
+-			free(evsel->name);
+-		if (evsel->id)
+-			free(evsel->id);
 -	}
-+	} else if (ph->needs_swap)
-+		swap_features(header->adds_features);
+-
+-	free(events);
+-}
+-
+-static struct perf_evsel *
++static struct perf_evlist *
+ read_event_desc(struct perf_header *ph, int fd)
+ {
+-	struct perf_evsel *evsel, *events = NULL;
+-	u64 *id;
++	struct perf_evlist *evlist = NULL;
++	struct perf_evsel *evsel;
+ 	void *buf = NULL;
+ 	u32 nre, sz, nr, i, j;
+ 	ssize_t ret;
+@@ -1255,18 +1238,15 @@ read_event_desc(struct perf_header *ph, int fd)
+ 	if (!buf)
+ 		goto error;
  
- 	memcpy(&ph->adds_features, &header->adds_features,
- 	       sizeof(ph->adds_features));
+-	/* the last event terminates with evsel->attr.size == 0: */
+-	events = calloc(nre + 1, sizeof(*events));
+-	if (!events)
++	evlist = perf_evlist__new();
++	if (!evlist)
+ 		goto error;
+ 
+ 	msz = sizeof(evsel->attr);
+ 	if (sz < msz)
+ 		msz = sz;
+ 
+-	for (i = 0, evsel = events; i < nre; evsel++, i++) {
+-		evsel->idx = i;
+-
++	for (i = 0; i < nre; i++) {
+ 		/*
+ 		 * must read entire on-file attr struct to
+ 		 * sync up with layout.
+@@ -1275,6 +1255,10 @@ read_event_desc(struct perf_header *ph, int fd)
+ 		if (ret != (ssize_t)sz)
+ 			goto error;
+ 
++		evsel = perf_evsel__new(buf, i);
++		if (!evsel)
++			goto error;
++
+ 		if (ph->needs_swap)
+ 			perf_event__attr_swap(buf);
+ 
+@@ -1289,49 +1273,55 @@ read_event_desc(struct perf_header *ph, int fd)
+ 			evsel->needs_swap = true;
+ 		}
+ 
++		perf_evlist__add(evlist, evsel);
++
+ 		evsel->name = do_read_string(fd, ph);
+ 
+ 		if (!nr)
+ 			continue;
+ 
+-		id = calloc(nr, sizeof(*id));
+-		if (!id)
++		if (perf_evsel__alloc_id(evsel, 1, nr))
+ 			goto error;
++
+ 		evsel->ids = nr;
+-		evsel->id = id;
+ 
+ 		for (j = 0 ; j < nr; j++) {
+-			ret = readn(fd, id, sizeof(*id));
+-			if (ret != (ssize_t)sizeof(*id))
++			u64 id;
++
++			ret = readn(fd, &id, sizeof(id));
++			if (ret != (ssize_t)sizeof(id))
+ 				goto error;
+ 			if (ph->needs_swap)
+-				*id = bswap_64(*id);
+-			id++;
++				id = bswap_64(id);
++
++			perf_evlist__id_add(evlist, evsel, 0, j, id);
+ 		}
+ 	}
+ out:
+ 	if (buf)
+ 		free(buf);
+-	return events;
++	return evlist;
+ error:
+-	if (events)
+-		free_event_desc(events);
+-	events = NULL;
++	if (evlist)
++		perf_evlist__delete(evlist);
++	evlist = NULL;
+ 	goto out;
+ }
+ 
+ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
+ {
+-	struct perf_evsel *evsel, *events = read_event_desc(ph, fd);
++	struct perf_evlist *evlist;
++	struct perf_evsel *evsel;
+ 	u32 j;
+ 	u64 *id;
+ 
+-	if (!events) {
++	evlist = read_event_desc(ph, fd);
++	if (!evlist) {
+ 		fprintf(fp, "# event desc: not available or unable to read\n");
+ 		return;
+ 	}
+ 
+-	for (evsel = events; evsel->attr.size; evsel++) {
++	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		fprintf(fp, "# event : name = %s, ", evsel->name);
+ 
+ 		fprintf(fp, "type = %d, config = 0x%"PRIx64
+@@ -1364,7 +1354,7 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
+ 		fputc('\n', fp);
+ 	}
+ 
+-	free_event_desc(events);
++	perf_evlist__delete(evlist);
+ }
+ 
+ static void print_total_mem(struct perf_header *ph, int fd __maybe_unused,
+@@ -1785,17 +1775,19 @@ process_event_desc(struct perf_file_section *section __maybe_unused,
+ 		   void *data __maybe_unused)
+ {
+ 	struct perf_session *session;
+-	struct perf_evsel *evsel, *events = read_event_desc(header, fd);
++	struct perf_evlist *evlist;
++	struct perf_evsel *evsel;
+ 
+-	if (!events)
++	evlist = read_event_desc(header, fd);
++	if (!evlist)
+ 		return 0;
+ 
+ 	session = container_of(header, struct perf_session, header);
+-	for (evsel = events; evsel->attr.size; evsel++)
+-		perf_evlist__set_event_name(session->evlist, evsel);
+ 
+-	free_event_desc(events);
++	list_for_each_entry(evsel, &evlist->entries, node)
++		perf_evlist__set_event_name(session->evlist, evsel);
+ 
++	perf_evlist__delete(evlist);
+ 	return 0;
+ }
+ 
 -- 
 1.7.11.7
 
