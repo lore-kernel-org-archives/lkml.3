@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3IAPa6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 11:30:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50770 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab3IAPa4 (ORCPT
+	id S1757572Ab3IAPao (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 11:30:44 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54751 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529Ab3IAPak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 11:30:56 -0400
+	Sun, 1 Sep 2013 11:30:40 -0400
 From: Chenggang Qin <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] perf core: Fix a memory leak bug because symbol__delete is ignored
-Date: Sun,  1 Sep 2013 23:29:45 +0800
-Message-Id: <1378049385-4466-3-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH 2/3] perf core: Fix a mmap & munmap mismatches bug in dso__load
+Date: Sun,  1 Sep 2013 23:29:44 +0800
+Message-Id: <1378049385-4466-2-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
 References: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,10 +30,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-In function symbols__fixup_duplicate(), while the duplicated symbols are found,
-only the rb_node are deleted. The symbol structures themself are ignored.
-Then, these memory areas are lost.
-This patch fixed the bug. 
+Some dsos' symsrc is neither syms_ss or runtime_ss. In this situation, the
+corresponding ELF file is opened and mmapped in symsrc__init(), but they will
+be not closed and munmapped in any place.
+This bug can lead to mmap & munmap mismatched, the mmap areas will exist during
+the life of perf. We can think this is a memory leak.
+This patch fixed the bug. symsrc__destroy() is called while the opened and
+mmaped ELF file has neither symtlb section nor dynsym section, and opdsec
+section.
 Thanks.
 
 Cc: David Ahern <dsahern@gmail.com>
@@ -50,26 +54,23 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/util/symbol.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/symbol.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 9675866..3c9aa6f 100644
+index d5528e1..9675866 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -148,10 +148,12 @@ again:
+@@ -828,7 +828,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
  
- 		if (choose_best_symbol(curr, next) == SYMBOL_A) {
- 			rb_erase(&next->rb_node, symbols);
-+			symbol__delete(next);
- 			goto again;
- 		} else {
- 			nd = rb_next(&curr->rb_node);
- 			rb_erase(&curr->rb_node, symbols);
-+			symbol__delete(curr);
- 		}
+ 			if (syms_ss && runtime_ss)
+ 				break;
+-		}
++		} else
++			symsrc__destroy(ss);
+ 
  	}
- }
+ 
 -- 
 1.7.8.rc2.5.g815b
 
