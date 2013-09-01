@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3IAF0g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 01:26:36 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56758 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab3IAF0S (ORCPT
+	id S1754949Ab3IAGYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 02:24:16 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:57812 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab3IAGYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 01:26:18 -0400
+	Sun, 1 Sep 2013 02:24:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130831003641.GE19754@codeaurora.org>
+References: <20130828025721.GA19754@codeaurora.org>
+	<CAKohpomLL0rCYngM81iaTV37TTsrYE+f3ouGuT2D6TRE5E4W5A@mail.gmail.com>
+	<521E2ADE.4070401@codeaurora.org>
+	<CAKohpoke5BHypqKcLjPK5eHHvvfRTjCz36FMQNT1OGTVnueRkw@mail.gmail.com>
+	<20130831003641.GE19754@codeaurora.org>
+Date: Sun, 1 Sep 2013 11:54:10 +0530
+Message-ID: <CAKohpon3p5rTvc+2Cowm=rFSv+QP=ns1L9_nci5piuB90eD3FA@mail.gmail.com>
+Subject: Re: mutex warning in cpufreq + RFC patch
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, sboyd@codeaurora.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
-Date: Sun,  1 Sep 2013 10:56:02 +0530
-Message-Id: <80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
-In-Reply-To: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't take a big lock around __cpufreq_governor() as this causes recursive
-locking for some cases. But calls to this routine must be serialized for every
-policy.
+On 31 August 2013 06:06, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Yes that patch may reduce the chance of the race condition but I
+> don't believe it removes it entirely. I believe this bug still
+> exists in linux-next. Consider the scenario where CPU1 is going
+> down.
+>
+> __cpufreq_remove_dev()
+>  ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+>   __cpufreq_governor()
+>    policy->governor->governor(policy, CPUFREQ_GOV_STOP);
+>     cpufreq_governor_dbs()
+>      case CPUFREQ_GOV_STOP:
+>       mutex_destroy(&cpu_cdbs->timer_mutex)
+>       cpu_cdbs->cur_policy = NULL;
+>   <PREEMPT>
+> store()
+>  __cpufreq_set_policy()
+>   ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+>    __cpufreq_governor()
+>     policy->governor->governor(policy, CPUFREQ_GOV_LIMITS);
+>      case CPUFREQ_GOV_LIMITS:
+>       mutex_lock(&cpu_cdbs->timer_mutex); <-- Warning (destroyed mutex)
+>        if (policy->max < cpu_cdbs->cur_policy->cur) <- cur_policy == NULL
 
-Lets introduce another variable which would guarantee serialization here.
+Some of the crashes you reported would be fixed by the patches I sent
+today morning.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 7 ++++++-
- include/linux/cpufreq.h   | 1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
+Let me know if anything else is left for latest linux-next...
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index f320a20..4d5723db 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1692,13 +1692,15 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 						policy->cpu, event);
- 
- 	mutex_lock(&cpufreq_governor_lock);
--	if ((policy->governor_enabled && (event == CPUFREQ_GOV_START)) ||
-+	if (policy->governor_busy ||
-+		(policy->governor_enabled && (event == CPUFREQ_GOV_START)) ||
- 		(!policy->governor_enabled && ((event == CPUFREQ_GOV_LIMITS) ||
- 					       (event == CPUFREQ_GOV_STOP)))) {
- 		mutex_unlock(&cpufreq_governor_lock);
- 		return -EBUSY;
- 	}
- 
-+	policy->governor_busy = true;
- 	if (event == CPUFREQ_GOV_STOP)
- 		policy->governor_enabled = false;
- 	else if (event == CPUFREQ_GOV_START)
-@@ -1727,6 +1729,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
- 		module_put(policy->governor->owner);
- 
-+	mutex_lock(&cpufreq_governor_lock);
-+	policy->governor_busy = false;
-+	mutex_unlock(&cpufreq_governor_lock);
- 	return ret;
- }
- 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index d568f39..cca885d 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -76,6 +76,7 @@ struct cpufreq_policy {
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
- 	bool			governor_enabled; /* governor start/stop flag */
-+	bool			governor_busy;
- 
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
--- 
-1.7.12.rc2.18.g61b472e
+Btw, I am facing another crash which I am not sure how to fix.. It
+came with your script:
 
+[  190.850481] ------------[ cut here ]------------
+[  190.850489] WARNING: CPU: 3 PID: 14140 at
+/home/arm/work/kernel/mywork/linux.git/include/linux/kref.h:47
+kobject_get+0x42/0x50()
+[  190.850490] Modules linked in: nfsd nfs fscache lockd arc4 iwldvm
+mac80211 i915 iwlwifi drm_kms_helper nfs_acl auth_rpcgss cfg80211
+sunrpc drm joyd
+ev thinkpad_acpi snd_hda_codec_hdmi snd_seq_midi
+snd_hda_codec_conexant oid_registry btusb snd_rawmidi snd_hda_intel
+snd_hda_codec i2c_algo_bit rfcomm
+ snd_seq_midi_event bnep psmouse snd_seq snd_hwdep snd_pcm bluetooth
+snd_timer snd_seq_device parport_pc snd_page_alloc ppdev tpm_tis snd
+soundcore lp
+c_ich lp parport video serio_raw mac_hid wmi nvram binfmt_misc btrfs
+raid6_pq e1000e ptp pps_core xor sdhci_pci sdhci zlib_deflate
+libcrc32c
+[  190.850563] CPU: 3 PID: 14140 Comm: sh Not tainted 3.11.0-rc7-custom #39
+[  190.850567] Hardware name: LENOVO 4236G50/4236G50, BIOS 83ET70WW
+(1.40 ) 06/12/2012
+[  190.850571]  000000000000002f ffff8800c8bdfc38 ffffffff816746c3
+0000000000000007
+[  190.850580]  0000000000000000 ffff8800c8bdfc78 ffffffff8104cf8c
+ffff88011e5f9b18
+[  190.850587]  ffff880118eaf000 0000000000000001 0000000000000202
+0000000000000008
+[  190.850593] Call Trace:
+[  190.850607]  [<ffffffff816746c3>] dump_stack+0x46/0x58
+[  190.850615]  [<ffffffff8104cf8c>] warn_slowpath_common+0x8c/0xc0
+[  190.850622]  [<ffffffff8104cfda>] warn_slowpath_null+0x1a/0x20
+[  190.850629]  [<ffffffff81324e02>] kobject_get+0x42/0x50
+[  190.850638]  [<ffffffff81533ab0>] cpufreq_cpu_get+0x80/0xc0
+[  190.850647]  [<ffffffff81533c11>] cpufreq_get_policy+0x21/0x120
+[  190.850655]  [<ffffffff81533fdf>] store_scaling_min_freq+0x3f/0xa0
+[  190.850666]  [<ffffffff816785b6>] ? down_write+0x16/0x40
+[  190.850674]  [<ffffffff81533000>] store+0x70/0xb0
+[  190.850683]  [<ffffffff811f2582>] sysfs_write_file+0xe2/0x170
+[  190.850693]  [<ffffffff81181e8e>] vfs_write+0xce/0x200
+[  190.850700]  [<ffffffff81182392>] SyS_write+0x52/0xa0
+[  190.850707]  [<ffffffff81683882>] system_call_fastpath+0x16/0x1b
