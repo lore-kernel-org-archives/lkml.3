@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab3IAWMP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 18:12:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46618 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab3IAWMO (ORCPT
+	id S1756126Ab3IAWQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 18:16:28 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:42711 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab3IAWQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 18:12:14 -0400
-Date: Mon, 2 Sep 2013 00:12:12 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org
-Subject: Re: 3.11-final plan: unpriviledged user can crash the kernel
- (using bluetooth rfcomm)
-Message-ID: <20130901221212.GA15595@amd.pavel.ucw.cz>
-References: <20130831100127.GA6711@amd.pavel.ucw.cz>
- <20130831100933.GA7029@amd.pavel.ucw.cz>
- <20130831101451.GC7029@amd.pavel.ucw.cz>
- <20130831104238.GA7767@amd.pavel.ucw.cz>
- <20130901165525.GK7440@joana>
- <20130901185038.GA11714@amd.pavel.ucw.cz>
- <B3715CDF-1D85-45C9-9AD1-DBBD0DF24624@holtmann.org>
+	Sun, 1 Sep 2013 18:16:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B3715CDF-1D85-45C9-9AD1-DBBD0DF24624@holtmann.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130901212355.GU13318@ZenIV.linux.org.uk>
+References: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
+	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
+	<20130901212355.GU13318@ZenIV.linux.org.uk>
+Date: Sun, 1 Sep 2013 15:16:24 -0700
+X-Google-Sender-Auth: TfedwGiUzZbGF-72o4rpJbKIzNE
+Message-ID: <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Waiman Long <waiman.long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sun, Sep 1, 2013 at 2:23 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> How much of that is due to br_write_lock() taken in mntput_no_expire()
+> for no good reason?  IOW, could you try shmem.c patch I've sent yesterday
+> and see how much effect does it have?[1]  Basically, we get it grabbed
+> exclusive on each final fput() of a struct file created by shmem_file_setup(),
+> which is _not_ a rare event.  And the only reason for that is not having
+> shm_mnt marked long-living, even though its refcount never hits 0...
 
-> >>>>>> . Python sources for client/server are at 
-> >>>>>> 
-> >>>>>> http://tui.cvs.sourceforge.net/viewvc/tui/tui/liveview/
-> >>>>>> 
+Does not seem to matter. Still 66% mntput_no_expire, 31% path_init.
+And that lg_local_lock() takes 5-6% of CPU, pretty much all of which
+is that single xadd instruction that implements the spinlock.
 
-> > So... In 3.11 unpriviledged user can crash the kernel, but the fix is
-> > too big, so we release it without the fix?
-> > 
-> > Somehow, I don't think that's good idea.
-> 
-> can you boot a bluetooth-next kernel and see if the planned changes are fixing this or not. I would like to have that confirmed before we start any speculations here.
-> 
-> If the RFCOMM TTY rework that we have in bluetooth-next fixes this issue, then we can have a look at if this can be patched for 3.11 or a stable kernel without having to include the whole patch series. Or if the TTY subsystem changed from 2.6.32 so much that we have to take the whole changes.
-> 
-> However, please also note there is a different between RFCOMM sockets and RFCOMM TTYs. I would be curious if only the TTY part is affected or also the socket part.
-> 
+This is on /tmp, which is tmpfs. But I don't see how any of that could
+matter. "mntput()" does an unconditional call to mntput_no_expire(),
+and mntput_no_expire() does that br_read_lock() unconditionally too.
 
-Well, you are in as good position to repeat it as I am. Sources are in
-the CVS referenced above (and they are trivial). The version that
-reproduces the problem is marked as such in changelog. I already
-modified my system to work (not triggering oopsen)...
+Note that I'm talking about that "cheap" *read* lock being expensive.
+It's the local one, not the global one. So it's not what Waiman saw
+with the global lock. This is a local per-cpu thing.
 
-Yes, I can probably setup linux-next. It will take some time.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+That read-lock is supposed to be very cheap - it's just a per-cpu
+spinlock. But it ends up being very expensive for some reason. I'm not
+quite sure why - I don't see any lg_global_lock() calls at all, so...
+
+I wonder if there is some false sharing going on. But I don't see that
+either, this is the percpu offset map afaik:
+
+  000000000000f560 d files_lglock_lock
+  000000000000f564 d nr_dentry
+  000000000000f568 d last_ino
+  000000000000f56c d nr_unused
+  000000000000f570 d nr_inodes
+  000000000000f574 d vfsmount_lock_lock
+  000000000000f580 d bh_accounting
+
+and I don't see anything there that would get cross-cpu accesses, so
+there shouldn't be any cacheline bouncing. That's the whole point of
+percpu variables, after all.
+
+Odd. What am I missing?
+
+            Linus
