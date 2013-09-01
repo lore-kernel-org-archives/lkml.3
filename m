@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab3IAOCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 10:02:14 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:35585 "EHLO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab3IAOCN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 10:02:13 -0400
-Message-ID: <522348C0.3040405@gmail.com>
-Date: Sun, 01 Sep 2013 16:01:36 +0200
-From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+	id S1757458Ab3IAOsz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 10:48:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63882 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab3IAOsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 10:48:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1001,1367996400"; 
+   d="scan'208";a="389601129"
+Date: Sun, 1 Sep 2013 16:48:47 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
+Message-ID: <20130901144847.GM20329@zurbaran>
+References: <20130831130741.GG18608@sirena.org.uk>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Emulating ECC RAM in kernel or mirroring RAM to exclude HW issues
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130831130741.GG18608@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  I am trying to find out why some applications crash on my laptop.
-I mostly use python and have configured it via configure --with-pydebug
-so that is wraps memory allocated regions with 0xfb. That helps to realize
-something overwrote that memory region. So far, it twice reported
-0xfb to 0xfa transition at some logical position 5. I was told python cannot
-print physical hardware address but let's assume this is a memory error
-and one bit was flipped. However, sometimes other apps crash as well and
-I think I tried enough to run core dumps through gdb to find out where they
-crashed and it does not to an answer.
-  I tried for hours memtest86+ to find an error but is never found anything
-wrong. From my experience, the errors appear when the CPU is loaded and that
-is not under memtest86+ started from a boot CD. I think it another reason why
-memtest86+ maybe does not find the problematic bit is that it would have to
-fill whole RAM with e.g. 0xfb and scan those values all remaining hours whether
-they still read as 0xfb. It seems all write&read tests done by memtest86+ happen
-too quickly after each other. I lack tests where the data if written into memory
-and kept there for a long while (hours, days).
+Hi Mark,
 
-  Finally, I got an idea that linux kernel could emulate ECC RAM and just keep
-some checksums in another region of memory. This would to find not only flipped
-memory bit but even other (larger) corrupted regions of memory. I don't need
-speed (running apps under valgrind/DUMA is not fast either) and I don't need
-memory hotplug. Let's say this is for diagnostic purpose. I don't mind if somebody
-says I have to sacrifice 1/2 of my precious RAM to do software memory mirroring.
-Even that would be cool trick! to get around and see where is the bug hiding.
-I somewhat speculate it could be just a bit overheated memory controller after
-high CPU usage or the CPU or its cache gets upset and has nothing to do with RAM.
-When it is cold, it works. But, first I need a proof that RAM is not at fault.
+On Sat, Aug 31, 2013 at 02:07:41PM +0100, Mark Brown wrote:
+> This patch series removes the use of the ASoC-level read and write
+> functions from the cq93vc driver as part of a wider push to remove them
+> completely and just use regmap for all register I/O.  Since the driver
+> is essentially doing what regmap-mmio is doing this is done by adding a
+> MMIO regmap to the core device and using that.  This is compile tested
+> only, I don't have any hardware to run on.
+> 
+> Since I anticipate doing more cleanups over the CODEC drivers during the
+> next release cycle it'd be good to merge via ASoC, though there
+> shouldn't be any overlap with the first patch.
+As I'd prefer to carry the MFD ones (Including the twl6040 one) through
+mfd-next, I can build a branch for you to pull from. Would that be fine
+with you ?
 
-  I think somebody must already thought about this so I am just asking what do
-you think. Maybe this is already available in some linux source tree as a
-proof-of-the-concept patch. ;) That would be great. 
+Cheers,
+Samuel.
 
-https://www.usenix.org/legacy/event/atc10/tech/full_papers/Li.pdf
-
-Thank you,
-Martin
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
