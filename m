@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab3IAMV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 08:21:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41955 "EHLO mail.zytor.com"
+	id S1757343Ab3IAMcF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 08:32:05 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2111 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab3IAMVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 08:21:25 -0400
-Message-ID: <5223311D.2040608@zytor.com>
-Date: Sun, 01 Sep 2013 05:20:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752768Ab3IAMcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 08:32:01 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <522333AD.9080004@broadcom.com>
+Date: Sun, 1 Sep 2013 14:31:41 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: On the correctness of dbe3ed1c078c193be34326728d494c5c4bc115e2
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Hauke Mehrtens" <hauke@hauke-m.de>
+cc: "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        "Randy Dunlap" <rdunlap@infradead.org>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list@broadcom.com,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 30 (brcmfmac)
+References: <20130829200013.d9dde1eb64686a32c661b5d3@canb.auug.org.au>
+ <52210AB9.2090104@infradead.org>
+ <CAMuHMdXFmWyiUJF+4HbD=6oGPVXHBAVx=rOC7u=motTQFCKn7g@mail.gmail.com>
+ <5222341B.4070205@broadcom.com> <522238A1.3080008@hauke-m.de>
+In-Reply-To: <522238A1.3080008@hauke-m.de>
+X-WSS-ID: 7E3DEECE2L880408260-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A truly ancient commit (v2.6.23), dbe3ed1c078c193be34326728d494c5c4bc115e2:
+On 08/31/13 20:40, Hauke Mehrtens wrote:
+> On 08/31/2013 08:21 PM, Arend van Spriel wrote:
+>> On 08/31/13 19:37, Geert Uytterhoeven wrote:
+>>> On Fri, Aug 30, 2013 at 11:12 PM, Randy Dunlap<rdunlap@infradead.org>
+>>> wrote:
+>>>> This bool kconfig symbol:
+>>>>
+>>>> config BRCMFMAC_SDIO
+>>>>           bool "SDIO bus interface support for FullMAC driver"
+>>>>           depends on MMC
+>>>>
+>>>> allows BRCMFMAC_SDIO to be y even when MMC=m.
+>>>>
+>>>> Is there a reasonable solution to this?
+>>
+>> Actually, BRCMFMAC should be built in same form as the MMC and/or USB,
+>> but only when BRCMFMAC_SDIO or BRCMFMAC_USB are selected.
+>>
+>> So valid combinations are:
+>> MMC=m, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y =>  BRCMFMAC=m
+>> MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y =>  BRCMFMAC=m
+>> MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y =>  BRCMFMAC=m
+>> MMC=m, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n =>  BRCMFMAC=m
+>> MMC=m, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y =>  BRCMFMAC=m|y
+>> MMC=y, USB=m, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n =>  BRCMFMAC=m|y
+>> MMC=y, USB=m, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y =>  BRCMFMAC=m
+>> MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=y =>  BRCMFMAC=m|y
+>> MMC=y, USB=y, BRCMFMAC_SDIO=y, BRCMFMAC_USB=n =>  BRCMFMAC=m|y
+>> MMC=y, USB=y, BRCMFMAC_SDIO=n, BRCMFMAC_USB=y =>  BRCMFMAC=m|y
+>>
+>> Not sure how to express the above.
+>
+> This should be expressed with this Kconfig:
+>
+> config BRCMFMAC_USB
+> 	bool "USB bus interface support for FullMAC driver"
+> 	depends on (USB = y || USB = BRCMFMAC)
+> 	depends on BRCMFMAC
+>
+> config BRCMFMAC_SDIO
+> 	bool "SDIO bus interface support for FullMAC driver"
+> 	depends on (MMC = y || MMC = BRCMFMAC)
+> 	depends on BRCMFMAC
+> 	select FW_LOADER
+>
+> I haven't tested it, but we had a similar problem in b43 and fixed it
+> like this.
 
-    x86-64: page faults from user mode are always user faults
+Thanks, Hauke
 
-    Randy Dunlap noticed an interesting "crashme" behaviour on his dual
-    Prescott Xeon setup, where he gets page faults with the error code
-    having a zero "user" bit, but the register state points back to user
-    mode.
+I will create a patch fixing this.
 
-    This may be a CPU microcode buglet triggered by some strange
-    instruction pattern that crashme generates, and loading a microcode
-    update seems to possibly have fixed it.
+Regards,
+Arend
 
-    Regardless, we really should trust the register state more than the
-    error code, since it's really the register state that determines
-    whether we can actually send a signal, or whether we're in kernel
-    mode and need to oops/kill the process in the case of a page fault.
-
-... introduced the following code (since slightly modified):
-
-+	/*
-+	 * User-mode registers count as a user access even for any
-+	 * potential system fault or CPU buglet.
-+	 */
-+	if (user_mode_vm(regs))
-+		error_code |= PF_USER;
-+
-
-This has the end result that we treat a user space instruction which
-touches a privileged data structure that then page faults (e.g. a
-segment load which causes #PF on the GDT) as a user-space fault.
-
-This seems very wrong to me, since such a #PF would indicate a serious
-error in the kernel.
-
-If this was a buglet introduced by a specific processor ("Prescott Xeon"
-I presume means Nocona) and then even fixed in a patch, I'm concerned
-that we are putting the cart before the horse with this change.
-
-I went through the errata sheets for the CPUs of the time, but nothing
-jumped out at me as causing this kind of problem, although there is a
-mention of a couple of undefined opcodes which ought to #UD being able
-to generate a "load to an incorrect address".  Kind of a stretch, though.
-
-	-hpa
