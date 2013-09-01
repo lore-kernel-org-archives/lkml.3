@@ -1,218 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab3IATgk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 15:36:40 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38435 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753394Ab3IATgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 15:36:40 -0400
-Message-ID: <1378064198.1953.17.camel@joe-AO722>
-Subject: Re:  [staging] Staging: Convert uses of compare_ether_addr to
- ether_addr_equal
-From: Joe Perches <joe@perches.com>
-To: Wang Shilong <wangshilong1991@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sun, 01 Sep 2013 12:36:38 -0700
-In-Reply-To: <522395c4.hZ2B3PrpTjC+j1oP%wangshilong1991@gmail.com>
-References: <522395c4.hZ2B3PrpTjC+j1oP%wangshilong1991@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754834Ab3IATkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 15:40:35 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:57487 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752139Ab3IATkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 15:40:32 -0400
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: m.chehab@samsung.com, rdunlap@infradead.org, hans.verkuil@cisco.com,
+        mkrufky@linuxtv.org, lkundrak@v3.sk, linux-kernel@vger.kernel.org
+Subject: [RFC v3] Add a driver for the somagic smi2021 chip
+Date: Sun,  1 Sep 2013 21:42:50 +0200
+Message-Id: <1378064571-10537-1-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.3.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-02 at 03:30 +0800, Wang Shilong wrote:
-> Hello, Using checkpatch.pl, i get the following warnings(errors):
+This patch will add a driver for the smi2021 chip.
 
-Hello.
+This chip is found in a series of usb video capture devices branded as Easycap.
 
-Especially for staging patches, all of these are "don't care"
-types of messages.
+On first insertion, the device will identify as 0x1c88:0x0007.
+This is just a bootloader stage. After uploading the firmware, the
+device will reconnect with usb product id 0x003c, 0x003d, 0x003e or 0x003f
+depending on the firmware.
 
-You should change your script to check if these are existing
-warnings and if so, not bother reporting them.
+The device uses the gm7113c chip for video ADC, this is a clone of the
+saa7113 chip. This chip is controlled over i2c-bus from the bridge
+chip by a proprietary usb control transfer.
 
-> WARNING: Avoid CamelCase: <pstats->bHwError>
-> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
-> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
-> 
-> WARNING: Avoid CamelCase: <pstats->bCRC>
-> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
-> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
-> 
-> WARNING: Avoid CamelCase: <pstats->bICV>
-> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
-> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
-> 
-> WARNING: line over 80 characters
-> #185: FILE: drivers/staging/slicoss/slicoss.c:795:
-> +						     ether_frame->ether_dhost)) {
-> 
-> WARNING: Avoid CamelCase: <pCurrBSS->abyBSSID>
-> #207: FILE: drivers/staging/vt6655/bssdb.c:151:
-> +				if (ether_addr_equal(pCurrBSS->abyBSSID,
-> 
-> WARNING: Avoid CamelCase: <pbyBSSID>
-> #208: FILE: drivers/staging/vt6655/bssdb.c:152:
-> +						     pbyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <pMgmt->sBSSList[ii].abyBSSID>
-> #217: FILE: drivers/staging/vt6655/bssdb.c:279:
-> +			    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-> 
-> WARNING: Avoid CamelCase: <pMgmt->abyCurrBSSID>
-> #218: FILE: drivers/staging/vt6655/bssdb.c:280:
-> +					     pMgmt->abyCurrBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <pBSSList->abyBSSID>
-> #227: FILE: drivers/staging/vt6655/bssdb.c:323:
-> +			if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <abyBSSID>
-> #227: FILE: drivers/staging/vt6655/bssdb.c:323:
-> +			if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <abyDstAddr>
-> #236: FILE: drivers/staging/vt6655/bssdb.c:738:
-> +			if (ether_addr_equal(abyDstAddr,
-> 
-> WARNING: line over 80 characters
-> #237: FILE: drivers/staging/vt6655/bssdb.c:739:
-> +					     pMgmt->sNodeDBTable[ii].abyMACAddr)) {
-> 
-> WARNING: Avoid CamelCase: <pMgmt->sNodeDBTable[ii].abyMACAddr>
-> #237: FILE: drivers/staging/vt6655/bssdb.c:739:
-> +					     pMgmt->sNodeDBTable[ii].abyMACAddr)) {
-> 
-> WARNING: Avoid CamelCase: <pbyRxBuffer>
-> #250: FILE: drivers/staging/vt6655/dpc.c:175:
-> +	if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {
-> 
-> WARNING: Avoid CamelCase: <pDevice->abySNAP_Bridgetunnel>
-> #250: FILE: drivers/staging/vt6655/dpc.c:175:
-> +	if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {
-> 
-> WARNING: Avoid CamelCase: <pDevice->sRxEthHeader.abySrcAddr>
-> #262: FILE: drivers/staging/vt6655/dpc.c:423:
-> +	if (ether_addr_equal(pDevice->sRxEthHeader.abySrcAddr,
-> 
-> WARNING: Avoid CamelCase: <pDevice->abyCurrentNetAddr>
-> #263: FILE: drivers/staging/vt6655/dpc.c:424:
-> +			     pDevice->abyCurrentNetAddr))
-> 
-> WARNING: line over 80 characters
-> #276: FILE: drivers/staging/vt6655/iwctl.c:666:
-> +				    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-> 
-> WARNING: Avoid CamelCase: <pMgmt->abyDesireBSSID>
-> #277: FILE: drivers/staging/vt6655/iwctl.c:667:
-> +						     pMgmt->abyDesireBSSID)) {
-> 
-> WARNING: line over 80 characters
-> #286: FILE: drivers/staging/vt6655/iwctl.c:844:
-> +						    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-> 
-> WARNING: line over 80 characters
-> #287: FILE: drivers/staging/vt6655/iwctl.c:845:
-> +								     pCurr->abyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <pCurr->abyBSSID>
-> #287: FILE: drivers/staging/vt6655/iwctl.c:845:
-> +								     pCurr->abyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <pTable->KeyTable[i].abyBSSID>
-> #300: FILE: drivers/staging/vt6655/key.c:144:
-> +		    ether_addr_equal(pTable->KeyTable[i].abyBSSID, pbyBSSID)) {
-> 
-> WARNING: Avoid CamelCase: <pDevice->abyBSSID>
-> #389: FILE: drivers/staging/vt6655/wpactl.c:397:
-> +			if (ether_addr_equal(param->addr, pDevice->abyBSSID)) {
-> 
-> WARNING: suspect code indent for conditional statements (12, 20)
-> #399: FILE: drivers/staging/vt6656/bssdb.c:127:
->              if ((pCurrBSS->bActive) &&
-> [...]
-> +		    if (ether_addr_equal(pCurrBSS->abyBSSID, pbyBSSID)) {
-> 
-> WARNING: suspect code indent for conditional statements (20, 20)
-> #402: FILE: drivers/staging/vt6656/bssdb.c:129:
-> +		    if (ether_addr_equal(pCurrBSS->abyBSSID, pbyBSSID)) {
->                      if (pSSID != NULL) {
-> 
-> WARNING: suspect code indent for conditional statements (16, 16)
-> #422: FILE: drivers/staging/vt6656/bssdb.c:280:
-> +		if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
->                  if (pSSID->len == ((PWLAN_IE_SSID)pBSSList->abySSID)->len){
-> 
-> WARNING: suspect code indent for conditional statements (16, 16)
-> #432: FILE: drivers/staging/vt6656/bssdb.c:626:
-> +		if (ether_addr_equal(abyDstAddr,
-> [...]
->                  *puNodeIndex = ii;
-> 
-> WARNING: please, no spaces at the start of a line
-> #446: FILE: drivers/staging/vt6656/dpc.c:139:
-> +    if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {$
-> 
-> WARNING: please, no spaces at the start of a line
-> #449: FILE: drivers/staging/vt6656/dpc.c:141:
-> +    } else if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_RFC1042)) {$
-> 
-> WARNING: suspect code indent for conditional statements (7, 9)
-> #456: FILE: drivers/staging/vt6656/dpc.c:363:
->         if (pMgmt->sNodeDBTable[0].bActive) {
-> +	 if (ether_addr_equal(pMgmt->abyCurrBSSID, pMACHeader->addr2)) {
-> 
-> WARNING: suspect code indent for conditional statements (9, 12)
-> #458: FILE: drivers/staging/vt6656/dpc.c:364:
-> +	 if (ether_addr_equal(pMgmt->abyCurrBSSID, pMACHeader->addr2)) {
->  	    if (pMgmt->sNodeDBTable[0].uInActiveCount != 0)
-> 
-> WARNING: braces {} are not necessary for single statement blocks
-> #468: FILE: drivers/staging/vt6656/dpc.c:377:
-> +	if (!ether_addr_equal(pDevice->abyCurrentNetAddr, pMACHeader->addr1)) {
->  		return false;
->          }
-> 
-> WARNING: please, no spaces at the start of a line
-> #478: FILE: drivers/staging/vt6656/dpc.c:385:
-> +    if (ether_addr_equal((u8 *)pDevice->sRxEthHeader.h_source,$
-> 
-> WARNING: Avoid CamelCase: <pDevice->sRxEthHeader.h_source>
-> #478: FILE: drivers/staging/vt6656/dpc.c:385:
-> +    if (ether_addr_equal((u8 *)pDevice->sRxEthHeader.h_source,
-> 
-> WARNING: line over 80 characters
-> #493: FILE: drivers/staging/vt6656/iwctl.c:660:
-> +					ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-> 
-> WARNING: line over 80 characters
-> #494: FILE: drivers/staging/vt6656/iwctl.c:661:
-> +							 pMgmt->abyDesireBSSID)) {
-> 
-> WARNING: line over 80 characters
-> #504: FILE: drivers/staging/vt6656/iwctl.c:843:
-> +						ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
-> 
-> WARNING: line over 80 characters
-> #505: FILE: drivers/staging/vt6656/iwctl.c:844:
-> +								 pCurr->abyBSSID)) {
-> 
-> total: 0 errors, 39 warnings, 400 lines checked
-> 
-> patch has style problems, please review.
-> 
-> If any of these errors are false positives, please report
-> them to the maintainer, see CHECKPATCH in MAINTAINERS.
-> 
-> Thanks, Wang
-> 
-> Notice: this is an automatically generated by shell script
-> Any problems please contact: wangshilong1991@gmail.com
-> 
+The device also has a CirrusLogic CS5340 chip for audio ADC.
 
+This is the third version of this patch.
+The first version was posted on 14th of Mars 2013, and can be found here:
+http://www.spinics.net/lists/kernel/msg1499018.html
 
+The second version was posted on 25th of April 2014, and can be found here:
+http://www.spinics.net/lists/linux-media/msg63049.html
+
+Between the 2nd version and this version,
+most of my time was spent on implementing i2c platform_data
+for the saa7113 driver and having it accepted.
+I've also done a major rework on the code of this driver,
+rewriting almost all of it.
+
+This patch should be applied to the current media-master
+from linuxtv as it requires these patches:
+https://patchwork.linuxtv.org/patch/19535
+https://patchwork.linuxtv.org/patch/19536
+https://patchwork.linuxtv.org/patch/19537
+
+Output from v4l2-compliance:
+
+Driver Info:
+	Driver name   : smi2021
+	Card type     : smi2021
+	Bus info      : usb-0000:00:1d.0-1.1
+	Driver version: 3.11.0
+	Capabilities  : 0x85000001
+		Video Capture
+		Read/Write
+		Streaming
+		Device Capabilities
+	Device Caps   : 0x05000001
+		Video Capture
+		Read/Write
+		Streaming
+
+Compliance test for device /dev/video1 (not using libv4l2):
+
+Required ioctls:
+	test VIDIOC_QUERYCAP: OK
+
+Allow for multiple opens:
+	test second video open: OK
+	test VIDIOC_QUERYCAP: OK
+	test VIDIOC_G/S_PRIORITY: OK
+
+Debug ioctls:
+	test VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)
+	test VIDIOC_LOG_STATUS: OK
+
+Input ioctls:
+	test VIDIOC_G/S_TUNER: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)
+	test VIDIOC_ENUMAUDIO: OK (Not Supported)
+	test VIDIOC_G/S/ENUMINPUT: OK
+	test VIDIOC_G/S_AUDIO: OK (Not Supported)
+	Inputs: 2 Audio Inputs: 0 Tuners: 0
+
+Output ioctls:
+	test VIDIOC_G/S_MODULATOR: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_ENUMAUDOUT: OK (Not Supported)
+	test VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)
+	test VIDIOC_G/S_AUDOUT: OK (Not Supported)
+	Outputs: 0 Audio Outputs: 0 Modulators: 0
+
+Control ioctls:
+	test VIDIOC_QUERYCTRL/MENU: OK
+	test VIDIOC_G/S_CTRL: OK
+	test VIDIOC_G/S/TRY_EXT_CTRLS: OK
+	test VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK
+	test VIDIOC_G/S_JPEGCOMP: OK (Not Supported)
+	Standard Controls: 7 Private Controls: 0
+
+Input/Output configuration ioctls:
+	test VIDIOC_ENUM/G/S/QUERY_STD: OK
+	test VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)
+	test VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)
+
+Format ioctls:
+	test VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK
+	test VIDIOC_G/S_PARM: OK
+	test VIDIOC_G_FBUF: OK (Not Supported)
+	test VIDIOC_G_FMT: OK
+	test VIDIOC_TRY_FMT: OK
+	test VIDIOC_S_FMT: OK
+	test VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)
+
+Codec ioctls:
+	test VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)
+	test VIDIOC_G_ENC_INDEX: OK (Not Supported)
+	test VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)
+
+Buffer ioctls:
+	test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+
+Total: 36, Succeeded: 36, Failed: 0, Warnings: 0
+
+Jon Arne Jørgensen (1):
+  media: Add a driver for the Somagic smi2021 chip
+
+ drivers/media/usb/Kconfig                      |   1 +
+ drivers/media/usb/Makefile                     |   1 +
+ drivers/media/usb/smi2021/Kconfig              |  11 +
+ drivers/media/usb/smi2021/Makefile             |   9 +
+ drivers/media/usb/smi2021/smi2021.h            | 193 +++++
+ drivers/media/usb/smi2021/smi2021_audio.c      | 401 +++++++++++
+ drivers/media/usb/smi2021/smi2021_bootloader.c | 256 +++++++
+ drivers/media/usb/smi2021/smi2021_main.c       | 952 +++++++++++++++++++++++++
+ drivers/media/usb/smi2021/smi2021_v4l2.c       | 277 +++++++
+ 9 files changed, 2101 insertions(+)
+ create mode 100644 drivers/media/usb/smi2021/Kconfig
+ create mode 100644 drivers/media/usb/smi2021/Makefile
+ create mode 100644 drivers/media/usb/smi2021/smi2021.h
+ create mode 100644 drivers/media/usb/smi2021/smi2021_audio.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_bootloader.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_main.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
+
+-- 
+1.8.3.4
 
