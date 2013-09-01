@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab3IAKhj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:37:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14106 "EHLO mx1.redhat.com"
+	id S1757435Ab3IAKhs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab3IAKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:35 -0400
+	id S1757402Ab3IAKhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:45 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 15/25] perf tools: Add perf data version 3 header swap
-Date: Sun,  1 Sep 2013 12:36:26 +0200
-Message-Id: <1378031796-17892-16-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 18/25] perf tools: Get rid of post_processing_offset in record command
+Date: Sun,  1 Sep 2013 12:36:29 +0200
+Message-Id: <1378031796-17892-19-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf data version 3 header swap same way
-as it's done for v2.
+No need to use post_processing_offset variable now when
+we know where the data starts.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,53 +37,52 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/header.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ tools/perf/builtin-record.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index db6b131..77d588f 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2568,13 +2568,28 @@ static int swap_header_v2(struct perf_file_header *header)
- 	return 0;
- }
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index fdbcd51..4011698 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -75,7 +75,6 @@ struct perf_record {
+ 	bool			no_buildid;
+ 	bool			no_buildid_cache;
+ 	long			samples;
+-	off_t			post_processing_offset;
+ };
  
--static int swap_header(struct perf_file_header *header)
-+static int swap_header_v3(struct perf_file_header *header)
-+{
-+	struct perf_file_header_v3 *v3 = &header->v3;
-+
-+	mem_bswap_64(v3, offsetof(struct perf_file_header_v3,
-+		     adds_features));
-+
-+	swap_features(v3->adds_features);
-+	return 0;
-+}
-+
-+static int swap_header(struct perf_header *ph,
-+		       struct perf_file_header *header)
+ static void advance_output(struct perf_record *rec, size_t size)
+@@ -249,15 +248,17 @@ out:
+ 
+ static int process_buildids(struct perf_record *rec)
  {
- 	/* swap the generic part */
- 	mem_bswap_64(header, offsetof(struct perf_file_header, v2));
+-	u64 size = lseek(rec->output, 0, SEEK_CUR);
++	struct perf_session *session = rec->session;
++	u64 data_offset              = PERF_FILE_HEADER__DATA_OFFSET;
++	u64 size                     = session->header.data_size;
  
- 	/* version specific swap */
--	return swap_header_v2(header);
-+	if (ph->version <= PERF_HEADER_VERSION_2)
-+		return swap_header_v2(header);
-+
-+	return swap_header_v3(header);
+ 	if (size == 0)
+ 		return 0;
+ 
+ 	rec->session->fd = rec->output;
+-	return __perf_session__process_events(rec->session, rec->post_processing_offset,
+-					      size - rec->post_processing_offset,
+-					      size, &build_id__mark_dso_hit_ops);
++	return __perf_session__process_events(session, data_offset,
++					      size - data_offset, size,
++					      &build_id__mark_dso_hit_ops);
  }
  
- int perf_file_header__read(struct perf_file_header *header,
-@@ -2594,7 +2609,7 @@ int perf_file_header__read(struct perf_file_header *header,
- 		return -1;
+ static void perf_record__exit(int status, void *arg)
+@@ -457,8 +458,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
  	}
  
--	return ph->needs_swap ? swap_header(header) : 0;
-+	return ph->needs_swap ? swap_header(ph, header) : 0;
- }
+-	rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
+-
+ 	machine = &session->machines.host;
  
- static int perf_file_section__process(struct perf_file_section *section,
+ 	if (opts->pipe_output) {
 -- 
 1.7.11.7
 
