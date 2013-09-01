@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3IAPaW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 11:30:22 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:35359 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab3IAPaV (ORCPT
+	id S1757596Ab3IAPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 11:30:58 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50770 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3IAPa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 11:30:21 -0400
+	Sun, 1 Sep 2013 11:30:56 -0400
 From: Chenggang Qin <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: root <root@core097011.sqa.cm4>, David Ahern <dsahern@gmail.com>,
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -17,24 +17,23 @@ Cc: root <root@core097011.sqa.cm4>, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@taobao.com>
-Subject: [PATCH 1/3] perf core: Fix a mmap and munmap mismatched bug
-Date: Sun,  1 Sep 2013 23:29:43 +0800
-Message-Id: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3/3] perf core: Fix a memory leak bug because symbol__delete is ignored
+Date: Sun,  1 Sep 2013 23:29:45 +0800
+Message-Id: <1378049385-4466-3-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
+References: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: root <root@core097011.sqa.cm4>
+From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-In function filename__read_debuglink(), while the ELF file is opend and mmapped
-in elf_begin(), but if this file is considered to not be usable during the
-following code, we will goto the close(fd) directly. The elf_end() is skipped.
-So, the mmaped ELF file cannot be munmapped. The memory areas are mmapped is
-exist during the life of perf. This is a memory leak.
-This patch fixed this bug.
+In function symbols__fixup_duplicate(), while the duplicated symbols are found,
+only the rb_node are deleted. The symbol structures themself are ignored.
+Then, these memory areas are lost.
+This patch fixed the bug. 
 Thanks.
 
 Cc: David Ahern <dsahern@gmail.com>
@@ -51,46 +50,26 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/util/symbol-elf.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/util/symbol.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..b4df870 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -471,27 +471,27 @@ int filename__read_debuglink(const char *filename, char *debuglink,
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 9675866..3c9aa6f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -148,10 +148,12 @@ again:
  
- 	ek = elf_kind(elf);
- 	if (ek != ELF_K_ELF)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	if (gelf_getehdr(elf, &ehdr) == NULL) {
- 		pr_err("%s: cannot get elf header.\n", __func__);
--		goto out_close;
-+		goto out_elf_end;
+ 		if (choose_best_symbol(curr, next) == SYMBOL_A) {
+ 			rb_erase(&next->rb_node, symbols);
++			symbol__delete(next);
+ 			goto again;
+ 		} else {
+ 			nd = rb_next(&curr->rb_node);
+ 			rb_erase(&curr->rb_node, symbols);
++			symbol__delete(curr);
+ 		}
  	}
- 
- 	sec = elf_section_by_name(elf, &ehdr, &shdr,
- 				  ".gnu_debuglink", NULL);
- 	if (sec == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	data = elf_getdata(sec, NULL);
- 	if (data == NULL)
--		goto out_close;
-+		goto out_elf_end;
- 
- 	/* the start of this section is a zero-terminated string */
- 	strncpy(debuglink, data->d_buf, size);
- 
-+out_elf_end:
- 	elf_end(elf);
--
- out_close:
- 	close(fd);
- out:
+ }
 -- 
 1.7.8.rc2.5.g815b
 
