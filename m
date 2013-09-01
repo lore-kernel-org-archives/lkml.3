@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab3IAUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 16:00:27 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:47240 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab3IAUAZ (ORCPT
+	id S1755936Ab3IAUBI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 16:01:08 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:35927 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab3IAUBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 16:00:25 -0400
+	Sun, 1 Sep 2013 16:01:06 -0400
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/4] mfd: add STw481x driver
-Date: Sun,  1 Sep 2013 22:00:14 +0200
-Message-Id: <1378065614-18094-1-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 2/4] regulator: add STw481x VMMC driver
+Date: Sun,  1 Sep 2013 22:00:59 +0200
+Message-Id: <1378065659-18135-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a driver for the STw481x PMICs found in the Nomadik
-family of platforms. This one uses pure device tree probing.
-Print some of the OTP registers on boot and register a regulator
-MFD child.
+The ST Microelectronics STw481x PMIC used for the Nomadik
+has one single software-controlled regulator for VMMC.
+This driver registers directly to the compatible string
+as there is just one regulator.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Hi Sam, I'm seeking an ACK for this driver to take it through
-the ARM SoC tree with the enablement patches.
+Hi Mark, I'm seeking an ACK for this driver eventually, to
+take it through the ARM SoC tree with the dependency MFD
+driver and the enablement patches.
 ---
- drivers/mfd/Kconfig         |  10 ++
- drivers/mfd/Makefile        |   1 +
- drivers/mfd/stw481x.c       | 250 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/stw481x.h |  67 ++++++++++++
- 4 files changed, 328 insertions(+)
- create mode 100644 drivers/mfd/stw481x.c
- create mode 100644 include/linux/mfd/stw481x.h
+ drivers/regulator/Kconfig        |   8 ++
+ drivers/regulator/Makefile       |   1 +
+ drivers/regulator/stw481x-vmmc.c | 195 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 204 insertions(+)
+ create mode 100644 drivers/regulator/stw481x-vmmc.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index aecd6dd..bd6b521 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1145,6 +1145,16 @@ config MFD_WM8994
- 	  core support for the WM8994, in order to use the actual
- 	  functionaltiy of the device other drivers must be enabled.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index f1e6ad9..7e424fc 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -374,6 +374,14 @@ config REGULATOR_PALMAS
+ 	  on the muxing. This is handled automatically in the driver by
+ 	  reading the mux info from OTP.
  
-+config MFD_STW481X
-+	bool "Support for ST Microelectronics STw481x"
-+	depends on I2C && ARCH_NOMADIK
-+	select REGMAP_I2C
-+	select MFD_CORE
++config REGULATOR_STW481X_VMMC
++	bool "ST Microelectronics STW481X VMMC regulator"
++	depends on MFD_STW481X
++	default y if MFD_STW481X
 +	help
-+	  Select this option to enable the STw481x chip driver used
-+	  in various ST Microelectronics and ST-Ericsson embedded
-+	  Nomadik series.
++	  This driver supports the VMMC regulator in the STw481x
++	  PMIC chips.
 +
- endmenu
- endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 3c90051..1e1242c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -159,3 +159,4 @@ obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
- obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
- obj-$(CONFIG_MFD_AS3711)	+= as3711.o
-+obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-diff --git a/drivers/mfd/stw481x.c b/drivers/mfd/stw481x.c
+ config REGULATOR_TPS51632
+ 	tristate "TI TPS51632 Power Regulator"
+ 	depends on I2C
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index ba4a3cf..6d53bd4 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+ obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
++obj-$(CONFIG_REGULATOR_STW481X_VMMC) += stw481x-vmmc.o
+ obj-$(CONFIG_REGULATOR_TPS6105X) += tps6105x-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
+diff --git a/drivers/regulator/stw481x-vmmc.c b/drivers/regulator/stw481x-vmmc.c
 new file mode 100644
-index 0000000..b77f504
+index 0000000..e53916e
 --- /dev/null
-+++ b/drivers/mfd/stw481x.c
-@@ -0,0 +1,250 @@
++++ b/drivers/regulator/stw481x-vmmc.c
+@@ -0,0 +1,195 @@
 +/*
-+ * Core driver for STw4810/STw4811
++ * Regulator driver for STw4810/STw4811 VMMC regulator.
 + *
 + * Copyright (C) 2013 ST-Ericsson SA
 + * Written on behalf of Linaro for ST-Ericsson
@@ -85,317 +85,189 @@ index 0000000..b77f504
 + */
 +
 +#include <linux/err.h>
-+#include <linux/i2c.h>
 +#include <linux/init.h>
-+#include <linux/mfd/core.h>
 +#include <linux/mfd/stw481x.h>
 +#include <linux/module.h>
-+#include <linux/regmap.h>
-+#include <linux/spinlock.h>
-+#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
 +
-+/*
-+ * This driver can only access the non-USB portions of STw4811, the register
-+ * range 0x00-0x10 dealing with USB is bound to the two special I2C pins used
-+ * for USB control.
-+ */
-+
-+static int stw481x_get_pctl_reg(struct stw481x *stw481x, u8 reg)
++static int stw481x_vmmc_enable(struct regulator_dev *reg)
 +{
-+	u8 msb = (reg >> 3) & 0x03;
-+	u8 lsb = (reg << 5) & 0xe0;
-+	unsigned int val;
-+	u8 vrfy;
++	struct stw481x *stw481x = rdev_get_drvdata(reg);
 +	int ret;
 +
-+	ret = regmap_write(stw481x->map, 0x1f, msb);
++	/* First disable the external VMMC if it's active */
++	ret = regmap_update_bits(stw481x->map, STW_CONF2,
++				 STW_CONF2_VMMC_EXT, 0);
 +	if (ret)
 +		return ret;
-+	ret = regmap_write(stw481x->map, 0x1e, lsb);
-+	if (ret)
-+		return ret;
-+	ret = regmap_read(stw481x->map, 0x1f, &val);
-+	if (ret)
-+		return ret;
-+	vrfy = (val & 0x03) << 3;
-+	ret = regmap_read(stw481x->map, 0x1e, &val);
-+	if (ret)
-+		return ret;
-+	vrfy |= ((val >> 5) & 0x07);
-+	if (vrfy != reg)
-+		return -EIO;
-+	return (val >> 1) & 0x0f;
++
++	return regmap_update_bits(stw481x->map, STW_CONF1,
++				  0, STW_CONF1_PDN_VMMC);
 +}
 +
-+static int stw481x_startup(struct stw481x *stw481x)
++static int stw481x_vmmc_disable(struct regulator_dev *reg)
 +{
-+	u8 vcore_val[] = { 100, 105, 110, 115, 120, 122, 124, 126, 128,
-+			   130, 132, 134, 136, 138, 140, 145 };
-+	u8 vpll_val[] = { 105, 120, 130, 180 };
-+	u8 vaux_val[] = { 15, 18, 25, 28 };
-+	u8 vcore;
-+	u8 vcore_slp;
-+	u8 vpll;
-+	u8 vaux;
-+	bool vaux_en;
-+	bool it_warn;
++	struct stw481x *stw481x = rdev_get_drvdata(reg);
++
++	return regmap_update_bits(stw481x->map, STW_CONF1,
++				  STW_CONF1_PDN_VMMC, 0);
++}
++
++static int stw481x_vmmc_is_enabled(struct regulator_dev *reg)
++{
++	struct stw481x *stw481x = rdev_get_drvdata(reg);
 +	int ret;
 +	unsigned int val;
 +
 +	ret = regmap_read(stw481x->map, STW_CONF1, &val);
 +	if (ret)
 +		return ret;
-+	vaux_en = !!(val & STW_CONF1_PDN_VAUX);
-+	it_warn = !!(val & STW_CONF1_IT_WARN);
-+
-+	dev_info(&stw481x->client->dev, "voltages %s\n",
-+		(val & STW_CONF1_V_MONITORING) ? "OK" : "LOW");
-+	dev_info(&stw481x->client->dev, "MMC level shifter %s\n",
-+		(val & STW_CONF1_MMC_LS_STATUS) ? "high impedance" : "ON");
-+	dev_info(&stw481x->client->dev, "VMMC: %s\n",
-+		(val & STW_CONF1_PDN_VMMC) ? "ON" : "disabled");
-+
-+	dev_info(&stw481x->client->dev, "STw481x power control registers:\n");
-+
-+	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VCORE_SEL);
-+	if (ret < 0)
-+		return ret;
-+	vcore = ret & 0x0f;
-+
-+	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VAUX_SEL);
-+	if (ret < 0)
-+		return ret;
-+	vaux = (ret >> 2) & 3;
-+	vpll = (ret >> 4) & 1; /* Save bit 4 */
-+
-+	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VPLL_SEL);
-+	if (ret < 0)
-+		return ret;
-+	vpll |= (ret >> 1) & 2;
-+
-+	dev_info(&stw481x->client->dev, "VCORE: %u.%uV %s\n",
-+		vcore_val[vcore] / 100, vcore_val[vcore] % 100,
-+		(ret & 4) ? "ON" : "OFF");
-+
-+	dev_info(&stw481x->client->dev, "VPLL:  %u.%uV %s\n",
-+		vpll_val[vpll] / 100, vpll_val[vpll] % 100,
-+		(ret & 0x10) ? "ON" : "OFF");
-+
-+	dev_info(&stw481x->client->dev, "VAUX:  %u.%uV %s\n",
-+		vaux_val[vaux] / 10, vaux_val[vaux] % 10,
-+		vaux_en ? "ON" : "OFF");
-+
-+	ret = regmap_read(stw481x->map, STW_CONF2, &val);
-+	if (ret)
-+		return ret;
-+
-+	dev_info(&stw481x->client->dev, "TWARN: %s threshold, %s\n",
-+		it_warn ? "below" : "above",
-+		(val & STW_CONF2_MASK_TWARN) ? "enabled" : "mask through VDDOK");
-+	dev_info(&stw481x->client->dev, "VMMC: %s\n",
-+		(val & STW_CONF2_VMMC_EXT) ? "internal" : "external");
-+	dev_info(&stw481x->client->dev, "IT WAKE UP: %s\n",
-+		(val & STW_CONF2_MASK_IT_WAKE_UP) ? "enabled" : "masked");
-+	dev_info(&stw481x->client->dev, "GPO1: %s\n",
-+		(val & STW_CONF2_GPO1) ? "low" : "high impedance");
-+	dev_info(&stw481x->client->dev, "GPO2: %s\n",
-+		(val & STW_CONF2_GPO2) ? "low" : "high impedance");
-+
-+	ret = regmap_read(stw481x->map, STW_VCORE_SLEEP, &val);
-+	if (ret)
-+		return ret;
-+	vcore_slp = val & 0x0f;
-+	dev_info(&stw481x->client->dev, "VCORE SLEEP: %u.%uV\n",
-+		vcore_val[vcore_slp] / 100, vcore_val[vcore_slp] % 100);
-+
-+	return 0;
++	return !!(val & STW_CONF1_PDN_VMMC);
 +}
 +
-+/*
-+ * MFD cells - we have one cell which is selected operation
-+ * mode, and we always have a GPIO cell.
-+ */
-+static struct mfd_cell stw481x_cells[] = {
-+	{
-+		.of_compatible = "st,stw481x-vmmc",
-+		.name = "stw481x-vmmc-regulator",
-+		.id = -1,
-+	},
-+};
-+
-+const struct regmap_config stw481x_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int stw481x_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *id)
++static int stw481x_vmmc_get_voltage_sel(struct regulator_dev *reg)
 +{
-+	struct stw481x			*stw481x;
-+	struct stw481x_platform_data	*pdata = client->dev.platform_data;
++	struct stw481x *stw481x = rdev_get_drvdata(reg);
 +	int ret;
-+	int i;
++	unsigned int val;
 +
-+	stw481x = devm_kzalloc(&client->dev, sizeof(*stw481x), GFP_KERNEL);
-+	if (!stw481x)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(client, stw481x);
-+	stw481x->client = client;
-+	stw481x->pdata = pdata;
-+	stw481x->map = devm_regmap_init_i2c(client, &stw481x_regmap_config);
-+
-+	ret = stw481x_startup(stw481x);
-+	if (ret) {
-+		dev_err(&client->dev, "chip initialization failed\n");
-+		goto fail;
-+	}
-+
-+	/* Set up and register the platform devices. */
-+	for (i = 0; i < ARRAY_SIZE(stw481x_cells); i++) {
-+		/* One state holder for all drivers, this is simple */
-+		stw481x_cells[i].platform_data = stw481x;
-+		stw481x_cells[i].pdata_size = sizeof(*stw481x);
-+	}
-+
-+	ret = mfd_add_devices(&client->dev, 0, stw481x_cells,
-+			ARRAY_SIZE(stw481x_cells), NULL, 0, NULL);
++	ret = regmap_read(stw481x->map, STW_CONF1, &val);
 +	if (ret)
-+		goto fail;
-+
-+	dev_info(&client->dev, "initialized STw481x device\n");
-+
-+	return 0;
-+
-+fail:
-+	devm_kfree(&client->dev, stw481x);
-+	return ret;
++		return ret;
++	val &= STW_CONF1_VMMC_MASK;
++	return (val >> 1);
 +}
 +
-+static int stw481x_remove(struct i2c_client *client)
++static int stw481x_vmmc_set_voltage_sel(struct regulator_dev *reg,
++					unsigned selector)
 +{
-+	struct stw481x *stw481x = i2c_get_clientdata(client);
++	struct stw481x *stw481x = rdev_get_drvdata(reg);
 +
-+	mfd_remove_devices(&client->dev);
-+	devm_kfree(&client->dev, stw481x);
-+	return 0;
++	return regmap_update_bits(stw481x->map, STW_CONF1,
++				  STW_CONF1_VMMC_MASK,
++				  (selector << 1) & STW_CONF1_VMMC_MASK);
 +}
 +
-+/*
-+ * This ID table is completely unused, as this is a pure
-+ * device-tree probed driver, but it has to be here due to
-+ * the structure of the I2C core.
-+ */
-+static const struct i2c_device_id dummy_id[] = {
-+	{ "dummy", 0 },
-+	{ }
++static const unsigned int stw481x_vmmc_voltages[] = {
++	1800000,
++	1800000,
++	2850000,
++	3000000,
++	1850000,
++	2600000,
++	2700000,
++	3300000,
 +};
 +
-+static const struct of_device_id stw481x_match[] = {
-+	{ .compatible = "st,stw4810", },
-+	{ .compatible = "st,stw4811", },
++static struct regulator_ops stw481x_vmmc_ops = {
++	.list_voltage = regulator_list_voltage_table,
++	.enable      = stw481x_vmmc_enable,
++	.disable     = stw481x_vmmc_disable,
++	.is_enabled  = stw481x_vmmc_is_enabled,
++	.get_voltage_sel = stw481x_vmmc_get_voltage_sel,
++	.set_voltage_sel = stw481x_vmmc_set_voltage_sel,
++};
++
++static struct regulator_desc vmmc_regulator = {
++	.name = "VMMC",
++	.id   = 0,
++	.ops  = &stw481x_vmmc_ops,
++	.type = REGULATOR_VOLTAGE,
++	.owner = THIS_MODULE,
++	.n_voltages = ARRAY_SIZE(stw481x_vmmc_voltages),
++	.volt_table = stw481x_vmmc_voltages,
++	.enable_time = 200, /* FIXME: look this up */
++};
++
++static ssize_t show_ctrl1(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	int ret;
++	unsigned int val;
++	struct stw481x *stw481x = dev_get_platdata(dev);
++
++	ret = regmap_read(stw481x->map, STW_CONF1, &val);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%#x\n", val);
++};
++
++static DEVICE_ATTR(ctrl1, S_IRUGO, show_ctrl1, NULL);
++
++static struct attribute *stw481x_vmmc_sysfs_entries[] = {
++	&dev_attr_ctrl1.attr,
++	NULL,
++};
++
++static struct attribute_group stw481x_vmmc_attr_group = {
++        .attrs  = stw481x_vmmc_sysfs_entries,
++};
++
++static int stw481x_vmmc_regulator_probe(struct platform_device *pdev)
++{
++	struct stw481x *stw481x = dev_get_platdata(&pdev->dev);
++	struct regulator_config config = { };
++	int ret;
++
++	/* Register VMMC regulator */
++	config.dev = &pdev->dev;
++	config.driver_data = stw481x;
++	config.of_node = pdev->dev.of_node;
++	config.init_data = of_get_regulator_init_data(&pdev->dev,
++						      pdev->dev.of_node);
++
++	stw481x->vmmc_regulator = regulator_register(&vmmc_regulator, &config);
++	if (IS_ERR(stw481x->vmmc_regulator)) {
++		dev_err(&pdev->dev,
++			"error initializing STw481x VMMC regulator\n");
++		return PTR_ERR(stw481x->vmmc_regulator);
++	}
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &stw481x_vmmc_attr_group);
++	if (ret)
++		dev_err(&pdev->dev, "could not create sysfs group\n");
++
++	dev_info(&pdev->dev, "initialized STw481x VMMC regulator\n");
++	return 0;
++}
++
++static int stw481x_vmmc_regulator_remove(struct platform_device *pdev)
++{
++	struct stw481x *stw481x = dev_get_platdata(&pdev->dev);
++
++	regulator_unregister(stw481x->vmmc_regulator);
++	return 0;
++}
++
++static const struct of_device_id stw481x_vmmc_match[] = {
++	{ .compatible = "st,stw481x-vmmc", },
 +        {},
 +};
-+MODULE_DEVICE_TABLE(of, stw481x_match);
 +
-+static struct i2c_driver stw481x_driver = {
++static struct platform_driver stw481x_vmmc_regulator_driver = {
 +	.driver = {
-+		.name	= "stw481x",
-+		.of_match_table = stw481x_match,
++		.name  = "stw481x-vmmc-regulator",
++		.owner = THIS_MODULE,
 +	},
-+	.probe		= stw481x_probe,
-+	.remove		= stw481x_remove,
-+	.id_table	= dummy_id,
++	.probe = stw481x_vmmc_regulator_probe,
++	.remove = stw481x_vmmc_regulator_remove,
 +};
 +
-+static int __init stw481x_init(void)
++static __init int stw481x_vmmc_regulator_init(void)
 +{
-+	return i2c_add_driver(&stw481x_driver);
++	return platform_driver_register(&stw481x_vmmc_regulator_driver);
 +}
-+module_init(stw481x_init);
 +
-+static void __exit stw481x_exit(void)
++static __exit void stw481x_vmmc_regulator_exit(void)
 +{
-+	i2c_del_driver(&stw481x_driver);
++	platform_driver_unregister(&stw481x_vmmc_regulator_driver);
 +}
-+module_exit(stw481x_exit);
 +
-+MODULE_AUTHOR("Linus Walleij");
-+MODULE_DESCRIPTION("STw481x PMIC driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/stw481x.h b/include/linux/mfd/stw481x.h
-new file mode 100644
-index 0000000..dd4d9f8
---- /dev/null
-+++ b/include/linux/mfd/stw481x.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#ifndef MFD_STW481X_H
-+#define MFD_STW481X_H
-+
-+#include <linux/i2c.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regmap.h>
-+#include <linux/bitops.h>
-+
-+/* These registers are accessed from more than one driver */
-+#define STW_CONF1			0x11U
-+#define STW_CONF1_PDN_VMMC		0x01U
-+#define STW_CONF1_VMMC_MASK		0x0eU
-+#define STW_CONF1_VMMC_1_8V		0x02U
-+#define STW_CONF1_VMMC_2_85V		0x04U
-+#define STW_CONF1_VMMC_3V		0x06U
-+#define STW_CONF1_VMMC_1_85V		0x08U
-+#define STW_CONF1_VMMC_2_6V		0x0aU
-+#define STW_CONF1_VMMC_2_7V		0x0cU
-+#define STW_CONF1_VMMC_3_3V		0x0eU
-+#define STW_CONF1_MMC_LS_STATUS		0x10U
-+#define STW_CONF1_V_MONITORING		0x20U
-+#define STW_CONF1_IT_WARN		0x40U
-+#define STW_CONF1_PDN_VAUX		0x80U
-+#define STW_PC_VCORE_SEL		0x05U
-+#define STW_PC_VAUX_SEL			0x06U
-+#define STW_PC_VPLL_SEL			0x07U
-+#define STW_CONF2			0x20U
-+#define STW_CONF2_MASK_TWARN		0x01U
-+#define STW_CONF2_VMMC_EXT		0x02U
-+#define STW_CONF2_MASK_IT_WAKE_UP	0x04U
-+#define STW_CONF2_GPO1			0x08U
-+#define STW_CONF2_GPO2			0x10U
-+#define STW_VCORE_SLEEP			0x21U
-+
-+/**
-+ * struct stw481x_platform_data - TPS61905x platform data
-+ * @regulator_data: initialization data for the voltage
-+ *	regulator if used as a voltage source
-+ */
-+struct stw481x_platform_data {
-+	struct regulator_init_data *regulator_data;
-+};
-+
-+/**
-+ * struct stw481x - state holder for the Stw481x drivers
-+ * @mutex: mutex to serialize I2C accesses
-+ * @i2c_client: corresponding I2C client
-+ * @regulator: regulator device for regulator children
-+ * @map: regmap handle to access device registers
-+ */
-+struct stw481x {
-+	struct stw481x_platform_data *pdata;
-+	struct mutex		lock;
-+	struct i2c_client	*client;
-+	struct regulator_dev	*vmmc_regulator;
-+	struct regmap		*map;
-+};
-+
-+#endif
++subsys_initcall(stw481x_vmmc_regulator_init);
++module_exit(stw481x_vmmc_regulator_exit);
 -- 
 1.8.1.4
 
