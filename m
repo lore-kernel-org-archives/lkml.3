@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3IAKtf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:49:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49015 "EHLO mx1.redhat.com"
+	id S1757860Ab3IAKyK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:54:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757395Ab3IAKtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:49:20 -0400
+	id S1757454Ab3IAKte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:49:34 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,28 +14,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 05/24] tools list traceevent: Add options support
-Date: Sun,  1 Sep 2013 12:48:30 +0200
-Message-Id: <1378032529-18498-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 10/24] tools list traceevent: Add blk plugin
+Date: Sun,  1 Sep 2013 12:48:35 +0200
+Message-Id: <1378032529-18498-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 References: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Backporting options support for traceevent lib.
-
-It's now possible to use following interface
-to load options for 'struct pevent' object:
-
-void traceevent_add_options(const char *name, struct plugin_option *options);
-  - adds a set of options by a plugin
-
-void traceevent_remove_options(struct plugin_option *options);
-  - removes plugin options that were registered
-
-void traceevent_add_option(const char *name, const char *val);
-  - modifies plugin option
+Backporting blk plugin.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -48,324 +36,448 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/Makefile       |   2 +-
- tools/lib/traceevent/event-option.c | 278 ++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/event-parse.h  |   4 +
- 3 files changed, 283 insertions(+), 1 deletion(-)
- create mode 100644 tools/lib/traceevent/event-option.c
+ tools/lib/traceevent/Makefile     |  17 +-
+ tools/lib/traceevent/plugin_blk.c | 389 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 404 insertions(+), 2 deletions(-)
+ create mode 100644 tools/lib/traceevent/plugin_blk.c
 
 diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 539f3e5..99da843 100644
+index 8ac2b34..178cfa1 100644
 --- a/tools/lib/traceevent/Makefile
 +++ b/tools/lib/traceevent/Makefile
-@@ -180,7 +180,7 @@ $(obj)/%.o: $(src)/%.c
- %.o: $(src)/%.c
- 	$(Q)$(call do_compile)
+@@ -63,6 +63,19 @@ ifndef VERBOSE
+   VERBOSE = 0
+ endif
  
--PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-utils.o
-+PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-utils.o event-option.o
++# $(call test-build, snippet, ret) -> ret if snippet compiles
++#                                  -> empty otherwise
++test-build = $(if $(shell sh -c 'echo "$(1)" | \
++        $(CC) -o /dev/null -c -x c - > /dev/null 2>&1 && echo y'), $2)
++
++define BLK_TC_FLUSH_SOURCE
++#include <linux/blktrace_api.h>
++int main(void) { return BLK_TC_FLUSH; }
++endef
++
++# have flush/fua block layer instead of barriers?
++blk-flags := $(call test-build,$(BLK_TC_FLUSH_SOURCE),-DHAVE_BLK_TC_FLUSH)
++
+ ifeq ("$(origin O)", "command line")
+   BUILD_OUTPUT := $(O)
+ endif
+@@ -133,7 +146,7 @@ CFLAGS ?= -g -Wall
+ 
+ # Append required CFLAGS
+ override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
+-override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
++override CFLAGS += $(blk-flags) -D_GNU_SOURCE
+ 
+ ifeq ($(VERBOSE),1)
+   Q =
+@@ -195,7 +208,7 @@ $(obj)/%.o: $(src)/%.c
+ PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-utils.o event-option.o
  PEVENT_LIB_OBJS += kbuffer-parse.o
  
- ALL_OBJS = $(PEVENT_LIB_OBJS)
-diff --git a/tools/lib/traceevent/event-option.c b/tools/lib/traceevent/event-option.c
+-PLUGIN_OBJS = plugin_jbd2.o
++PLUGIN_OBJS = plugin_jbd2.o plugin_blk.o
+ 
+ PLUGINS := $(PLUGIN_OBJS:.o=.so)
+ 
+diff --git a/tools/lib/traceevent/plugin_blk.c b/tools/lib/traceevent/plugin_blk.c
 new file mode 100644
-index 0000000..61181be
+index 0000000..3b6f226
 --- /dev/null
-+++ b/tools/lib/traceevent/event-option.c
-@@ -0,0 +1,278 @@
-+
++++ b/tools/lib/traceevent/plugin_blk.c
+@@ -0,0 +1,389 @@
++/*
++ * Copyright (C) 2009 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation;
++ * version 2.1 of the License (not later!)
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this program; if not,  see <http://www.gnu.org/licenses>
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
++
++#include <linux/blktrace_api.h>
++
 +#include "event-parse.h"
-+#include "event-utils.h"
 +
-+static struct trace_plugin_options {
-+	struct trace_plugin_options	*next;
-+	char				*plugin;
-+	char				*option;
-+	char				*value;
-+} *trace_plugin_options;
++#define MINORBITS	20
++#define MINORMASK	((1U << MINORBITS) - 1)
++#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
++#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
++#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 +
-+static struct registered_plugin_options {
-+	struct registered_plugin_options	*next;
-+	struct plugin_option			*options;
-+} *registered_options;
++struct blk_data {
++	unsigned long long	sector;
++	struct event_format	*event;
++	unsigned int		action;
++	unsigned int		pid;
++	unsigned int		device;
++	unsigned int		bytes;
++	unsigned int		error;
++	void			*pdu_data;
++	unsigned short		pdu_len;
++};
 +
-+static void update_option(const char *file, struct plugin_option *option)
++static void fill_rwbs(char *rwbs, int action, unsigned int bytes)
 +{
-+	struct trace_plugin_options *op;
-+	char *plugin;
++	int i = 0;
++	int tc = action >> BLK_TC_SHIFT;
 +
-+	if (option->plugin_alias) {
-+		plugin = strdup(option->plugin_alias);
-+		if (!plugin)
-+			die("malloc");
-+	} else {
-+		char *p;
-+		plugin = strdup(file);
-+		if (!plugin)
-+			die("malloc");
-+		p = strstr(plugin, ".");
-+		if (p)
-+			*p = '\0';
-+	}
-+
-+	/* first look for named options */
-+	for (op = trace_plugin_options; op; op = op->next) {
-+		if (!op->plugin)
-+			continue;
-+		if (strcmp(op->plugin, plugin) != 0)
-+			continue;
-+		if (strcmp(op->option, option->name) != 0)
-+			continue;
-+
-+		option->value = op->value;
-+		option->set ^= 1;
++	if (action == BLK_TN_MESSAGE) {
++		rwbs[i++] = 'N';
 +		goto out;
 +	}
 +
-+	/* first look for unnamed options */
-+	for (op = trace_plugin_options; op; op = op->next) {
-+		if (op->plugin)
-+			continue;
-+		if (strcmp(op->option, option->name) != 0)
-+			continue;
++#if defined(HAVE_BLK_TC_FLUSH)
++	if (tc & BLK_TC_FLUSH)
++		rwbs[i++] = 'F';
++#endif
 +
-+		option->value = op->value;
-+		option->set ^= 1;
-+		break;
++	if (tc & BLK_TC_DISCARD)
++		rwbs[i++] = 'D';
++	else if (tc & BLK_TC_WRITE)
++		rwbs[i++] = 'W';
++	else if (bytes)
++		rwbs[i++] = 'R';
++	else
++		rwbs[i++] = 'N';
++
++#if defined(HAVE_BLK_TC_FLUSH)
++	if (tc & BLK_TC_FUA)
++		rwbs[i++] = 'F';
++#endif
++	if (tc & BLK_TC_AHEAD)
++		rwbs[i++] = 'A';
++#if !defined(HAVE_BLK_TC_FLUSH)
++	if (tc & BLK_TC_BARRIER)
++		rwbs[i++] = 'B';
++#endif
++	if (tc & BLK_TC_SYNC)
++		rwbs[i++] = 'S';
++	if (tc & BLK_TC_META)
++		rwbs[i++] = 'M';
++out:
++	rwbs[i] = '\0';
++}
++
++static int log_action(struct trace_seq *s, struct blk_data *data,
++		      const char *act)
++{
++	char rwbs[6];
++
++	fill_rwbs(rwbs, data->action, data->bytes);
++	return trace_seq_printf(s, "%3d,%-3d %2s %3s ",
++				MAJOR(data->device),
++				MINOR(data->device), act, rwbs);
++}
++
++static void blk_log_msg(struct trace_seq *s, void *data, int len)
++{
++	trace_seq_printf(s, "%.*s", len, (char *)data);
++}
++
++static int blk_log_dump_pdu(struct trace_seq *s, const unsigned char *pdu_buf,
++			    int pdu_len)
++{
++	int i, end, ret;
++
++	if (!pdu_len)
++		return 1;
++
++	/* find the last zero that needs to be printed */
++	for (end = pdu_len - 1; end >= 0; end--)
++		if (pdu_buf[end])
++			break;
++	end++;
++
++	if (!trace_seq_putc(s, '('))
++		return 0;
++
++	for (i = 0; i < pdu_len; i++) {
++
++		ret = trace_seq_printf(s, "%s%02x",
++				       i == 0 ? "" : " ", pdu_buf[i]);
++		if (!ret)
++			return ret;
++
++		/*
++		 * stop when the rest is just zeroes and indicate so
++		 * with a ".." appended
++		 */
++		if (i == end && end != pdu_len - 1)
++			return trace_seq_puts(s, " ..) ");
++	}
++
++	return trace_seq_puts(s, ") ");
++}
++
++static unsigned int t_sec(int bytes)
++{
++	return bytes >> 9;
++}
++
++static unsigned int be32_to_cpu(unsigned int val)
++{
++	unsigned int swap;
++
++	if (traceevent_host_bigendian())
++		return val;
++
++	swap = ((val & 0xffULL) << 24) |
++		((val & (0xffULL << 8)) << 8) |
++		((val & (0xffULL << 16)) >> 8) |
++		((val & (0xffULL << 24)) >> 24);
++
++	return swap;
++}
++
++static unsigned long long be64_to_cpu(unsigned long long val)
++{
++	unsigned long long swap;
++
++	if (traceevent_host_bigendian())
++		return val;
++
++	swap = ((val & 0xffULL) << 56) |
++		((val & (0xffULL << 8)) << 40) |
++		((val & (0xffULL << 16)) << 24) |
++		((val & (0xffULL << 24)) << 8) |
++		((val & (0xffULL << 32)) >> 8) |
++		((val & (0xffULL << 40)) >> 24) |
++		((val & (0xffULL << 48)) >> 40) |
++		((val & (0xffULL << 56)) >> 56);
++
++	return swap;
++}
++
++static unsigned long long get_pdu_int(void *data)
++{
++	const unsigned long long *val = data;
++	return be64_to_cpu(*val);
++}
++
++static void get_pdu_remap(void *pdu_data,
++			  struct blk_io_trace_remap *r)
++{
++	const struct blk_io_trace_remap *__r = pdu_data;
++	unsigned long long sector_from = __r->sector_from;
++
++	r->device_from = be32_to_cpu(__r->device_from);
++	r->device_to   = be32_to_cpu(__r->device_to);
++	r->sector_from = be64_to_cpu(sector_from);
++}
++
++static int blk_log_remap(struct trace_seq *s, struct blk_data *data)
++{
++	struct blk_io_trace_remap r = { .device_from = 0, };
++
++	get_pdu_remap(data->pdu_data, &r);
++	return trace_seq_printf(s, "%llu + %u <- (%d,%d) %llu\n",
++				data->sector, t_sec(data->bytes),
++				MAJOR(r.device_from), MINOR(r.device_from),
++				(unsigned long long)r.sector_from);
++}
++
++static int blk_log_split(struct trace_seq *s, struct blk_data *data)
++{
++	const char *cmd;
++
++	cmd = pevent_data_comm_from_pid(data->event->pevent, data->pid);
++
++	return trace_seq_printf(s, "%llu / %llu [%s]\n", data->sector,
++				get_pdu_int(data->pdu_data), cmd);
++}
++
++static int blk_log_plug(struct trace_seq *s, struct blk_data *data)
++{
++	const char *cmd;
++
++	cmd = pevent_data_comm_from_pid(data->event->pevent, data->pid);
++
++	return trace_seq_printf(s, "[%s]\n", cmd);
++}
++
++static int blk_log_unplug(struct trace_seq *s, struct blk_data *data)
++{
++	const char *cmd;
++
++	cmd = pevent_data_comm_from_pid(data->event->pevent, data->pid);
++
++	return trace_seq_printf(s, "[%s] %llu\n", cmd,
++				get_pdu_int(data->pdu_data));
++}
++
++static int blk_log_with_error(struct trace_seq *s, struct blk_data *data)
++{
++	if (data->action & BLK_TC_ACT(BLK_TC_PC)) {
++		blk_log_dump_pdu(s, data->pdu_data, data->pdu_len);
++		trace_seq_printf(s, "[%d]\n", data->error);
++		return 0;
++	} else {
++		if (t_sec(data->bytes))
++			return trace_seq_printf(s, "%llu + %u [%d]\n",
++						data->sector,
++						t_sec(data->bytes),
++						data->error);
++		return trace_seq_printf(s, "%llu [%d]\n",
++					data->sector, data->error);
++	}
++}
++
++static int blk_log_generic(struct trace_seq *s, struct blk_data *data)
++{
++	const char *cmd;
++
++	cmd = pevent_data_comm_from_pid(data->event->pevent, data->pid);
++
++	if (data->action & BLK_TC_ACT(BLK_TC_PC)) {
++		int ret;
++
++		ret = trace_seq_printf(s, "%u ", data->bytes);
++		if (!ret)
++			return 0;
++		ret = blk_log_dump_pdu(s, data->pdu_data, data->pdu_len);
++		if (!ret)
++			return 0;
++		return trace_seq_printf(s, "[%s]\n", cmd);
++	} else {
++		if (t_sec(data->bytes))
++			return trace_seq_printf(s, "%llu + %u [%s]\n",
++						data->sector,
++						t_sec(data->bytes), cmd);
++		return trace_seq_printf(s, "[%s]\n", cmd);
++	}
++}
++
++static const struct {
++	const char *act[2];
++	int	   (*print)(struct trace_seq *s, struct blk_data *data);
++} what2act[] = {
++	[__BLK_TA_QUEUE]	= {{  "Q", "queue" },	   blk_log_generic },
++	[__BLK_TA_BACKMERGE]	= {{  "M", "backmerge" },  blk_log_generic },
++	[__BLK_TA_FRONTMERGE]	= {{  "F", "frontmerge" }, blk_log_generic },
++	[__BLK_TA_GETRQ]	= {{  "G", "getrq" },	   blk_log_generic },
++	[__BLK_TA_SLEEPRQ]	= {{  "S", "sleeprq" },	   blk_log_generic },
++	[__BLK_TA_REQUEUE]	= {{  "R", "requeue" },	   blk_log_with_error },
++	[__BLK_TA_ISSUE]	= {{  "D", "issue" },	   blk_log_generic },
++	[__BLK_TA_COMPLETE]	= {{  "C", "complete" },   blk_log_with_error },
++	[__BLK_TA_PLUG]		= {{  "P", "plug" },	   blk_log_plug },
++	[__BLK_TA_UNPLUG_IO]	= {{  "U", "unplug_io" },  blk_log_unplug },
++	[__BLK_TA_UNPLUG_TIMER]	= {{ "UT", "unplug_timer" }, blk_log_unplug },
++	[__BLK_TA_INSERT]	= {{  "I", "insert" },	   blk_log_generic },
++	[__BLK_TA_SPLIT]	= {{  "X", "split" },	   blk_log_split },
++	[__BLK_TA_BOUNCE]	= {{  "B", "bounce" },	   blk_log_generic },
++	[__BLK_TA_REMAP]	= {{  "A", "remap" },	   blk_log_remap },
++};
++
++static int blktrace_handler(struct trace_seq *s, struct pevent_record *record,
++			    struct event_format *event, void *context)
++{
++	struct format_field *field;
++	unsigned long long val;
++	void *data = record->data;
++	struct blk_data blk_data;
++	unsigned short what;
++	int long_act = 0;
++
++	field = pevent_find_field(event, "action");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.action = val;
++
++	field = pevent_find_field(event, "bytes");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.bytes = val;
++
++	field = pevent_find_field(event, "device");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.device = val;
++
++	field = pevent_find_field(event, "pdu_len");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.pdu_len = val;
++
++	field = pevent_find_field(event, "data");
++	if (!field)
++		return 1;
++	blk_data.pdu_data = data + field->offset;
++
++	field = pevent_find_field(event, "sector");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &blk_data.sector))
++		return 1;
++
++	field = pevent_find_field(event, "pid");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.pid = val;
++
++	field = pevent_find_field(event, "error");
++	if (!field)
++		return 1;
++	if (pevent_read_number_field(field, data, &val))
++		return 1;
++	blk_data.error = val;
++
++	blk_data.event = event;
++
++
++	what	   = blk_data.action & ((1 << BLK_TC_SHIFT) - 1);
++
++	if (blk_data.action == BLK_TN_MESSAGE) {
++		log_action(s, &blk_data, "m");
++		blk_log_msg(s, blk_data.pdu_data, blk_data.pdu_len);
++		goto out;
++	}
++
++	if (what == 0 || what >= ARRAY_SIZE(what2act))
++		trace_seq_printf(s, "Unknown action %x\n", what);
++	else {
++		log_action(s, &blk_data, what2act[what].act[long_act]);
++		what2act[what].print(s, &blk_data);
 +	}
 +
 + out:
-+	free(plugin);
++	return 0;
 +}
 +
-+/**
-+ * trace_util_add_options - Add a set of options by a plugin
-+ * @name: The name of the plugin adding the options
-+ * @options: The set of options being loaded
-+ *
-+ * Sets the options with the values that have been added by user.
-+ */
-+void traceevent_add_options(const char *name, struct plugin_option *options)
++int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
 +{
-+	struct registered_plugin_options *reg;
-+
-+	reg = malloc_or_die(sizeof(*reg));
-+	reg->next = registered_options;
-+	reg->options = options;
-+	registered_options = reg;
-+
-+	while (options->name) {
-+		update_option("ftrace", options);
-+		options++;
-+	}
++	pevent_register_event_handler(pevent, -1, "ftrace", "blktrace",
++				      blktrace_handler, NULL);
++	return 0;
 +}
-+
-+/**
-+ * trace_util_remove_options - remove plugin options that were registered
-+ * @options: Options to removed that were registered with trace_util_add_options
-+ */
-+void traceevent_remove_options(struct plugin_option *options)
-+{
-+	struct registered_plugin_options **last;
-+	struct registered_plugin_options *reg;
-+
-+	for (last = &registered_options; *last; last = &(*last)->next) {
-+		if ((*last)->options == options) {
-+			reg = *last;
-+			*last = reg->next;
-+			free(reg);
-+			return;
-+		}
-+	}
-+}
-+
-+static struct plugin_option *
-+find_registered_option(const char *plugin, const char *option)
-+{
-+	struct registered_plugin_options *reg;
-+	struct plugin_option *op;
-+	const char *op_plugin;
-+
-+	for (reg = registered_options; reg; reg = reg->next) {
-+		for (op = reg->options; op->name; op++) {
-+			if (op->plugin_alias)
-+				op_plugin = op->plugin_alias;
-+			else
-+				op_plugin = op->file;
-+
-+			if (plugin && strcmp(plugin, op_plugin) != 0)
-+				continue;
-+			if (strcmp(option, op->name) != 0)
-+				continue;
-+
-+			return op;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+static void lower_case(char *str)
-+{
-+	if (!str)
-+		return;
-+	for (; *str; str++)
-+		*str = tolower(*str);
-+}
-+
-+static int update_option_value(struct plugin_option *op, const char *val)
-+{
-+	char *op_val;
-+	int ret = 1;
-+
-+	if (!val) {
-+		/* toggle, only if option is boolean */
-+		if (op->value)
-+			/* Warn? */
-+			return 0;
-+		op->set ^= 1;
-+		return 1;
-+	}
-+
-+	/*
-+	 * If the option has a value then it takes a string
-+	 * otherwise the option is a boolean.
-+	 */
-+	if (op->value) {
-+		op->value = (char *) val;
-+		return 1;
-+	}
-+
-+	/* Option is boolean, must be either "1", "0", "true" or "false" */
-+
-+	op_val = strdup(val);
-+	if (!op_val)
-+		die("malloc");
-+	lower_case(op_val);
-+
-+	if (strcmp(val, "1") == 0 || strcmp(val, "true") == 0)
-+		op->set = 1;
-+	else if (strcmp(val, "0") == 0 || strcmp(val, "false") == 0)
-+		op->set = 0;
-+	else
-+		/* Warn on else? */
-+		ret = 0;
-+	free(op_val);
-+
-+	return ret;
-+}
-+
-+static int process_option(const char *plugin, const char *option, const char *val)
-+{
-+	struct plugin_option *op;
-+
-+	op = find_registered_option(plugin, option);
-+	if (!op)
-+		return 0;
-+
-+	return update_option_value(op, val);
-+}
-+
-+static void parse_option_name(char **option, char **plugin)
-+{
-+	char *p;
-+
-+	*plugin = NULL;
-+
-+	if ((p = strstr(*option, ":"))) {
-+		*plugin = *option;
-+		*p = '\0';
-+		*option = strdup(p + 1);
-+		if (!*option)
-+			die("malloc");
-+	}
-+}
-+
-+/**
-+ * trace_util_add_option - add an option/val pair to set plugin options
-+ * @name: The name of the option (format: <plugin>:<option> or just <option>)
-+ * @val: (optiona) the value for the option
-+ *
-+ * Modify a plugin option. If @val is given than the value of the option
-+ * is set (note, some options just take a boolean, so @val must be either
-+ * "1" or "0" or "true" or "false").
-+ */
-+void traceevent_add_option(const char *name, const char *val)
-+{
-+	struct trace_plugin_options *op;
-+	char *option_str;
-+	char *plugin;
-+
-+	option_str = strdup(name);
-+	if (!option_str)
-+		die("malloc");
-+
-+	parse_option_name(&option_str, &plugin);
-+
-+	/* If the option exists, update the val */
-+	for (op = trace_plugin_options; op; op = op->next) {
-+		/* Both must be NULL or not NULL */
-+		if ((!plugin || !op->plugin) && plugin != op->plugin)
-+			continue;
-+		if (plugin && strcmp(plugin, op->plugin) != 0)
-+			continue;
-+		if (strcmp(op->option, option_str) != 0)
-+			continue;
-+
-+		/* update option */
-+		free(op->value);
-+		if (val) {
-+			op->value = strdup(val);
-+			if (!op->value)
-+				die("malloc");
-+		} else
-+			op->value = NULL;
-+
-+		/* plugin and option_str don't get freed at the end */
-+		free(plugin);
-+		free(option_str);
-+
-+		plugin = op->plugin;
-+		option_str = op->option;
-+		break;
-+	}
-+
-+	/* If not found, create */
-+	if (!op) {
-+		op = malloc_or_die(sizeof(*op));
-+		memset(op, 0, sizeof(*op));
-+		op->next = trace_plugin_options;
-+		trace_plugin_options = op;
-+
-+		op->plugin = plugin;
-+		op->option = option_str;
-+
-+		if (val) {
-+			op->value = strdup(val);
-+			if (!op->value)
-+				die("malloc");
-+		}
-+	}
-+
-+	process_option(plugin, option_str, val);
-+}
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 8273c6e..3aaf668 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -110,6 +110,10 @@ struct plugin_option {
- 	int				set;
- };
- 
-+void traceevent_add_options(const char *name, struct plugin_option *options);
-+void traceevent_remove_options(struct plugin_option *options);
-+void traceevent_add_option(const char *name, const char *val);
-+
- /*
-  * Plugin hooks that can be called:
-  *
 -- 
 1.7.11.7
 
