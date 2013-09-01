@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab3IARBb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 13:01:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54299 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab3IARB3 (ORCPT
+	id S1757761Ab3IARtN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 13:49:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49030 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab3IARtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 13:01:29 -0400
-Message-ID: <522372EB.1060701@ti.com>
-Date: Sun, 1 Sep 2013 20:01:31 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130808 Thunderbird/17.0.8
+	Sun, 1 Sep 2013 13:49:11 -0400
+Date: Sun, 1 Sep 2013 18:48:54 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130901174853.GR13318@ZenIV.linux.org.uk>
+References: <5220FD51.2010709@hp.com>
+ <CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
+ <20130830205404.GF13318@ZenIV.linux.org.uk>
+ <CA+55aFwwKEaTBX9Uoexpote7dOHBq+TiJ=RifzTpVL_jh24A9w@mail.gmail.com>
+ <20130830214452.GH13318@ZenIV.linux.org.uk>
+ <CA+55aFyyrihbLyMRSW9ahviNFiwi-NBKbcjeKW6fouWUW8fj6g@mail.gmail.com>
+ <20130831212355.GN13318@ZenIV.linux.org.uk>
+ <CA+55aFwxQ2zN+kbt0Atob-Rims4B1pxgFniXbbA=YDAfb+wWAg@mail.gmail.com>
+ <20130831232758.GO13318@ZenIV.linux.org.uk>
+ <20130901001306.GP13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-CC: <dmitry.torokhov@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>,
-        <broonie@opensource.wolfsonmicro.com>, <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] driver: input: twl4030-vibra: fix missing of_node_put
-References: <522190ED.6020909@huawei.com>
-In-Reply-To: <522190ED.6020909@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130901001306.GP13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2013 09:45 AM, Libo Chen wrote:
+On Sun, Sep 01, 2013 at 01:13:06AM +0100, Al Viro wrote:
+> > Actually, right now I'm debugging a variant that avoids local buffers; use
+> > is %pD3 for grandparent/parent/name, etc., up to %pD4.  %pd is equivalent
+> > to %pD1 (just the dentry name).  Keep in mind that things like NFS use
+> > a _lot_ of what would be %pD2 in debugging printks and the string can grow
+> > fairly long, so I'd rather live with widen() than mess with local buffers
+> > here.  I'll send an updated variant when I'm more or less satisfied with
+> > it...
 > 
-> decrease node device_node refcount after task completion
-> 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> Seems to be working...  This doesn't include the metric arseload of
+> conversions in fs/*/* - just the sprintf part.
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+FWIW, now that I've looked at more users (and we do have a shitload
+of those), it seems that we need the following set:
+	dentry name
+	dentry path 2--4 levels deep (most of the users want 2 right now,
+but that's mostly a matter of arguments being too painful to type for
+deeper ones)
+	same for file - sure, we can just pass file->f_path.dentry,
+but there's a lot of such guys and I'd like to reduce the amount of
+places where we have ->f_path.dentry mentioned in source.
 
-> ---
->  drivers/input/misc/twl4030-vibra.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-> index 68a5f33..b8d1526 100644
-> --- a/drivers/input/misc/twl4030-vibra.c
-> +++ b/drivers/input/misc/twl4030-vibra.c
-> @@ -185,8 +185,10 @@ static bool twl4030_vibra_check_coexist(struct twl4030_vibra_data *pdata,
->  	if (pdata && pdata->coexist)
->  		return true;
-> 
-> -	if (of_find_node_by_name(node, "codec"))
-> +	if (of_find_node_by_name(node, "codec")) {
-> +		of_node_put(node);
->  		return true;
-> +	}
-> 
->  	return false;
->  }
-> 
-
-
--- 
-Péter
+Suggestions regarding formats to use would be welcome.  For now I'm using
+pd/pd<n>/pD/pD<n>, the latter two being for struct file, but I'd gladly
+take anything prettier than that.
