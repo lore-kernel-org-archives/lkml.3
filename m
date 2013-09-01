@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab3IAQBY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 12:01:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45835 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757626Ab3IAQBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 12:01:23 -0400
-Message-ID: <522364AA.9050506@zytor.com>
-Date: Sun, 01 Sep 2013 09:00:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756043Ab3IAQEq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 12:04:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59856 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3IAQEo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 12:04:44 -0400
+Date: Sun, 1 Sep 2013 17:04:29 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Florian Weimer <fw@deneb.enyo.de>
+Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
+        opensuse-kernel@opensuse.org, David Howells <dhowells@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC PATCH 00/18 v3] Signature verification of hibernate
+ snapshot
+Message-ID: <20130901160429.GA1375@srcf.ucam.org>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+ <87eh9dzg00.fsf@mid.deneb.enyo.de>
+ <1377734505.19568.39.camel@linux-s257.site>
+ <87r4d8vn71.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: On the correctness of dbe3ed1c078c193be34326728d494c5c4bc115e2
-References: <5223311D.2040608@zytor.com> <CA+55aFwUKyJwphC7EFCgQKGLfZq1yrjx+4CrMhJeVmxFr8QNdg@mail.gmail.com>
-In-Reply-To: <CA+55aFwUKyJwphC7EFCgQKGLfZq1yrjx+4CrMhJeVmxFr8QNdg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r4d8vn71.fsf@mid.deneb.enyo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2013 08:58 AM, Linus Torvalds wrote:
-> On Sun, Sep 1, 2013 at 5:20 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> This has the end result that we treat a user space instruction which
->> touches a privileged data structure that then page faults (e.g. a
->> segment load which causes #PF on the GDT) as a user-space fault.
->>
->> This seems very wrong to me, since such a #PF would indicate a serious
->> error in the kernel.
-> 
-> Not necessarily. Don't we basically do exactly that for the F00F bug
-> workaround, for example?
-> 
+On Sun, Sep 01, 2013 at 12:41:22PM +0200, Florian Weimer wrote:
 
-We do, but only after matching on an exact address (is_f00f_bug()).
-Note also that is_f00f_bug() isn't conditional on PF_USER.
+> But if you don't generate fresh keys on every boot, the persistent
+> keys are mor exposed to other UEFI applications.  Correct me if I'm
+> wrong, but I don't think UEFI variables are segregated between
+> different UEFI applications, so if anyone gets a generic UEFI variable
+> dumper (or setter) signed by the trusted key, this cryptographic
+> validation of hibernate snapshots is bypassable.
 
-	-hpa
+If anyone can execute arbitrary code in your UEFI environment then 
+you've already lost.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
