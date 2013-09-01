@@ -1,162 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3IAUN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 16:13:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39732 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3IAUN2 (ORCPT
+	id S1756073Ab3IAUQN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 16:16:13 -0400
+Received: from s15283307.onlinehome-server.info ([87.106.208.187]:43715 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3IAUQM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 16:13:28 -0400
-Date: Sun, 1 Sep 2013 21:13:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Message-ID: <20130901201321.GB23687@sirena.org.uk>
-References: <1378065659-18135-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
-Content-Disposition: inline
-In-Reply-To: <1378065659-18135-1-git-send-email-linus.walleij@linaro.org>
-X-Cookie: You may be recognized soon.  Hide.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] regulator: add STw481x VMMC driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Sun, 1 Sep 2013 16:16:12 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: 3.11-final plan: unpriviledged user can crash the kernel (using bluetooth rfcomm)
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20130901185038.GA11714@amd.pavel.ucw.cz>
+Date: Sun, 1 Sep 2013 13:16:07 -0700
+Cc: Gustavo Padovan <gustavo@padovan.org>, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B3715CDF-1D85-45C9-9AD1-DBBD0DF24624@holtmann.org>
+References: <20130831100127.GA6711@amd.pavel.ucw.cz> <20130831100933.GA7029@amd.pavel.ucw.cz> <20130831101451.GC7029@amd.pavel.ucw.cz> <20130831104238.GA7767@amd.pavel.ucw.cz> <20130901165525.GK7440@joana> <20130901185038.GA11714@amd.pavel.ucw.cz>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Pavel,
 
---TRYliJ5NKNqkz5bu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>>>>>> . Python sources for client/server are at 
+>>>>>> 
+>>>>>> http://tui.cvs.sourceforge.net/viewvc/tui/tui/liveview/
+>>>>>> 
+>>>>>> . My kernels like to warn about
+>>>>> System is debian stable with gnome2.
+>>>> 
+>>>> And no, it is not fixed in 3.11-rc7.
+>>> 
+>>> 2.6.32-5-686 from debian seems to work.
+>> 
+>> Could you try linux-next? We recently pushed a rework of the RFCOMM tty
+>> handling, it should fix this. The work was too big to be pushed to 3.11
+> 
+> So... In 3.11 unpriviledged user can crash the kernel, but the fix is
+> too big, so we release it without the fix?
+> 
+> Somehow, I don't think that's good idea.
 
-On Sun, Sep 01, 2013 at 10:00:59PM +0200, Linus Walleij wrote:
+can you boot a bluetooth-next kernel and see if the planned changes are fixing this or not. I would like to have that confirmed before we start any speculations here.
 
-> Hi Mark, I'm seeking an ACK for this driver eventually, to
-> take it through the ARM SoC tree with the dependency MFD
-> driver and the enablement patches.
+If the RFCOMM TTY rework that we have in bluetooth-next fixes this issue, then we can have a look at if this can be patched for 3.11 or a stable kernel without having to include the whole patch series. Or if the TTY subsystem changed from 2.6.32 so much that we have to take the whole changes.
 
-I can put it on a branch so it can be pulled into arm-soc - it makes
-life easier for framework refactorings to have the driver in the
-regulator tree as well.  Would that be OK?
+However, please also note there is a different between RFCOMM sockets and RFCOMM TTYs. I would be curious if only the TTY part is affected or also the socket part.
 
-> +static int stw481x_vmmc_enable(struct regulator_dev *reg)
-> +{
-> +	struct stw481x *stw481x = rdev_get_drvdata(reg);
-> +	int ret;
-> +
-> +	/* First disable the external VMMC if it's active */
-> +	ret = regmap_update_bits(stw481x->map, STW_CONF2,
-> +				 STW_CONF2_VMMC_EXT, 0);
-> +	if (ret)
-> +		return ret;
+Regards
 
-This is a bit unusual - is there some definite relationship between the
-two?
+Marcel
 
-> +static int stw481x_vmmc_disable(struct regulator_dev *reg)
-> +{
-> +	struct stw481x *stw481x = rdev_get_drvdata(reg);
-> +
-> +	return regmap_update_bits(stw481x->map, STW_CONF1,
-> +				  STW_CONF1_PDN_VMMC, 0);
-> +}
-
-Should use regulator_disable_regmap().
-
-> +static int stw481x_vmmc_is_enabled(struct regulator_dev *reg)
-> +{
-> +	struct stw481x *stw481x = rdev_get_drvdata(reg);
-> +	int ret;
-> +	unsigned int val;
-> +
-> +	ret = regmap_read(stw481x->map, STW_CONF1, &val);
-> +	if (ret)
-> +		return ret;
-> +	return !!(val & STW_CONF1_PDN_VMMC);
-> +}
-
-Should use regulator_is_enabled_regmap().
-
-> +static int stw481x_vmmc_get_voltage_sel(struct regulator_dev *reg)
-> +static int stw481x_vmmc_set_voltage_sel(struct regulator_dev *reg,
-> +					unsigned selector)
-
-Should use regulator_get/set_voltage_sel_regmap().
-
-> +static ssize_t show_ctrl1(struct device *dev,
-> +			  struct device_attribute *attr, char *buf)
-> +{
-> +	int ret;
-> +	unsigned int val;
-> +	struct stw481x *stw481x = dev_get_platdata(dev);
-> +
-> +	ret = regmap_read(stw481x->map, STW_CONF1, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return sprintf(buf, "%#x\n", val);
-> +};
-> +
-> +static DEVICE_ATTR(ctrl1, S_IRUGO, show_ctrl1, NULL);
-
-I'd suggest setting max_register (and possibly readable_reg()) in the
-regmap config rather than adding specific sysfs files.  Unless there's
-some pressing reason for this beyond debug?
-
-> +	stw481x->vmmc_regulator = regulator_register(&vmmc_regulator, &config);
-> +	if (IS_ERR(stw481x->vmmc_regulator)) {
-> +		dev_err(&pdev->dev,
-> +			"error initializing STw481x VMMC regulator\n");
-> +		return PTR_ERR(stw481x->vmmc_regulator);
-> +	}
-
-I sent patches for a devm_regulator_register() yesterday - it'll be
-going into -next after the merge window, though the conversion can
-always happen later (I didn't convert most of the drivers yet anyway).
-
-> +static __init int stw481x_vmmc_regulator_init(void)
-> +{
-> +	return platform_driver_register(&stw481x_vmmc_regulator_driver);
-> +}
-> +
-> +static __exit void stw481x_vmmc_regulator_exit(void)
-> +{
-> +	platform_driver_unregister(&stw481x_vmmc_regulator_driver);
-> +}
-> +
-> +subsys_initcall(stw481x_vmmc_regulator_init);
-> +module_exit(stw481x_vmmc_regulator_exit);
-
-You should be able to use module_platform_driver() with modern systems,
-deferred probing should cope with most uses of subsys_initcall().  Not
-the end of the world though.
-
---TRYliJ5NKNqkz5bu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSI5/eAAoJELSic+t+oim9zvQP/2r3TzB8dJKxzA55NfvFTXWk
-MNHY7/0Siv3DscG8yjbAOARaAjnXBScIBTPpnGldeV9fFjHnf98ABOq0ax3xxOZF
-YlnCHlHwWEsmK4qzWp5/I4kr/fS01dtTyN4mYhaaNp3cDrSGZ5SyA5b/57rqvAsM
-9gN/RNFS3Ewpd2gQQPMibkbOyqL4/P/Q12mXnjDGkTCcOJaNbsMvXeQNQDjBvCi+
-WdxFeEPsZde7zHjudh/t3GTZA8V+q84Lykm2DZI8kUwqP5pzgY/6PDFlSsrFmhJz
-M4eYbWwmPohXikSVJMteq0WY4L3wb8bD6Fdk9q1YJgJOKl/7JorsydH8KLgs/kdO
-X5MzVmYcaQIxVjoat8j3QTNknpi8IiEWBDh/4LbaYivAguseo+cxRp1C7sKeueSu
-HcTGF1s2i0c9uod7mwtXRjMXSVVqEjGpcQw1wthkesfL/UDkbWmMwFd20MEtVoRU
-XwSMm3LLQEfvOfzg1Z5p9/HNKHB6qP67trbHQ7G1MjlvIqiw7LELNqOz/ADIjLdc
-3IPi9j0K+omV3wF6gY/yYvzm9vO/PrEYD6IwpeeldwnsbafEBcZxfXujUC/gyK6C
-JedO0LcW4CDU6GdYpr2BOH5sA+PnqnJOBX3ytQ0Vylt3gyixB21YYB0eGNiq/s8m
-JsNmO+gOjmzOboeOb7k3
-=oY0E
------END PGP SIGNATURE-----
-
---TRYliJ5NKNqkz5bu--
