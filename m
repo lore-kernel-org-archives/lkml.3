@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757716Ab3IAKur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:50:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23669 "EHLO mx1.redhat.com"
+	id S1757734Ab3IAKux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:50:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757669Ab3IAKup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:50:45 -0400
+	id S1757239Ab3IAKuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:50:50 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,16 +14,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 14/24] tools list traceevent: Add mac80211 plugin
-Date: Sun,  1 Sep 2013 12:48:39 +0200
-Message-Id: <1378032529-18498-15-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 16/24] tools list traceevent: Add function plugin
+Date: Sun,  1 Sep 2013 12:48:41 +0200
+Message-Id: <1378032529-18498-17-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 References: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Backporting mac80211 plugin.
+Backporting function plugin.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -36,33 +36,32 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/Makefile          |   3 +-
- tools/lib/traceevent/plugin_mac80211.c | 204 +++++++++++++++++++++++++++++++++
- 2 files changed, 206 insertions(+), 1 deletion(-)
- create mode 100644 tools/lib/traceevent/plugin_mac80211.c
+ tools/lib/traceevent/Makefile          |   2 +-
+ tools/lib/traceevent/plugin_function.c | 182 +++++++++++++++++++++++++++++++++
+ 2 files changed, 183 insertions(+), 1 deletion(-)
+ create mode 100644 tools/lib/traceevent/plugin_function.c
 
 diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 3ac01c6..690e107 100644
+index 3a5ffd3..c926d09 100644
 --- a/tools/lib/traceevent/Makefile
 +++ b/tools/lib/traceevent/Makefile
-@@ -208,7 +208,8 @@ $(obj)/%.o: $(src)/%.c
- PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-utils.o event-option.o
+@@ -209,7 +209,7 @@ PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-
  PEVENT_LIB_OBJS += kbuffer-parse.o
  
--PLUGIN_OBJS = plugin_jbd2.o plugin_blk.o plugin_hrtimer.o plugin_kmem.o plugin_kvm.o
-+PLUGIN_OBJS = plugin_jbd2.o plugin_blk.o plugin_hrtimer.o plugin_kmem.o plugin_kvm.o \
-+	plugin_mac80211.o
+ PLUGIN_OBJS = plugin_jbd2.o plugin_blk.o plugin_hrtimer.o plugin_kmem.o plugin_kvm.o \
+-	plugin_mac80211.o plugin_sched_switch.o
++	plugin_mac80211.o plugin_sched_switch.o plugin_function.o
  
  PLUGINS := $(PLUGIN_OBJS:.o=.so)
  
-diff --git a/tools/lib/traceevent/plugin_mac80211.c b/tools/lib/traceevent/plugin_mac80211.c
+diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
 new file mode 100644
-index 0000000..070c7c9
+index 0000000..d0444ba
 --- /dev/null
-+++ b/tools/lib/traceevent/plugin_mac80211.c
-@@ -0,0 +1,204 @@
++++ b/tools/lib/traceevent/plugin_function.c
+@@ -0,0 +1,182 @@
 +/*
-+ * Copyright (C) 2009 Johannes Berg <johannes@sipsolutions.net>
++ * Copyright (C) 2009, 2010 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
 + *
 + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 + * This program is free software; you can redistribute it and/or
@@ -85,185 +84,163 @@ index 0000000..070c7c9
 +#include <string.h>
 +
 +#include "event-parse.h"
++#include "event-utils.h"
 +
-+#define INDENT 65
++static struct func_stack {
++	int index;
++	int size;
++	char **stack;
++} *fstack;
 +
-+static void print_string(struct trace_seq *s, struct event_format *event,
-+			 const char *name, const void *data)
++static int cpus = -1;
++
++#define STK_BLK 10
++
++struct plugin_option plugin_options[] =
 +{
-+	struct format_field *f = pevent_find_field(event, name);
-+	int offset;
-+	int length;
-+
-+	if (!f) {
-+		trace_seq_printf(s, "NOTFOUND:%s", name);
-+		return;
++	{
++		.name = "parent",
++		.plugin_alias = "ftrace",
++		.description =
++		"Print parent of functions for function events",
++	},
++	{
++		.name = "indent",
++		.plugin_alias = "ftrace",
++		.description =
++		"Try to show function call indents, based on parents",
++		.set = 1,
++	},
++	{
++		.name = NULL,
 +	}
-+
-+	offset = f->offset;
-+	length = f->size;
-+
-+	if (!strncmp(f->type, "__data_loc", 10)) {
-+		unsigned long long v;
-+		if (pevent_read_number_field(f, data, &v)) {
-+			trace_seq_printf(s, "invalid_data_loc");
-+			return;
-+		}
-+		offset = v & 0xffff;
-+		length = v >> 16;
-+	}
-+
-+	trace_seq_printf(s, "%.*s", length, (char *)data + offset);
-+}
-+
-+struct value_name {
-+	unsigned long long value;
-+	const char *name;
 +};
 +
-+static void _print_enum(struct trace_seq *s, struct event_format *event,
-+			const char *name, const void *data,
-+			const struct value_name *names, int n_names)
++static struct plugin_option *ftrace_parent = &plugin_options[0];
++static struct plugin_option *ftrace_indent = &plugin_options[1];
++
++static void add_child(struct func_stack *stack, const char *child, int pos)
 +{
-+	struct format_field *f = pevent_find_field(event, name);
-+	unsigned long long val;
 +	int i;
 +
-+	if (!f) {
-+		trace_seq_puts(s, "field-not-found");
++	if (!child)
 +		return;
++
++	if (pos < stack->size)
++		free(stack->stack[pos]);
++	else {
++		if (!stack->stack)
++			stack->stack = malloc_or_die(sizeof(char *) * STK_BLK);
++		else
++			stack->stack = realloc(stack->stack, sizeof(char *) *
++					       (stack->size + STK_BLK));
++		for (i = stack->size; i < stack->size + STK_BLK; i++)
++			stack->stack[i] = NULL;
++		stack->size += STK_BLK;
 +	}
 +
-+	if (pevent_read_number_field(f, data, &val)) {
-+		trace_seq_puts(s, "field-invalid");
-+		return;
++	stack->stack[pos] = strdup(child);
++}
++
++static int get_index(const char *parent, const char *child, int cpu)
++{
++	int i;
++
++	if (cpu < 0)
++		return 0;
++
++	if (cpu > cpus) {
++		if (fstack)
++			fstack = realloc(fstack, sizeof(*fstack) * (cpu + 1));
++		else
++			fstack = malloc_or_die(sizeof(*fstack) * (cpu + 1));
++
++		/* Account for holes in the cpu count */
++		for (i = cpus + 1; i <= cpu; i++)
++			memset(&fstack[i], 0, sizeof(fstack[i]));
++		cpus = cpu;
 +	}
 +
-+	for (i = 0; i < n_names; i++) {
-+		if (names[i].value == val) {
-+			trace_seq_puts(s, names[i].name);
-+			return;
++	for (i = 0; i < fstack[cpu].size && fstack[cpu].stack[i]; i++) {
++		if (strcmp(parent, fstack[cpu].stack[i]) == 0) {
++			add_child(&fstack[cpu], child, i+1);
++			return i;
 +		}
 +	}
 +
-+	trace_seq_printf(s, "%llu", val);
-+}
-+
-+#define print_enum(s, ev, name, data, enums...)				\
-+	({ static const struct value_name __n[] = { enums };		\
-+	_print_enum(s, ev, name, data, __n, sizeof(__n)/sizeof(__n[0]));\
-+	})
-+
-+static void _print_flag(struct trace_seq *s, struct event_format *event,
-+			const char *name, const void *data,
-+			const struct value_name *names, int n_names)
-+{
-+	struct format_field *f = pevent_find_field(event, name);
-+	unsigned long long val;
-+	int i, j, found, first = 1;
-+
-+	if (!f) {
-+		trace_seq_puts(s, "field-not-found");
-+		return;
-+	}
-+
-+	if (pevent_read_number_field(f, data, &val)) {
-+		trace_seq_puts(s, "field-invalid");
-+		return;
-+	}
-+
-+	for (i = 0; i < 64; i++) {
-+		if (!(val & (1ULL<<i)))
-+			continue;
-+		if (!first)
-+			trace_seq_putc(s, '|');
-+		first = 0;
-+
-+		found = 0;
-+		for (j = 0; j < n_names; j++) {
-+			if (i == names[j].value) {
-+				trace_seq_puts(s, names[j].name);
-+				found = 1;
-+				break;
-+			}
-+		}
-+		if (!found)
-+			trace_seq_printf(s, "flag_%d", i);
-+	}
-+}
-+
-+#define print_flag(s, ev, name, data, enums...)					\
-+	({ static const struct value_name __n[] = { enums };			\
-+	_print_flag(s, ev, name, data, __n, sizeof(__n)/sizeof(__n[0]));	\
-+	})
-+
-+#define SF(fn)	pevent_print_num_field(s, fn ":%d", event, fn, record, 0)
-+#define SFX(fn)	pevent_print_num_field(s, fn ":%#x", event, fn, record, 0)
-+#define SP()	trace_seq_putc(s, ' ')
-+
-+static int drv_bss_info_changed(struct trace_seq *s,
-+				struct pevent_record *record,
-+				struct event_format *event, void *context)
-+{
-+	void *data = record->data;
-+
-+	print_string(s, event, "wiphy_name", data);
-+	trace_seq_printf(s, " vif:");
-+	print_string(s, event, "vif_name", data);
-+	pevent_print_num_field(s, "(%d)", event, "vif_type", record, 1);
-+
-+	trace_seq_printf(s, "\n%*s", INDENT, "");
-+	SF("assoc"); SP();
-+	SF("aid"); SP();
-+	SF("cts"); SP();
-+	SF("shortpre"); SP();
-+	SF("shortslot"); SP();
-+	SF("dtimper"); SP();
-+	trace_seq_printf(s, "\n%*s", INDENT, "");
-+	SF("bcnint"); SP();
-+	SFX("assoc_cap"); SP();
-+	SFX("basic_rates"); SP();
-+	SF("enable_beacon");
-+	trace_seq_printf(s, "\n%*s", INDENT, "");
-+	SF("ht_operation_mode");
-+
++	/* Not found */
++	add_child(&fstack[cpu], parent, 0);
++	add_child(&fstack[cpu], child, 1);
 +	return 0;
 +}
 +
-+static int drv_config(struct trace_seq *s, struct pevent_record *record,
-+		      struct event_format *event, void *context)
++static int function_handler(struct trace_seq *s, struct pevent_record *record,
++			    struct event_format *event, void *context)
 +{
-+	void *data = record->data;
++	struct pevent *pevent = event->pevent;
++	unsigned long long function;
++	unsigned long long pfunction;
++	const char *func;
++	const char *parent;
++	int i, index = 0;
 +
-+	print_string(s, event, "wiphy_name", data);
-+	trace_seq_putc(s, ' ');
-+	print_flag(s, event, "flags", data,
-+		{ 0, "MONITOR" },
-+		{ 1, "PS" },
-+		{ 2, "IDLE" },
-+		{ 3, "QOS"},
-+	);
-+	pevent_print_num_field(s, " chan:%d/", event, "center_freq", record, 1);
-+	print_enum(s, event, "channel_type", data,
-+		{ 0, "noht" },
-+		{ 1, "ht20" },
-+		{ 2, "ht40-" },
-+		{ 3, "ht40+" });
-+	trace_seq_putc(s, ' ');
-+	SF("power_level");
++	if (pevent_get_field_val(s, event, "ip", record, &function, 1))
++		return trace_seq_putc(s, '!');
++
++	func = pevent_find_function(pevent, function);
++
++	if (pevent_get_field_val(s, event, "parent_ip", record, &pfunction, 1))
++		return trace_seq_putc(s, '!');
++
++	parent = pevent_find_function(pevent, pfunction);
++
++	if (ftrace_indent->set)
++		index = get_index(parent, func, record->cpu);
++
++	for (i = 0; i < index; i++)
++		trace_seq_printf(s, "   ");
++
++	if (func)
++		trace_seq_printf(s, "%s", func);
++	else
++		trace_seq_printf(s, "0x%llx", function);
++
++	if (ftrace_parent->set) {
++		trace_seq_printf(s, " <-- ");
++		if (parent)
++			trace_seq_printf(s, "%s", parent);
++		else
++			trace_seq_printf(s, "0x%llx", pfunction);
++	}
 +
 +	return 0;
 +}
 +
 +int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
 +{
-+	pevent_register_event_handler(pevent, -1, "mac80211",
-+				      "drv_bss_info_changed",
-+				      drv_bss_info_changed, NULL);
-+	pevent_register_event_handler(pevent, -1, "mac80211", "drv_config",
-+				      drv_config, NULL);
++	pevent_register_event_handler(pevent, -1, "ftrace", "function",
++				      function_handler, NULL);
++
++	traceevent_add_options("ftrace", plugin_options);
 +
 +	return 0;
++}
++
++void PEVENT_PLUGIN_UNLOADER(void)
++{
++	int i, x;
++
++	for (i = 0; i <= cpus; i++) {
++		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
++			free(fstack[i].stack[x]);
++		free(fstack[i].stack);
++	}
++
++	traceevent_remove_options(plugin_options);
++
++	free(fstack);
++	fstack = NULL;
++	cpus = -1;
 +}
 -- 
 1.7.11.7
