@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab3IAXqm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 19:46:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36062 "EHLO
+	id S1756734Ab3IAXxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 19:53:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49529 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3IAXql (ORCPT
+	with ESMTP id S1753305Ab3IAXxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 19:46:41 -0400
-Date: Mon, 2 Sep 2013 09:46:29 +1000
+	Sun, 1 Sep 2013 19:53:50 -0400
+Date: Mon, 2 Sep 2013 09:53:48 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Please add
- git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git
- branch h8300-remove to linux-next
-Message-Id: <20130902094629.4450871f9e7276a855d04a72@canb.auug.org.au>
-In-Reply-To: <52213228.3050308@roeck-us.net>
-References: <52213228.3050308@roeck-us.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-Id: <20130902095348.b8687db80751d2cce4cad8bc@canb.auug.org.au>
+In-Reply-To: <CA+55aFwWEqzGi7uW_xPt=eC0FC-5qnom=W4x87xbH_a2Oy4=6A@mail.gmail.com>
+References: <20130830181202.bea6400ec4d92744e05b5b9f@canb.auug.org.au>
+	<CA+55aFwWEqzGi7uW_xPt=eC0FC-5qnom=W4x87xbH_a2Oy4=6A@mail.gmail.com>
 X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0"
+ boundary="Signature=_Mon__2_Sep_2013_09_53_48_+1000__A69wq1F6x/5+1xL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0
+--Signature=_Mon__2_Sep_2013_09_53_48_+1000__A69wq1F6x/5+1xL
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Guenter,
+Hi Linus,
 
-On Fri, 30 Aug 2013 17:00:40 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+On Fri, 30 Aug 2013 08:25:06 -0700 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
 >
-> Please add the h8300-remove branch of
-> git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git
-> to linux-next.
+> On Fri, Aug 30, 2013 at 1:12 AM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+> >
+> > I don't know if it is safe to read d_lockref.count without locking
+>=20
+> That's not the issue. Since commit 84d08fa888e7 ("helper for reading
+> ->d_count") non-core VFS code shouldn't try to access d_count directly
+> at all. So instead of "dentry->d_count" it should use
+> "d_count(dentry)". Then the code doesn't need to know about lockrefs
+> or anything like that at all.
 
-Added from today.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
+Thanks for that.  I will implement that temporary fix in linux-next today
+unless Andrew has been busy over the weekend.
 --=20
 Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0
+--Signature=_Mon__2_Sep_2013_09_53_48_+1000__A69wq1F6x/5+1xL
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSI9HZAAoJEECxmPOUX5FE2xoP/3kJwfcfAGA+w1Bgl3niqeeB
-E2Ocvs+yPfXtUhzASA7fG4rVrxDNmS7aVDs5RUCBBaaqYE5T3as6fjZYspYK8wub
-udpT0RWCYU3pjYgeKwa2dk1+iNLQqbCL1pMxhoK67TVzq8aMK5JnSkzqvZvgxKXo
-yvKviVvvX2AvGVhxsYAy4cw9GNtrD5Cu2gGvgnhXVFV8zmw7hl4i/633WRr9F54i
-bWO6FpC9NsAyvOPpHJQAXDAxbHTTDYhmqUZvajsinFCV+M9KwvrDMPfqloVbZUmu
-2NMouYqg444rM3IugT3rYsrYg/63RIgE3Epa4x7BRchKCZcXVo5MK3RbFIEFCOZQ
-a+RGFUdR29rcYfD5qhnt8ai7BOrGOvYZMTNkd3jTwy5XClHI9zac/F16yBkmK2vu
-jKOmuSapAeLHNG9le0MjXm3CWyvIuBAfkxXEDAyCGUPFoMDe0DwII4Eyv/txyhuR
-ca6/A3sQtq0sAX3IHZBg0IOPKzRPAWFdEZZaHRXsySl/1p4VXyh6MvwQVgWb3AQN
-xP38k00HZpFjuz3X+wcB23Q4vnxNIbYXcfvZLyL93WN7BJpPTjStdEeIP8gWY7dT
-GdjqMu0673yQTIoE7qeDM6cWpJ2AHDW9p02eyFYdu087hXonvncN8oXu0igwy6Pf
-eko458n15bOjqUraYi95
-=6jbQ
+iQIcBAEBCAAGBQJSI9OMAAoJEECxmPOUX5FEbngP/2Tzu5CM0fFVY2el3x9ubNXu
+eW/C95ybFmDk1wS4AX4OFdOa8bgsRxk9hNgWTrODG5l8vEVbtfc4Yjpp/t5NkKJW
+iGnD8e/TK7urwZqyGF4rU9vf7d2cSOnWTLwy+smr4D/LDS1atdLDUbXNa68Uj5rE
+fk1BFskiEnHq0p5FCpfLV0A0yzW8mleVp4R/2e3zlhZEOrs8Guto+ipCJkrkQu/Y
+7Y5as6AEliElIxUO8HHArgTIJ8p6HA3Os5Z164NtTcRtFj7o7yeb9sdZ8I5sRlNL
+h7N9VdxpZ3p5I69mzhjrDo0zulZtu6hMQOugNYYaeQ2dNrkDvY/wtqgS7FQZvuGZ
+uiYMAQ2R5f0GdXnUyaVZjHcylE/cU1MWe2ppEIADE1w0yN1LPG50bkAsQfJKaB2o
+vPr/vOLLfPoPUrtakOZtny1u8Re0l9bOJZYXosT9ZyjyVgA8nuaA/sHmPdueMEWH
++Ch8RnyGVlJhd/wA7vMCh+9P6ofzMNOtPbalfXGy3xutNSvZIZkI8HR+6DYqeCqg
+fn14ad9SCPTc1lt4P62L4BA8o2VdJUxhopr1rLTrcN1rphujZbTeN8ku4aDreeOq
+nnVtW/Ej9Se/sVYXhZGBeagKyTUpX94EIOnWBQ14jnPF3oQJrDOGMSmIDoYr1iy9
+iZLXs5W2eBiZNn2YgQRq
+=tCUU
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0--
+--Signature=_Mon__2_Sep_2013_09_53_48_+1000__A69wq1F6x/5+1xL--
