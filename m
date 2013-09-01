@@ -1,54 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab3IAOsz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 10:48:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63882 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259Ab3IAOsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 10:48:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1001,1367996400"; 
-   d="scan'208";a="389601129"
-Date: Sun, 1 Sep 2013 16:48:47 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
-Message-ID: <20130901144847.GM20329@zurbaran>
-References: <20130831130741.GG18608@sirena.org.uk>
+	id S1755927Ab3IAPEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 11:04:09 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54092 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3IAPEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 11:04:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130831130741.GG18608@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <877gf1pb7c.fsf@xmission.com>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty>
+	<20130828201141.GA21455@dztty>
+	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	<20130828211116.GA22184@dztty>
+	<87sixt735b.fsf@xmission.com>
+	<20130829091127.GA2635@dztty>
+	<CAGXu5jJtiji1KPPLSr5SXKXGwBbb8McWZY3DqCZFWXKtP=KEzA@mail.gmail.com>
+	<20130831202637.GA6013@dztty>
+	<877gf1pb7c.fsf@xmission.com>
+Date: Sun, 1 Sep 2013 08:04:06 -0700
+X-Google-Sender-Auth: NhnAQ1bugSABSKld2KOJgsYOHPE
+Message-ID: <CAGXu5jKo+qWjGHfT1N7N6LnjqtD1TPVw9qHYfLj9YBe9_3C2dA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+From: Kees Cook <keescook@chromium.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Sat, Aug 31, 2013 at 6:44 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Djalal Harouni <tixxdz@opendz.org> writes:
+>
+>> (Sorry for my late response)
+>>
+>> On Thu, Aug 29, 2013 at 03:14:32PM -0700, Kees Cook wrote:
+>>> On Thu, Aug 29, 2013 at 2:11 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>>> > Hi Eric,
+>>> >
+>>> > On Wed, Aug 28, 2013 at 05:26:56PM -0700, Eric W. Biederman wrote:
+>>> >>
+>>> >> I have take a moment and read this thread, and have been completely
+>>> >> unenlightend.  People are upset but it is totally unclear why.
+>>> >>
+>>> >> There is no explanation why it is ok to ignore the suid-exec case, as
+>>> >> the posted patches do.  Which ultimately means the patches provide
+>>> > Please, did you take a look at the patches ?
+>>> > -       INF("syscall",    S_IRUGO, proc_pid_syscall),
+>>> > +       INF("syscall",    S_IRUSR, proc_pid_syscall),
+>>> >
+>>> > Can you please tell me how did you come to the conclusion that the
+>>> > patches "ignore the suid-exec case as the posted patches do" ?
+>>>
+>>> There are a few conditions that need to be handled. The original fix
+>>> that Al landed was to stop this:
+>>>
+>>> create IPC
+>>> fork child
+>>> child opens /proc/self/syscall
+>>> child sends fd to parent over IPC
+>>> child execs setuid process
+>>> parent reads setuid process's "syscall" file
+>>>
+>>> The solution was to check perms of reader (in this case parent wasn't
+>>> privileged, so it gets denied).
+>> Yes, of course
+>>
+>>
+>>> The new problem is:
+>>>
+>>> open /proc/$target/syscall
+>>> dup to stdin
+>>> exec setuid process that reports contents of stdin
+>>>
+>>> So, changing perms to 0400 doesn't actually fix what we want to fix,
+>>> since it can still by bypassed under more limited situations:
+>>>
+>>> open /proc/self/syscall
+>>> dup to stdin
+>>> exec setuid process that reports contents of stdin
+>>>
+>>> So, changing to 0400 means only setuid programs that aren't already
+>>> running will have their ASLR leaked.
+>> Yes I do realize. That change was only to block leaks against already
+>> running processes and *restore* the old permissions.
+>>
+>>
+>>> [...]
+>>> Maybe I'm lacking imagination, but changing to 0400 does reduce the
+>>> scope of the leak from all processes to "just" what was execed. This
+>>> still needs to be addressed, but I don't see a way to handle this
+>>> without explicitly invalidating the /proc handle across exec.
+>> Yes Kees,
+>>
+>> I did try a year ago to adapt the exec_id from grsecurity and failed
+>> (and failed again to resend - not enough resources):
+>> https://lkml.org/lkml/2012/3/10/174
+>>
+>>
+>> Kees IMHO the right solution is to invalidate the fd across exec as
+>> you suggest
+>>
+>> Alan Cox's thread which describe the problem correctly:
+>> https://lkml.org/lkml/2012/1/29/35
+>>
+>> Alan suggested to revoke() the file handles.
+>
+> That was in particular with respect to /dev/mem.
+>
+> In the general case calling setuid or any of it's cousins can cause the
+> same problem.  So a revoke that only works at exec time is insufficient.
+>
+> The problem we are examining is what happens when the file descriptor is
+> passed to a more privileged process that will pass the ptrace_may_access
+> check while the original process that opened the file did not.
+>
+> We have file->f_cred that has the permissions of the process at open
+> time, and likely that should factor into the calculations somehow.
+>
+> Alternatively we may simply be able to call get_task_cred() at the time
+> we open the file and if the cred on the process changes fail.  I know
+> Linus was looking at something like that recently, but ran into problmes
+> with Chromes sandbox. (Sigh).  Although I think he was talking about
+> file->f_cred...
+>
+> This is most definitely a solvable problem with current mechanisms, but
+> it is going to take some grunt work to make it happen.
 
-On Sat, Aug 31, 2013 at 02:07:41PM +0100, Mark Brown wrote:
-> This patch series removes the use of the ASoC-level read and write
-> functions from the cq93vc driver as part of a wider push to remove them
-> completely and just use regmap for all register I/O.  Since the driver
-> is essentially doing what regmap-mmio is doing this is done by adding a
-> MMIO regmap to the core device and using that.  This is compile tested
-> only, I don't have any hardware to run on.
-> 
-> Since I anticipate doing more cleanups over the CODEC drivers during the
-> next release cycle it'd be good to merge via ASoC, though there
-> shouldn't be any overlap with the first patch.
-As I'd prefer to carry the MFD ones (Including the twl6040 one) through
-mfd-next, I can build a branch for you to pull from. Would that be fine
-with you ?
+Well, in the meantime, it seems we should restore the 0400 perms,
+since that at least covers the ASLR leak of running processes.
 
-Cheers,
-Samuel.
+-Kees
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Kees Cook
+Chrome OS Security
