@@ -1,149 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3IAPEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 11:04:09 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54092 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3IAPEH (ORCPT
+	id S1757478Ab3IAPJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 11:09:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54089 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab3IAPJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 11:04:07 -0400
+	Sun, 1 Sep 2013 11:09:04 -0400
+Date: Sun, 1 Sep 2013 16:08:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130901150853.GG3084@sirena.org.uk>
+References: <20130831130741.GG18608@sirena.org.uk>
+ <20130901144847.GM20329@zurbaran>
 MIME-Version: 1.0
-In-Reply-To: <877gf1pb7c.fsf@xmission.com>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
-	<871u5gqtw3.fsf@xmission.com>
-	<20130826172054.GE27005@ZenIV.linux.org.uk>
-	<20130827172406.GA2664@dztty>
-	<20130828201141.GA21455@dztty>
-	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
-	<20130828211116.GA22184@dztty>
-	<87sixt735b.fsf@xmission.com>
-	<20130829091127.GA2635@dztty>
-	<CAGXu5jJtiji1KPPLSr5SXKXGwBbb8McWZY3DqCZFWXKtP=KEzA@mail.gmail.com>
-	<20130831202637.GA6013@dztty>
-	<877gf1pb7c.fsf@xmission.com>
-Date: Sun, 1 Sep 2013 08:04:06 -0700
-X-Google-Sender-Auth: NhnAQ1bugSABSKld2KOJgsYOHPE
-Message-ID: <CAGXu5jKo+qWjGHfT1N7N6LnjqtD1TPVw9qHYfLj9YBe9_3C2dA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Solar Designer <solar@openwall.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6lXr1rPCNTf1w0X8"
+Content-Disposition: inline
+In-Reply-To: <20130901144847.GM20329@zurbaran>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 6:44 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Djalal Harouni <tixxdz@opendz.org> writes:
->
->> (Sorry for my late response)
->>
->> On Thu, Aug 29, 2013 at 03:14:32PM -0700, Kees Cook wrote:
->>> On Thu, Aug 29, 2013 at 2:11 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
->>> > Hi Eric,
->>> >
->>> > On Wed, Aug 28, 2013 at 05:26:56PM -0700, Eric W. Biederman wrote:
->>> >>
->>> >> I have take a moment and read this thread, and have been completely
->>> >> unenlightend.  People are upset but it is totally unclear why.
->>> >>
->>> >> There is no explanation why it is ok to ignore the suid-exec case, as
->>> >> the posted patches do.  Which ultimately means the patches provide
->>> > Please, did you take a look at the patches ?
->>> > -       INF("syscall",    S_IRUGO, proc_pid_syscall),
->>> > +       INF("syscall",    S_IRUSR, proc_pid_syscall),
->>> >
->>> > Can you please tell me how did you come to the conclusion that the
->>> > patches "ignore the suid-exec case as the posted patches do" ?
->>>
->>> There are a few conditions that need to be handled. The original fix
->>> that Al landed was to stop this:
->>>
->>> create IPC
->>> fork child
->>> child opens /proc/self/syscall
->>> child sends fd to parent over IPC
->>> child execs setuid process
->>> parent reads setuid process's "syscall" file
->>>
->>> The solution was to check perms of reader (in this case parent wasn't
->>> privileged, so it gets denied).
->> Yes, of course
->>
->>
->>> The new problem is:
->>>
->>> open /proc/$target/syscall
->>> dup to stdin
->>> exec setuid process that reports contents of stdin
->>>
->>> So, changing perms to 0400 doesn't actually fix what we want to fix,
->>> since it can still by bypassed under more limited situations:
->>>
->>> open /proc/self/syscall
->>> dup to stdin
->>> exec setuid process that reports contents of stdin
->>>
->>> So, changing to 0400 means only setuid programs that aren't already
->>> running will have their ASLR leaked.
->> Yes I do realize. That change was only to block leaks against already
->> running processes and *restore* the old permissions.
->>
->>
->>> [...]
->>> Maybe I'm lacking imagination, but changing to 0400 does reduce the
->>> scope of the leak from all processes to "just" what was execed. This
->>> still needs to be addressed, but I don't see a way to handle this
->>> without explicitly invalidating the /proc handle across exec.
->> Yes Kees,
->>
->> I did try a year ago to adapt the exec_id from grsecurity and failed
->> (and failed again to resend - not enough resources):
->> https://lkml.org/lkml/2012/3/10/174
->>
->>
->> Kees IMHO the right solution is to invalidate the fd across exec as
->> you suggest
->>
->> Alan Cox's thread which describe the problem correctly:
->> https://lkml.org/lkml/2012/1/29/35
->>
->> Alan suggested to revoke() the file handles.
->
-> That was in particular with respect to /dev/mem.
->
-> In the general case calling setuid or any of it's cousins can cause the
-> same problem.  So a revoke that only works at exec time is insufficient.
->
-> The problem we are examining is what happens when the file descriptor is
-> passed to a more privileged process that will pass the ptrace_may_access
-> check while the original process that opened the file did not.
->
-> We have file->f_cred that has the permissions of the process at open
-> time, and likely that should factor into the calculations somehow.
->
-> Alternatively we may simply be able to call get_task_cred() at the time
-> we open the file and if the cred on the process changes fail.  I know
-> Linus was looking at something like that recently, but ran into problmes
-> with Chromes sandbox. (Sigh).  Although I think he was talking about
-> file->f_cred...
->
-> This is most definitely a solvable problem with current mechanisms, but
-> it is going to take some grunt work to make it happen.
 
-Well, in the meantime, it seems we should restore the 0400 perms,
-since that at least covers the ASLR leak of running processes.
+--6lXr1rPCNTf1w0X8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--Kees
+On Sun, Sep 01, 2013 at 04:48:47PM +0200, Samuel Ortiz wrote:
 
--- 
-Kees Cook
-Chrome OS Security
+> As I'd prefer to carry the MFD ones (Including the twl6040 one) through
+> mfd-next, I can build a branch for you to pull from. Would that be fine
+> with you ?
+
+That's fine by me, I just want the patches in ASoC - obviously the
+branch couldn't be rebased though.
+
+--6lXr1rPCNTf1w0X8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSI1iCAAoJELSic+t+oim9+b4P/i1410dDEXX6TJacGtOVBIsk
+oUB0WdYEJgyxoiAyolJhkDRzbjrYxIH8HomfjjCb8pTHVUkEmM7a4cX58PDmuXMR
+BFAq9Ov0nrLAzBeq99mPYrWLRkSCBac5hAMjliCHRKNwJEqLimV3338LD8MdwuzQ
+790r1iyONKkCr1Vub0EdwdTt1zthP1hdF+wNvv8LmTU9jnKfULlOaTTK6+YXfGun
+vZQ2/ljPkBQNyeV85IdGwn6zmwTLcgX0v5tHykzOs6G95m1rQ20IBkf8LwkIuGE+
+ODsVtwhESStuws6osMIjsciiJJXVDaJW9mnc1YZPk1q4NEkGlCO72cKLHwGxvXH6
+uvIRxOtJeCPl9xIUweRBaIMtrdRoVhZEJOSXNXKHBWlIJTn8OU8I7SPlT/kzC54e
+VIfD3WOSGz6KRUErefKaCSWJA1aCQdIZjwJDfonaVvGFtORYMlPrR/Fec/A2vDIo
+QXxqNuu5YxpfCFwmE/8AYVzo6J5V4lzx6MRfElt0lWafY/hnXONI0Ql4OAHJrfe6
+qo5XLkR9ZqcvWPr7KFLY6qgdlQxQqLLpbhyvGuNAI9M0ktdXSdv6RQjNGLcdMhLG
+15EDmGBb2y6hkU6a+NVaUF185AlTVuRuaVEBhwuUwb1B4FcdOQji6wOPRtXdaMNE
+PD3u2ZVN+Iv9RBBBdbe1
+=zyny
+-----END PGP SIGNATURE-----
+
+--6lXr1rPCNTf1w0X8--
