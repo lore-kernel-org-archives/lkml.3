@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab3IATcg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 15:32:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48062 "EHLO
+	id S1757901Ab3IATgk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 15:36:40 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38435 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753601Ab3IATce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 15:32:34 -0400
-Message-ID: <1378063953.1953.14.camel@joe-AO722>
-Subject: [PATCH] scsi: Convert uses of compare_ether_addr to ether_addr_equal
+	id S1753394Ab3IATgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 15:36:40 -0400
+Message-ID: <1378064198.1953.17.camel@joe-AO722>
+Subject: Re:  [staging] Staging: Convert uses of compare_ether_addr to
+ ether_addr_equal
 From: Joe Perches <joe@perches.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fcoe-devel@open-fcoe.org
-Cc: Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Robert Love <robert.w.love@intel.com>,
-        Hiral Patel <hiralpat@cisco.com>, Suma Ramars <sramars@cisco.com>,
-        Brian Uchino <buchino@cisco.com>
-Date: Sun, 01 Sep 2013 12:32:33 -0700
-In-Reply-To: <1378062947.1953.9.camel@joe-AO722>
-References: <1378061483.1953.3.camel@joe-AO722>
-	 <1378062947.1953.9.camel@joe-AO722>
+To: Wang Shilong <wangshilong1991@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sun, 01 Sep 2013 12:36:38 -0700
+In-Reply-To: <522395c4.hZ2B3PrpTjC+j1oP%wangshilong1991@gmail.com>
+References: <522395c4.hZ2B3PrpTjC+j1oP%wangshilong1991@gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
@@ -28,195 +24,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preliminary to removing compare_ether_addr altogether:
+On Mon, 2013-09-02 at 03:30 +0800, Wang Shilong wrote:
+> Hello, Using checkpatch.pl, i get the following warnings(errors):
 
-Use the new bool function ether_addr_equal to add
-some clarity and reduce the likelihood for misuse
-of compare_ether_addr for sorting.
+Hello.
 
-Done via cocci script:
+Especially for staging patches, all of these are "don't care"
+types of messages.
 
-$ cat compare_ether_addr.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr(a, b)
-+	ether_addr_equal(a, b)
+You should change your script to check if these are existing
+warnings and if so, not bother reporting them.
 
-@@
-expression a,b;
-@@
--	compare_ether_addr(a, b)
-+	!ether_addr_equal(a, b)
+> WARNING: Avoid CamelCase: <pstats->bHwError>
+> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
+> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
+> 
+> WARNING: Avoid CamelCase: <pstats->bCRC>
+> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
+> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
+> 
+> WARNING: Avoid CamelCase: <pstats->bICV>
+> #124: FILE: drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1875:
+> +		 (!pstats->bHwError) && (!pstats->bCRC) && (!pstats->bICV));
+> 
+> WARNING: line over 80 characters
+> #185: FILE: drivers/staging/slicoss/slicoss.c:795:
+> +						     ether_frame->ether_dhost)) {
+> 
+> WARNING: Avoid CamelCase: <pCurrBSS->abyBSSID>
+> #207: FILE: drivers/staging/vt6655/bssdb.c:151:
+> +				if (ether_addr_equal(pCurrBSS->abyBSSID,
+> 
+> WARNING: Avoid CamelCase: <pbyBSSID>
+> #208: FILE: drivers/staging/vt6655/bssdb.c:152:
+> +						     pbyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <pMgmt->sBSSList[ii].abyBSSID>
+> #217: FILE: drivers/staging/vt6655/bssdb.c:279:
+> +			    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
+> 
+> WARNING: Avoid CamelCase: <pMgmt->abyCurrBSSID>
+> #218: FILE: drivers/staging/vt6655/bssdb.c:280:
+> +					     pMgmt->abyCurrBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <pBSSList->abyBSSID>
+> #227: FILE: drivers/staging/vt6655/bssdb.c:323:
+> +			if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <abyBSSID>
+> #227: FILE: drivers/staging/vt6655/bssdb.c:323:
+> +			if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <abyDstAddr>
+> #236: FILE: drivers/staging/vt6655/bssdb.c:738:
+> +			if (ether_addr_equal(abyDstAddr,
+> 
+> WARNING: line over 80 characters
+> #237: FILE: drivers/staging/vt6655/bssdb.c:739:
+> +					     pMgmt->sNodeDBTable[ii].abyMACAddr)) {
+> 
+> WARNING: Avoid CamelCase: <pMgmt->sNodeDBTable[ii].abyMACAddr>
+> #237: FILE: drivers/staging/vt6655/bssdb.c:739:
+> +					     pMgmt->sNodeDBTable[ii].abyMACAddr)) {
+> 
+> WARNING: Avoid CamelCase: <pbyRxBuffer>
+> #250: FILE: drivers/staging/vt6655/dpc.c:175:
+> +	if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {
+> 
+> WARNING: Avoid CamelCase: <pDevice->abySNAP_Bridgetunnel>
+> #250: FILE: drivers/staging/vt6655/dpc.c:175:
+> +	if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {
+> 
+> WARNING: Avoid CamelCase: <pDevice->sRxEthHeader.abySrcAddr>
+> #262: FILE: drivers/staging/vt6655/dpc.c:423:
+> +	if (ether_addr_equal(pDevice->sRxEthHeader.abySrcAddr,
+> 
+> WARNING: Avoid CamelCase: <pDevice->abyCurrentNetAddr>
+> #263: FILE: drivers/staging/vt6655/dpc.c:424:
+> +			     pDevice->abyCurrentNetAddr))
+> 
+> WARNING: line over 80 characters
+> #276: FILE: drivers/staging/vt6655/iwctl.c:666:
+> +				    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
+> 
+> WARNING: Avoid CamelCase: <pMgmt->abyDesireBSSID>
+> #277: FILE: drivers/staging/vt6655/iwctl.c:667:
+> +						     pMgmt->abyDesireBSSID)) {
+> 
+> WARNING: line over 80 characters
+> #286: FILE: drivers/staging/vt6655/iwctl.c:844:
+> +						    ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
+> 
+> WARNING: line over 80 characters
+> #287: FILE: drivers/staging/vt6655/iwctl.c:845:
+> +								     pCurr->abyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <pCurr->abyBSSID>
+> #287: FILE: drivers/staging/vt6655/iwctl.c:845:
+> +								     pCurr->abyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <pTable->KeyTable[i].abyBSSID>
+> #300: FILE: drivers/staging/vt6655/key.c:144:
+> +		    ether_addr_equal(pTable->KeyTable[i].abyBSSID, pbyBSSID)) {
+> 
+> WARNING: Avoid CamelCase: <pDevice->abyBSSID>
+> #389: FILE: drivers/staging/vt6655/wpactl.c:397:
+> +			if (ether_addr_equal(param->addr, pDevice->abyBSSID)) {
+> 
+> WARNING: suspect code indent for conditional statements (12, 20)
+> #399: FILE: drivers/staging/vt6656/bssdb.c:127:
+>              if ((pCurrBSS->bActive) &&
+> [...]
+> +		    if (ether_addr_equal(pCurrBSS->abyBSSID, pbyBSSID)) {
+> 
+> WARNING: suspect code indent for conditional statements (20, 20)
+> #402: FILE: drivers/staging/vt6656/bssdb.c:129:
+> +		    if (ether_addr_equal(pCurrBSS->abyBSSID, pbyBSSID)) {
+>                      if (pSSID != NULL) {
+> 
+> WARNING: suspect code indent for conditional statements (16, 16)
+> #422: FILE: drivers/staging/vt6656/bssdb.c:280:
+> +		if (ether_addr_equal(pBSSList->abyBSSID, abyBSSID)) {
+>                  if (pSSID->len == ((PWLAN_IE_SSID)pBSSList->abySSID)->len){
+> 
+> WARNING: suspect code indent for conditional statements (16, 16)
+> #432: FILE: drivers/staging/vt6656/bssdb.c:626:
+> +		if (ether_addr_equal(abyDstAddr,
+> [...]
+>                  *puNodeIndex = ii;
+> 
+> WARNING: please, no spaces at the start of a line
+> #446: FILE: drivers/staging/vt6656/dpc.c:139:
+> +    if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_Bridgetunnel)) {$
+> 
+> WARNING: please, no spaces at the start of a line
+> #449: FILE: drivers/staging/vt6656/dpc.c:141:
+> +    } else if (ether_addr_equal(pbyRxBuffer, pDevice->abySNAP_RFC1042)) {$
+> 
+> WARNING: suspect code indent for conditional statements (7, 9)
+> #456: FILE: drivers/staging/vt6656/dpc.c:363:
+>         if (pMgmt->sNodeDBTable[0].bActive) {
+> +	 if (ether_addr_equal(pMgmt->abyCurrBSSID, pMACHeader->addr2)) {
+> 
+> WARNING: suspect code indent for conditional statements (9, 12)
+> #458: FILE: drivers/staging/vt6656/dpc.c:364:
+> +	 if (ether_addr_equal(pMgmt->abyCurrBSSID, pMACHeader->addr2)) {
+>  	    if (pMgmt->sNodeDBTable[0].uInActiveCount != 0)
+> 
+> WARNING: braces {} are not necessary for single statement blocks
+> #468: FILE: drivers/staging/vt6656/dpc.c:377:
+> +	if (!ether_addr_equal(pDevice->abyCurrentNetAddr, pMACHeader->addr1)) {
+>  		return false;
+>          }
+> 
+> WARNING: please, no spaces at the start of a line
+> #478: FILE: drivers/staging/vt6656/dpc.c:385:
+> +    if (ether_addr_equal((u8 *)pDevice->sRxEthHeader.h_source,$
+> 
+> WARNING: Avoid CamelCase: <pDevice->sRxEthHeader.h_source>
+> #478: FILE: drivers/staging/vt6656/dpc.c:385:
+> +    if (ether_addr_equal((u8 *)pDevice->sRxEthHeader.h_source,
+> 
+> WARNING: line over 80 characters
+> #493: FILE: drivers/staging/vt6656/iwctl.c:660:
+> +					ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
+> 
+> WARNING: line over 80 characters
+> #494: FILE: drivers/staging/vt6656/iwctl.c:661:
+> +							 pMgmt->abyDesireBSSID)) {
+> 
+> WARNING: line over 80 characters
+> #504: FILE: drivers/staging/vt6656/iwctl.c:843:
+> +						ether_addr_equal(pMgmt->sBSSList[ii].abyBSSID,
+> 
+> WARNING: line over 80 characters
+> #505: FILE: drivers/staging/vt6656/iwctl.c:844:
+> +								 pCurr->abyBSSID)) {
+> 
+> total: 0 errors, 39 warnings, 400 lines checked
+> 
+> patch has style problems, please review.
+> 
+> If any of these errors are false positives, please report
+> them to the maintainer, see CHECKPATCH in MAINTAINERS.
+> 
+> Thanks, Wang
+> 
+> Notice: this is an automatically generated by shell script
+> Any problems please contact: wangshilong1991@gmail.com
+> 
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) == 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) != 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) == 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) != 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!!ether_addr_equal(a, b)
-+	ether_addr_equal(a, b)
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c |  3 +--
- drivers/scsi/fcoe/fcoe.c          |  2 +-
- drivers/scsi/fcoe/fcoe_ctlr.c     | 22 +++++++++++-----------
- drivers/scsi/fcoe/fcoe_sysfs.c    |  2 +-
- drivers/scsi/fnic/fnic_fcs.c      |  6 +++---
- 5 files changed, 17 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-index 69ac554..1c83670 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-@@ -542,8 +542,7 @@ static void bnx2fc_recv_frame(struct sk_buff *skb)
- 	vn_port = fc_vport_id_lookup(lport, ntoh24(fh->fh_d_id));
- 	if (vn_port) {
- 		port = lport_priv(vn_port);
--		if (compare_ether_addr(port->data_src_addr, dest_mac)
--		    != 0) {
-+		if (!ether_addr_equal(port->data_src_addr, dest_mac)) {
- 			BNX2FC_HBA_DBG(lport, "fpma mismatch\n");
- 			put_cpu();
- 			kfree_skb(skb);
-diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-index 07453bb..7dd26cc 100644
---- a/drivers/scsi/fcoe/fcoe.c
-+++ b/drivers/scsi/fcoe/fcoe.c
-@@ -1455,7 +1455,7 @@ static int fcoe_rcv(struct sk_buff *skb, struct net_device *netdev,
- 	eh = eth_hdr(skb);
- 
- 	if (is_fip_mode(ctlr) &&
--	    compare_ether_addr(eh->h_source, ctlr->dest_addr)) {
-+	    !ether_addr_equal(eh->h_source, ctlr->dest_addr)) {
- 		FCOE_NETDEV_DBG(netdev, "wrong source mac address:%pM\n",
- 				eh->h_source);
- 		goto err;
-diff --git a/drivers/scsi/fcoe/fcoe_ctlr.c b/drivers/scsi/fcoe/fcoe_ctlr.c
-index 203415e..9a08f5d 100644
---- a/drivers/scsi/fcoe/fcoe_ctlr.c
-+++ b/drivers/scsi/fcoe/fcoe_ctlr.c
-@@ -300,7 +300,7 @@ static void fcoe_ctlr_announce(struct fcoe_ctlr *fip)
- 	spin_unlock_bh(&fip->ctlr_lock);
- 	sel = fip->sel_fcf;
- 
--	if (sel && !compare_ether_addr(sel->fcf_mac, fip->dest_addr))
-+	if (sel && ether_addr_equal(sel->fcf_mac, fip->dest_addr))
- 		goto unlock;
- 	if (!is_zero_ether_addr(fip->dest_addr)) {
- 		printk(KERN_NOTICE "libfcoe: host%d: "
-@@ -1000,7 +1000,7 @@ static void fcoe_ctlr_recv_adv(struct fcoe_ctlr *fip, struct sk_buff *skb)
- 		if (fcf->switch_name == new.switch_name &&
- 		    fcf->fabric_name == new.fabric_name &&
- 		    fcf->fc_map == new.fc_map &&
--		    compare_ether_addr(fcf->fcf_mac, new.fcf_mac) == 0) {
-+		    ether_addr_equal(fcf->fcf_mac, new.fcf_mac)) {
- 			found = 1;
- 			break;
- 		}
-@@ -1340,7 +1340,7 @@ static void fcoe_ctlr_recv_clr_vlink(struct fcoe_ctlr *fip,
- 			mp = (struct fip_mac_desc *)desc;
- 			if (dlen < sizeof(*mp))
- 				goto err;
--			if (compare_ether_addr(mp->fd_mac, fcf->fcf_mac))
-+			if (!ether_addr_equal(mp->fd_mac, fcf->fcf_mac))
- 				goto err;
- 			desc_mask &= ~BIT(FIP_DT_MAC);
- 			break;
-@@ -1418,8 +1418,8 @@ static void fcoe_ctlr_recv_clr_vlink(struct fcoe_ctlr *fip,
- 			 * 'port_id' is already validated, check MAC address and
- 			 * wwpn
- 			 */
--			if (compare_ether_addr(fip->get_src_addr(vn_port),
--						vp->fd_mac) != 0 ||
-+			if (!ether_addr_equal(fip->get_src_addr(vn_port),
-+					      vp->fd_mac) ||
- 				get_unaligned_be64(&vp->fd_wwpn) !=
- 							vn_port->wwpn)
- 				continue;
-@@ -1479,12 +1479,12 @@ static int fcoe_ctlr_recv_handler(struct fcoe_ctlr *fip, struct sk_buff *skb)
- 		goto drop;
- 	eh = eth_hdr(skb);
- 	if (fip->mode == FIP_MODE_VN2VN) {
--		if (compare_ether_addr(eh->h_dest, fip->ctl_src_addr) &&
--		    compare_ether_addr(eh->h_dest, fcoe_all_vn2vn) &&
--		    compare_ether_addr(eh->h_dest, fcoe_all_p2p))
-+		if (!ether_addr_equal(eh->h_dest, fip->ctl_src_addr) &&
-+		    !ether_addr_equal(eh->h_dest, fcoe_all_vn2vn) &&
-+		    !ether_addr_equal(eh->h_dest, fcoe_all_p2p))
- 			goto drop;
--	} else if (compare_ether_addr(eh->h_dest, fip->ctl_src_addr) &&
--		   compare_ether_addr(eh->h_dest, fcoe_all_enode))
-+	} else if (!ether_addr_equal(eh->h_dest, fip->ctl_src_addr) &&
-+		   !ether_addr_equal(eh->h_dest, fcoe_all_enode))
- 		goto drop;
- 	fiph = (struct fip_header *)skb->data;
- 	op = ntohs(fiph->fip_op);
-@@ -1856,7 +1856,7 @@ int fcoe_ctlr_recv_flogi(struct fcoe_ctlr *fip, struct fc_lport *lport,
- 		 * address_mode flag to use FC_OUI-based Ethernet DA.
- 		 * Otherwise we use the FCoE gateway addr
- 		 */
--		if (!compare_ether_addr(sa, (u8[6])FC_FCOE_FLOGI_MAC)) {
-+		if (ether_addr_equal(sa, (u8[6])FC_FCOE_FLOGI_MAC)) {
- 			fcoe_ctlr_map_dest(fip);
- 		} else {
- 			memcpy(fip->dest_addr, sa, ETH_ALEN);
-diff --git a/drivers/scsi/fcoe/fcoe_sysfs.c b/drivers/scsi/fcoe/fcoe_sysfs.c
-index c9382d6..eb42c0a 100644
---- a/drivers/scsi/fcoe/fcoe_sysfs.c
-+++ b/drivers/scsi/fcoe/fcoe_sysfs.c
-@@ -653,7 +653,7 @@ static int fcoe_fcf_device_match(struct fcoe_fcf_device *new,
- 	if (new->switch_name == old->switch_name &&
- 	    new->fabric_name == old->fabric_name &&
- 	    new->fc_map == old->fc_map &&
--	    compare_ether_addr(new->mac, old->mac) == 0)
-+	    ether_addr_equal(new->mac, old->mac))
- 		return 1;
- 	return 0;
- }
-diff --git a/drivers/scsi/fnic/fnic_fcs.c b/drivers/scsi/fnic/fnic_fcs.c
-index 006fa92..902520c 100644
---- a/drivers/scsi/fnic/fnic_fcs.c
-+++ b/drivers/scsi/fnic/fnic_fcs.c
-@@ -651,13 +651,13 @@ void fnic_update_mac_locked(struct fnic *fnic, u8 *new)
- 
- 	if (is_zero_ether_addr(new))
- 		new = ctl;
--	if (!compare_ether_addr(data, new))
-+	if (ether_addr_equal(data, new))
- 		return;
- 	FNIC_FCS_DBG(KERN_DEBUG, fnic->lport->host, "update_mac %pM\n", new);
--	if (!is_zero_ether_addr(data) && compare_ether_addr(data, ctl))
-+	if (!is_zero_ether_addr(data) && !ether_addr_equal(data, ctl))
- 		vnic_dev_del_addr(fnic->vdev, data);
- 	memcpy(data, new, ETH_ALEN);
--	if (compare_ether_addr(new, ctl))
-+	if (!ether_addr_equal(new, ctl))
- 		vnic_dev_add_addr(fnic->vdev, new);
- }
- 
 
 
