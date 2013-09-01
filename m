@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3IAEpY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 00:45:24 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:46652 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab3IAEpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 00:45:22 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <878uzmhkqg.fsf@xmission.com>
-	<CALCETrWPDzuoaJp2ko5jAbwYUBqSdPjvO5uGo-gZVsS4Wm1PKQ@mail.gmail.com>
-	<87a9k2g5la.fsf@xmission.com>
-Date: Sat, 31 Aug 2013 21:45:11 -0700
-In-Reply-To: <87a9k2g5la.fsf@xmission.com> (Eric W. Biederman's message of
-	"Tue, 27 Aug 2013 14:57:05 -0700")
-Message-ID: <87eh99noa0.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754742Ab3IAE4i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 00:56:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57041 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857Ab3IAE4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 00:56:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1000,1367996400"; 
+   d="asc'?scan'208";a="395086657"
+Date: Sun, 1 Sep 2013 09:40:45 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@gmail.com,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [GIT PULL] slave-dmaengine fixes
+Message-ID: <20130901041044.GB7376@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/6KlSvpw3CdDV4dkvBWi+tosBv97DwCjk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0316]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc and sysfs can be mounted
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
 
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Tue, Aug 27, 2013 at 2:44 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>>
->>> Rely on the fact that another flavor of the filesystem is already
->>> mounted and do not rely on state in the user namespace.
->>
->> Possibly dumb question: does this check whether the pre-existing mount
->> has hidepid set?
->
-> Not currently. 
->
-> It may be worth doing something with respect to hidepid.  I forget what
-> hidepid tries to do, and I need to dash.  But feel free to cook up a
-> follow on patch.
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So I have thought about this a bit more.
+Hey Linus,
 
-hidepid hides the processes that ptrace_may_access will fail on.
+Please consider the pull request for 3.11 to recive a fix for the resolving
+TI_EDMA driver's build error in allmodconfig to have filter function built =
+in.
 
-You can only reach the point where an unprivileged mount of a pid
-namespace is possible if you have created both a user namespace and a
-pid namespace.  Which means the creator of the pid namespace will be
-capable of ptracing all of the other processes in the pid namespace
-(ignoring setns).
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
+  Linus Torvalds (1):
+        Linux 3.11-rc4
 
-So I don't see a point of worry about hidepid or the hidepid gid on
-child pid namespaces.  The cases it is attempting to protecting against
-really don't exist.
+are available in the git repository at:
 
-Eric
+  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+
+Guenter Roeck (1):
+      dma/Kconfig: TI_EDMA needs to be boolean
+
+ drivers/dma/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+Thanks
+~Vinod
+--=20
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSIr5EAAoJEHwUBw8lI4NHAZsQAIjnK9Cl04gh0dm8nOExP70+
+aYPohvRDuBvewr7gQReb8DZy6/1FmybKyXeMokK4JndtVYRoLtIyCrQ8tNgz5P9l
++eHfaN+JLl8HG2xeAOo/wD8SF2a2LQtTjjJuUauUph3WtsJHaxZZ1ioWBV2DF1ek
+u70UaFABlAPjxjlatk/c9BOaMAp4JOrA2ntE7lIOY5HvrGm5ytryBPoCZfXKkIOz
+ijbWPqqIDRhkxKTQj6FrUUnprPXVrMZ4NQUufp6aWnTxi46v8V226CZX94dQGgPq
+k2sOkAGOVgphOmF54as/DoNJxDAFwrz/WNrMJmTn+XIxjOapCTFA00C2mv11ZLPf
+uj6xi7a6kbA4AcC1zVCuhbum31mq+M0kOBgPNqtVt3GzVz17q84pqkoJdQPMw5IU
+gafnvIFQPTD4yL4wV7r6Ky2qz1bDTDRelOmGaOcQFP5T8mZ4FqZxpWCMmuoixmsl
+aai6MHj01AtfJzPelOKjrmdt5NzInOkcv/8A1Z03l4hhC1QZgPqL2WTU/TxO+kY/
+JV4YxNHAKNFsW97CUBo+L4QvjsdeZHkapcpgfusZpsHfJptei7ZjqmChCwERD4rm
+NMT8v6U5n3VxFFN3+PPO0ctzH8W8X8ls8Y9uE6XUgvgMFg48Pa9D6BlCOgbk4OW2
+tkDRn22yFglrKRhgnuBJ
+=H/NF
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
