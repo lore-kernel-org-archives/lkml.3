@@ -1,55 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3IABDb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 21:03:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34287 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab3IABDa (ORCPT
+	id S1755520Ab3IABox (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 21:44:53 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58084 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab3IABov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 21:03:30 -0400
-Message-ID: <52229245.5070004@infradead.org>
-Date: Sat, 31 Aug 2013 18:03:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sat, 31 Aug 2013 21:44:51 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Solar Designer <solar@openwall.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening\@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+	<871u5gqtw3.fsf@xmission.com>
+	<20130826172054.GE27005@ZenIV.linux.org.uk>
+	<20130827172406.GA2664@dztty> <20130828201141.GA21455@dztty>
+	<CAGXu5jJ2yop1JrJT1nzKWoT_Q83s9fGK_2BuBcCotHCR9YecDQ@mail.gmail.com>
+	<20130828211116.GA22184@dztty> <87sixt735b.fsf@xmission.com>
+	<20130829091127.GA2635@dztty>
+	<CAGXu5jJtiji1KPPLSr5SXKXGwBbb8McWZY3DqCZFWXKtP=KEzA@mail.gmail.com>
+	<20130831202637.GA6013@dztty>
+Date: Sat, 31 Aug 2013 18:44:39 -0700
+In-Reply-To: <20130831202637.GA6013@dztty> (Djalal Harouni's message of "Sat,
+	31 Aug 2013 21:26:37 +0100")
+Message-ID: <877gf1pb7c.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] [trivial]treewide: Fix typo in Kconfig
-References: <1377420828-32716-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1377420828-32716-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+LRrUbBbe2A/3ZlvCi56x/ykUqXKugdCw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Djalal Harouni <tixxdz@opendz.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/13 01:53, Masanari Iida wrote:
-> Correct spelling typo in various Kconfig files.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Djalal Harouni <tixxdz@opendz.org> writes:
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> (Sorry for my late response)
+>
+> On Thu, Aug 29, 2013 at 03:14:32PM -0700, Kees Cook wrote:
+>> On Thu, Aug 29, 2013 at 2:11 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>> > Hi Eric,
+>> >
+>> > On Wed, Aug 28, 2013 at 05:26:56PM -0700, Eric W. Biederman wrote:
+>> >>
+>> >> I have take a moment and read this thread, and have been completely
+>> >> unenlightend.  People are upset but it is totally unclear why.
+>> >>
+>> >> There is no explanation why it is ok to ignore the suid-exec case, as
+>> >> the posted patches do.  Which ultimately means the patches provide
+>> > Please, did you take a look at the patches ?
+>> > -       INF("syscall",    S_IRUGO, proc_pid_syscall),
+>> > +       INF("syscall",    S_IRUSR, proc_pid_syscall),
+>> >
+>> > Can you please tell me how did you come to the conclusion that the
+>> > patches "ignore the suid-exec case as the posted patches do" ?
+>> 
+>> There are a few conditions that need to be handled. The original fix
+>> that Al landed was to stop this:
+>> 
+>> create IPC
+>> fork child
+>> child opens /proc/self/syscall
+>> child sends fd to parent over IPC
+>> child execs setuid process
+>> parent reads setuid process's "syscall" file
+>> 
+>> The solution was to check perms of reader (in this case parent wasn't
+>> privileged, so it gets denied).
+> Yes, of course
+>
+>
+>> The new problem is:
+>> 
+>> open /proc/$target/syscall
+>> dup to stdin
+>> exec setuid process that reports contents of stdin
+>> 
+>> So, changing perms to 0400 doesn't actually fix what we want to fix,
+>> since it can still by bypassed under more limited situations:
+>> 
+>> open /proc/self/syscall
+>> dup to stdin
+>> exec setuid process that reports contents of stdin
+>> 
+>> So, changing to 0400 means only setuid programs that aren't already
+>> running will have their ASLR leaked.
+> Yes I do realize. That change was only to block leaks against already
+> running processes and *restore* the old permissions.
+>
+>
+>> [...] 
+>> Maybe I'm lacking imagination, but changing to 0400 does reduce the
+>> scope of the leak from all processes to "just" what was execed. This
+>> still needs to be addressed, but I don't see a way to handle this
+>> without explicitly invalidating the /proc handle across exec.
+> Yes Kees,
+>
+> I did try a year ago to adapt the exec_id from grsecurity and failed
+> (and failed again to resend - not enough resources):
+> https://lkml.org/lkml/2012/3/10/174
+>
+>
+> Kees IMHO the right solution is to invalidate the fd across exec as
+> you suggest
+>
+> Alan Cox's thread which describe the problem correctly:
+> https://lkml.org/lkml/2012/1/29/35
+>
+> Alan suggested to revoke() the file handles.
 
+That was in particular with respect to /dev/mem.
 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 3ecd8a1..43d7554 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -536,7 +536,7 @@ config CONTEXT_TRACKING_FORCE
->  	  dynticks working.
->  
->  	  This option stands for testing when an arch implements the
-> -	  context tracking backend but doesn't yet fullfill all the
-> +	  context tracking backend but doesn't yet fulfill all the
+In the general case calling setuid or any of it's cousins can cause the
+same problem.  So a revoke that only works at exec time is insufficient.
 
-I usually spell it "fulfil" but either way is OK.
+The problem we are examining is what happens when the file descriptor is
+passed to a more privileged process that will pass the ptrace_may_access
+check while the original process that opened the file did not.
 
->  	  requirements to make the full dynticks feature working.
->  	  Without the full dynticks, there is no way to test the support
->  	  for context tracking and the subsystems that rely on it: RCU
+We have file->f_cred that has the permissions of the process at open
+time, and likely that should factor into the calculations somehow.
 
+Alternatively we may simply be able to call get_task_cred() at the time
+we open the file and if the cred on the process changes fail.  I know
+Linus was looking at something like that recently, but ran into problmes
+with Chromes sandbox. (Sigh).  Although I think he was talking about
+file->f_cred...
 
-Thanks.
+This is most definitely a solvable problem with current mechanisms, but
+it is going to take some grunt work to make it happen.
 
--- 
-~Randy
+Eric
