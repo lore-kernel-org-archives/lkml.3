@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3IAEmN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 00:42:13 -0400
-Received: from smtp-66.nebula.fi ([83.145.220.66]:36470 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751857Ab3IAEmL (ORCPT
+	id S1755486Ab3IAEpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 00:45:24 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:46652 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab3IAEpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 00:42:11 -0400
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org
-Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH] clk: add generic driver for fixed rate clock
-Date: Sun,  1 Sep 2013 07:40:20 +0300
-Message-Id: <1378010420-20031-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 1 Sep 2013 00:45:22 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <878uzmhkqg.fsf@xmission.com>
+	<CALCETrWPDzuoaJp2ko5jAbwYUBqSdPjvO5uGo-gZVsS4Wm1PKQ@mail.gmail.com>
+	<87a9k2g5la.fsf@xmission.com>
+Date: Sat, 31 Aug 2013 21:45:11 -0700
+In-Reply-To: <87a9k2g5la.fsf@xmission.com> (Eric W. Biederman's message of
+	"Tue, 27 Aug 2013 14:57:05 -0700")
+Message-ID: <87eh99noa0.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/6KlSvpw3CdDV4dkvBWi+tosBv97DwCjk=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0316]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc and sysfs can be mounted
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a simple driver with the only purpose to initialise
-the fixed rate clock.
-This is useful for systems that do not wish to use seperate init
-code for the fixed rate clock init, but rather only rely on a
-device tree description of it.
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
----
- drivers/clk/Kconfig             |  8 ++++++
- drivers/clk/Makefile            |  1 +
- drivers/clk/clk-generic-fixed.c | 59 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 68 insertions(+)
- create mode 100644 drivers/clk/clk-generic-fixed.c
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Tue, Aug 27, 2013 at 2:44 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>>
+>>> Rely on the fact that another flavor of the filesystem is already
+>>> mounted and do not rely on state in the user namespace.
+>>
+>> Possibly dumb question: does this check whether the pre-existing mount
+>> has hidepid set?
+>
+> Not currently. 
+>
+> It may be worth doing something with respect to hidepid.  I forget what
+> hidepid tries to do, and I need to dash.  But feel free to cook up a
+> follow on patch.
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 51380d6..7c8ea78 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -87,6 +87,14 @@ config CLK_PPC_CORENET
- 	  This adds the clock driver support for Freescale PowerPC corenet
- 	  platforms using common clock framework.
- 
-+config COMMON_CLK_GENERIC_FIXED
-+	tristate "Generic fixed rate clock driver"
-+	depends on OF
-+	---help---
-+	  Driver for systems that do not want to register their fixed rate
-+	  clocks through init code, but rather through the device tree
-+	  description.
-+
- endmenu
- 
- source "drivers/clk/mvebu/Kconfig"
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 4038c2b..2d46647 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
-+obj-$(CONFIG_COMMON_CLK_GENERIC_FIXED) += clk-generic-fixed.o
- 
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-diff --git a/drivers/clk/clk-generic-fixed.c b/drivers/clk/clk-generic-fixed.c
-new file mode 100644
-index 0000000..85df8a8
---- /dev/null
-+++ b/drivers/clk/clk-generic-fixed.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright 2013 Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Generic driver for fixed rate clock
-+ */
-+#include <linux/platform_device.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/module.h>
-+
-+static const struct of_device_id generic_fixed_clk_match[] __initconst = {
-+	{ .compatible = "fixed-clock",},
-+	{}
-+};
-+
-+static int generic_fixed_clk_probe(struct platform_device *pdev)
-+{
-+	of_fixed_clk_setup(pdev->dev.of_node);
-+
-+	return 0;
-+}
-+
-+static int generic_fixed_clk_remove(struct platform_device *pdev)
-+{
-+	of_clk_del_provider(pdev->dev.of_node);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver generic_fixed_clk_driver = {
-+	.driver = {
-+		.name = "generic-fixed-clk",
-+		.owner = THIS_MODULE,
-+		.of_match_table = generic_fixed_clk_match,
-+	},
-+	.probe	= generic_fixed_clk_probe,
-+	.remove	= generic_fixed_clk_remove,
-+};
-+
-+static int __init generic_fixed_clk_init(void)
-+{
-+	return platform_driver_register(&generic_fixed_clk_driver);
-+}
-+subsys_initcall(generic_fixed_clk_init);
-+
-+static void __exit generic_fixed_exit(void)
-+{
-+	platform_driver_unregister(&generic_fixed_clk_driver);
-+}
-+module_exit(generic_fixed_exit);
-+
-+MODULE_AUTHOR("Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>");
-+MODULE_DESCRIPTION("Generic driver for fixed rate clock");
-+MODULE_LICENSE("GPL v2");
--- 
-1.8.1.2
+So I have thought about this a bit more.
 
+hidepid hides the processes that ptrace_may_access will fail on.
+
+You can only reach the point where an unprivileged mount of a pid
+namespace is possible if you have created both a user namespace and a
+pid namespace.  Which means the creator of the pid namespace will be
+capable of ptracing all of the other processes in the pid namespace
+(ignoring setns).
+
+So I don't see a point of worry about hidepid or the hidepid gid on
+child pid namespaces.  The cases it is attempting to protecting against
+really don't exist.
+
+Eric
