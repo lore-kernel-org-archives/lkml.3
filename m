@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab3IANZv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 09:25:51 -0400
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:46170 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab3IANZu (ORCPT
+	id S1757234Ab3IAOCO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 10:02:14 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:35585 "EHLO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab3IAOCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 09:25:50 -0400
-X-SENDER-IP: [85.230.171.181]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArVuAEQ/I1JV5qu1PGdsb2JhbABagwYBiGelCoxihhKBDYEeFwMBAQEBODWDARMBDxgRWRgKGhOHcAMTr2gNiWgWjHmCcIQkA5QbgXGIKIV4iFE6
-X-IronPort-AV: E=Sophos;i="4.89,1001,1367964000"; 
-   d="scan'208";a="607455429"
-From: Henrik Rydberg <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] HID: Correct the USB IDs for the new Macbook Air 6
-Date: Sun,  1 Sep 2013 15:31:44 +0200
-Message-Id: <1378042304-1400-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.8.3.4
+	Sun, 1 Sep 2013 10:02:13 -0400
+Message-ID: <522348C0.3040405@gmail.com>
+Date: Sun, 01 Sep 2013 16:01:36 +0200
+From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Emulating ECC RAM in kernel or mirroring RAM to exclude HW issues
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recent patch (9d9a04ee) added support for the new machine, but got
-the sequence of USB ids wrong. Reports from both Ian and Linus T show
-that the 0x0291 id is for ISO, not ANSI, which should have the missing
-number 0x0290. This patchs moves the three numbers accordingly, fixing
-the problem.
+Hi,
+  I am trying to find out why some applications crash on my laptop.
+I mostly use python and have configured it via configure --with-pydebug
+so that is wraps memory allocated regions with 0xfb. That helps to realize
+something overwrote that memory region. So far, it twice reported
+0xfb to 0xfa transition at some logical position 5. I was told python cannot
+print physical hardware address but let's assume this is a memory error
+and one bit was flipped. However, sometimes other apps crash as well and
+I think I tried enough to run core dumps through gdb to find out where they
+crashed and it does not to an answer.
+  I tried for hours memtest86+ to find an error but is never found anything
+wrong. From my experience, the errors appear when the CPU is loaded and that
+is not under memtest86+ started from a boot CD. I think it another reason why
+memtest86+ maybe does not find the problematic bit is that it would have to
+fill whole RAM with e.g. 0xfb and scan those values all remaining hours whether
+they still read as 0xfb. It seems all write&read tests done by memtest86+ happen
+too quickly after each other. I lack tests where the data if written into memory
+and kept there for a long while (hours, days).
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
-Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Jiri, Dmitry,
+  Finally, I got an idea that linux kernel could emulate ECC RAM and just keep
+some checksums in another region of memory. This would to find not only flipped
+memory bit but even other (larger) corrupted regions of memory. I don't need
+speed (running apps under valgrind/DUMA is not fast either) and I don't need
+memory hotplug. Let's say this is for diagnostic purpose. I don't mind if somebody
+says I have to sacrifice 1/2 of my precious RAM to do software memory mirroring.
+Even that would be cool trick! to get around and see where is the bug hiding.
+I somewhat speculate it could be just a bit overheated memory controller after
+high CPU usage or the CPU or its cache gets upset and has nothing to do with RAM.
+When it is cold, it works. But, first I need a proof that RAM is not at fault.
 
-it looks like this change has been sufficiently tested now, in
-addition to making perfect sense. Jiri, would you mind taking it, if
-Dmitry approves?
+  I think somebody must already thought about this so I am just asking what do
+you think. Maybe this is already available in some linux source tree as a
+proof-of-the-concept patch. ;) That would be great. 
 
-The patch should go to stable as well at some point, but the new order
-makes me not dare adding a Cc... ;-)
+https://www.usenix.org/legacy/event/atc10/tech/full_papers/Li.pdf
 
-Cheers,
-Henrik
-
- drivers/hid/hid-ids.h         | 6 +++---
- drivers/input/mouse/bcm5974.c | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index ffe4c7a..0b7ac21 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -135,9 +135,9 @@
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0290
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0292
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
- #define USB_DEVICE_ID_APPLE_IRCONTROL	0x8240
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index 4ef4d5e..a73f961 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -89,9 +89,9 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
- /* MacbookAir6,2 (unibody, June 2013) */
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
--#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0290
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0292
- 
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
--- 
-1.8.3.4
-
+Thank you,
+Martin
