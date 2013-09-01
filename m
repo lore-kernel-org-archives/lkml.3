@@ -1,187 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab3IAMGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 08:06:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46256 "EHLO mx1.redhat.com"
+	id S1757188Ab3IAMV0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 08:21:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41955 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab3IAMGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 08:06:23 -0400
-Date: Sun, 1 Sep 2013 15:06:09 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel
- handling
-Message-ID: <20130901120609.GJ22899@redhat.com>
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
- <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
+	id S1752768Ab3IAMVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 08:21:25 -0400
+Message-ID: <5223311D.2040608@zytor.com>
+Date: Sun, 01 Sep 2013 05:20:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: On the correctness of dbe3ed1c078c193be34326728d494c5c4bc115e2
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
-> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
-> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
-> them to user space which saves time on switching to user space and back.
-> 
-> Both real and virtual modes are supported. The kernel tries to
-> handle a TCE request in the real mode, if fails it passes the request
-> to the virtual mode to complete the operation. If it a virtual mode
-> handler fails, the request is passed to user space.
-> 
-> The first user of this is VFIO on POWER. Trampolines to the VFIO external
-> user API functions are required for this patch.
-> 
-> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
-> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
-> of map/unmap requests. The device supports a single attribute which is
-> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
-> establishes the connection between KVM and VFIO.
-> 
-> Tests show that this patch increases transmission speed from 220MB/s
-> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
-> 
-> Signed-off-by: Paul Mackerras <paulus@samba.org>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> 
-> ---
-> 
-> Changes:
-> v9:
-> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
-> KVM device
-> * release_spapr_tce_table() is not shared between different TCE types
-> * reduced the patch size by moving VFIO external API
-> trampolines to separate patche
-> * moved documentation from Documentation/virtual/kvm/api.txt to
-> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> 
-> v8:
-> * fixed warnings from check_patch.pl
-> 
-> 2013/07/11:
-> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
-> for KVM_BOOK3S_64
-> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
-> for this here but the next patch for hugepages support will use it more.
-> 
-> 2013/07/06:
-> * added realmode arch_spin_lock to protect TCE table from races
-> in real and virtual modes
-> * POWERPC IOMMU API is changed to support real mode
-> * iommu_take_ownership and iommu_release_ownership are protected by
-> iommu_table's locks
-> * VFIO external user API use rewritten
-> * multiple small fixes
-> 
-> 2013/06/27:
-> * tce_list page is referenced now in order to protect it from accident
-> invalidation during H_PUT_TCE_INDIRECT execution
-> * added use of the external user VFIO API
-> 
-> 2013/06/05:
-> * changed capability number
-> * changed ioctl number
-> * update the doc article number
-> 
-> 2013/05/20:
-> * removed get_user() from real mode handlers
-> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
-> translated TCEs, tries realmode_get_page() on those and if it fails, it
-> passes control over the virtual mode handler which tries to finish
-> the request handling
-> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
-> on a page
-> * The only reason to pass the request to user mode now is when the user mode
-> did not register TCE table in the kernel, in all other cases the virtual mode
-> handler is expected to do the job
-> ---
->  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
->  arch/powerpc/include/asm/kvm_host.h                |   4 +
->  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
->  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
->  arch/powerpc/kvm/powerpc.c                         |   1 +
->  include/linux/kvm_host.h                           |   1 +
->  virt/kvm/kvm_main.c                                |   5 +
->  7 files changed, 477 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> 
-> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> new file mode 100644
-> index 0000000..4bc8fc3
-> --- /dev/null
-> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> @@ -0,0 +1,37 @@
-> +SPAPR TCE IOMMU device
-> +
-> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
-> +Architectures: powerpc
-> +
-> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
-> +
-> +Groups:
-> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
-> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
-> +
-> +This is completely made up device which provides API to link
-> +logical bus number (LIOBN) and IOMMU group. The user space has
-> +to create a new SPAPR TCE IOMMU device per a logical bus.
-> +
-Why not have one device that can handle multimple links?
+A truly ancient commit (v2.6.23), dbe3ed1c078c193be34326728d494c5c4bc115e2:
 
-> +LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
-> +(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
-> +IOMMU group is a minimal isolated device set which can be passed to
-> +the user space via VFIO.
-> +
-> +Right after creation the device is in uninitlized state and requires
-> +a KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE attribute to be set.
-> +The attribute contains liobn, IOMMU fd and flags:
-> +
-> +struct kvm_create_spapr_tce_iommu_linkage {
-> +	__u64 liobn;
-> +	__u32 fd;
-> +	__u32 flags;
-> +};
-> +
-> +The user space creates the SPAPR TCE IOMMU device, obtains
-> +an IOMMU fd via VFIO ABI and sets the attribute to the SPAPR TCE IOMMU
-> +device. At the moment of setting the attribute, the SPAPR TCE IOMMU
-> +device links LIOBN to IOMMU group and makes necessary steps
-> +to make sure that VFIO group will not disappear before KVM destroys.
-> +
-> +The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
-[skip]
+    x86-64: page faults from user mode are always user faults
 
-> +
-> +static int kvmppc_spapr_tce_iommu_get_attr(struct kvm_device *dev,
-> +		struct kvm_device_attr *attr)
-> +{
-> +	struct kvmppc_spapr_tce_table *tt = dev->private;
-> +	void __user *argp = (void __user *) attr->addr;
-> +
-> +	switch (attr->group) {
-> +	case KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE:
-> +		if (!tt)
-> +			return -EFAULT;
-Does not look like correct error code to return here. EINVAL may be?
+    Randy Dunlap noticed an interesting "crashme" behaviour on his dual
+    Prescott Xeon setup, where he gets page faults with the error code
+    having a zero "user" bit, but the register state points back to user
+    mode.
 
-> +		if (copy_to_user(&tt->link, argp, sizeof(tt->link)))
-> +			return -EFAULT;
-> +		return 0;
-> +	}
-> +	return -ENXIO;
-> +}
-> +
+    This may be a CPU microcode buglet triggered by some strange
+    instruction pattern that crashme generates, and loading a microcode
+    update seems to possibly have fixed it.
 
---
-			Gleb.
+    Regardless, we really should trust the register state more than the
+    error code, since it's really the register state that determines
+    whether we can actually send a signal, or whether we're in kernel
+    mode and need to oops/kill the process in the case of a page fault.
+
+... introduced the following code (since slightly modified):
+
++	/*
++	 * User-mode registers count as a user access even for any
++	 * potential system fault or CPU buglet.
++	 */
++	if (user_mode_vm(regs))
++		error_code |= PF_USER;
++
+
+This has the end result that we treat a user space instruction which
+touches a privileged data structure that then page faults (e.g. a
+segment load which causes #PF on the GDT) as a user-space fault.
+
+This seems very wrong to me, since such a #PF would indicate a serious
+error in the kernel.
+
+If this was a buglet introduced by a specific processor ("Prescott Xeon"
+I presume means Nocona) and then even fixed in a patch, I'm concerned
+that we are putting the cart before the horse with this change.
+
+I went through the errata sheets for the CPUs of the time, but nothing
+jumped out at me as causing this kind of problem, although there is a
+mention of a couple of undefined opcodes which ought to #UD being able
+to generate a "load to an incorrect address".  Kind of a stretch, though.
+
+	-hpa
