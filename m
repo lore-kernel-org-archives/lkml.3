@@ -1,360 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803Ab3IAQsR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 12:48:17 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:33804 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200Ab3IAQsQ (ORCPT
+	id S1757587Ab3IAQza (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 12:55:30 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:50700 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab3IAQz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 12:48:16 -0400
-Message-ID: <52236FBF.2090705@elopez.com.ar>
-Date: Sun, 01 Sep 2013 13:47:59 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Sun, 1 Sep 2013 12:55:28 -0400
+Date: Sun, 1 Sep 2013 17:55:25 +0100
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.11-rc7: unpriviledged user crashes kernel using bluetooth
+Message-ID: <20130901165525.GK7440@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Pavel Machek <pavel@ucw.cz>, marcel@holtmann.org,
+	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
+	kernel list <linux-kernel@vger.kernel.org>
+References: <20130831100127.GA6711@amd.pavel.ucw.cz>
+ <20130831100933.GA7029@amd.pavel.ucw.cz>
+ <20130831101451.GC7029@amd.pavel.ucw.cz>
+ <20130831104238.GA7767@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: oliver+list@schinagl.nl
-CC: arnd@arndb.de, gregkh@linuxfoundation.org, linux@arm.linux.org.uk,
-        Oliver Schinagl <oliver@schinagl.nl>, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com,
-        andy.shevchenko@gmail.com, maxime.ripard@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv6 1/2] ARM: sunxi: Initial support for Allwinner's Security
- ID fuses
-References: <1378035019-9649-1-git-send-email-oliver+list@schinagl.nl> <1378035019-9649-2-git-send-email-oliver+list@schinagl.nl>
-In-Reply-To: <1378035019-9649-2-git-send-email-oliver+list@schinagl.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130831104238.GA7767@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+Hi Pavel,
 
-Most of my comments on this are nitpicks, overall it looks good to me
+2013-08-31 Pavel Machek <pavel@ucw.cz>:
 
-El 01/09/13 08:30, oliver+list@schinagl.nl escribió:
-> From: Oliver Schinagl <oliver@schinagl.nl>
->
-> Allwinner has electric fuses (efuse) on their line of chips. This driver
-> reads those fuses, seeds the kernel entropy and exports them as a sysfs
-> node.
->
-> These fuses are most likely to be programmed at the factory, encoding
-> things like Chip ID, some sort of serial number etc and appear to be
+> On Sat 2013-08-31 12:14:51, Pavel Machek wrote:
+> > On Sat 2013-08-31 12:09:33, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > . Python sources for client/server are at 
+> > > > 
+> > > > http://tui.cvs.sourceforge.net/viewvc/tui/tui/liveview/
+> > > > 
+> > > > . My kernels like to warn about
+> > > System is debian stable with gnome2.
+> > 
+> > And no, it is not fixed in 3.11-rc7.
+> 
+> 2.6.32-5-686 from debian seems to work.
 
-"..number, etc. and appear.."
+Could you try linux-next? We recently pushed a rework of the RFCOMM tty
+handling, it should fix this. The work was too big to be pushed to 3.11
 
-> reasonable unique.
-
-reasonably
-
-> While in theory, these should be writeable by the user, it will probably
-> be inconvinient to do so. Allwinner recommends that a certain input pin,
-
-inconvenient
-
-> labeled 'efuse_vddq', be connected to GND. To write these fuses however,
-> a 2.5 V programming voltage needs to be applied to this pin.
->
-> Even so, they can still be used to generate a board-unique mac from,
-> board unique RSA key and seed the kernel RNG.
->
-> On sun7i additional storage is available, this is initially used for an
-> UEFI BOOT key, Secure JTAG key, HDMI-HDCP key and vendor specific keys.
->
-> Currently supported are the following known chips:
-> Allwinner sun4i (A10)
-> Allwinner sun5i (A10s, A13)
-> Allwinner sun7i (A20)
->
-> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
-> ---
->   Documentation/ABI/testing/sysfs-driver-sunxi-sid   |  22 +++
->   .../bindings/misc/allwinner,sunxi-sid.txt          |  17 ++
->   drivers/misc/eeprom/Kconfig                        |  13 ++
->   drivers/misc/eeprom/Makefile                       |   1 +
->   drivers/misc/eeprom/sunxi_sid.c                    | 177 +++++++++++++++++++++
->   5 files changed, 230 insertions(+)
->   create mode 100644 Documentation/ABI/testing/sysfs-driver-sunxi-sid
->   create mode 100644 Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
->   create mode 100644 drivers/misc/eeprom/sunxi_sid.c
->
-> diff --git a/Documentation/ABI/testing/sysfs-driver-sunxi-sid b/Documentation/ABI/testing/sysfs-driver-sunxi-sid
-> new file mode 100644
-> index 0000000..ffb9536
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-driver-sunxi-sid
-> @@ -0,0 +1,22 @@
-> +What:		/sys/devices/*/<our-device>/eeprom
-> +Date:		August 2013
-> +Contact:	Oliver Schinagl <oliver@schinagl.nl>
-> +Description:	read-only access to the SID (Security-ID) on current
-> +		A-series SoC's from Allwinner. Currently supports A10, A10s, A13
-> +		and A20 CPU's. The earlier A1x series of SoCs exports 16 bytes,
-> +		whereas the newer A20 SoC exposes 512 bytes split into sections.
-> +		Besides the 16 bytes of SID, there's also an SJTAG area,
-> +		HDMI-HDCP key and some custom keys. Below a quick overview, for
-> +		details see the user manual:
-> +		0x000  128 bit root-key (sun[457]i)
-> +		0x010  128 bit boot-key (sun7i)
-> +		0x020   64 bit security-jtag-key (sun7i)
-> +		0x028   16 bit key configuration (sun7i)
-> +		0x02b   16 bit custom-vendor-key (sun7i)
-> +		0x02c  320 bit low general key (sun7i)
-> +		0x040   32 bit read-control access (sun7i)
-> +		0x064  224 bit low general key (sun7i)
-> +		0x080 2304 bit HDCP-key (sun7i)
-> +		0x1a0  768 bit high general key (sun7i)
-> +Users:		any user space application which wants to read the SID on
-> +		Allwinner's A-series of CPU's.
-> diff --git a/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt b/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
-> new file mode 100644
-> index 0000000..68ba372
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
-> @@ -0,0 +1,17 @@
-> +Allwinner sunxi-sid
-> +
-> +Required properties:
-> +- compatible: "allwinner,sun4i-sid" or "allwinner,sun7i-a20-sid".
-> +- reg: Should contain registers location and length
-> +
-> +Example for sun4i:
-> +	sid@01c23800 {
-> +		compatible = "allwinner,sun4i-sid";
-> +		reg = <0x01c23800 0x10>
-> +	};
-> +
-> +Example for sun7i:
-> +	sid@01c23800 {
-> +		compatible = "allwinner,sun7i-a20-sid";
-> +		reg = <0x01c23800 0x200>
-> +	};
-> diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-> index 04f2e1f..9536852f 100644
-> --- a/drivers/misc/eeprom/Kconfig
-> +++ b/drivers/misc/eeprom/Kconfig
-> @@ -96,4 +96,17 @@ config EEPROM_DIGSY_MTC_CFG
->
->   	  If unsure, say N.
->
-> +config EEPROM_SUNXI_SID
-> +	tristate "Allwinner sunxi security ID support"
-> +	depends on ARCH_SUNXI && SYSFS
-> +	help
-> +	  This is a driver for the 'security ID' available on various Allwinner
-> +	  devices.
-> +
-> +	  Due to the potential risks involved with changing e-fuses,
-> +	  this driver is read-only.
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called sunxi_sid.
-> +
->   endmenu
-> diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
-> index fc1e81d..9507aec 100644
-> --- a/drivers/misc/eeprom/Makefile
-> +++ b/drivers/misc/eeprom/Makefile
-> @@ -4,4 +4,5 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
->   obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
->   obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
->   obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
-> +obj-$(CONFIG_EEPROM_SUNXI_SID)	+= sunxi_sid.o
->   obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
-> diff --git a/drivers/misc/eeprom/sunxi_sid.c b/drivers/misc/eeprom/sunxi_sid.c
-> new file mode 100644
-> index 0000000..39a9a62
-> --- /dev/null
-> +++ b/drivers/misc/eeprom/sunxi_sid.c
-> @@ -0,0 +1,177 @@
-> +/*
-> + * Copyright (c) 2013 Oliver Schinagl <oliver@schinagl.nl>
-> + * http://www.linux-sunxi.org
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * This driver exposes the Allwinner security ID, efuses exported in byte-
-> + * sized chunks.
-> + */
-> +
-> +#include <linux/compiler.h>
-> +#include <linux/device.h>
-> +#include <linux/err.h>
-> +#include <linux/export.h>
-> +#include <linux/fs.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/kobject.h>
-> +#include <linux/module.h>
-> +#include <linux/of_device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/random.h>
-> +#include <linux/slab.h>
-> +#include <linux/stat.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/types.h>
-> +
-> +#define DRV_NAME "sunxi-sid"
-> +
-> +struct sunxi_sid_data {
-> +	void __iomem *reg_base;
-> +	unsigned int keysize;
-> +};
-> +
-> +/* We read the entire key, due to a 32 bit read alignment requirement. Since we
-> + * want to return the requested byte, this resuls in somewhat slower code and
-> + * uses 4 times more reads as needed but keeps code simpler. Since the SID is
-> + * only very rarly probed, this is not really an issue.
-
-rarely
-
-> + */
-> +static u8 sunxi_sid_read_byte(const struct sunxi_sid_data *sid_data,
-> +			      const unsigned int offset)
-> +{
-> +	u32 sid_key;
-> +
-> +	if (offset >= sid_data->keysize)
-> +		return 0;
-> +
-> +	sid_key = ioread32be(sid_data->reg_base + round_down(offset, 4));
-> +	sid_key >>= (offset % 4) * 8;
-> +
-> +	return sid_key; /* Only return the last byte */
-> +}
-> +
-> +static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-> +			struct bin_attribute *attr, char *buf,
-> +			loff_t pos, size_t size)
-> +{
-> +	struct platform_device *pdev;
-> +	struct sunxi_sid_data *sid_data;
-> +	int i;
-> +
-> +	pdev = to_platform_device(kobj_to_dev(kobj));
-> +	sid_data = platform_get_drvdata(pdev);
-> +
-> +	if (pos < 0 || pos >= sid_data->keysize)
-> +		return 0;
-> +	if (size > sid_data->keysize - pos)
-> +		size = sid_data->keysize - pos;
-> +
-> +	for (i = 0; i < size; i++)
-> +		buf[i] = sunxi_sid_read_byte(sid_data, pos + i);
-> +
-> +	return i;
-> +}
-> +
-> +static struct bin_attribute sid_bin_attr = {
-> +	.attr = { .name = "eeprom", .mode = S_IRUGO, },
-> +	.read = sid_read,
-> +};
-> +
-> +static struct bin_attribute *sunxi_sid_bin_attrs[] = {
-> +	&sid_bin_attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group sunxi_sid_group = {
-> +	.bin_attrs = sunxi_sid_bin_attrs,
-> +};
-> +
-> +/* fixme: Unused struct to be used with proper sysfs bin_attr groups */
-> +static const struct attribute_group *sunxi_sid_groups[] = {
-> +	&sunxi_sid_group,
-> +	NULL,
-> +};
-> +
-> +static int sunxi_sid_remove(struct platform_device *pdev)
-> +{
-> +	struct sunxi_sid_data *sid_data;
-> +
-> +	device_remove_bin_file(&pdev->dev, &sid_bin_attr); /* fixme: remove when using sysfs bin attrs */
-> +	sid_data = platform_get_drvdata(pdev);
-> +	dev_dbg(&pdev->dev, "driver unloaded\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id sunxi_sid_of_match[] = {
-> +	{ .compatible = "allwinner,sun4i-sid", .data = (void *)16},
-> +	{ .compatible = "allwinner,sun7i-a20-sid", .data = (void *)512},
-> +	{/* sentinel */},
-> +};
-> +MODULE_DEVICE_TABLE(of, sunxi_sid_of_match);
-> +
-> +static int __init sunxi_sid_probe(struct platform_device *pdev)
-> +{
-> +	struct sunxi_sid_data *sid_data;
-> +	struct resource *res;
-> +	const struct of_device_id *of_dev_id;
-> +	u8 *entropy;
-> +	unsigned int i;
-> +
-> +	sid_data = devm_kzalloc(&pdev->dev, sizeof(struct sunxi_sid_data),
-> +				GFP_KERNEL);
-> +	if (!sid_data)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	sid_data->reg_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(sid_data->reg_base))
-> +		return PTR_ERR(sid_data->reg_base);
-> +
-> +	of_dev_id = of_match_device(sunxi_sid_of_match, &pdev->dev);
-> +	if (!of_dev_id)
-> +		return -ENODEV;
-> +	sid_data->keysize = (int)of_dev_id->data;
-> +
-> +	platform_set_drvdata(pdev, sid_data);
-> +
-> +	sid_bin_attr.size = sid_data->keysize; /* fixme: this should be properly set by the sysfs bin attr groups later */
-> +	if (device_create_bin_file(&pdev->dev, &sid_bin_attr)) /* fixme: this will need to be removed when using sysfs bin attr groups */
-> +		return -ENODEV;
-> +
-> +	entropy = kzalloc(sizeof(u8) * sid_data->keysize, GFP_KERNEL);
-> +	for (i = 0; i < sid_data->keysize; i++)
-> +		entropy[i] = sunxi_sid_read_byte(sid_data, i);
-> +	add_device_randomness(entropy, sid_data->keysize);
-> +	kfree(entropy);
-> +
-> +	dev_dbg(&pdev->dev, "loaded\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver sunxi_sid_driver = {
-> +	.probe = sunxi_sid_probe,
-> +	.remove = sunxi_sid_remove,
-> +	.driver = {
-> +		.name = DRV_NAME,
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = sunxi_sid_of_match,
-> +		/* .groups = sunxi_sid_groups, fixme: this is the proper way using bin attr groups */
-> +	},
-> +};
-> +module_platform_driver(sunxi_sid_driver);
-
-As the probe function is marked __init, and this is a non-hotpluggable 
-device, I think you should use module_platform_driver_probe(...) instead 
-of module_platform_driver(...)
-
-> +
-> +MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
-> +MODULE_DESCRIPTION("Allwinner sunxi security id driver");
-> +MODULE_LICENSE("GPL");
->
-
-Thanks for working on this!
-
-Emilio
+	Gustavo
