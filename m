@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab3IAKjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30166 "EHLO mx1.redhat.com"
+	id S1757451Ab3IAKhy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14510 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757402Ab3IAKiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:38:00 -0400
+	id S1757427Ab3IAKht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:49 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,71 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 24/25] perf tools: Add multi file '-M' option for record command
-Date: Sun,  1 Sep 2013 12:36:35 +0200
-Message-Id: <1378031796-17892-25-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 20/25] perf tools: Add perf_data_file__open interface to data object
+Date: Sun,  1 Sep 2013 12:36:31 +0200
+Message-Id: <1378031796-17892-21-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-split event data into multiple files based on the file
-size or time delta specified as an argument to the option.
-
-Adding multi file '-M' option for record command to store
-output perf.data into multiple files based on the size
-threshold.
-
-The threshold is specified either as size (B/K/M/G) or time
-(s/m/h) by appending the size with appropriate unit, like:
-  -M 5M for 5 megabytes threshold
-  -M 1h for 1 hour threshold
-The generated name for each data file is appended with sequential
-number (prepended by 5 zeros).For default output file name it
-will be:
-  perf.data-00000
-  perf.data-00001
-  perf.data-00002
-  ...
-
-Also watermark/wakeup_watermark is set accordingly to get
-wake ups more often so we could get close enough to the
-file size promise.
-
-Example:
-  $ perf record -M 5M yes > /dev/null
-  ^C[ perf record: Woken up 228 times to write data ]
-  [ perf record: Captured and wrote 20.246 MB perf.data-[0-4](~884542 samples) ]
-  yes: Interrupt
-  $ ls -l perf.data-0*
-  -rw------- 1 jolsa jolsa 5289856 Aug 16 16:07 perf.data-00000
-  -rw------- 1 jolsa jolsa 5296008 Aug 16 16:08 perf.data-00001
-  -rw------- 1 jolsa jolsa 5344968 Aug 16 16:09 perf.data-00002
-  -rw------- 1 jolsa jolsa 5309144 Aug 16 16:09 perf.data-00003
-  -rw------- 1 jolsa jolsa 2358268 Aug 16 16:09 perf.data-00004
-  $ ./perf diff perf.data-0000*
-  # Event 'cycles'
-  #
-  # Data files:
-  #  [0] perf.data-00000 (Baseline)
-  #  [1] perf.data-00001
-  #  [2] perf.data-00002
-  #  [3] perf.data-00003
-  #  [4] perf.data-00004
-  #
-  # Baseline/0  Delta/1  Delta/2  Delta/3  Delta/4      Shared Object                                      Symbol
-  # ..........  .......  .......  .......  .......  .................  ..........................................
-  #
-        37.70%   -0.17%   -0.42%   -0.24%   -0.31%  libc-2.15.so       [.] _IO_file_xsputn@@GLIBC_2.2.5
-        30.31%   +0.28%   +0.22%   +0.07%   +0.06%  yes                [.] main
-        16.73%   +0.02%   +0.10%   -0.03%   +0.11%  libc-2.15.so       [.] __strlen_sse2
-        14.22%   -0.30%   -0.10%   -0.31%   -0.14%  libc-2.15.so       [.] fputs_unlocked
-         0.39%                              -0.01%  yes                [.] fputs_unlocked@plt
-         0.06%                                      [kernel.kallsyms]  [k] system_call
-         0.06%                     +0.01%           [kernel.kallsyms]  [k] __srcu_read_lock
-         0.05%                     +0.01%           [kernel.kallsyms]  [k] __srcu_read_unlock
-  ...
+Adding perf_data_file__open interface to data object
+to open the perf.data file for both read and write.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -91,467 +37,443 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Documentation/perf-record.txt |  14 ++
- tools/perf/builtin-record.c              | 246 ++++++++++++++++++++++++++++---
- tools/perf/perf.h                        |  14 ++
- tools/perf/util/evlist.c                 |   2 +-
- tools/perf/util/evlist.h                 |   2 +
- tools/perf/util/evsel.c                  |  24 +++
- 6 files changed, 280 insertions(+), 22 deletions(-)
+ tools/perf/Makefile               |   1 +
+ tools/perf/builtin-record.c       |  34 +----------
+ tools/perf/builtin-top.c          |   9 +--
+ tools/perf/tests/session-simple.c |   3 -
+ tools/perf/util/data.c            | 120 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/data.h            |   4 ++
+ tools/perf/util/session.c         |  95 ++++++++++--------------------
+ tools/perf/util/session.h         |   2 +-
+ 8 files changed, 158 insertions(+), 110 deletions(-)
+ create mode 100644 tools/perf/util/data.c
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 400e9bb..f77658b 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -184,6 +184,20 @@ Enable weightened sampling. An additional weight is recorded per sample and can
- displayed with the weight and local_weight sort keys.  This currently works for TSX
- abort events and some memory events in precise mode on modern Intel CPUs.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2510355..7c80443 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -363,6 +363,7 @@ LIB_OBJS += $(OUTPUT)util/intlist.o
+ LIB_OBJS += $(OUTPUT)util/vdso.o
+ LIB_OBJS += $(OUTPUT)util/stat.o
+ LIB_OBJS += $(OUTPUT)util/record.o
++LIB_OBJS += $(OUTPUT)util/data.o
  
-+-M::
-+--multi::
-+Store output perf.data into multiple files based on the size threshold.
-+The threshold is specified either as size (B/K/M/G) or time (s/m/h)
-+by appending the size with appropriate unit, like:
-+  -M 5M for 5 megabytes threshold
-+  -M 1h for 1 hour threshold
-+The generated name for each data file is appended with sequential number
-+(prepended by 5 zeros).  For default output file name it will be:
-+  perf.data-00000
-+  perf.data-00001
-+  perf.data-00002
-+  ...
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 046ddda..b0c5937 100644
+index 1887b20..ace16f8 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -66,6 +66,9 @@ struct perf_record {
- 	struct perf_tool	tool;
- 	struct perf_record_opts	opts;
- 	u64			bytes_written;
-+	u64			multi_bytes_written;
-+	unsigned int		multi_idx;
-+	time_t			multi_time;
- 	struct perf_data_file	file_base;
- 	struct perf_data_file	*file;
- 	struct perf_evlist	*evlist;
-@@ -249,11 +252,10 @@ out:
- 	return rc;
- }
+@@ -433,15 +433,12 @@ out:
  
--static int process_buildids(struct perf_record *rec)
-+static int process_buildids(struct perf_session *session)
- {
--	struct perf_session *session = rec->session;
--	u64 data_offset              = PERF_FILE_HEADER__DATA_OFFSET;
--	u64 size                     = session->header.data_size;
-+	u64 data_offset = PERF_FILE_HEADER__DATA_OFFSET;
-+	u64 size        = session->header.data_size;
- 
- 	if (size == 0)
- 		return 0;
-@@ -263,6 +265,19 @@ static int process_buildids(struct perf_record *rec)
- 					      &build_id__mark_dso_hit_ops);
- }
- 
-+static int file_finish(struct perf_record *rec,
-+		       struct perf_data_file *file,
-+		       struct perf_session *session,
-+		       u64 bytes_written)
-+{
-+	session->header.data_size = bytes_written;
-+
-+	if (!rec->no_buildid)
-+		process_buildids(session);
-+
-+	return perf_session__write_header(session, session->evlist, file->fd);
-+}
-+
- static void perf_record__exit(int status, void *arg)
- {
- 	struct perf_record *rec = arg;
-@@ -272,12 +287,8 @@ static void perf_record__exit(int status, void *arg)
- 		return;
- 
- 	if (!file->is_pipe) {
--		rec->session->header.data_size += rec->bytes_written;
--
--		if (!rec->no_buildid)
--			process_buildids(rec);
--		perf_session__write_header(rec->session, rec->evlist,
--					   file->fd);
-+		file_finish(rec, rec->file, rec->session,
-+			    rec->bytes_written);
- 		perf_session__delete(rec->session);
- 		perf_evlist__delete(rec->evlist);
- 		symbol__exit();
-@@ -402,6 +413,172 @@ static int synthesize_record(struct perf_record *rec)
- 	return err ? err : synthesize_record_file(rec);
- }
- 
-+static void set_multi_value(struct perf_record_opts *opts,
-+			    u64 value, int type)
-+{
-+	if ((type == MULTI_TYPE__SIZE) &&
-+	    (value < MULTI_LIMIT__MIN_SIZE)) {
-+		pr_info("setting size to minimal size of the data file %dK\n",
-+			MULTI_LIMIT__MIN_SIZE / 1024);
-+		value = MULTI_LIMIT__MIN_SIZE;
-+	}
-+
-+	pr_debug("-M/--multi value %lu (%s)\n",
-+		 value, type == MULTI_TYPE__SIZE ? "size" : "time");
-+
-+	opts->multi_limit = true;
-+	opts->multi_value = value;
-+	opts->multi_type  = type;
-+}
-+
-+static int parse_multi(const struct option *opt, const char *str,
-+		       int unset __maybe_unused)
-+{
-+	static struct parse_tag tags_size[] = {
-+		{ .tag  = 'B', .mult = 1       },
-+		{ .tag  = 'K', .mult = 1 << 10 },
-+		{ .tag  = 'M', .mult = 1 << 20 },
-+		{ .tag  = 'G', .mult = 1 << 30 },
-+		{ .tag  = 0 },
-+	};
-+	static struct parse_tag tags_time[] = {
-+		{ .tag  = 's', .mult = 1    },
-+		{ .tag  = 'm', .mult = 60   },
-+		{ .tag  = 'h', .mult = 3600 },
-+		{ .tag  = 0 },
-+	};
-+	struct perf_record_opts *opts = opt->value;
-+	unsigned long value;
-+
-+	value = parse_tag_value(str, tags_size);
-+	if (value != (unsigned long) -1) {
-+		set_multi_value(opts, value, MULTI_TYPE__SIZE);
-+		return 0;
-+	}
-+
-+	value = parse_tag_value(str, tags_time);
-+	if (value != (unsigned long) -1) {
-+		set_multi_value(opts, value, MULTI_TYPE__TIME);
-+		return 0;
-+	}
-+
-+	pr_err("failed to parse -M/--multi size value\n");
-+	return -1;
-+}
-+
-+static const char *multi_file_base(struct perf_data_file *file)
-+{
-+	static const char *base;
-+
-+	if (!base)
-+		base = file->path;
-+	if (!base)
-+		base = "perf.data";
-+
-+	return base;
-+}
-+
-+static int multi_file_name(struct perf_data_file *file, unsigned int idx)
-+{
-+	char path[PATH_MAX];
-+
-+	snprintf(path, PATH_MAX, "%s-%05u",
-+		 multi_file_base(file), idx);
-+	file->path = strdup(path);
-+
-+	return file->path ? 0 : -ENOMEM;
-+}
-+
-+static int multi_file_finish(struct perf_record *rec)
-+{
-+	struct perf_data_file *file = rec->file;
-+	struct perf_session *session;
-+	int err;
-+
-+	/* TODO create perf_session__dup(session) */
-+	session = perf_session__new(NULL, false, NULL);
-+	if (!session)
-+		return -ENOMEM;
-+
-+	session->evlist = rec->evlist;
-+	session->file   = file;
-+	session->header = rec->session->header;
-+
-+	err = file_finish(rec, file, session, rec->bytes_written);
-+	if (!err)
-+		pr_debug("multi: written file %s [%s]\n",
-+			 file->path, err ? "failed" : "ok");
-+
-+	perf_session__delete(session);
-+	return err;
-+}
-+
-+static int multi_file_init(struct perf_record *rec)
-+{
-+	struct perf_data_file *file = rec->file;
-+	int err;
-+
-+	if (multi_file_name(rec->file, rec->multi_idx++))
-+		return -ENOMEM;
-+
-+	err = perf_data_file__open(file);
-+	if (err)
-+		return err;
-+
-+	err = perf_session__prepare_header(file->fd);
-+	if (err)
-+		goto out_close;
-+
-+	err = synthesize_record_file(rec);
-+	if (err)
-+		goto out_close;
-+
-+	return 0;
-+
-+ out_close:
-+	perf_data_file__close(file);
-+	return err;
-+}
-+
-+static bool multi_trigger(struct perf_record *rec)
-+{
-+	u64 value = rec->opts.multi_value;
-+	time_t now;
-+
-+	switch (rec->opts.multi_type) {
-+	case MULTI_TYPE__SIZE:
-+		return rec->bytes_written > value;
-+
-+	case MULTI_TYPE__TIME:
-+		now = time(NULL);
-+		return (now - rec->multi_time) > (time_t) value;
-+	default:
-+		BUG_ON(1);
-+	};
-+}
-+
-+/*
-+ * TODO Setup SIGALRM to wakeup for time threshold
-+ * even if there's no data.
-+ * */
-+static int multi_file_threshold(struct perf_record *rec)
-+{
-+	int err;
-+
-+	if (!rec->opts.multi_limit || !multi_trigger(rec))
-+		return 0;
-+
-+	pr_debug("multi: file limit crossed %lu B\n", rec->bytes_written);
-+
-+	err = multi_file_finish(rec);
-+
-+	rec->multi_bytes_written += rec->bytes_written;
-+	rec->bytes_written = 0;
-+	rec->multi_time    = time(NULL);
-+
-+	return err ? err : multi_file_init(rec);
-+}
-+
- static struct perf_event_header finished_round_event = {
- 	.size = sizeof(struct perf_event_header),
- 	.type = PERF_RECORD_FINISHED_ROUND,
-@@ -421,6 +598,9 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
- 		}
- 	}
- 
-+	if (multi_file_threshold(rec))
-+		return -1;
-+
- 	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
- 		rc = write_output(rec, &finished_round_event,
- 				  sizeof(finished_round_event));
-@@ -429,6 +609,28 @@ out:
- 	return rc;
- }
- 
-+static void display_exit_msg(struct perf_record *rec, unsigned long waking)
-+{
-+	struct perf_data_file *file = rec->file;
-+	bool multi = rec->opts.multi_limit > 0;
-+	char buf[PATH_MAX];
-+	u64  bytes = multi ? rec->multi_bytes_written : rec->bytes_written;
-+	char *path = multi ? buf : (char *) file->path;
-+
-+	if (multi)
-+		snprintf(path, PATH_MAX, "%s-[0-%u]",
-+			 multi_file_base(file), rec->multi_idx - 1);
-+
-+	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
-+
-+	/*
-+	 * Approximate RIP event size: 24 bytes.
-+	 */
-+	fprintf(stderr,
-+		"[ perf record: Captured and wrote %.3f MB %s(~%" PRIu64 " samples) ]\n",
-+		(double) bytes / 1024.0 / 1024.0, path, bytes / 24);
-+}
-+
  static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
  {
+-	struct stat st;
+-	int flags;
  	int err, feat;
-@@ -450,6 +652,12 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	unsigned long waking = 0;
+ 	const bool forks = argc > 0;
+ 	struct perf_record_opts *opts = &rec->opts;
+ 	struct perf_evlist *evsel_list = rec->evlist;
+ 	struct perf_data_file *file = rec->file;
+-	const char *output_name = file->path;
+ 	struct perf_session *session;
+ 	bool disabled = false;
+ 
+@@ -455,35 +452,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
  	signal(SIGUSR1, sig_handler);
  	signal(SIGTERM, sig_handler);
  
-+	if (rec->opts.multi_limit &&
-+	    multi_file_name(file, rec->multi_idx++)) {
-+		pr_err("Not enough memory\n");
-+		return -1;
-+	}
-+
+-	if (!output_name) {
+-		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+-			file->is_pipe = true;
+-		else
+-			file->path = output_name = "perf.data";
+-	}
+-	if (output_name) {
+-		if (!strcmp(output_name, "-"))
+-			file->is_pipe = true;
+-		else if (!stat(output_name, &st) && st.st_size) {
+-			char oldname[PATH_MAX];
+-			snprintf(oldname, sizeof(oldname), "%s.old",
+-				 output_name);
+-			unlink(oldname);
+-			rename(output_name, oldname);
+-		}
+-	}
+-
+-	flags = O_CREAT|O_RDWR|O_TRUNC;
+-
+-	if (file->is_pipe)
+-		file->fd = STDOUT_FILENO;
+-	else
+-		file->fd = open(output_name, flags, S_IRUSR | S_IWUSR);
+-	if (file->fd < 0) {
+-		perror("failed to create output file");
+-		return -1;
+-	}
+-
  	session = perf_session__new(file, false, NULL);
  	if (session == NULL) {
  		pr_err("Not enough memory for reading perf file header\n");
-@@ -515,6 +723,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (err)
- 		goto out_delete_session;
+@@ -611,7 +579,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	fprintf(stderr,
+ 		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
+ 		(double)rec->bytes_written / 1024.0 / 1024.0,
+-		output_name,
++		file->path,
+ 		rec->bytes_written / 24);
  
-+	if (rec->opts.multi_type == MULTI_TYPE__TIME)
-+		rec->multi_time = time(NULL);
-+
- 	if (rec->realtime_prio) {
- 		struct sched_param param;
- 
-@@ -569,17 +780,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
- 
--	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
--
--	/*
--	 * Approximate RIP event size: 24 bytes.
--	 */
--	fprintf(stderr,
--		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
--		(double)rec->bytes_written / 1024.0 / 1024.0,
--		file->path,
--		rec->bytes_written / 24);
--
-+	display_exit_msg(rec, waking);
  	return 0;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 46489cb..1cfc14c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -930,15 +930,8 @@ static int __cmd_top(struct perf_top *top)
+ 	struct perf_record_opts *opts = &top->record_opts;
+ 	pthread_t thread;
+ 	int ret;
+-	struct perf_data_file file = {
+-		.mode = PERF_DATA_MODE_WRITE,
+-	};
  
- out_delete_session:
-@@ -845,6 +1046,9 @@ const struct option record_options[] = {
- 	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
- 		     "number of mmap data pages",
- 		     perf_evlist__parse_mmap_pages),
-+	OPT_CALLBACK('M', "multi", &record.opts, "spec",
-+		     "split data into more data files",
-+		     parse_multi),
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &record.opts,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 0914630..76b7ae0 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -210,6 +210,17 @@ enum perf_call_graph_mode {
- 	CALLCHAIN_DWARF
- };
+-	/*
+-	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
+-	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
+-	 */
+-	top->session = perf_session__new(&file, false, NULL);
++	top->session = perf_session__new(NULL, false, NULL);
+ 	if (top->session == NULL)
+ 		return -ENOMEM;
  
-+enum perf_record_multi_limits {
-+	MULTI_LIMIT__MIN_SIZE       = 100 * 1024, /* 100K */
-+	MULTI_LIMIT__MIN_WATTERMARK = 10  * 1024, /* 10K */
-+	MULTI_LIMIT__MAX_WATTERMARK = MULTI_LIMIT__MIN_SIZE,
-+};
-+
-+enum perf_record_multi_type {
-+	MULTI_TYPE__SIZE,
-+	MULTI_TYPE__TIME,
-+};
-+
- struct perf_record_opts {
- 	struct perf_target target;
- 	int	     call_graph;
-@@ -223,6 +234,7 @@ struct perf_record_opts {
- 	bool	     sample_weight;
- 	bool	     sample_time;
- 	bool	     period;
-+	bool	     multi_limit;
- 	unsigned int freq;
- 	unsigned int mmap_pages;
- 	unsigned int user_freq;
-@@ -230,6 +242,8 @@ struct perf_record_opts {
- 	u64	     default_interval;
- 	u64	     user_interval;
- 	u16	     stack_dump_size;
-+	u64	     multi_value;
-+	int	     multi_type;
- };
+diff --git a/tools/perf/tests/session-simple.c b/tools/perf/tests/session-simple.c
+index e2b1037..6a459d9 100644
+--- a/tools/perf/tests/session-simple.c
++++ b/tools/perf/tests/session-simple.c
+@@ -461,9 +461,6 @@ static int session_write(char *path)
+ 	size_t size = 0;
+ 	int feat;
  
- #endif
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 998e0d1..a862937 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -632,7 +632,7 @@ out_unmap:
- 	return -1;
- }
+-	file.fd = open(file.path, O_RDWR);
+-	TEST_ASSERT_VAL("failed to open data file", file.fd >= 0);
+-
+ 	evlist = perf_evlist__new_default();
+ 	TEST_ASSERT_VAL("failed to get evlist", evlist);
  
--static size_t perf_evlist__mmap_size(unsigned long pages)
-+size_t perf_evlist__mmap_size(unsigned long pages)
- {
- 	/* 512 kiB: default amount of unprivileged mlocked memory */
- 	if (pages == UINT_MAX)
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index ca016b1..59bcf52 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -104,6 +104,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 				  bool want_signal);
- int perf_evlist__start_workload(struct perf_evlist *evlist);
- 
-+size_t perf_evlist__mmap_size(unsigned long pages);
+diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+new file mode 100644
+index 0000000..7d09faf
+--- /dev/null
++++ b/tools/perf/util/data.c
+@@ -0,0 +1,120 @@
++#include <linux/compiler.h>
++#include <linux/kernel.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <string.h>
 +
- int perf_evlist__parse_mmap_pages(const struct option *opt,
- 				  const char *str,
- 				  int unset);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e8745fb..122511d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -672,6 +672,30 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		attr->branch_sample_type = opts->branch_stack;
- 	}
- 
-+	if (opts->multi_limit) {
-+		u64 wm = MULTI_LIMIT__MIN_WATTERMARK;
-+		attr->watermark = 1;
++#include "data.h"
++#include "util.h"
 +
-+		if (opts->multi_type == MULTI_TYPE__SIZE) {
-+			/*
-+			 * The watermark could not get under 10K because
-+			 * of the minimal file limit and we are guarded
-+			 * with 100K for max wattermark.
-+			 */
-+			wm = opts->multi_value;
-+			wm = min(wm / 10, (u64) MULTI_LIMIT__MAX_WATTERMARK);
++static bool check_pipe(struct perf_data_file *file)
++{
++	struct stat st;
++	bool is_pipe = false;
++	int fd = perf_data_file__is_read(file) ?
++		 STDIN_FILENO : STDOUT_FILENO;
 +
-+			/*
-+			 * We also dont want to have watermark close to the size
-+			 * of the mmap to ensure data would always cross it and
-+			 * we get poll notification.
-+			 */
-+			wm = min(wm, (u64) perf_evlist__mmap_size(opts->mmap_pages) - 100);
-+		}
-+
-+		attr->wakeup_watermark = wm;
++	if (!file->path) {
++		if (!fstat(fd, &st) && S_ISFIFO(st.st_mode))
++			is_pipe = true;
++	} else {
++		if (!strcmp(file->path, "-"))
++			is_pipe = true;
 +	}
 +
- 	if (opts->sample_weight)
- 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
++	if (is_pipe)
++		file->fd = fd;
++
++	return file->is_pipe = is_pipe;
++}
++
++static int check_backup(struct perf_data_file *file)
++{
++	struct stat st;
++
++	if (!stat(file->path, &st) && st.st_size) {
++		/* TODO check errors properly */
++		char oldname[PATH_MAX];
++		snprintf(oldname, sizeof(oldname), "%s.old",
++			 file->path);
++		unlink(oldname);
++		rename(file->path, oldname);
++	}
++
++	return 0;
++}
++
++static int open_file_read(struct perf_data_file *file)
++{
++	struct stat st;
++	int fd;
++
++	fd = open(file->path, O_RDONLY);
++	if (fd < 0) {
++		int err = errno;
++
++		pr_err("failed to open %s: %s", file->path, strerror(err));
++		if (err == ENOENT && !strcmp(file->path, "perf.data"))
++			pr_err("  (try 'perf record' first)");
++		pr_err("\n");
++		return -err;
++	}
++
++	if (fstat(fd, &st) < 0)
++		goto out_close;
++
++	if (!file->force && st.st_uid && (st.st_uid != geteuid())) {
++		pr_err("file %s not owned by current user or root\n",
++		       file->path);
++		goto out_close;
++	}
++
++	if (!st.st_size) {
++		pr_info("zero-sized file (%s), nothing to do!\n",
++			file->path);
++		goto out_close;
++	}
++
++	file->size = st.st_size;
++	return fd;
++
++ out_close:
++	close(fd);
++	return -1;
++}
++
++static int open_file_write(struct perf_data_file *file)
++{
++	if (check_backup(file))
++		return -1;
++
++	return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
++}
++
++static int open_file(struct perf_data_file *file)
++{
++	int fd;
++
++	fd = perf_data_file__is_read(file) ?
++	     open_file_read(file) : open_file_write(file);
++
++	file->fd = fd;
++	return fd < 0 ? -1 : 0;
++}
++
++int perf_data_file__open(struct perf_data_file *file)
++{
++	if (check_pipe(file))
++		return 0;
++
++	if (!file->path)
++		file->path = "perf.data";
++
++	return open_file(file);
++}
++
++void perf_data_file__close(struct perf_data_file *file)
++{
++	close(file->fd);
++}
+diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
+index ffa0186..d6c262e 100644
+--- a/tools/perf/util/data.h
++++ b/tools/perf/util/data.h
+@@ -13,6 +13,7 @@ struct perf_data_file {
+ 	int fd;
+ 	bool is_pipe;
+ 	bool force;
++	unsigned long size;
+ 	enum perf_data_mode mode;
+ };
  
+@@ -26,4 +27,7 @@ static inline bool perf_data_file__is_write(struct perf_data_file *file)
+ 	return file->mode == PERF_DATA_MODE_WRITE;
+ }
+ 
++int perf_data_file__open(struct perf_data_file *file);
++void perf_data_file__close(struct perf_data_file *file);
++
+ #endif /* __PERF_DATA_H */
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 023a5b4..b9ceccb 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -16,73 +16,35 @@
+ #include "perf_regs.h"
+ #include "vdso.h"
+ 
+-static int perf_session__open(struct perf_session *self, bool force)
++static int perf_session__open(struct perf_session *self)
+ {
+-	struct stat input_stat;
+-
+-	if (!strcmp(self->filename, "-")) {
+-		self->fd_pipe = true;
+-		self->fd = STDIN_FILENO;
+-
++	if (self->fd_pipe) {
+ 		if (perf_session__read_header(self) < 0)
+ 			pr_err("incompatible file format (rerun with -v to learn more)");
+-
+ 		return 0;
+ 	}
+ 
+-	self->fd = open(self->filename, O_RDONLY);
+-	if (self->fd < 0) {
+-		int err = errno;
+-
+-		pr_err("failed to open %s: %s", self->filename, strerror(err));
+-		if (err == ENOENT && !strcmp(self->filename, "perf.data"))
+-			pr_err("  (try 'perf record' first)");
+-		pr_err("\n");
+-		return -errno;
+-	}
+-
+-	if (fstat(self->fd, &input_stat) < 0)
+-		goto out_close;
+-
+-	if (!force && input_stat.st_uid && (input_stat.st_uid != geteuid())) {
+-		pr_err("file %s not owned by current user or root\n",
+-		       self->filename);
+-		goto out_close;
+-	}
+-
+-	if (!input_stat.st_size) {
+-		pr_info("zero-sized file (%s), nothing to do!\n",
+-			self->filename);
+-		goto out_close;
+-	}
+-
+ 	if (perf_session__read_header(self) < 0) {
+ 		pr_err("incompatible file format (rerun with -v to learn more)");
+-		goto out_close;
++		return -1;
+ 	}
+ 
+ 	if (!perf_evlist__valid_sample_type(self->evlist)) {
+ 		pr_err("non matching sample_type");
+-		goto out_close;
++		return -1;
+ 	}
+ 
+ 	if (!perf_evlist__valid_sample_id_all(self->evlist)) {
+ 		pr_err("non matching sample_id_all");
+-		goto out_close;
++		return -1;
+ 	}
+ 
+ 	if (!perf_evlist__valid_read_format(self->evlist)) {
+ 		pr_err("non matching read_format");
+-		goto out_close;
++		return -1;
+ 	}
+ 
+-	self->size = input_stat.st_size;
+ 	return 0;
+-
+-out_close:
+-	close(self->fd);
+-	self->fd = -1;
+-	return -1;
+ }
+ 
+ void perf_session__set_id_hdr_size(struct perf_session *session)
+@@ -110,35 +72,35 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 				       bool repipe, struct perf_tool *tool)
+ {
+ 	struct perf_session *self;
+-	const char *filename = file->path;
+-	struct stat st;
+-	size_t len;
+-
+-	if (!filename || !strlen(filename)) {
+-		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
+-			filename = "-";
+-		else
+-			filename = "perf.data";
+-	}
+ 
+-	len = strlen(filename);
+-	self = zalloc(sizeof(*self) + len);
+-
+-	if (self == NULL)
++	self = zalloc(sizeof(*self));
++	if (!self)
+ 		goto out;
+ 
+-	memcpy(self->filename, filename, len);
+ 	self->repipe = repipe;
+ 	INIT_LIST_HEAD(&self->ordered_samples.samples);
+ 	INIT_LIST_HEAD(&self->ordered_samples.sample_cache);
+ 	INIT_LIST_HEAD(&self->ordered_samples.to_free);
+ 	machines__init(&self->machines);
+ 
+-	if (perf_data_file__is_read(file)) {
+-		if (perf_session__open(self, file->force) < 0)
++	if (file) {
++		if (perf_data_file__open(file))
+ 			goto out_delete;
+-		perf_session__set_id_hdr_size(self);
+-	} else if (perf_data_file__is_write(file)) {
++
++		self->fd       = file->fd;
++		self->fd_pipe  = file->is_pipe;
++		self->filename = file->path;
++		self->size     = file->size;
++
++		if (perf_data_file__is_read(file)) {
++			if (perf_session__open(self) < 0)
++				goto out_close;
++
++			perf_session__set_id_hdr_size(self);
++		}
++	}
++
++	if (!file || perf_data_file__is_write(file)) {
+ 		/*
+ 		 * In O_RDONLY mode this will be performed when reading the
+ 		 * kernel MMAP event, in perf_event__process_mmap().
+@@ -153,10 +115,13 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		tool->ordered_samples = false;
+ 	}
+ 
+-out:
+ 	return self;
+-out_delete:
++
++ out_close:
++	perf_data_file__close(file);
++ out_delete:
+ 	perf_session__delete(self);
++ out:
+ 	return NULL;
+ }
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 1e4d813..c6a21d9 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -39,7 +39,7 @@ struct perf_session {
+ 	bool			fd_pipe;
+ 	bool			repipe;
+ 	struct ordered_samples	ordered_samples;
+-	char			filename[1];
++	const char		*filename;
+ };
+ 
+ #define PRINT_IP_OPT_IP		(1<<0)
 -- 
 1.7.11.7
 
