@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab3IAKnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:43:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52143 "EHLO mx1.redhat.com"
+	id S1757685Ab3IAKnb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:43:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33479 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757297Ab3IAKhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:16 -0400
+	id S1757077Ab3IAKhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:09 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,18 +14,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 08/25] perf doc: Add perf data file documentation
-Date: Sun,  1 Sep 2013 12:36:19 +0200
-Message-Id: <1378031796-17892-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 05/25] perf tests: Add simple session read/write test
+Date: Sun,  1 Sep 2013 12:36:16 +0200
+Message-Id: <1378031796-17892-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf data file documentation.
+Adding simple session read/write test to keep up
+with file format changes.
 
-TODO Finish the FEATURES section
+Dumping the session to the file with several events
+and reading it again back.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -38,280 +40,659 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Documentation/perf-data-file-v2.txt | 264 +++++++++++++++++++++++++
- 1 file changed, 264 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-data-file-v2.txt
+ tools/perf/Makefile               |   1 +
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/session-simple.c | 602 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ 4 files changed, 608 insertions(+)
+ create mode 100644 tools/perf/tests/session-simple.c
 
-diff --git a/tools/perf/Documentation/perf-data-file-v2.txt b/tools/perf/Documentation/perf-data-file-v2.txt
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ecebfd0..7484119 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -394,6 +394,7 @@ ifeq ($(ARCH),x86)
+ LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
+ endif
+ LIB_OBJS += $(OUTPUT)tests/code-reading.o
++LIB_OBJS += $(OUTPUT)tests/session-simple.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 8ad9415..e40aec9 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -108,6 +108,10 @@ static struct test {
+ 		.func = test__sample_parsing,
+ 	},
+ 	{
++		.desc = "Test session - simple read/write",
++		.func = test__session_simple,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/session-simple.c b/tools/perf/tests/session-simple.c
 new file mode 100644
-index 0000000..f5c1d5b8
+index 0000000..612f84d
 --- /dev/null
-+++ b/tools/perf/Documentation/perf-data-file-v2.txt
-@@ -0,0 +1,264 @@
-+perf-data-file-v2(5)
-+====================
-+
-+NAME
-+----
-+perf-data-file-v2 - The perf tool file format version 2
-+
-+
-+DESCRIPTION
-+-----------
-+Following text describes version 2 of the perf data file format,
-+which is version that is currently used by perf tool.
-+
-+The perf data file format is composed of several sections
-+describing monitored events and the data itself.
-+
-+High level view of the format:
-+  FILE HEADER
-+  EVENT IDS
-+  EVENT ATTRIBUTES
-+  EVENT TYPES
-+  EVENT DATA
-+  FEATURES
-+
-+
-+COMMON PRIMITIVES
-+-----------------
-+Following definitions are used as primitives on multiple places
-+within the perf data file.
++++ b/tools/perf/tests/session-simple.c
+@@ -0,0 +1,602 @@
++
++/*
++ * FIXME Missing test for PERF_RECORD_READ event.
++ */
++
++#include <stdlib.h>
++#include <linux/kernel.h>
++
++#include "tests.h"
++#include "session.h"
++#include "header.h"
++#include "util.h"
++#include "evlist.h"
++
++#define EVENTS_MMAP 5
++#define EVENTS_LOST 6
++#define EVENTS_COMM 3
++#define EVENTS_EXIT 4
++#define EVENTS_FORK 8
++#define EVENTS_THROTTLE 2
++#define EVENTS_UNTHROTTLE 3
++#define EVENTS_SAMPLE 4
++
++static int events_mmap;
++static int events_lost;
++static int events_comm;
++static int events_exit;
++static int events_fork;
++static int events_throttle;
++static int events_unthrottle;
++static int events_sample;
++
++/* global sample type for sample */
++static u64 sample_type = PERF_SAMPLE_IP |
++			 PERF_SAMPLE_TID |
++			 PERF_SAMPLE_TIME |
++			 PERF_SAMPLE_ADDR |
++			 PERF_SAMPLE_ID |
++			 PERF_SAMPLE_CPU |
++			 PERF_SAMPLE_PERIOD |
++			 PERF_SAMPLE_STREAM_ID |
++			 PERF_SAMPLE_WEIGHT |
++			 PERF_SAMPLE_DATA_SRC;
++
++static char *get_file(void)
++{
++	static char buf[PATH_MAX];
++	int fd;
++
++	snprintf(buf, PATH_MAX, "/tmp/perf-test-session-simple-data-XXXXXX");
++	fd = mkstemp(buf);
++	if (fd < 0) {
++		pr_err("mkstemp failed");
++		return NULL;
++	}
++
++	close(fd);
++
++	pr_debug("data file %s\n", buf);
++	return buf;
++}
++
++static union perf_event *get_event_MMAP(void)
++{
++	static union perf_event event;
++	size_t size;
++
++	size = snprintf(event.mmap.filename, sizeof(event.mmap.filename),
++			"krava") + 1;
++	size = PERF_ALIGN(size, sizeof(u64));
++
++	event.header.type = PERF_RECORD_MMAP;
++	event.header.misc = PERF_RECORD_MISC_KERNEL;
++	event.header.size = sizeof(event.mmap) -
++			    (sizeof(event.mmap.filename) - size);
++
++	event.mmap.pgoff = 10;
++	event.mmap.start = 0;
++	event.mmap.len   = 10;
++	event.mmap.pid   = 123;
++
++	return &event;
++}
++
++static int process_mmap(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine __maybe_unused)
++{
++	pr_debug("event MMAP misc %d, pgoff %lu, start %lu,"
++		 " len %lu, pid %d, filename '%s'\n",
++		 event->header.misc,
++		 event->mmap.pgoff,
++		 event->mmap.start,
++		 event->mmap.len,
++		 event->mmap.pid,
++		 event->mmap.filename);
++
++	TEST_ASSERT_VAL("wrong MMAP misc\n",
++		event->header.misc == PERF_RECORD_MISC_KERNEL);
 +
-+struct perf_file_section::
-+  Used to determine location of data sections within the file.
-+
-+  struct perf_file_section {
-+        u64 offset;
-+        u64 size;
-+  };
++	TEST_ASSERT_VAL("wrong MMAP pgoff\n",
++		event->mmap.pgoff == 10);
 +
-+  offset  section location (offset) within the file
-+  size    section size in bytes
-+
++	TEST_ASSERT_VAL("wrong MMAP start\n",
++		event->mmap.start == 0);
 +
-+FILE HEADER
-+-----------
-+Starting point of the data file with magic bytes and global
-+section information.
++	TEST_ASSERT_VAL("wrong MMAP len\n",
++		event->mmap.len == 10);
 +
-+The section contains following data:
-+  struct perf_file_header header
++	TEST_ASSERT_VAL("wrong MMAP pid\n",
++		event->mmap.pid == 123);
 +
-+struct perf_file_header::
-+  struct perf_file_header {
-+        u64                             magic;
-+        u64                             size;
-+        u64                             attr_size;
-+        struct perf_file_section        attrs;
-+        struct perf_file_section        data;
-+        struct perf_file_section        event_types;
-+        DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
-+  }
-+
-+  magic           ID 'PERFFILE|PERFILE2'
-+  size            header size sizeof(struct perf_file_header)
-+  attr_size       attribute size sizeof(struct perf_file_attr)
-+                  (see EVENT ATTRIBUTES)
-+  attrs           location of 'EVENT ATTRIBUTES'
-+  data            location of 'EVENT DATA'
-+  event_types     location of 'EVENT TYPES'
-+  adds_features   'FEATURES' bitmask
-+
-+
-+EVENT IDS
-+---------
-+This section contains CPU related IDs for each monitored event.
-+It is used only if there was more than 1 events monitored. The
-+reason is to be able to map event's data to event definition.
-+
-+The section contains following data:
-+  u64  event1_ids[]
-+  u64  event2_ids[]
-+  ...
-+  u64  eventX_ids[]
-+
-+eventX_ids::
-+  per-cpu event X IDs array
-+  this array is referenced in 'EVENT ATTRIBUTES'
-+
-+
-+EVENT ATTRIBUTES
-+----------------
-+This section contains attribute information together with the
-+location of the IDs array for each event.
-+
-+The section contains following data:
-+  struct perf_file_attr  attrs[]
-+
-+struct perf_file_attr::
-+  struct perf_file_attr {
-+        struct perf_event_attr    attr;
-+        struct perf_file_section  ids;
-+  }
++	TEST_ASSERT_VAL("wrong MMAP filename\n",
++		!strcmp(event->mmap.filename, "krava"));
 +
-+  attr  perf event interface structure for each event
-+  ids   IDs location for event in 'EVENT IDS' section
++	TEST_ASSERT_VAL("wrong MMAP misc\n",
++		event->header.misc == PERF_RECORD_MISC_KERNEL);
 +
++	TEST_ASSERT_VAL("wrong MMAP pgoff\n",
++		event->mmap.pgoff == 10);
 +
-+EVENT TYPES
-+-----------
-+This section map event's config value (struct perf_event_attr::config)
-+with the event name.
++	TEST_ASSERT_VAL("wrong MMAP start\n",
++		event->mmap.start == 0);
 +
-+The section contains following data:
-+  struct perf_trace_event_type  types[]
++	TEST_ASSERT_VAL("wrong MMAP len\n",
++		event->mmap.len == 10);
 +
-+#define MAX_EVENT_NAME 64
++	TEST_ASSERT_VAL("wrong MMAP pid\n",
++		event->mmap.pid == 123);
 +
-+struct perf_trace_event_type::
-+  struct perf_trace_event_type {
-+        u64   event_id;
-+        char  name[MAX_EVENT_NAME];
-+  };
++	TEST_ASSERT_VAL("wrong MMAP filename\n",
++		!strcmp(event->mmap.filename, "krava"));
 +
-+  event_id  struct perf_event_attr::config value
-+  name      event name
++	events_mmap++;
++	return 0;
++}
++
++static union perf_event *get_event_LOST(void)
++{
++	static union perf_event event;
 +
-+NOTE This section got deprecated and its data are no longer stored.
-+     The 'event_types' location in the header is zero-ed.
++	event.header.type = PERF_RECORD_LOST;
++	event.header.misc = PERF_RECORD_MISC_USER;
++	event.header.size = sizeof(event.lost);
 +
++	event.lost.id   = 12345;
++	event.lost.lost = 293467890514143;
++	return &event;
++}
 +
-+EVENT DATA
-+----------
-+This section contains blob of all events data - auxiliary events
-+and samples.
++static int process_lost(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine __maybe_unused)
++{
++	pr_debug("event LOST id %lu, lost %lu\n",
++		 event->lost.id,
++		 event->lost.lost);
 +
++	TEST_ASSERT_VAL("wrong LOST id\n",
++		event->lost.id == 12345);
 +
-+FEATURES
-+--------
-+This section contains various configuration data and its contents
-+depends on the header's adds_features bitmask. Each bit in this
-+bitmask represent a single feature (0 - NOT present, 1 present).
++	TEST_ASSERT_VAL("wrong LOST lost\n",
++		event->lost.lost == 293467890514143);
 +
-+The section contains following data:
-+  struct perf_file_section feature_locations[nr_features];
++	events_lost++;
++	return 0;
++}
 +
-+  nr_features        number of present features bitmap_weight(adds_features)
-+  feature_locations  location of each feature data
++static union perf_event *get_event_COMM(void)
++{
++	static union perf_event event;
++	size_t size;
 +
-+Available features (possible max 256):
-+  enum {
-+        HEADER_RESERVED         = 0,
-+        HEADER_TRACING_DATA     = 1,
-+        HEADER_BUILD_ID,
-+        HEADER_HOSTNAME,
-+        HEADER_OSRELEASE,
-+        HEADER_VERSION,
-+        HEADER_ARCH,
-+        HEADER_NRCPUS,
-+        HEADER_CPUDESC,
-+        HEADER_CPUID,
-+        HEADER_TOTAL_MEM,
-+        HEADER_CMDLINE,
-+        HEADER_EVENT_DESC,
-+        HEADER_CPU_TOPOLOGY,
-+        HEADER_NUMA_TOPOLOGY,
-+        HEADER_BRANCH_STACK,
-+        HEADER_PMU_MAPPINGS,
-+        HEADER_GROUP_DESC,
-+        HEADER_LAST_FEATURE,
-+        HEADER_FEAT_BITS        = 256,
-+  }
++	size = snprintf(event.comm.comm, sizeof(event.comm.comm),
++			"krava") + 1;
++	size = PERF_ALIGN(size, sizeof(u64));
 +
++	event.header.type = PERF_RECORD_COMM;
++	event.header.size = sizeof(event.comm) -
++			    (sizeof(event.comm.comm) - size);
++
++	event.comm.pid = 1234;
++	event.comm.tid = 4321;
++
++	return &event;
++}
++
++static int process_comm(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine __maybe_unused)
++{
++	pr_debug("event COMM pid %d, tid %d, comm '%s'\n",
++		 event->comm.pid,
++		 event->comm.tid,
++		 event->comm.comm);
 +
-+TODO finish FEATURES::* sections descriptions.
++	TEST_ASSERT_VAL("wrong COMM pid\n",
++		event->comm.pid == 1234);
 +
-+FEATURES::HEADER_RESERVED
-+-------------------------
-+allways zero bit
++	TEST_ASSERT_VAL("wrong COMM tid\n",
++		event->comm.tid == 4321);
 +
++	TEST_ASSERT_VAL("wrong COMM comm\n",
++		!strcmp(event->comm.comm, "krava"));
 +
-+FEATURES::HEADER_TRACING_DATA
-+-----------------------------
-+tracing data
++	events_comm++;
++	return 0;
++}
 +
++static union perf_event *get_event_EXIT(void)
++{
++	static union perf_event event;
 +
-+FEATURES::HEADER_BUILD_ID
-+-------------------------
-+build ids
++	event.header.type = PERF_RECORD_EXIT;
++	event.header.size = sizeof(event.fork);
 +
++	event.fork.pid = 2322;
++	event.fork.tid = 2232;
++	event.fork.ppid = 10;
++	event.fork.ptid = 1;
++	event.fork.time = 0xB16B00B5;
++
++	return &event;
++}
++
++static int process_exit(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine __maybe_unused)
++{
++	pr_debug("event EXIT pid %d, tid %d, ppid %d, ptid %d, time 0x%lx\n",
++		 event->fork.pid, event->fork.tid,
++		 event->fork.ppid, event->fork.ptid,
++		 event->fork.time);
 +
-+FEATURES::HEADER_HOSTNAME
-+-------------------------
-+uname hostname
++	TEST_ASSERT_VAL("wrong EXIT pid\n",
++		event->fork.pid == 2322);
 +
++	TEST_ASSERT_VAL("wrong EXIT tid\n",
++		event->fork.tid == 2232);
 +
-+FEATURES::HEADER_OSRELEASE
-+--------------------------
-+uname osrelease
++	TEST_ASSERT_VAL("wrong EXIT ppid\n",
++		event->fork.ppid == 10);
 +
++	TEST_ASSERT_VAL("wrong EXIT ptid\n",
++		event->fork.ptid == 1);
 +
-+FEATURES::HEADER_VERSION
-+------------------------
-+perf version
++	TEST_ASSERT_VAL("wrong EXIT time\n",
++		event->fork.time == 0xB16B00B5);
 +
++	events_exit++;
++	return 0;
++}
 +
-+FEATURES::HEADER_ARCH
-+---------------------
-+uname arch
++static union perf_event *get_event_FORK(void)
++{
++	static union perf_event event;
++
++	event.header.type = PERF_RECORD_FORK;
++	event.header.size = sizeof(event.fork);
++
++	event.fork.pid  = 4321;
++	event.fork.tid  = 1234;
++	event.fork.ppid = 14321;
++	event.fork.ptid = 11234;
++	event.fork.time = 0xdeadbeef;
 +
++	return &event;
++}
 +
-+FEATURES::HEADER_NRCPUS
-+-----------------------
-+offset          size(B) description
-+0               4       sysconf(_SC_NPROCESSORS_CONF)
-+4               4       sysconf(_SC_NPROCESSORS_ONLN)
-+
-+
-+FEATURES::HEADER_CPUDESC
-+------------------------
-+/proc/cpuinfo data for 'Model name'
-+
-+
-+FEATURES::HEADER_CPUID
-+----------------------
-+'vendor,family,model,step'
-+
-+
-+FEATURES::HEADER_TOTAL_MEM
-+--------------------------
-+/proc/meminfo data for 'MemTotal'
-+
-+
-+FEATURES::HEADER_CMDLINE
-+------------------------
-+perf complete command line
-+
-+
-+FEATURES::HEADER_EVENT_DESC
-+---------------------------
-+event attributes plus related info(ids)
-+
-+
-+FEATURES::HEADER_CPU_TOPOLOGY
-+-----------------------------
-+cpu topology
-+
-+
-+FEATURES::HEADER_NUMA_TOPOLOGY
-+------------------------------
-+numa topology
-+
-+
-+FEATURES::HEADER_BRANCH_STACK
-+-----------------------------
-+nothing
-+
-+
-+FEATURES::HEADER_PMU_MAPPINGS
-+-----------------------------
-+available pmus
-+
-+
-+FEATURES::HEADER_GROUP_DESC
-+---------------------------
-+event groups info
++static int process_fork(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine __maybe_unused)
++{
++	pr_debug("event FORK pid %d, tid %d, ppid %d, ptid %d, time 0x%lx\n",
++		 event->fork.pid, event->fork.tid,
++		 event->fork.ppid, event->fork.ptid,
++		 event->fork.time);
++
++	TEST_ASSERT_VAL("wrong FORK pid\n",
++		event->fork.pid == 4321);
++
++	TEST_ASSERT_VAL("wrong FORK tid\n",
++		event->fork.tid == 1234);
++
++	TEST_ASSERT_VAL("wrong FORK ppid\n",
++		event->fork.ppid == 14321);
++
++	TEST_ASSERT_VAL("wrong FORK ptid\n",
++		event->fork.ptid == 11234);
++
++	TEST_ASSERT_VAL("wrong FORK time\n",
++		event->fork.time == 0xdeadbeef);
++
++	events_fork++;
++	return 0;
++}
++
++static union perf_event *get_event_THROTTLE(void)
++{
++	static union perf_event event;
++
++	event.header.type = PERF_RECORD_THROTTLE;
++	event.header.size = sizeof(event.throttle);
++
++	event.throttle.time      = 0xdeadbeef;
++	event.throttle.id        = 123;
++	event.throttle.stream_id = 987;
++
++	return &event;
++}
++
++static int process_throttle(struct perf_tool *tool __maybe_unused,
++			    union perf_event *event,
++			    struct perf_sample *sample __maybe_unused,
++			    struct machine *machine __maybe_unused)
++{
++	pr_debug("event THROTTLE time 0x%lx, id 0x%lx, stream_id 0x%lx\n",
++		 event->throttle.time, event->throttle.id,
++		 event->throttle.stream_id);
++
++	TEST_ASSERT_VAL("wrong THROTTLE time\n",
++		event->throttle.time == 0xdeadbeef);
++
++	TEST_ASSERT_VAL("wrong THROTTLE id\n",
++		event->throttle.id == 123);
++
++	TEST_ASSERT_VAL("wrong THROTTLE id\n",
++		event->throttle.stream_id == 987);
++
++	events_throttle++;
++	return 0;
++}
++
++static union perf_event *get_event_UNTHROTTLE(void)
++{
++	static union perf_event event;
++
++	event.header.type = PERF_RECORD_UNTHROTTLE;
++	event.header.size = sizeof(event.throttle);
++
++	event.throttle.time      = 0xdeadbeef;
++	event.throttle.id        = 542318590;
++	event.throttle.stream_id = 2341238951;
++
++	return &event;
++}
++
++static int process_unthrottle(struct perf_tool *tool __maybe_unused,
++			      union perf_event *event,
++			      struct perf_sample *sample __maybe_unused,
++			      struct machine *machine __maybe_unused)
++{
++	pr_debug("event UNTHROTTLE time 0x%lx, id 0x%lx, stream_id 0x%lx\n",
++		 event->throttle.time, event->throttle.id,
++		 event->throttle.stream_id);
++
++	TEST_ASSERT_VAL("wrong UNTHROTTLE time\n",
++		event->throttle.time == 0xdeadbeef);
++
++	TEST_ASSERT_VAL("wrong UNTHROTTLE id\n",
++		event->throttle.id == 542318590);
++
++	TEST_ASSERT_VAL("wrong UNTHROTTLE id\n",
++		event->throttle.stream_id == 2341238951);
++
++	events_unthrottle++;
++	return 0;
++}
++
++static union perf_event *get_event_SAMPLE(void)
++{
++	static unsigned char buf[4096];
++	static union perf_event *event = (union perf_event *) buf;
++	struct perf_sample sample = {
++		.ip		= 0xaaa,
++		.pid		= 0xedfa,
++		.tid		= 0xabc,
++		.time		= 123456789,
++		.addr		= 0xabababab,
++		.id		= 0xedf234abf,
++		.stream_id	= 9273651,
++		.period		= 0xdead,
++		.weight		= 1,
++		.cpu		= 1024,
++		.data_src	= 3,
++	};
++	size_t sz;
++	int ret;
++
++	sz = perf_event__sample_event_size(&sample, sample_type, 0, 0);
++
++	event->header.type = PERF_RECORD_SAMPLE;
++	event->header.misc = 0;
++	event->header.size = sz;
++
++	ret = perf_event__synthesize_sample(event, sample_type, 0, 0,
++					    &sample, false);
++	return ret ? NULL : event;
++}
++
++static int process_sample(struct perf_tool *tool __maybe_unused,
++			  union perf_event *event __maybe_unused,
++			  struct perf_sample *sample,
++			  struct perf_evsel *evsel __maybe_unused,
++			  struct machine *machine __maybe_unused)
++{
++	pr_debug("event SAMPLE ip %lx, pid %x, tid %x, time %lx, "
++		 "addr %lx, id %lx, stream_id %lx, period %lx, "
++		 "weight %lx, cpu %x, data_src %lx\n",
++		 sample->ip, sample->pid, sample->tid, sample->time,
++		 sample->addr, sample->id, sample->stream_id,
++		 sample->period, sample->weight, sample->cpu,
++		 sample->data_src);
++
++	TEST_ASSERT_VAL("wrong SAMPLE ip\n", sample->ip == 0xaaa);
++	TEST_ASSERT_VAL("wrong SAMPLE pid\n", sample->pid == 0xedfa);
++	TEST_ASSERT_VAL("wrong SAMPLE tid\n", sample->tid == 0xabc);
++	TEST_ASSERT_VAL("wrong SAMPLE time\n", sample->time == 123456789);
++	TEST_ASSERT_VAL("wrong SAMPLE addr\n", sample->addr == 0xabababab);
++	TEST_ASSERT_VAL("wrong SAMPLE id\n", sample->id == 0xedf234abf);
++	TEST_ASSERT_VAL("wrong SAMPLE stream_id\n",
++			sample->stream_id == 9273651);
++	TEST_ASSERT_VAL("wrong SAMPLE period\n", sample->period == 0xdead);
++	TEST_ASSERT_VAL("wrong SAMPLE weight\n", sample->weight == 1);
++	TEST_ASSERT_VAL("wrong SAMPLE cpu\n", sample->cpu == 1024);
++	TEST_ASSERT_VAL("wrong SAMPLE data_src\n", sample->data_src == 3);
++
++	events_sample++;
++	return 0;
++}
++
++static int store_event(int fd, union perf_event *event, size_t *size)
++{
++	TEST_ASSERT_VAL("no event\n", event);
++	*size += event->header.size;
++	return write(fd, event, event->header.size) > 0 ? 0 : -1;
++}
++
++static int session_write(char *file)
++{
++	struct perf_session *session;
++	struct perf_evlist *evlist;
++	size_t size = 0;
++	int feat, fd;
++
++	fd = open(file, O_RDWR);
++	TEST_ASSERT_VAL("failed to open data file", fd >= 0);
++
++	evlist = perf_evlist__new_default();
++	TEST_ASSERT_VAL("failed to get evlist", evlist);
++
++	perf_evlist__first(evlist)->attr.sample_type = sample_type;
++
++	pr_debug("session writing start\n");
++
++	session = perf_session__new(file, O_WRONLY, true, false, NULL);
++	TEST_ASSERT_VAL("failed to create session", session);
++
++	session->evlist = evlist;
++	session->fd     = fd;
++
++	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
++		perf_header__set_feat(&session->header, feat);
++
++	perf_header__clear_feat(&session->header, HEADER_BUILD_ID);
++	perf_header__clear_feat(&session->header, HEADER_TRACING_DATA);
++	perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
++
++	TEST_ASSERT_VAL("failed to write header",
++		!perf_session__write_header(session, evlist, fd, false));
++
++#define STORE_EVENTS(str, func, cnt)				\
++do {								\
++	int i;							\
++	for (i = 0; i < cnt; i++) {				\
++		TEST_ASSERT_VAL(str,				\
++			!store_event(fd, func(), &size));	\
++	}							\
++} while (0)
++
++	STORE_EVENTS("failed to store MMAP event",
++		     get_event_MMAP, EVENTS_MMAP);
++
++	STORE_EVENTS("failed to store LOST event",
++		     get_event_LOST, EVENTS_LOST);
++
++	STORE_EVENTS("failed to store COMM event",
++		     get_event_COMM, EVENTS_COMM);
++
++	STORE_EVENTS("failed to store EXIT event",
++		     get_event_EXIT, EVENTS_EXIT);
++
++	STORE_EVENTS("failed to store FORK event",
++		     get_event_FORK, EVENTS_FORK);
++
++	STORE_EVENTS("failed to store THROTTLE event",
++		     get_event_THROTTLE, EVENTS_THROTTLE);
++
++	STORE_EVENTS("failed to store UNTHROTTLE event",
++		     get_event_UNTHROTTLE, EVENTS_UNTHROTTLE);
++
++	STORE_EVENTS("failed to store SAMPLE event",
++		     get_event_SAMPLE, EVENTS_SAMPLE);
++
++#undef STORE_EVENTS
++
++	session->header.data_size += size;
++
++	TEST_ASSERT_VAL("failed to write header",
++		!perf_session__write_header(session, evlist, fd, true));
++
++	perf_session__delete(session);
++	perf_evlist__delete(evlist);
++
++	pr_debug("session writing stop\n");
++	return 0;
++}
++
++static int __session_read(char *file)
++{
++	struct perf_session *session;
++	struct perf_tool tool = {
++		.mmap = process_mmap,
++		.lost = process_lost,
++		.comm = process_comm,
++		.exit = process_exit,
++		.fork = process_fork,
++		.throttle = process_throttle,
++		.unthrottle = process_unthrottle,
++		.sample = process_sample,
++	};
++
++	pr_debug("session reading start\n");
++
++	session = perf_session__new(file, O_RDONLY, false, false, &tool);
++	TEST_ASSERT_VAL("failed to create session", session);
++
++	TEST_ASSERT_VAL("failed to process events",
++		perf_session__process_events(session, &tool) == 0);
++
++	perf_session__delete(session);
++
++	pr_debug("session reading stop\n");
++	return 0;
++}
++
++static int session_read(char *file)
++{
++	events_mmap = 0;
++	events_lost = 0;
++	events_comm = 0;
++	events_exit = 0;
++	events_fork = 0;
++	events_throttle = 0;
++	events_unthrottle = 0;
++	events_sample = 0;
++
++	if (__session_read(file))
++		return -1;
++
++	TEST_ASSERT_VAL("wrong MMAP events count", events_mmap == EVENTS_MMAP);
++	TEST_ASSERT_VAL("wrong LOST events count", events_lost == EVENTS_LOST);
++	TEST_ASSERT_VAL("wrong COMM events count", events_comm == EVENTS_COMM);
++	TEST_ASSERT_VAL("wrong EXIT events count", events_exit == EVENTS_EXIT);
++	TEST_ASSERT_VAL("wrong FORK events count", events_fork == EVENTS_FORK);
++	TEST_ASSERT_VAL("wrong THROTTLE events count",
++			events_throttle == EVENTS_THROTTLE);
++	TEST_ASSERT_VAL("wrong UNTHROTTLE events count",
++			events_unthrottle == EVENTS_UNTHROTTLE);
++	TEST_ASSERT_VAL("wrong SAMPLE events count",
++			events_sample == EVENTS_SAMPLE);
++	return 0;
++}
++
++static int test_generated_data(void)
++{
++	char *file = get_file();
++	int err = 0;
++
++	TEST_ASSERT_VAL("failed to get temporary file", file);
++
++	err = session_write(file);
++	if (!err)
++		err = session_read(file);
++
++	unlink(file);
++	return err;
++}
++
++int test__session_simple(void)
++{
++	int err;
++
++	pr_debug("Testing generated data\n");
++	err = test_generated_data();
++	return err;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 83d5b71..94b04cd 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -38,5 +38,6 @@ int test__sw_clock_freq(void);
+ int test__perf_time_to_tsc(void);
+ int test__code_reading(void);
+ int test__sample_parsing(void);
++int test__session_simple(void);
+ 
+ #endif /* TESTS_H */
 -- 
 1.7.11.7
 
