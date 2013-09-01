@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3IACtn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 22:49:43 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:61125 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab3IACtS (ORCPT
+	id S1757039Ab3IACtl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 22:49:41 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:38842 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab3IACtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 22:49:18 -0400
+	Sat, 31 Aug 2013 22:49:16 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 3/9] hwmon: (gpio-fan) Convert to use hwmon_device_register_with_groups
-Date: Sat, 31 Aug 2013 19:48:56 -0700
-Message-Id: <1378003742-18685-4-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 2/9] hwmon: (ds1621) Convert to use hwmon_device_register_with_groups
+Date: Sat, 31 Aug 2013 19:48:55 -0700
+Message-Id: <1378003742-18685-3-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
 References: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
@@ -24,104 +24,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/gpio-fan.c |   41 ++++++++++++++---------------------------
- 1 file changed, 14 insertions(+), 27 deletions(-)
+ drivers/hwmon/ds1621.c |   60 ++++++++++++++++++++++--------------------------
+ 1 file changed, 27 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-index b7d6a57..05c2220 100644
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -309,12 +309,6 @@ exit_unlock:
- 	return ret;
+diff --git a/drivers/hwmon/ds1621.c b/drivers/hwmon/ds1621.c
+index a26ba7a..595f4ef 100644
+--- a/drivers/hwmon/ds1621.c
++++ b/drivers/hwmon/ds1621.c
+@@ -120,7 +120,7 @@ static const u8 DS1621_REG_TEMP[3] = {
+ 
+ /* Each client has this additional data */
+ struct ds1621_data {
+-	struct device *hwmon_dev;
++	struct i2c_client *client;
+ 	struct mutex update_lock;
+ 	char valid;			/* !=0 if following fields are valid */
+ 	unsigned long last_updated;	/* In jiffies */
+@@ -151,10 +151,10 @@ static inline u16 DS1621_TEMP_TO_REG(long temp, u8 zbits)
+ 	return temp;
  }
  
--static ssize_t show_name(struct device *dev,
--			 struct device_attribute *attr, char *buf)
--{
--	return sprintf(buf, "gpio-fan\n");
--}
--
- static DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, show_pwm, set_pwm);
- static DEVICE_ATTR(pwm1_enable, S_IRUGO | S_IWUSR,
- 		   show_pwm_enable, set_pwm_enable);
-@@ -324,26 +318,23 @@ static DEVICE_ATTR(fan1_max, S_IRUGO, show_rpm_max, NULL);
- static DEVICE_ATTR(fan1_input, S_IRUGO, show_rpm, NULL);
- static DEVICE_ATTR(fan1_target, S_IRUGO | S_IWUSR, show_rpm, set_rpm);
+-static void ds1621_init_client(struct i2c_client *client)
++static void ds1621_init_client(struct ds1621_data *data,
++			       struct i2c_client *client)
+ {
+ 	u8 conf, new_conf, sreg, resol;
+-	struct ds1621_data *data = i2c_get_clientdata(client);
  
--static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
--
- static umode_t gpio_fan_is_visible(struct kobject *kobj,
- 				   struct attribute *attr, int index)
+ 	new_conf = conf = i2c_smbus_read_byte_data(client, DS1621_REG_CONF);
+ 	/* switch to continuous conversion mode */
+@@ -197,8 +197,8 @@ static void ds1621_init_client(struct i2c_client *client)
+ 
+ static struct ds1621_data *ds1621_update_client(struct device *dev)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct ds1621_data *data = dev_get_drvdata(dev);
++	struct i2c_client *client = data->client;
+ 	u8 new_conf;
+ 
+ 	mutex_lock(&data->update_lock);
+@@ -247,8 +247,7 @@ static ssize_t set_temp(struct device *dev, struct device_attribute *da,
+ 			const char *buf, size_t count)
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct ds1621_data *data = dev_get_drvdata(dev);
+ 	long val;
+ 	int err;
+ 
+@@ -258,7 +257,7 @@ static ssize_t set_temp(struct device *dev, struct device_attribute *da,
+ 
+ 	mutex_lock(&data->update_lock);
+ 	data->temp[attr->index] = DS1621_TEMP_TO_REG(val, data->zbits);
+-	i2c_smbus_write_word_swapped(client, DS1621_REG_TEMP[attr->index],
++	i2c_smbus_write_word_swapped(data->client, DS1621_REG_TEMP[attr->index],
+ 				     data->temp[attr->index]);
+ 	mutex_unlock(&data->update_lock);
+ 	return count;
+@@ -282,16 +281,15 @@ static ssize_t show_alarm(struct device *dev, struct device_attribute *da,
+ static ssize_t show_convrate(struct device *dev, struct device_attribute *da,
+ 			  char *buf)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct ds1621_data *data = dev_get_drvdata(dev);
+ 	return scnprintf(buf, PAGE_SIZE, "%hu\n", data->update_interval);
+ }
+ 
+ static ssize_t set_convrate(struct device *dev, struct device_attribute *da,
+ 			    const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct ds1621_data *data = dev_get_drvdata(dev);
++	struct i2c_client *client = data->client;
+ 	unsigned long convrate;
+ 	s32 err;
+ 	int resol = 0;
+@@ -343,8 +341,7 @@ static umode_t ds1621_attribute_visible(struct kobject *kobj,
+ 					struct attribute *attr, int index)
  {
  	struct device *dev = container_of(kobj, struct device, kobj);
- 	struct gpio_fan_data *data = dev_get_drvdata(dev);
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct ds1621_data *data = dev_get_drvdata(dev);
  
--	if (index == 1 && !data->alarm)
-+	if (index == 0 && !data->alarm)
- 		return 0;
--	if (index > 1 && !data->ctrl)
-+	if (index > 0 && !data->ctrl)
- 		return 0;
- 
- 	return attr->mode;
- }
- 
- static struct attribute *gpio_fan_attributes[] = {
--	&dev_attr_name.attr,
--	&dev_attr_fan1_alarm.attr,		/* 1 */
--	&dev_attr_pwm1.attr,			/* 2 */
-+	&dev_attr_fan1_alarm.attr,		/* 0 */
-+	&dev_attr_pwm1.attr,			/* 1 */
- 	&dev_attr_pwm1_enable.attr,
- 	&dev_attr_pwm1_mode.attr,
- 	&dev_attr_fan1_input.attr,
-@@ -358,6 +349,11 @@ static const struct attribute_group gpio_fan_group = {
- 	.is_visible = gpio_fan_is_visible,
+ 	if (attr == &dev_attr_update_interval.attr)
+ 		if (data->kind == ds1621 || data->kind == ds1625)
+@@ -358,49 +355,46 @@ static const struct attribute_group ds1621_group = {
+ 	.is_visible = ds1621_attribute_visible
  };
  
-+static const struct attribute_group *gpio_fan_groups[] = {
-+	&gpio_fan_group,
++static const struct attribute_group *ds1621_groups[] = {
++	&ds1621_group,
 +	NULL
 +};
 +
- static int fan_ctrl_init(struct gpio_fan_data *fan_data,
- 			 struct gpio_fan_platform_data *pdata)
+ static int ds1621_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
  {
-@@ -539,24 +535,16 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 			return err;
- 	}
+ 	struct ds1621_data *data;
+-	int err;
++	struct device *hwmon_dev;
  
--	err = sysfs_create_group(&pdev->dev.kobj, &gpio_fan_group);
+ 	data = devm_kzalloc(&client->dev, sizeof(struct ds1621_data),
+ 			    GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	i2c_set_clientdata(client, data);
+ 	mutex_init(&data->update_lock);
+ 
+ 	data->kind = id->driver_data;
++	data->client = client;
+ 
+ 	/* Initialize the DS1621 chip */
+-	ds1621_init_client(client);
++	ds1621_init_client(data, client);
+ 
+-	/* Register sysfs hooks */
+-	err = sysfs_create_group(&client->dev.kobj, &ds1621_group);
 -	if (err)
 -		return err;
--
- 	/* Make this driver part of hwmon class. */
--	fan_data->hwmon_dev = hwmon_device_register(&pdev->dev);
--	if (IS_ERR(fan_data->hwmon_dev)) {
--		err = PTR_ERR(fan_data->hwmon_dev);
--		goto err_remove;
--	}
-+	fan_data->hwmon_dev = hwmon_device_register_with_groups(&pdev->dev,
-+						"gpio-fan", fan_data,
-+						gpio_fan_groups);
-+	if (IS_ERR(fan_data->hwmon_dev))
-+		return PTR_ERR(fan_data->hwmon_dev);
++	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
++						      client->name, data,
++						      ds1621_groups);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
  
- 	dev_info(&pdev->dev, "GPIO fan initialized\n");
+-	data->hwmon_dev = hwmon_device_register(&client->dev);
+-	if (IS_ERR(data->hwmon_dev)) {
+-		err = PTR_ERR(data->hwmon_dev);
+-		goto exit_remove_files;
+-	}
++	i2c_set_clientdata(client, hwmon_dev);
  
  	return 0;
 -
--err_remove:
--	sysfs_remove_group(&pdev->dev.kobj, &gpio_fan_group);
+- exit_remove_files:
+-	sysfs_remove_group(&client->dev.kobj, &ds1621_group);
 -	return err;
  }
  
- static int gpio_fan_remove(struct platform_device *pdev)
-@@ -564,7 +552,6 @@ static int gpio_fan_remove(struct platform_device *pdev)
- 	struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
+ static int ds1621_remove(struct i2c_client *client)
+ {
+-	struct ds1621_data *data = i2c_get_clientdata(client);
++	struct device *hwmon_dev = i2c_get_clientdata(client);
  
- 	hwmon_device_unregister(fan_data->hwmon_dev);
--	sysfs_remove_group(&pdev->dev.kobj, &gpio_fan_group);
+-	hwmon_device_unregister(data->hwmon_dev);
+-	sysfs_remove_group(&client->dev.kobj, &ds1621_group);
++	hwmon_device_unregister(hwmon_dev);
  
  	return 0;
  }
