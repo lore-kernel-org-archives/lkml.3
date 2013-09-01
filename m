@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3IAKtj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:49:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63770 "EHLO mx1.redhat.com"
+	id S1757504Ab3IAKth (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:49:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757397Ab3IAKt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:49:26 -0400
+	id S1757396Ab3IAKtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:49:22 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 07/24] tools list traceevent: Add traceevent_host_bigendian function
-Date: Sun,  1 Sep 2013 12:48:32 +0200
-Message-Id: <1378032529-18498-8-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 06/24] tools list traceevent: Add plugin build support
+Date: Sun,  1 Sep 2013 12:48:31 +0200
+Message-Id: <1378032529-18498-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 References: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding traceevent_host_bigendian function to get host
-endianity. It's used in following patches.
+Backporting missing pieces of plugin building infrastructure.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,29 +36,98 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/event-parse.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/lib/traceevent/Makefile | 37 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 33 insertions(+), 4 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 3aaf668..1199934 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -526,6 +526,15 @@ __data2host8(struct pevent *pevent, unsigned long long data)
- 	__data2host8(pevent, __val);				\
- })
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 99da843..19bde02 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -43,6 +43,17 @@ man_dir_SQ = '$(subst ','\'',$(man_dir))'
+ export man_dir man_dir_SQ INSTALL
+ export DESTDIR DESTDIR_SQ
  
-+static inline int traceevent_host_bigendian(void)
-+{
-+	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4 };
-+	unsigned int *ptr;
++# Set plugin_dir to preffered global plugin location
++# If we install under $HOME directory we go under
++# $(HOME)/.traceevent/plugins
++ifeq ($(prefix),$(HOME))
++override plugin_dir = $(HOME)/.traceevent/plugins
++else
++override plugin_dir ?= $(prefix)/lib/traceevent/plugins
++PLUGIN_DIR = -DPLUGIN_DIR="$(plugin_dir)"
++PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
++endif
 +
-+	ptr = (unsigned int *)str;
-+	return *ptr == 0x01020304;
-+}
+ # copy a bit from Linux kbuild
+ 
+ ifeq ("$(origin V)", "command line")
+@@ -96,6 +107,7 @@ export prefix bindir src obj
+ # Shell quotes
+ bindir_SQ = $(subst ','\'',$(bindir))
+ bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
++plugin_dir_SQ = $(subst ','\'',$(plugin_dir))
+ 
+ LIB_FILE = libtraceevent.a libtraceevent.so
+ 
+@@ -139,7 +151,7 @@ else
+   print_fpic_compile =		echo '  CC FPIC            '$(OBJ);
+   print_shared_lib_compile =	echo '  BUILD SHARED LIB   '$(OBJ);
+   print_plugin_obj_compile =	echo '  CC PLUGIN OBJ      '$(OBJ);
+-  print_plugin_build =		echo '  CC PLUGI           '$(OBJ);
++  print_plugin_build =		echo '  BUILD PLUGIN       '$(OBJ);
+   print_static_lib_build =	echo '  BUILD STATIC LIB   '$(OBJ);
+   print_install =		echo '  INSTALL     '$1'	to	$(DESTDIR_SQ)$2';
+ endif
+@@ -183,9 +195,11 @@ $(obj)/%.o: $(src)/%.c
+ PEVENT_LIB_OBJS = event-parse.o event-plugin.o trace-seq.o parse-filter.o parse-utils.o event-option.o
+ PEVENT_LIB_OBJS += kbuffer-parse.o
+ 
+-ALL_OBJS = $(PEVENT_LIB_OBJS)
++PLUGINS := $(PLUGIN_OBJS:.o=.so)
+ 
+-CMD_TARGETS = $(LIB_FILE)
++ALL_OBJS = $(PEVENT_LIB_OBJS) $(PLUGIN_OBJS)
 +
- /* taken from kernel/trace/trace.h */
- enum trace_flag_type {
- 	TRACE_FLAG_IRQS_OFF		= 0x01,
++CMD_TARGETS = $(LIB_FILE) $(PLUGINS)
+ 
+ TARGETS = $(CMD_TARGETS)
+ 
+@@ -200,9 +214,17 @@ libtraceevent.so: $(PEVENT_LIB_OBJS)
+ libtraceevent.a: $(PEVENT_LIB_OBJS)
+ 	$(Q)$(do_build_static_lib)
+ 
++plugins: $(PLUGINS)
++
+ $(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
+ 	$(Q)$(do_fpic_compile)
+ 
++$(PLUGIN_OBJS): %.o : $(src)/%.c
++	$(Q)$(do_compile_plugin_obj)
++
++$(PLUGINS): %.so: %.o
++	$(Q)$(do_plugin_build)
++
+ define make_version.h
+ 	(echo '/* This file is automatically generated. Do not modify. */';		\
+ 	echo \#define VERSION_CODE $(shell						\
+@@ -290,9 +312,16 @@ define do_install
+ 	$(INSTALL) $1 '$(DESTDIR_SQ)$2'
+ endef
+ 
+-install_lib: all_cmd
++install_lib: all_cmd install_plugins
+ 	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
+ 
++PLUGINS_INSTALL = $(subst .so,.install,$(PLUGINS))
++
++$(PLUGINS_INSTALL): %.install : %.so force
++	$(Q)$(call do_install,$<,$(plugin_dir_SQ))
++
++install_plugins: $(PLUGINS_INSTALL)
++
+ install: install_lib
+ 
+ clean:
 -- 
 1.7.11.7
 
