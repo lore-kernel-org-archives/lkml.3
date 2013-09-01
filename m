@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab3IAKho (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:37:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30484 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757402Ab3IAKhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757403Ab3IAKhj (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 1 Sep 2013 06:37:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754691Ab3IAKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:35 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 14/25] perf tools: Introduce perf.data version 3 format
-Date: Sun,  1 Sep 2013 12:36:25 +0200
-Message-Id: <1378031796-17892-15-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 15/25] perf tools: Add perf data version 3 header swap
+Date: Sun,  1 Sep 2013 12:36:26 +0200
+Message-Id: <1378031796-17892-16-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing perf.data version 3 format. No functional change,
-just introducing doc, magic bytes and the struct.
+Adding perf data version 3 header swap same way
+as it's done for v2.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,154 +37,53 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Documentation/perf-data-file-v3.txt | 63 ++++++++++++++++++++++++++
- tools/perf/util/header.c                       |  8 +++-
- tools/perf/util/header.h                       |  8 ++++
- 3 files changed, 78 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/Documentation/perf-data-file-v3.txt
+ tools/perf/util/header.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-data-file-v3.txt b/tools/perf/Documentation/perf-data-file-v3.txt
-new file mode 100644
-index 0000000..9bf9464
---- /dev/null
-+++ b/tools/perf/Documentation/perf-data-file-v3.txt
-@@ -0,0 +1,63 @@
-+perf-data-file-v3(5)
-+====================
-+
-+NAME
-+----
-+perf-data-file-v3 - The perf tool file format version 3
-+
-+
-+DESCRIPTION
-+-----------
-+Following text describes version 3 of the perf data file format,
-+which is version that is currently used by perf tool.
-+
-+In version 3 we got rid of following sections:
-+  EVENT IDS
-+  EVENT ATTRIBUTES
-+  EVENT TYPES
-+
-+and keep only data and features sections. All the data
-+from above listed sections are now read from specific
-+FEATURES sections.
-+
-+High level view of the format:
-+  FILE HEADER
-+  EVENT DATA
-+  FEATURES
-+
-+
-+FILE HEADER
-+-----------
-+Starting point of the data file with magic bytes and global
-+section information.
-+
-+The section contains following data:
-+  struct perf_file_header header
-+
-+struct perf_file_header::
-+  struct perf_file_header {
-+        u64  magic;
-+        u64  size;
-+        u64  attr_size;
-+        struct perf_file_section  data;
-+        struct perf_file_section  features;
-+        DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
-+  }
-+
-+  magic           ID 'PERFILE3'
-+  size            header size sizeof(struct perf_file_header)
-+  attr_size       attribute size sizeof(struct perf_file_attr)
-+  data            location of 'EVENT DATA'
-+  features        location of 'EVENT TYPES'
-+  adds_features   'FEATURES' bitmask
-+
-+
-+EVENT DATA
-+----------
-+This section contains blob of all events' data - auxiliary events
-+and samples.
-+
-+
-+FEATURES
-+--------
-+Same as in version 2.
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index e43879e..db6b131 100644
+index db6b131..77d588f 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -30,6 +30,7 @@ static const char **header_argv;
- 
- /*
-  * magic2 = "PERFILE2"
-+ * magic3 = "PERFILE3"
-  * must be a numerical value to let the endianness
-  * determine the memory layout. That way we are able
-  * to detect endianness when reading the perf.data file
-@@ -40,6 +41,8 @@ static const char **header_argv;
- static const char *__perf_magic1 = "PERFFILE";
- static const u64 __perf_magic2    = 0x32454c4946524550ULL;
- static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
-+static const u64 __perf_magic3    = 0x33454c4946524550ULL;
-+static const u64 __perf_magic3_sw = 0x50455246494c4533ULL;
- 
- #define PERF_MAGIC	__perf_magic2
- 
-@@ -2464,7 +2467,9 @@ bool is_perf_magic(u64 magic)
- {
- 	if (!memcmp(&magic, __perf_magic1, sizeof(magic))
- 		|| magic == __perf_magic2
--		|| magic == __perf_magic2_sw)
-+		|| magic == __perf_magic2_sw
-+		|| magic == __perf_magic3
-+		|| magic == __perf_magic3_sw)
- 		return true;
- 
- 	return false;
-@@ -2506,6 +2511,7 @@ do {								\
- } while (0)
- 
- 	CHECK(__perf_magic2, PERF_HEADER_VERSION_2);
-+	CHECK(__perf_magic3, PERF_HEADER_VERSION_3);
- 
- 	return -1;
+@@ -2568,13 +2568,28 @@ static int swap_header_v2(struct perf_file_header *header)
+ 	return 0;
  }
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index c6ea4603..bcd3e64 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -37,6 +37,7 @@ enum {
- enum perf_header_version {
- 	PERF_HEADER_VERSION_1,
- 	PERF_HEADER_VERSION_2,
-+	PERF_HEADER_VERSION_3,
- };
  
- struct perf_file_section {
-@@ -52,6 +53,12 @@ struct perf_file_header_v2 {
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- };
- 
-+struct perf_file_header_v3 {
-+	struct perf_file_section	data;
-+	struct perf_file_section	features;
-+	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
-+};
+-static int swap_header(struct perf_file_header *header)
++static int swap_header_v3(struct perf_file_header *header)
++{
++	struct perf_file_header_v3 *v3 = &header->v3;
 +
- struct perf_file_header {
- 	u64	magic;
- 	u64	size;
-@@ -60,6 +67,7 @@ struct perf_file_header {
- 	/* version specific data */
- 	union {
- 		struct perf_file_header_v2 v2;
-+		struct perf_file_header_v3 v3;
- 	};
- };
++	mem_bswap_64(v3, offsetof(struct perf_file_header_v3,
++		     adds_features));
++
++	swap_features(v3->adds_features);
++	return 0;
++}
++
++static int swap_header(struct perf_header *ph,
++		       struct perf_file_header *header)
+ {
+ 	/* swap the generic part */
+ 	mem_bswap_64(header, offsetof(struct perf_file_header, v2));
  
+ 	/* version specific swap */
+-	return swap_header_v2(header);
++	if (ph->version <= PERF_HEADER_VERSION_2)
++		return swap_header_v2(header);
++
++	return swap_header_v3(header);
+ }
+ 
+ int perf_file_header__read(struct perf_file_header *header,
+@@ -2594,7 +2609,7 @@ int perf_file_header__read(struct perf_file_header *header,
+ 		return -1;
+ 	}
+ 
+-	return ph->needs_swap ? swap_header(header) : 0;
++	return ph->needs_swap ? swap_header(ph, header) : 0;
+ }
+ 
+ static int perf_file_section__process(struct perf_file_section *section,
 -- 
 1.7.11.7
 
