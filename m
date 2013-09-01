@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab3IAKm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:42:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17771 "EHLO mx1.redhat.com"
+	id S1757672Ab3IAKnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:43:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52143 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757323Ab3IAKhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:18 -0400
+	id S1757297Ab3IAKhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:16 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,18 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/25] perf tools: Introduce perf_evlist__new_default function
-Date: Sun,  1 Sep 2013 12:36:14 +0200
-Message-Id: <1378031796-17892-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 08/25] perf doc: Add perf data file documentation
+Date: Sun,  1 Sep 2013 12:36:19 +0200
+Message-Id: <1378031796-17892-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new common function to create evlist with default
-event. It spares some code lines in automated tests.
+Adding perf data file documentation.
+
+TODO Finish the FEATURES section
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,112 +38,280 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/tests/perf-record.c | 12 +-----------
- tools/perf/tests/task-exit.c   | 14 ++------------
- tools/perf/util/evlist.c       | 12 ++++++++++++
- tools/perf/util/evlist.h       |  1 +
- 4 files changed, 16 insertions(+), 23 deletions(-)
+ tools/perf/Documentation/perf-data-file-v2.txt | 264 +++++++++++++++++++++++++
+ 1 file changed, 264 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-data-file-v2.txt
 
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index 72d8881..6143b06 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -45,7 +45,7 @@ int test__PERF_RECORD(void)
- 	};
- 	cpu_set_t cpu_mask;
- 	size_t cpu_mask_size = sizeof(cpu_mask);
--	struct perf_evlist *evlist = perf_evlist__new();
-+	struct perf_evlist *evlist = perf_evlist__new_default();
- 	struct perf_evsel *evsel;
- 	struct perf_sample sample;
- 	const char *cmd = "sleep";
-@@ -66,16 +66,6 @@ int test__PERF_RECORD(void)
- 	}
- 
- 	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_delete_evlist;
--	}
--
--	/*
- 	 * Create maps of threads and cpus to monitor. In this case
- 	 * we start with all threads and cpus (-1, -1) but then in
- 	 * perf_evlist__prepare_workload we'll fill in the only thread
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index 28fe589..b07f8a1 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -37,20 +37,11 @@ int test__task_exit(void)
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGUSR1, sig_handler);
- 
--	evlist = perf_evlist__new();
-+	evlist = perf_evlist__new_default();
- 	if (evlist == NULL) {
--		pr_debug("perf_evlist__new\n");
-+		pr_debug("perf_evlist__new_default\n");
- 		return -1;
- 	}
--	/*
--	 * We need at least one evsel in the evlist, use the default
--	 * one: "cycles".
--	 */
--	err = perf_evlist__add_default(evlist);
--	if (err < 0) {
--		pr_debug("Not enough memory to create evsel\n");
--		goto out_free_evlist;
--	}
- 
- 	/*
- 	 * Create maps of threads and cpus to monitor. In this case
-@@ -117,7 +108,6 @@ out_close_evlist:
- 	perf_evlist__close(evlist);
- out_delete_maps:
- 	perf_evlist__delete_maps(evlist);
--out_free_evlist:
- 	perf_evlist__delete(evlist);
- 	return err;
- }
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 8ea933f..998e0d1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -50,6 +50,18 @@ struct perf_evlist *perf_evlist__new(void)
- 	return evlist;
- }
- 
-+struct perf_evlist *perf_evlist__new_default(void)
-+{
-+	struct perf_evlist *evlist = perf_evlist__new();
+diff --git a/tools/perf/Documentation/perf-data-file-v2.txt b/tools/perf/Documentation/perf-data-file-v2.txt
+new file mode 100644
+index 0000000..f5c1d5b8
+--- /dev/null
++++ b/tools/perf/Documentation/perf-data-file-v2.txt
+@@ -0,0 +1,264 @@
++perf-data-file-v2(5)
++====================
 +
-+	if (evlist && perf_evlist__add_default(evlist)) {
-+		perf_evlist__delete(evlist);
-+		evlist = NULL;
-+	}
++NAME
++----
++perf-data-file-v2 - The perf tool file format version 2
 +
-+	return evlist;
-+}
 +
- /**
-  * perf_evlist__set_id_pos - set the positions of event ids.
-  * @evlist: selected event list
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index cae0bf5..ca016b1 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -53,6 +53,7 @@ struct perf_evsel_str_handler {
- };
- 
- struct perf_evlist *perf_evlist__new(void);
-+struct perf_evlist *perf_evlist__new_default(void);
- void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
- 		       struct thread_map *threads);
- void perf_evlist__exit(struct perf_evlist *evlist);
++DESCRIPTION
++-----------
++Following text describes version 2 of the perf data file format,
++which is version that is currently used by perf tool.
++
++The perf data file format is composed of several sections
++describing monitored events and the data itself.
++
++High level view of the format:
++  FILE HEADER
++  EVENT IDS
++  EVENT ATTRIBUTES
++  EVENT TYPES
++  EVENT DATA
++  FEATURES
++
++
++COMMON PRIMITIVES
++-----------------
++Following definitions are used as primitives on multiple places
++within the perf data file.
++
++struct perf_file_section::
++  Used to determine location of data sections within the file.
++
++  struct perf_file_section {
++        u64 offset;
++        u64 size;
++  };
++
++  offset  section location (offset) within the file
++  size    section size in bytes
++
++
++FILE HEADER
++-----------
++Starting point of the data file with magic bytes and global
++section information.
++
++The section contains following data:
++  struct perf_file_header header
++
++struct perf_file_header::
++  struct perf_file_header {
++        u64                             magic;
++        u64                             size;
++        u64                             attr_size;
++        struct perf_file_section        attrs;
++        struct perf_file_section        data;
++        struct perf_file_section        event_types;
++        DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
++  }
++
++  magic           ID 'PERFFILE|PERFILE2'
++  size            header size sizeof(struct perf_file_header)
++  attr_size       attribute size sizeof(struct perf_file_attr)
++                  (see EVENT ATTRIBUTES)
++  attrs           location of 'EVENT ATTRIBUTES'
++  data            location of 'EVENT DATA'
++  event_types     location of 'EVENT TYPES'
++  adds_features   'FEATURES' bitmask
++
++
++EVENT IDS
++---------
++This section contains CPU related IDs for each monitored event.
++It is used only if there was more than 1 events monitored. The
++reason is to be able to map event's data to event definition.
++
++The section contains following data:
++  u64  event1_ids[]
++  u64  event2_ids[]
++  ...
++  u64  eventX_ids[]
++
++eventX_ids::
++  per-cpu event X IDs array
++  this array is referenced in 'EVENT ATTRIBUTES'
++
++
++EVENT ATTRIBUTES
++----------------
++This section contains attribute information together with the
++location of the IDs array for each event.
++
++The section contains following data:
++  struct perf_file_attr  attrs[]
++
++struct perf_file_attr::
++  struct perf_file_attr {
++        struct perf_event_attr    attr;
++        struct perf_file_section  ids;
++  }
++
++  attr  perf event interface structure for each event
++  ids   IDs location for event in 'EVENT IDS' section
++
++
++EVENT TYPES
++-----------
++This section map event's config value (struct perf_event_attr::config)
++with the event name.
++
++The section contains following data:
++  struct perf_trace_event_type  types[]
++
++#define MAX_EVENT_NAME 64
++
++struct perf_trace_event_type::
++  struct perf_trace_event_type {
++        u64   event_id;
++        char  name[MAX_EVENT_NAME];
++  };
++
++  event_id  struct perf_event_attr::config value
++  name      event name
++
++NOTE This section got deprecated and its data are no longer stored.
++     The 'event_types' location in the header is zero-ed.
++
++
++EVENT DATA
++----------
++This section contains blob of all events data - auxiliary events
++and samples.
++
++
++FEATURES
++--------
++This section contains various configuration data and its contents
++depends on the header's adds_features bitmask. Each bit in this
++bitmask represent a single feature (0 - NOT present, 1 present).
++
++The section contains following data:
++  struct perf_file_section feature_locations[nr_features];
++
++  nr_features        number of present features bitmap_weight(adds_features)
++  feature_locations  location of each feature data
++
++Available features (possible max 256):
++  enum {
++        HEADER_RESERVED         = 0,
++        HEADER_TRACING_DATA     = 1,
++        HEADER_BUILD_ID,
++        HEADER_HOSTNAME,
++        HEADER_OSRELEASE,
++        HEADER_VERSION,
++        HEADER_ARCH,
++        HEADER_NRCPUS,
++        HEADER_CPUDESC,
++        HEADER_CPUID,
++        HEADER_TOTAL_MEM,
++        HEADER_CMDLINE,
++        HEADER_EVENT_DESC,
++        HEADER_CPU_TOPOLOGY,
++        HEADER_NUMA_TOPOLOGY,
++        HEADER_BRANCH_STACK,
++        HEADER_PMU_MAPPINGS,
++        HEADER_GROUP_DESC,
++        HEADER_LAST_FEATURE,
++        HEADER_FEAT_BITS        = 256,
++  }
++
++
++TODO finish FEATURES::* sections descriptions.
++
++FEATURES::HEADER_RESERVED
++-------------------------
++allways zero bit
++
++
++FEATURES::HEADER_TRACING_DATA
++-----------------------------
++tracing data
++
++
++FEATURES::HEADER_BUILD_ID
++-------------------------
++build ids
++
++
++FEATURES::HEADER_HOSTNAME
++-------------------------
++uname hostname
++
++
++FEATURES::HEADER_OSRELEASE
++--------------------------
++uname osrelease
++
++
++FEATURES::HEADER_VERSION
++------------------------
++perf version
++
++
++FEATURES::HEADER_ARCH
++---------------------
++uname arch
++
++
++FEATURES::HEADER_NRCPUS
++-----------------------
++offset          size(B) description
++0               4       sysconf(_SC_NPROCESSORS_CONF)
++4               4       sysconf(_SC_NPROCESSORS_ONLN)
++
++
++FEATURES::HEADER_CPUDESC
++------------------------
++/proc/cpuinfo data for 'Model name'
++
++
++FEATURES::HEADER_CPUID
++----------------------
++'vendor,family,model,step'
++
++
++FEATURES::HEADER_TOTAL_MEM
++--------------------------
++/proc/meminfo data for 'MemTotal'
++
++
++FEATURES::HEADER_CMDLINE
++------------------------
++perf complete command line
++
++
++FEATURES::HEADER_EVENT_DESC
++---------------------------
++event attributes plus related info(ids)
++
++
++FEATURES::HEADER_CPU_TOPOLOGY
++-----------------------------
++cpu topology
++
++
++FEATURES::HEADER_NUMA_TOPOLOGY
++------------------------------
++numa topology
++
++
++FEATURES::HEADER_BRANCH_STACK
++-----------------------------
++nothing
++
++
++FEATURES::HEADER_PMU_MAPPINGS
++-----------------------------
++available pmus
++
++
++FEATURES::HEADER_GROUP_DESC
++---------------------------
++event groups info
 -- 
 1.7.11.7
 
