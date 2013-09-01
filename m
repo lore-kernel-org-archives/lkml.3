@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab3IAKhd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:37:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7511 "EHLO mx1.redhat.com"
+	id S1757418Ab3IAKho (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab3IAKha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:30 -0400
+	id S1757402Ab3IAKhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:39 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,19 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 13/25] perf tools: Using evlist as a holder for event_desc feature
-Date: Sun,  1 Sep 2013 12:36:24 +0200
-Message-Id: <1378031796-17892-14-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 14/25] perf tools: Introduce perf.data version 3 format
+Date: Sun,  1 Sep 2013 12:36:25 +0200
+Message-Id: <1378031796-17892-15-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using evlist as a holder for events stored via event_desc
-feature. The event_desc events data is same as the one
-stored via main header. We will use event_desc data to
-replace the main header data source in next patches.
+Introducing perf.data version 3 format. No functional change,
+just introducing doc, magic bytes and the struct.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,181 +37,153 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/header.c | 84 ++++++++++++++++++++++--------------------------
- 1 file changed, 38 insertions(+), 46 deletions(-)
+ tools/perf/Documentation/perf-data-file-v3.txt | 63 ++++++++++++++++++++++++++
+ tools/perf/util/header.c                       |  8 +++-
+ tools/perf/util/header.h                       |  8 ++++
+ 3 files changed, 78 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/Documentation/perf-data-file-v3.txt
 
+diff --git a/tools/perf/Documentation/perf-data-file-v3.txt b/tools/perf/Documentation/perf-data-file-v3.txt
+new file mode 100644
+index 0000000..9bf9464
+--- /dev/null
++++ b/tools/perf/Documentation/perf-data-file-v3.txt
+@@ -0,0 +1,63 @@
++perf-data-file-v3(5)
++====================
++
++NAME
++----
++perf-data-file-v3 - The perf tool file format version 3
++
++
++DESCRIPTION
++-----------
++Following text describes version 3 of the perf data file format,
++which is version that is currently used by perf tool.
++
++In version 3 we got rid of following sections:
++  EVENT IDS
++  EVENT ATTRIBUTES
++  EVENT TYPES
++
++and keep only data and features sections. All the data
++from above listed sections are now read from specific
++FEATURES sections.
++
++High level view of the format:
++  FILE HEADER
++  EVENT DATA
++  FEATURES
++
++
++FILE HEADER
++-----------
++Starting point of the data file with magic bytes and global
++section information.
++
++The section contains following data:
++  struct perf_file_header header
++
++struct perf_file_header::
++  struct perf_file_header {
++        u64  magic;
++        u64  size;
++        u64  attr_size;
++        struct perf_file_section  data;
++        struct perf_file_section  features;
++        DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
++  }
++
++  magic           ID 'PERFILE3'
++  size            header size sizeof(struct perf_file_header)
++  attr_size       attribute size sizeof(struct perf_file_attr)
++  data            location of 'EVENT DATA'
++  features        location of 'EVENT TYPES'
++  adds_features   'FEATURES' bitmask
++
++
++EVENT DATA
++----------
++This section contains blob of all events' data - auxiliary events
++and samples.
++
++
++FEATURES
++--------
++Same as in version 2.
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 3f58a3f..e43879e 100644
+index e43879e..db6b131 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -1208,28 +1208,11 @@ static void print_cpu_topology(struct perf_header *ph, int fd __maybe_unused,
- 	}
- }
+@@ -30,6 +30,7 @@ static const char **header_argv;
  
--static void free_event_desc(struct perf_evsel *events)
--{
--	struct perf_evsel *evsel;
--
--	if (!events)
--		return;
--
--	for (evsel = events; evsel->attr.size; evsel++) {
--		if (evsel->name)
--			free(evsel->name);
--		if (evsel->id)
--			free(evsel->id);
--	}
--
--	free(events);
--}
--
--static struct perf_evsel *
-+static struct perf_evlist *
- read_event_desc(struct perf_header *ph, int fd)
+ /*
+  * magic2 = "PERFILE2"
++ * magic3 = "PERFILE3"
+  * must be a numerical value to let the endianness
+  * determine the memory layout. That way we are able
+  * to detect endianness when reading the perf.data file
+@@ -40,6 +41,8 @@ static const char **header_argv;
+ static const char *__perf_magic1 = "PERFFILE";
+ static const u64 __perf_magic2    = 0x32454c4946524550ULL;
+ static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
++static const u64 __perf_magic3    = 0x33454c4946524550ULL;
++static const u64 __perf_magic3_sw = 0x50455246494c4533ULL;
+ 
+ #define PERF_MAGIC	__perf_magic2
+ 
+@@ -2464,7 +2467,9 @@ bool is_perf_magic(u64 magic)
  {
--	struct perf_evsel *evsel, *events = NULL;
--	u64 *id;
-+	struct perf_evlist *evlist = NULL;
-+	struct perf_evsel *evsel;
- 	void *buf = NULL;
- 	u32 nre, sz, nr, i, j;
- 	ssize_t ret;
-@@ -1255,18 +1238,15 @@ read_event_desc(struct perf_header *ph, int fd)
- 	if (!buf)
- 		goto error;
+ 	if (!memcmp(&magic, __perf_magic1, sizeof(magic))
+ 		|| magic == __perf_magic2
+-		|| magic == __perf_magic2_sw)
++		|| magic == __perf_magic2_sw
++		|| magic == __perf_magic3
++		|| magic == __perf_magic3_sw)
+ 		return true;
  
--	/* the last event terminates with evsel->attr.size == 0: */
--	events = calloc(nre + 1, sizeof(*events));
--	if (!events)
-+	evlist = perf_evlist__new();
-+	if (!evlist)
- 		goto error;
+ 	return false;
+@@ -2506,6 +2511,7 @@ do {								\
+ } while (0)
  
- 	msz = sizeof(evsel->attr);
- 	if (sz < msz)
- 		msz = sz;
+ 	CHECK(__perf_magic2, PERF_HEADER_VERSION_2);
++	CHECK(__perf_magic3, PERF_HEADER_VERSION_3);
  
--	for (i = 0, evsel = events; i < nre; evsel++, i++) {
--		evsel->idx = i;
--
-+	for (i = 0; i < nre; i++) {
- 		/*
- 		 * must read entire on-file attr struct to
- 		 * sync up with layout.
-@@ -1275,6 +1255,10 @@ read_event_desc(struct perf_header *ph, int fd)
- 		if (ret != (ssize_t)sz)
- 			goto error;
- 
-+		evsel = perf_evsel__new(buf, i);
-+		if (!evsel)
-+			goto error;
-+
- 		if (ph->needs_swap)
- 			perf_event__attr_swap(buf);
- 
-@@ -1289,49 +1273,55 @@ read_event_desc(struct perf_header *ph, int fd)
- 			evsel->needs_swap = true;
- 		}
- 
-+		perf_evlist__add(evlist, evsel);
-+
- 		evsel->name = do_read_string(fd, ph);
- 
- 		if (!nr)
- 			continue;
- 
--		id = calloc(nr, sizeof(*id));
--		if (!id)
-+		if (perf_evsel__alloc_id(evsel, 1, nr))
- 			goto error;
-+
- 		evsel->ids = nr;
--		evsel->id = id;
- 
- 		for (j = 0 ; j < nr; j++) {
--			ret = readn(fd, id, sizeof(*id));
--			if (ret != (ssize_t)sizeof(*id))
-+			u64 id;
-+
-+			ret = readn(fd, &id, sizeof(id));
-+			if (ret != (ssize_t)sizeof(id))
- 				goto error;
- 			if (ph->needs_swap)
--				*id = bswap_64(*id);
--			id++;
-+				id = bswap_64(id);
-+
-+			perf_evlist__id_add(evlist, evsel, 0, j, id);
- 		}
- 	}
- out:
- 	if (buf)
- 		free(buf);
--	return events;
-+	return evlist;
- error:
--	if (events)
--		free_event_desc(events);
--	events = NULL;
-+	if (evlist)
-+		perf_evlist__delete(evlist);
-+	evlist = NULL;
- 	goto out;
+ 	return -1;
  }
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index c6ea4603..bcd3e64 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -37,6 +37,7 @@ enum {
+ enum perf_header_version {
+ 	PERF_HEADER_VERSION_1,
+ 	PERF_HEADER_VERSION_2,
++	PERF_HEADER_VERSION_3,
+ };
  
- static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- {
--	struct perf_evsel *evsel, *events = read_event_desc(ph, fd);
-+	struct perf_evlist *evlist;
-+	struct perf_evsel *evsel;
- 	u32 j;
- 	u64 *id;
+ struct perf_file_section {
+@@ -52,6 +53,12 @@ struct perf_file_header_v2 {
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ };
  
--	if (!events) {
-+	evlist = read_event_desc(ph, fd);
-+	if (!evlist) {
- 		fprintf(fp, "# event desc: not available or unable to read\n");
- 		return;
- 	}
- 
--	for (evsel = events; evsel->attr.size; evsel++) {
-+	list_for_each_entry(evsel, &evlist->entries, node) {
- 		fprintf(fp, "# event : name = %s, ", evsel->name);
- 
- 		fprintf(fp, "type = %d, config = 0x%"PRIx64
-@@ -1364,7 +1354,7 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 		fputc('\n', fp);
- 	}
- 
--	free_event_desc(events);
-+	perf_evlist__delete(evlist);
- }
- 
- static void print_total_mem(struct perf_header *ph, int fd __maybe_unused,
-@@ -1785,17 +1775,19 @@ process_event_desc(struct perf_file_section *section __maybe_unused,
- 		   void *data __maybe_unused)
- {
- 	struct perf_session *session;
--	struct perf_evsel *evsel, *events = read_event_desc(header, fd);
-+	struct perf_evlist *evlist;
-+	struct perf_evsel *evsel;
- 
--	if (!events)
-+	evlist = read_event_desc(header, fd);
-+	if (!evlist)
- 		return 0;
- 
- 	session = container_of(header, struct perf_session, header);
--	for (evsel = events; evsel->attr.size; evsel++)
--		perf_evlist__set_event_name(session->evlist, evsel);
- 
--	free_event_desc(events);
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		perf_evlist__set_event_name(session->evlist, evsel);
- 
-+	perf_evlist__delete(evlist);
- 	return 0;
- }
++struct perf_file_header_v3 {
++	struct perf_file_section	data;
++	struct perf_file_section	features;
++	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
++};
++
+ struct perf_file_header {
+ 	u64	magic;
+ 	u64	size;
+@@ -60,6 +67,7 @@ struct perf_file_header {
+ 	/* version specific data */
+ 	union {
+ 		struct perf_file_header_v2 v2;
++		struct perf_file_header_v3 v3;
+ 	};
+ };
  
 -- 
 1.7.11.7
