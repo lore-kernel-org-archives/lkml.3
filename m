@@ -1,60 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3IAUDe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 16:03:34 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:42836 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab3IAUDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 16:03:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130901141139.43645159@gandalf.local.home>
-References: <CA+55aFz7k5zUvJdZxpZgCgfx_-PT+f-9J50hnC1i3x=8_dXkBw@mail.gmail.com>
-	<20130901085049.21748.qmail@science.horizon.com>
-	<20130901111008.GA28812@thunk.org>
-	<CA+55aFx5oAdGHGXd9P95-0UrKe9Tki_8Q8NoUtCVJtM-=he-Cg@mail.gmail.com>
-	<20130901141139.43645159@gandalf.local.home>
-Date: Sun, 1 Sep 2013 13:03:32 -0700
-X-Google-Sender-Auth: VS5S9OwKwgw_zm3pwWpySfHUTmw
-Message-ID: <CA+55aFzKQ6Pj18TB8p4Yr0M4t+S+BsiHH=BJNmn=76-NcjTj-g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, George Spelvin <linux@horizon.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <waiman.long@hp.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755427Ab3IAUL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 16:11:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56598 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753467Ab3IAUL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 16:11:56 -0400
+Message-ID: <1378066315.1953.23.camel@joe-AO722>
+Subject: [PATCH net-next] llc: Use normal etherdevice.h tests
+From: Joe Perches <joe@perches.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 01 Sep 2013 13:11:55 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 1, 2013 at 11:11 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> I've been told that gcc works better with 'bool' than with an int.
-> Should I replace those bools with bit fields in the structure?
+Convert the llc_<foo> static inlines to the
+equivalents from etherdevice.h and remove
+the llc_<foo> static inline functions.
 
-I think bitfields are a better idea in a struct, yes. They take less
-space, and there's a possibility to generate better code with a
-bitfield test than with a bool, especially if you have multiple values
-and you test them together.
+llc_mac_null -> is_zero_ether_addr
+llc_mac_multicast -> is_multicast_ether_addr
+llc_mac_match -> ether_addr_equal
 
-If it's a single bool in a structure, it really doesn't matter. It's
-going to take up at least a char (and usually more due to padding of
-other fields) regardless of bool-vs-bitfield issues. But I'd much
-rather see bitfields in structs because they *can* work better, and
-they are more flexible than "bool" anyway.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/llc_if.h | 30 ------------------------------
+ net/llc/af_llc.c     |  6 +++---
+ net/llc/llc_conn.c   |  6 +++---
+ net/llc/llc_sap.c    |  4 ++--
+ 4 files changed, 8 insertions(+), 38 deletions(-)
 
-Bools generally should generate the same code as "char", and yes, that
-can be better than "int". On x86, for example, the "setcc" instruction
-always sets a char, so if you use an "int" for boolean values, the
-compiler usually generates something like "xor %eax,%eax; test ..;
-setne %al" or similar. A bool or a char will skip the "xor", because
-the "setne" will set the low bits that are sufficient. That said, it's
-not actually noticeable in practice, and most routines that return
-true/false will just do plain "return 0" or whatever, so there's no
-use for "setcc" to begin with.
+diff --git a/include/net/llc_if.h b/include/net/llc_if.h
+index b595a00..f0cb909 100644
+--- a/include/net/llc_if.h
++++ b/include/net/llc_if.h
+@@ -62,36 +62,6 @@
+ #define LLC_STATUS_CONFLICT	7 /* disconnect conn */
+ #define LLC_STATUS_RESET_DONE	8 /*  */
+ 
+-/**
+- *      llc_mac_null - determines if a address is a null mac address
+- *      @mac: Mac address to test if null.
+- *
+- *      Determines if a given address is a null mac address.  Returns 0 if the
+- *      address is not a null mac, 1 if the address is a null mac.
+- */
+-static inline int llc_mac_null(const u8 *mac)
+-{
+-	return is_zero_ether_addr(mac);
+-}
+-
+-static inline int llc_mac_multicast(const u8 *mac)
+-{
+-	return is_multicast_ether_addr(mac);
+-}
+-/**
+- *	llc_mac_match - determines if two mac addresses are the same
+- *	@mac1: First mac address to compare.
+- *	@mac2: Second mac address to compare.
+- *
+- *	Determines if two given mac address are the same.  Returns 0 if there
+- *	is not a complete match up to len, 1 if a complete match up to len is
+- *	found.
+- */
+-static inline int llc_mac_match(const u8 *mac1, const u8 *mac2)
+-{
+-	return !compare_ether_addr(mac1, mac2);
+-}
+-
+ extern int llc_establish_connection(struct sock *sk, u8 *lmac,
+ 				    u8 *dmac, u8 dsap);
+ extern int llc_build_and_send_pkt(struct sock *sk, struct sk_buff *skb);
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 48aaa89..6cba486 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -321,12 +321,12 @@ static int llc_ui_bind(struct socket *sock, struct sockaddr *uaddr, int addrlen)
+ 		if (llc->dev) {
+ 			if (!addr->sllc_arphrd)
+ 				addr->sllc_arphrd = llc->dev->type;
+-			if (llc_mac_null(addr->sllc_mac))
++			if (is_zero_ether_addr(addr->sllc_mac))
+ 				memcpy(addr->sllc_mac, llc->dev->dev_addr,
+ 				       IFHWADDRLEN);
+ 			if (addr->sllc_arphrd != llc->dev->type ||
+-			    !llc_mac_match(addr->sllc_mac,
+-					   llc->dev->dev_addr)) {
++			    !ether_addr_equal(addr->sllc_mac,
++					      llc->dev->dev_addr)) {
+ 				rc = -EINVAL;
+ 				llc->dev = NULL;
+ 			}
+diff --git a/net/llc/llc_conn.c b/net/llc/llc_conn.c
+index 0d0d416..cd87241 100644
+--- a/net/llc/llc_conn.c
++++ b/net/llc/llc_conn.c
+@@ -478,8 +478,8 @@ static inline bool llc_estab_match(const struct llc_sap *sap,
+ 
+ 	return llc->laddr.lsap == laddr->lsap &&
+ 		llc->daddr.lsap == daddr->lsap &&
+-		llc_mac_match(llc->laddr.mac, laddr->mac) &&
+-		llc_mac_match(llc->daddr.mac, daddr->mac);
++		ether_addr_equal(llc->laddr.mac, laddr->mac) &&
++		ether_addr_equal(llc->daddr.mac, daddr->mac);
+ }
+ 
+ /**
+@@ -550,7 +550,7 @@ static inline bool llc_listener_match(const struct llc_sap *sap,
+ 
+ 	return sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN &&
+ 		llc->laddr.lsap == laddr->lsap &&
+-		llc_mac_match(llc->laddr.mac, laddr->mac);
++		ether_addr_equal(llc->laddr.mac, laddr->mac);
+ }
+ 
+ static struct sock *__llc_lookup_listener(struct llc_sap *sap,
+diff --git a/net/llc/llc_sap.c b/net/llc/llc_sap.c
+index 78be45c..e585069 100644
+--- a/net/llc/llc_sap.c
++++ b/net/llc/llc_sap.c
+@@ -302,7 +302,7 @@ static inline bool llc_dgram_match(const struct llc_sap *sap,
+ 
+      return sk->sk_type == SOCK_DGRAM &&
+ 	  llc->laddr.lsap == laddr->lsap &&
+-	  llc_mac_match(llc->laddr.mac, laddr->mac);
++	  ether_addr_equal(llc->laddr.mac, laddr->mac);
+ }
+ 
+ /**
+@@ -425,7 +425,7 @@ void llc_sap_handler(struct llc_sap *sap, struct sk_buff *skb)
+ 	llc_pdu_decode_da(skb, laddr.mac);
+ 	llc_pdu_decode_dsap(skb, &laddr.lsap);
+ 
+-	if (llc_mac_multicast(laddr.mac)) {
++	if (is_multicast_ether_addr(laddr.mac)) {
+ 		llc_sap_mcast(sap, &laddr, skb);
+ 		kfree_skb(skb);
+ 	} else {
 
-         Linus
+
