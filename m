@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab3IAIcm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 04:32:42 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:46411 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab3IAIch (ORCPT
+	id S1755673Ab3IAIuz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 04:50:55 -0400
+Received: from science.horizon.com ([71.41.210.146]:63624 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755298Ab3IAIuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 04:32:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
-References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
-Date: Sun, 1 Sep 2013 01:32:36 -0700
-Message-ID: <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com>
-Subject: Re: [PATCH] rwsem: add rwsem_is_contended
-From: Michel Lespinasse <walken@google.com>
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 1 Sep 2013 04:50:52 -0400
+Date: 1 Sep 2013 04:50:49 -0400
+Message-ID: <20130901085049.21748.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, torvalds@linux-foundation.org
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless update of refcount
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, waiman.long@hp.com
+In-Reply-To: <CA+55aFz7k5zUvJdZxpZgCgfx_-PT+f-9J50hnC1i3x=8_dXkBw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josef,
+> If "bool" had real advantages (like having a dense array
+> representation, for example), that would be one thing. It doesn't.
+> Sure, now you can take an address of a bool (which you couldn't
+> generally do efficiently if it really was a bit array), but it also
+> means that in practice, "bool" is normally nothing but "char" with
+> some really odd and special implicit type casting rules.
 
-On Fri, Aug 30, 2013 at 7:14 AM, Josef Bacik <jbacik@fusionio.com> wrote:
-> Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
-> read lock on this rwsem while they scan the extent tree, and if need_resched()
-> they will drop the lock and schedule.  The transaction commit needs to take a
-> write lock for this rwsem for a very short period to switch out the commit
-> roots.  If there are a lot of threads doing this caching operation we can starve
-> out the committers which slows everybody out.  To address this we want to add
-> this functionality to see if our rwsem has anybody waiting to take a write lock
-> so we can drop it and schedule for a bit to allow the commit to continue.
-> Thanks,
+Huh.  For me, the big advantage is, to paraphrase Michael Palin, that
+the number of possible values is two, no more, and no less.  Two is
+the number of possibilities, and the number of possibilities is two.
+Three is Right Out.
+
+I agree that as a *storage* type (in a data structure), it's of limited
+usefulness.  But as a *parameter* type, to pass to and return from
+functions, it's wonderful.
+
+There are lots of naming conventions (like the word "flag", or a function
+name starting with "is") to indicate that the return value is a simple
+true/false, but declaring it that way provides compile-time checking.
+
+> I doubt most people really even understand how "bool" casting works.
+
+There's a reason for that; you rarely need to cast to bool, and you
+could forbid it outright with very little impact on bool's usefulness.
+What fraction of C programmers remember off the top of their heads that
+casting from float to integer rounds toward zero?
+
+Heck, if you asked me which conversions were defined and which were
+undefined, I'd have to look it up.  (I'd guess it's the same as the
+different overflow rules for signed and unsigned types, but I'd have
+to check.)
+
+The place bool is most useful is control flow flags and other things
+where all you're doing is assigning literal values and testing it.  And,
+if you want to get fancy, assigning to bool variables from boolean-valued
+expressions like "flag = value >= limit;"
+
+
+That said, I agree that the fact that 2 != (bool)2 is a bit subtle, but
+doesn't that basic problem apply to *any* narrowing cast?  (And thus,
+is not really an *additional* subtlety that a progammer needs to learn
+about.)  And in this case, I can't really think of a *better* choice
+that could have been made.
+
+I can only see three plausible alternatives:
+
+1) Use the lsbit, (bool)x == x & 1
+2) Use zero/nonzero, and make (bool)x == !!x
+3) Forbid casting to bool entirely.
+
+Option 1 matches all other narrowing casts in C, and would be how I'd
+expect a "bit" type to work.
+
+Option 2 is how C conditional statements already work, so for any value x,
+"if (x)" is the same as "if ((bool)x)".  It's a rule that C programmers
+already need to know; they only need to know to *apply* it in this one
+extra case.
+
+In fact, it arguably makes things *simpler* to explain, since it at least
+gives a name to the magic that C condition expressions are subject to.
+
+Option 3 is attractive, but ends up breaking the analogy to conditional
+expressions.  I'd recommend it as a coding style, however.
+
+> And bool is actually really *dangerous* to use if you don't understand
+> it. There are people who use "bool", but then because they want to be
+> portable, they have a compatibility #ifdef or other configuration
+> thing that does something like
 >
-> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+>   typedef int bool;
+>   #define true 1
+>   #define false 0
+>
+> and it will actually work. Most of the time. And then the semantic
+> differences from a _real_ C compiler that supports the C99 _Bool/bool
+> type are really really subtle.
 
-FYI, I once tried to introduce something like this before, but my use
-case was pretty weak so it was not accepted at the time. I don't think
-there were any objections to the API itself though, and I think it's
-potentially a good idea if you use case justifies it.
+But *all* of the subtleties arise when casting other types to bool.
+If you just avoid that one thing (which it's hopefully obvious won't be
+faithfully emulated by a compatibility kludge anyway), it all goes away.
 
-Two comments:
+And this rule is itself just a special case of "be very careful with
+narrowing casts", which is already common wisdom.
 
-- Note that there are two rwsem implementations - if you are going to
-add functionality to rwsem.h you want to add the same functionality in
-rwsem-spinlock.h as well.
+For that kludge, I think a better equivalent would be
 
-- I would prefer if you could avoid taking the wait_lock in your
-rwsem.h implementation. In your use case (read lock is known to be
-held), checking for sem->count < 0 would be sufficient to indicate a
-writer is queued (or getting onto the queue). In the general case,
-some architectures have the various values set up so that
-RWSEM_WAITING_BIAS != RWSEM_ACTIVE_WRITE_BIAS - for these
-architectures at least, you can check for waiters by looking if the
-lowest bit of RWSEM_WAITING_BIAS is set in sem->count.
+typedef enum { false, true } bool;
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+which at least communicates the idea (again, this is an annoying sutlety
+that C programmers *already* have to deal with, so no additional cognitive
+effort) that "the compiler might not catch you assigning out-of-range
+values, but if you do, demons might fly out of your nose."
+
+
+Anyway, thanks for sharing your opition.  To me, it just looked like exactly
+the sort of code where the bool type was a natural fit.
