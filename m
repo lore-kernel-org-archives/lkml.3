@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab3IARAG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 13:00:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54139 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757569Ab3IARAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 13:00:04 -0400
-Message-ID: <5223728E.8000905@ti.com>
-Date: Sun, 1 Sep 2013 19:59:58 +0300
+	id S1757714Ab3IARBb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 13:01:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54299 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab3IARB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 13:01:29 -0400
+Message-ID: <522372EB.1060701@ti.com>
+Date: Sun, 1 Sep 2013 20:01:31 +0300
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130808 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Libo Chen <clbchenlibo.chen@huawei.com>
 CC: <dmitry.torokhov@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>,
-        <broonie@opensource.wolfsonmicro.com>, <javier@dowhile0.org>,
-        <linux-input@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: Re: [PATCH 3/3] driver: input: twl6040-vibra: fix missing of_node_put
-References: <522190F1.3010103@huawei.com>
-In-Reply-To: <522190F1.3010103@huawei.com>
+        <broonie@opensource.wolfsonmicro.com>, <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] driver: input: twl4030-vibra: fix missing of_node_put
+References: <522190ED.6020909@huawei.com>
+In-Reply-To: <522190ED.6020909@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,46 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 08/31/2013 09:45 AM, Libo Chen wrote:
 > 
-> decrease twl6040_core_node device_node refcount after task completion
-> 
-> There are two ways to implement the function of_node_put through
-> the marco CONFIG_OF_DYNAMIC, so it is save to call directly.
+> decrease node device_node refcount after task completion
 > 
 > Signed-off-by: Libo Chen <libo.chen@huawei.com>
 
 Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
 > ---
->  drivers/input/misc/twl6040-vibra.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  drivers/input/misc/twl4030-vibra.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-> index 0c2dfc8..f16193a 100644
-> --- a/drivers/input/misc/twl6040-vibra.c
-> +++ b/drivers/input/misc/twl6040-vibra.c
-> @@ -271,12 +271,14 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
->  #endif
+> diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+> index 68a5f33..b8d1526 100644
+> --- a/drivers/input/misc/twl4030-vibra.c
+> +++ b/drivers/input/misc/twl4030-vibra.c
+> @@ -185,8 +185,10 @@ static bool twl4030_vibra_check_coexist(struct twl4030_vibra_data *pdata,
+>  	if (pdata && pdata->coexist)
+>  		return true;
 > 
->  	if (!pdata && !twl6040_core_node) {
-> +		of_node_put(twl6040_core_node);
->  		dev_err(&pdev->dev, "platform_data not available\n");
->  		return -EINVAL;
->  	}
+> -	if (of_find_node_by_name(node, "codec"))
+> +	if (of_find_node_by_name(node, "codec")) {
+> +		of_node_put(node);
+>  		return true;
+> +	}
 > 
->  	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
->  	if (!info) {
-> +		of_node_put(twl6040_core_node);
->  		dev_err(&pdev->dev, "couldn't allocate memory\n");
->  		return -ENOMEM;
->  	}
-> @@ -304,6 +306,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
->  				     &vddvibl_uV);
->  		of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV",
->  				     &vddvibr_uV);
-> +		of_node_put(twl6040_core_node);
->  	}
-> 
->  	if ((!info->vibldrv_res && !info->viblmotor_res) ||
+>  	return false;
+>  }
 > 
 
 
