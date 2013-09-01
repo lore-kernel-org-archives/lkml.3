@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3IAXnE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 19:43:04 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:53098 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3IAXnC (ORCPT
+	id S1757265Ab3IAXqm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 19:46:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36062 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab3IAXql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 19:43:02 -0400
-X-Originating-IP: 50.43.39.152
-Date: Sun, 1 Sep 2013 16:42:52 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        lttng-dev@lists.lttng.org, sparse@chrisli.org,
-        linux-sparse@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] rcu: Make rcu_assign_pointer's assignment volatile and
- type-safe
-Message-ID: <20130901234251.GB25057@leaf>
-References: <20130822213318.49a57fa2@nehalam.linuxnetplumber.net>
- <20130823164637.GB3871@linux.vnet.ibm.com>
- <20130823171653.GA16558@Krystal>
- <20130823210822.GD3871@linux.vnet.ibm.com>
- <20130830005733.GA20664@linux.vnet.ibm.com>
- <20130830021637.GA21862@leaf>
- <20130831213228.GF3871@linux.vnet.ibm.com>
- <20130901204209.GA20802@leaf>
- <20130901222619.GH3871@linux.vnet.ibm.com>
- <20130901224317.GA25057@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130901224317.GA25057@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 1 Sep 2013 19:46:41 -0400
+Date: Mon, 2 Sep 2013 09:46:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Please add
+ git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git
+ branch h8300-remove to linux-next
+Message-Id: <20130902094629.4450871f9e7276a855d04a72@canb.auug.org.au>
+In-Reply-To: <52213228.3050308@roeck-us.net>
+References: <52213228.3050308@roeck-us.net>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu_assign_pointer needs to use ACCESS_ONCE to make the assignment to
-the destination pointer volatile, to protect against compilers too
-clever for their own good.
+--Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In addition, since rcu_assign_pointer force-casts the source pointer to
-add the __rcu address space (overriding any existing address space), add
-an explicit check that the source pointer has the __kernel address space
-to start with.
+Hi Guenter,
 
-This new check produces warnings like this, when attempting to assign
-from a __user pointer:
+On Fri, 30 Aug 2013 17:00:40 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> Please add the h8300-remove branch of
+> git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git
+> to linux-next.
 
-test.c:25:9: warning: incorrect type in argument 2 (different address spaces)
-test.c:25:9:    expected struct foo *<noident>
-test.c:25:9:    got struct foo [noderef] <asn:1>*badsrc
+Added from today.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- include/linux/rcupdate.h | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 4b14bdc..3f62def 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -510,8 +510,17 @@ static inline void rcu_preempt_sleep_check(void)
- #ifdef __CHECKER__
- #define rcu_dereference_sparse(p, space) \
- 	((void)(((typeof(*p) space *)p) == p))
-+/* The dummy first argument in __rcu_assign_pointer_typecheck makes the
-+ * typechecked pointer the second argument, matching rcu_assign_pointer itself;
-+ * this avoids confusion about argument numbers in warning messages. */
-+#define __rcu_assign_pointer_check_kernel(v) \
-+	do { \
-+		extern void __rcu_assign_pointer_typecheck(int, typeof(*(v)) __kernel *); \
-+		__rcu_assign_pointer_typecheck(0, v); \
-+	} while (0)
- #else /* #ifdef __CHECKER__ */
- #define rcu_dereference_sparse(p, space)
-+#define __rcu_assign_pointer_check_kernel(v) do { } while (0)
- #endif /* #else #ifdef __CHECKER__ */
- 
- #define __rcu_access_pointer(p, space) \
-@@ -555,7 +564,8 @@ static inline void rcu_preempt_sleep_check(void)
- #define __rcu_assign_pointer(p, v, space) \
- 	do { \
- 		smp_wmb(); \
--		(p) = (typeof(*v) __force space *)(v); \
-+		__rcu_assign_pointer_check_kernel(v); \
-+		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
- 	} while (0)
- 
- 
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSI9HZAAoJEECxmPOUX5FE2xoP/3kJwfcfAGA+w1Bgl3niqeeB
+E2Ocvs+yPfXtUhzASA7fG4rVrxDNmS7aVDs5RUCBBaaqYE5T3as6fjZYspYK8wub
+udpT0RWCYU3pjYgeKwa2dk1+iNLQqbCL1pMxhoK67TVzq8aMK5JnSkzqvZvgxKXo
+yvKviVvvX2AvGVhxsYAy4cw9GNtrD5Cu2gGvgnhXVFV8zmw7hl4i/633WRr9F54i
+bWO6FpC9NsAyvOPpHJQAXDAxbHTTDYhmqUZvajsinFCV+M9KwvrDMPfqloVbZUmu
+2NMouYqg444rM3IugT3rYsrYg/63RIgE3Epa4x7BRchKCZcXVo5MK3RbFIEFCOZQ
+a+RGFUdR29rcYfD5qhnt8ai7BOrGOvYZMTNkd3jTwy5XClHI9zac/F16yBkmK2vu
+jKOmuSapAeLHNG9le0MjXm3CWyvIuBAfkxXEDAyCGUPFoMDe0DwII4Eyv/txyhuR
+ca6/A3sQtq0sAX3IHZBg0IOPKzRPAWFdEZZaHRXsySl/1p4VXyh6MvwQVgWb3AQN
+xP38k00HZpFjuz3X+wcB23Q4vnxNIbYXcfvZLyL93WN7BJpPTjStdEeIP8gWY7dT
+GdjqMu0673yQTIoE7qeDM6cWpJ2AHDW9p02eyFYdu087hXonvncN8oXu0igwy6Pf
+eko458n15bOjqUraYi95
+=6jbQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Sep_2013_09_46_29_+1000_8mTF50iB92G1z1l0--
