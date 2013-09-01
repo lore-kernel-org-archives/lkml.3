@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3IACty (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Aug 2013 22:49:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60345 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3IACtW (ORCPT
+	id S1757280Ab3IACtw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Aug 2013 22:49:52 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:59566 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756845Ab3IACtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Aug 2013 22:49:22 -0400
+	Sat, 31 Aug 2013 22:49:33 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 4/9] hwmon: (ltc4245) Convert to use hwmon_device_register_with_groups
-Date: Sat, 31 Aug 2013 19:48:57 -0700
-Message-Id: <1378003742-18685-5-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 9/9] hwmon: (ds1621) Convert to use devm_hwmon_device_register_with_groups
+Date: Sat, 31 Aug 2013 19:49:02 -0700
+Message-Id: <1378003742-18685-10-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
 References: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
@@ -24,152 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/ltc4245.c |   78 +++++++++++++++--------------------------------
- 1 file changed, 24 insertions(+), 54 deletions(-)
+ drivers/hwmon/ds1621.c |   18 +++---------------
+ 1 file changed, 3 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/hwmon/ltc4245.c b/drivers/hwmon/ltc4245.c
-index cdc1ecc..d4172933 100644
---- a/drivers/hwmon/ltc4245.c
-+++ b/drivers/hwmon/ltc4245.c
-@@ -51,7 +51,9 @@ enum ltc4245_cmd {
- };
+diff --git a/drivers/hwmon/ds1621.c b/drivers/hwmon/ds1621.c
+index 595f4ef..51a6113 100644
+--- a/drivers/hwmon/ds1621.c
++++ b/drivers/hwmon/ds1621.c
+@@ -379,23 +379,12 @@ static int ds1621_probe(struct i2c_client *client,
+ 	/* Initialize the DS1621 chip */
+ 	ds1621_init_client(data, client);
  
- struct ltc4245_data {
--	struct device *hwmon_dev;
-+	struct i2c_client *client;
-+
-+	const struct attribute_group *groups[3];
+-	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
+-						      client->name, data,
+-						      ds1621_groups);
++	hwmon_dev = devm_hwmon_device_register_with_groups(&client->dev,
++							   client->name, data,
++							   ds1621_groups);
+ 	if (IS_ERR(hwmon_dev))
+ 		return PTR_ERR(hwmon_dev);
  
- 	struct mutex update_lock;
- 	bool valid;
-@@ -77,8 +79,8 @@ struct ltc4245_data {
-  */
- static void ltc4245_update_gpios(struct device *dev)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct ltc4245_data *data = i2c_get_clientdata(client);
-+	struct ltc4245_data *data = dev_get_drvdata(dev);
-+	struct i2c_client *client = data->client;
- 	u8 gpio_curr, gpio_next, gpio_reg;
- 	int i;
- 
-@@ -130,8 +132,8 @@ static void ltc4245_update_gpios(struct device *dev)
- 
- static struct ltc4245_data *ltc4245_update_device(struct device *dev)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct ltc4245_data *data = i2c_get_clientdata(client);
-+	struct ltc4245_data *data = dev_get_drvdata(dev);
-+	struct i2c_client *client = data->client;
- 	s32 val;
- 	int i;
- 
-@@ -455,41 +457,14 @@ static const struct attribute_group ltc4245_gpio_group = {
- 	.attrs = ltc4245_gpio_attributes,
- };
- 
--static int ltc4245_sysfs_create_groups(struct i2c_client *client)
-+static void ltc4245_sysfs_add_groups(struct ltc4245_data *data)
- {
--	struct ltc4245_data *data = i2c_get_clientdata(client);
--	struct device *dev = &client->dev;
--	int ret;
--
--	/* register the standard sysfs attributes */
--	ret = sysfs_create_group(&dev->kobj, &ltc4245_std_group);
--	if (ret) {
--		dev_err(dev, "unable to register standard attributes\n");
--		return ret;
--	}
-+	/* standard sysfs attributes */
-+	data->groups[0] = &ltc4245_std_group;
- 
- 	/* if we're using the extra gpio support, register it's attributes */
--	if (data->use_extra_gpios) {
--		ret = sysfs_create_group(&dev->kobj, &ltc4245_gpio_group);
--		if (ret) {
--			dev_err(dev, "unable to register gpio attributes\n");
--			sysfs_remove_group(&dev->kobj, &ltc4245_std_group);
--			return ret;
--		}
--	}
+-	i2c_set_clientdata(client, hwmon_dev);
 -
 -	return 0;
 -}
 -
--static void ltc4245_sysfs_remove_groups(struct i2c_client *client)
+-static int ds1621_remove(struct i2c_client *client)
 -{
--	struct ltc4245_data *data = i2c_get_clientdata(client);
--	struct device *dev = &client->dev;
+-	struct device *hwmon_dev = i2c_get_clientdata(client);
 -
- 	if (data->use_extra_gpios)
--		sysfs_remove_group(&dev->kobj, &ltc4245_gpio_group);
+-	hwmon_device_unregister(hwmon_dev);
 -
--	sysfs_remove_group(&dev->kobj, &ltc4245_std_group);
-+		data->groups[1] = &ltc4245_gpio_group;
- }
- 
- static bool ltc4245_use_extra_gpios(struct i2c_client *client)
-@@ -517,7 +492,7 @@ static int ltc4245_probe(struct i2c_client *client,
- {
- 	struct i2c_adapter *adapter = client->adapter;
- 	struct ltc4245_data *data;
--	int ret;
-+	struct device *hwmon_dev;
- 
- 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -ENODEV;
-@@ -526,7 +501,7 @@ static int ltc4245_probe(struct i2c_client *client,
- 	if (!data)
- 		return -ENOMEM;
- 
--	i2c_set_clientdata(client, data);
-+	data->client = client;
- 	mutex_init(&data->update_lock);
- 	data->use_extra_gpios = ltc4245_use_extra_gpios(client);
- 
-@@ -534,30 +509,25 @@ static int ltc4245_probe(struct i2c_client *client,
- 	i2c_smbus_write_byte_data(client, LTC4245_FAULT1, 0x00);
- 	i2c_smbus_write_byte_data(client, LTC4245_FAULT2, 0x00);
- 
--	/* Register sysfs hooks */
--	ret = ltc4245_sysfs_create_groups(client);
--	if (ret)
--		return ret;
-+	/* Add sysfs hooks */
-+	ltc4245_sysfs_add_groups(data);
- 
--	data->hwmon_dev = hwmon_device_register(&client->dev);
--	if (IS_ERR(data->hwmon_dev)) {
--		ret = PTR_ERR(data->hwmon_dev);
--		goto out_hwmon_device_register;
--	}
-+	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
-+						      client->name, data,
-+						      data->groups);
-+	if (IS_ERR(hwmon_dev))
-+		return PTR_ERR(hwmon_dev);
- 
--	return 0;
-+	i2c_set_clientdata(client, hwmon_dev);
- 
--out_hwmon_device_register:
--	ltc4245_sysfs_remove_groups(client);
--	return ret;
-+	return 0;
- }
- 
- static int ltc4245_remove(struct i2c_client *client)
- {
--	struct ltc4245_data *data = i2c_get_clientdata(client);
-+	struct device *hwmon_dev = i2c_get_clientdata(client);
- 
--	hwmon_device_unregister(data->hwmon_dev);
--	ltc4245_sysfs_remove_groups(client);
-+	hwmon_device_unregister(hwmon_dev);
- 
  	return 0;
  }
+ 
+@@ -416,7 +405,6 @@ static struct i2c_driver ds1621_driver = {
+ 		.name	= "ds1621",
+ 	},
+ 	.probe		= ds1621_probe,
+-	.remove		= ds1621_remove,
+ 	.id_table	= ds1621_id,
+ };
+ 
 -- 
 1.7.9.7
 
