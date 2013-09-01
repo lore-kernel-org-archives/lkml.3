@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab3IAKhE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:37:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52802 "EHLO mx1.redhat.com"
+	id S1757293Ab3IAKhL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19850 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757077Ab3IAKhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:00 -0400
+	id S1754691Ab3IAKhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:06 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,31 +14,27 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCHv2 00/25] perf tool: Add support for multiple data file storage
-Date: Sun,  1 Sep 2013 12:36:11 +0200
-Message-Id: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 02/25] perf tools: Add possibility to specify mmap size
+Date: Sun,  1 Sep 2013 12:36:13 +0200
+Message-Id: <1378031796-17892-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
+References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sending the support for multiple file storage. Initial
-RFC is here:
-http://marc.info/?l=linux-kernel&m=137408381902423&w=2
+Adding possibility to specify mmap size via -m/--mmap-pages
+by appending unit size character (B/K/M/G) to the
+number, like:
+  $ perf record -m 8K ls
+  $ perf record -m 2M ls
 
-v2 changes:
-  - reworked perf mmap size setup to be able to get
-    the mmap size value easily later
-  - added perf.data read/write test for v2 and v3
-    for both endianity
-  - added record '-M time' support
+The size is rounded up appropriately to follow perf
+mmap restrictions.
 
-It's reachable here:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-perf/core_file
-
-thanks,
-jirka
+If no unit is specified the number provides pages as
+of now, like:
+  $ perf record -m 8 ls
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -51,87 +47,190 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
-Jiri Olsa (25):
-      perf tools: Check mmap pages value early
-      perf tools: Add possibility to specify mmap size
-      perf tools: Introduce perf_evlist__new_default function
-      perf tools: Adding throttle event data struct support
-      perf tests: Add simple session read/write test
-      perf tests: Add session reading test for little endian perf data
-      perf tests: Add session reading test for big endian perf data
-      perf doc: Add perf data file documentation
-      perf tools: Introduce perf data file version CHECK macro
-      perf tools: Introduce swap_features function
-      perf tools: Introduce swap_header function
-      perf tools: Separate version 2 specific perf data header bits
-      perf tools: Using evlist as a holder for event_desc feature
-      perf tools: Introduce perf.data version 3 format
-      perf tools: Add perf data version 3 header swap
-      perf tools: Add perf data version 3 header read
-      perf tools: Add perf.data version 3 header write
-      perf tools: Get rid of post_processing_offset in record command
-      perf tools: Move synthesizing into single function
-      perf tools: Add perf_data_file__open interface to data object
-      perf tools: Separating data file properties from session
-      perf tests: Add session reading test for little endian perf data v3
-      perf tests: Add session reading test for big endian perf data v3
-      perf tools: Add multi file '-M' option for record command
-      perf tools: Have the process properly sythesized in subsequent data files
+ tools/perf/Documentation/perf-kvm.txt    |  4 +++-
+ tools/perf/Documentation/perf-record.txt |  4 +++-
+ tools/perf/Documentation/perf-top.txt    |  4 +++-
+ tools/perf/Documentation/perf-trace.txt  |  4 +++-
+ tools/perf/util/evlist.c                 | 32 ++++++++++++++++++++++++++------
+ tools/perf/util/util.c                   | 25 +++++++++++++++++++++++++
+ tools/perf/util/util.h                   | 14 ++++++++++++++
+ 7 files changed, 77 insertions(+), 10 deletions(-)
 
- tools/perf/Documentation/perf-data-file-v2.txt | 265 ++++++++++++++++++++++++++++++++++
- tools/perf/Documentation/perf-data-file-v3.txt |  63 ++++++++
- tools/perf/Documentation/perf-kvm.txt          |   4 +-
- tools/perf/Documentation/perf-record.txt       |  18 ++-
- tools/perf/Documentation/perf-top.txt          |   4 +-
- tools/perf/Documentation/perf-trace.txt        |   4 +-
- tools/perf/Makefile                            |   6 +
- tools/perf/builtin-annotate.c                  |  11 +-
- tools/perf/builtin-buildid-cache.c             |   8 +-
- tools/perf/builtin-buildid-list.c              |  11 +-
- tools/perf/builtin-diff.c                      |  19 ++-
- tools/perf/builtin-evlist.c                    |   7 +-
- tools/perf/builtin-inject.c                    |  10 +-
- tools/perf/builtin-kmem.c                      |   7 +-
- tools/perf/builtin-kvm.c                       |  18 ++-
- tools/perf/builtin-lock.c                      |   8 +-
- tools/perf/builtin-mem.c                       |   9 +-
- tools/perf/builtin-record.c                    | 484 ++++++++++++++++++++++++++++++++++++++++++++------------------
- tools/perf/builtin-report.c                    |  18 ++-
- tools/perf/builtin-sched.c                     |   6 +-
- tools/perf/builtin-script.c                    |  17 ++-
- tools/perf/builtin-timechart.c                 |  10 +-
- tools/perf/builtin-top.c                       |  12 +-
- tools/perf/builtin-trace.c                     |  13 +-
- tools/perf/perf.h                              |  15 +-
- tools/perf/tests/builtin-test.c                |   4 +
- tools/perf/tests/perf-record.c                 |  12 +-
- tools/perf/tests/perf.data.v2.be.h             | 265 ++++++++++++++++++++++++++++++++++
- tools/perf/tests/perf.data.v2.le.h             | 219 ++++++++++++++++++++++++++++
- tools/perf/tests/perf.data.v3.be.h             | 258 +++++++++++++++++++++++++++++++++
- tools/perf/tests/perf.data.v3.le.h             | 212 +++++++++++++++++++++++++++
- tools/perf/tests/session-simple.c              | 658 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/task-exit.c                   |  14 +-
- tools/perf/tests/tests.h                       |   1 +
- tools/perf/util/data.c                         | 120 ++++++++++++++++
- tools/perf/util/data.h                         |  48 +++++++
- tools/perf/util/event.h                        |   7 +
- tools/perf/util/evlist.c                       |  78 ++++++++--
- tools/perf/util/evlist.h                       |   9 +-
- tools/perf/util/evsel.c                        |  24 ++++
- tools/perf/util/header.c                       | 446 +++++++++++++++++++++++++++++++++------------------------
- tools/perf/util/header.h                       |  31 +++-
- tools/perf/util/python.c                       |   7 -
- tools/perf/util/session.c                      | 138 ++++++++----------
- tools/perf/util/session.h                      |  11 +-
- tools/perf/util/util.c                         |  25 ++++
- tools/perf/util/util.h                         |  14 ++
- 47 files changed, 3137 insertions(+), 511 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-data-file-v2.txt
- create mode 100644 tools/perf/Documentation/perf-data-file-v3.txt
- create mode 100644 tools/perf/tests/perf.data.v2.be.h
- create mode 100644 tools/perf/tests/perf.data.v2.le.h
- create mode 100644 tools/perf/tests/perf.data.v3.be.h
- create mode 100644 tools/perf/tests/perf.data.v3.le.h
- create mode 100644 tools/perf/tests/session-simple.c
- create mode 100644 tools/perf/util/data.c
- create mode 100644 tools/perf/util/data.h
+diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+index ac84db2..6a06cef 100644
+--- a/tools/perf/Documentation/perf-kvm.txt
++++ b/tools/perf/Documentation/perf-kvm.txt
+@@ -109,7 +109,9 @@ STAT LIVE OPTIONS
+ 
+ -m::
+ --mmap-pages=::
+-    Number of mmap data pages. Must be a power of two.
++    Number of mmap data pages (must be a power of two) or size
++    specification with appended unit character - B/K/M/G. The
++    size is rounded up to have nearest pages power of two value.
+ 
+ -a::
+ --all-cpus::
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index e297b74..400e9bb 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -87,7 +87,9 @@ OPTIONS
+ 
+ -m::
+ --mmap-pages=::
+-	Number of mmap data pages. Must be a power of two.
++	Number of mmap data pages (must be a power of two) or size
++	specification with appended unit character - B/K/M/G. The
++	size is rounded up to have nearest pages power of two value.
+ 
+ -g::
+ --call-graph::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 58d6598..19ab69e 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -68,7 +68,9 @@ Default is to monitor all CPUS.
+ 
+ -m <pages>::
+ --mmap-pages=<pages>::
+-	Number of mmapped data pages.
++	Number of mmap data pages (must be a power of two) or size
++	specification with appended unit character - B/K/M/G. The
++	size is rounded up to have nearest pages power of two value.
+ 
+ -p <pid>::
+ --pid=<pid>::
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index daccd2c..d390efa 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -59,7 +59,9 @@ OPTIONS
+ 
+ -m::
+ --mmap-pages=::
+-	Number of mmap data pages. Must be a power of two.
++	Number of mmap data pages (must be a power of two) or size
++	specification with appended unit character - B/K/M/G. The
++	size is rounded up to have nearest pages power of two value.
+ 
+ -C::
+ --cpu::
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 4780b9e..8ea933f 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -634,14 +634,33 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
+ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 				  int unset __maybe_unused)
+ {
+-	unsigned int pages, *mmap_pages = opt->value;
++	unsigned int pages, val, *mmap_pages = opt->value;
+ 	size_t size;
+-	char *eptr;
++	static struct parse_tag tags[] = {
++		{ .tag  = 'B', .mult = 1       },
++		{ .tag  = 'K', .mult = 1 << 10 },
++		{ .tag  = 'M', .mult = 1 << 20 },
++		{ .tag  = 'G', .mult = 1 << 30 },
++		{ .tag  = 0 },
++	};
+ 
+-	pages = strtoul(str, &eptr, 10);
+-	if (*eptr != '\0') {
+-		pr_err("failed to parse --mmap_pages/-m value\n");
+-		return -1;
++	val = parse_tag_value(str, tags);
++	if (val != (unsigned int) -1) {
++		/* we got file size value */
++		pages = PERF_ALIGN(val, page_size) / page_size;
++		if (!is_power_of_2(pages)) {
++			pages = next_pow2(pages);
++			pr_info("rounding mmap pages size to %u (%u pages)\n",
++				pages * page_size, pages);
++		}
++	} else {
++		/* we got pages count value */
++		char *eptr;
++		pages = strtoul(str, &eptr, 10);
++		if (*eptr != '\0') {
++			pr_err("failed to parse --mmap_pages/-m value\n");
++			return -1;
++		}
+ 	}
+ 
+ 	size = perf_evlist__mmap_size(pages);
+@@ -685,6 +704,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 
+ 	evlist->overwrite = overwrite;
+ 	evlist->mmap_len = perf_evlist__mmap_size(pages);
++	pr_debug("mmap size %luB\n", evlist->mmap_len);
+ 	mask = evlist->mmap_len - page_size - 1;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 6d17b18..141317e 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -361,3 +361,28 @@ int parse_nsec_time(const char *str, u64 *ptime)
+ 	*ptime = time_sec * NSEC_PER_SEC + time_nsec;
+ 	return 0;
+ }
++
++unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
++{
++	struct parse_tag *i = tags;
++
++	while (i->tag) {
++		char *s;
++
++		s = strchr(str, i->tag);
++		if (s) {
++			unsigned long int value;
++			char *endptr;
++
++			value = strtoul(str, &endptr, 10);
++			if (s != endptr)
++				break;
++
++			value *= i->mult;
++			return value;
++		}
++		i++;
++	}
++
++	return (unsigned long) -1;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index a535359..c29ecaa 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -270,6 +270,13 @@ bool is_power_of_2(unsigned long n)
+ 	return (n != 0 && ((n & (n - 1)) == 0));
+ }
+ 
++static inline unsigned next_pow2(unsigned x)
++{
++	if (!x)
++		return 1;
++	return 1ULL << (32 - __builtin_clz(x - 1));
++}
++
+ size_t hex_width(u64 v);
+ int hex2u64(const char *ptr, u64 *val);
+ 
+@@ -281,4 +288,11 @@ void dump_stack(void);
+ extern unsigned int page_size;
+ 
+ void get_term_dimensions(struct winsize *ws);
++
++struct parse_tag {
++	char tag;
++	int mult;
++};
++
++unsigned long parse_tag_value(const char *str, struct parse_tag *tags);
+ #endif /* GIT_COMPAT_UTIL_H */
+-- 
+1.7.11.7
+
