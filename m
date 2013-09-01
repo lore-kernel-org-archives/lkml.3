@@ -1,102 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3IAGYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 02:24:16 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:57812 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab3IAGYM (ORCPT
+	id S1756940Ab3IAG0N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 02:26:13 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:59588 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3IAG0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 02:24:12 -0400
+	Sun, 1 Sep 2013 02:26:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130831003641.GE19754@codeaurora.org>
-References: <20130828025721.GA19754@codeaurora.org>
-	<CAKohpomLL0rCYngM81iaTV37TTsrYE+f3ouGuT2D6TRE5E4W5A@mail.gmail.com>
-	<521E2ADE.4070401@codeaurora.org>
-	<CAKohpoke5BHypqKcLjPK5eHHvvfRTjCz36FMQNT1OGTVnueRkw@mail.gmail.com>
-	<20130831003641.GE19754@codeaurora.org>
-Date: Sun, 1 Sep 2013 11:54:10 +0530
-Message-ID: <CAKohpon3p5rTvc+2Cowm=rFSv+QP=ns1L9_nci5piuB90eD3FA@mail.gmail.com>
-Subject: Re: mutex warning in cpufreq + RFC patch
+In-Reply-To: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
+References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
+Date: Sun, 1 Sep 2013 11:56:09 +0530
+Message-ID: <CAKohpomt4vAxHiCkiSzpX6UttMqox=Sc9Oqhgxw6YHtkJfghGQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: don't allow governor limits to be changed
+ when it is disabled
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Boyd <sboyd@codeaurora.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
         "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 August 2013 06:06, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Yes that patch may reduce the chance of the race condition but I
-> don't believe it removes it entirely. I believe this bug still
-> exists in linux-next. Consider the scenario where CPU1 is going
-> down.
->
-> __cpufreq_remove_dev()
->  ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->   __cpufreq_governor()
->    policy->governor->governor(policy, CPUFREQ_GOV_STOP);
->     cpufreq_governor_dbs()
->      case CPUFREQ_GOV_STOP:
->       mutex_destroy(&cpu_cdbs->timer_mutex)
->       cpu_cdbs->cur_policy = NULL;
->   <PREEMPT>
-> store()
->  __cpufreq_set_policy()
->   ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
->    __cpufreq_governor()
->     policy->governor->governor(policy, CPUFREQ_GOV_LIMITS);
->      case CPUFREQ_GOV_LIMITS:
->       mutex_lock(&cpu_cdbs->timer_mutex); <-- Warning (destroyed mutex)
->        if (policy->max < cpu_cdbs->cur_policy->cur) <- cur_policy == NULL
+On 1 September 2013 10:56, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Its better if we can get these in for 3.11, otherwise we need to get them in the
+> stable tree..
 
-Some of the crashes you reported would be fixed by the patches I sent
-today morning.
+They can't get into 3.11 due to two reasons..
+- I haven't tested them over 3.11 but linux-next/master.
+- Few more dependency patches might also be required for 3.11..
 
-Let me know if anything else is left for latest linux-next...
-
-Btw, I am facing another crash which I am not sure how to fix.. It
-came with your script:
-
-[  190.850481] ------------[ cut here ]------------
-[  190.850489] WARNING: CPU: 3 PID: 14140 at
-/home/arm/work/kernel/mywork/linux.git/include/linux/kref.h:47
-kobject_get+0x42/0x50()
-[  190.850490] Modules linked in: nfsd nfs fscache lockd arc4 iwldvm
-mac80211 i915 iwlwifi drm_kms_helper nfs_acl auth_rpcgss cfg80211
-sunrpc drm joyd
-ev thinkpad_acpi snd_hda_codec_hdmi snd_seq_midi
-snd_hda_codec_conexant oid_registry btusb snd_rawmidi snd_hda_intel
-snd_hda_codec i2c_algo_bit rfcomm
- snd_seq_midi_event bnep psmouse snd_seq snd_hwdep snd_pcm bluetooth
-snd_timer snd_seq_device parport_pc snd_page_alloc ppdev tpm_tis snd
-soundcore lp
-c_ich lp parport video serio_raw mac_hid wmi nvram binfmt_misc btrfs
-raid6_pq e1000e ptp pps_core xor sdhci_pci sdhci zlib_deflate
-libcrc32c
-[  190.850563] CPU: 3 PID: 14140 Comm: sh Not tainted 3.11.0-rc7-custom #39
-[  190.850567] Hardware name: LENOVO 4236G50/4236G50, BIOS 83ET70WW
-(1.40 ) 06/12/2012
-[  190.850571]  000000000000002f ffff8800c8bdfc38 ffffffff816746c3
-0000000000000007
-[  190.850580]  0000000000000000 ffff8800c8bdfc78 ffffffff8104cf8c
-ffff88011e5f9b18
-[  190.850587]  ffff880118eaf000 0000000000000001 0000000000000202
-0000000000000008
-[  190.850593] Call Trace:
-[  190.850607]  [<ffffffff816746c3>] dump_stack+0x46/0x58
-[  190.850615]  [<ffffffff8104cf8c>] warn_slowpath_common+0x8c/0xc0
-[  190.850622]  [<ffffffff8104cfda>] warn_slowpath_null+0x1a/0x20
-[  190.850629]  [<ffffffff81324e02>] kobject_get+0x42/0x50
-[  190.850638]  [<ffffffff81533ab0>] cpufreq_cpu_get+0x80/0xc0
-[  190.850647]  [<ffffffff81533c11>] cpufreq_get_policy+0x21/0x120
-[  190.850655]  [<ffffffff81533fdf>] store_scaling_min_freq+0x3f/0xa0
-[  190.850666]  [<ffffffff816785b6>] ? down_write+0x16/0x40
-[  190.850674]  [<ffffffff81533000>] store+0x70/0xb0
-[  190.850683]  [<ffffffff811f2582>] sysfs_write_file+0xe2/0x170
-[  190.850693]  [<ffffffff81181e8e>] vfs_write+0xce/0x200
-[  190.850700]  [<ffffffff81182392>] SyS_write+0x52/0xa0
-[  190.850707]  [<ffffffff81683882>] system_call_fastpath+0x16/0x1b
+So get them into 3.12-rc1 if they look okay to you :)
