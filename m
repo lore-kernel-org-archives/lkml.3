@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3IAKnb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 06:43:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33479 "EHLO mx1.redhat.com"
+	id S1757228Ab3IAKhD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 06:37:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757077Ab3IAKhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 06:37:09 -0400
+	id S1751905Ab3IAKhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 06:37:00 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,20 +14,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 05/25] perf tests: Add simple session read/write test
-Date: Sun,  1 Sep 2013 12:36:16 +0200
-Message-Id: <1378031796-17892-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 01/25] perf tools: Check mmap pages value early
+Date: Sun,  1 Sep 2013 12:36:12 +0200
+Message-Id: <1378031796-17892-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding simple session read/write test to keep up
-with file format changes.
+Moving the check of the mmap_pages value into the options
+parsing time, so we could relay on this value on other
+parts of code. Related changes come in next patches.
 
-Dumping the session to the file with several events
-and reading it again back.
+Also changins perf_evlist::mmap_len to proper size_t type.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -40,659 +40,191 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile               |   1 +
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/session-simple.c | 602 ++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- 4 files changed, 608 insertions(+)
- create mode 100644 tools/perf/tests/session-simple.c
+ tools/perf/builtin-kvm.c    |  5 +++--
+ tools/perf/builtin-record.c |  9 +++------
+ tools/perf/builtin-top.c    |  5 +++--
+ tools/perf/builtin-trace.c  |  5 +++--
+ tools/perf/util/evlist.c    | 46 ++++++++++++++++++++++++++++++++++++---------
+ tools/perf/util/evlist.h    |  6 +++++-
+ 6 files changed, 54 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ecebfd0..7484119 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -394,6 +394,7 @@ ifeq ($(ARCH),x86)
- LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
- endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
-+LIB_OBJS += $(OUTPUT)tests/session-simple.o
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 47b3540..f89f7d6 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1426,8 +1426,9 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 	const struct option live_options[] = {
+ 		OPT_STRING('p', "pid", &kvm->opts.target.pid, "pid",
+ 			"record events on existing process id"),
+-		OPT_UINTEGER('m', "mmap-pages", &kvm->opts.mmap_pages,
+-			"number of mmap data pages"),
++		OPT_CALLBACK('m', "mmap-pages", &kvm->opts.mmap_pages, "pages",
++			"number of mmap data pages",
++			perf_evlist__parse_mmap_pages),
+ 		OPT_INCR('v', "verbose", &verbose,
+ 			"be more verbose (show counter open errors, etc)"),
+ 		OPT_BOOLEAN('a', "all-cpus", &kvm->opts.target.system_wide,
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index a41ac415..351ede3 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -234,10 +234,6 @@ try_again:
+ 			       "or try again with a smaller value of -m/--mmap_pages.\n"
+ 			       "(current value: %d)\n", opts->mmap_pages);
+ 			rc = -errno;
+-		} else if (!is_power_of_2(opts->mmap_pages) &&
+-			   (opts->mmap_pages != UINT_MAX)) {
+-			pr_err("--mmap_pages/-m value must be a power of two.");
+-			rc = -EINVAL;
+ 		} else {
+ 			pr_err("failed to mmap with %d (%s)\n", errno, strerror(errno));
+ 			rc = -errno;
+@@ -854,8 +850,9 @@ const struct option record_options[] = {
+ 	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+ 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
+-	OPT_UINTEGER('m', "mmap-pages", &record.opts.mmap_pages,
+-		     "number of mmap data pages"),
++	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
++		     "number of mmap data pages",
++		     perf_evlist__parse_mmap_pages),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &record.opts,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 2122141..0a84334 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1076,8 +1076,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "file", "vmlinux pathname"),
+ 	OPT_BOOLEAN('K', "hide_kernel_symbols", &top.hide_kernel_symbols,
+ 		    "hide kernel symbols"),
+-	OPT_UINTEGER('m', "mmap-pages", &opts->mmap_pages,
+-		     "number of mmap data pages"),
++	OPT_CALLBACK('m', "mmap-pages", &opts->mmap_pages, "pages",
++		     "number of mmap data pages",
++		     perf_evlist__parse_mmap_pages),
+ 	OPT_INTEGER('r', "realtime", &top.realtime_prio,
+ 		    "collect data with this RT SCHED_FIFO priority"),
+ 	OPT_INTEGER('d', "delay", &top.delay_secs,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 69a065e..9967a56 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1042,8 +1042,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "list of cpus to monitor"),
+ 	OPT_BOOLEAN(0, "no-inherit", &trace.opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_UINTEGER('m', "mmap-pages", &trace.opts.mmap_pages,
+-		     "number of mmap data pages"),
++	OPT_CALLBACK('m', "mmap-pages", &trace.opts.mmap_pages, "pages",
++		     "number of mmap data pages",
++		     perf_evlist__parse_mmap_pages),
+ 	OPT_STRING('u', "uid", &trace.opts.target.uid_str, "user",
+ 		   "user to profile"),
+ 	OPT_CALLBACK(0, "duration", &trace, "float",
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 5df4ca9..4780b9e 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -18,6 +18,7 @@
+ #include <unistd.h>
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 8ad9415..e40aec9 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -108,6 +108,10 @@ static struct test {
- 		.func = test__sample_parsing,
- 	},
- 	{
-+		.desc = "Test session - simple read/write",
-+		.func = test__session_simple,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/session-simple.c b/tools/perf/tests/session-simple.c
-new file mode 100644
-index 0000000..612f84d
---- /dev/null
-+++ b/tools/perf/tests/session-simple.c
-@@ -0,0 +1,602 @@
-+
-+/*
-+ * FIXME Missing test for PERF_RECORD_READ event.
-+ */
-+
-+#include <stdlib.h>
-+#include <linux/kernel.h>
-+
-+#include "tests.h"
-+#include "session.h"
-+#include "header.h"
-+#include "util.h"
-+#include "evlist.h"
-+
-+#define EVENTS_MMAP 5
-+#define EVENTS_LOST 6
-+#define EVENTS_COMM 3
-+#define EVENTS_EXIT 4
-+#define EVENTS_FORK 8
-+#define EVENTS_THROTTLE 2
-+#define EVENTS_UNTHROTTLE 3
-+#define EVENTS_SAMPLE 4
-+
-+static int events_mmap;
-+static int events_lost;
-+static int events_comm;
-+static int events_exit;
-+static int events_fork;
-+static int events_throttle;
-+static int events_unthrottle;
-+static int events_sample;
-+
-+/* global sample type for sample */
-+static u64 sample_type = PERF_SAMPLE_IP |
-+			 PERF_SAMPLE_TID |
-+			 PERF_SAMPLE_TIME |
-+			 PERF_SAMPLE_ADDR |
-+			 PERF_SAMPLE_ID |
-+			 PERF_SAMPLE_CPU |
-+			 PERF_SAMPLE_PERIOD |
-+			 PERF_SAMPLE_STREAM_ID |
-+			 PERF_SAMPLE_WEIGHT |
-+			 PERF_SAMPLE_DATA_SRC;
-+
-+static char *get_file(void)
+ #include "parse-events.h"
++#include "parse-options.h"
+ 
+ #include <sys/mman.h>
+ 
+@@ -619,6 +620,40 @@ out_unmap:
+ 	return -1;
+ }
+ 
++static size_t perf_evlist__mmap_size(unsigned long pages)
 +{
-+	static char buf[PATH_MAX];
-+	int fd;
++	/* 512 kiB: default amount of unprivileged mlocked memory */
++	if (pages == UINT_MAX)
++		pages = (512 * 1024) / page_size;
++	else if (!is_power_of_2(pages))
++		return 0;
 +
-+	snprintf(buf, PATH_MAX, "/tmp/perf-test-session-simple-data-XXXXXX");
-+	fd = mkstemp(buf);
-+	if (fd < 0) {
-+		pr_err("mkstemp failed");
-+		return NULL;
++	return (pages + 1) * page_size;
++}
++
++int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
++				  int unset __maybe_unused)
++{
++	unsigned int pages, *mmap_pages = opt->value;
++	size_t size;
++	char *eptr;
++
++	pages = strtoul(str, &eptr, 10);
++	if (*eptr != '\0') {
++		pr_err("failed to parse --mmap_pages/-m value\n");
++		return -1;
 +	}
 +
-+	close(fd);
-+
-+	pr_debug("data file %s\n", buf);
-+	return buf;
-+}
-+
-+static union perf_event *get_event_MMAP(void)
-+{
-+	static union perf_event event;
-+	size_t size;
-+
-+	size = snprintf(event.mmap.filename, sizeof(event.mmap.filename),
-+			"krava") + 1;
-+	size = PERF_ALIGN(size, sizeof(u64));
-+
-+	event.header.type = PERF_RECORD_MMAP;
-+	event.header.misc = PERF_RECORD_MISC_KERNEL;
-+	event.header.size = sizeof(event.mmap) -
-+			    (sizeof(event.mmap.filename) - size);
-+
-+	event.mmap.pgoff = 10;
-+	event.mmap.start = 0;
-+	event.mmap.len   = 10;
-+	event.mmap.pid   = 123;
-+
-+	return &event;
-+}
-+
-+static int process_mmap(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event MMAP misc %d, pgoff %lu, start %lu,"
-+		 " len %lu, pid %d, filename '%s'\n",
-+		 event->header.misc,
-+		 event->mmap.pgoff,
-+		 event->mmap.start,
-+		 event->mmap.len,
-+		 event->mmap.pid,
-+		 event->mmap.filename);
-+
-+	TEST_ASSERT_VAL("wrong MMAP misc\n",
-+		event->header.misc == PERF_RECORD_MISC_KERNEL);
-+
-+	TEST_ASSERT_VAL("wrong MMAP pgoff\n",
-+		event->mmap.pgoff == 10);
-+
-+	TEST_ASSERT_VAL("wrong MMAP start\n",
-+		event->mmap.start == 0);
-+
-+	TEST_ASSERT_VAL("wrong MMAP len\n",
-+		event->mmap.len == 10);
-+
-+	TEST_ASSERT_VAL("wrong MMAP pid\n",
-+		event->mmap.pid == 123);
-+
-+	TEST_ASSERT_VAL("wrong MMAP filename\n",
-+		!strcmp(event->mmap.filename, "krava"));
-+
-+	TEST_ASSERT_VAL("wrong MMAP misc\n",
-+		event->header.misc == PERF_RECORD_MISC_KERNEL);
-+
-+	TEST_ASSERT_VAL("wrong MMAP pgoff\n",
-+		event->mmap.pgoff == 10);
-+
-+	TEST_ASSERT_VAL("wrong MMAP start\n",
-+		event->mmap.start == 0);
-+
-+	TEST_ASSERT_VAL("wrong MMAP len\n",
-+		event->mmap.len == 10);
-+
-+	TEST_ASSERT_VAL("wrong MMAP pid\n",
-+		event->mmap.pid == 123);
-+
-+	TEST_ASSERT_VAL("wrong MMAP filename\n",
-+		!strcmp(event->mmap.filename, "krava"));
-+
-+	events_mmap++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_LOST(void)
-+{
-+	static union perf_event event;
-+
-+	event.header.type = PERF_RECORD_LOST;
-+	event.header.misc = PERF_RECORD_MISC_USER;
-+	event.header.size = sizeof(event.lost);
-+
-+	event.lost.id   = 12345;
-+	event.lost.lost = 293467890514143;
-+	return &event;
-+}
-+
-+static int process_lost(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event LOST id %lu, lost %lu\n",
-+		 event->lost.id,
-+		 event->lost.lost);
-+
-+	TEST_ASSERT_VAL("wrong LOST id\n",
-+		event->lost.id == 12345);
-+
-+	TEST_ASSERT_VAL("wrong LOST lost\n",
-+		event->lost.lost == 293467890514143);
-+
-+	events_lost++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_COMM(void)
-+{
-+	static union perf_event event;
-+	size_t size;
-+
-+	size = snprintf(event.comm.comm, sizeof(event.comm.comm),
-+			"krava") + 1;
-+	size = PERF_ALIGN(size, sizeof(u64));
-+
-+	event.header.type = PERF_RECORD_COMM;
-+	event.header.size = sizeof(event.comm) -
-+			    (sizeof(event.comm.comm) - size);
-+
-+	event.comm.pid = 1234;
-+	event.comm.tid = 4321;
-+
-+	return &event;
-+}
-+
-+static int process_comm(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event COMM pid %d, tid %d, comm '%s'\n",
-+		 event->comm.pid,
-+		 event->comm.tid,
-+		 event->comm.comm);
-+
-+	TEST_ASSERT_VAL("wrong COMM pid\n",
-+		event->comm.pid == 1234);
-+
-+	TEST_ASSERT_VAL("wrong COMM tid\n",
-+		event->comm.tid == 4321);
-+
-+	TEST_ASSERT_VAL("wrong COMM comm\n",
-+		!strcmp(event->comm.comm, "krava"));
-+
-+	events_comm++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_EXIT(void)
-+{
-+	static union perf_event event;
-+
-+	event.header.type = PERF_RECORD_EXIT;
-+	event.header.size = sizeof(event.fork);
-+
-+	event.fork.pid = 2322;
-+	event.fork.tid = 2232;
-+	event.fork.ppid = 10;
-+	event.fork.ptid = 1;
-+	event.fork.time = 0xB16B00B5;
-+
-+	return &event;
-+}
-+
-+static int process_exit(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event EXIT pid %d, tid %d, ppid %d, ptid %d, time 0x%lx\n",
-+		 event->fork.pid, event->fork.tid,
-+		 event->fork.ppid, event->fork.ptid,
-+		 event->fork.time);
-+
-+	TEST_ASSERT_VAL("wrong EXIT pid\n",
-+		event->fork.pid == 2322);
-+
-+	TEST_ASSERT_VAL("wrong EXIT tid\n",
-+		event->fork.tid == 2232);
-+
-+	TEST_ASSERT_VAL("wrong EXIT ppid\n",
-+		event->fork.ppid == 10);
-+
-+	TEST_ASSERT_VAL("wrong EXIT ptid\n",
-+		event->fork.ptid == 1);
-+
-+	TEST_ASSERT_VAL("wrong EXIT time\n",
-+		event->fork.time == 0xB16B00B5);
-+
-+	events_exit++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_FORK(void)
-+{
-+	static union perf_event event;
-+
-+	event.header.type = PERF_RECORD_FORK;
-+	event.header.size = sizeof(event.fork);
-+
-+	event.fork.pid  = 4321;
-+	event.fork.tid  = 1234;
-+	event.fork.ppid = 14321;
-+	event.fork.ptid = 11234;
-+	event.fork.time = 0xdeadbeef;
-+
-+	return &event;
-+}
-+
-+static int process_fork(struct perf_tool *tool __maybe_unused,
-+			union perf_event *event,
-+			struct perf_sample *sample __maybe_unused,
-+			struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event FORK pid %d, tid %d, ppid %d, ptid %d, time 0x%lx\n",
-+		 event->fork.pid, event->fork.tid,
-+		 event->fork.ppid, event->fork.ptid,
-+		 event->fork.time);
-+
-+	TEST_ASSERT_VAL("wrong FORK pid\n",
-+		event->fork.pid == 4321);
-+
-+	TEST_ASSERT_VAL("wrong FORK tid\n",
-+		event->fork.tid == 1234);
-+
-+	TEST_ASSERT_VAL("wrong FORK ppid\n",
-+		event->fork.ppid == 14321);
-+
-+	TEST_ASSERT_VAL("wrong FORK ptid\n",
-+		event->fork.ptid == 11234);
-+
-+	TEST_ASSERT_VAL("wrong FORK time\n",
-+		event->fork.time == 0xdeadbeef);
-+
-+	events_fork++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_THROTTLE(void)
-+{
-+	static union perf_event event;
-+
-+	event.header.type = PERF_RECORD_THROTTLE;
-+	event.header.size = sizeof(event.throttle);
-+
-+	event.throttle.time      = 0xdeadbeef;
-+	event.throttle.id        = 123;
-+	event.throttle.stream_id = 987;
-+
-+	return &event;
-+}
-+
-+static int process_throttle(struct perf_tool *tool __maybe_unused,
-+			    union perf_event *event,
-+			    struct perf_sample *sample __maybe_unused,
-+			    struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event THROTTLE time 0x%lx, id 0x%lx, stream_id 0x%lx\n",
-+		 event->throttle.time, event->throttle.id,
-+		 event->throttle.stream_id);
-+
-+	TEST_ASSERT_VAL("wrong THROTTLE time\n",
-+		event->throttle.time == 0xdeadbeef);
-+
-+	TEST_ASSERT_VAL("wrong THROTTLE id\n",
-+		event->throttle.id == 123);
-+
-+	TEST_ASSERT_VAL("wrong THROTTLE id\n",
-+		event->throttle.stream_id == 987);
-+
-+	events_throttle++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_UNTHROTTLE(void)
-+{
-+	static union perf_event event;
-+
-+	event.header.type = PERF_RECORD_UNTHROTTLE;
-+	event.header.size = sizeof(event.throttle);
-+
-+	event.throttle.time      = 0xdeadbeef;
-+	event.throttle.id        = 542318590;
-+	event.throttle.stream_id = 2341238951;
-+
-+	return &event;
-+}
-+
-+static int process_unthrottle(struct perf_tool *tool __maybe_unused,
-+			      union perf_event *event,
-+			      struct perf_sample *sample __maybe_unused,
-+			      struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event UNTHROTTLE time 0x%lx, id 0x%lx, stream_id 0x%lx\n",
-+		 event->throttle.time, event->throttle.id,
-+		 event->throttle.stream_id);
-+
-+	TEST_ASSERT_VAL("wrong UNTHROTTLE time\n",
-+		event->throttle.time == 0xdeadbeef);
-+
-+	TEST_ASSERT_VAL("wrong UNTHROTTLE id\n",
-+		event->throttle.id == 542318590);
-+
-+	TEST_ASSERT_VAL("wrong UNTHROTTLE id\n",
-+		event->throttle.stream_id == 2341238951);
-+
-+	events_unthrottle++;
-+	return 0;
-+}
-+
-+static union perf_event *get_event_SAMPLE(void)
-+{
-+	static unsigned char buf[4096];
-+	static union perf_event *event = (union perf_event *) buf;
-+	struct perf_sample sample = {
-+		.ip		= 0xaaa,
-+		.pid		= 0xedfa,
-+		.tid		= 0xabc,
-+		.time		= 123456789,
-+		.addr		= 0xabababab,
-+		.id		= 0xedf234abf,
-+		.stream_id	= 9273651,
-+		.period		= 0xdead,
-+		.weight		= 1,
-+		.cpu		= 1024,
-+		.data_src	= 3,
-+	};
-+	size_t sz;
-+	int ret;
-+
-+	sz = perf_event__sample_event_size(&sample, sample_type, 0, 0);
-+
-+	event->header.type = PERF_RECORD_SAMPLE;
-+	event->header.misc = 0;
-+	event->header.size = sz;
-+
-+	ret = perf_event__synthesize_sample(event, sample_type, 0, 0,
-+					    &sample, false);
-+	return ret ? NULL : event;
-+}
-+
-+static int process_sample(struct perf_tool *tool __maybe_unused,
-+			  union perf_event *event __maybe_unused,
-+			  struct perf_sample *sample,
-+			  struct perf_evsel *evsel __maybe_unused,
-+			  struct machine *machine __maybe_unused)
-+{
-+	pr_debug("event SAMPLE ip %lx, pid %x, tid %x, time %lx, "
-+		 "addr %lx, id %lx, stream_id %lx, period %lx, "
-+		 "weight %lx, cpu %x, data_src %lx\n",
-+		 sample->ip, sample->pid, sample->tid, sample->time,
-+		 sample->addr, sample->id, sample->stream_id,
-+		 sample->period, sample->weight, sample->cpu,
-+		 sample->data_src);
-+
-+	TEST_ASSERT_VAL("wrong SAMPLE ip\n", sample->ip == 0xaaa);
-+	TEST_ASSERT_VAL("wrong SAMPLE pid\n", sample->pid == 0xedfa);
-+	TEST_ASSERT_VAL("wrong SAMPLE tid\n", sample->tid == 0xabc);
-+	TEST_ASSERT_VAL("wrong SAMPLE time\n", sample->time == 123456789);
-+	TEST_ASSERT_VAL("wrong SAMPLE addr\n", sample->addr == 0xabababab);
-+	TEST_ASSERT_VAL("wrong SAMPLE id\n", sample->id == 0xedf234abf);
-+	TEST_ASSERT_VAL("wrong SAMPLE stream_id\n",
-+			sample->stream_id == 9273651);
-+	TEST_ASSERT_VAL("wrong SAMPLE period\n", sample->period == 0xdead);
-+	TEST_ASSERT_VAL("wrong SAMPLE weight\n", sample->weight == 1);
-+	TEST_ASSERT_VAL("wrong SAMPLE cpu\n", sample->cpu == 1024);
-+	TEST_ASSERT_VAL("wrong SAMPLE data_src\n", sample->data_src == 3);
-+
-+	events_sample++;
-+	return 0;
-+}
-+
-+static int store_event(int fd, union perf_event *event, size_t *size)
-+{
-+	TEST_ASSERT_VAL("no event\n", event);
-+	*size += event->header.size;
-+	return write(fd, event, event->header.size) > 0 ? 0 : -1;
-+}
-+
-+static int session_write(char *file)
-+{
-+	struct perf_session *session;
-+	struct perf_evlist *evlist;
-+	size_t size = 0;
-+	int feat, fd;
-+
-+	fd = open(file, O_RDWR);
-+	TEST_ASSERT_VAL("failed to open data file", fd >= 0);
-+
-+	evlist = perf_evlist__new_default();
-+	TEST_ASSERT_VAL("failed to get evlist", evlist);
-+
-+	perf_evlist__first(evlist)->attr.sample_type = sample_type;
-+
-+	pr_debug("session writing start\n");
-+
-+	session = perf_session__new(file, O_WRONLY, true, false, NULL);
-+	TEST_ASSERT_VAL("failed to create session", session);
-+
-+	session->evlist = evlist;
-+	session->fd     = fd;
-+
-+	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
-+		perf_header__set_feat(&session->header, feat);
-+
-+	perf_header__clear_feat(&session->header, HEADER_BUILD_ID);
-+	perf_header__clear_feat(&session->header, HEADER_TRACING_DATA);
-+	perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
-+
-+	TEST_ASSERT_VAL("failed to write header",
-+		!perf_session__write_header(session, evlist, fd, false));
-+
-+#define STORE_EVENTS(str, func, cnt)				\
-+do {								\
-+	int i;							\
-+	for (i = 0; i < cnt; i++) {				\
-+		TEST_ASSERT_VAL(str,				\
-+			!store_event(fd, func(), &size));	\
-+	}							\
-+} while (0)
-+
-+	STORE_EVENTS("failed to store MMAP event",
-+		     get_event_MMAP, EVENTS_MMAP);
-+
-+	STORE_EVENTS("failed to store LOST event",
-+		     get_event_LOST, EVENTS_LOST);
-+
-+	STORE_EVENTS("failed to store COMM event",
-+		     get_event_COMM, EVENTS_COMM);
-+
-+	STORE_EVENTS("failed to store EXIT event",
-+		     get_event_EXIT, EVENTS_EXIT);
-+
-+	STORE_EVENTS("failed to store FORK event",
-+		     get_event_FORK, EVENTS_FORK);
-+
-+	STORE_EVENTS("failed to store THROTTLE event",
-+		     get_event_THROTTLE, EVENTS_THROTTLE);
-+
-+	STORE_EVENTS("failed to store UNTHROTTLE event",
-+		     get_event_UNTHROTTLE, EVENTS_UNTHROTTLE);
-+
-+	STORE_EVENTS("failed to store SAMPLE event",
-+		     get_event_SAMPLE, EVENTS_SAMPLE);
-+
-+#undef STORE_EVENTS
-+
-+	session->header.data_size += size;
-+
-+	TEST_ASSERT_VAL("failed to write header",
-+		!perf_session__write_header(session, evlist, fd, true));
-+
-+	perf_session__delete(session);
-+	perf_evlist__delete(evlist);
-+
-+	pr_debug("session writing stop\n");
-+	return 0;
-+}
-+
-+static int __session_read(char *file)
-+{
-+	struct perf_session *session;
-+	struct perf_tool tool = {
-+		.mmap = process_mmap,
-+		.lost = process_lost,
-+		.comm = process_comm,
-+		.exit = process_exit,
-+		.fork = process_fork,
-+		.throttle = process_throttle,
-+		.unthrottle = process_unthrottle,
-+		.sample = process_sample,
-+	};
-+
-+	pr_debug("session reading start\n");
-+
-+	session = perf_session__new(file, O_RDONLY, false, false, &tool);
-+	TEST_ASSERT_VAL("failed to create session", session);
-+
-+	TEST_ASSERT_VAL("failed to process events",
-+		perf_session__process_events(session, &tool) == 0);
-+
-+	perf_session__delete(session);
-+
-+	pr_debug("session reading stop\n");
-+	return 0;
-+}
-+
-+static int session_read(char *file)
-+{
-+	events_mmap = 0;
-+	events_lost = 0;
-+	events_comm = 0;
-+	events_exit = 0;
-+	events_fork = 0;
-+	events_throttle = 0;
-+	events_unthrottle = 0;
-+	events_sample = 0;
-+
-+	if (__session_read(file))
++	size = perf_evlist__mmap_size(pages);
++	if (!size) {
++		pr_err("--mmap_pages/-m value must be a power of two.");
 +		return -1;
++	}
 +
-+	TEST_ASSERT_VAL("wrong MMAP events count", events_mmap == EVENTS_MMAP);
-+	TEST_ASSERT_VAL("wrong LOST events count", events_lost == EVENTS_LOST);
-+	TEST_ASSERT_VAL("wrong COMM events count", events_comm == EVENTS_COMM);
-+	TEST_ASSERT_VAL("wrong EXIT events count", events_exit == EVENTS_EXIT);
-+	TEST_ASSERT_VAL("wrong FORK events count", events_fork == EVENTS_FORK);
-+	TEST_ASSERT_VAL("wrong THROTTLE events count",
-+			events_throttle == EVENTS_THROTTLE);
-+	TEST_ASSERT_VAL("wrong UNTHROTTLE events count",
-+			events_unthrottle == EVENTS_UNTHROTTLE);
-+	TEST_ASSERT_VAL("wrong SAMPLE events count",
-+			events_sample == EVENTS_SAMPLE);
++	*mmap_pages = pages;
 +	return 0;
 +}
 +
-+static int test_generated_data(void)
-+{
-+	char *file = get_file();
-+	int err = 0;
-+
-+	TEST_ASSERT_VAL("failed to get temporary file", file);
-+
-+	err = session_write(file);
-+	if (!err)
-+		err = session_read(file);
-+
-+	unlink(file);
-+	return err;
-+}
-+
-+int test__session_simple(void)
-+{
-+	int err;
-+
-+	pr_debug("Testing generated data\n");
-+	err = test_generated_data();
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 83d5b71..94b04cd 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -38,5 +38,6 @@ int test__sw_clock_freq(void);
- int test__perf_time_to_tsc(void);
- int test__code_reading(void);
- int test__sample_parsing(void);
-+int test__session_simple(void);
+ /** perf_evlist__mmap - Create per cpu maps to receive events
+  *
+  * @evlist - list of events
+@@ -642,14 +677,6 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 	const struct thread_map *threads = evlist->threads;
+ 	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE), mask;
  
- #endif /* TESTS_H */
+-        /* 512 kiB: default amount of unprivileged mlocked memory */
+-        if (pages == UINT_MAX)
+-                pages = (512 * 1024) / page_size;
+-	else if (!is_power_of_2(pages))
+-		return -EINVAL;
+-
+-	mask = pages * page_size - 1;
+-
+ 	if (evlist->mmap == NULL && perf_evlist__alloc_mmap(evlist) < 0)
+ 		return -ENOMEM;
+ 
+@@ -657,7 +684,8 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 		return -ENOMEM;
+ 
+ 	evlist->overwrite = overwrite;
+-	evlist->mmap_len = (pages + 1) * page_size;
++	evlist->mmap_len = perf_evlist__mmap_size(pages);
++	mask = evlist->mmap_len - page_size - 1;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 841a394..cae0bf5 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -31,7 +31,7 @@ struct perf_evlist {
+ 	int		 nr_groups;
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+-	int		 mmap_len;
++	size_t		 mmap_len;
+ 	int		 id_pos;
+ 	int		 is_pos;
+ 	u64		 combined_sample_type;
+@@ -103,6 +103,10 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 				  bool want_signal);
+ int perf_evlist__start_workload(struct perf_evlist *evlist);
+ 
++int perf_evlist__parse_mmap_pages(const struct option *opt,
++				  const char *str,
++				  int unset);
++
+ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 		      bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
 -- 
 1.7.11.7
 
