@@ -1,822 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab3IALjs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 07:39:48 -0400
-Received: from m12-16.163.com ([220.181.12.16]:40664 "EHLO m12-16.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757196Ab3IALjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 07:39:43 -0400
-X-Coremail-DSSMTP: 113.102.132.230
-From: liujunliang_ljl@163.com
-To: davem@davemloft.net
-Cc: horms@verge.net.au, joe@perches.com, romieu@fr.zoreil.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sunhecheng@vip.126.com, Liu Junliang <liujunliang_ljl@163.com>
-Subject: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NET SR9700Device Driver Support
-Date: Sun,  1 Sep 2013 19:38:08 +0800
-Message-Id: <1378035488-8643-1-git-send-email-liujunliang_ljl@163.com>
-X-Mailer: git-send-email 1.7.9.5
-X-CM-TRANSID: EMCowEAJGWA9JyNSA+OLAw--.766S2
-X-Coremail-Antispam: 1Uf129KBjvAXoWfCr4fXF48Zry8Ar47Kr4fGrg_yoW8Zw4kKo
-	Z7XFsxXw18Jr1xArZ5Ww1xXw4DXFyDKw45Ar45ZrZ7Za43XF1DKrWag3y5Zw15Ja4S9rn5
-	Zw18tanxAFZYvryrn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73VFW2AGmfu7bjvjm3
-	AaLaJ3UbIYCTnIWIevJa73UjIFyTuYvjxUUsqWUUUUU
-X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiRR6LX1EAGoEKswAAs8
+	id S1757531Ab3IALlB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 07:41:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41147 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757196Ab3IALk7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 07:40:59 -0400
+Date: Sun, 1 Sep 2013 04:40:31 -0700
+From: tip-bot for Linn Crosetto <tipbot@zytor.com>
+Message-ID: <tip-30e46b574a1db7d14404e52dca8e1aa5f5155fd2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, linn@hp.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, linn@hp.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1376430401-67445-1-git-send-email-linn@hp.com>
+References: <1376430401-67445-1-git-send-email-linn@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86: avoid remapping data in parse_setup_data()
+Git-Commit-ID: 30e46b574a1db7d14404e52dca8e1aa5f5155fd2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 01 Sep 2013 04:40:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Junliang <liujunliang_ljl@163.com>
+Commit-ID:  30e46b574a1db7d14404e52dca8e1aa5f5155fd2
+Gitweb:     http://git.kernel.org/tip/30e46b574a1db7d14404e52dca8e1aa5f5155fd2
+Author:     Linn Crosetto <linn@hp.com>
+AuthorDate: Tue, 13 Aug 2013 15:46:41 -0600
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 13 Aug 2013 23:29:19 -0700
 
+x86: avoid remapping data in parse_setup_data()
 
-Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
+Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
+larger than early_memremap() is able to handle, which is currently
+limited to 256kB. If this occurs it leads to a NULL dereference in
+parse_setup_data().
+
+To avoid this, remap the setup_data header and allow parsing functions
+for individual types to handle their own data remapping.
+
+Signed-off-by: Linn Crosetto <linn@hp.com>
+Link: http://lkml.kernel.org/r/1376430401-67445-1-git-send-email-linn@hp.com
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/net/usb/Kconfig  |    8 +
- drivers/net/usb/Makefile |    1 +
- drivers/net/usb/sr9700.c |  560 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/net/usb/sr9700.h |  173 ++++++++++++++
- 4 files changed, 742 insertions(+)
- create mode 100644 drivers/net/usb/sr9700.c
- create mode 100644 drivers/net/usb/sr9700.h
+ arch/x86/include/asm/e820.h |  2 +-
+ arch/x86/kernel/e820.c      |  5 ++++-
+ arch/x86/kernel/setup.c     | 19 ++++++++-----------
+ 3 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index 287cc62..a94b196 100644
---- a/drivers/net/usb/Kconfig
-+++ b/drivers/net/usb/Kconfig
-@@ -272,6 +272,14 @@ config USB_NET_DM9601
- 	  This option adds support for Davicom DM9601 based USB 1.1
- 	  10/100 Ethernet adapters.
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index cccd07f..779c2ef 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -29,7 +29,7 @@ extern void e820_setup_gap(void);
+ extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
+ 			unsigned long start_addr, unsigned long long end_addr);
+ struct setup_data;
+-extern void parse_e820_ext(struct setup_data *data);
++extern void parse_e820_ext(u64 phys_addr, u32 data_len);
  
-+config USB_NET_SR9700
-+	tristate "CoreChip-sz SR9700 based USB 1.1 10/100 ethernet devices"
-+	depends on USB_USBNET
-+	select CRC32
-+	help
-+	  This option adds support for CoreChip-sz SR9700 based USB 1.1
-+	  10/100 Ethernet adapters.
-+
- config USB_NET_SMSC75XX
- 	tristate "SMSC LAN75XX based USB 2.0 gigabit ethernet devices"
- 	depends on USB_USBNET
-diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
-index 9ab5c9d..bba87a2 100644
---- a/drivers/net/usb/Makefile
-+++ b/drivers/net/usb/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
- obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
- obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
- obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
-+obj-$(CONFIG_USB_NET_SR9700)	+= sr9700.o
- obj-$(CONFIG_USB_NET_SMSC75XX)	+= smsc75xx.o
- obj-$(CONFIG_USB_NET_SMSC95XX)	+= smsc95xx.o
- obj-$(CONFIG_USB_NET_GL620A)	+= gl620a.o
-diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
-new file mode 100644
-index 0000000..7ec3e0e
---- /dev/null
-+++ b/drivers/net/usb/sr9700.c
-@@ -0,0 +1,560 @@
-+/*
-+ * CoreChip-sz SR9700 one chip USB 1.1 Ethernet Devices
-+ *
-+ * Author : Liu Junliang <liujunliang_ljl@163.com>
-+ *
-+ * Based on dm9601.c
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/stddef.h>
-+#include <linux/init.h>
-+#include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
-+#include <linux/ethtool.h>
-+#include <linux/mii.h>
-+#include <linux/usb.h>
-+#include <linux/crc32.h>
-+#include <linux/usb/usbnet.h>
-+
-+#include "sr9700.h"
-+
-+static int sr_read(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	int err;
-+
-+	err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG, 0, reg, data,
-+			      length);
-+	if ((err != length) && (err >= 0))
-+		err = -EINVAL;
-+	return err;
-+}
-+
-+static int sr_write(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	int err;
-+
-+	err = usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG, 0, reg, data,
-+			       length);
-+	if ((err >= 0) && (err < length))
-+		err = -EINVAL;
-+	return err;
-+}
-+
-+static int sr_read_reg(struct usbnet *dev, u8 reg, u8 *value)
-+{
-+	return sr_read(dev, reg, 1, value);
-+}
-+
-+static int sr_write_reg(struct usbnet *dev, u8 reg, u8 value)
-+{
-+	return usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
-+				value, reg, NULL, 0);
-+}
-+
-+static void sr_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
-+{
-+	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
-+			       0, reg, data, length);
-+}
-+
-+static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
-+{
-+	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
-+			       value, reg, NULL, 0);
-+}
-+
-+static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
-+{
-+	int i;
-+
-+	for (i = 0; i < SR_SHARE_TIMEOUT; i++) {
-+		u8 tmp = 0;
-+		int ret;
-+
-+		udelay(1);
-+		ret = sr_read_reg(dev, EPCR, &tmp);
-+		if (ret < 0)
-+			return ret;
-+
-+		/* ready */
-+		if (!(tmp & EPCR_ERRE))
-+			return 0;
-+	}
-+
-+	netdev_err(dev->net, "%s write timed out!\n", phy ? "phy" : "eeprom");
-+
-+	return -EIO;
-+}
-+
-+static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
-+			      __le16 *value)
-+{
-+	int ret;
-+
-+	mutex_lock(&dev->phy_mutex);
-+
-+	sr_write_reg(dev, EPAR, phy ? (reg | EPAR_PHY_ADR) : reg);
-+	sr_write_reg(dev, EPCR, phy ? (EPCR_EPOS | EPCR_ERPRR) : EPCR_ERPRR);
-+
-+	ret = wait_phy_eeprom_ready(dev, phy);
-+	if (ret < 0)
-+		goto out_unlock;
-+
-+	sr_write_reg(dev, EPCR, 0x0);
-+	ret = sr_read(dev, EPDR, 2, value);
-+
-+	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
-+		   phy, reg, *value, ret);
-+
-+out_unlock:
-+	mutex_unlock(&dev->phy_mutex);
-+	return ret;
-+}
-+
-+static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg,
-+			       __le16 value)
-+{
-+	int ret;
-+
-+	mutex_lock(&dev->phy_mutex);
-+
-+	ret = sr_write(dev, EPDR, 2, &value);
-+	if (ret < 0)
-+		goto out_unlock;
-+
-+	sr_write_reg(dev, EPAR, phy ? (reg | EPAR_PHY_ADR) : reg);
-+	sr_write_reg(dev, EPCR, phy ? (EPCR_WEP | EPCR_EPOS | EPCR_ERPRW) :
-+		    (EPCR_WEP | EPCR_ERPRW));
-+
-+	ret = wait_phy_eeprom_ready(dev, phy);
-+	if (ret < 0)
-+		goto out_unlock;
-+
-+	sr_write_reg(dev, EPCR, 0x0);
-+
-+out_unlock:
-+	mutex_unlock(&dev->phy_mutex);
-+	return ret;
-+}
-+
-+static int sr_read_eeprom_word(struct usbnet *dev, u8 offset, void *value)
-+{
-+	return sr_share_read_word(dev, 0, offset, value);
-+}
-+
-+static int sr9700_get_eeprom_len(struct net_device *netdev)
-+{
-+	return SR_EEPROM_LEN;
-+}
-+
-+static int sr9700_get_eeprom(struct net_device *netdev,
-+			     struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	__le16 *buf = (__le16 *)data;
-+	int ret = 0;
-+	int i;
-+
-+	/* access is 16bit */
-+	if ((eeprom->offset & 0x01) || (eeprom->len & 0x01))
-+		return -EINVAL;
-+
-+	for (i = 0; i < eeprom->len / 2; i++) {
-+		ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i, buf + i);
-+		if (ret < 0)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int sr_mdio_read(struct net_device *netdev, int phy_id, int loc)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	__le16 res;
-+	int rc = 0;
-+
-+	if (phy_id) {
-+		netdev_dbg(netdev, "Only internal phy supported\n");
-+		return 0;
-+	}
-+
-+	/* Access NSR_LINKST bit for link status instead of MII_BMSR */
-+	if (loc == MII_BMSR) {
-+		u8 value;
-+
-+		sr_read_reg(dev, NSR, &value);
-+		if (value & NSR_LINKST)
-+			rc = 1;
-+	}
-+	sr_share_read_word(dev, 1, loc, &res);
-+	if (rc == 1)
-+		res = le16_to_cpu(res) | BMSR_LSTATUS;
-+	else
-+		res = le16_to_cpu(res) & ~BMSR_LSTATUS;
-+
-+	netdev_dbg(netdev, "sr_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
-+		   phy_id, loc, res);
-+
-+	return res;
-+}
-+
-+static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc,
-+			  int val)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	__le16 res = cpu_to_le16(val);
-+
-+	if (phy_id) {
-+		netdev_dbg(netdev, "Only internal phy supported\n");
-+		return;
-+	}
-+
-+	netdev_dbg(netdev, "sr_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
-+		   phy_id, loc, val);
-+
-+	sr_share_write_word(dev, 1, loc, res);
-+}
-+
-+static u32 sr9700_get_link(struct net_device *netdev)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	u8 value = 0;
-+	int rc = 0;
-+
-+	/* Get the Link Status directly */
-+	sr_read_reg(dev, NSR, &value);
-+	if (value & NSR_LINKST)
-+		rc = 1;
-+
-+	return rc;
-+}
-+
-+static int sr9700_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+
-+	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
-+}
-+
-+static const struct ethtool_ops sr9700_ethtool_ops = {
-+	.get_drvinfo	= usbnet_get_drvinfo,
-+	.get_link	= sr9700_get_link,
-+	.get_msglevel	= usbnet_get_msglevel,
-+	.set_msglevel	= usbnet_set_msglevel,
-+	.get_eeprom_len	= sr9700_get_eeprom_len,
-+	.get_eeprom	= sr9700_get_eeprom,
-+	.get_settings	= usbnet_get_settings,
-+	.set_settings	= usbnet_set_settings,
-+	.nway_reset	= usbnet_nway_reset,
-+};
-+
-+static void sr9700_set_multicast(struct net_device *netdev)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	/* We use the 20 byte dev->data for our 8 byte filter buffer
-+	 * to avoid allocating memory that is tricky to free later
-+	 */
-+	u8 *hashes = (u8 *)&dev->data;
-+	/* rx_ctl setting : enable, disable_long, disable_crc */
-+	u8 rx_ctl = RCR_RXEN | RCR_DIS_CRC | RCR_DIS_LONG;
-+
-+	memset(hashes, 0x00, SR_MCAST_SIZE);
-+	/* broadcast address */
-+	hashes[SR_MCAST_SIZE - 1] |= SR_MCAST_ADDR_FLAG;
-+	if (netdev->flags & IFF_PROMISC) {
-+		rx_ctl |= RCR_PRMSC;
-+	} else if (netdev->flags & IFF_ALLMULTI ||
-+		   netdev_mc_count(netdev) > SR_MCAST_MAX) {
-+		rx_ctl |= RCR_RUNT;
-+	} else if (!netdev_mc_empty(netdev)) {
-+		struct netdev_hw_addr *ha;
-+
-+		netdev_for_each_mc_addr(ha, netdev) {
-+			u32 crc = ether_crc(ETH_ALEN, ha->addr) >> 26;
-+			hashes[crc >> 3] |= 1 << (crc & 0x7);
-+		}
-+	}
-+
-+	sr_write_async(dev, MAR, SR_MCAST_SIZE, hashes);
-+	sr_write_reg_async(dev, RCR, rx_ctl);
-+}
-+
-+static int sr9700_set_mac_address(struct net_device *netdev, void *p)
-+{
-+	struct usbnet *dev = netdev_priv(netdev);
-+	struct sockaddr *addr = p;
-+
-+	if (!is_valid_ether_addr(addr->sa_data)) {
-+		netdev_err(netdev, "not setting invalid mac address %pM\n",
-+			   addr->sa_data);
-+		return -EINVAL;
-+	}
-+
-+	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
-+	sr_write_async(dev, PAR, 6, netdev->dev_addr);
-+
-+	return 0;
-+}
-+
-+static const struct net_device_ops sr9700_netdev_ops = {
-+	.ndo_open		= usbnet_open,
-+	.ndo_stop		= usbnet_stop,
-+	.ndo_start_xmit		= usbnet_start_xmit,
-+	.ndo_tx_timeout		= usbnet_tx_timeout,
-+	.ndo_change_mtu		= usbnet_change_mtu,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_do_ioctl		= sr9700_ioctl,
-+	.ndo_set_rx_mode	= sr9700_set_multicast,
-+	.ndo_set_mac_address	= sr9700_set_mac_address,
-+};
-+
-+static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
-+{
-+	struct net_device *netdev;
-+	struct mii_if_info *mii;
-+	int ret;
-+
-+	ret = usbnet_get_endpoints(dev, intf);
-+	if (ret)
-+		goto out;
-+
-+	netdev = dev->net;
-+
-+	netdev->netdev_ops = &sr9700_netdev_ops;
-+	netdev->ethtool_ops = &sr9700_ethtool_ops;
-+	netdev->hard_header_len += SR_TX_OVERHEAD;
-+	dev->hard_mtu = netdev->mtu + netdev->hard_header_len;
-+	/* bulkin buffer is preferably not less than 3K */
-+	dev->rx_urb_size = 3072;
-+
-+	mii = &dev->mii;
-+	mii->dev = netdev;
-+	mii->mdio_read = sr_mdio_read;
-+	mii->mdio_write = sr_mdio_write;
-+	mii->phy_id_mask = 0x1f;
-+	mii->reg_num_mask = 0x1f;
-+
-+	sr_write_reg(dev, NCR, NCR_RST);
-+	udelay(20);
-+
-+	/* read MAC
-+	 * After Chip Power on, the Chip will reload the MAC from
-+	 * EEPROM automatically to PAR. In case there is no EEPROM externally,
-+	 * a default MAC address is stored in PAR for making chip work properly.
-+	 */
-+	if (sr_read(dev, PAR, ETH_ALEN, netdev->dev_addr) < 0) {
-+		netdev_err(netdev, "Error reading MAC address\n");
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	/* power up and reset phy */
-+	sr_write_reg(dev, PRR, PRR_PHY_RST);
-+	/* at least 10ms, here 20ms for safe */
-+	mdelay(20);
-+	sr_write_reg(dev, PRR, 0);
-+	/* at least 1ms, here 2ms for reading right register */
-+	udelay(2 * 1000);
-+
-+	/* receive broadcast packets */
-+	sr9700_set_multicast(netdev);
-+
-+	sr_mdio_write(netdev, mii->phy_id, MII_BMCR, BMCR_RESET);
-+	sr_mdio_write(netdev, mii->phy_id, MII_ADVERTISE, ADVERTISE_ALL |
-+		      ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
-+	mii_nway_restart(mii);
-+
-+out:
-+	return ret;
-+}
-+
-+static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-+{
-+	struct sk_buff *sr_skb;
-+	int len;
-+
-+	/* skb content (packets) format :
-+	 *                    p0            p1            p2    ......    pm
-+	 *                 /      \
-+	 *            /                \
-+	 *        /                            \
-+	 *  /                                        \
-+	 * p0b0 p0b1 p0b2 p0b3 ...... p0b(n-4) p0b(n-3)...p0bn
-+	 *
-+	 * p0 : packet 0
-+	 * p0b0 : packet 0 byte 0
-+	 *
-+	 * b0: rx status
-+	 * b1: packet length (incl crc) low
-+	 * b2: packet length (incl crc) high
-+	 * b3..n-4: packet data
-+	 * bn-3..bn: ethernet packet crc
-+	 */
-+	if (unlikely(skb->len < SR_RX_OVERHEAD)) {
-+		netdev_err(dev->net, "unexpected tiny rx frame\n");
-+		return 0;
-+	}
-+
-+	/* one skb may contains multiple packets */
-+	while (skb->len > SR_RX_OVERHEAD) {
-+		if (skb->data[0] != 0x40)
-+			return 0;
-+
-+		/* ignore the CRC length */
-+		len = (skb->data[1] | (skb->data[2] << 8)) - 4;
-+
-+		if (len > ETH_FRAME_LEN)
-+			return 0;
-+
-+		/* the last packet of current skb */
-+		if (skb->len == (len + SR_RX_OVERHEAD))	{
-+			skb_pull(skb, 3);
-+			skb->len = len;
-+			skb_set_tail_pointer(skb, len);
-+			skb->truesize = len + sizeof(struct sk_buff);
-+			return 2;
-+		}
-+
-+		/* skb_clone is used for address align */
-+		sr_skb = skb_clone(skb, GFP_ATOMIC);
-+		if (!sr_skb)
-+			return 0;
-+
-+		sr_skb->len = len;
-+		sr_skb->data = skb->data + 3;
-+		skb_set_tail_pointer(sr_skb, len);
-+		sr_skb->truesize = len + sizeof(struct sk_buff);
-+		usbnet_skb_return(dev, sr_skb);
-+
-+		skb_pull(skb, len + SR_RX_OVERHEAD);
-+	};
-+
-+	return 0;
-+}
-+
-+static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
-+				       gfp_t flags)
-+{
-+	int len;
-+
-+	/* SR9700 can only send out one ethernet packet at once.
-+	 *
-+	 * b0 b1 b2 b3 ...... b(n-4) b(n-3)...bn
-+	 *
-+	 * b0: rx status
-+	 * b1: packet length (incl crc) low
-+	 * b2: packet length (incl crc) high
-+	 * b3..n-4: packet data
-+	 * bn-3..bn: ethernet packet crc
-+	 */
-+
-+	len = skb->len;
-+
-+	if (skb_headroom(skb) < SR_TX_OVERHEAD) {
-+		struct sk_buff *skb2;
-+
-+		skb2 = skb_copy_expand(skb, SR_TX_OVERHEAD, 0, flags);
-+		dev_kfree_skb_any(skb);
-+		skb = skb2;
-+		if (!skb)
-+			return NULL;
-+	}
-+
-+	__skb_push(skb, SR_TX_OVERHEAD);
-+
-+	/* usbnet adds padding if length is a multiple of packet size
-+	 * if so, adjust length value in header
-+	 */
-+	if ((skb->len % dev->maxpacket) == 0)
-+		len++;
-+
-+	skb->data[0] = len;
-+	skb->data[1] = len >> 8;
-+
-+	return skb;
-+}
-+
-+static void sr9700_status(struct usbnet *dev, struct urb *urb)
-+{
-+	int link;
-+	u8 *buf;
-+
-+	/* format:
-+	   b0: net status
-+	   b1: tx status 1
-+	   b2: tx status 2
-+	   b3: rx status
-+	   b4: rx overflow
-+	   b5: rx count
-+	   b6: tx count
-+	   b7: gpr
-+	*/
-+
-+	if (urb->actual_length < 8)
-+		return;
-+
-+	buf = urb->transfer_buffer;
-+
-+	link = !!(buf[0] & 0x40);
-+	if (netif_carrier_ok(dev->net) != link) {
-+		usbnet_link_change(dev, link, 1);
-+		netdev_dbg(dev->net, "Link Status is: %d\n", link);
-+	}
-+}
-+
-+static int sr9700_link_reset(struct usbnet *dev)
-+{
-+	struct ethtool_cmd ecmd;
-+
-+	mii_check_media(&dev->mii, 1, 1);
-+	mii_ethtool_gset(&dev->mii, &ecmd);
-+
-+	netdev_dbg(dev->net, "link_reset() speed: %d duplex: %d\n",
-+		   ecmd.speed, ecmd.duplex);
-+
-+	return 0;
-+}
-+
-+static const struct driver_info sr9700_driver_info = {
-+	.description	= "CoreChip SR9700 USB Ethernet",
-+	.flags		= FLAG_ETHER,
-+	.bind		= sr9700_bind,
-+	.rx_fixup	= sr9700_rx_fixup,
-+	.tx_fixup	= sr9700_tx_fixup,
-+	.status		= sr9700_status,
-+	.link_reset	= sr9700_link_reset,
-+	.reset		= sr9700_link_reset,
-+};
-+
-+static const struct usb_device_id products[] = {
-+	{
-+		USB_DEVICE(0x0fe6, 0x9700),	/* SR9700 device */
-+		.driver_info = (unsigned long)&sr9700_driver_info,
-+	},
-+	{},			/* END */
-+};
-+
-+MODULE_DEVICE_TABLE(usb, products);
-+
-+static struct usb_driver sr9700_usb_driver = {
-+	.name		= "sr9700",
-+	.id_table	= products,
-+	.probe		= usbnet_probe,
-+	.disconnect	= usbnet_disconnect,
-+	.suspend	= usbnet_suspend,
-+	.resume		= usbnet_resume,
-+	.disable_hub_initiated_lpm = 1,
-+};
-+
-+module_usb_driver(sr9700_usb_driver);
-+
-+MODULE_AUTHOR("liujl <liujunliang_ljl@163.com>");
-+MODULE_DESCRIPTION("SR9700 one chip USB 1.1 USB to Ethernet device from http://www.corechip-sz.com/");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/net/usb/sr9700.h b/drivers/net/usb/sr9700.h
-new file mode 100644
-index 0000000..fd687c5
---- /dev/null
-+++ b/drivers/net/usb/sr9700.h
-@@ -0,0 +1,173 @@
-+/*
-+ * CoreChip-sz SR9700 one chip USB 1.1 Ethernet Devices
-+ *
-+ * Author : Liu Junliang <liujunliang_ljl@163.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ */
-+
-+#ifndef _SR9700_H
-+#define	_SR9700_H
-+
-+/* sr9700 spec. register table on Linux platform */
-+
-+/* Network Control Reg */
-+#define	NCR			0x00
-+#define		NCR_RST			(1 << 0)
-+#define		NCR_LBK			(3 << 1)
-+#define		NCR_FDX			(1 << 3)
-+#define		NCR_WAKEEN		(1 << 6)
-+/* Network Status Reg */
-+#define	NSR			0x01
-+#define		NSR_RXRDY		(1 << 0)
-+#define		NSR_RXOV		(1 << 1)
-+#define		NSR_TX1END		(1 << 2)
-+#define		NSR_TX2END		(1 << 3)
-+#define		NSR_TXFULL		(1 << 4)
-+#define		NSR_WAKEST		(1 << 5)
-+#define		NSR_LINKST		(1 << 6)
-+#define		NSR_SPEED		(1 << 7)
-+/* Tx Control Reg */
-+#define	TCR			0x02
-+#define		TCR_CRC_DIS		(1 << 1)
-+#define		TCR_PAD_DIS		(1 << 2)
-+#define		TCR_LC_CARE		(1 << 3)
-+#define		TCR_CRS_CARE	(1 << 4)
-+#define		TCR_EXCECM		(1 << 5)
-+#define		TCR_LF_EN		(1 << 6)
-+/* Tx Status Reg for Packet Index 1 */
-+#define	TSR1		0x03
-+#define		TSR1_EC			(1 << 2)
-+#define		TSR1_COL		(1 << 3)
-+#define		TSR1_LC			(1 << 4)
-+#define		TSR1_NC			(1 << 5)
-+#define		TSR1_LOC		(1 << 6)
-+#define		TSR1_TLF		(1 << 7)
-+/* Tx Status Reg for Packet Index 2 */
-+#define	TSR2		0x04
-+#define		TSR2_EC			(1 << 2)
-+#define		TSR2_COL		(1 << 3)
-+#define		TSR2_LC			(1 << 4)
-+#define		TSR2_NC			(1 << 5)
-+#define		TSR2_LOC		(1 << 6)
-+#define		TSR2_TLF		(1 << 7)
-+/* Rx Control Reg*/
-+#define	RCR			0x05
-+#define		RCR_RXEN		(1 << 0)
-+#define		RCR_PRMSC		(1 << 1)
-+#define		RCR_RUNT		(1 << 2)
-+#define		RCR_ALL			(1 << 3)
-+#define		RCR_DIS_CRC		(1 << 4)
-+#define		RCR_DIS_LONG	(1 << 5)
-+/* Rx Status Reg */
-+#define	RSR			0x06
-+#define		RSR_AE			(1 << 2)
-+#define		RSR_MF			(1 << 6)
-+#define		RSR_RF			(1 << 7)
-+/* Rx Overflow Counter Reg */
-+#define	ROCR		0x07
-+#define		ROCR_ROC		(0x7F << 0)
-+#define		ROCR_RXFU		(1 << 7)
-+/* Back Pressure Threshold Reg */
-+#define	BPTR		0x08
-+#define		BPTR_JPT		(0x0F << 0)
-+#define		BPTR_BPHW		(0x0F << 4)
-+/* Flow Control Threshold Reg */
-+#define	FCTR		0x09
-+#define		FCTR_LWOT		(0x0F << 0)
-+#define		FCTR_HWOT		(0x0F << 4)
-+/* rx/tx Flow Control Reg */
-+#define	FCR			0x0A
-+#define		FCR_FLCE		(1 << 0)
-+#define		FCR_BKPA		(1 << 4)
-+#define		FCR_TXPEN		(1 << 5)
-+#define		FCR_TXPF		(1 << 6)
-+#define		FCR_TXP0		(1 << 7)
-+/* Eeprom & Phy Control Reg */
-+#define	EPCR		0x0B
-+#define		EPCR_ERRE		(1 << 0)
-+#define		EPCR_ERPRW		(1 << 1)
-+#define		EPCR_ERPRR		(1 << 2)
-+#define		EPCR_EPOS		(1 << 3)
-+#define		EPCR_WEP		(1 << 4)
-+/* Eeprom & Phy Address Reg */
-+#define	EPAR		0x0C
-+#define		EPAR_EROA		(0x3F << 0)
-+#define		EPAR_PHY_ADR_MASK	(0x03 << 6)
-+#define		EPAR_PHY_ADR		(0x01 << 6)
-+/* Eeprom &	Phy Data Reg */
-+#define	EPDR		0x0D	/* 0x0D ~ 0x0E for Data Reg Low & High */
-+/* Wakeup Control Reg */
-+#define	WCR			0x0F
-+#define		WCR_MAGICST		(1 << 0)
-+#define		WCR_LINKST		(1 << 2)
-+#define		WCR_MAGICEN		(1 << 3)
-+#define		WCR_LINKEN		(1 << 5)
-+/* Physical Address Reg */
-+#define	PAR			0x10	/* 0x10 ~ 0x15 6 bytes for PAR */
-+/* Multicast Address Reg */
-+#define	MAR			0x16	/* 0x16 ~ 0x1D 8 bytes for MAR */
-+/* 0x1e unused */
-+/* Phy Reset Reg */
-+#define	PRR			0x1F
-+#define		PRR_PHY_RST		(1 << 0)
-+/* Tx sdram Write Pointer Address Low */
-+#define	TWPAL		0x20
-+/* Tx sdram Write Pointer Address High */
-+#define	TWPAH		0x21
-+/* Tx sdram Read Pointer Address Low */
-+#define	TRPAL		0x22
-+/* Tx sdram Read Pointer Address High */
-+#define	TRPAH		0x23
-+/* Rx sdram Write Pointer Address Low */
-+#define	RWPAL		0x24
-+/* Rx sdram Write Pointer Address High */
-+#define	RWPAH		0x25
-+/* Rx sdram Read Pointer Address Low */
-+#define	RRPAL		0x26
-+/* Rx sdram Read Pointer Address High */
-+#define	RRPAH		0x27
-+/* Vendor ID register */
-+#define	VID			0x28	/* 0x28 ~ 0x29 2 bytes for VID */
-+/* Product ID register */
-+#define	PID			0x2A	/* 0x2A ~ 0x2B 2 bytes for PID */
-+/* CHIP Revision register */
-+#define	CHIPR		0x2C
-+/* 0x2D --> 0xEF unused */
-+/* USB Device Address */
-+#define	USBDA		0xF0
-+#define		USBDA_USBFA		(0x7F << 0)
-+/* RX packet Counter Reg */
-+#define	RXC			0xF1
-+/* Tx packet Counter & USB Status Reg */
-+#define	TXC_USBS	0xF2
-+#define		TXC_USBS_TXC0		(1 << 0)
-+#define		TXC_USBS_TXC1		(1 << 1)
-+#define		TXC_USBS_TXC2		(1 << 2)
-+#define		TXC_USBS_EP1RDY		(1 << 5)
-+#define		TXC_USBS_SUSFLAG	(1 << 6)
-+#define		TXC_USBS_RXFAULT	(1 << 7)
-+/* USB Control register */
-+#define	USBC		0xF4
-+#define		USBC_EP3NAK		(1 << 4)
-+#define		USBC_EP3ACK		(1 << 5)
-+
-+/* Register access commands and flags */
-+#define	SR_RD_REGS		0x00
-+#define	SR_WR_REGS		0x01
-+#define	SR_WR_REG		0x03
-+#define	SR_REQ_RD_REG	(USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE)
-+#define	SR_REQ_WR_REG	(USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE)
-+
-+/* parameters */
-+#define	SR_SHARE_TIMEOUT	1000
-+#define	SR_EEPROM_LEN		256
-+#define	SR_MCAST_SIZE		8
-+#define	SR_MCAST_ADDR_FLAG	0x80
-+#define	SR_MCAST_MAX		64
-+#define	SR_TX_OVERHEAD		2	/* 2bytes header */
-+#define	SR_RX_OVERHEAD		7	/* 3bytes header + 4crc tail */
-+
-+#endif	/* _SR9700_H */
--- 
-1.7.9.5
-
-
+ #if defined(CONFIG_X86_64) || \
+ 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d32abea..174da5f 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -658,15 +658,18 @@ __init void e820_setup_gap(void)
+  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
+  * linked list of struct setup_data, which is parsed here.
+  */
+-void __init parse_e820_ext(struct setup_data *sdata)
++void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+ {
+ 	int entries;
+ 	struct e820entry *extmap;
++	struct setup_data *sdata;
+ 
++	sdata = early_memremap(phys_addr, data_len);
+ 	entries = sdata->len / sizeof(struct e820entry);
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	early_iounmap(sdata, data_len);
+ 	printk(KERN_INFO "e820: extended physical RAM map:\n");
+ 	e820_print_map("extended");
+ }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index de33798..b6b45e4 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -426,25 +426,23 @@ static void __init reserve_initrd(void)
+ static void __init parse_setup_data(void)
+ {
+ 	struct setup_data *data;
+-	u64 pa_data;
++	u64 pa_data, pa_next;
+ 
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		u32 data_len, map_len;
++		u32 data_len, map_len, data_type;
+ 
+ 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+ 			      (u64)sizeof(struct setup_data));
+ 		data = early_memremap(pa_data, map_len);
+ 		data_len = data->len + sizeof(struct setup_data);
+-		if (data_len > map_len) {
+-			early_iounmap(data, map_len);
+-			data = early_memremap(pa_data, data_len);
+-			map_len = data_len;
+-		}
++		data_type = data->type;
++		pa_next = data->next;
++		early_iounmap(data, map_len);
+ 
+-		switch (data->type) {
++		switch (data_type) {
+ 		case SETUP_E820_EXT:
+-			parse_e820_ext(data);
++			parse_e820_ext(pa_data, data_len);
+ 			break;
+ 		case SETUP_DTB:
+ 			add_dtb(pa_data);
+@@ -452,8 +450,7 @@ static void __init parse_setup_data(void)
+ 		default:
+ 			break;
+ 		}
+-		pa_data = data->next;
+-		early_iounmap(data, map_len);
++		pa_data = pa_next;
+ 	}
+ }
+ 
