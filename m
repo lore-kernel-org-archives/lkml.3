@@ -1,122 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab3IBI61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:58:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37915 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758586Ab3IBIzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:55 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Russ Anderson <rja@sgi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 57/58] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
-Date: Mon,  2 Sep 2013 09:54:42 +0100
-Message-Id: <1378112083-9475-58-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1758711Ab3IBI7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:59:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755275Ab3IBI65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:58:57 -0400
+Date: Mon, 2 Sep 2013 11:00:54 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 4/4] PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
+Message-ID: <22d32807482ab4a2131116c50fe217c111849ec0.1378111919.git.agordeev@redhat.com>
+References: <cover.1378111919.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1378111919.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
+There are no consumers of pci_enable_msi_block_auto()
+interface have left. Eliminate it for now.
 
-------------------
-
-From: Russ Anderson <rja@sgi.com>
-
-commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
-
-"cat /sys/devices/system/memory/memory*/removable" crashed the system.
-
-The problem is that show_mem_removable() is passing a
-bad pfn to is_mem_section_removable(), which causes
-
-    if (!node_online(page_to_nid(page)))
-
-to blow up.  Why is it passing in a bad pfn?
-
-The reason is that show_mem_removable() will loop sections_per_block
-times.  sections_per_block is 16, but mem->section_count is 8,
-indicating holes in this memory block.  Checking that the memory section
-is present before checking to see if the memory section is removable
-fixes the problem.
-
-   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
-   0
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   BUG: unable to handle kernel paging request at ffffea00c3200000
-   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   PGD 83ffd4067 PUD 37bdfce067 PMD 0
-   Oops: 0000 [#1] SMP
-   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
-   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
-   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
-   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
-   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
-   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
-   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
-   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
-   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
-   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
-   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
-   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
-   Call Trace:
-     show_mem_removable+0x41/0x70
-     dev_attr_show+0x2a/0x60
-     sysfs_read_file+0xf7/0x1c0
-     vfs_read+0xc8/0x130
-     SyS_read+0x5d/0xa0
-     system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/base/memory.c | 2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/PCI/MSI-HOWTO.txt |   12 ++++++------
+ drivers/pci/msi.c               |   25 -------------------------
+ include/linux/pci.h             |    7 -------
+ 3 files changed, 6 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 7dda4f7..d63a06b 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -154,6 +154,8 @@ static ssize_t show_mem_removable(struct device *dev,
- 		container_of(dev, struct memory_block, dev);
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 32d7d15..a8019e3 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -197,12 +197,12 @@ supported, it can set the pointer count to NULL.
  
- 	for (i = 0; i < sections_per_block; i++) {
-+		if (!present_section_nr(mem->start_section_nr + i))
-+			continue;
- 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
+ void pci_disable_msi(struct pci_dev *dev)
+ 
+-This function should be used to undo the effect of pci_enable_msi_block(),
+-pci_enable_msi(), pci_enable_msi_block_auto() or pci_enable_msi_block_part().
+-Calling it restores dev->irq to the pin-based interrupt number and frees the
+-previously allocated message signaled interrupt(s). The interrupt may
+-subsequently be assigned to another device, so drivers should not cache the
+-value of dev->irq.
++This function should be used to undo the effect of pci_enable_msi() or
++pci_enable_msi_block() or pci_enable_msi_block_part().  Calling it restores
++dev->irq to the pin-based interrupt number and frees the previously
++allocated message signaled interrupt(s).  The interrupt may subsequently be
++assigned to another device, so drivers should not cache the value of
++dev->irq.
+ 
+ Before calling this function, a device driver must always call free_irq()
+ on any interrupt for which it previously called request_irq().
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index a5c958f..d99f022 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -866,31 +866,6 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ }
+ EXPORT_SYMBOL(pci_enable_msi_block);
+ 
+-int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+-{
+-	int ret, nvec;
+-	u16 msgctl;
+-
+-	if (!dev->msi_cap)
+-		return -EINVAL;
+-
+-	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+-	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+-
+-	if (maxvec)
+-		*maxvec = ret;
+-
+-	do {
+-		nvec = ret;
+-		ret = pci_enable_msi_block(dev, nvec);
+-	} while (ret > 0);
+-
+-	if (ret < 0)
+-		return ret;
+-	return nvec;
+-}
+-EXPORT_SYMBOL(pci_enable_msi_block_auto);
+-
+ void pci_msi_shutdown(struct pci_dev *dev)
+ {
+ 	struct msi_desc *desc;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 6552cee..89935b4 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1133,12 +1133,6 @@ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ 	return -1;
+ }
+ 
+-static inline int
+-pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+-{
+-	return -1;
+-}
+-
+ static inline void pci_msi_shutdown(struct pci_dev *dev)
+ { }
+ static inline void pci_disable_msi(struct pci_dev *dev)
+@@ -1172,7 +1166,6 @@ static inline int pci_msi_enabled(void)
+ int pci_enable_msi_block_part(struct pci_dev *dev,
+ 			      unsigned int nvec, int nvec_mme);
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+-int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
+ void pci_disable_msi(struct pci_dev *dev);
+ int pci_msix_table_size(struct pci_dev *dev);
 -- 
-1.8.3.2
+1.7.7.6
 
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
