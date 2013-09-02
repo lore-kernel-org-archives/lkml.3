@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab3IBHlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 03:41:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52396 "EHLO
+	id S932072Ab3IBHlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 03:41:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52415 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757600Ab3IBHlL (ORCPT
+	with ESMTP id S1757313Ab3IBHld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 03:41:11 -0400
-Date: Mon, 2 Sep 2013 00:40:00 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-ae23bff1d71f8b416ed740bc458df67355c77c92@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, namhyung@kernel.org,
-        jstancek@redhat.com, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, jstancek@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1377355554-8934-1-git-send-email-jolsa@redhat.com>
-References: <1377355554-8934-1-git-send-email-jolsa@redhat.com>
+	Mon, 2 Sep 2013 03:41:33 -0400
+Date: Mon, 2 Sep 2013 00:40:58 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-739xxqkyvftrhnh9ncudutc7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        preeti@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Prevent race in unthrottling code
-Git-Commit-ID: ae23bff1d71f8b416ed740bc458df67355c77c92
+Subject: [tip:sched/core] sched/fair: Make group power more consistent
+Git-Commit-ID: 3ae11c90fd055ba1b1b03a014f851b395bdd26ff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,132 +25,154 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:40:07 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:41:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ae23bff1d71f8b416ed740bc458df67355c77c92
-Gitweb:     http://git.kernel.org/tip/ae23bff1d71f8b416ed740bc458df67355c77c92
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 24 Aug 2013 16:45:54 +0200
+Commit-ID:  3ae11c90fd055ba1b1b03a014f851b395bdd26ff
+Gitweb:     http://git.kernel.org/tip/3ae11c90fd055ba1b1b03a014f851b395bdd26ff
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 15 Aug 2013 20:37:48 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 2 Sep 2013 08:13:24 +0200
+CommitDate: Mon, 2 Sep 2013 08:27:37 +0200
 
-perf: Prevent race in unthrottling code
+sched/fair: Make group power more consistent
 
-The current throttling code triggers WARN below via following
-workload (only hit on AMD machine with 48 CPUs):
+For easier access, less dereferences and more consistent value, store
+the group power in update_sg_lb_stats() and use it thereafter. The
+actual value in sched_group::sched_group_power::power can change
+throughout the load-balance pass if we're unlucky.
 
-  # while [ 1 ]; do perf record perf bench sched messaging; done
-
-  WARNING: at arch/x86/kernel/cpu/perf_event.c:1054 x86_pmu_start+0xc6/0x100()
-  SNIP
-  Call Trace:
-   <IRQ>  [<ffffffff815f62d6>] dump_stack+0x19/0x1b
-   [<ffffffff8105f531>] warn_slowpath_common+0x61/0x80
-   [<ffffffff8105f60a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff810213a6>] x86_pmu_start+0xc6/0x100
-   [<ffffffff81129dd2>] perf_adjust_freq_unthr_context.part.75+0x182/0x1a0
-   [<ffffffff8112a058>] perf_event_task_tick+0xc8/0xf0
-   [<ffffffff81093221>] scheduler_tick+0xd1/0x140
-   [<ffffffff81070176>] update_process_times+0x66/0x80
-   [<ffffffff810b9565>] tick_sched_handle.isra.15+0x25/0x60
-   [<ffffffff810b95e1>] tick_sched_timer+0x41/0x60
-   [<ffffffff81087c24>] __run_hrtimer+0x74/0x1d0
-   [<ffffffff810b95a0>] ? tick_sched_handle.isra.15+0x60/0x60
-   [<ffffffff81088407>] hrtimer_interrupt+0xf7/0x240
-   [<ffffffff81606829>] smp_apic_timer_interrupt+0x69/0x9c
-   [<ffffffff8160569d>] apic_timer_interrupt+0x6d/0x80
-   <EOI>  [<ffffffff81129f74>] ? __perf_event_task_sched_in+0x184/0x1a0
-   [<ffffffff814dd937>] ? kfree_skbmem+0x37/0x90
-   [<ffffffff815f2c47>] ? __slab_free+0x1ac/0x30f
-   [<ffffffff8118143d>] ? kfree+0xfd/0x130
-   [<ffffffff81181622>] kmem_cache_free+0x1b2/0x1d0
-   [<ffffffff814dd937>] kfree_skbmem+0x37/0x90
-   [<ffffffff814e03c4>] consume_skb+0x34/0x80
-   [<ffffffff8158b057>] unix_stream_recvmsg+0x4e7/0x820
-   [<ffffffff814d5546>] sock_aio_read.part.7+0x116/0x130
-   [<ffffffff8112c10c>] ? __perf_sw_event+0x19c/0x1e0
-   [<ffffffff814d5581>] sock_aio_read+0x21/0x30
-   [<ffffffff8119a5d0>] do_sync_read+0x80/0xb0
-   [<ffffffff8119ac85>] vfs_read+0x145/0x170
-   [<ffffffff8119b699>] SyS_read+0x49/0xa0
-   [<ffffffff810df516>] ? __audit_syscall_exit+0x1f6/0x2a0
-   [<ffffffff81604a19>] system_call_fastpath+0x16/0x1b
-  ---[ end trace 622b7e226c4a766a ]---
-
-The reason is a race in perf_event_task_tick() throttling code.
-The race flow (simplified code):
-
-  - perf_throttled_count is per cpu variable and is
-    CPU throttling flag, here starting with 0
-
-  - perf_throttled_seq is sequence/domain for allowed
-    count of interrupts within the tick, gets increased
-    each tick
-
-    on single CPU (CPU bounded event):
-
-      ... workload
-
-    perf_event_task_tick:
-    |
-    | T0    inc(perf_throttled_seq)
-    | T1    needs_unthr = xchg(perf_throttled_count, 0) == 0
-     tick gets interrupted:
-
-            ... event gets throttled under new seq ...
-
-      T2    last NMI comes, event is throttled - inc(perf_throttled_count)
-
-     back to tick:
-    | perf_adjust_freq_unthr_context:
-    |
-    | T3    unthrottling is skiped for event (needs_unthr == 0)
-    | T4    event is stop and started via freq adjustment
-    |
-    tick ends
-
-      ... workload
-      ... no sample is hit for event ...
-
-    perf_event_task_tick:
-    |
-    | T5    needs_unthr = xchg(perf_throttled_count, 0) != 0 (from T2)
-    | T6    unthrottling is done on event (interrupts == MAX_INTERRUPTS)
-    |       event is already started (from T4) -> WARN
-
-Fixing this by not checking needs_unthr again and thus
-check all events for unthrottling.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Stephane Eranian <eranian@google.com>
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1377355554-8934-1-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/n/tip-739xxqkyvftrhnh9ncudutc7@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c | 41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f86599e..258eaaf 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2712,7 +2712,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5795219..ccf20e7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4239,6 +4239,7 @@ struct sg_lb_stats {
+ 	unsigned long group_load; /* Total load over the CPUs of the group */
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long load_per_task;
++	unsigned long group_power;
+ 	unsigned int sum_nr_running; /* Nr tasks running in the group */
+ 	unsigned int group_capacity;
+ 	unsigned int idle_cpus;
+@@ -4518,7 +4519,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		update_group_power(env->sd, env->dst_cpu);
  
- 		hwc = &event->hw;
+ 	/* Adjust by relative CPU power of the group */
+-	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
++	sgs->group_power = group->sgp->power;
++	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / sgs->group_power;
  
--		if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
-+		if (hwc->interrupts == MAX_INTERRUPTS) {
- 			hwc->interrupts = 0;
- 			perf_log_throttle(event, 1);
- 			event->pmu->start(event, 0);
+ 	/*
+ 	 * Consider the group unbalanced when the imbalance is larger
+@@ -4537,7 +4539,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		sgs->group_imb = 1;
+ 
+ 	sgs->group_capacity =
+-		DIV_ROUND_CLOSEST(group->sgp->power, SCHED_POWER_SCALE);
++		DIV_ROUND_CLOSEST(sgs->group_power, SCHED_POWER_SCALE);
+ 
+ 	if (!sgs->group_capacity)
+ 		sgs->group_capacity = fix_small_capacity(env->sd, group);
+@@ -4637,7 +4639,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 
+ 		/* Now, start updating sd_lb_stats */
+ 		sds->total_load += sgs->group_load;
+-		sds->total_pwr += sg->sgp->power;
++		sds->total_pwr += sgs->group_power;
+ 
+ 		if (!local_group && update_sd_pick_busiest(env, sds, sg, sgs)) {
+ 			sds->busiest = sg;
+@@ -4685,8 +4687,9 @@ static int check_asym_packing(struct lb_env *env, struct sd_lb_stats *sds)
+ 	if (env->dst_cpu > busiest_cpu)
+ 		return 0;
+ 
+-	env->imbalance = DIV_ROUND_CLOSEST(sds->busiest_stat.avg_load *
+-				sds->busiest->sgp->power, SCHED_POWER_SCALE);
++	env->imbalance = DIV_ROUND_CLOSEST(
++		sds->busiest_stat.avg_load * sds->busiest_stat.group_power,
++		SCHED_POWER_SCALE);
+ 
+ 	return 1;
+ }
+@@ -4716,7 +4719,7 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 
+ 	scaled_busy_load_per_task =
+ 		(busiest->load_per_task * SCHED_POWER_SCALE) /
+-		sds->busiest->sgp->power;
++		busiest->group_power;
+ 
+ 	if (busiest->avg_load - local->avg_load + scaled_busy_load_per_task >=
+ 	    (scaled_busy_load_per_task * imbn)) {
+@@ -4730,32 +4733,32 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 	 * moving them.
+ 	 */
+ 
+-	pwr_now += sds->busiest->sgp->power *
++	pwr_now += busiest->group_power *
+ 			min(busiest->load_per_task, busiest->avg_load);
+-	pwr_now += sds->local->sgp->power *
++	pwr_now += local->group_power *
+ 			min(local->load_per_task, local->avg_load);
+ 	pwr_now /= SCHED_POWER_SCALE;
+ 
+ 	/* Amount of load we'd subtract */
+ 	tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
+-		sds->busiest->sgp->power;
++		busiest->group_power;
+ 	if (busiest->avg_load > tmp) {
+-		pwr_move += sds->busiest->sgp->power *
++		pwr_move += busiest->group_power *
+ 			    min(busiest->load_per_task,
+ 				busiest->avg_load - tmp);
+ 	}
+ 
+ 	/* Amount of load we'd add */
+-	if (busiest->avg_load * sds->busiest->sgp->power <
++	if (busiest->avg_load * busiest->group_power <
+ 	    busiest->load_per_task * SCHED_POWER_SCALE) {
+-		tmp = (busiest->avg_load * sds->busiest->sgp->power) /
+-			sds->local->sgp->power;
++		tmp = (busiest->avg_load * busiest->group_power) /
++		      local->group_power;
+ 	} else {
+ 		tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
+-			sds->local->sgp->power;
++		      local->group_power;
+ 	}
+-	pwr_move += sds->local->sgp->power *
+-			min(local->load_per_task, local->avg_load + tmp);
++	pwr_move += local->group_power *
++		    min(local->load_per_task, local->avg_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
+ 
+ 	/* Move if we gain throughput */
+@@ -4800,7 +4803,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 			(busiest->sum_nr_running - busiest->group_capacity);
+ 
+ 		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+-		load_above_capacity /= sds->busiest->sgp->power;
++		load_above_capacity /= busiest->group_power;
+ 	}
+ 
+ 	/*
+@@ -4818,8 +4821,8 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 
+ 	/* How much load to actually move to equalise the imbalance */
+ 	env->imbalance = min(
+-		max_pull * sds->busiest->sgp->power,
+-		(sds->avg_load - local->avg_load) * sds->local->sgp->power
++		max_pull * busiest->group_power,
++		(sds->avg_load - local->avg_load) * local->group_power
+ 	) / SCHED_POWER_SCALE;
+ 
+ 	/*
