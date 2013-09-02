@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758954Ab3IBSlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 14:41:47 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:44814 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758880Ab3IBSlp (ORCPT
+	id S932164Ab3IBSq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 14:46:27 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:48701 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758720Ab3IBSqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 14:41:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1378117829-9095-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com>
-Date: Mon, 2 Sep 2013 11:41:44 -0700
-X-Google-Sender-Auth: rTglT38Zq0EzgopskT17QpyWqgk
-Message-ID: <CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/3] x86, mm: Update min_pfn_mapped in add_pfn_range_mapped().
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Sep 2013 14:46:25 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH] input: allow SERIO=m even without EXPERT=y
+Date: Mon,  2 Sep 2013 20:47:10 +0200
+Message-Id: <1378147630-12471-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 3:30 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> In current kernel, we update min_pfn_mapped and max_pfn_mapped like this:
->
-> init_mem_mapping()
-> {
->         while ( a loop iterates all memory ranges ) {
->                 init_range_memory_mapping();
->                  |->init_memory_mapping()
->                      |->kernel_physical_mapping_init()
->                      |->add_pfn_range_mapped()
->                          |-> update max_pfn_mapped;
->
->                 update min_pfn_mapped;
->         }
-> }
->
-> max_pfn_mapped is updated in add_pfn_range_mapped() when a range of memory
-> is mapped. But min_pfn_mapped is updated in init_mem_mapping(). We can also
-> update min_pfn_mapped in add_pfn_range_mapped().
->
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/mm/init.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 5b2eaca..a97749f 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -313,6 +313,7 @@ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
->         nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
->
->         max_pfn_mapped = max(max_pfn_mapped, end_pfn);
-> +       min_pfn_mapped = min(min_pfn_mapped, start_pfn);
->  }
->
->  bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
-> @@ -442,7 +443,6 @@ void __init init_mem_mapping(void)
->                 new_mapped_ram_size = init_range_memory_mapping(start,
->                                                         last_start);
->                 last_start = start;
-> -               min_pfn_mapped = last_start >> PAGE_SHIFT;
->                 /* only increase step_size after big range get mapped */
->                 if (new_mapped_ram_size > mapped_ram_size)
->                         step_size <<= STEP_SIZE_SHIFT;
+There is plenty of consumer hardware (e.g., mac books) that does not use
+AT keyboards or PS/2 mice. It therefore makes sense for distro kernels
+to build the related drivers as modules to avoid loading them on hardware
+that does not need them. As such, these options should no longer be protected
+by EXPERT.
 
+Moreover, building these drivers as modules gets rid of the following ugly
+error during boot:
 
-Nak, you can not move that.
+[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
+[    3.439537] i8042: No controller found
 
-min_pfn_mapped should not be updated before init_range_memory_mapping
-is returned. as it need to refer old min_pfn_mapped.
-and init_range_memory_mapping still init mapping from low to high locally.
-min_pfn_mapped can not be updated too early.
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/keyboard/Kconfig | 4 ++--
+ drivers/input/serio/Kconfig    | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Yinghai
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 269d4c3..2d31cec 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ menuconfig INPUT_KEYBOARD
+-	bool "Keyboards" if EXPERT || !X86
++	bool "Keyboards"
+ 	default y
+ 	help
+ 	  Say Y here, and a list of supported keyboards will be displayed.
+@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
+ 	  module will be called atakbd.
+ 
+ config KEYBOARD_ATKBD
+-	tristate "AT keyboard" if EXPERT || !X86
++	tristate "AT keyboard"
+ 	default y
+ 	select SERIO
+ 	select SERIO_LIBPS2
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 1e691a3..39c869d 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ config SERIO
+-	tristate "Serial I/O support" if EXPERT || !X86
++	tristate "Serial I/O support"
+ 	default y
+ 	help
+ 	  Say Yes here if you have any input device that uses serial I/O to
+@@ -19,7 +19,7 @@ config SERIO
+ if SERIO
+ 
+ config SERIO_I8042
+-	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
++	tristate "i8042 PC Keyboard controller"
+ 	default y
+ 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
+ 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
+@@ -170,7 +170,7 @@ config SERIO_MACEPS2
+ 	  module will be called maceps2.
+ 
+ config SERIO_LIBPS2
+-	tristate "PS/2 driver library" if EXPERT
++	tristate "PS/2 driver library"
+ 	depends on SERIO_I8042 || SERIO_I8042=n
+ 	help
+ 	  Say Y here if you are using a driver for device connected
+-- 
+1.8.4
+
