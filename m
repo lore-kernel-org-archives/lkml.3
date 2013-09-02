@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab3IBJDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:03:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37814 "EHLO
+	id S1758864Ab3IBJEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:04:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab3IBIzc (ORCPT
+	with ESMTP id S1758480Ab3IBIzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:32 -0400
+	Mon, 2 Sep 2013 04:55:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@linaro.org>,
+Cc: Terry Suereth <terry.suereth@gmail.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 40/58] ARM: davinci: nand: specify ecc strength
-Date: Mon,  2 Sep 2013 09:54:25 +0100
-Message-Id: <1378112083-9475-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 39/58] libata: apply behavioral quirks to sil3826 PMP
+Date: Mon,  2 Sep 2013 09:54:24 +0100
+Message-Id: <1378112083-9475-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sekhar Nori <nsekhar@ti.com>
+From: Terry Suereth <terry.suereth@gmail.com>
 
-commit acd36357edc08649e85ff15dc4ed62353c912eff upstream.
+commit 8ffff94d20b7eb446e848e0046107d51b17a20a8 upstream.
 
-Starting with kernel v3.5, it is mandatory
-to specify ECC strength when using hardware
-ECC. Without this, kernel panics with a warning
-of the sort:
+Fixing support for the Silicon Image 3826 port multiplier, by applying
+to it the same quirks applied to the Silicon Image 3726.  Specifically
+fixes the repeated timeout/reset process which previously afflicted
+the 3726, as described from line 290.  Slightly based on notes from:
 
-Driver must set ecc.strength when using hardware ECC
-------------[ cut here ]------------
-kernel BUG at drivers/mtd/nand/nand_base.c:3519!
+https://bugzilla.redhat.com/show_bug.cgi?id=890237
 
-Fix this by specifying ECC strength for the boards
-which were missing this.
-
-Reported-by: Holger Freyther <holger@freyther.de>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Terry Suereth <terry.suereth@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-davinci/board-dm355-leopard.c | 1 +
- arch/arm/mach-davinci/board-dm644x-evm.c    | 1 +
- arch/arm/mach-davinci/board-dm646x-evm.c    | 1 +
- arch/arm/mach-davinci/board-neuros-osd2.c   | 1 +
- 4 files changed, 4 insertions(+)
+ drivers/ata/libata-pmp.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
-index 8e77032..eeeb81f 100644
---- a/arch/arm/mach-davinci/board-dm355-leopard.c
-+++ b/arch/arm/mach-davinci/board-dm355-leopard.c
-@@ -75,6 +75,7 @@ static struct davinci_nand_pdata davinci_nand_data = {
- 	.parts			= davinci_nand_partitions,
- 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
- 	.ecc_mode		= NAND_ECC_HW_SYNDROME,
-+	.ecc_bits		= 4,
- 	.bbt_options		= NAND_BBT_USE_FLASH,
- };
+diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
+index f63a588..f5c35be 100644
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -289,24 +289,24 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
  
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index d34ed55..87a904f 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -152,6 +152,7 @@ static struct davinci_nand_pdata davinci_evm_nandflash_data = {
- 	.parts		= davinci_evm_nandflash_partition,
- 	.nr_parts	= ARRAY_SIZE(davinci_evm_nandflash_partition),
- 	.ecc_mode	= NAND_ECC_HW,
-+	.ecc_bits	= 1,
- 	.bbt_options	= NAND_BBT_USE_FLASH,
- 	.timing		= &davinci_evm_nandflash_timing,
- };
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 958679a..5d4b51f 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -89,6 +89,7 @@ static struct davinci_nand_pdata davinci_nand_data = {
- 	.parts			= davinci_nand_partitions,
- 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
- 	.ecc_mode		= NAND_ECC_HW,
-+	.ecc_bits		= 1,
- 	.options		= 0,
- };
+ 	/* Disable sending Early R_OK.
+ 	 * With "cached read" HDD testing and multiple ports busy on a SATA
+-	 * host controller, 3726 PMP will very rarely drop a deferred
++	 * host controller, 3x26 PMP will very rarely drop a deferred
+ 	 * R_OK that was intended for the host. Symptom will be all
+ 	 * 5 drives under test will timeout, get reset, and recover.
+ 	 */
+-	if (vendor == 0x1095 && devid == 0x3726) {
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
+ 		u32 reg;
  
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index 5de69f2..198289c 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -88,6 +88,7 @@ static struct davinci_nand_pdata davinci_ntosd2_nandflash_data = {
- 	.parts		= davinci_ntosd2_nandflash_partition,
- 	.nr_parts	= ARRAY_SIZE(davinci_ntosd2_nandflash_partition),
- 	.ecc_mode	= NAND_ECC_HW,
-+	.ecc_bits	= 1,
- 	.bbt_options	= NAND_BBT_USE_FLASH,
- };
+ 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to read Sil3726 Private Register";
++			reason = "failed to read Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 		reg &= ~0x1;
+ 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to write Sil3726 Private Register";
++			reason = "failed to write Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 	}
+@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 	u16 devid = sata_pmp_gscr_devid(gscr);
+ 	struct ata_link *link;
  
+-	if (vendor == 0x1095 && devid == 0x3726) {
+-		/* sil3726 quirks */
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
++		/* sil3x26 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
 -- 
 1.8.3.2
 
