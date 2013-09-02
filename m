@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab3IBIzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:55:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37799 "EHLO
+	id S1758598Ab3IBJCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:02:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758419Ab3IBIz3 (ORCPT
+	with ESMTP id S1758481Ab3IBIze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:29 -0400
+	Mon, 2 Sep 2013 04:55:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+Cc: Anthony Foiani <anthony.foiani@gmail.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 37/58] ARM: at91/DT: fix at91sam9n12ek memory node
-Date: Mon,  2 Sep 2013 09:54:22 +0100
-Message-Id: <1378112083-9475-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 42/58] sata_fsl: save irqs while coalescing
+Date: Mon,  2 Sep 2013 09:54:27 +0100
+Message-Id: <1378112083-9475-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Anthony Foiani <anthony.foiani@gmail.com>
 
-commit a57603ca2871ee0773b00839c1ea35c4a2d3eeb0 upstream.
+commit 99bbdfa6bdcb4bdf5be914a48e9b46941bf30819 upstream.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Before this patch, I was seeing the following lockdep splat on my
+MPC8315 (PPC32) target:
+
+  [    9.086051] =================================
+  [    9.090393] [ INFO: inconsistent lock state ]
+  [    9.094744] 3.9.7-ajf-gc39503d #1 Not tainted
+  [    9.099087] ---------------------------------
+  [    9.103432] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+  [    9.109431] scsi_eh_1/39 [HC1[1]:SC0[0]:HE0:SE1] takes:
+  [    9.114642]  (&(&host->lock)->rlock){?.+...}, at: [<c02f4168>] sata_fsl_interrupt+0x50/0x250
+  [    9.123137] {HARDIRQ-ON-W} state was registered at:
+  [    9.128004]   [<c006cdb8>] lock_acquire+0x90/0xf4
+  [    9.132737]   [<c043ef04>] _raw_spin_lock+0x34/0x4c
+  [    9.137645]   [<c02f3560>] fsl_sata_set_irq_coalescing+0x68/0x100
+  [    9.143750]   [<c02f36a0>] sata_fsl_init_controller+0xa8/0xc0
+  [    9.149505]   [<c02f3f10>] sata_fsl_probe+0x17c/0x2e8
+  [    9.154568]   [<c02acc90>] driver_probe_device+0x90/0x248
+  [    9.159987]   [<c02acf0c>] __driver_attach+0xc4/0xc8
+  [    9.164964]   [<c02aae74>] bus_for_each_dev+0x5c/0xa8
+  [    9.170028]   [<c02ac218>] bus_add_driver+0x100/0x26c
+  [    9.175091]   [<c02ad638>] driver_register+0x88/0x198
+  [    9.180155]   [<c0003a24>] do_one_initcall+0x58/0x1b4
+  [    9.185226]   [<c05aeeac>] kernel_init_freeable+0x118/0x1c0
+  [    9.190823]   [<c0004110>] kernel_init+0x18/0x108
+  [    9.195542]   [<c000f6b8>] ret_from_kernel_thread+0x64/0x6c
+  [    9.201142] irq event stamp: 160
+  [    9.204366] hardirqs last  enabled at (159): [<c043f778>] _raw_spin_unlock_irq+0x30/0x50
+  [    9.212469] hardirqs last disabled at (160): [<c000f414>] reenable_mmu+0x30/0x88
+  [    9.219867] softirqs last  enabled at (144): [<c002ae5c>] __do_softirq+0x168/0x218
+  [    9.227435] softirqs last disabled at (137): [<c002b0d4>] irq_exit+0xa8/0xb4
+  [    9.234481]
+  [    9.234481] other info that might help us debug this:
+  [    9.240995]  Possible unsafe locking scenario:
+  [    9.240995]
+  [    9.246898]        CPU0
+  [    9.249337]        ----
+  [    9.251776]   lock(&(&host->lock)->rlock);
+  [    9.255878]   <Interrupt>
+  [    9.258492]     lock(&(&host->lock)->rlock);
+  [    9.262765]
+  [    9.262765]  *** DEADLOCK ***
+  [    9.262765]
+  [    9.268684] no locks held by scsi_eh_1/39.
+  [    9.272767]
+  [    9.272767] stack backtrace:
+  [    9.277117] Call Trace:
+  [    9.279589] [cfff9da0] [c0008504] show_stack+0x48/0x150 (unreliable)
+  [    9.285972] [cfff9de0] [c0447d5c] print_usage_bug.part.35+0x268/0x27c
+  [    9.292425] [cfff9e10] [c006ace4] mark_lock+0x2ac/0x658
+  [    9.297660] [cfff9e40] [c006b7e4] __lock_acquire+0x754/0x1840
+  [    9.303414] [cfff9ee0] [c006cdb8] lock_acquire+0x90/0xf4
+  [    9.308745] [cfff9f20] [c043ef04] _raw_spin_lock+0x34/0x4c
+  [    9.314250] [cfff9f30] [c02f4168] sata_fsl_interrupt+0x50/0x250
+  [    9.320187] [cfff9f70] [c0079ff0] handle_irq_event_percpu+0x90/0x254
+  [    9.326547] [cfff9fc0] [c007a1fc] handle_irq_event+0x48/0x78
+  [    9.332220] [cfff9fe0] [c007c95c] handle_level_irq+0x9c/0x104
+  [    9.337981] [cfff9ff0] [c000d978] call_handle_irq+0x18/0x28
+  [    9.343568] [cc7139f0] [c000608c] do_IRQ+0xf0/0x1a8
+  [    9.348464] [cc713a20] [c000fc8c] ret_from_except+0x0/0x14
+  [    9.353983] --- Exception: 501 at _raw_spin_unlock_irq+0x40/0x50
+  [    9.353983]     LR = _raw_spin_unlock_irq+0x30/0x50
+  [    9.364839] [cc713af0] [c043db10] wait_for_common+0xac/0x188
+  [    9.370513] [cc713b30] [c02ddee4] ata_exec_internal_sg+0x2b0/0x4f0
+  [    9.376699] [cc713be0] [c02de18c] ata_exec_internal+0x68/0xa8
+  [    9.382454] [cc713c20] [c02de4b8] ata_dev_read_id+0x158/0x594
+  [    9.388205] [cc713ca0] [c02ec244] ata_eh_recover+0xd88/0x13d0
+  [    9.393962] [cc713d20] [c02f2520] sata_pmp_error_handler+0xc0/0x8ac
+  [    9.400234] [cc713dd0] [c02ecdc8] ata_scsi_port_error_handler+0x464/0x5e8
+  [    9.407023] [cc713e10] [c02ecfd0] ata_scsi_error+0x84/0xb8
+  [    9.412528] [cc713e40] [c02c4974] scsi_error_handler+0xd8/0x47c
+  [    9.418457] [cc713eb0] [c004737c] kthread+0xa8/0xac
+  [    9.423355] [cc713f40] [c000f6b8] ret_from_kernel_thread+0x64/0x6c
+
+This fix was suggested by Bhushan Bharat <R65777@freescale.com>, and
+was discussed in email at:
+
+  http://linuxppc.10917.n7.nabble.com/MPC8315-reboot-failure-lockdep-splat-possibly-related-tp75162.html
+
+Same patch successfully tested with 3.9.7.  linux-next compiled but
+not tested on hardware.
+
+This patch is based off linux-next tag next-20130819
+(which is commit 66a01bae29d11916c09f9f5a937cafe7d402e4a5 )
+
+Signed-off-by: Anthony Foiani <anthony.foiani@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/at91sam9n12ek.dts | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/sata_fsl.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
-index f4e43e3..84d8bdb 100644
---- a/arch/arm/boot/dts/at91sam9n12ek.dts
-+++ b/arch/arm/boot/dts/at91sam9n12ek.dts
-@@ -14,11 +14,11 @@
- 	compatible = "atmel,at91sam9n12ek", "atmel,at91sam9n12", "atmel,at91sam9";
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index d6577b9..a3f0bbd 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -290,6 +290,7 @@ static void fsl_sata_set_irq_coalescing(struct ata_host *host,
+ {
+ 	struct sata_fsl_host_priv *host_priv = host->private_data;
+ 	void __iomem *hcr_base = host_priv->hcr_base;
++	unsigned long flags;
  
- 	chosen {
--		bootargs = "mem=128M console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=jffs2";
-+		bootargs = "console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=jffs2";
- 	};
+ 	if (count > ICC_MAX_INT_COUNT_THRESHOLD)
+ 		count = ICC_MAX_INT_COUNT_THRESHOLD;
+@@ -302,12 +303,12 @@ static void fsl_sata_set_irq_coalescing(struct ata_host *host,
+ 			(count > ICC_MIN_INT_COUNT_THRESHOLD))
+ 		ticks = ICC_SAFE_INT_TICKS;
  
- 	memory {
--		reg = <0x20000000 0x10000000>;
-+		reg = <0x20000000 0x8000000>;
- 	};
+-	spin_lock(&host->lock);
++	spin_lock_irqsave(&host->lock, flags);
+ 	iowrite32((count << 24 | ticks), hcr_base + ICC);
  
- 	clocks {
+ 	intr_coalescing_count = count;
+ 	intr_coalescing_ticks = ticks;
+-	spin_unlock(&host->lock);
++	spin_unlock_irqrestore(&host->lock, flags);
+ 
+ 	DPRINTK("intrrupt coalescing, count = 0x%x, ticks = %x\n",
+ 			intr_coalescing_count, intr_coalescing_ticks);
 -- 
 1.8.3.2
 
