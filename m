@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab3IBJDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:03:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37819 "EHLO
+	id S1758826Ab3IBJDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:03:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37814 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758498Ab3IBIzd (ORCPT
+	with ESMTP id S1758491Ab3IBIzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:33 -0400
+	Mon, 2 Sep 2013 04:55:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 41/58] ARM: 7816/1: CONFIG_KUSER_HELPERS: fix help text
-Date: Mon,  2 Sep 2013 09:54:26 +0100
-Message-Id: <1378112083-9475-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 40/58] ARM: davinci: nand: specify ecc strength
+Date: Mon,  2 Sep 2013 09:54:25 +0100
+Message-Id: <1378112083-9475-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
+From: Sekhar Nori <nsekhar@ti.com>
 
-commit ac124504ecf6b20a2457d873d0728a8b991a5b0c upstream.
+commit acd36357edc08649e85ff15dc4ed62353c912eff upstream.
 
-Commit f6f91b0d9fd9 ("ARM: allow kuser helpers to be removed from the
-vector page") introduced some help text for the CONFIG_KUSER_HELPERS
-option which is rather contradictory.
+Starting with kernel v3.5, it is mandatory
+to specify ECC strength when using hardware
+ECC. Without this, kernel panics with a warning
+of the sort:
 
-Let's fix that, and improve it a little.
+Driver must set ecc.strength when using hardware ECC
+------------[ cut here ]------------
+kernel BUG at drivers/mtd/nand/nand_base.c:3519!
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fix this by specifying ECC strength for the boards
+which were missing this.
+
+Reported-by: Holger Freyther <holger@freyther.de>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/Kconfig | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/arm/mach-davinci/board-dm355-leopard.c | 1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c    | 1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c    | 1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c   | 1 +
+ 4 files changed, 4 insertions(+)
 
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 8d194df..6c5a533 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -768,15 +768,18 @@ config KUSER_HELPERS
- 	  the CPU type fitted to the system.  This permits binaries to be
- 	  run on ARMv4 through to ARMv7 without modification.
+diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
+index 8e77032..eeeb81f 100644
+--- a/arch/arm/mach-davinci/board-dm355-leopard.c
++++ b/arch/arm/mach-davinci/board-dm355-leopard.c
+@@ -75,6 +75,7 @@ static struct davinci_nand_pdata davinci_nand_data = {
+ 	.parts			= davinci_nand_partitions,
+ 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
+ 	.ecc_mode		= NAND_ECC_HW_SYNDROME,
++	.ecc_bits		= 4,
+ 	.bbt_options		= NAND_BBT_USE_FLASH,
+ };
  
-+	  See Documentation/arm/kernel_user_helpers.txt for details.
-+
- 	  However, the fixed address nature of these helpers can be used
- 	  by ROP (return orientated programming) authors when creating
- 	  exploits.
+diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
+index d34ed55..87a904f 100644
+--- a/arch/arm/mach-davinci/board-dm644x-evm.c
++++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+@@ -152,6 +152,7 @@ static struct davinci_nand_pdata davinci_evm_nandflash_data = {
+ 	.parts		= davinci_evm_nandflash_partition,
+ 	.nr_parts	= ARRAY_SIZE(davinci_evm_nandflash_partition),
+ 	.ecc_mode	= NAND_ECC_HW,
++	.ecc_bits	= 1,
+ 	.bbt_options	= NAND_BBT_USE_FLASH,
+ 	.timing		= &davinci_evm_nandflash_timing,
+ };
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index 958679a..5d4b51f 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -89,6 +89,7 @@ static struct davinci_nand_pdata davinci_nand_data = {
+ 	.parts			= davinci_nand_partitions,
+ 	.nr_parts		= ARRAY_SIZE(davinci_nand_partitions),
+ 	.ecc_mode		= NAND_ECC_HW,
++	.ecc_bits		= 1,
+ 	.options		= 0,
+ };
  
- 	  If all of the binaries and libraries which run on your platform
- 	  are built specifically for your platform, and make no use of
--	  these helpers, then you can turn this option off.  However,
--	  when such an binary or library is run, it will receive a SIGILL
--	  signal, which will terminate the program.
-+	  these helpers, then you can turn this option off to hinder
-+	  such exploits. However, in that case, if a binary or library
-+	  relying on those helpers is run, it will receive a SIGILL signal,
-+	  which will terminate the program.
+diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+index 5de69f2..198289c 100644
+--- a/arch/arm/mach-davinci/board-neuros-osd2.c
++++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+@@ -88,6 +88,7 @@ static struct davinci_nand_pdata davinci_ntosd2_nandflash_data = {
+ 	.parts		= davinci_ntosd2_nandflash_partition,
+ 	.nr_parts	= ARRAY_SIZE(davinci_ntosd2_nandflash_partition),
+ 	.ecc_mode	= NAND_ECC_HW,
++	.ecc_bits	= 1,
+ 	.bbt_options	= NAND_BBT_USE_FLASH,
+ };
  
- 	  Say N here only if you are absolutely certain that you do not
- 	  need these helpers; otherwise, the safe option is to say Y.
 -- 
 1.8.3.2
 
