@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758884Ab3IBJGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:06:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37773 "EHLO
+	id S1758438Ab3IBIzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37751 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab3IBIzY (ORCPT
+	with ESMTP id S1758395Ab3IBIzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:24 -0400
+	Mon, 2 Sep 2013 04:55:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 32/58] ARM: 7810/1: perf: Fix array out of bounds access in armpmu_map_hw_event()
-Date: Mon,  2 Sep 2013 09:54:17 +0100
-Message-Id: <1378112083-9475-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 29/58] MIPS: Rewrite pfn_valid to work in modules, too.
+Date: Mon,  2 Sep 2013 09:54:14 +0100
+Message-Id: <1378112083-9475-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,86 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Ralf Baechle <ralf@linux-mips.org>
 
-commit d9f966357b14e356dbd83b8f4a197a287ab4ff83 upstream.
+commit 8b9232141bf40788cce31f893c13f344ec31ee66 upstream.
 
-Vince Weaver reports an oops in the ARM perf event code while
-running his perf_fuzzer tool on a pandaboard running v3.11-rc4.
+This fixes:
 
-Unable to handle kernel paging request at virtual address 73fd14cc
-pgd = eca6c000
-[73fd14cc] *pgd=00000000
-Internal error: Oops: 5 [#1] SMP ARM
-Modules linked in: snd_soc_omap_hdmi omapdss snd_soc_omap_abe_twl6040 snd_soc_twl6040 snd_soc_omap snd_soc_omap_hdmi_card snd_soc_omap_mcpdm snd_soc_omap_mcbsp snd_soc_core snd_compress regmap_spi snd_pcm snd_page_alloc snd_timer snd soundcore
-CPU: 1 PID: 2790 Comm: perf_fuzzer Not tainted 3.11.0-rc4 #6
-task: eddcab80 ti: ed892000 task.ti: ed892000
-PC is at armpmu_map_event+0x20/0x88
-LR is at armpmu_event_init+0x38/0x280
-pc : [<c001c3e4>]    lr : [<c001c17c>]    psr: 60000013
-sp : ed893e40  ip : ecececec  fp : edfaec00
-r10: 00000000  r9 : 00000000  r8 : ed8c3ac0
-r7 : ed8c3b5c  r6 : edfaec00  r5 : 00000000  r4 : 00000000
-r3 : 000000ff  r2 : c0496144  r1 : c049611c  r0 : edfaec00
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: aca6c04a  DAC: 00000015
-Process perf_fuzzer (pid: 2790, stack limit = 0xed892240)
-Stack: (0xed893e40 to 0xed894000)
-3e40: 00000800 c001c17c 00000002 c008a748 00000001 00000000 00000000 c00bf078
-3e60: 00000000 edfaee50 00000000 00000000 00000000 edfaec00 ed8c3ac0 edfaec00
-3e80: 00000000 c073ffac ed893f20 c00bf180 00000001 00000000 c00bf078 ed893f20
-3ea0: 00000000 ed8c3ac0 00000000 00000000 00000000 c0cb0818 eddcab80 c00bf440
-3ec0: ed893f20 00000000 eddcab80 eca76800 00000000 eca76800 00000000 00000000
-3ee0: 00000000 ec984c80 eddcab80 c00bfe68 00000000 00000000 00000000 00000080
-3f00: 00000000 ed892000 00000000 ed892030 00000004 ecc7e3c8 ecc7e3c8 00000000
-3f20: 00000000 00000048 ecececec 00000000 00000000 00000000 00000000 00000000
-3f40: 00000000 00000000 00297810 00000000 00000000 00000000 00000000 00000000
-3f60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-3f80: 00000002 00000002 000103a4 00000002 0000016c c00128e8 ed892000 00000000
-3fa0: 00090998 c0012700 00000002 000103a4 00090ab8 00000000 00000000 0000000f
-3fc0: 00000002 000103a4 00000002 0000016c 00090ab0 00090ab8 000107a0 00090998
-3fe0: bed92be0 bed92bd0 0000b785 b6e8f6d0 40000010 00090ab8 00000000 00000000
-[<c001c3e4>] (armpmu_map_event+0x20/0x88) from [<c001c17c>] (armpmu_event_init+0x38/0x280)
-[<c001c17c>] (armpmu_event_init+0x38/0x280) from [<c00bf180>] (perf_init_event+0x108/0x180)
-[<c00bf180>] (perf_init_event+0x108/0x180) from [<c00bf440>] (perf_event_alloc+0x248/0x40c)
-[<c00bf440>] (perf_event_alloc+0x248/0x40c) from [<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc)
-[<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc) from [<c0012700>] (ret_fast_syscall+0x0/0x48)
-Code: 0a000005 e3540004 0a000016 e3540000 (0791010c)
+  MODPOST 393 modules
+ERROR: "min_low_pfn" [arch/mips/kvm/kvm.ko] undefined!
+make[3]: *** [__modpost] Error 1
 
-This is because event->attr.config in armpmu_event_init()
-contains a very large number copied directly from userspace and
-is never checked against the size of the array indexed in
-armpmu_map_hw_event(). Fix the problem by checking the value of
-config before indexing the array and rejecting invalid config
-values.
+It would have been possible to just export min_low_pfn but in the end
+pfn_valid should return 1 for any pfn argument for which a struct page
+exists so using min_low_pfn was wrong anyway.
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/mips/include/asm/page.h | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 522c11d..54fbd46 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -109,7 +109,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
- static int
- armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
- {
--	int mapping = (*event_map)[config];
-+	int mapping;
+diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
+index da9bd7d..ccb77ec 100644
+--- a/arch/mips/include/asm/page.h
++++ b/arch/mips/include/asm/page.h
+@@ -175,14 +175,13 @@ typedef struct { unsigned long pgprot; } pgprot_t;
+ 
+ #ifdef CONFIG_FLATMEM
+ 
+-#define pfn_valid(pfn)							\
+-({									\
+-	unsigned long __pfn = (pfn);					\
+-	/* avoid <linux/bootmem.h> include hell */			\
+-	extern unsigned long min_low_pfn;				\
+-									\
+-	__pfn >= min_low_pfn && __pfn < max_mapnr;			\
+-})
++static inline int pfn_valid(unsigned long pfn)
++{
++	/* avoid <linux/mm.h> include hell */
++	extern unsigned long max_mapnr;
 +
-+	if (config >= PERF_COUNT_HW_MAX)
-+		return -EINVAL;
-+
-+	mapping = (*event_map)[config];
- 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
- }
++	return pfn >= ARCH_PFN_OFFSET && pfn < max_mapnr;
++}
+ 
+ #elif defined(CONFIG_SPARSEMEM)
  
 -- 
 1.8.3.2
