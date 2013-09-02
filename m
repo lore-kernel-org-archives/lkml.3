@@ -1,200 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab3IBJBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:01:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37851 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758538Ab3IBIzl (ORCPT
+	id S1758770Ab3IBJBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:01:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38650 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab3IBJBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:41 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 46/58] [SCSI] zfcp: fix schedule-inside-lock in scsi_device list loops
-Date: Mon,  2 Sep 2013 09:54:31 +0100
-Message-Id: <1378112083-9475-47-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 2 Sep 2013 05:01:35 -0400
+Date: Mon, 2 Sep 2013 19:01:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: linux-next: build failure after merge of the final tree (drm tree
+ related)
+Message-Id: <20130902190123.e3cd30ac95fcefa1aaa95c8b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Sep_2013_19_01_23_+1000_E=+6H/YZgo46ENDt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Mon__2_Sep_2013_19_01_23_+1000_E=+6H/YZgo46ENDt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi all,
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-commit 924dd584b198a58aa7cb3efefd8a03326550ce8f upstream.
+drivers/gpu/drm/radeon/ci_dpm.c: In function 'ci_request_link_speed_change_=
+before_state_change':
+drivers/gpu/drm/radeon/ci_dpm.c:4212:4: error: implicit declaration of func=
+tion 'radeon_acpi_pcie_performance_request' [-Werror=3Dimplicit-function-de=
+claration]
+    if (radeon_acpi_pcie_performance_request(rdev, PCIE_PERF_REQ_PECI_GEN3,=
+ false) =3D=3D 0)
+    ^
 
-BUG: sleeping function called from invalid context at kernel/workqueue.c:2752
-in_atomic(): 1, irqs_disabled(): 1, pid: 360, name: zfcperp0.0.1700
-CPU: 1 Not tainted 3.9.3+ #69
-Process zfcperp0.0.1700 (pid: 360, task: 0000000075b7e080, ksp: 000000007476bc30)
-<snip>
-Call Trace:
-([<00000000001165de>] show_trace+0x106/0x154)
- [<00000000001166a0>] show_stack+0x74/0xf4
- [<00000000006ff646>] dump_stack+0xc6/0xd4
- [<000000000017f3a0>] __might_sleep+0x128/0x148
- [<000000000015ece8>] flush_work+0x54/0x1f8
- [<00000000001630de>] __cancel_work_timer+0xc6/0x128
- [<00000000005067ac>] scsi_device_dev_release_usercontext+0x164/0x23c
- [<0000000000161816>] execute_in_process_context+0x96/0xa8
- [<00000000004d33d8>] device_release+0x60/0xc0
- [<000000000048af48>] kobject_release+0xa8/0x1c4
- [<00000000004f4bf2>] __scsi_iterate_devices+0xfa/0x130
- [<000003ff801b307a>] zfcp_erp_strategy+0x4da/0x1014 [zfcp]
- [<000003ff801b3caa>] zfcp_erp_thread+0xf6/0x2b0 [zfcp]
- [<000000000016b75a>] kthread+0xf2/0xfc
- [<000000000070c9de>] kernel_thread_starter+0x6/0xc
- [<000000000070c9d8>] kernel_thread_starter+0x0/0xc
+Caused by commit cc8dbbb4f62a ("drm/radeon: add dpm support for CI dGPUs
+(v2)").  These calls need protecting with CONFIG_ACPI (like is done in
+cypress_dpm.c, I guess).
 
-Apparently, the ref_count for some scsi_device drops down to zero,
-triggering device removal through execute_in_process_context(), while
-the lldd error recovery thread iterates through a scsi device list.
-Unfortunately, execute_in_process_context() decides to immediately
-execute that device removal function, instead of scheduling asynchronous
-execution, since it detects process context and thinks it is safe to do
-so. But almost all calls to shost_for_each_device() in our lldd are
-inside spin_lock_irq, even in thread context. Obviously, schedule()
-inside spin_lock_irq sections is a bad idea.
+I tried reverting commit 9c725e5bcdae ("Merge branch 'drm-next-3.12' of
+git://people.freedesktop.org/~agd5f/linux into drm-next") but that failed
+because that branch is based on v3.11-rc7 (!) which is later than the
+base of the drm tree (v3.11-rc3).  :-(
 
-Change the lldd to use the proper iterator function,
-__shost_for_each_device(), in combination with required locking.
+I added this fix up patch for today (it may be wrong, butfixes the build
+failure).
 
-Occurences that need to be changed include all calls in zfcp_erp.c,
-since those might be executed in zfcp error recovery thread context
-with a lock held.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 2 Sep 2013 18:57:41 +1000
+Subject: [PATCH] drm/radeon: protect ACPI calls with CONFIG_ACPI
 
-Other occurences of shost_for_each_device() in zfcp_fsf.c do not
-need to be changed (no process context, no surrounding locking).
-
-The problem was introduced in Linux 2.6.37 by commit
-b62a8d9b45b971a67a0f8413338c230e3117dff5
-"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit".
-
-Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/s390/scsi/zfcp_erp.c | 29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/radeon/ci_dpm.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/s390/scsi/zfcp_erp.c b/drivers/s390/scsi/zfcp_erp.c
-index e1b4f80..5c87270 100644
---- a/drivers/s390/scsi/zfcp_erp.c
-+++ b/drivers/s390/scsi/zfcp_erp.c
-@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port(struct zfcp_port *port)
- 
- 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
- 		zfcp_erp_action_dismiss(&port->erp_action);
--	else
--		shost_for_each_device(sdev, port->adapter->scsi_host)
-+	else {
-+		spin_lock(port->adapter->scsi_host->host_lock);
-+		__shost_for_each_device(sdev, port->adapter->scsi_host)
- 			if (sdev_to_zfcp(sdev)->port == port)
- 				zfcp_erp_action_dismiss_lun(sdev);
-+		spin_unlock(port->adapter->scsi_host->host_lock);
-+	}
- }
- 
- static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
-@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(struct zfcp_port *port, int clear,
- {
- 	struct scsi_device *sdev;
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock(port->adapter->scsi_host->host_lock);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
-+	spin_unlock(port->adapter->scsi_host->host_lock);
- }
- 
- static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
-@@ -1435,8 +1440,10 @@ void zfcp_erp_set_adapter_status(struct zfcp_adapter *adapter, u32 mask)
- 		atomic_set_mask(common_mask, &port->status);
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
- 
--	shost_for_each_device(sdev, adapter->scsi_host)
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host)
- 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-@@ -1470,11 +1477,13 @@ void zfcp_erp_clear_adapter_status(struct zfcp_adapter *adapter, u32 mask)
+diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dp=
+m.c
+index 916630f..3cce533 100644
+--- a/drivers/gpu/drm/radeon/ci_dpm.c
++++ b/drivers/gpu/drm/radeon/ci_dpm.c
+@@ -4208,6 +4208,7 @@ static void ci_request_link_speed_change_before_state=
+_change(struct radeon_devic
+ 	pi->pspp_notify_required =3D false;
+ 	if (target_link_speed > current_link_speed) {
+ 		switch (target_link_speed) {
++#ifdef CONFIG_ACPI
+ 		case RADEON_PCIE_GEN3:
+ 			if (radeon_acpi_pcie_performance_request(rdev, PCIE_PERF_REQ_PECI_GEN3,=
+ false) =3D=3D 0)
+ 				break;
+@@ -4217,6 +4218,7 @@ static void ci_request_link_speed_change_before_state=
+_change(struct radeon_devic
+ 		case RADEON_PCIE_GEN2:
+ 			if (radeon_acpi_pcie_performance_request(rdev, PCIE_PERF_REQ_PECI_GEN2,=
+ false) =3D=3D 0)
+ 				break;
++#endif
+ 		default:
+ 			pi->force_pcie_gen =3D ci_get_current_pcie_speed(rdev);
+ 			break;
+@@ -4248,7 +4250,9 @@ static void ci_notify_link_speed_change_after_state_c=
+hange(struct radeon_device
+ 		    (ci_get_current_pcie_speed(rdev) > 0))
+ 			return;
+=20
++#ifdef CONFIG_ACPI
+ 		radeon_acpi_pcie_performance_request(rdev, request, false);
++#endif
  	}
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
- 
--	shost_for_each_device(sdev, adapter->scsi_host) {
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host) {
- 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
- 		if (clear_counter)
- 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 	}
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
  }
- 
- /**
-@@ -1488,16 +1497,19 @@ void zfcp_erp_set_port_status(struct zfcp_port *port, u32 mask)
- {
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
-+	unsigned long flags;
- 
- 	atomic_set_mask(mask, &port->status);
- 
- 	if (!common_mask)
- 		return;
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			atomic_set_mask(common_mask,
- 					&sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
- 
- /**
-@@ -1512,6 +1524,7 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
- 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
-+	unsigned long flags;
- 
- 	atomic_clear_mask(mask, &port->status);
- 
-@@ -1521,13 +1534,15 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	if (clear_counter)
- 		atomic_set(&port->erp_counter, 0);
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port) {
- 			atomic_clear_mask(common_mask,
- 					  &sdev_to_zfcp(sdev)->status);
- 			if (clear_counter)
- 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 		}
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
- 
- /**
--- 
-1.8.3.2
+=20
+--=20
+1.8.4.rc3
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__2_Sep_2013_19_01_23_+1000_E=+6H/YZgo46ENDt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJFPnAAoJEECxmPOUX5FEHlAQAJ6YOPAllK+gx/SJVaBElA3/
+DFoVVphPrFTXjFdnZ44llfLlbSffcHta80AX1GJB1Kgqm0IaK+lqA6CRMA2LpYyG
+WsRPeqb1reYwejPqnCQL++PJZnQ/X/ozaO+me6TigFOA72iAiHnB6N1qkgiI5Rts
+0h57/1ZgfTlxdFl9Wk06gsH6Iw20tIJNXLqLUgovZGvLlnFRFJYJcbPYW7OCHU8E
+CJMXqkQjyA2eFYUpGwJp8VYEbf6dosAkS4WWJYxnC91MRFk+zeiJlv4s/R8V75MO
+IAG/+iHLSakWCVKgr6yyFkCK4vVRwk18Kp1HjYXlkYKkTebcx3wccIiPOngzksqc
+BuZl3u2DV1FptuzsfvZKdMIp03GAc8+xWaIFEDmKcH7ZHg7L99L4TREbC8AfTM0s
+NSBCytDf8DMUg9BNBAA+P5wLA5OxOv7bUwXZuswEeSb3GM78xgZDA5o+GH5YZ/ee
+s7lkAMgVtcyOvQ8/ScyYhrYhfjSodOKRtwxgnLGP5cfqFeQr7Jac8gUmCVsY6vTb
+3QGj1j4Ir3ASNtbJhm9g/xAMSVqiYYxawkGStlJWlNadUlVp6LSdfsUmi2jgxbmE
+Co0U1ahQvnobryzU0Km3HifHd44kDA6RipIuA5eJ8gm6hLooCC7S9xwrP+MlBjcQ
+uXDimN2GiwBeKxZx2eup
+=uOoi
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Sep_2013_19_01_23_+1000_E=+6H/YZgo46ENDt--
