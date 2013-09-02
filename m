@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3IBGTk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 02:19:40 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:65475 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab3IBGTh (ORCPT
+	id S1755465Ab3IBGTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 02:19:38 -0400
+Received: from contumacia.investici.org ([178.255.144.35]:46470 "EHLO
+	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243Ab3IBGTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 02:19:37 -0400
-Date: Mon, 2 Sep 2013 08:19:50 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] [PATCH 0/2] vgaarb: Fixes for partial VGA opt-out
-Message-ID: <20130902061950.GH9374@phenom.ffwll.local>
-Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <20130815222835.27642.15330.stgit@bling.home>
- <20130830124119.GH11428@intel.com>
+	Mon, 2 Sep 2013 02:19:33 -0400
+X-Greylist: delayed 1333 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Sep 2013 02:19:32 EDT
+X-DKIM: OpenDKIM Filter v2.6.8 contumacia.investici.org 2D7B3E8178
+Date: Mon, 2 Sep 2013 07:54:26 +0200
+From: Antonio Quartulli <ordex@autistici.org>
+To: Joe Perches <joe@perches.com>
+Cc: Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] batman: Remove reference to compare_ether_addr
+Message-ID: <20130902055426.GD1871@ritirata.org>
+References: <1378075508.1953.27.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130830124119.GH11428@intel.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378075508.1953.27.camel@joe-AO722>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 03:41:19PM +0300, Ville Syrjälä wrote:
-> On Thu, Aug 15, 2013 at 04:37:47PM -0600, Alex Williamson wrote:
-> > I'm trying to add support for VGA arbitration on newer Intel graphics
-> > devices.  The existing code attempts to do this, but appear to have
-> > not been updated since GMCH devices roamed the Earth.  On newer
-> > devices like Haswell, we can disable VGA memory through an MSR on the
-> > device, but we rely on the VGA arbiter to manage VGA IO using the PCI
-> > COMMAND register.  In trying to unregister legacy VGA memory, I found
-> > that the VGA arbiter still wanted to disable both memory and IO on
-> > the device and that it forgot to actually program the device to
-> > disable IO when the decoding is updated.  This series attempts to fix
-> > both of those.  Thanks,
-> 
-> The series looks good to me.
-> 
-> Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Merged to dinq with Dave's irc-ack. I'll shuffle my tree a bit so that
-this will be part of my 3.12 latecomers pull request to Dave.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--wxDdMuZNg1r63Hyj
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Sep 01, 2013 at 03:45:08PM -0700, Joe Perches wrote:
+> This function is being removed, rename the reference.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Antonio Quartulli <ordex@autistici.org>
+
+Thanks a lot Joe
+
+--=20
+Antonio Quartulli
+
+=2E.each of us alone is worth nothing..
+Ernesto "Che" Guevara
+
+--wxDdMuZNg1r63Hyj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJCgSAAoJEADl0hg6qKeOox4P/0IoajFQuuet06ot0bKWVCUO
+wpDvkDlLyoFzc07JqWde9GmqEU2lgRIaINBvbuwuqRUGOSiC/TGzJ6c2xJ6dcYh/
+LueY/o0kfJ7JhvmYACYncCrnXK6RZrcYeigkY04z3HY7l5fCzumydgTQmX5M21a1
+nYDuSXIu02hmZVUYs4yrQdcMYvZaO/3O7F4Kt55xKkLERPpxznvow3+6kt5hGi9a
+vsl6zlprxy9Il/nwZCTwcV9XOZQJi4EvCpyVcOTZzPD+wdZE03C5uBZJwtp0RZig
+44YdCZh7TsbbvArGP+kJ7VY+FFbiF8crR1dPkPfyckae2q+bIKcEqXITOVOII0ud
+u7UgjHJZt8WLXuu265WRyKmvlrQE/4NNXgWkHxKfU53vC03zB9oJyoyLh6LgKXeH
+sBKi1MpekbWixvi3pnA7Xi6bGRFCd9djgu8L6ZWibG908mzmXE4Rz8SUkpHm5r6W
+wUKZfvZrlYNKJCoJh0pyaY4IlVeW3YAADkulQup3tqjqOI6dNOxpS6cZ780a/w3Z
+bLhcRKiBLxRYeSMoN+XeDsTaNPsyVjXiskaLvLY2833C8HVkxdZNZpVIo4R0xeWU
+9zVmg2yLFVUXuUmY38wetFFX8717WEjoy439Xrdn/Ygsuu3wr0HbpLE2F5IdCb++
+1YLkbEmxrglYFzKdz3rl
+=k085
+-----END PGP SIGNATURE-----
+
+--wxDdMuZNg1r63Hyj--
