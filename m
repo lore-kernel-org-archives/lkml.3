@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758280Ab3IBLaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 07:30:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47607 "EHLO mx2.suse.de"
+	id S1758189Ab3IBLcg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 07:32:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32751 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab3IBLaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 07:30:11 -0400
-Date: Mon, 2 Sep 2013 13:30:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Correct the USB IDs for the new Macbook Air 6
-In-Reply-To: <1378042304-1400-1-git-send-email-rydberg@euromail.se>
-Message-ID: <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz>
-References: <1378042304-1400-1-git-send-email-rydberg@euromail.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755365Ab3IBLcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 07:32:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1006,1367996400"; 
+   d="scan'208";a="389914331"
+Date: Mon, 2 Sep 2013 16:16:27 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, djbw@fb.com,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/1] dma: imx-dma: Remove redundant NULL check
+Message-ID: <20130902104627.GN7376@intel.com>
+References: <1378108278-4051-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378108278-4051-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Sep 2013, Henrik Rydberg wrote:
+On Mon, Sep 02, 2013 at 01:21:18PM +0530, Sachin Kamat wrote:
+> kfree on a NULL pointer is a no-op. Null pointer check is
+> not necessary.
 
-> A recent patch (9d9a04ee) added support for the new machine, but got
-> the sequence of USB ids wrong. Reports from both Ian and Linus T show
-> that the 0x0291 id is for ISO, not ANSI, which should have the missing
-> number 0x0290. This patchs moves the three numbers accordingly, fixing
-> the problem.
-> 
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
-> Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi Jiri, Dmitry,
-> 
-> it looks like this change has been sufficiently tested now, in
-> addition to making perfect sense. Jiri, would you mind taking it, if
-> Dmitry approves?
+Applied, thanks
 
-Absolutely ... waiting for Dmitry's Ack.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+~Vinod
