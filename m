@@ -1,228 +1,461 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab3IBINl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:13:41 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:8568 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab3IBINi (ORCPT
+	id S1754460Ab3IBIQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:16:33 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:43592 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab3IBIQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:13:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 02 Sep 2013 01:10:54 -0700
-Message-ID: <522448CB.3080102@nvidia.com>
-Date: Mon, 2 Sep 2013 16:14:03 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 04:16:31 -0400
+Date: Mon, 2 Sep 2013 09:16:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] mfd: add STw481x driver
+Message-ID: <20130902081625.GB12341@lee--X1>
+References: <1378065614-18094-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 02/14] drivers: thermal: introduce device tree parser
-References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com> <1377299755-5134-3-git-send-email-eduardo.valentin@ti.com> <20130827102205.GC19893@e106331-lin.cambridge.arm.com> <521CAD48.2030306@ti.com> <20130827162309.GR19893@e106331-lin.cambridge.arm.com> <521CED34.2090008@ti.com> <521FD70F.7080104@ti.com>
-In-Reply-To: <521FD70F.7080104@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378065614-18094-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 07:19 AM, Eduardo Valentin wrote:
-> * PGP Signed: 08/29/2013 at 04:19:46 PM
-> 
-> Mark, Pawel and Stephen,
-> 
-> 
-> On 27-08-2013 14:17, Eduardo Valentin wrote:
->> On 27-08-2013 12:23, Mark Rutland wrote:
->>> On Tue, Aug 27, 2013 at 02:44:40PM +0100, Eduardo Valentin wrote:
->>>> Hello Mark,
-> 
-> <cut>
-> 
-> I believe now we need to align on thermal bindings, before I propose
-> next version of this series. So, following the discussions on this
-> thread, I believe a typical CPU thermal zone would look like the following:
-> + #include <dt-bindings/thermal/thermal.h>
-> +
-> + cpu_thermal: cpu_thermal {
-> +         passive-delay = <250>; /* milliseconds */
-> +         polling-delay = <1000>; /* milliseconds */
-> +                 /*
-> +                  * sensor       ID
-> +                  */
-> +         sensors = <&bandgap0     0>;
-> +                         /*
-> +                          * cooling
-> +                          * device       Usage   Trip            lower
-> bound             upper bound
-> +                          */
-> +         cooling-devices = <&cpu0        100     &cpu-alert
-> THERMAL_NO_LIMITS        THERMAL_NO_LIMITS>;
-> +         trips {
-> +                 cpu-alert: cpu-alert {
-> +                         temperature = <100000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 };
-> +                 cpu-crit: cpu-crit {
-> +                         temperature = <125000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_CRITICAL>;
-> +                 };
-> +         };
-> + };
-> 
-> *Note: THERMAL_NO_LIMIT means, it will be using the cooling device
-> minimum and maximum limits.
-> 
-> Couple of comments.
-> 1. I am keeping the pooling intervals. A possible alternative way to
-> describe that would be specifying the maximum dT/dt. Essentially because
-> I am still convinced that this is part of hw specs.
-> 
-> 2. The above follows your suggestion to use consumer pointing to
-> producers. Although, I still need to figure out how this could be
-> implemented for Linux. But I think that is another story, at least for
-> now. We need to first align on the DT binding itself.
-> 
-> 3. The link from cooling device specification to trip points, from my
-> perspective, should be enough, and thus we shall not need the thermal
-> cells and size for trip points, as you proposed. Let me know what you think.
-> 
-> Below is another example, on a more complex scenario, board specific
-> case (hypothetical, just for exemplification):
-> 
-> + #include <dt-bindings/thermal/thermal.h>
-> +
-> + board_thermal: board_thermal {
-> +         passive-delay = <1000>; /* milliseconds */
-> +         polling-delay = <2500>; /* milliseconds */
-> +                 /*
-> +                  * sensor       ID
-> +                  */
-> +         sensors = <&adc-dummy     0>,
-> +		    <&adc-dummy     1>,
-> +		    <&adc-dymmy     2>;
-> +                         /*
-> +                          * cooling
-> +                          * device       Usage   Trip		lower	upper
-> +                          */
-> +         cooling-devices = <&cpu0       75     &cpu-trip	0      2>,
-> +			    <&gpu0       40     &gpu-trip	0      2>;
-> +			    <&lcd0       25     &lcd-trip	5      10>;
-> +         trips {
-> +                 cpu-trip: cpu-trip {
-> +                         temperature = <60000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 };
-> +                 gpu-trip: gpu-trip {
-> +                         temperature = <55000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 }
-> +                 lcd-trip: lcp-trip {
-> +                         temperature = <53000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 };
-> +                 crit-trip: crit-trip {
-> +                         temperature = <68000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_CRITICAL>;
-> +                 };
-> +         };
-> + };
-> 
-> Now writing the above example, one might want to have a way to say the
-> sensor correlation equation.
-> 
-> Another example:
-> + #include <dt-bindings/thermal/thermal.h>
-> +
-> + dsp_thermal: dsp_thermal {
-> +         passive-delay = <250>; /* milliseconds */
-> +         polling-delay = <1000>; /* milliseconds */
-> +                 /*
-> +                  * sensor       ID
-> +                  */
-> +         sensors = <&bandgap0     1>;
-> +                         /*
-> +                          * cooling
-> +                          * device       Usage   Trip            lower
-> bound             upper bound
-> +                          */
-> +         cooling-devices = <&dsp0        100     &dsp-alert
-> THERMAL_NO_LIMIT        THERMAL_NO_LIMIT>;
-> +         trips {
-> +                 dsp-alert: dsp-alert {
-> +                         temperature = <100000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 };
-> +                 dsp-crit: cdsp-crit {
-> +                         temperature = <125000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_CRITICAL>;
-> +                 };
-> +         };
-> + };
-> +
-> + gpu_thermal: gpu_thermal {
-> +         passive-delay = <500>; /* milliseconds */
-> +         polling-delay = <1000>; /* milliseconds */
-> +                 /*
-> +                  * sensor       ID
-> +                  */
-> +         sensors = <&bandgap0     2>;
-> +                         /*
-> +                          * cooling
-> +                          * device       Usage   Trip            lower
-> bound             upper bound
-> +                          */
-> +         cooling-devices = <&gpu0        100     &gpu-alert
-> THERMAL_NO_LIMIT        THERMAL_NO_LIMIT>;
-> +         trips {
-> +                 gpu-alert: gpu-alert {
-> +                         temperature = <100000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_PASSIVE>;
-> +                 };
-> +                 gpu-crit: gpu-crit {
-> +                         temperature = <125000>; /* milliCelsius */
-> +                         hysteresis = <2000>; /* milliCelsius */
-> +                         type = <THERMAL_TRIP_CRITICAL>;
-> +                 };
-> +         };
-> + };
-> 
-> 
-> Wei, I think the above would cover for the IPs with multiple internal
-> sensors cases you were looking for, right?
-Yes, I think so, and this series is what I'm looking for, thanks again.
+Hi Linus,
 
+> This adds a driver for the STw481x PMICs found in the Nomadik
+> family of platforms. This one uses pure device tree probing.
+> Print some of the OTP registers on boot and register a regulator
+> MFD child.
 > 
-> Durga, please also check if I am missing something to cover for your
-> plans to, in case you will be using DT to describe your HW.
-> 
-> Anyways, Mark and Pawel, let me know if I missed something from our
-> discussion. I believe the above bindings would look more like regular
-> standard DT bindings. And also they should be now slim enough, without
-> Linux implementation details and also without policies.
-> 
->>
->>
-> 
-> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> Hi Sam, I'm seeking an ACK for this driver to take it through
+> the ARM SoC tree with the enablement patches.
+> ---
+>  drivers/mfd/Kconfig         |  10 ++
+>  drivers/mfd/Makefile        |   1 +
+>  drivers/mfd/stw481x.c       | 250 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/stw481x.h |  67 ++++++++++++
+>  4 files changed, 328 insertions(+)
+>  create mode 100644 drivers/mfd/stw481x.c
+>  create mode 100644 include/linux/mfd/stw481x.h
 
+Please see to the checkpatch.pl pointed out by Wang.
+
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index aecd6dd..bd6b521 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -1145,6 +1145,16 @@ config MFD_WM8994
+>  	  core support for the WM8994, in order to use the actual
+>  	  functionaltiy of the device other drivers must be enabled.
+>  
+> +config MFD_STW481X
+> +	bool "Support for ST Microelectronics STw481x"
+> +	depends on I2C && ARCH_NOMADIK
+
+I believe this chip is commercially available, therefore it's surely
+possible that they 'could' appear on !NOMADIK platforms? What are the
+dependencies on the Nomadik platform?
+
+> +	select REGMAP_I2C
+> +	select MFD_CORE
+> +	help
+> +	  Select this option to enable the STw481x chip driver used
+> +	  in various ST Microelectronics and ST-Ericsson embedded
+> +	  Nomadik series.
+> +
+>  endmenu
+>  endif
+>  
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 3c90051..1e1242c 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -159,3 +159,4 @@ obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+>  obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
+>  obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
+>  obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+> +obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+> diff --git a/drivers/mfd/stw481x.c b/drivers/mfd/stw481x.c
+> new file mode 100644
+> index 0000000..b77f504
+> --- /dev/null
+> +++ b/drivers/mfd/stw481x.c
+> @@ -0,0 +1,250 @@
+> +/*
+> + * Core driver for STw4810/STw4811
+> + *
+> + * Copyright (C) 2013 ST-Ericsson SA
+> + * Written on behalf of Linaro for ST-Ericsson
+> + *
+> + * Author: Linus Walleij <linus.walleij@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +
+> +#include <linux/err.h>
+> +#include <linux/i2c.h>
+> +#include <linux/init.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/stw481x.h>
+> +#include <linux/module.h>
+> +#include <linux/regmap.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/slab.h>
+> +
+> +/*
+> + * This driver can only access the non-USB portions of STw4811, the register
+> + * range 0x00-0x10 dealing with USB is bound to the two special I2C pins used
+> + * for USB control.
+> + */
+> +
+> +static int stw481x_get_pctl_reg(struct stw481x *stw481x, u8 reg)
+> +{
+> +	u8 msb = (reg >> 3) & 0x03;
+> +	u8 lsb = (reg << 5) & 0xe0;
+> +	unsigned int val;
+> +	u8 vrfy;
+> +	int ret;
+> +
+> +	ret = regmap_write(stw481x->map, 0x1f, msb);
+
+Any chance in replacing the register param #defined?
+
+I still don't know what this function is doing. I'm taking a guess
+that we're fetching the power control registers as opposed to some
+kind of pinctrl?
+
+With the variables used in the function and in the map, coupled with
+the !#defined register values is making it really hard to see exactly
+what we're doing here.
+
+> +	if (ret)
+> +		return ret;
+> +	ret = regmap_write(stw481x->map, 0x1e, lsb);
+> +	if (ret)
+> +		return ret;
+> +	ret = regmap_read(stw481x->map, 0x1f, &val);
+> +	if (ret)
+> +		return ret;
+> +	vrfy = (val & 0x03) << 3;
+> +	ret = regmap_read(stw481x->map, 0x1e, &val);
+> +	if (ret)
+> +		return ret;
+> +	vrfy |= ((val >> 5) & 0x07);
+> +	if (vrfy != reg)
+> +		return -EIO;
+> +	return (val >> 1) & 0x0f;
+> +}
+> +
+> +static int stw481x_startup(struct stw481x *stw481x)
+> +{
+> +	u8 vcore_val[] = { 100, 105, 110, 115, 120, 122, 124, 126, 128,
+> +			   130, 132, 134, 136, 138, 140, 145 };
+> +	u8 vpll_val[] = { 105, 120, 130, 180 };
+> +	u8 vaux_val[] = { 15, 18, 25, 28 };
+
+I had to look further down to see that these were voltages*100. Any
+chance of a small comment here to allude to the fact?
+
+> +	u8 vcore;
+> +	u8 vcore_slp;
+> +	u8 vpll;
+> +	u8 vaux;
+> +	bool vaux_en;
+> +	bool it_warn;
+> +	int ret;
+> +	unsigned int val;
+> +
+> +	ret = regmap_read(stw481x->map, STW_CONF1, &val);
+> +	if (ret)
+> +		return ret;
+> +	vaux_en = !!(val & STW_CONF1_PDN_VAUX);
+> +	it_warn = !!(val & STW_CONF1_IT_WARN);
+> +
+> +	dev_info(&stw481x->client->dev, "voltages %s\n",
+> +		(val & STW_CONF1_V_MONITORING) ? "OK" : "LOW");
+> +	dev_info(&stw481x->client->dev, "MMC level shifter %s\n",
+> +		(val & STW_CONF1_MMC_LS_STATUS) ? "high impedance" : "ON");
+> +	dev_info(&stw481x->client->dev, "VMMC: %s\n",
+> +		(val & STW_CONF1_PDN_VMMC) ? "ON" : "disabled");
+> +
+> +	dev_info(&stw481x->client->dev, "STw481x power control registers:\n");
+> +
+> +	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VCORE_SEL);
+> +	if (ret < 0)
+> +		return ret;
+> +	vcore = ret & 0x0f;
+> +
+> +	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VAUX_SEL);
+> +	if (ret < 0)
+> +		return ret;
+> +	vaux = (ret >> 2) & 3;
+> +	vpll = (ret >> 4) & 1; /* Save bit 4 */
+> +
+> +	ret = stw481x_get_pctl_reg(stw481x, STW_PC_VPLL_SEL);
+> +	if (ret < 0)
+> +		return ret;
+> +	vpll |= (ret >> 1) & 2;
+> +
+> +	dev_info(&stw481x->client->dev, "VCORE: %u.%uV %s\n",
+> +		vcore_val[vcore] / 100, vcore_val[vcore] % 100,
+> +		(ret & 4) ? "ON" : "OFF");
+> +
+> +	dev_info(&stw481x->client->dev, "VPLL:  %u.%uV %s\n",
+> +		vpll_val[vpll] / 100, vpll_val[vpll] % 100,
+> +		(ret & 0x10) ? "ON" : "OFF");
+> +
+> +	dev_info(&stw481x->client->dev, "VAUX:  %u.%uV %s\n",
+> +		vaux_val[vaux] / 10, vaux_val[vaux] % 10,
+> +		vaux_en ? "ON" : "OFF");
+> +
+> +	ret = regmap_read(stw481x->map, STW_CONF2, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	dev_info(&stw481x->client->dev, "TWARN: %s threshold, %s\n",
+> +		it_warn ? "below" : "above",
+> +		(val & STW_CONF2_MASK_TWARN) ? "enabled" : "mask through VDDOK");
+> +	dev_info(&stw481x->client->dev, "VMMC: %s\n",
+> +		(val & STW_CONF2_VMMC_EXT) ? "internal" : "external");
+> +	dev_info(&stw481x->client->dev, "IT WAKE UP: %s\n",
+> +		(val & STW_CONF2_MASK_IT_WAKE_UP) ? "enabled" : "masked");
+> +	dev_info(&stw481x->client->dev, "GPO1: %s\n",
+> +		(val & STW_CONF2_GPO1) ? "low" : "high impedance");
+> +	dev_info(&stw481x->client->dev, "GPO2: %s\n",
+> +		(val & STW_CONF2_GPO2) ? "low" : "high impedance");
+> +
+> +	ret = regmap_read(stw481x->map, STW_VCORE_SLEEP, &val);
+> +	if (ret)
+> +		return ret;
+> +	vcore_slp = val & 0x0f;
+> +	dev_info(&stw481x->client->dev, "VCORE SLEEP: %u.%uV\n",
+> +		vcore_val[vcore_slp] / 100, vcore_val[vcore_slp] % 100);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * MFD cells - we have one cell which is selected operation
+> + * mode, and we always have a GPIO cell.
+> + */
+> +static struct mfd_cell stw481x_cells[] = {
+> +	{
+> +		.of_compatible = "st,stw481x-vmmc",
+> +		.name = "stw481x-vmmc-regulator",
+> +		.id = -1,
+> +	},
+> +};
+> +
+> +const struct regmap_config stw481x_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +};
+> +
+> +static int stw481x_probe(struct i2c_client *client,
+> +			 const struct i2c_device_id *id)
+> +{
+> +	struct stw481x			*stw481x;
+> +	struct stw481x_platform_data	*pdata = client->dev.platform_data;
+
+If this is a DT only won't this always be NULL, or does the I2C
+subsystem populate it using some automagic routine?
+
+> +	int ret;
+> +	int i;
+> +
+> +	stw481x = devm_kzalloc(&client->dev, sizeof(*stw481x), GFP_KERNEL);
+> +	if (!stw481x)
+> +		return -ENOMEM;
+
+This is a question, rather than a statement; can *alloc ever return
+anything other than a pointer or -ENOMEM? If so, you should probably
+return stw481x here, if not, just ignore me.
+
+> +	i2c_set_clientdata(client, stw481x);
+> +	stw481x->client = client;
+> +	stw481x->pdata = pdata;
+> +	stw481x->map = devm_regmap_init_i2c(client, &stw481x_regmap_config);
+> +
+> +	ret = stw481x_startup(stw481x);
+> +	if (ret) {
+> +		dev_err(&client->dev, "chip initialization failed\n");
+> +		goto fail;
+> +	}
+> +
+> +	/* Set up and register the platform devices. */
+> +	for (i = 0; i < ARRAY_SIZE(stw481x_cells); i++) {
+> +		/* One state holder for all drivers, this is simple */
+> +		stw481x_cells[i].platform_data = stw481x;
+> +		stw481x_cells[i].pdata_size = sizeof(*stw481x);
+> +	}
+> +
+> +	ret = mfd_add_devices(&client->dev, 0, stw481x_cells,
+> +			ARRAY_SIZE(stw481x_cells), NULL, 0, NULL);
+> +	if (ret)
+> +		goto fail;
+> +
+> +	dev_info(&client->dev, "initialized STw481x device\n");
+> +
+> +	return 0;
+> +
+> +fail:
+> +	devm_kfree(&client->dev, stw481x);
+
+Does this device carry on living after this probe function? I don't
+think it does, so you can omit any freeing of memory if you're using
+managed resources.
+
+> +	return ret;
+> +}
+> +
+> +static int stw481x_remove(struct i2c_client *client)
+> +{
+> +	struct stw481x *stw481x = i2c_get_clientdata(client);
+> +
+> +	mfd_remove_devices(&client->dev);
+> +	devm_kfree(&client->dev, stw481x);
+
+... same here.
+
+> +	return 0;
+> +}
+> +
+> +/*
+> + * This ID table is completely unused, as this is a pure
+> + * device-tree probed driver, but it has to be here due to
+> + * the structure of the I2C core.
+> + */
+
+That's not true. It will be used if anyone decides not to use the
+of_device_id table. As this is an I2C device you can register it via
+Device Tree by (in this case) putting 'dummy' as the node name, so
+it's almost certainly not good to use that name here.
+
+> +static const struct i2c_device_id dummy_id[] = {
+> +	{ "dummy", 0 },
+> +	{ }
+> +};
+> +
+> +static const struct of_device_id stw481x_match[] = {
+> +	{ .compatible = "st,stw4810", },
+> +	{ .compatible = "st,stw4811", },
+> +        {},
+
+Funny spacing here.
+
+> +};
+> +MODULE_DEVICE_TABLE(of, stw481x_match);
+> +
+> +static struct i2c_driver stw481x_driver = {
+> +	.driver = {
+> +		.name	= "stw481x",
+> +		.of_match_table = stw481x_match,
+> +	},
+> +	.probe		= stw481x_probe,
+> +	.remove		= stw481x_remove,
+> +	.id_table	= dummy_id,
+> +};
+> +
+> +static int __init stw481x_init(void)
+> +{
+> +	return i2c_add_driver(&stw481x_driver);
+> +}
+> +module_init(stw481x_init);
+> +
+> +static void __exit stw481x_exit(void)
+> +{
+> +	i2c_del_driver(&stw481x_driver);
+> +}
+> +module_exit(stw481x_exit);
+
+Better to remove all this boiler plate and replace with module_i2c_driver().
+
+> +MODULE_AUTHOR("Linus Walleij");
+> +MODULE_DESCRIPTION("STw481x PMIC driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/stw481x.h b/include/linux/mfd/stw481x.h
+> new file mode 100644
+> index 0000000..dd4d9f8
+> --- /dev/null
+> +++ b/include/linux/mfd/stw481x.h
+> @@ -0,0 +1,67 @@
+> +/*
+> + * Copyright (C) 2011 ST-Ericsson SA
+> + * Written on behalf of Linaro for ST-Ericsson
+> + *
+> + * Author: Linus Walleij <linus.walleij@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +#ifndef MFD_STW481X_H
+> +#define MFD_STW481X_H
+> +
+> +#include <linux/i2c.h>
+> +#include <linux/regulator/machine.h>
+> +#include <linux/regmap.h>
+> +#include <linux/bitops.h>
+> +
+> +/* These registers are accessed from more than one driver */
+> +#define STW_CONF1			0x11U
+> +#define STW_CONF1_PDN_VMMC		0x01U
+> +#define STW_CONF1_VMMC_MASK		0x0eU
+> +#define STW_CONF1_VMMC_1_8V		0x02U
+> +#define STW_CONF1_VMMC_2_85V		0x04U
+> +#define STW_CONF1_VMMC_3V		0x06U
+> +#define STW_CONF1_VMMC_1_85V		0x08U
+> +#define STW_CONF1_VMMC_2_6V		0x0aU
+> +#define STW_CONF1_VMMC_2_7V		0x0cU
+> +#define STW_CONF1_VMMC_3_3V		0x0eU
+> +#define STW_CONF1_MMC_LS_STATUS		0x10U
+> +#define STW_CONF1_V_MONITORING		0x20U
+> +#define STW_CONF1_IT_WARN		0x40U
+> +#define STW_CONF1_PDN_VAUX		0x80U
+> +#define STW_PC_VCORE_SEL		0x05U
+> +#define STW_PC_VAUX_SEL			0x06U
+> +#define STW_PC_VPLL_SEL			0x07U
+> +#define STW_CONF2			0x20U
+> +#define STW_CONF2_MASK_TWARN		0x01U
+> +#define STW_CONF2_VMMC_EXT		0x02U
+> +#define STW_CONF2_MASK_IT_WAKE_UP	0x04U
+> +#define STW_CONF2_GPO1			0x08U
+> +#define STW_CONF2_GPO2			0x10U
+> +#define STW_VCORE_SLEEP			0x21U
+> +
+> +/**
+> + * struct stw481x_platform_data - TPS61905x platform data
+> + * @regulator_data: initialization data for the voltage
+> + *	regulator if used as a voltage source
+> + */
+> +struct stw481x_platform_data {
+> +	struct regulator_init_data *regulator_data;
+> +};
+> +
+> +/**
+> + * struct stw481x - state holder for the Stw481x drivers
+> + * @mutex: mutex to serialize I2C accesses
+> + * @i2c_client: corresponding I2C client
+> + * @regulator: regulator device for regulator children
+> + * @map: regmap handle to access device registers
+> + */
+> +struct stw481x {
+> +	struct stw481x_platform_data *pdata;
+> +	struct mutex		lock;
+> +	struct i2c_client	*client;
+> +	struct regulator_dev	*vmmc_regulator;
+> +	struct regmap		*map;
+> +};
+> +
+> +#endif
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
