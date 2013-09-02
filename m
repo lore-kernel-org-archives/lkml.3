@@ -1,88 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759026Ab3IBWOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 18:14:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49886 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753909Ab3IBWOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 18:14:48 -0400
-Message-ID: <1378160086.1953.129.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Report missing spaces around trigraphs with
- --strict
-From: Joe Perches <joe@perches.com>
-To: Guenter Roeck <linux@roeck-us.net>,
+	id S1759102Ab3IBWSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 18:18:52 -0400
+Received: from mail-ye0-f171.google.com ([209.85.213.171]:52643 "EHLO
+	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3IBWSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 18:18:50 -0400
+From: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+To: William Hubbs <w.d.hubbs@gmail.com>,
+        Chris Brannon <chris@the-brannons.com>, Kirk Reiser <kirk@reisers.ca>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, Andy Whitcroft <apw@canonical.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Date: Mon, 02 Sep 2013 15:14:46 -0700
-In-Reply-To: <5224EF32.5060104@roeck-us.net>
-References: <9976.1378132260@warthog.procyon.org.uk>
-	 <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
-	 <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
-	 <1378148367.1953.98.camel@joe-AO722> <20130902195056.GB32628@leaf>
-	 <5224EF32.5060104@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+Subject: [PATCH 1/1] staging/speakup/kobjects.c: Code improvement.
+Date: Mon,  2 Sep 2013 19:20:18 -0300
+Message-Id: <1378160418-13898-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spaces around trigraphs are specified by CodingStyle
-but checkpatch is currently silent about them because
-there are many current instances without them.
+Well, there is no need to use strcmp since we can make a test of similar semantic by using the var_id field of param.
+I moved the test into the VAR_NUM:VAR_TIME case since VAR_STRING will never be "voice".
 
-Make missing spaces around trigraphs a --strict message.
+spk_xlate isn't used anymore (in line 628), then there is no difference between using cp and buf in VAR_STRING case.
+Besides, buf is a const char and those changes remove one uneeded line.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+I created the function spk_reset_default_value because it clarifies the code and allows code reusing.
+
+Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
 ---
-> Oddly enough, the opposite is true as well. 3.1, spaces around binary
-> and ternary operators, is for example not enforced, presumably because
-> it would generate too many positives. Since I like that rule, I have
-> my private version of checkpatch.pl which does check for it. After all,
-> it _is_ a CodingStyle rule.
+ drivers/staging/speakup/kobjects.c |   71 ++++++++++++++++++++----------------
+ 1 files changed, 39 insertions(+), 32 deletions(-)
 
- scripts/checkpatch.pl | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9bb056c..bb34c11 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2817,7 +2817,7 @@ sub process {
- 				\+=|-=|\*=|\/=|%=|\^=|\|=|&=|
- 				=>|->|<<|>>|<|>|=|!|~|
- 				&&|\|\||,|\^|\+\+|--|&|\||\+|-|\*|\/|%|
--				\?|:
-+				\?:|\?|:
- 			}x;
- 			my @elements = split(/($ops|;)/, $opline);
+diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
+index 51bdea3..5c6e77a 100644
+--- a/drivers/staging/speakup/kobjects.c
++++ b/drivers/staging/speakup/kobjects.c
+@@ -586,6 +586,25 @@ ssize_t spk_var_show(struct kobject *kobj, struct kobj_attribute *attr,
+ EXPORT_SYMBOL_GPL(spk_var_show);
  
-@@ -3040,15 +3040,13 @@ sub process {
- 					    	$ok = 1;
- 					}
- 
--					# Ignore ?:
--					if (($opv eq ':O' && $ca =~ /\?$/) ||
--					    ($op eq '?' && $cc =~ /^:/)) {
--					    	$ok = 1;
--					}
--
-+					# messages are ERROR, but ?: are CHK
- 					if ($ok == 0) {
--						if (ERROR("SPACING",
--							  "spaces required around that '$op' $at\n" . $hereptr)) {
-+						my $msg_type = \&ERROR;
-+						$msg_type = \&CHK if (($op eq '?:' || $op eq '?' || $op eq ':') && $ctx =~ /VxV/);
+ /*
++ * Used to reset either default_pitch or default_vol.
++ */
++static inline void spk_reset_default_value(char *header_name,
++					int *synth_default_value, int idx)
++{
++	struct st_var_header *param;
 +
-+						if (&{$msg_type}("SPACING",
-+								 "spaces required around that '$op' $at\n" . $hereptr)) {
- 							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
- 							if (defined $fix_elements[$n + 2]) {
- 								$fix_elements[$n + 2] =~ s/^\s+//;
-
++	if (synth && synth_default_value) {
++		param = spk_var_header_by_name(header_name);
++		if (param)  {
++			spk_set_num_var(synth_default_value[idx],
++					param, E_NEW_DEFAULT);
++			spk_set_num_var(0, param, E_DEFAULT);
++			pr_info("%s reset to default value\n", param->name);
++		}
++	}
++}
++
++/*
+  * This function is called when a user echos a value to one of the
+  * variable parameters.
+  */
+@@ -624,56 +643,44 @@ ssize_t spk_var_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 		if (ret == -ERANGE) {
+ 			var_data = param->data;
+ 			pr_warn("value for %s out of range, expect %d to %d\n",
+-				attr->attr.name,
++				param->name,
+ 				var_data->u.n.low, var_data->u.n.high);
+ 		}
++
++	       /*
++		* If voice was just changed, we might need to reset our default
++		* pitch and volume.
++		*/
++		if (param->var_id == VOICE) {
++			spk_reset_default_value("pitch", synth->default_pitch,
++				value);
++			spk_reset_default_value("vol", synth->default_vol,
++				value);
++		}
+ 		break;
+ 	case VAR_STRING:
+-		len = strlen(buf);
+-		if ((len >= 1) && (buf[len - 1] == '\n'))
++		len = strlen(cp);
++		if ((len >= 1) && (cp[len - 1] == '\n'))
+ 			--len;
+-		if ((len >= 2) && (buf[0] == '"') && (buf[len - 1] == '"')) {
+-			++buf;
++		if ((len >= 2) && (cp[0] == '"') && (cp[len - 1] == '"')) {
++			++cp;
+ 			len -= 2;
+ 		}
+-		cp = (char *) buf;
+ 		cp[len] = '\0';
+-		ret = spk_set_string_var(buf, param, len);
++		ret = spk_set_string_var(cp, param, len);
+ 		if (ret == -E2BIG)
+ 			pr_warn("value too long for %s\n",
+-					attr->attr.name);
++					param->name);
+ 		break;
+ 	default:
+ 		pr_warn("%s unknown type %d\n",
+ 			param->name, (int)param->var_type);
+ 	break;
+-	}
+-	/*
+-	 * If voice was just changed, we might need to reset our default
+-	 * pitch and volume.
+-	 */
+-	if (strcmp(attr->attr.name, "voice") == 0) {
+-		if (synth && synth->default_pitch) {
+-			param = spk_var_header_by_name("pitch");
+-			if (param)  {
+-				spk_set_num_var(synth->default_pitch[value],
+-						param, E_NEW_DEFAULT);
+-				spk_set_num_var(0, param, E_DEFAULT);
+-			}
+-		}
+-		if (synth && synth->default_vol) {
+-			param = spk_var_header_by_name("vol");
+-			if (param)  {
+-				spk_set_num_var(synth->default_vol[value],
+-						param, E_NEW_DEFAULT);
+-				spk_set_num_var(0, param, E_DEFAULT);
+-			}
+-		}
+-	}
++	}
+ 	spin_unlock_irqrestore(&speakup_info.spinlock, flags);
+ 
+ 	if (ret == -ERESTART)
+-		pr_info("%s reset to default value\n", attr->attr.name);
++		pr_info("%s reset to default value\n", param->name);
+ 	return count;
+ }
+ EXPORT_SYMBOL_GPL(spk_var_store);
+-- 
+1.7.2.5
 
