@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3IBJMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:12:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37669 "EHLO
+	id S1758325Ab3IBJNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:13:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37642 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309Ab3IBIzA (ORCPT
+	with ESMTP id S1758279Ab3IBIyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:00 -0400
+	Mon, 2 Sep 2013 04:54:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 11/58] ALSA: 6fire: make buffers DMA-able (pcm)
-Date: Mon,  2 Sep 2013 09:53:56 +0100
-Message-Id: <1378112083-9475-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 06/58] vm: add no-mmu vm_iomap_memory() stub
+Date: Mon,  2 Sep 2013 09:53:51 +0100
+Message-Id: <1378112083-9475-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -27,113 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torsten Schenk <torsten.schenk@zoho.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 5ece263f1d93fba8d992e67e3ab8a71acf674db9 upstream.
+commit 3c0b9de6d37a481673e81001c57ca0e410c72346 upstream.
 
-Patch makes pcm buffers DMA-able by allocating each one separately.
+I think we could just move the full vm_iomap_memory() function into
+util.h or similar, but I didn't get any reply from anybody actually
+using nommu even to this trivial patch, so I'm not going to touch it any
+more than required.
 
-Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: backported to 3.5: adjusted context ]
+Here's the fairly minimal stub to make the nommu case at least
+potentially work.  It doesn't seem like anybody cares, though.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/6fire/pcm.c | 41 ++++++++++++++++++++++++++++++++++++++++-
- sound/usb/6fire/pcm.h |  2 +-
- 2 files changed, 41 insertions(+), 2 deletions(-)
+ mm/nommu.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/sound/usb/6fire/pcm.c b/sound/usb/6fire/pcm.c
-index 7c4f311..51e3f62f 100644
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -578,6 +578,33 @@ static void __devinit usb6fire_pcm_init_urb(struct pcm_urb *urb,
- 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
+diff --git a/mm/nommu.c b/mm/nommu.c
+index a60db99..572c4c0 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1827,6 +1827,16 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
  }
+ EXPORT_SYMBOL(remap_pfn_range);
  
-+static int usb6fire_pcm_buffers_init(struct pcm_runtime *rt)
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
 +{
-+	int i;
++	unsigned long pfn = start >> PAGE_SHIFT;
++	unsigned long vm_len = vma->vm_end - vma->vm_start;
 +
-+	for (i = 0; i < PCM_N_URBS; i++) {
-+		rt->out_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
-+				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
-+		if (!rt->out_urbs[i].buffer)
-+			return -ENOMEM;
-+		rt->in_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
-+				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
-+		if (!rt->in_urbs[i].buffer)
-+			return -ENOMEM;
-+	}
-+	return 0;
++	pfn += vma->vm_pgoff;
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
 +}
++EXPORT_SYMBOL(vm_iomap_memory);
 +
-+static void usb6fire_pcm_buffers_destroy(struct pcm_runtime *rt)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCM_N_URBS; i++) {
-+		kfree(rt->out_urbs[i].buffer);
-+		kfree(rt->in_urbs[i].buffer);
-+	}
-+}
-+
- int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
+ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+ 			unsigned long pgoff)
  {
- 	int i;
-@@ -589,6 +616,13 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
- 	if (!rt)
- 		return -ENOMEM;
- 
-+	ret = usb6fire_pcm_buffers_init(rt);
-+	if (ret) {
-+		usb6fire_pcm_buffers_destroy(rt);
-+		kfree(rt);
-+		return ret;
-+	}
-+
- 	rt->chip = chip;
- 	rt->stream_state = STREAM_DISABLED;
- 	rt->rate = ARRAY_SIZE(rates);
-@@ -610,6 +644,7 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
- 
- 	ret = snd_pcm_new(chip->card, "DMX6FireUSB", 0, 1, 1, &pcm);
- 	if (ret < 0) {
-+		usb6fire_pcm_buffers_destroy(rt);
- 		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX "cannot create pcm instance.\n");
- 		return ret;
-@@ -625,6 +660,7 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
- 			snd_dma_continuous_data(GFP_KERNEL),
- 			MAX_BUFSIZE, MAX_BUFSIZE);
- 	if (ret) {
-+		usb6fire_pcm_buffers_destroy(rt);
- 		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX
- 				"error preallocating pcm buffers.\n");
-@@ -669,6 +705,9 @@ void usb6fire_pcm_abort(struct sfire_chip *chip)
- 
- void usb6fire_pcm_destroy(struct sfire_chip *chip)
- {
--	kfree(chip->pcm);
-+	struct pcm_runtime *rt = chip->pcm;
-+
-+	usb6fire_pcm_buffers_destroy(rt);
-+	kfree(rt);
- 	chip->pcm = NULL;
- }
-diff --git a/sound/usb/6fire/pcm.h b/sound/usb/6fire/pcm.h
-index 3104301..84610cf 100644
---- a/sound/usb/6fire/pcm.h
-+++ b/sound/usb/6fire/pcm.h
-@@ -32,7 +32,7 @@ struct pcm_urb {
- 	struct urb instance;
- 	struct usb_iso_packet_descriptor packets[PCM_N_PACKETS_PER_URB];
- 	/* END DO NOT SEPARATE */
--	u8 buffer[PCM_N_PACKETS_PER_URB * PCM_MAX_PACKET_SIZE];
-+	u8 *buffer;
- 
- 	struct pcm_urb *peer;
- };
 -- 
 1.8.3.2
 
