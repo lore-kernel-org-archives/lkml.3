@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab3IBJFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:05:22 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:20151 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab3IBJFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:05:18 -0400
-Message-ID: <5224548C.8000603@huawei.com>
-Date: Mon, 2 Sep 2013 17:04:12 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1758879Ab3IBJFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:05:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14695 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758610Ab3IBJFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:05:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1005,1367996400"; 
+   d="scan'208";a="289779163"
+Message-ID: <52245647.1040503@intel.com>
+Date: Mon, 02 Sep 2013 12:11:35 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Baoquan He <baoquan.he@gmail.com>
-CC: Hillf Danton <dhillf@gmail.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Subject: Re: 3.11-rc7:BUG: soft lockup
-References: <522055D7.70002@gmail.com> <CAM_iQpW3F=inR0y6GFE64OgkhKSdzF-trrZamgThXTiyOYYmBw@mail.gmail.com> <CAJd=RBCT6dbLwX6z+1LxCvJ9-NOYQRe0zzBkEQosFgLvNgg4bg@mail.gmail.com> <52242AEA.9020502@gmail.com> <522441E9.8040809@huawei.com> <52244B44.4030703@gmail.com>
-In-Reply-To: <52244B44.4030703@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 24/25] perf tools: Add multi file '-M' option for record
+ command
+References: <1378031796-17892-1-git-send-email-jolsa@redhat.com> <1378031796-17892-25-git-send-email-jolsa@redhat.com> <522443CE.5030703@intel.com> <20130902083737.GA1067@krava.brq.redhat.com>
+In-Reply-To: <20130902083737.GA1067@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/2 16:24, Baoquan He wrote:
-> Hi Tianhong,
+On 02/09/13 11:37, Jiri Olsa wrote:
+> On Mon, Sep 02, 2013 at 10:52:46AM +0300, Adrian Hunter wrote:
+>> On 01/09/13 13:36, Jiri Olsa wrote:
+>>> split event data into multiple files based on the file
+>>> size or time delta specified as an argument to the option.
+>>>
+>>> Adding multi file '-M' option for record command to store
+>>> output perf.data into multiple files based on the size
+>>> threshold.
+>>>
+>>> The threshold is specified either as size (B/K/M/G) or time
+>>> (s/m/h) by appending the size with appropriate unit, like:
+>>>   -M 5M for 5 megabytes threshold
+>>>   -M 1h for 1 hour threshold
+>>> The generated name for each data file is appended with sequential
+>>> number (prepended by 5 zeros).For default output file name it
+>>> will be:
+>>>   perf.data-00000
+>>>   perf.data-00001
+>>>   perf.data-00002
+>>>   ...
+>>>
+>>> Also watermark/wakeup_watermark is set accordingly to get
+>>> wake ups more often so we could get close enough to the
+>>> file size promise.
+>>>
+>>> Example:
+>>>   $ perf record -M 5M yes > /dev/null
+>>>   ^C[ perf record: Woken up 228 times to write data ]
+>>>   [ perf record: Captured and wrote 20.246 MB perf.data-[0-4](~884542 samples) ]
+>>>   yes: Interrupt
+>>>   $ ls -l perf.data-0*
+>>>   -rw------- 1 jolsa jolsa 5289856 Aug 16 16:07 perf.data-00000
+>>>   -rw------- 1 jolsa jolsa 5296008 Aug 16 16:08 perf.data-00001
+>>>   -rw------- 1 jolsa jolsa 5344968 Aug 16 16:09 perf.data-00002
+>>>   -rw------- 1 jolsa jolsa 5309144 Aug 16 16:09 perf.data-00003
+>>>   -rw------- 1 jolsa jolsa 2358268 Aug 16 16:09 perf.data-00004
+>>
+>> Did you consider doing this with "perf inject" instead of "perf record"?
+>> That way you could get the split exactly right, and you could split the same
+>> file different ways.
 > 
-> I applied your patch and execute below cmd. 
-> Then keyboard inputting problems happened, 
-> I can't enter user/password correctly, then reboot again, it's OK now.
+> right, this could be added into inject command as well
 
-Thanks for your work, I don't understand that the keyboard problem is the patch fault or your system problem, 
-if it is not happen again, I think the problem is fixed.
+I was really thinking "instead" not "as well" e.g.
 
-> 
-> The original bug still can't be reproduced.
-> 
-> make SUBDIRS=net/bridge/netfilter/
-> cp /net/bridge/netfilter/ebtables.ko
-> /lib/modules/3.11.0-rc7+/kernel/net/bridge/netfilter/ebtables.ko
-> depmod
-> modprobe ebtables.ko
-> reboot
-> 
-> Baoquan
-> Thanks
-> 
->> please try this patch and give me the result, thanks.
->>
->> Return the correct value if mutex_lock_interruptible() failed, avoid
->> confusion with that the modules is not exist, and deal with the return
->> value in right way.
->>
->> if mutex_lock_interrupt() failed, sh
->>
->> Signed-off-by: root <root@linux-yocto.site>
->> ---
->>  net/bridge/netfilter/ebtables.c | 17 +++++++----------
->>  1 file changed, 7 insertions(+), 10 deletions(-)
->>
->> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
->> index ac78024..e7fe9f8 100644
->> --- a/net/bridge/netfilter/ebtables.c
->> +++ b/net/bridge/netfilter/ebtables.c
->> @@ -322,17 +322,14 @@ static inline void *
->>  find_inlist_lock_noload(struct list_head *head, const char *name, int *error,
->>     struct mutex *mutex)
->>  {
->> -	struct {
->> -		struct list_head list;
->> -		char name[EBT_FUNCTION_MAXNAMELEN];
->> -	} *e;
->> +	struct ebt_table *e;
->>  
->>  	*error = mutex_lock_interruptible(mutex);
->>  	if (*error != 0)
->> -		return NULL;
->> +		return ERR_PTR(-EINTR);
->>  
->>  	list_for_each_entry(e, head, list) {
->> -		if (strcmp(e->name, name) == 0)
->> +		 if (strcmp(e->name, name) == 0 && try_module_get(e->me))
->>  			return e;
->>  	}
->>  	*error = -ENOENT;
->> @@ -1005,7 +1002,7 @@ static int do_replace_finish(struct net *net, struct ebt_replace *repl,
->>  		goto free_counterstmp;
->>  
->>  	t = find_table_lock(net, repl->name, &ret, &ebt_mutex);
->> -	if (!t) {
->> +	if (IS_ERR_OR_NULL(t)) {
->>  		ret = -ENOENT;
->>  		goto free_iterate;
->>  	}
->> @@ -1284,7 +1281,7 @@ static int do_update_counters(struct net *net, const char *name,
->>  		return -ENOMEM;
->>  
->>  	t = find_table_lock(net, name, &ret, &ebt_mutex);
->> -	if (!t)
->> +	if (IS_ERR_OR_NULL(t))
->>  		goto free_tmp;
->>  
->>  	if (num_counters != t->private->nentries) {
->> @@ -1504,7 +1501,7 @@ static int do_ebt_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
->>  		return -EFAULT;
->>  
->>  	t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->> -	if (!t)
->> +	if (IS_ERR_OR_NULL(t))
->>  		return ret;
->>  
->>  	switch(cmd) {
->> @@ -2319,7 +2316,7 @@ static int compat_do_ebt_get_ctl(struct sock *sk, int cmd,
->>  		return -EFAULT;
->>  
->>  	t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->> -	if (!t)
->> +	if (IS_ERR_OR_NULL(t))
->>  		return ret;
->>  
->>  	xt_compat_lock(NFPROTO_BRIDGE);
-> 
-> 
-> .
-> 
-
+	perf record yes | perf inject -M 5M
 
