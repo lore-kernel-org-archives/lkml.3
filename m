@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab3IBJas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:30:48 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:56505 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757484Ab3IBJaq (ORCPT
+	id S1755791Ab3IBJhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:37:53 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:57303 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3IBJhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:30:46 -0400
-Message-ID: <52245AC5.2010305@linaro.org>
-Date: Mon, 02 Sep 2013 11:30:45 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 2 Sep 2013 05:37:52 -0400
+Date: Mon, 2 Sep 2013 10:37:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL] Final pull-request due for the v3.12 merge window
+Message-ID: <20130902093747.GI12341@lee--X1>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] intel_idle: shrink states tables
-References: <2945985.mxvmQoz8DY@amdc1032>
-In-Reply-To: <2945985.mxvmQoz8DY@amdc1032>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 12:25 PM, Bartlomiej Zolnierkiewicz wrote:
-> There is no reason to define CPUIDLE_STATE_MAX (currently 10) entries
-> in states tables if the driver always stops iterating over table when
-> it encounters first .enter == NULL entry.
-> 
-> $ size drivers/idle/intel_idle.o.*
->    text    data     bss     dec     hex filename
->    2886    5440      32    8358    20a6 drivers/idle/intel_idle.o.before
->    2886    3752      32    6670    1a0e drivers/idle/intel_idle.o.after
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Len Brown <lenb@kernel.org>
-> ---
+The following changes since commit 2b274fe522e9d5ac7397e07e3516bb10e3c2ee92:
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+  mfd: 88pm805: Fix potential NULL pdata dereference (2013-09-02 11:00:16 +0200)
 
->  drivers/idle/intel_idle.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index fa6964d..9c97fbb42 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -123,7 +123,7 @@ static struct cpuidle_state *cpuidle_state_table;
->   * which is also the index into the MWAIT hint array.
->   * Thus C0 is a dummy.
->   */
-> -static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state nehalem_cstates[] = {
->  	{
->  		.name = "C1-NHM",
->  		.desc = "MWAIT 0x00",
-> @@ -156,7 +156,7 @@ static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
->  		.enter = NULL }
->  };
->  
-> -static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state snb_cstates[] = {
->  	{
->  		.name = "C1-SNB",
->  		.desc = "MWAIT 0x00",
-> @@ -196,7 +196,7 @@ static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
->  		.enter = NULL }
->  };
->  
-> -static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state ivb_cstates[] = {
->  	{
->  		.name = "C1-IVB",
->  		.desc = "MWAIT 0x00",
-> @@ -236,7 +236,7 @@ static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
->  		.enter = NULL }
->  };
->  
-> -static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state hsw_cstates[] = {
->  	{
->  		.name = "C1-HSW",
->  		.desc = "MWAIT 0x00",
-> @@ -297,7 +297,7 @@ static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
->  		.enter = NULL }
->  };
->  
-> -static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state atom_cstates[] = {
->  	{
->  		.name = "C1E-ATM",
->  		.desc = "MWAIT 0x00",
-> @@ -628,7 +628,7 @@ static int intel_idle_cpu_init(int cpu)
->  		int num_substates, mwait_hint, mwait_cstate, mwait_substate;
->  
->  		if (cpuidle_state_table[cstate].enter == NULL)
-> -			continue;
-> +			break;
->  
->  		if (cstate + 1 > max_cstate) {
->  			printk(PREFIX "max_cstate %d reached\n", max_cstate);
-> 
+are available in the git repository at:
 
+  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.12-2
+
+for you to fetch changes up to 02a0bf6e351de6bcda4ddeeb2af34197a4e6d591:
+
+  mfd: ucb1x00-core: Rewrite ucb1x00_add_dev() (2013-09-02 10:22:46 +0100)
+
+----------------------------------------------------------------
+mfd-lee-3.12-2
+
+These are the final patches due for the v3.12 merge window.
+
+----------------------------------------------------------------
+Lee Jones (3):
+      mfd: ab8500-debugfs: Apply a check for -ENOMEM after allocating memory for sysfs
+      mfd: ab8500-debugfs: Apply a check for -ENOMEM after allocating memory for event name
+      mfd: ucb1x00-core: Rewrite ucb1x00_add_dev()
+
+Sachin Kamat (7):
+      mfd: omap-usb-host: Staticize usbhs_driver_name
+      mfd: db8500-prcmu: Use ANSI function declaration
+      mfd: db8500-prcmu: Staticize clk_mgt
+      mfd: ab8500-debugfs: Staticize local variables
+      mfd: timberdale: Staticize local variables
+      mfd: timberdale: Remove redundant break
+      mfd: timberdale: Use module_pci_driver
+
+ drivers/mfd/ab8500-debugfs.c | 14 ++++++++++----
+ drivers/mfd/db8500-prcmu.c   |  4 ++--
+ drivers/mfd/omap-usb-host.c  |  2 +-
+ drivers/mfd/timberdale.c     | 34 +++-------------------------------
+ drivers/mfd/ucb1x00-core.c   | 28 +++++++++++++++-------------
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
