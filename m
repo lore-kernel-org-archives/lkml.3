@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab3IBAnz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 20:43:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40151 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab3IBAny (ORCPT
+	id S1757845Ab3IBAuP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 20:50:15 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:34552 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3IBAuN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 20:43:54 -0400
-Date: Sun, 1 Sep 2013 17:43:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, rmk+kernel@arm.linux.org.uk
-Subject: Re: [RFC PATCH v2 next]module: Fix mod->mkobj.kobj potentially freed
- too early
-Message-ID: <20130902004353.GA13495@kroah.com>
-References: <1377078598.2709.25.camel@ThinkPad-T5421>
- <20130821161819.GA14364@kroah.com>
- <1377138846.2633.25.camel@ThinkPad-T5421>
- <20130822040333.GB4821@kroah.com>
- <1377157075.2633.63.camel@ThinkPad-T5421>
- <20130825040734.GA18107@kroah.com>
- <87bo4jd9z0.fsf@rustcorp.com.au>
- <20130827062135.GA3395@kroah.com>
- <871u58ayn8.fsf@rustcorp.com.au>
+	Sun, 1 Sep 2013 20:50:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u58ayn8.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+References: <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
+	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
+	<20130901212355.GU13318@ZenIV.linux.org.uk>
+	<CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+Date: Sun, 1 Sep 2013 17:50:11 -0700
+X-Google-Sender-Auth: qUgLb4WmwYBBBs-jdgnlKqO0zP8
+Message-ID: <CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Waiman Long <waiman.long@hp.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 09:21:55AM +0930, Rusty Russell wrote:
-> Greg KH <gregkh@linuxfoundation.org> writes:
-> > On Tue, Aug 27, 2013 at 02:08:27PM +0930, Rusty Russell wrote:
-> >> Greg KH <gregkh@linuxfoundation.org> writes:
-> >> > On Thu, Aug 22, 2013 at 03:37:55PM +0800, Li Zhong wrote:
-> >> >> DEBUG_KOBJECT_RELEASE helps to find the issue attached below.
-> >> > People are starting to hit these types of issues, and I'd like to take
-> >> > this one out of the picture.
-> >> >
-> >> > Rusty, any objection to me taking this through my driver-core tree,
-> >> > where this new config option shows up?
-> >> 
-> >> The original fix was better.
-> >> 
-> >> Moving the module_kobject out and giving it its own lifetime solves this
-> >> immediate issue, but it still means there's an accessible module_kobject
-> >> around referring to a module which doesn't exist any more.
-> >
-> > That's ok, it could happen before as well.  What's wrong with that?
-> >
-> >> Original copied below, feel free to take it.
-> >
-> > You are just sitting and sleeping until someone drops the last reference
-> > to the module.  What if userspace grabs a reference from sysfs?  That
-> > could never return, I don't think you want to stall that out.
-> 
-> In your scenario, what happens if userspace grabs a reference via sysfs?
-> It then tries to use module_kobj->mod which points into freed memory?
-> 
-> eg. show_modinfo_##field or show_refcnt.
+On Sun, Sep 1, 2013 at 5:12 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> It *is* one of the few locked accesses remaining, and it's clearly
+> getting called a lot (three calls per system call: two mntput's  - one
+> for the root path, one for the result path, and one from path_init ->
+> rcu_walk_init), but with up to 8% CPU time for basically that one
+> "lock xadd" instruction is damn odd. I can't see how that could happen
+> without seriously nasty cacheline bouncing, but I can't see how *that*
+> can happen when all the accesses seem to be from the current CPU.
 
-The sysfs file will not be able to be "called" as Tejun fixed that up a
-long time ago, but yes, you are right, it really doesn't solve the
-issue.
+So, I wanted to double-check that "it can only be that expensive if
+there's cacheline bouncing" statement. Thinking "maybe it's just
+really expensive. Even when running just a single thread".
 
-> Is there an owner field I'm missing somewhere which stops this from
-> happening?  Otherwise, we can't unload the module until it's done.
+So I set MAX_THREADS to 1 in my stupid benchmark, just to see what happens..
 
-Good point.
+And almost everything changes as expected: now we don't have any
+cacheline bouncing any more, so lockref_put_or_lock() and
+lockref_get_or_lock() no longer dominate - instead of being 20%+ each,
+they are now just 3%.
 
-> > I'd prefer not having 2 things determining the lifecycle of a single
-> > object, that's messy, and not needed at all.
-> 
-> Normally you'd grab a reference to the module via an owner pointer.
-> Doing that in kobject seems like overkill, so we're working around it
-> here...
+What _didn't_ change? Right. lg_local_lock() is still 6.40%. Even when
+single-threaded. It's now the #1 function in my profile:
 
-Ok, fair enough, your version is fine, feel free to add a:
+   6.40%   lg_local_lock
+   5.42%   copy_user_enhanced_fast_string
+   5.14%   sysret_check
+   4.79%   link_path_walk
+   4.41%   0x00007ff861834ee3
+   4.33%   avc_has_perm_flags
+   4.19%   __lookup_mnt
+   3.83%   lookup_fast
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(that "copy_user_enhanced_fast_string" is when we copy the "struct
+stat" from kernel space to user space)
 
-if you want it.
+The instruction-level profile just looking like
 
-thanks,
+       │    ffffffff81078e70 <lg_local_lock>:
+  2.06 │      push   %rbp
+  1.06 │      mov    %rsp,%rbp
+  0.11 │      mov    (%rdi),%rdx
+  2.13 │      add    %gs:0xcd48,%rdx
+  0.92 │      mov    $0x100,%eax
+ 85.87 │      lock   xadd   %ax,(%rdx)
+  0.04 │      movzbl %ah,%ecx
+       │      cmp    %al,%cl
+  3.60 │    ↓ je     31
+       │      nop
+       │28:   pause
+       │      movzbl (%rdx),%eax
+       │      cmp    %cl,%al
+       │    ↑ jne    28
+       │31:   pop    %rbp
+  4.22 │    ← retq
 
-greg k-h
+so that instruction sequence is just expensive, and it is expensive
+without any cacheline bouncing. The expense seems to be 100% simply
+due to the fact that it's an atomic serializing instruction, and it
+just gets called way too much.
+
+So lockref_[get|put]_or_lock() are each called once per pathname
+lookup (because the RCU accesses to the dentries get turned into a
+refcount, and then that refcount gets dropped). But lg_local_lock()
+gets called twice: once for path_init(), and once for mntput() - I
+think I was wrong about mntput getting called twice.
+
+So it doesn't seem to be cacheline bouncing at all. It's just
+"serializing instructions are really expensive" together with calling
+that function too much. And we've optimized pathname lookup so much
+that even a single locked instruction shows up like a sort thumb.
+
+I guess we should be proud.
+
+              Linus
