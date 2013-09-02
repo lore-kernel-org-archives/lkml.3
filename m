@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab3IBCPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 22:15:18 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:54387 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3IBCPP (ORCPT
+	id S1757997Ab3IBCRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 22:17:54 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:63732 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab3IBCRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 22:15:15 -0400
-Subject: Re: [RFC PATCH 00/18 v3] Signature verification of hibernate
- snapshot
-From: joeyli <jlee@suse.com>
-To: Florian Weimer <fw@deneb.enyo.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, David Howells <dhowells@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <87vc2ksdfa.fsf@mid.deneb.enyo.de>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
-	 <87eh9dzg00.fsf@mid.deneb.enyo.de>
-	 <1377734505.19568.39.camel@linux-s257.site>
-	 <87r4d8vn71.fsf@mid.deneb.enyo.de> <20130901160429.GA1375@srcf.ucam.org>
-	 <87vc2ksdfa.fsf@mid.deneb.enyo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Sep 2013 10:12:22 +0800
-Message-ID: <1378087942.7080.75.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Sun, 1 Sep 2013 22:17:52 -0400
+Message-ID: <5223F462.7090500@linaro.org>
+Date: Mon, 02 Sep 2013 10:13:54 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH 3/6] x86: simplify _acpi_map_lsapic()
+References: <1377944162-18574-1-git-send-email-hanjun.guo@linaro.org> <1377944162-18574-3-git-send-email-hanjun.guo@linaro.org> <8575859.HxOyLiBtGF@vostro.rjw.lan>
+In-Reply-To: <8575859.HxOyLiBtGF@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 日，2013-09-01 於 18:40 +0200，Florian Weimer 提到：
-> * Matthew Garrett:
+On 2013-9-1 4:14, Rafael J. Wysocki wrote:
+> On Saturday, August 31, 2013 06:15:58 PM Hanjun Guo wrote:
+[...]
+>> +static int acpi_register_lapic(int id, u8 enabled)
+>>  {
+>>  	unsigned int ver = 0;
+>>  
+>>  	if (id >= (MAX_LOCAL_APIC-1)) {
+>>  		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+>> -		return;
+>> +		return -1;
+>>  	}
+>>  
+>>  	if (!enabled) {
+>>  		++disabled_cpus;
+>> -		return;
+>> +		return -1;
+>>  	}
 > 
-> > On Sun, Sep 01, 2013 at 12:41:22PM +0200, Florian Weimer wrote:
-> >
-> >> But if you don't generate fresh keys on every boot, the persistent
-> >> keys are mor exposed to other UEFI applications.  Correct me if I'm
-> >> wrong, but I don't think UEFI variables are segregated between
-> >> different UEFI applications, so if anyone gets a generic UEFI variable
-> >> dumper (or setter) signed by the trusted key, this cryptographic
-> >> validation of hibernate snapshots is bypassable.
-> >
-> > If anyone can execute arbitrary code in your UEFI environment then 
-> > you've already lost.
+> If this returned -EINVAL instead of just -1, ->
 > 
-> This is not about arbitrary code execution.  The problematic
-> applications which conflict with this proposed functionality are not
-> necessarily malicious by themselves and even potentially useful.
+>>  
+>>  	if (boot_cpu_physical_apicid != -1U)
+>>  		ver = apic_version[boot_cpu_physical_apicid];
+>>  
+>> -	generic_processor_info(id, ver);
+>> +	return generic_processor_info(id, ver);
 > 
-> For example, if you want to provision a bunch of machines and you have
-> to set certain UEFI variables, it might be helpful to do so in an
-> unattended fashion, just by booting from a USB stick with a suitable
-> UEFI application.  Is this evil?  I don't think so.
-> --
+> -> and this too (on errors), -->
+> 
+>>  }
+>>  
+>>  static int __init
+>> @@ -622,44 +629,19 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+>>  
+>>  static int _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
+>>  {
+>> -	cpumask_var_t tmp_map, new_map;
+>>  	int cpu;
+>> -	int retval = -ENOMEM;
+>> -
+>> -	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
+>> -		goto out;
+>>  
+>> -	if (!alloc_cpumask_var(&new_map, GFP_KERNEL))
+>> -		goto free_tmp_map;
+>> -
+>> -	cpumask_copy(tmp_map, cpu_present_mask);
+>> -	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
+>> -
+>> -	/*
+>> -	 * If acpi_register_lapic successfully generates a new logical cpu
+>> -	 * number, then the following will get us exactly what was mapped
+>> -	 */
+>> -	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
+>> -	if (cpumask_empty(new_map)) {
+>> +	cpu = acpi_register_lapic(physid, ACPI_MADT_ENABLED);
+>> +	if (cpu == -1) {
+>>  		printk ("Unable to map lapic to logical cpu number\n");
+>> -		retval = -EINVAL;
+>> -		goto free_new_map;
+>> +		return -EINVAL;
+>>  	}
+> 
+> --> then this could be
+> 
+> 	if (cpu < 0) {
+> 		...
+> 		return cpu;
+> 	}
 
-Yes, if there have the kind of UEFI tools like you said, and it leak to
-attacker, then we lost.
+Thanks for the suggestion, and I find out some grammar mistake in the
+changelog too, I will update this patch set and send out soon.
 
-Even we re-generate key-pair for every S4, the tool, if it can set
-variable, means it can replace the public key that was stored by efi
-bootloader in bootservices variable. Then we still lost.
-
-When the tool can only dump variable but not set, then re-generate
-key-pair to every S4 can prevent it. If the tool can also set variable,
-then I don't think there have any way to protect key-pair in UEFI
-variables.
-
-Using TPM is a way to protect key-pair, but user need key-in password
-when generate and use key to sign stuff. It noises to user, but the best
-way to keep the password is in brain.
-
-
-Thanks a lot!
-Joey Lee
+Thanks
+Hanjun
 
