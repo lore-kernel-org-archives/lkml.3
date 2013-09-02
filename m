@@ -1,110 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab3IBJoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:44:46 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57616 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab3IBJop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:44:45 -0400
-Message-ID: <52245DE0.1010701@huawei.com>
-Date: Mon, 2 Sep 2013 17:44:00 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1758192Ab3IBJre (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:47:34 -0400
+Received: from smtp1.goneo.de ([212.90.139.80]:45887 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995Ab3IBJrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:47:31 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.721
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Mon, 02 Sep 2013 11:38:25 +0200
+Message-ID: <4094364.ACYUvMRRNa@lem-wkst-02>
+User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5220F849.8030909@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdaWPQTPw8u+97iV8MRB1fdeS40kd242pJd3UE9Ler4kRQ@mail.gmail.com> <5220F849.8030909@wwwdotorg.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] cgroup: fix css leaks on online_css() failure
-References: <1377723829-22814-1-git-send-email-tj@kernel.org> <1377723829-22814-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1377723829-22814-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/29 5:03, Tejun Heo wrote:
-> ae7f164a09 ("cgroup: move cgroup->subsys[] assignment to
-> online_css()") moved cgroup->subsys[] assignements later in
-> cgroup_create() but didn't update error handling path accordingly
-> leaking later css's after an online_css() failure.
+Am Freitag, 30. August 2013, 13:53:45 schrieb Stephen Warren:
+> On 08/29/2013 01:26 PM, Linus Walleij wrote:
+> > On Tue, Aug 27, 2013 at 10:17 PM, Stephen Warren <swarren@wwwdotorg.org> 
+wrote:
+> >> On 08/26/2013 08:07 AM, Lars Poeschel wrote:
+> >>> Currently the kernel is ambigously treating GPIOs and interrupts
+> >>> from a GPIO controller: GPIOs and interrupts are treated as
+> >>> orthogonal. This unfortunately makes it unclear how to actually
+> >>> retrieve and request a GPIO line or interrupt from a GPIO
+> >>> controller in the device tree probe path.
+> >> 
+> >> I still think that this patch is the wrong approach. Instead, the logic
+> >> should be hooked into gpio_request() and request_irq(). This patch only
+> >> addresses DT, and ignores anything else, hence doesn't seem like the
+> >> right level of abstraction to plug in, since the issue is not related to
+> >> DT.> 
+> > We tried to do it that way, and it exploded. See commit
+> > b4419e1a15905191661ffe75ba2f9e649f5d565e
+> > "gpio/omap: auto request GPIO as input if used as IRQ via DT"
+> > 
+> > Here request_irq() augmented through its irqdomain to
+> > issue gpio_request_one().
+> > 
+> > Why was this patch reverted? It seems this is what has not
+> > managed to reach the audience here.
+> > 
+> > It turns out some drivers were already doing this:
+> > 
+> > request_gpio(gpio);
+> > gpio_direction_input(gpio);
+> > request_irq(gpio_to_irq(gpio));
+> > 
+> > Looks perfectly valid right?
+> > 
+> > Not so: after the above change, we tried to request the
+> > GPIO a *second time* in the GPIO driver's irq map function,
+> > and of course it failed, as it was already taken.
+> > 
+> > So saying that it should be done in the request_irq()
+> > function is imposing this other semantic on the kernel
+> > instead: you must *NOT* request the GPIO with
+> > request_gpio() if you're going to use it as an IRQ.
 > 
-> This patch moves reference bumping inside online_css() loop, clears
-> css_ar[] as css's are brought online successfully, and updates
-> err_destroy path so that either a css is fully online and destroyed by
-> cgroup_destroy_locked() or the error path frees it.  This creates a
-> duplicate css free logic in the error path but it will be cleaned up
-> soon.
+> Surely both request_gpio() and request_irq() must both request the GPIO
+> (amongst other things), with the caveat that if the same driver does
+> both, this specific "sharing" is allowed.
+
+As explained in my previous mail, I do not see, how this should work.
+
+> If that won't work, then the very core concept behind what this patch is
+> attempting to do won't work.
+
+The concept only does not work in the non-DT case, which we do neither try to 
+address with this patch.
+
+> > (Also, it force us to implement the same code in each
+> > and every driver, but that is a lesser problem.)
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/cgroup.c | 23 +++++++++++++++--------
->  1 file changed, 15 insertions(+), 8 deletions(-)
+> Drivers don't have to do the request; the IRQ/GPIO core can do this,
+> with drivers simply providing an irq_to_gpio() (which only returns valid
+> data iff there's a 1:1 mapping between IRQs and GPIOs in that particular
+> HW).
 > 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index b5f4989..a4168cf 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -4489,14 +4489,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->  	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
->  	root->number_of_cgroups++;
->  
-> -	/* each css holds a ref to the cgroup's dentry and the parent css */
-> -	for_each_root_subsys(root, ss) {
-> -		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-> -
-> -		dget(dentry);
-> -		css_get(css->parent);
-> -	}
-> -
->  	/* hold a ref to the parent's dentry */
->  	dget(parent->dentry);
->  
-> @@ -4508,6 +4500,13 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->  		if (err)
->  			goto err_destroy;
-
-If online_css() returns -error, it means cgroup->subsys[ss->subsys_id] == NULL,
-
->  
-> +		/* each css holds a ref to the cgroup's dentry and parent css */
-> +		dget(dentry);
-> +		css_get(css->parent);
-> +
-> +		/* mark it consumed for error path */
-> +		css_ar[ss->subsys_id] = NULL;
-> +
->  		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
->  		    parent->parent) {
->  			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-> @@ -4554,6 +4553,14 @@ err_free_cgrp:
->  	return err;
->  
->  err_destroy:
-> +	for_each_root_subsys(root, ss) {
-> +		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
-> +
-> +		if (css) {
-> +			percpu_ref_cancel_init(&css->refcnt);
-> +			ss->css_free(css);
-> +		}
-> +	}
->  	cgroup_destroy_locked(cgrp);
-
-Now cgroup_destroy_locked() is called:
-
-	for_each_root_subsys(cgrp->root, ss)
-		kill_css(cgroup_css(cgrp, ss));
-
-cgroup_css(cgrp, ss) will return NULL and pass it to kill_css(), which leads
-to NULL pointer deref ?
-
->  	mutex_unlock(&cgroup_mutex);
->  	mutex_unlock(&dentry->d_inode->i_mutex);
+> > I don't quite understand what is so hard around this.
+> > We cannot get away from restricting the semantics in
+> > some way, if gpio-controllers shall also be interrupt-controllers,
+> > the current patch is the least intrusive I've seen so far.
 > 
+> Yet the current patch only addresses a limited set of cases, since it
+> doesn't hook the APIs but rather parses the DT. It doesn't cover the
+> non-DT case. It should if the feature is useful.
 
-(I'll go through the patchset tomorrow.)
-
+As pointed out before, only DT has this problem, that, whatever you do, 
+otherwise it has no chance to request a gpio for a gpio-backed irq. Drivers 
+can do this and board files also can do this.
+I agree with you that it is somewhat odd, that there are two different ways, 
+doing the same thing, but I don't see another way yet.
