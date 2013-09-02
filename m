@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab3IBQKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 12:10:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45670 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932158Ab3IBQKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 12:10:06 -0400
-Message-ID: <1378138205.1953.66.camel@joe-AO722>
-Subject: Re: Making changes to the Coding Style
-From: Joe Perches <joe@perches.com>
-To: David Howells <dhowells@redhat.com>
-Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 02 Sep 2013 09:10:05 -0700
-In-Reply-To: <9976.1378132260@warthog.procyon.org.uk>
-References: <9976.1378132260@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758748Ab3IBQQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 12:16:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755548Ab3IBQQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 12:16:29 -0400
+Date: Mon, 2 Sep 2013 19:16:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, glin@suse.de,
+        agraf@suse.de, brogers@suse.de, afaerber@suse.de, lnussel@suse.de,
+        edk2-devel@lists.sf.net, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
+Message-ID: <20130902161617.GG10142@redhat.com>
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com>
+ <5224584F.6010409@linux.vnet.ibm.com>
+ <20130902092518.GN22899@redhat.com>
+ <5224B608.3080303@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5224B608.3080303@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing lkml, Andrew Morton and Linus)
+On Mon, Sep 02, 2013 at 06:00:08PM +0200, Paolo Bonzini wrote:
+> Il 02/09/2013 11:25, Gleb Natapov ha scritto:
+> > On Mon, Sep 02, 2013 at 05:20:15PM +0800, Xiao Guangrong wrote:
+> >> On 08/30/2013 08:41 PM, Paolo Bonzini wrote:
+> >>> Page tables in a read-only memory slot will currently cause a triple
+> >>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+> >>>
+> >>> OVMF uses such a page table; however, real hardware seems to be fine with
+> >>> that as long as the accessed/dirty bits are set.  Save whether the slot
+> >>> is readonly, and later check it when updating the accessed and dirty bits.
+> >>
+> >> Paolo, do you know why OVMF is using readonly memory like this?
+> >>
+> > Just a guess, but perhaps they want to move to paging mode as early as
+> > possible even before memory controller is fully initialized.
+> 
+> More precisely they want to move to 64-bit mode as early as possible,
+> and that requires paging.
+> 
+> >> AFAIK, The fault trigged by this kind of access can hardly be fixed by
+> >> userspace since the fault is trigged by pagetable walking not by the current
+> >> instruction. Do you have any idea to let uerspace emulate it properly?
+> >
+> > Not sure what userspace you mean here, but there shouldn't be a fault in the
+> > first place if ROM page tables have access/dirty bit set and they do.
+> 
+> Yep.  Actually they do not set dirty on the PD/PDP/PML4, only on the
+> bottom level (which is also fine).
+> 
+They do it for a good reason, dirty bit exists only on the bottom level :)
 
-Hi David.
-
-I'm making a few comments to your otherwise unedited
-original email sent to me and ksummit-2013-discuss below:
-
-On Mon, 2013-09-02 at 15:31 +0100, David Howells wrote:
-> I have some questions about the process of changing the coding style:
->
->  (1) Should there be a procedure for changing the kernel coding style so that
->      people don't find out from checkpatch that what was fine yesterday now
->      gets you moaned at?
-> 
->  (2) Where should changes be announced so that enough people see it that there
->      can be discussion?  I suggest that this not be LKML due to the amount of
->      noise.  Perhaps a kernel-announce list?
-
-I do not read ksummit-2013-announce.
-This should be sent to lkml as it's the widest list.
-Perhaps other lists as well, but certainly lkml at a
-minimum.
-
->  (3) Who maintains the coding style?  Who arbitrates since coding style is
->      very much subjective?
-> 
->  (4) Do we actually need to make changes at all when people are generally okay
->      with what we already have?
-> 
->  (5) To what extent should local conditions be allowed to prevail?  For
->      example, in CodingStyle, there are different commenting rules for net/
->      and drivers/net/.  There are also unwritten variations in how various
->      bits of the tree are styled.
-> 
->  (6) If the coding style does get changed, should existing lines within the
->      kernel then be retroactively changed?
-> 
-> 
-> To illustrate a recent case:
-> 
-> A patch was posted to LKML to have checkpatch require the removal of "extern"
-> from all function prototypes added in patches.  Sadly, I don't manage to read
-> much of LKML these days and didn't see the initial posting.  The first I heard
-> about this was when patches came my way retroactively fixing up kernel sources
-> for which I'm responsible - patches which were firmly NAK'd.
-> 
-> I posted an objection to the coding style change itself[*] but the patch went
-> in to upstream checkpatch anyway.  The first I found out about that was when
-> Fengguang's automated git commit compile checker started sending me messages
-> about patches that had previously been okay in this regard.
-> 
-> [*] Note that in this case, I disagree with the suggestion that the extern is
->     just visual noise - to me it's a visual cue.  I grant, however, that this
->     is subjective.
-> Does this mean that the checkpatch crew are now the arbiters of the coding
-> style, and whatever they decide is best just goes?
-
-I make no such claims.
-
-I do prefer standardized styles and I don't much care
-what style is used.  I believe the standardized styles
-can habituate developer's reading speeds for the better
-and can also reduce the defect rate in new code.
-
-extern is used in .h files far fewer times in function
-prototypes than not. (~2:1 in favor of no extern) in
-the kernel tree.
-
-> Can we just delete checkpatch entirely?
-> 
-> Is the CodingStyle file obsolete, since things get put into checkpatch but not
-> into CodingStyle?
-> 
-> </rant>
-> 
-> David
-> 
-
-
-
+--
+			Gleb.
