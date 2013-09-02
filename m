@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab3IBOXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:23:21 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44157 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab3IBOXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:23:18 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH RFC 5/6] ARM: dts: AM335x: prcm node (for reset)
-Date: Mon, 2 Sep 2013 19:52:04 +0530
-Message-ID: <00675d65eef61eb4222e6a461ef479ebbd1d4787.1378129416.git.afzal@ti.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <cover.1378129416.git.afzal@ti.com>
-References: <cover.1378129416.git.afzal@ti.com>
+	id S1758669Ab3IBOZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:25:50 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48988 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab3IBOZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 10:25:49 -0400
+Date: Mon, 2 Sep 2013 17:24:31 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130902142431.GC2368@swordfish.minsk.epam.com>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
+ <20130830230402.GA14760@somewhere>
+ <20130902122845.GA2457@swordfish.minsk.epam.com>
+ <20130902130744.GB2378@somewhere>
+ <20130902135033.GA1686@redhat.com>
+ <20130902141350.GC2378@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130902141350.GC2378@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add AM335x prcm node with reset binding.
+On (09/02/13 16:13), Frederic Weisbecker wrote:
+> > On Mon, Sep 02, 2013 at 03:07:45PM +0200, Frederic Weisbecker wrote:
+> > > > Hope this may help.
+> > > > I've added a silly check to make sure that `stime < rtime'
+> > > > 
+> > > > @@ -579,6 +582,10 @@ static void cputime_adjust(struct task_cputime *curr,
+> > > >         if (total) {
+> > > >                 stime = scale_stime((__force u64)stime,
+> > > >                                     (__force u64)rtime, (__force u64)total);
+> > > > +               if (stime > rtime) {
+> > > > +                       printk(KERN_ERR "Ooops: stime:%llu rtime:%llu\n", stime, rtime);
+> > > > +                       WARN_ON(1);
+> > > > +               }
+> > > >                 utime = rtime - stime;
+> > > >         } else {
+> > > >                 stime = rtime;
+> > [snip]
+> > 
+> > > Thanks a lot Sergey for testing this further!
+> > > 
+> > > Interesting results, so rtime is always one or two units off stime after scaling.
+> > > Stanislaw made the scaling code with Linus and he has a better idea on the math guts
+> > > here.
+> > 
+> > I don't think this is scale issue, but rather at scale_stime() input
+> > stime is already bigger then rtime. Sergey, could you verify that
+> > by adding check before scale_stime() ?
+> 
+> Note that having stime > rtime should be fine to handle. This can happen for
+> example if the task runs on tiny timeslices but is unlucky enough that all these
+> timeslices are interrupted by the tick.
+>
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+even is stime > rtime, scale_stime() fixes it:
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 4701e3c..c2ccf94 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -530,6 +530,12 @@
- 			#size-cells = <1>;
- 			status = "disabled";
- 		};
-+
-+		prcm: prcm@44e00000 {
-+			compatible = "ti,am3352-prcm";
-+			reg = <0x44e00000 0x1300>;
-+			#reset-cells = <1>;
-+		};
- 	};
- 
- 	clocks {
--- 
-1.8.3.4
+	if (stime > rtime)
+		swap(rtime, stime);
 
+	-ss
