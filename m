@@ -1,152 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab3IBPqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 11:46:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44506 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758766Ab3IBPo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 11:44:26 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rogerq@ti.com>, <kishon@ti.com>, <balbi@ti.com>
-CC: <bcousson@baylibre.com>, <tony@atomide.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/7] usb: dwc3: get "usb_phy" only if the platform indicates the presence of PHY
-Date: Mon, 2 Sep 2013 21:13:05 +0530
-Message-ID: <1378136591-7463-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1378136591-7463-1-git-send-email-kishon@ti.com>
-References: <1378136591-7463-1-git-send-email-kishon@ti.com>
+	id S932402Ab3IBPqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 11:46:48 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:37132 "EHLO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab3IBPqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 11:46:46 -0400
+Message-ID: <5224B2BE.7070001@gmail.com>
+Date: Mon, 02 Sep 2013 17:46:06 +0200
+From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10.9: kmemleak disables all CPUs except CPU0
+References: <5221F119.4070000@gmail.com> <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com>
+In-Reply-To: <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There can be systems which does not have a external usb_phy, so get
-usb_phy only if usb-phy property is added in the case of dt boot or if
-platform_data indicates the presence of PHY. Also remove checking if
-return value is -ENXIO since it's now changed to always enable usb_phy layer.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/dwc3/Kconfig         |    1 +
- drivers/usb/dwc3/core.c          |   60 +++++++++++++++++---------------------
- drivers/usb/dwc3/platform_data.h |    1 +
- 3 files changed, 28 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-index f969ea2..cfc16dd 100644
---- a/drivers/usb/dwc3/Kconfig
-+++ b/drivers/usb/dwc3/Kconfig
-@@ -2,6 +2,7 @@ config USB_DWC3
- 	tristate "DesignWare USB3 DRD Core Support"
- 	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
- 	depends on EXTCON
-+	select USB_PHY
- 	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
- 	help
- 	  Say Y or M here if your system has a Dual Role SuperSpeed
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 474162e..428c29e 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -387,16 +387,38 @@ static int dwc3_probe(struct platform_device *pdev)
- 	if (node) {
- 		dwc->maximum_speed = of_usb_get_maximum_speed(node);
- 
--		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
--		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
-+		if (of_property_read_bool(node, "usb-phy")) {
-+			dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
-+				"usb-phy", 0);
-+			if (IS_ERR(dwc->usb2_phy))
-+				return PTR_ERR(dwc->usb2_phy);
-+			dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
-+				"usb-phy", 1);
-+			if (IS_ERR(dwc->usb3_phy))
-+				return PTR_ERR(dwc->usb3_phy);
-+		} else {
-+			dwc->usb2_phy = NULL;
-+			dwc->usb3_phy = NULL;
-+		}
- 
- 		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
- 		dwc->dr_mode = of_usb_get_dr_mode(node);
- 	} else if (pdata) {
- 		dwc->maximum_speed = pdata->maximum_speed;
- 
--		dwc->usb2_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
-+		if (pdata->has_phy) {
-+			dwc->usb2_phy = devm_usb_get_phy(dev,
-+				USB_PHY_TYPE_USB2);
-+			if (IS_ERR(dwc->usb2_phy))
-+				return PTR_ERR(dwc->usb2_phy);
-+			dwc->usb3_phy = devm_usb_get_phy(dev,
-+				USB_PHY_TYPE_USB3);
-+			if (IS_ERR(dwc->usb3_phy))
-+				return PTR_ERR(dwc->usb3_phy);
-+		} else {
-+			dwc->usb2_phy = NULL;
-+			dwc->usb3_phy = NULL;
-+		}
- 
- 		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
- 		dwc->dr_mode = pdata->dr_mode;
-@@ -409,36 +431,6 @@ static int dwc3_probe(struct platform_device *pdev)
- 	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
- 		dwc->maximum_speed = USB_SPEED_SUPER;
- 
--	if (IS_ERR(dwc->usb2_phy)) {
--		ret = PTR_ERR(dwc->usb2_phy);
--
--		/*
--		 * if -ENXIO is returned, it means PHY layer wasn't
--		 * enabled, so it makes no sense to return -EPROBE_DEFER
--		 * in that case, since no PHY driver will ever probe.
--		 */
--		if (ret == -ENXIO)
--			return ret;
--
--		dev_err(dev, "no usb2 phy configured\n");
--		return -EPROBE_DEFER;
--	}
--
--	if (IS_ERR(dwc->usb3_phy)) {
--		ret = PTR_ERR(dwc->usb3_phy);
--
--		/*
--		 * if -ENXIO is returned, it means PHY layer wasn't
--		 * enabled, so it makes no sense to return -EPROBE_DEFER
--		 * in that case, since no PHY driver will ever probe.
--		 */
--		if (ret == -ENXIO)
--			return ret;
--
--		dev_err(dev, "no usb3 phy configured\n");
--		return -EPROBE_DEFER;
--	}
--
- 	dwc->xhci_resources[0].start = res->start;
- 	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
- 					DWC3_XHCI_REGS_END;
-diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index 7db34f0..5a5e068 100644
---- a/drivers/usb/dwc3/platform_data.h
-+++ b/drivers/usb/dwc3/platform_data.h
-@@ -24,4 +24,5 @@ struct dwc3_platform_data {
- 	enum usb_device_speed maximum_speed;
- 	enum usb_dr_mode dr_mode;
- 	bool tx_fifo_resize;
-+	bool has_phy;
- };
--- 
-1.7.10.4
+Catalin Marinas wrote:
+> On 31 August 2013 14:35, Martin MOKREJŠ <mmokrejs@gmail.com> wrote:
+>>   never realized that my CPUs are gone if I compile into kernel kmemleak.
+>> Is that really the aim?
+>>
+>> CONFIG_HAVE_DEBUG_KMEMLEAK=y
+>> CONFIG_DEBUG_KMEMLEAK=y
+>> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+>> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
+>> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
+>>
+>> 1.  Why isn't there /sys/devices/system/cpu/cpu0/online file?
+>> Does not matter if it contains 0 or 1. It just should exist.
+> 
+> I can't really see how kmemleak would do this, maybe other config
+> options that get set/cleared in the process of selecting kmemleak. Can
+> you do a diff between your config with /sys/... entries and the one
+> without?
 
+Hi,
+  I tried but did not get to report back. One one these re-enabled my CPUs back.
+
+@@ -3177,14 +3179,7 @@
+ CONFIG_HAVE_ARCH_KGDB=y
+ # CONFIG_KGDB is not set
+ CONFIG_HAVE_ARCH_KMEMCHECK=y
+-CONFIG_KMEMCHECK=y
+-# CONFIG_KMEMCHECK_DISABLED_BY_DEFAULT is not set
+-# CONFIG_KMEMCHECK_ENABLED_BY_DEFAULT is not set
+-CONFIG_KMEMCHECK_ONESHOT_BY_DEFAULT=y
+-CONFIG_KMEMCHECK_QUEUE_SIZE=64
+-CONFIG_KMEMCHECK_SHADOW_COPY_SHIFT=5
+-CONFIG_KMEMCHECK_PARTIAL_OK=y
+-# CONFIG_KMEMCHECK_BITOPS_OK is not set
++# CONFIG_KMEMCHECK is not set
+ # CONFIG_TEST_STRING_HELPERS is not set
+ # CONFIG_TEST_KSTRTOX is not set
+ # CONFIG_STRICT_DEVMEM is not set
+
+
+So, the CONFIG_KMEMCHECK disables the additional CPUs I believe. I thought it
+should be traceable from the dmesg output I sent to the list. Yes, I screwed the
+subject line because I did not realize a difference so far. :(
+
+Martin
