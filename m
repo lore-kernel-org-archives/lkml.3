@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3IBIcu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:32:50 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62517 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab3IBIcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:32:47 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, vinod.koul@intel.com,
-        linus.walleij@linaro.org
-Subject: [PATCH 2/2] dma: ste_dma40: Fix potential null pointer dereference
-Date: Mon,  2 Sep 2013 13:44:59 +0530
-Message-Id: <1378109699-25245-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378109699-25245-1-git-send-email-sachin.kamat@linaro.org>
-References: <1378109699-25245-1-git-send-email-sachin.kamat@linaro.org>
+	id S1756289Ab3IBIhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:37:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753709Ab3IBIhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:37:45 -0400
+Message-ID: <52244E52.3060408@redhat.com>
+Date: Mon, 02 Sep 2013 16:37:38 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH V2 6/6] vhost_net: correctly limit the max pending buffers
+References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-7-git-send-email-jasowang@redhat.com> <20130902055609.GC19838@redhat.com> <52243071.5090303@redhat.com>
+In-Reply-To: <52243071.5090303@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc can return NULL. Check the pointer before dereferencing.
+On 09/02/2013 02:30 PM, Jason Wang wrote:
+> On 09/02/2013 01:56 PM, Michael S. Tsirkin wrote:
+>> > On Fri, Aug 30, 2013 at 12:29:22PM +0800, Jason Wang wrote:
+>>> >> As Michael point out, We used to limit the max pending DMAs to get better cache
+>>> >> utilization. But it was not done correctly since it was one done when there's no
+>>> >> new buffers submitted from guest. Guest can easily exceeds the limitation by
+>>> >> keeping sending packets.
+>>> >>
+>>> >> So this patch moves the check into main loop. Tests shows about 5%-10%
+>>> >> improvement on per cpu throughput for guest tx. But a 5% drop on per cpu
+>>> >> transaction rate for a single session TCP_RR.
+>> > Any explanation for the drop? single session TCP_RR is unlikely to
+>> > exceed VHOST_MAX_PEND, correct?
+> Unlikely to exceed. Recheck the result, looks like it was not stable
+> enough. Will re-test and report.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/dma/ste_dma40.c |    3 +++
- 1 file changed, 3 insertions(+)
+Re-tested with more iterations, result shows no difference on TCP_RR
+test and 5%-10% improvement on per cpu throughput for guest tx.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index df0a606..82d2b97 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2591,6 +2591,9 @@ dma40_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
- 	int i;
- 
- 	sg = kcalloc(periods + 1, sizeof(struct scatterlist), GFP_NOWAIT);
-+	if (!sg)
-+		return NULL;
-+
- 	for (i = 0; i < periods; i++) {
- 		sg_dma_address(&sg[i]) = dma_addr;
- 		sg_dma_len(&sg[i]) = period_len;
--- 
-1.7.9.5
-
+Will post V3 soon.
