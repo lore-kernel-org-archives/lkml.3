@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab3IBJkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:40:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538Ab3IBJkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:40:32 -0400
-Date: Mon, 2 Sep 2013 11:40:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 24/25] perf tools: Add multi file '-M' option for record
- command
-Message-ID: <20130902094002.GA2713@krava.brq.redhat.com>
-References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
- <1378031796-17892-25-git-send-email-jolsa@redhat.com>
- <522443CE.5030703@intel.com>
- <20130902083737.GA1067@krava.brq.redhat.com>
- <52245647.1040503@intel.com>
+	id S1757781Ab3IBJmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:42:36 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38656 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab3IBJmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:42:33 -0400
+Message-ID: <52245D81.7060402@linux.vnet.ibm.com>
+Date: Mon, 02 Sep 2013 17:42:25 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52245647.1040503@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, glin@suse.de, agraf@suse.de, brogers@suse.de,
+        afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <20130901091744.GF22899@redhat.com>
+In-Reply-To: <20130901091744.GF22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090209-2674-0000-0000-00000A7A0F9F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 12:11:35PM +0300, Adrian Hunter wrote:
-> On 02/09/13 11:37, Jiri Olsa wrote:
-> > On Mon, Sep 02, 2013 at 10:52:46AM +0300, Adrian Hunter wrote:
-> >> On 01/09/13 13:36, Jiri Olsa wrote:
-> >>> split event data into multiple files based on the file
-> >>> size or time delta specified as an argument to the option.
-> >>>
-> >>> Adding multi file '-M' option for record command to store
-> >>> output perf.data into multiple files based on the size
-> >>> threshold.
-> >>>
-> >>> The threshold is specified either as size (B/K/M/G) or time
-> >>> (s/m/h) by appending the size with appropriate unit, like:
-> >>>   -M 5M for 5 megabytes threshold
-> >>>   -M 1h for 1 hour threshold
-> >>> The generated name for each data file is appended with sequential
-> >>> number (prepended by 5 zeros).For default output file name it
-> >>> will be:
-> >>>   perf.data-00000
-> >>>   perf.data-00001
-> >>>   perf.data-00002
-> >>>   ...
-> >>>
-> >>> Also watermark/wakeup_watermark is set accordingly to get
-> >>> wake ups more often so we could get close enough to the
-> >>> file size promise.
-> >>>
-> >>> Example:
-> >>>   $ perf record -M 5M yes > /dev/null
-> >>>   ^C[ perf record: Woken up 228 times to write data ]
-> >>>   [ perf record: Captured and wrote 20.246 MB perf.data-[0-4](~884542 samples) ]
-> >>>   yes: Interrupt
-> >>>   $ ls -l perf.data-0*
-> >>>   -rw------- 1 jolsa jolsa 5289856 Aug 16 16:07 perf.data-00000
-> >>>   -rw------- 1 jolsa jolsa 5296008 Aug 16 16:08 perf.data-00001
-> >>>   -rw------- 1 jolsa jolsa 5344968 Aug 16 16:09 perf.data-00002
-> >>>   -rw------- 1 jolsa jolsa 5309144 Aug 16 16:09 perf.data-00003
-> >>>   -rw------- 1 jolsa jolsa 2358268 Aug 16 16:09 perf.data-00004
-> >>
-> >> Did you consider doing this with "perf inject" instead of "perf record"?
-> >> That way you could get the split exactly right, and you could split the same
-> >> file different ways.
-> > 
-> > right, this could be added into inject command as well
+On 09/01/2013 05:17 PM, Gleb Natapov wrote:
+> On Fri, Aug 30, 2013 at 02:41:37PM +0200, Paolo Bonzini wrote:
+>> Page tables in a read-only memory slot will currently cause a triple
+>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+>>
+>> OVMF uses such a page table; however, real hardware seems to be fine with
+>> that as long as the accessed/dirty bits are set.  Save whether the slot
+>> is readonly, and later check it when updating the accessed and dirty bits.
+>>
+> The fix looks OK to me, but some comment below.
 > 
-> I was really thinking "instead" not "as well" e.g.
+>> Cc: stable@vger.kernel.org
+>> Cc: gleb@redhat.com
+>> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+>> 	CCing to stable@ since the regression was introduced with
+>> 	support for readonly memory slots.
+>>
+>>  arch/x86/kvm/paging_tmpl.h |  7 ++++++-
+>>  include/linux/kvm_host.h   |  1 +
+>>  virt/kvm/kvm_main.c        | 14 +++++++++-----
+>>  3 files changed, 16 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+>> index 0433301..dadc5c0 100644
+>> --- a/arch/x86/kvm/paging_tmpl.h
+>> +++ b/arch/x86/kvm/paging_tmpl.h
+>> @@ -99,6 +99,7 @@ struct guest_walker {
+>>  	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
+>>  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
+>>  	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
+>> +	bool pte_writable[PT_MAX_FULL_LEVELS];
+>>  	unsigned pt_access;
+>>  	unsigned pte_access;
+>>  	gfn_t gfn;
+>> @@ -235,6 +236,9 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
+>>  		if (pte == orig_pte)
+>>  			continue;
+>>  
+>> +		if (unlikely(!walker->pte_writable[level - 1]))
+>> +			return -EACCES;
+>> +
+>>  		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
+>>  		if (ret)
+>>  			return ret;
+>> @@ -309,7 +313,8 @@ retry_walk:
+>>  			goto error;
+>>  		real_gfn = gpa_to_gfn(real_gfn);
+>>  
+>> -		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
+>> +		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
+>> +					    &walker->pte_writable[walker->level - 1]);
+> The use of gfn_to_hva_read is misleading. The code can still write into
+> gfn. Lets rename gfn_to_hva_read to gfn_to_hva_prot() and gfn_to_hva()
+> to gfn_to_hva_write().
+
+Yes. I agreed.
+
 > 
-> 	perf record yes | perf inject -M 5M
-> 
+> This makes me think are there other places where gfn_to_hva() was
+> used, but gfn_to_hva_prot() should have been?
+>  - kvm_host_page_size() looks incorrect. We never use huge page to map
+>    read only memory slots currently.
 
-yep, got it.. this gives you more fine grained size resolution
-and lets you split already stored data files, nice
+It only checks whether gfn have been mapped, I think we can use
+gfn_to_hva_read() instead, the real permission will be checked when we translate
+the gfn to pfn.
 
-But while I think this is nice feature to have, two things keeps
-me thinking we should leave the support in record command as well:
-  - the extra inject command overhead, that needs to parse the whole
-    stream, which might not be wanted in some cases
-  - AFAIU the vast majority of perf users do just record/report
-    and would be restrained from this feature ;-)
+>  - kvm_handle_bad_page() also looks incorrect and may cause incorrect
+>    address to be reported to userspace.
 
-jirka
+I have no idea on this point. kvm_handle_bad_page() is called when it failed to
+translate the target gfn to pfn, then the emulator can detect the error on target gfn
+properly. no? Or i misunderstood your meaning?
+
+>  - kvm_setup_async_pf() also incorrect. Makes all page fault on read
+>    only slot to be sync.
+>  - kvm_vm_fault() one looks OK since function assumes write only slots,
+>    but it is obsolete and should be deleted anyway.
+
+
