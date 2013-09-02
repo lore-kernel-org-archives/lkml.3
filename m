@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab3IBJId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:08:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37737 "EHLO
+	id S1758393Ab3IBIzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37723 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758376Ab3IBIzP (ORCPT
+	with ESMTP id S1758355Ab3IBIzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:15 -0400
+	Mon, 2 Sep 2013 04:55:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Simek <michal.simek@xilinx.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 25/58] microblaze: Update microblaze defconfigs
-Date: Mon,  2 Sep 2013 09:54:10 +0100
-Message-Id: <1378112083-9475-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 22/58] USB: mos7720: fix broken control requests
+Date: Mon,  2 Sep 2013 09:54:07 +0100
+Message-Id: <1378112083-9475-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -27,263 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Simek <michal.simek@xilinx.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d0e045401f268a8de6f87d65678214748b772680 upstream.
+commit ef6c8c1d733e244f0499035be0dabe1f4ed98c6f upstream.
 
-The main reason is 0-day testing system which can directly
-use these defconfigs for testing.
+The parallel-port code of the drivers used a stack allocated
+control-request buffer for asynchronous (and possibly deferred) control
+requests. This not only violates the no-DMA-from-stack requirement but
+could also lead to corrupt control requests being submitted.
 
-Enable support for all xilinx drivers which Microblaze
-can use and disable dependency on external rootfs.cpio.
-There is only one exception which is axi ethernet driver
-which still uses NO_IRQ which is not defined for Microblaze.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/microblaze/configs/mmu_defconfig   | 52 +++++++++++++++--------
- arch/microblaze/configs/nommu_defconfig | 73 ++++++++++++++++++++-------------
- 2 files changed, 80 insertions(+), 45 deletions(-)
+ drivers/usb/serial/mos7720.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/microblaze/configs/mmu_defconfig b/arch/microblaze/configs/mmu_defconfig
-index b3f5eec..d2b097a 100644
---- a/arch/microblaze/configs/mmu_defconfig
-+++ b/arch/microblaze/configs/mmu_defconfig
-@@ -1,25 +1,22 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
-+CONFIG_SYSFS_DEPRECATED=y
- CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_BLK_DEV_INITRD=y
--CONFIG_INITRAMFS_SOURCE="rootfs.cpio"
--CONFIG_INITRAMFS_COMPRESSION_GZIP=y
--# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
--CONFIG_EXPERT=y
- CONFIG_KALLSYMS_ALL=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
--# CONFIG_HOTPLUG is not set
- # CONFIG_BASE_FULL is not set
--# CONFIG_FUTEX is not set
--# CONFIG_EPOLL is not set
--# CONFIG_SIGNALFD is not set
--# CONFIG_SHMEM is not set
-+CONFIG_EMBEDDED=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
-+CONFIG_PARTITION_ADVANCED=y
-+# CONFIG_EFI_PARTITION is not set
- CONFIG_OPT_LIB_ASM=y
- CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
-@@ -31,39 +28,62 @@ CONFIG_HZ_100=y
- CONFIG_MMU=y
- CONFIG_CMDLINE_BOOL=y
- CONFIG_CMDLINE_FORCE=y
-+CONFIG_HIGHMEM=y
-+CONFIG_PCI=y
-+CONFIG_PCI_XILINX=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
- # CONFIG_INET_LRO is not set
- # CONFIG_IPV6 is not set
-+CONFIG_MTD=y
- CONFIG_PROC_DEVICETREE=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_BLK_DEV_RAM_SIZE=8192
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
- CONFIG_XILINX_EMACLITE=y
-+CONFIG_XILINX_LL_TEMAC=y
- # CONFIG_INPUT is not set
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_UARTLITE=y
- CONFIG_SERIAL_UARTLITE_CONSOLE=y
- # CONFIG_HW_RANDOM is not set
-+CONFIG_XILINX_HWICAP=y
-+CONFIG_I2C=y
-+CONFIG_I2C_XILINX=y
-+CONFIG_SPI=y
-+CONFIG_SPI_XILINX=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_XILINX=y
- # CONFIG_HWMON is not set
-+CONFIG_WATCHDOG=y
-+CONFIG_XILINX_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_XILINX=y
- # CONFIG_USB_SUPPORT is not set
-+CONFIG_UIO=y
-+CONFIG_UIO_PDRV=y
-+CONFIG_UIO_PDRV_GENIRQ=y
-+CONFIG_UIO_DMEM_GENIRQ=y
- CONFIG_EXT2_FS=y
- # CONFIG_DNOTIFY is not set
-+CONFIG_CRAMFS=y
-+CONFIG_ROMFS_FS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_CIFS=y
- CONFIG_CIFS_STATS=y
- CONFIG_CIFS_STATS2=y
--CONFIG_PARTITION_ADVANCED=y
--CONFIG_DEBUG_KERNEL=y
- CONFIG_DETECT_HUNG_TASK=y
- CONFIG_DEBUG_SLAB=y
- CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_INFO=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_EARLY_PRINTK=y
-+CONFIG_KEYS=y
-+CONFIG_ENCRYPTED_KEYS=y
-+CONFIG_KEYS_DEBUG_PROC_KEYS=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
-diff --git a/arch/microblaze/configs/nommu_defconfig b/arch/microblaze/configs/nommu_defconfig
-index 0249e4b..10b5172 100644
---- a/arch/microblaze/configs/nommu_defconfig
-+++ b/arch/microblaze/configs/nommu_defconfig
-@@ -1,41 +1,42 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
- CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
- CONFIG_BSD_PROCESS_ACCT=y
- CONFIG_BSD_PROCESS_ACCT_V3=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
-+CONFIG_SYSFS_DEPRECATED=y
- CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_EXPERT=y
- CONFIG_KALLSYMS_ALL=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
--# CONFIG_HOTPLUG is not set
- # CONFIG_BASE_FULL is not set
-+CONFIG_EMBEDDED=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
--# CONFIG_OPT_LIB_FUNCTION is not set
-+CONFIG_PARTITION_ADVANCED=y
-+# CONFIG_EFI_PARTITION is not set
- CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_BARREL=1
- CONFIG_XILINX_MICROBLAZE0_USE_DIV=1
- CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL=2
- CONFIG_XILINX_MICROBLAZE0_USE_FPU=2
--CONFIG_HIGH_RES_TIMERS=y
- CONFIG_HZ_100=y
- CONFIG_CMDLINE_BOOL=y
--CONFIG_BINFMT_FLAT=y
-+CONFIG_CMDLINE_FORCE=y
-+CONFIG_PCI=y
-+CONFIG_PCI_XILINX=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
- # CONFIG_INET_LRO is not set
- # CONFIG_IPV6 is not set
--# CONFIG_PREVENT_FIRMWARE_BUILD is not set
- CONFIG_MTD=y
--CONFIG_MTD_CONCAT=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-@@ -45,41 +46,55 @@ CONFIG_MTD_CFI_AMDSTD=y
- CONFIG_MTD_RAM=y
- CONFIG_MTD_UCLINUX=y
- CONFIG_PROC_DEVICETREE=y
--CONFIG_BLK_DEV_NBD=y
- CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_SIZE=8192
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
-+CONFIG_XILINX_EMACLITE=y
-+CONFIG_XILINX_LL_TEMAC=y
- # CONFIG_INPUT is not set
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_UARTLITE=y
- CONFIG_SERIAL_UARTLITE_CONSOLE=y
--CONFIG_HW_RANDOM=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_XILINX_HWICAP=y
-+CONFIG_I2C=y
-+CONFIG_I2C_XILINX=y
-+CONFIG_SPI=y
-+CONFIG_SPI_XILINX=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_XILINX=y
- # CONFIG_HWMON is not set
--CONFIG_VIDEO_OUTPUT_CONTROL=y
-+CONFIG_WATCHDOG=y
-+CONFIG_XILINX_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_XILINX=y
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_UIO=y
-+CONFIG_UIO_PDRV=y
-+CONFIG_UIO_PDRV_GENIRQ=y
-+CONFIG_UIO_DMEM_GENIRQ=y
- CONFIG_EXT2_FS=y
- # CONFIG_DNOTIFY is not set
- CONFIG_CRAMFS=y
- CONFIG_ROMFS_FS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_NFS_V3_ACL=y
--CONFIG_UNUSED_SYMBOLS=y
--CONFIG_DEBUG_FS=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_SHIRQ=y
-+CONFIG_NLS=y
- CONFIG_DETECT_HUNG_TASK=y
--CONFIG_SCHEDSTATS=y
--CONFIG_TIMER_STATS=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_SELFTEST=y
--CONFIG_DEBUG_OBJECTS_FREE=y
--CONFIG_DEBUG_OBJECTS_TIMERS=y
-+CONFIG_DEBUG_SLAB=y
-+CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_INFO=y
--CONFIG_DEBUG_LIST=y
--CONFIG_DEBUG_SG=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
--CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_EARLY_PRINTK=y
-+CONFIG_KEYS=y
-+CONFIG_ENCRYPTED_KEYS=y
-+CONFIG_KEYS_DEBUG_PROC_KEYS=y
-+CONFIG_CRYPTO_ECB=y
-+CONFIG_CRYPTO_MD4=y
-+CONFIG_CRYPTO_MD5=y
-+CONFIG_CRYPTO_ARC4=y
-+CONFIG_CRYPTO_DES=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
--# CONFIG_CRC32 is not set
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index 614ad93..9809fbc 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -97,6 +97,7 @@ struct urbtracker {
+ 	struct list_head        urblist_entry;
+ 	struct kref             ref_count;
+ 	struct urb              *urb;
++	struct usb_ctrlrequest	*setup;
+ };
+ 
+ enum mos7715_pp_modes {
+@@ -278,6 +279,7 @@ static void destroy_urbtracker(struct kref *kref)
+ 	struct mos7715_parport *mos_parport = urbtrack->mos_parport;
+ 
+ 	usb_free_urb(urbtrack->urb);
++	kfree(urbtrack->setup);
+ 	kfree(urbtrack);
+ 	kref_put(&mos_parport->ref_count, destroy_mos_parport);
+ }
+@@ -360,7 +362,6 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 	struct urbtracker *urbtrack;
+ 	int ret_val;
+ 	unsigned long flags;
+-	struct usb_ctrlrequest setup;
+ 	struct usb_serial *serial = mos_parport->serial;
+ 	struct usb_device *usbdev = serial->dev;
+ 
+@@ -378,14 +379,20 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 		kfree(urbtrack);
+ 		return -ENOMEM;
+ 	}
+-	setup.bRequestType = (__u8)0x40;
+-	setup.bRequest = (__u8)0x0e;
+-	setup.wValue = get_reg_value(reg, dummy);
+-	setup.wIndex = get_reg_index(reg);
+-	setup.wLength = 0;
++	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
++	if (!urbtrack->setup) {
++		usb_free_urb(urbtrack->urb);
++		kfree(urbtrack);
++		return -ENOMEM;
++	}
++	urbtrack->setup->bRequestType = (__u8)0x40;
++	urbtrack->setup->bRequest = (__u8)0x0e;
++	urbtrack->setup->wValue = get_reg_value(reg, dummy);
++	urbtrack->setup->wIndex = get_reg_index(reg);
++	urbtrack->setup->wLength = 0;
+ 	usb_fill_control_urb(urbtrack->urb, usbdev,
+ 			     usb_sndctrlpipe(usbdev, 0),
+-			     (unsigned char *)&setup,
++			     (unsigned char *)urbtrack->setup,
+ 			     NULL, 0, async_complete, urbtrack);
+ 	kref_init(&urbtrack->ref_count);
+ 	INIT_LIST_HEAD(&urbtrack->urblist_entry);
 -- 
 1.8.3.2
 
