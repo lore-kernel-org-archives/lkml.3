@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab3IBIig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:38:36 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45722 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab3IBIie (ORCPT
+	id S1757706Ab3IBIiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:38:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56048 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3IBIiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:38:34 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, fengguang.wu@intel.com,
-        Rostislav Lisovy <lisovy@gmail.com>
-Subject: [PATCH] drivers: uio: mf624_disable_interrupt() can be static
-Date: Mon,  2 Sep 2013 10:38:33 +0200
-Message-Id: <1378111113-28002-1-git-send-email-lisovy@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 2 Sep 2013 04:38:15 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-b0-52244e751776
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 1/4] slab: factor out calculate nr objects in cache_estimate
+Date: Mon,  2 Sep 2013 17:38:55 +0900
+Message-Id: <1378111138-30340-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
+ <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+This logic is not simple to understand so that making separate function
+helping readability. Additionally, we can use this change in the
+following patch which implement for freelist to have another sized index
+in according to nr objects.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
----
- drivers/uio/uio_mf624.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/drivers/uio/uio_mf624.c b/drivers/uio/uio_mf624.c
-index a1768b2..92cf6a9 100644
---- a/drivers/uio/uio_mf624.c
-+++ b/drivers/uio/uio_mf624.c
-@@ -42,7 +42,7 @@
- 
- enum mf624_interrupt_source {ADC, CTR4, ALL};
- 
--void mf624_disable_interrupt(enum mf624_interrupt_source source,
-+static void mf624_disable_interrupt(enum mf624_interrupt_source source,
- 			     struct uio_info *info)
- {
- 	void __iomem *INTCSR_reg = info->mem[0].internal_addr + INTCSR;
-@@ -70,7 +70,7 @@ void mf624_disable_interrupt(enum mf624_interrupt_source source,
- 	}
+diff --git a/mm/slab.c b/mm/slab.c
+index f3868fe..9d4bad5 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -565,9 +565,31 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+ 	return cachep->array[smp_processor_id()];
  }
  
--void mf624_enable_interrupt(enum mf624_interrupt_source source,
-+static void mf624_enable_interrupt(enum mf624_interrupt_source source,
- 			    struct uio_info *info)
+-static size_t slab_mgmt_size(size_t nr_objs, size_t align)
++static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
++				size_t idx_size, size_t align)
  {
- 	void __iomem *INTCSR_reg = info->mem[0].internal_addr + INTCSR;
+-	return ALIGN(nr_objs * sizeof(unsigned int), align);
++	int nr_objs;
++	size_t freelist_size;
++
++	/*
++	 * Ignore padding for the initial guess. The padding
++	 * is at most @align-1 bytes, and @buffer_size is at
++	 * least @align. In the worst case, this result will
++	 * be one greater than the number of objects that fit
++	 * into the memory allocation when taking the padding
++	 * into account.
++	 */
++	nr_objs = slab_size / (buffer_size + idx_size);
++
++	/*
++	 * This calculated number will be either the right
++	 * amount, or one greater than what we want.
++	 */
++	freelist_size = slab_size - nr_objs * buffer_size;
++	if (freelist_size < ALIGN(nr_objs * idx_size, align))
++		nr_objs--;
++
++	return nr_objs;
+ }
+ 
+ /*
+@@ -600,28 +622,12 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
+ 		nr_objs = slab_size / buffer_size;
+ 
+ 	} else {
+-		/*
+-		 * Ignore padding for the initial guess. The padding
+-		 * is at most @align-1 bytes, and @buffer_size is at
+-		 * least @align. In the worst case, this result will
+-		 * be one greater than the number of objects that fit
+-		 * into the memory allocation when taking the padding
+-		 * into account.
+-		 */
+-		nr_objs = (slab_size) / (buffer_size + sizeof(unsigned int));
+-
+-		/*
+-		 * This calculated number will be either the right
+-		 * amount, or one greater than what we want.
+-		 */
+-		if (slab_mgmt_size(nr_objs, align) + nr_objs*buffer_size
+-		       > slab_size)
+-			nr_objs--;
+-
+-		mgmt_size = slab_mgmt_size(nr_objs, align);
++		nr_objs = calculate_nr_objs(slab_size, buffer_size,
++					sizeof(unsigned int), align);
++		mgmt_size = ALIGN(nr_objs * sizeof(unsigned int), align);
+ 	}
+ 	*num = nr_objs;
+-	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
++	*left_over = slab_size - (nr_objs * buffer_size) - mgmt_size;
+ }
+ 
+ #if DEBUG
 -- 
-1.7.10.4
+1.7.9.5
 
