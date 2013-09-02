@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab3IBPcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 11:32:10 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:58425 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab3IBPcI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 11:32:08 -0400
+	id S1758784Ab3IBPip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 11:38:45 -0400
+Received: from nm33.bullet.mail.gq1.yahoo.com ([98.136.217.16]:36068 "EHLO
+	nm33.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758613Ab3IBPio convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 11:38:44 -0400
+X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Sep 2013 11:38:44 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 971821.35455.bm@omp1088.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=UydnWTFszVDRnbEourBnNToOgHmkcvhNr+QI/YF+FIjO3w01zZJdYrP5hlkriWSq5xYoaZIiHx0gXgsqFKO2kgeITOJD1VxG+bOK3up7mo6ZWEVHy4QPG36rqbNAsvt5vCrIngt15y/a94oCXH57w34m8dYlEcW1Dq0W2PuiRC8=;
+X-YMail-OSG: K4zWEAkVM1keH8FycxNk.wOVpZsbKmxTyTZEf2u7xsC01WE
+ .xtoih20GArCOvu4BVBNA
+X-Rocket-MIMEInfo: 002.001,DQpIZWxsbyxIb3cgYXJlIHlvdSxJIGhvcGUgeW91J3JlIHdlbGwsbXkgbmFtZSBpcyBNdXRvbmksSSdtIG1lZGl1bSBoZWlnaHQgYW5kIGZhaXIgaW4gY29tcGxleGlvbixpIGxvdmUsY2FyaW5nIGFuZCBJIGRlY2lkZWQgdG8gY29udGFjdCB5b3UuSSByZWFsbHkgd2FudCB0byBoYXZlIGEgZ29vZCByZWxhdGlvbnNoaXAgd2l0aCB5b3UuTmV4dCBJIGhhdmUgYSBzcGVjaWFsIHNvbWV0aGluZyBJIHdhbnQgdG8gZGlzY3VzcyB3aXRoIHlvdSxhbmQgdGVsbCB5b3UgbW9yZSBhYm91dCBteSBzZWxmLkhvcGUgaGUBMAEBAQE-
+X-RocketYMMF: nasiejustin
+X-Mailer: YahooMailClassic/315 YahooMailWebService/0.8.156.576
+Message-ID: <1378135985.44511.YahooMailBasic@web163905.mail.gq1.yahoo.com>
+Date: Mon, 2 Sep 2013 08:33:05 -0700 (PDT)
+From: Mutoni Williams <mutoni_w@hotmail.com>
+Reply-To: mutoniwilliam@yahoo.com
+Subject: Hallo..........
+To: undisclosed recipients:;
 MIME-Version: 1.0
-In-Reply-To: <5221F119.4070000@gmail.com>
-References: <5221F119.4070000@gmail.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 2 Sep 2013 16:31:48 +0100
-X-Google-Sender-Auth: IWW00m_u6On0JX0li7so5z-uLVs
-Message-ID: <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com>
-Subject: Re: 3.10.9: kmemleak disables all CPUs except CPU0
-To: =?UTF-8?Q?Martin_MOKREJ=C5=A0?= <mmokrejs@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 August 2013 14:35, Martin MOKREJÅ  <mmokrejs@gmail.com> wrote:
->   never realized that my CPUs are gone if I compile into kernel kmemleak.
-> Is that really the aim?
->
-> CONFIG_HAVE_DEBUG_KMEMLEAK=y
-> CONFIG_DEBUG_KMEMLEAK=y
-> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
-> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
-> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
->
-> 1.  Why isn't there /sys/devices/system/cpu/cpu0/online file?
-> Does not matter if it contains 0 or 1. It just should exist.
 
-I can't really see how kmemleak would do this, maybe other config
-options that get set/cleared in the process of selecting kmemleak. Can
-you do a diff between your config with /sys/... entries and the one
-without?
-
--- 
-Catalin
+Hello,How are you,I hope you're well,my name is Mutoni,I'm medium height and fair in complexion,i love,caring and I decided to contact you.I really want to have a good relationship with you.Next I have a special something I want to discuss with you,and tell you more about my self.Hope hear from you soon.I know age will not be a bearier to our relationship,I will give my best. Yours,Miss.Mutoni.
+ 
+Hallo,Wie geht es dir,ich hoffe,du bist gut,mein Name ist Mutoni, ich mittlerer Höhe und Messe in Teint bin,ich liebe,fürsorgliche und ich beschlossen,you.I kontaktieren wirklich wollen,eine gute Beziehung mit Ihnen haben.Weiter habe ich eine besondere etwas möchte ich mit Ihnen zu besprechen haben,und erfahren Sie mehr über meine self.Hope von Ihnen zu hören soon.i wissen Alter wird kein bearier,unsere Beziehung zu sein, werde ich mein Bestes geben.Yours,Miss.Mutoni.
