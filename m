@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3IBB6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 21:58:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51028 "EHLO arroyo.ext.ti.com"
+	id S1757982Ab3IBCBb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 22:01:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51156 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366Ab3IBB6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 21:58:36 -0400
-Message-ID: <5223F0AD.2040304@ti.com>
-Date: Mon, 2 Sep 2013 07:28:05 +0530
+	id S1754592Ab3IBCB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 22:01:29 -0400
+Message-ID: <5223F160.6030006@ti.com>
+Date: Mon, 2 Sep 2013 07:31:04 +0530
 From: George Cherian <george.cherian@ti.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -23,16 +23,18 @@ CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <linux-doc@vger.kernel.org>,
         <popcornmix@gmail.com>
 Subject: Re: [PATCH v3 1/3] extcon: extcon-gpio-usbvid: Generic USB VBUS/ID
  detection via GPIO
-References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-2-git-send-email-george.cherian@ti.com> <521EA563.4060305@samsung.com> <521EB018.3000301@ti.com> <521EE8FC.80802@samsung.com> <521EF88F.4070402@ti.com> <521F245E.8050506@samsung.com> <521F3515.7040001@ti.com> <521F3AA2.9010707@samsung.com> <521F505E.8090607@ti.com> <521FE31D.8050902@samsung.com> <52203872.2050304@ti.com> <52204158.8070406@samsung.com>
-In-Reply-To: <52204158.8070406@samsung.com>
+References: <1377711185-31238-1-git-send-email-george.cherian@ti.com> <1377711185-31238-2-git-send-email-george.cherian@ti.com> <521EA563.4060305@samsung.com> <521EB018.3000301@ti.com> <521EE8FC.80802@samsung.com> <521EF88F.4070402@ti.com> <521F245E.8050506@samsung.com> <521F3515.7040001@ti.com> <521F3AA2.9010707@samsung.com> <521F505E.8090607@ti.com> <521FE31D.8050902@samsung.com> <52203872.2050304@ti.com> <52204641.3020203@samsung.com>
+In-Reply-To: <52204641.3020203@samsung.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/30/2013 12:23 PM, Chanwoo Choi wrote:
+On 8/30/2013 12:44 PM, Chanwoo Choi wrote:
 > Hi George,
+>
+> In addition, I add answer about that device driver control gpio pin directly.
 >
 > On 08/30/2013 03:15 PM, George Cherian wrote:
 >> Hi Chanwoo,
@@ -77,8 +79,20 @@ On 8/30/2013 12:23 PM, Chanwoo Choi wrote:
 >>> As far as I know, the generic driver cannot direclty control gpio pin and get value from gpio pin.
 >>> Almost device driver including in kernel/drivers control gpio pin on specific device driver
 >>> instead of generic driver.
->> But without reading the gpio value how can we set the cable states? for this driver the assumption is the dedicated gpio
+>> But without reading the gpio value how can we set the cable states?
+> hmm. I mentioned above my answer as following:
+> 	>> As far as I know, the generic driver cannot direclty control gpio pin and get value from gpio pin.
+> 	>> Almost device driver including in kernel/drivers control gpio pin on specific device driver
+> Because your extcon driver directly control gpio pin so I think your extcon driver isn't generic.
+>
+> for this driver the assumption is the dedicated gpio
+Obviously when I am writing a generic driver for USB VBUS-ID detetction 
+which is via gpio then i assume I have a dedicated gpio.
+what is wrong in that assumption? How else can you detect ID pin change 
+and VBUS change via gpio if not you have them dedicated?
 >> is always DIR_IN and in the driver we just read the value.
+> What is DIR_IN?
+Direction IN gpio.
 >>>>> I need your answer about above my opinion for other SoC.
 >>>> So how about this, I have removed the dra7x specific stuffs (gpio-usb-id)
 >>>>
@@ -138,53 +152,20 @@ On 8/30/2013 12:23 PM, Chanwoo Choi wrote:
 >> If so that is a really bad h/w design and it will not fly.
 >> Or, you meant that only USB ID pin is connected to single gpio and it controls the state of the USB/USB-HOST cables?
 >> If so thats what exactly the v3 driver did with compatible gpio-usb-id.
-> My original question intention,
-> I'd like you to answer that this driver can support all case of "SoC A"/"SoC B"/"SoC C" without othe implementation?
->
-Definitely supports SoC A and SoC C. this is neither  a generic extcon 
-driver nor a generic gpio driver.
-This is a generic driver for USB VBUS-ID detection connected via gpios. 
-so doesnot address ADC (SOC B)
+>>
 >>> "SoC B" wish to detect USB/USB-HOST cable through ADC value instead of gpio pin.
 >> Via ADC this driver should never be used , it should be extcon-adc-usbvid driver and not extcon-gpio-usbvid driver.
-> No, we cannot implement many generic extcon device driver whenever this is the case.
-then how can I make this one generic? Pointers?
->
 >>> "SoC C" wish to detect USB/USB-HOST cable through two gpio pin because USB connected on gpio an USB-HOST connected on another.
 >> Whatever modifications above should meet this need  in combination with named gpios (id_gpio and vbus_gpio in dt)as stephen pointed.
 >> But still i feel the above modification would even support Soc A provided the code registered for the notifier could handle it properly.
-> I'd like you to answer that this driver can support all case of "SoC A"/"SoC B"/"SoC C"?
-Answered above.
-> If we should implement extcon device driver according each case,
-> Could you tell me that this driver is generic? I think NO.
-If for each case separate extcon driver, then its  not generic. But How 
-would I make one or how can I modify this one to be more generic?
 >>> In addition,
 >>> if "SoC A/C" wish to write some data to own specific registers for proper opeating,
 >>> Could we write some data to register on generic driver?
 >> Yes definitely, those register configuration should not be part of this driver and it should be done in the notifier handler.
-> No. there are many extcon consumer driver. We cannot order the sequence of notification reception among all of extcon consumer driver.
-> Only, extcon consumer driver get the changed state of cable and can never set cable H/W setting in extcon consumer driver.
-> Certainly, we have to set cabe H/W setting in extcon producer driver.
-I dont want the consumer driver to change the cable state. I wanted to 
-mention that the cable state change might need a register write specifc 
-to the H/W which could be done
-in consumers call back.
-  For eg:- When the USB cable is connected I need to set the UTMI config 
-register to Peripheral mode and when USB-HOST is connected the same need 
-to be set to HOST mode, these writes will be done
-in the call back functions.
 >>> Finally,
 >>> "SoC D" wish to detect USB/USB-HOST/JIG cable through two gpio pin
 >> Correct me If I am wrong, USB JIG is not a standard cable. so for supporting that anyways you need to have
 >> a different driver.
-> No, we cannot guarantee that some cable would be connected to SoC.
-> If this dirver is generic, it have to certainly support above all case in this driver.
-
-okay, but at the same time there are tons of devices running linux which 
-doesnot support USB JIG cable.
-Are those all attributed to linux and its drivers?
->
 >>> - one gpio may detect either USB or USB-HOST and another may detect JIG cable
 >> I assume u meant the USB ID pin is connected to one gpio and based on it value USB/USB-HOST  is detected.
 >>> or one gpio may detect either USb or JIG and another may detect USB-HOST cable.
@@ -196,11 +177,6 @@ Are those all attributed to linux and its drivers?
 >>> I think this driver could support dra7x series SoC but as I mentioned,
 >>> this driver may not guarantee all of cases.
 >> I am sorry, I feel it supports all standard cases except for something like a JIG cable which is not standard.
-> I've never seen spec documentation that USB/USB-HOST cable have to be only connected to SoC.
-> As I mentioned above, there are many cases we cannot think about various extcon devices.
-
-Okay but we have to start with some known working combinations and then 
-increase the number of stuffs supported.
 >>>> [snip]
 >>>>>>> I have some confusion. I need additional your explanation.
 >>>>>>> Could this driver register only one interrupt handler either id_irq_handler() or vbus_irq_handler()?
@@ -220,8 +196,6 @@ increase the number of stuffs supported.
 >>>> So if i remove that part then?
 >>> The setting order should be removed in generic driver.
 >> Yes I agree and should be done by the subscriber to the notifier.
-> OK.
->
 >>>>>>> Did you think that SoC should always connect either "USB-HOST" cable or "USB" cable?
 >>>>>> No,  even if a physical cable is not connected it should  default to either USB-HOST or USB
 >>>>> It isn't general.
@@ -236,7 +210,7 @@ increase the number of stuffs supported.
 >>>>>>> and can't agree as generic extcon gpio driver.
 >>> Thanks,
 >>> Chanwoo Choi
->
+>>
 > Thanks,
 > Chanwoo Choi
 >
