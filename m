@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758336Ab3IBJyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:54:55 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:11964
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755133Ab3IBJy2 (ORCPT
+	id S1757920Ab3IBKAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 06:00:51 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:53666 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330Ab3IBKAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:54:28 -0400
-X-IronPort-AV: E=Sophos;i="4.89,1006,1367964000"; 
-   d="scan'208";a="25430803"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] spi: delete premature free_irq
-Date: Mon,  2 Sep 2013 11:54:20 +0200
-Message-Id: <1378115661-5371-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1378115661-5371-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1378115661-5371-1-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 2 Sep 2013 06:00:49 -0400
+Message-ID: <522461C7.8090701@linux.vnet.ibm.com>
+Date: Mon, 02 Sep 2013 18:00:39 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, glin@suse.de, agraf@suse.de, brogers@suse.de,
+        afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <5224584F.6010409@linux.vnet.ibm.com> <20130902092518.GN22899@redhat.com>
+In-Reply-To: <20130902092518.GN22899@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090209-5490-0000-0000-000004148700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 09/02/2013 05:25 PM, Gleb Natapov wrote:
+> On Mon, Sep 02, 2013 at 05:20:15PM +0800, Xiao Guangrong wrote:
+>> On 08/30/2013 08:41 PM, Paolo Bonzini wrote:
+>>> Page tables in a read-only memory slot will currently cause a triple
+>>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+>>>
+>>> OVMF uses such a page table; however, real hardware seems to be fine with
+>>> that as long as the accessed/dirty bits are set.  Save whether the slot
+>>> is readonly, and later check it when updating the accessed and dirty bits.
+>>
+>> Paolo, do you know why OVMF is using readonly memory like this?
+>>
+> Just a guess, but perhaps they want to move to paging mode as early as
+> possible even before memory controller is fully initialized.
+> 
+>> AFAIK, The fault trigged by this kind of access can hardly be fixed by
+>> userspace since the fault is trigged by pagetable walking not by the current
+>> instruction. Do you have any idea to let uerspace emulate it properly?
+> Not sure what userspace you mean here, but there shouldn't be a fault in the
 
-Free_irq is not needed if there has been no request_irq.  Free_irq is
-removed from both the probe and remove functions.  The correct request_irq
-and free_irq appear to be in the add_host and remove_host functions in
-spi-dw.c.
+I just wonder how to fix this kind of fault. The current patch returns -EACCES
+but that will crash the guest. I think we'd better let userspace to fix this
+error (let userspace set the D/A bit.)
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+> first place if ROM page tables have access/dirty bit set and they do.
 
-// <smpl>
-@@
-expression e;
-@@
-
-*e = platform_get_irq(...);
-... when != request_irq(e,...)
-*free_irq(e,...)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-Not tested.
-
- drivers/spi/spi-dw-mmio.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/drivers/spi/spi-dw-mmio.c b/drivers/spi/spi-dw-mmio.c
-index 4aa8be8..168c620 100644
---- a/drivers/spi/spi-dw-mmio.c
-+++ b/drivers/spi/spi-dw-mmio.c
-@@ -74,7 +74,7 @@ static int dw_spi_mmio_probe(struct platform_device *pdev)
- 	dwsmmio->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(dwsmmio->clk)) {
- 		ret = PTR_ERR(dwsmmio->clk);
--		goto err_irq;
-+		goto err_unmap;
- 	}
- 	clk_enable(dwsmmio->clk);
- 
-@@ -94,8 +94,6 @@ err_clk:
- 	clk_disable(dwsmmio->clk);
- 	clk_put(dwsmmio->clk);
- 	dwsmmio->clk = NULL;
--err_irq:
--	free_irq(dws->irq, dws);
- err_unmap:
- 	iounmap(dws->regs);
- err_release_reg:
-@@ -115,7 +113,6 @@ static int dw_spi_mmio_remove(struct platform_device *pdev)
- 	clk_put(dwsmmio->clk);
- 	dwsmmio->clk = NULL;
- 
--	free_irq(dwsmmio->dws.irq, &dwsmmio->dws);
- 	dw_spi_remove_host(&dwsmmio->dws);
- 	iounmap(dwsmmio->dws.regs);
- 	kfree(dwsmmio);
+Yes, so we can not call x86_emulate_instruction() to fix this fault (that function
+emulates the access on the first place). Need directly return a MMIO-exit to
+userpsace when met this fault? What happen if this fault on pagetable-walking
+is trigged in x86_emulate_instruction().?
 
