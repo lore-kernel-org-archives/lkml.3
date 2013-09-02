@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab3IBLnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 07:43:43 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38837 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758419Ab3IBLnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 07:43:41 -0400
+	id S1758352Ab3IBL6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 07:58:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4437 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755365Ab3IBL6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 07:58:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1006,1367996400"; 
+   d="scan'208";a="354819090"
+Date: Mon, 2 Sep 2013 16:42:00 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lu Jingchang-B35083 <B35083@freescale.com>
+Cc: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 3/3] dma: Add Freescale eDMA engine driver support
+Message-ID: <20130902111200.GP7376@intel.com>
+References: <1376633274-17850-1-git-send-email-b35083@freescale.com>
+ <20130828081742.GC11414@intel.com>
+ <B56CDBE15CE27145A4B77D2D24263E8520A8C7@039-SN1MPN1-003.039d.mgd.msft.net>
+ <20130902045050.GE7376@intel.com>
+ <B56CDBE15CE27145A4B77D2D24263E8520D0D4@039-SN1MPN1-004.039d.mgd.msft.net>
+ <20130902063721.GK7376@intel.com>
+ <B56CDBE15CE27145A4B77D2D24263E8520F101@039-SN1MPN1-004.039d.mgd.msft.net>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1308261129200.1445-100000@iolanthe.rowland.org>
-References: <CACVXFVMi8VU=m_XkdToAWtMDj-AJ2H+Jz6J4yy0=YWAweV1UMA@mail.gmail.com>
- <Pine.LNX.4.44L0.1308261129200.1445-100000@iolanthe.rowland.org>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 2 Sep 2013 12:43:21 +0100
-X-Google-Sender-Auth: twBY9qICnoCJvrXic-i4ws4CXqA
-Message-ID: <CAHkRjk5LdzTCY2w+OJo2Xm9CxBPnXgY7cfJhMYW0nV9J0QmOTg@mail.gmail.com>
-Subject: Re: Memory synchronization vs. interrupt handlers
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: David Howells <dhowells@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B56CDBE15CE27145A4B77D2D24263E8520F101@039-SN1MPN1-004.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 August 2013 16:49, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Here's a question that doesn't seem to be answered in
-> Documentation/memory-barriers.txt.  Are memory accesses within an
-> interrupt handler synchronized with respect to interrupts?
->
-> In more detail, suppose we have an interrupt handler that uses a memory
-> variable A.  The device attached to the IRQ line sends two interrupt
-> requests, and we get:
->
->         CPU 0                           CPU 1
->         -----                           -----
->         Receive IRQ
->         Call the interrupt handler
->                 Write A
->         Finish IRQ processing
->
->                                         Receive IRQ
->                                         Call the interrupt handler
->                                                 Read A
->                                         Finish IRQ processing
->
-> Is CPU 0's write to A guaranteed to be visible on CPU 1?  Given that
-> interrupts on an IRQ line are serialized, and that IRQ processing must
-> involve some amount of memory barriers, I would expect the answer to be
-> Yes.
+On Mon, Sep 02, 2013 at 07:32:53AM +0000, Lu Jingchang-B35083 wrote:
+> > > > > > > +	chan->private = fn_param;
+> > > > > > why do you need to use chan->private?
+> > > > > [Lu Jingchang]
+> > > > > The private used here is to store the slot_id information, which
+> > must
+> > > > be used
+> > > > > by the DMAMUX in alloc_chan_resources function. Thanks.
+> > > > Why dont you pass this in struct dma_slave_config memeber slave_id
+> > for
+> > > > this.
+> > > [Lu Jingchang-b35083]
+> > > I will drop this private and setup the slave_id directly in the filter
+> > function.
+> > why in filter? before calling prepare function you can set the slave
+> > config
+> How about change the filter_fn to follow:
+> static bool fsl_edma_filter_fn(struct dma_chan *chan, void *fn_param)
+> {
+>         struct fsl_edma_filter_param *fparam = fn_param;
+>         struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+>         unsigned char val;
+> 
+>         if (fsl_chan->edmamux->mux_id != fparam->mux_id)
+>                 return false;
+> 
+>         val = EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(fparam->slot_id);
+>         fsl_edmamux_config_chan(fsl_chan, val);
+>         return true;
+> }
+> In fact the slot_id isn't need elsewhere, and if the filter return true, 
+> This channel should be to this request. So no need to save the slave id, Right?
+something like
 
-On arm (or arm64), this is not guaranteed. Finishing the IRQ
-processing usually involves a device write but there is no ordering
-required with other write accesses. It could easily be fixed in the
-IRQ controller code (drivers/irqchip/irq-gic.c for newer ARM
-processors). We have a barrier for SMP cross-calls for the same
-ordering reason, so I guess we need one for EOI as well.
+static bool fsl_edma_filter_fn(struct dma_chan *chan, void *fn_param)
+{
+	struct fsl_edma_filter_param *fparam = fn_param;
+	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
 
-In practice I would think it's nearly impossible to hit this issue,
-given the time to save the state when taking the interrupt plus some
-spinlocks, the write from CPU0 would become visible.
+	if (fsl_chan->edmamux->mux_id != fparam->mux_id)
+		return false;
+	return true;
+}
 
-Also, if the data is accessed by the same driver with the same IRQ,
-most likely the interrupt goes to the same CPU (unless you had some
-rebalancing, but this being rarer it makes it less likely). If the
-data is being accessed between two separate IRQ handlers, a spinlock
-must be used anyway.
+in thedriver which calls this:
 
--- 
-Catalin
+before prep:
+
+	config->slave_id = val;
+
+	dma_set_slave_config(chan, slave);
+
+~Vinod
