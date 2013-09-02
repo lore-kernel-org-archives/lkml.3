@@ -1,417 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab3IBOd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:33:27 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55118 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3IBOdZ (ORCPT
+	id S1758793Ab3IBOdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:33:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40787 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab3IBOdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:33:25 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, david@fromorbit.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v2 3/7] ext4: add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-Date: Mon,  2 Sep 2013 23:32:39 +0900
-Message-Id: <1378132359-2919-1-git-send-email-linkinjeon@gmail.com>
+	Mon, 2 Sep 2013 10:33:38 -0400
+From: Javi Merino <javi.merino@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Javi Merino <javi.merino@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] smp: harmonize prototypes of smp functions
+Date: Mon,  2 Sep 2013 15:33:13 +0100
+Message-Id: <1378132393-17089-1-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 02 Sep 2013 14:33:32.0861 (UTC) FILETIME=[6676E6D0:01CEA7E9]
+X-MC-Unique: 113090215333601901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r82EXlJI009013
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Avoid unnecessary casts from int to bool in smp functions.  Some
+functions in kernel/smp.c have a wait parameter that can be set to one
+if you want to wait for the command to complete.  It's defined as bool
+in a few of them and int in the rest.  If a function with wait
+declared as int calls a function whose prototype has wait defined as
+bool, the compiler needs to test if the int is != 0 and change it to 1
+if so.  This useless check can be avoided if we are consistent and
+make all the functions use the same type for this parameter.
 
-Add support FALLOC_FL_COLLAPSE_RANGE for fallocate.
+For example in arm, before this patch:
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+800464e4 <smp_call_function>:
+800464e4:       b538            push    {r3, r4, r5, lr}
+800464e6:       460d            mov     r5, r1
+800464e8:       4613            mov     r3, r2       ; move wait to r3
+800464ea:       f64f 448c       movw    r4, #64652
+800464ee:       3300            adds    r3, #0       ; test if wait is 0
+800464f0:       f2c8 0425       movt    r4, #32805
+800464f4:       4601            mov     r1, r0
+800464f6:       bf18            it      ne
+800464f8:       2301            movne   r3, #1       ; if it is not, wait = 1
+800464fa:       462a            mov     r2, r5
+800464fc:       6820            ldr     r0, [r4, #0]
+800464fe:       f7ff fea9       bl      80046254 <smp_call_function_many>
+80046502:       2000            movs    r0, #0
+80046504:       bd38            pop     {r3, r4, r5, pc}
+80046506:       bf00            nop
+
+After the patch:
+
+800464e4 <smp_call_function>:
+800464e4:	b538      	push	{r3, r4, r5, lr}
+800464e6:	460d      	mov	r5, r1
+800464e8:	4613      	mov	r3, r2      ; just move it to r3
+800464ea:	f64f 448c 	movw	r4, #64652
+800464ee:	4601      	mov	r1, r0
+800464f0:	f2c8 0425 	movt	r4, #32805
+800464f4:	462a      	mov	r2, r5
+800464f6:	6820      	ldr	r0, [r4, #0]
+800464f8:	f7ff feac 	bl	80046254 <smp_call_function_many>
+800464fc:	2000      	movs	r0, #0
+800464fe:	bd38      	pop	{r3, r4, r5, pc}
+
+Same for x86.  Before:
+
+ffffffff8109bf10 <smp_call_function>:
+ffffffff8109bf10:       55                      push   %rbp
+ffffffff8109bf11:       48 89 e5                mov    %rsp,%rbp
+ffffffff8109bf14:       31 c9                   xor    %ecx,%ecx  ; ecx = 0
+ffffffff8109bf16:       85 d2                   test   %edx,%edx  ; test if wait is 0
+ffffffff8109bf18:       48 89 f2                mov    %rsi,%rdx
+ffffffff8109bf1b:       48 89 fe                mov    %rdi,%rsi
+ffffffff8109bf1e:       48 8b 3d 4b d3 76 00    mov    0x76d34b(%rip),%rdi        # ffffffff81809270 <cpu_online_mask>
+ffffffff8109bf25:       0f 95 c1                setne  %cl        ; if it is not, ecx = 1
+ffffffff8109bf28:       e8 43 fc ff ff          callq  ffffffff8109bb70 <smp_call_function_many>
+ffffffff8109bf2d:       31 c0                   xor    %eax,%eax
+ffffffff8109bf2f:       5d                      pop    %rbp
+ffffffff8109bf30:       c3                      retq
+
+After:
+
+ffffffff8109bf20 <smp_call_function>:
+ffffffff8109bf20:       55                      push   %rbp
+ffffffff8109bf21:       48 89 e5                mov    %rsp,%rbp
+ffffffff8109bf24:       89 d1                   mov    %edx,%ecx  ; just move wait to ecx
+ffffffff8109bf26:       48 89 f2                mov    %rsi,%rdx
+ffffffff8109bf29:       48 89 fe                mov    %rdi,%rsi
+ffffffff8109bf2c:       48 8b 3d 3d d3 76 00    mov    0x76d33d(%rip),%rdi        # ffffffff81809270 <cpu_online_mask>
+ffffffff8109bf33:       e8 48 fc ff ff          callq  ffffffff8109bb80 <smp_call_function_many>
+ffffffff8109bf38:       31 c0                   xor    %eax,%eax
+ffffffff8109bf3a:       5d                      pop    %rbp
+ffffffff8109bf3b:       c3                      retq
+ffffffff8109bf3c:       0f 1f 40 00             nopl   0x0(%rax)
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Javi Merino <javi.merino@arm.com>
 ---
- fs/ext4/ext4.h              |    3 +
- fs/ext4/extents.c           |  286 ++++++++++++++++++++++++++++++++++++++++++-
- fs/ext4/move_extent.c       |    2 +-
- include/trace/events/ext4.h |   25 ++++
- 4 files changed, 314 insertions(+), 2 deletions(-)
+ include/linux/smp.h |    6 +++---
+ kernel/smp.c        |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index f3c43fc..a13e0f4 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2737,6 +2737,7 @@ extern int ext4_find_delalloc_cluster(struct inode *inode, ext4_lblk_t lblk);
- extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 			__u64 start, __u64 len);
- extern int ext4_ext_precache(struct inode *inode);
-+extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
- 
- /* move_extent.c */
- extern void ext4_double_down_write_data_sem(struct inode *first,
-@@ -2748,6 +2749,8 @@ void ext4_inode_double_unlock(struct inode *inode1, struct inode *inode2);
- extern int ext4_move_extents(struct file *o_filp, struct file *d_filp,
- 			     __u64 start_orig, __u64 start_donor,
- 			     __u64 len, __u64 *moved_len);
-+extern int mext_next_extent(struct inode *inode, struct ext4_ext_path *path,
-+			    struct ext4_extent **extent);
- 
- /* page-io.c */
- extern int __init ext4_init_pageio(void);
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 54d52af..baf1faf 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4580,12 +4580,16 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	unsigned int credits, blkbits = inode->i_blkbits;
- 
- 	/* Return error if mode is not supported */
--	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-+		     FALLOC_FL_COLLAPSE_RANGE))
- 		return -EOPNOTSUPP;
- 
- 	if (mode & FALLOC_FL_PUNCH_HOLE)
- 		return ext4_punch_hole(inode, offset, len);
- 
-+	if (mode & FALLOC_FL_COLLAPSE_RANGE)
-+		return ext4_collapse_range(inode, offset, len);
-+
- 	ret = ext4_convert_inline_data(inode);
- 	if (ret)
- 		return ret;
-@@ -4884,3 +4888,283 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 	ext4_es_lru_add(inode);
- 	return error;
- }
-+
-+/*
-+ * ext4_access_path:
-+ * Function to access the path buffer for marking it dirty.
-+ * It also checks if there are sufficient credits left in the journal handle
-+ * to update path.
-+ */
-+static int
-+ext4_access_path(handle_t *handle, struct inode *inode,
-+		struct ext4_ext_path *path)
-+{
-+	int credits, err;
-+
-+	/*
-+	 * Check if need to extend journal credits
-+	 * 3 for leaf, sb, and inode plus 2 (bmap and group
-+	 * descriptor) for each block group; assume two block
-+	 * groups
-+	 */
-+	if (handle->h_buffer_credits < 7) {
-+		credits = ext4_writepage_trans_blocks(inode);
-+		err = ext4_ext_truncate_extend_restart(handle, inode, credits);
-+		/* EAGAIN is success */
-+		if (err && err != -EAGAIN)
-+			return err;
-+	}
-+
-+	err = ext4_ext_get_access(handle, inode, path);
-+	return err;
-+}
-+
-+/*
-+ * ext4_ext_shift_path_extents:
-+ * Shift the extents of a path structure lying between path[depth].p_ext
-+ * and EXT_LAST_EXTENT(path[depth].p_hdr) downwards, by subtracting shift
-+ * from starting block for each extent.
-+ */
-+static int
-+ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
-+			    struct inode *inode, handle_t *handle,
-+			    ext4_lblk_t *start)
-+{
-+	int depth, err = 0;
-+	struct ext4_extent *ex_start, *ex_last;
-+	bool update = 0;
-+	depth = path->p_depth;
-+
-+	while (depth >= 0) {
-+		if (depth == path->p_depth) {
-+			ex_start = path[depth].p_ext;
-+			if (!ex_start)
-+				return -EIO;
-+
-+			ex_last = EXT_LAST_EXTENT(path[depth].p_hdr);
-+			if (!ex_last)
-+				return -EIO;
-+
-+			err = ext4_access_path(handle, inode, path + depth);
-+			if (err)
-+				goto out;
-+
-+			if (ex_start == EXT_FIRST_EXTENT(path[depth].p_hdr))
-+				update = 1;
-+
-+			*start = ex_last->ee_block +
-+				ext4_ext_get_actual_len(ex_last);
-+
-+			while (ex_start <= ex_last) {
-+				ex_start->ee_block -= shift;
-+				ext4_ext_try_to_merge(handle, inode,
-+						path, ex_start);
-+				ex_start++;
-+			}
-+			err = ext4_ext_dirty(handle, inode, path + depth);
-+			if (err)
-+				goto out;
-+
-+			if (--depth < 0 || !update)
-+				break;
-+		}
-+
-+		/* Update index too */
-+		err = ext4_access_path(handle, inode, path + depth);
-+		if (err)
-+			goto out;
-+
-+		path[depth].p_idx->ei_block -= shift;
-+		err = ext4_ext_dirty(handle, inode, path + depth);
-+		if (err)
-+			goto out;
-+
-+		/* we are done if current index is not a starting index */
-+		if (path[depth].p_idx != EXT_FIRST_INDEX(path[depth].p_hdr))
-+			break;
-+
-+		depth--;
-+	}
-+
-+out:
-+	return err;
-+}
-+
-+/*
-+ * ext4_ext_shift_extents:
-+ * All the extents which lies in the range from start to the last allocated
-+ * block for the file are shifted downwards by shift blocks.
-+ * On success, 0 is returned, error otherwise.
-+ */
-+static int
-+ext4_ext_shift_extents(struct inode *inode, handle_t *handle,
-+		       ext4_lblk_t start, ext4_lblk_t shift)
-+{
-+	struct ext4_ext_path *path;
-+	int ret = 0, depth;
-+	struct ext4_extent *extent;
-+	ext4_lblk_t stop_block, current_block;
-+	ext4_lblk_t ex_start, ex_end;
-+
-+	/* Let path point to the last extent */
-+	path = ext4_ext_find_extent(inode, EXT_MAX_BLOCKS - 1, NULL, 0);
-+	if (IS_ERR(path))
-+		return PTR_ERR(path);
-+
-+	depth = path->p_depth;
-+	extent = path[depth].p_ext;
-+	if (!extent) {
-+		ext4_ext_drop_refs(path);
-+		kfree(path);
-+		return ret;
-+	}
-+
-+	stop_block = extent->ee_block + ext4_ext_get_actual_len(extent);
-+	ext4_ext_drop_refs(path);
-+	kfree(path);
-+
-+	/* Nothing to shift, if hole is at the end of file */
-+	if (start >= stop_block)
-+		return ret;
-+
-+	/*
-+	 * Don't start shifting extents until we make sure the hole is big
-+	 * enough to accomodate the shift.
-+	 */
-+	path = ext4_ext_find_extent(inode, start - 1, NULL, 0);
-+	depth = path->p_depth;
-+	extent =  path[depth].p_ext;
-+	ex_start = extent->ee_block;
-+	ex_end = extent->ee_block + ext4_ext_get_actual_len(extent);
-+	ext4_ext_drop_refs(path);
-+	kfree(path);
-+
-+	if ((ex_start > start - 1 && shift > ex_start) ||
-+	    (ex_end > start - shift))
-+		return -EIO;
-+
-+	/* Its safe to start updating extents */
-+	while (start < stop_block) {
-+		path = ext4_ext_find_extent(inode, start, NULL, 0);
-+		if (IS_ERR(path))
-+			return PTR_ERR(path);
-+		depth = path->p_depth;
-+		extent = path[depth].p_ext;
-+		current_block = extent->ee_block;
-+		if (start > current_block) {
-+			/* Hole, move to the next extent */
-+			ret = mext_next_extent(inode, path, &extent);
-+			if (ret != 0) {
-+				ext4_ext_drop_refs(path);
-+				kfree(path);
-+				if (ret == 1)
-+					ret = 0;
-+				break;
-+			}
-+		}
-+		ret = ext4_ext_shift_path_extents(path, shift, inode,
-+				handle, &start);
-+		ext4_ext_drop_refs(path);
-+		kfree(path);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+/*
-+ * ext4_collapse_range:
-+ * This implements the fallocate's collapse range functionality for ext4
-+ * Returns: 0 and non-zero on error.
-+ */
-+int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	ext4_lblk_t punch_start, punch_stop;
-+	handle_t *handle;
-+	unsigned int credits;
-+	unsigned int rounding;
-+	loff_t ioffset, new_size;
-+	int ret;
-+
-+	if (!S_ISREG(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	if (EXT4_SB(sb)->s_cluster_ratio > 1)
-+		return -EOPNOTSUPP;
-+
-+	/* Currently just for extent based files */
-+	if (!ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
-+		return -EOPNOTSUPP;
-+
-+	if (IS_SWAPFILE(inode))
-+		return -ETXTBSY;
-+
-+	trace_ext4_collapse_range(inode, offset, len);
-+
-+	punch_start = offset >> EXT4_BLOCK_SIZE_BITS(sb);
-+	punch_stop = (offset + len) >> EXT4_BLOCK_SIZE_BITS(sb);
-+
-+	rounding = max_t(uint, 1 << EXT4_BLOCK_SIZE_BITS(sb), PAGE_CACHE_SIZE);
-+	ioffset = offset & ~(rounding - 1);
-+
-+	/* Write out all dirty pages */
-+	ret = filemap_write_and_wait_range(inode->i_mapping, ioffset, -1);
-+	if (ret)
-+		return ret;
-+
-+	/* Take mutex lock */
-+	mutex_lock(&inode->i_mutex);
-+
-+	/* Wait for existing dio to complete */
-+	ext4_inode_block_unlocked_dio(inode);
-+	inode_dio_wait(inode);
-+
-+	truncate_pagecache_range(inode, ioffset, -1);
-+
-+	credits = ext4_writepage_trans_blocks(inode);
-+	handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
-+	if (IS_ERR(handle)) {
-+		ret = PTR_ERR(handle);
-+		goto out_dio;
-+	}
-+
-+	down_write(&EXT4_I(inode)->i_data_sem);
-+
-+	ext4_discard_preallocations(inode);
-+
-+	ret = ext4_es_remove_extent(inode, punch_start,
-+				    EXT_MAX_BLOCKS - punch_start - 1);
-+	if (ret)
-+		goto journal_stop;
-+
-+	ret = ext4_ext_remove_space(inode, punch_start, punch_stop - 1);
-+	if (ret)
-+		goto journal_stop;
-+
-+	ret = ext4_ext_shift_extents(inode, handle, punch_stop,
-+				     punch_stop - punch_start);
-+	if (ret)
-+		goto journal_stop;
-+
-+	if ((offset + len) > i_size_read(inode))
-+		new_size = offset;
-+	else
-+		new_size = i_size_read(inode) - len;
-+
-+	truncate_setsize(inode, new_size);
-+	EXT4_I(inode)->i_disksize = new_size;
-+
-+	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
-+	ext4_mark_inode_dirty(handle, inode);
-+
-+journal_stop:
-+	ext4_journal_stop(handle);
-+	up_write(&EXT4_I(inode)->i_data_sem);
-+
-+out_dio:
-+	ext4_inode_resume_unlocked_dio(inode);
-+	mutex_unlock(&inode->i_mutex);
-+	return ret;
-+}
-diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-index 7fa4d85..4cbebb0 100644
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -76,7 +76,7 @@ copy_extent_status(struct ext4_extent *src, struct ext4_extent *dest)
-  * ext4_ext_path structure refers to the last extent, or a negative error
-  * value on failure.
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index c181399..a894405 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -72,7 +72,7 @@ extern void smp_cpus_done(unsigned int max_cpus);
   */
--static int
-+int
- mext_next_extent(struct inode *inode, struct ext4_ext_path *path,
- 		      struct ext4_extent **extent)
+ int smp_call_function(smp_call_func_t func, void *info, int wait);
+ void smp_call_function_many(const struct cpumask *mask,
+-			    smp_call_func_t func, void *info, bool wait);
++			    smp_call_func_t func, void *info, int wait);
+ 
+ void __smp_call_function_single(int cpuid, struct call_single_data *data,
+ 				int wait);
+@@ -104,7 +104,7 @@ int on_each_cpu(smp_call_func_t func, void *info, int wait);
+  * the local one.
+  */
+ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+-		void *info, bool wait);
++		void *info, int wait);
+ 
+ /*
+  * Call a function on each processor for which the supplied function
+@@ -112,7 +112,7 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+  * processor.
+  */
+ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+-		smp_call_func_t func, void *info, bool wait,
++		smp_call_func_t func, void *info, int wait,
+ 		gfp_t gfp_flags);
+ 
+ /*
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fe9f773..f614250 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -367,7 +367,7 @@ void __smp_call_function_single(int cpu, struct call_single_data *csd,
+  * must be disabled when calling this function.
+  */
+ void smp_call_function_many(const struct cpumask *mask,
+-			    smp_call_func_t func, void *info, bool wait)
++			    smp_call_func_t func, void *info, int wait)
  {
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 197d312..90e2f71 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -2410,6 +2410,31 @@ TRACE_EVENT(ext4_es_shrink_exit,
- 		  __entry->shrunk_nr, __entry->cache_cnt)
- );
+ 	struct call_function_data *cfd;
+ 	int cpu, next_cpu, this_cpu = smp_processor_id();
+@@ -590,7 +590,7 @@ EXPORT_SYMBOL(on_each_cpu);
+  * from a hardware interrupt handler or from a bottom half handler.
+  */
+ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
+-			void *info, bool wait)
++			void *info, int wait)
+ {
+ 	int cpu = get_cpu();
  
-+TRACE_EVENT(ext4_collapse_range,
-+	TP_PROTO(struct inode *inode, loff_t offset, loff_t len),
-+
-+	TP_ARGS(inode, offset, len),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	offset)
-+		__field(loff_t, len)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->offset	= offset;
-+		__entry->len	= len;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu offset %lld len %lld",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  __entry->offset, __entry->len)
-+);
-+
- #endif /* _TRACE_EXT4_H */
- 
- /* This part must be outside protection */
+@@ -632,7 +632,7 @@ EXPORT_SYMBOL(on_each_cpu_mask);
+  * from a hardware interrupt handler or from a bottom half handler.
+  */
+ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+-			smp_call_func_t func, void *info, bool wait,
++			smp_call_func_t func, void *info, int wait,
+ 			gfp_t gfp_flags)
+ {
+ 	cpumask_var_t cpus;
 -- 
 1.7.9.5
+
 
