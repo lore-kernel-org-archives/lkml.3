@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab3IBFg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 01:36:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29961 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266Ab3IBFg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 01:36:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1004,1367996400"; 
-   d="scan'208";a="372080934"
-Date: Mon, 2 Sep 2013 10:20:50 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lu Jingchang-B35083 <B35083@freescale.com>
-Cc: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 3/3] dma: Add Freescale eDMA engine driver support
-Message-ID: <20130902045050.GE7376@intel.com>
-References: <1376633274-17850-1-git-send-email-b35083@freescale.com>
- <20130828081742.GC11414@intel.com>
- <B56CDBE15CE27145A4B77D2D24263E8520A8C7@039-SN1MPN1-003.039d.mgd.msft.net>
+	id S1755530Ab3IBFjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 01:39:14 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55381 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3IBFjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 01:39:13 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5224247E.3050600@roeck-us.net>
+Date: Sun, 01 Sep 2013 22:39:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B56CDBE15CE27145A4B77D2D24263E8520A8C7@039-SN1MPN1-003.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lennox Wu <lennox.wu@gmail.com>
+CC: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Liqin Chen <liqin299@gmail.com>
+Subject: Re: [PATCH] Remove support for score architecture
+References: <1377914435-24206-1-git-send-email-linux@roeck-us.net> <CAF0htA6gW3h82p2sBBpFEi4s0MkQ-NUn79VXWLieZmYNuUPA6w@mail.gmail.com>
+In-Reply-To: <CAF0htA6gW3h82p2sBBpFEi4s0MkQ-NUn79VXWLieZmYNuUPA6w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 03:32:04AM +0000, Lu Jingchang-B35083 wrote:
+On 09/01/2013 09:13 PM, Lennox Wu wrote:
+> Dear all,
+>
+> Indeed, Sunplus S+core is not a popular architecture and there is no
+> standalone to be sold so you should not find related news on the
+> Internet.  However, the s+core is adopted by our SoCs and these SoCs
+> are indeed adopted by some companies, we hope the architecture can be
+> reserved to provide the more and more powerful Linux for our
+> customers. It is true that we rarely update the code because that we
+> are rarely requested to add new functions and to correct bugs by our
+> customers, and it is also because we have no new product to release.
+> In the near future, we will release some patches for the existed
+> S+core architecture.
+>
 
-Please use a right MUA and wrap your lines at 80chars...
+Key question is not if the platform is popular, but if it is maintained.
+The commit log over the last two years strongly suggests that this is
+not the case. I suspect that the code is far from compilable at this point,
+much less executable. Unfortunately this is hard to verify, as a pre-built
+or even buildable toolchain is not easily available.
 
-> 
-> > 
-> > > +			return -EINVAL;
-> > > +		}
-> > > +		return 0;
-> > > +
-> > > +	default:
-> > > +		return -ENXIO;
-> > > +	}
-> > > +}
-> > > +
-> > > +static enum dma_status fsl_edma_tx_status(struct dma_chan *chan,
-> > > +		dma_cookie_t cookie, struct dma_tx_state *txstate)
-> > > +{
-> > > +	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
-> > > +
-> > > +	if (fsl_chan->status == DMA_ERROR)
-> > > +		return DMA_ERROR;
-> > > +
-> > > +	return dma_cookie_status(chan, cookie, txstate);
-> > this will tell if the DMA is completed or not only.
-> > You also need to calculate residue for the pending dma
-> > 
-> > Since you support cyclic this should be done properly...
-> > 
-> > also you cna take more help from vchan support to make your life
-> > simpler...
-> [Lu Jingchang]
-No need to put your name :)
- 
-> Ok, if it is needed, I will add residue calculation in the next version. 
-Yes this is needed
+ From a company perspective, you might want to decide if you want to put
+resources into this architecture to keep it alive, or focus on more recent
+chips and architectures. Information available on the internet suggests
+that Suncore's more recent chips are based on ARM. Given that, it appears
+somewhat unlikely that resources for maintaining S+core will be made
+available. Guess we'll see if the situation changes.
 
-> > > +static bool fsl_edma_filter_fn(struct dma_chan *chan, void *fn_param)
-> > > +{
-> > > +	struct fsl_edma_filter_param *fparam = fn_param;
-> > > +	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
-> > > +
-> > > +	if (fsl_chan->edmamux->mux_id != fparam->mux_id)
-> > > +		return false;
-> > > +
-> > > +	fsl_chan->slot_id = fparam->slot_id;
-> > > +	chan->private = fn_param;
-> > why do you need to use chan->private?
-> [Lu Jingchang] 
-> The private used here is to store the slot_id information, which must be used
-> by the DMAMUX in alloc_chan_resources function. Thanks.
-Why dont you pass this in struct dma_slave_config memeber slave_id for this.
+Guenter
 
-> 
-> > > +	return true;
-> > > +}
-> > > +
-> > > +static struct dma_chan *fsl_edma_xlate(struct of_phandle_args
-> > *dma_spec,
-> > > +		struct of_dma *ofdma)
-> > > +{
-> > > +	dma_cap_mask_t mask;
-> > > +	struct fsl_edma_filter_param fparam;
-> > > +
-> > > +	if (dma_spec->args_count != 2)
-> > > +		return NULL;
-> > > +
-> > > +	fparam.mux_id = dma_spec->args[0];
-> > > +	fparam.slot_id = dma_spec->args[1];
-> > > +
-> > > +	dma_cap_zero(mask);
-> > > +	dma_cap_set(DMA_SLAVE, mask);
-> > > +	dma_cap_set(DMA_CYCLIC, mask);
-> > > +	return dma_request_channel(mask, fsl_edma_filter_fn, (void
-> > *)&fparam);
-> > > +}
-> > > +
-> > > +static int fsl_edma_alloc_chan_resources(struct dma_chan *chan)
-> > > +{
-> > > +	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
-> > > +	struct fsl_edma_filter_param *data = chan->private;
-> > > +	unsigned char val;
-> > > +
-> > > +	val = EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(data->slot_id);
-> > okay, so what does the slot_id mean?
-> >
-> [Lu Jingchang] 
-> slot_id is the request source id, a peripheral device ID. Each peripheral
-> using DMA has a ID that can be identified by the DMA engine. the peripheral ID
-> must be written to the DMAMUX configuration register to route the peripheral
-> to DMA engine channel. Thanks.
-And thanks makes me belive you dont need this way, slave_id is the thing for
-you...
+> 2013/8/31 Guenter Roeck <linux@roeck-us.net>:
+>> The web site associated with the score architecture in MAINTAINERS
+>> is non-functional and available for sale. The last Ack from one
+>> of the maintainers was in December 2012. The main maintainer's last
+>> commit was in 2011. The last maintainer pull request was early 2011.
+>>
+>> Cc: Lennox Wu <lennox.wu@gmail.com>
+>> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>> More housekeeping.
+>>
+>> Maybe this removal request is a bit early, but architecture support seems
+>> to have vanished entirely. At the very least this puts interested parties
+>> (if there are any) on notice.
+>>
 
-~Vinod
-
--- 
