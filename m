@@ -1,187 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3IBEDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 00:03:34 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:61724 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758041Ab3IBEDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 00:03:31 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v2 3/6] x86 / ACPI: simplify _acpi_map_lsapic()
-Date: Mon,  2 Sep 2013 11:57:36 +0800
-Message-Id: <1378094259-5922-4-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378094259-5922-1-git-send-email-hanjun.guo@linaro.org>
-References: <1378094259-5922-1-git-send-email-hanjun.guo@linaro.org>
+	id S1754455Ab3IBEGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 00:06:06 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:35092 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097Ab3IBEGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 00:06:04 -0400
+Message-ID: <52240EA9.7010207@ispras.ru>
+Date: Mon, 02 Sep 2013 07:06:01 +0300
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: htl10@users.sourceforge.net
+CC: larry.finger@lwfinger.net, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] rtl8187: fix use after free on failure path in rtl8187_init_urbs()
+References: <1378021881.73447.YahooMailBasic@web172302.mail.ir2.yahoo.com>
+In-Reply-To: <1378021881.73447.YahooMailBasic@web172302.mail.ir2.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On 01.09.2013 10:51, Hin-Tak Leung wrote:
+> ------------------------------
+> On Sat, Aug 31, 2013 22:18 BST Alexey Khoroshilov wrote:
+>
+>> In case of __dev_alloc_skb() failure rtl8187_init_urbs()
+>> calls usb_free_urb(entry) where 'entry' can points to urb
+>> allocated at the previous iteration. That means refcnt will be
+>> decremented incorrectly and the urb can be used after memory
+>> deallocation.
+>>
+>> The patch fixes the issue and implements error handling of init_urbs
+>> in rtl8187_start().
+>>
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>>
+>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+>> ---
+>> drivers/net/wireless/rtl818x/rtl8187/dev.c | 15 ++++++++++-----
+>> 1 file changed, 10 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/net/wireless/rtl818x/rtl8187/dev.c b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+>> index f49220e..e83d53c 100644
+>> --- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
+>> +++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+>> @@ -438,17 +438,16 @@ static int rtl8187_init_urbs(struct ieee80211_hw *dev)
+>>          skb_queue_tail(&priv->rx_queue, skb);
+>>          usb_anchor_urb(entry, &priv->anchored);
+>>          ret = usb_submit_urb(entry, GFP_KERNEL);
+>> +        usb_free_urb(entry);
+>>          if (ret) {
+>>              skb_unlink(skb, &priv->rx_queue);
+>>              usb_unanchor_urb(entry);
+>>              goto err;
+>>          }
+>> -        usb_free_urb(entry);
+>>      }
+>>      return ret;
+>>
+>> err:
+>> -    usb_free_urb(entry);
+>>      kfree_skb(skb);
+>>      usb_kill_anchored_urbs(&priv->anchored);
+>>      return ret;
+> This part looks wrong - you free_urb(entry) then unanchor_urb(entry).
+I do not see any problems here.
+usb_free_urb() just decrements refcnt of the urb.
+While usb_anchor_urb() and usb_unanchor_urb() increment and decrement it 
+as well.
+So actual memory deallocation will happen in usb_unanchor_urb().
 
-In acpi_register_lapic(), it will generates a new logical cpu
-number and maps to the local APIC id, this logical cpu number
-can be returned to simplify _acpi_map_lsapic() implementation.
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/x86/include/asm/mpspec.h |    2 +-
- arch/x86/kernel/acpi/boot.c   |   50 +++++++++++++----------------------------
- arch/x86/kernel/apic/apic.c   |    8 ++++---
- 3 files changed, 22 insertions(+), 38 deletions(-)
-
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 626cf70..3142a94 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -94,7 +94,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
- #define default_get_smp_config x86_init_uint_noop
- #endif
- 
--void generic_processor_info(int apicid, int version);
-+int generic_processor_info(int apicid, int version);
- #ifdef CONFIG_ACPI
- extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 3e186d1..ab89c2b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -195,24 +195,31 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
- 	return 0;
- }
- 
--static void acpi_register_lapic(int id, u8 enabled)
-+/**
-+ * acpi_register_lapic - register a local apic and generates a logic cpu number
-+ * @id: local apic id to register
-+ * @enabled: this cpu is enabled or not
-+ *
-+ * Returns the logic cpu number which maps to the local apic
-+ */
-+static int acpi_register_lapic(int id, u8 enabled)
- {
- 	unsigned int ver = 0;
- 
- 	if (id >= (MAX_LOCAL_APIC-1)) {
- 		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
--		return;
-+		return -EINVAL;
- 	}
- 
- 	if (!enabled) {
- 		++disabled_cpus;
--		return;
-+		return -EINVAL;
- 	}
- 
- 	if (boot_cpu_physical_apicid != -1U)
- 		ver = apic_version[boot_cpu_physical_apicid];
- 
--	generic_processor_info(id, ver);
-+	return generic_processor_info(id, ver);
- }
- 
- static int __init
-@@ -622,44 +629,19 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
- 
- static int _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
- {
--	cpumask_var_t tmp_map, new_map;
- 	int cpu;
--	int retval = -ENOMEM;
--
--	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
--		goto out;
- 
--	if (!alloc_cpumask_var(&new_map, GFP_KERNEL))
--		goto free_tmp_map;
--
--	cpumask_copy(tmp_map, cpu_present_mask);
--	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
--
--	/*
--	 * If acpi_register_lapic successfully generates a new logical cpu
--	 * number, then the following will get us exactly what was mapped
--	 */
--	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
--	if (cpumask_empty(new_map)) {
--		printk ("Unable to map lapic to logical cpu number\n");
--		retval = -EINVAL;
--		goto free_new_map;
-+	cpu = acpi_register_lapic(physid, ACPI_MADT_ENABLED);
-+	if (cpu < 0) {
-+		pr_info(PREFIX "Unable to map lapic to logical cpu number\n");
-+		return cpu;
- 	}
- 
- 	acpi_processor_set_pdc(handle);
--
--	cpu = cpumask_first(new_map);
- 	acpi_map_cpu2node(handle, cpu, physid);
- 
- 	*pcpu = cpu;
--	retval = 0;
--
--free_new_map:
--	free_cpumask_var(new_map);
--free_tmp_map:
--	free_cpumask_var(tmp_map);
--out:
--	return retval;
-+	return 0;
- }
- 
- /* wrapper to silence section mismatch warning */
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index eca89c5..c98fe31 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2107,7 +2107,7 @@ void disconnect_bsp_APIC(int virt_wire_setup)
- 	apic_write(APIC_LVT1, value);
- }
- 
--void generic_processor_info(int apicid, int version)
-+int generic_processor_info(int apicid, int version)
- {
- 	int cpu, max = nr_cpu_ids;
- 	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
-@@ -2127,7 +2127,7 @@ void generic_processor_info(int apicid, int version)
- 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
- 
- 		disabled_cpus++;
--		return;
-+		return -ENODEV;
- 	}
- 
- 	if (num_processors >= nr_cpu_ids) {
-@@ -2138,7 +2138,7 @@ void generic_processor_info(int apicid, int version)
- 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
- 
- 		disabled_cpus++;
--		return;
-+		return -EINVAL;
- 	}
- 
- 	num_processors++;
-@@ -2183,6 +2183,8 @@ void generic_processor_info(int apicid, int version)
- #endif
- 	set_cpu_possible(cpu, true);
- 	set_cpu_present(cpu, true);
-+
-+	return cpu;
- }
- 
- int hard_smp_processor_id(void)
--- 
-1.7.9.5
+>
+>> @@ -956,8 +955,12 @@ static int rtl8187_start(struct ieee80211_hw *dev)
+>>                    (RETRY_COUNT < 8  /* short retry limit */) |
+>>                    (RETRY_COUNT < 0  /* long retry limit */) |
+>>                    (7 < 21 /* MAX TX DMA */));
+>> -        rtl8187_init_urbs(dev);
+>> -        rtl8187b_init_status_urb(dev);
+>> +        ret = rtl8187_init_urbs(dev);
+>> +        if (ret)
+>> +            goto rtl8187_start_exit;
+>> +        ret = rtl8187b_init_status_urb(dev);
+>> +        if (ret)
+>> +            usb_kill_anchored_urbs(&priv->anchored);
+>>          goto rtl8187_start_exit;
+>>      }
+>>
+>> @@ -966,7 +969,9 @@ static int rtl8187_start(struct ieee80211_hw *dev)
+>>      rtl818x_iowrite32(priv, &priv->map->MAR[0], ~0);
+>>      rtl818x_iowrite32(priv, &priv->map->MAR[1], ~0);
+>>
+>> -    rtl8187_init_urbs(dev);
+>> +    ret = rtl8187_init_urbs(dev);
+>> +    if (ret)
+>> +        goto rtl8187_start_exit;
+>>
+>>      reg = RTL818X_RX_CONF_ONLYERLPKT |
+>>            RTL818X_RX_CONF_RX_AUTORESETPHY |
+>> -- 
+>> 1.8.1.2
+>>
+>
+>
 
