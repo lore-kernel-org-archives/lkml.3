@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663Ab3IBI4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:56:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34099 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758596Ab3IBI4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:56:43 -0400
-Date: Mon, 2 Sep 2013 10:56:31 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Xiubo Li-B47053 <B47053@freescale.com>
-Cc: Guo Shawn-R65073 <r65073@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Lu Jingchang-B35083 <B35083@freescale.com>
-Subject: Re: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
-Message-ID: <20130902085630.GS30088@pengutronix.de>
-Mail-Followup-To: Xiubo Li-B47053 <B47053@freescale.com>,
-	Guo Shawn-R65073 <r65073@freescale.com>,
-	"thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-	"grant.likely@linaro.org" <grant.likely@linaro.org>,
-	"linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-	"rob@landley.net" <rob@landley.net>,
-	"ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-	"swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-	"mark.rutland@arm.com" <mark.rutland@arm.com>,
-	"pawel.moll@arm.com" <pawel.moll@arm.com>,
-	"rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-	Lu Jingchang-B35083 <B35083@freescale.com>
-References: <1377856132-11290-1-git-send-email-Li.Xiubo@freescale.com>
- <1377856132-11290-2-git-send-email-Li.Xiubo@freescale.com>
- <20130830174909.GF30088@pengutronix.de>
- <1DD289F6464F0949A2FCA5AA6DC23F827F785F@039-SN2MPN1-011.039d.mgd.msft.net>
+	id S1758608Ab3IBIz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12456 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758483Ab3IBIzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:55:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1005,1367996400"; 
+   d="scan'208";a="372152941"
+Date: Mon, 2 Sep 2013 10:55:34 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
+Message-ID: <20130902085534.GP20329@zurbaran>
+References: <20130831130741.GG18608@sirena.org.uk>
+ <20130901144847.GM20329@zurbaran>
+ <20130901150853.GG3084@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F827F785F@039-SN2MPN1-011.039d.mgd.msft.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:52:57 up 8 days, 18:23, 33 users,  load average: 0.01, 0.02, 0.19
+In-Reply-To: <20130901150853.GG3084@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 03:33:37AM +0000, Xiubo Li-B47053 wrote:
-> 
-> > > +static void fsl_pwm_free(struct pwm_chip *chip, struct pwm_device
-> > > +*pwm) {
-> > > +	struct fsl_pwm_chip *fpc;
-> > > +	struct fsl_pwm_data *pwm_data;
-> > > +
-> > > +	fpc = to_fsl_chip(chip);
-> > > +
-> > > +	pwm_data = pwm_get_chip_data(pwm);
-> > > +	if (!pwm_data)
-> > > +		return;
-> > 
-> > THis check seems unnecessary.
-> > 
-> 
-> But if do not check it here, I must check it in the following code.
-> 
-> > > +
-> > > +	if (pwm_data->available != FSL_AVAILABLE)
-> > > +		return;
-> > > +
-> 
-> So the ' struct fsl_pwm_data' may be removed in the future.
-> 
-> > 
-> > > +
-> > > +
-> > > +	pwm_data->period_cycles = period_cycles;
-> > > +	pwm_data->duty_cycles = duty_cycles;
-> > 
-> > These fields are set but never read. Please drop them.
-> > 
-> > If you drop the 'available' field also the you can drop chip_data
-> > completely.
-> > 
-> 
-> I think I may move the 'available' field to the PWM driver data struct.
+Hi Mark,
 
-You simply don't need the available field. You don't need to track
-whether they are available. If a user enables a pwm which is not routed
-out of the SoC (disabled in the iomux) simply nothing will happen except
-for a slightly increased power consumption.
+On Sun, Sep 01, 2013 at 04:08:53PM +0100, Mark Brown wrote:
+> On Sun, Sep 01, 2013 at 04:48:47PM +0200, Samuel Ortiz wrote:
+> 
+> > As I'd prefer to carry the MFD ones (Including the twl6040 one) through
+> > mfd-next, I can build a branch for you to pull from. Would that be fine
+> > with you ?
+> 
+> That's fine by me, I just want the patches in ASoC - obviously the
+> branch couldn't be rebased though.
+I put a topic/for-asoc branch upstream for you to pull from:
 
-Sascha
+The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
 
+  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git topic/for-asoc
+
+for you to fetch changes up to c6f39257c952bc7da974bf93255936ff2ece2c34:
+
+  mfd: twl6040: Use regmap for register cache (2013-09-02 10:30:14
++0200)
+
+----------------------------------------------------------------
+Mark Brown (3):
+      mfd: davinci_voicecodec: Remove unused read and write functions
+      mfd: davinci_voicecodec: Provide a regmap for register I/O
+      mfd: twl6040: Use regmap for register cache
+
+ drivers/mfd/davinci_voicecodec.c       |   23 +++++++++++++----------
+ drivers/mfd/twl6040.c                  |   43 ++++++++++++++++++++++++++++++-------------
+ include/linux/mfd/davinci_voicecodec.h |    3 +++
+ include/linux/mfd/twl6040.h            |    1 -
+ 4 files changed, 46 insertions(+), 24 deletions(-)
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Intel Open Source Technology Centre
+http://oss.intel.com/
