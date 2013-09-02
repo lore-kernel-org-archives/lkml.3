@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759211Ab3IBXhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 19:37:48 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40778 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab3IBXhS (ORCPT
+	id S1759104Ab3IBXqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 19:46:23 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49747 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab3IBXqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 19:37:18 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge page 
-Date: Tue,  3 Sep 2013 07:36:44 +0800
-Message-Id: <1378165006-19435-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1378165006-19435-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1378165006-19435-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090223-2000-0000-0000-00000D8F8801
+	Mon, 2 Sep 2013 19:46:22 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5225234A.50407@roeck-us.net>
+Date: Mon, 02 Sep 2013 16:46:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11
+References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com> <1378161032.32763.341.camel@haakon3.risingtidesystems.com> <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
+In-Reply-To: <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- *v1 -> v2: reverse PageTransHuge(page) && !PageHuge(page) check 
+On 09/02/2013 03:50 PM, Linus Torvalds wrote:
+> On Mon, Sep 2, 2013 at 3:30 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+>>
+>> Unfortunately, this doesn't include the remaining target fixes for
+>> v3.11:
+>>
+>> Re: [GIT PULL -v2] target fixes for v3.11
+>> http://marc.info/?l=linux-kernel&m=137799048226191&w=2
+>>
+>> Is there a reason why these did not get PULLed..?
+>
+> Very simple: I have no such email in my mailbox. I see the "target
+> updates for v3.11-rc1" email (and I pulled that), and there is nothing
+> since.
+>
+> I don't even have that mail in my lkml archives, much less as a private email.
+>
+> I see neither youe "-v2 PULL request" nor the "One more late v3.11
+> specific regression" one. In fact, I see no emails from you at all
+> from Aug 31.
+>
+> It may be that gmail hates you for some reason...
+>
+> [ time passes ]
+>
+> Yup. It's in my spam-box, with gmail helpfully telling me:
+>
+>     Why is this message in Spam? We've found that lots of messages from
+> linux-iscsi.org are spam.  Learn more
+>
+> so something is rotten in the state of linux-iscsi.org.
+>
+> Recent messages from you were similarly tagged:
+>
+>   "[GIT PULL -v2] target fixes for 3.11"
+>   "Re: LIO FC Target"
+>   "Re: [GIT PULL] target fixes for v3.11-rc7"
+>
+> there might have been more. You might want to try to figure out why
+> gmail thinks that linux-iscsi.org is spammy.
+>
 
-PageTransHuge() can't guarantee the page is transparent huge page since it 
-return true for both transparent huge and hugetlbfs pages. This patch fix 
-it by check the page is also !hugetlbfs page.
+I don't think it has anything to do with linux-iscsi.org.
+Possibly Nicholas' e-mail provider is not hosted in the US, meaning e-mail
+sent through it can not be logged and examined by a certain US government agency.
 
-Before patch:
+I had the same experience; Google blocks all e-mail from my private provider
+(located in Singapore). When asked by the provider, they claimed to know
+nothing about it. No, my provider doesn't forward more spam than other providers,
+and definitely less than, say, Yahoo.
 
-[  121.571128] Injecting memory failure at pfn 23a200
-[  121.571141] MCE 0x23a200: huge page recovery: Delayed
-[  140.355100] MCE: Memory failure is now running on 0x23a200
+I can only recommend for everyone to send pull requests through a gmail account.
+If you set it up correctly, you can keep using your non-gmail source address
+but still send it through a Google server. Just don't use it for anything else
+unless you don't mind Big Brother listening in.
 
-After patch:
-
-[   94.290793] Injecting memory failure at pfn 23a000
-[   94.290800] MCE 0x23a000: huge page recovery: Delayed
-[  105.722303] MCE: Software-unpoisoned page 0x23a000
-
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/memory-failure.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index e28ee77..b114570 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
- 	 * worked by memory_failure() and the page lock is not held yet.
- 	 * In such case, we yield to memory_failure() and make unpoison fail.
- 	 */
--	if (PageTransHuge(page)) {
-+	if (!PageHuge(page) && PageTransHuge(page)) {
- 		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
- 			return 0;
- 	}
--- 
-1.8.1.2
+Guenter
 
