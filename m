@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab3IBIyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:54:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757861Ab3IBIwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:52:53 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH V3 4/6] vhost_net: determine whether or not to use zerocopy at one time
-Date: Mon,  2 Sep 2013 16:40:59 +0800
-Message-Id: <1378111261-14826-5-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
-References: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
+	id S1758293Ab3IBIy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:54:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37624 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757941Ab3IBIyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:54:51 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 03/58] serial: mxs: fix buffer overflow
+Date: Mon,  2 Sep 2013 09:53:48 +0100
+Message-Id: <1378112083-9475-4-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
-upend_idx != done_idx we still set zcopy_used to true and rollback this choice
-later. This could be avoided by determining zerocopy once by checking all
-conditions at one time before.
+3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+------------------
+
+From: Wolfram Sang <wsa@the-dreams.de>
+
+commit 4829e7650f8a40645e4e32b26a37fb833a5e75f0 upstream.
+
+SMATCH correctly found an off-by-one error:
+
+drivers/tty/serial/mxs-auart.c:889 auart_console_write() error: buffer overflow 'auart_port' 5 <= 5
+
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
- 1 files changed, 20 insertions(+), 27 deletions(-)
+ drivers/tty/serial/mxs-auart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 8a6dd0d..3f89dea 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
- 			       iov_length(nvq->hdr, s), hdr_size);
- 			break;
- 		}
--		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
--				       nvq->upend_idx != nvq->done_idx);
-+
-+		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
-+				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
-+				      nvq->done_idx
-+				   && vhost_net_tx_select_zcopy(net);
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 64565f8..5ceeed8 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -547,7 +547,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
+ 	unsigned int old_ctrl0, old_ctrl2;
+ 	unsigned int to = 20000;
  
- 		/* use msg_control to pass vhost zerocopy ubuf info to skb */
- 		if (zcopy_used) {
-+			struct ubuf_info *ubuf;
-+			ubuf = nvq->ubuf_info + nvq->upend_idx;
-+
- 			vq->heads[nvq->upend_idx].id = head;
--			if (!vhost_net_tx_select_zcopy(net) ||
--			    len < VHOST_GOODCOPY_LEN) {
--				/* copy don't need to wait for DMA done */
--				vq->heads[nvq->upend_idx].len =
--							VHOST_DMA_DONE_LEN;
--				msg.msg_control = NULL;
--				msg.msg_controllen = 0;
--				ubufs = NULL;
--			} else {
--				struct ubuf_info *ubuf;
--				ubuf = nvq->ubuf_info + nvq->upend_idx;
--
--				vq->heads[nvq->upend_idx].len =
--					VHOST_DMA_IN_PROGRESS;
--				ubuf->callback = vhost_zerocopy_callback;
--				ubuf->ctx = nvq->ubufs;
--				ubuf->desc = nvq->upend_idx;
--				msg.msg_control = ubuf;
--				msg.msg_controllen = sizeof(ubuf);
--				ubufs = nvq->ubufs;
--				kref_get(&ubufs->kref);
--			}
-+			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
-+			ubuf->callback = vhost_zerocopy_callback;
-+			ubuf->ctx = nvq->ubufs;
-+			ubuf->desc = nvq->upend_idx;
-+			msg.msg_control = ubuf;
-+			msg.msg_controllen = sizeof(ubuf);
-+			ubufs = nvq->ubufs;
-+			kref_get(&ubufs->kref);
- 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
--		} else
-+		} else {
- 			msg.msg_control = NULL;
-+			ubufs = NULL;
-+		}
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
- 			if (zcopy_used) {
--				if (ubufs)
--					vhost_net_ubuf_put(ubufs);
-+				vhost_net_ubuf_put(ubufs);
- 				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
- 					% UIO_MAXIOV;
- 			}
+-	if (co->index >	MXS_AUART_PORTS || co->index < 0)
++	if (co->index >= MXS_AUART_PORTS || co->index < 0)
+ 		return;
+ 
+ 	s = auart_port[co->index];
 -- 
-1.7.1
+1.8.3.2
 
