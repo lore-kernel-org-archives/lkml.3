@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab3IBBZU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 21:25:20 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:26247 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab3IBBZR (ORCPT
+	id S1757967Ab3IBB01 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 21:26:27 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13462 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757924Ab3IBB00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 21:25:17 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-e9-5223e8fab7a3
+	Sun, 1 Sep 2013 21:26:26 -0400
+X-AuditID: cbfee68f-b7f656d0000058e3-96-5223e94018f9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Vinod Koul'" <vinod.koul@intel.com>
 Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
@@ -16,42 +16,42 @@ Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004c01cea77a$ffd30030$ff790090$%han@samsung.com>
 In-reply-to: <004c01cea77a$ffd30030$ff790090$%han@samsung.com>
-Subject: PATCH 2/2] dma: k3dma: use devm_ioremap_resource() instead of
+Subject: [PATCH 2/2] dma: k3dma: use devm_ioremap_resource() instead of
  devm_request_and_ioremap()
-Date: Mon, 02 Sep 2013 10:25:13 +0900
-Message-id: <004d01cea77b$46152550$d23f6ff0$%han@samsung.com>
+Date: Mon, 02 Sep 2013 10:26:23 +0900
+Message-id: <005101cea77b$6fe297a0$4fa7c6e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6nev+73G/gftskTrSsjC4jQpqUyAAAAbaA
+Thread-index: Ac6nev+73G/gftskTrSsjC4jQpqUyAAAFocg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zY91fL5SDDDpecVps7n/AZrH46SwW
-	i8sLL7FaXN41h83iZd9+Foubay6wO7B5TGx+x+7RcuQtq8fiPS+ZPO5c28Pm0bdlFaPH501y
-	AWxRXDYpqTmZZalF+nYJXBkPf6xjLJjDVnHwQwt7A+N01i5GTg4JAROJ1qbpTBC2mMSFe+vZ
-	uhi5OIQEljFKvOlezw5TtL5rDztEYhGjxMLv31kgnF+MEjsezmMGqWITUJP48uUwUBUHh4iA
-	usTS6zIgNcwC2xglnm7bAbZCSMBWYtaVThYQm1PATmL/9JtgvcICyRKvZrazgdgsAqoS7//f
-	ZASxeYHq90yawAZhC0r8mHwPrJdZQEti/c7jTBC2vMTmNW+ZQfZKAO199FcXJCwiYCRxr3cO
-	G0SJiMS+F+8YQe6REPjILvHl8Q12iF0CEt8mH2KB6JWV2HSAGeJhSYmDK26wTGCUmIVk8ywk
-	m2ch2TwLyYoFjCyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MULid+IOxvsHrA8xJgOtn8gs
-	JZqcD4z/vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VusA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFw
-	SjUwphzSveRie9vg/HG2Lyv+9cpsnTo33H7JH6UyXhHHadkuBad1FLZaO8ydu+L0uo1nZ8Wv
-	eu48zeTh3I+hF2RFT7N/8y57c7xpRag+f/LpyxrZb8O11bvc9q2O23ott8Hh3JZPl6rWW7K+
-	ypdOXOeYYblBJTnOacvcFYfzWZbKpYlG7GnkvP9gnhJLcUaioRZzUXEiACyKbYD1AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd1fL5SDDKa2sFls7n/AZrH46SwW
-	i8sLL7FaXN41h83iZd9+Foubay6wO7B5TGx+x+7RcuQtq8fiPS+ZPO5c28Pm0bdlFaPH501y
-	AWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
-	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzHv5Yx1gwh63i4IcW9gbG
-	6axdjJwcEgImEuu79rBD2GISF+6tZ+ti5OIQEljEKLHw+3cWCOcXo8SOh/OYQarYBNQkvnw5
-	DNTBwSEioC6x9LoMSA2zwDZGiafbdjCB1AgJ2ErMutLJAmJzCthJ7J9+E6xXWCBZ4tXMdjYQ
-	m0VAVeL9/5uMIDYvUP2eSRPYIGxBiR+T74H1MgtoSazfeZwJwpaX2LzmLTPIXgmgvY/+6oKE
-	RQSMJO71zmGDKBGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtc
-	mpeul5yfu4kRnByeSe1gXNlgcYhRgINRiYe3YoVykBBrYllxZe4hRgkOZiUR3qrnQCHelMTK
-	qtSi/Pii0pzU4kOMyUCPTmSWEk3OByauvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeW
-	pGanphakFsFsYeLglGpglJ+VpX7GkytjemrY2slqp6ceOeSkHRD8MFi8feLevHjNyUfe/5p8
-	ZOuELQsnOlm6db/64TRV7oT13V8rlsuYSmQYRs6Ya8Lv7fLB/8J5uY6dLz8+VHItnZHn67dR
-	afI5f++cAz1zVnzMW56dxWLDLcJ86sNkMbFJe3q5W1oOtGyQDnmRLvTNW4mlOCPRUIu5qDgR
-	ADUrEWxSAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zQ12Hl8pBBo0rRSw29z9gs1j8dBaL
+	xeWFl1gtLu+aw2bxsm8/i8XNNRfYHdg8Jja/Y/doOfKW1WPxnpdMHneu7WHz6NuyitHj8ya5
+	ALYoLpuU1JzMstQifbsEroyHP9YxFsxhqzj4oYW9gXE6axcjJ4eEgInEqxU72SBsMYkL99YD
+	2VwcQgLLGCUmTljKAlP0fv9VVojEIkaJy6eugCWEBH4xSmyclQpiswmoSXz5cpi9i5GDQ0RA
+	XWLpdRmQemaBbYwST7ftYIKot5WYdaUTrJdTwE5i//SbzCC2sECKxOTV18EuYhFQlbix9ChY
+	nBeovnfrCiYIW1Dix+R7YL3MAloS63ceZ4Kw5SU2r3nLDLJXAmjvo7+6IGERASOJL///MUOU
+	iEjse/GOEeQeCYG37BINE1+yQewSkPg2+RALRK+sxKYDzBD/SkocXHGDZQKjxCwkm2ch2TwL
+	yeZZSFYsYGRZxSiaWpBcUJyUXmSsV5yYW1yal66XnJ+7iRESvf07GO8esD7EmAy0fiKzlGhy
+	PjD680riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	aNrW2+SqKuhyvGvngxNaT3Ses2scm/W+6fkn0YLWzKmepR0hnBF2wQHscqfFv/0wf8RZve7R
+	iqnZdxfmX5plFPC3qipl6xTVGc3RE1KUNt3Pi3pdmtGqlKD2tsRdO2zamdZH+hJXeW6tl//G
+	1K2zpMbhppjFBu7GekGN7RyOk36yuPpN+cyixFKckWioxVxUnAgAJgpupvQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jAV2Hl8pBBh2bBSw29z9gs1j8dBaL
+	xeWFl1gtLu+aw2bxsm8/i8XNNRfYHdg8Jja/Y/doOfKW1WPxnpdMHneu7WHz6NuyitHj8ya5
+	ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKA7
+	lBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZD3+sYyyYw1Zx8EMLewPj
+	dNYuRk4OCQETiff7r0LZYhIX7q1n62Lk4hASWMQocfnUFRaQhJDAL0aJjbNSQWw2ATWJL18O
+	s3cxcnCICKhLLL0uA1LPLLCNUeLpth1MEPW2ErOudIL1cgrYSeyffpMZxBYWSJGYvPo62DIW
+	AVWJG0uPgsV5gep7t65ggrAFJX5MvgfWyyygJbF+53EmCFteYvOat8wgeyWA9j76qwsSFhEw
+	kvjy/x8zRImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4NTwTGoH48oGi0OMAhyMSjy8FSuUg4RYE8uKK3MPMUpwMCuJ8FY9BwrxpiRWVqUW
+	5ccXleakFh9iTAZ6dCKzlGhyPjBt5ZXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7
+	NbUgtQhmCxMHp1QDY/BKx6VHhLq8Y7dNUDn3Mr3w7LsYZc6uiEs5TvXRZ9RX1Dcv6hWc3yXy
+	t/6p1eT1c5tXirotW7vX0MJ92fN/Ud19fzVk2hl3pelf+Wnnrs6y+r8ro8tq3W9L/rxstQrj
+	m6v7K2T3z87y8KsTRP1sRHoTpsyOijzW9P281p+8Fx/4zDIZZGM/KrEUZyQaajEXFScCAIwg
+	Gs1RAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
