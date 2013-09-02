@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab3IBIUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:20:00 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60334 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753890Ab3IBIT6 (ORCPT
+	id S1756960Ab3IBIVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:21:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50097 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab3IBIVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:19:58 -0400
-Date: Mon, 2 Sep 2013 09:19:53 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Andrew Fish <afish@apple.com>
-Cc: edk2-devel@lists.sourceforge.net, Laszlo Ersek <lersek@redhat.com>,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130902081953.GC28598@console-pimps.org>
-References: <52001896.1030509@redhat.com>
- <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
- <20130808101730.GJ2515@console-pimps.org>
- <1AEC7AA8-D49E-485F-A634-31B4F0D07083@apple.com>
+	Mon, 2 Sep 2013 04:21:18 -0400
+Date: Mon, 2 Sep 2013 10:21:09 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: airlied@redhat.com, gregkh@linuxfoundation.org, daniel.vetter@ffwll.ch,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v3] imx-drm: Fix probe failure
+Message-ID: <20130902082109.GO30088@pengutronix.de>
+References: <1377885192-22005-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1AEC7AA8-D49E-485F-A634-31B4F0D07083@apple.com>
+In-Reply-To: <1377885192-22005-1-git-send-email-festevam@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:20:42 up 8 days, 17:51, 33 users,  load average: 1.59, 1.43, 0.95
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Aug, at 06:46:02AM, Andrew Fish wrote:
+On Fri, Aug 30, 2013 at 02:53:12PM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> On Aug 8, 2013, at 3:17 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> Since commit b5dc0d10 (drm/imx: kill firstopen callback) the following probe
+> failure is seen:
 > 
-> > On Wed, 07 Aug, at 02:10:28PM, Andrew Fish wrote:
-> >> Well the issue I see is I don't think OS X or Windows are doing this.
-> >> So I'm guessing there is some unique thing beings done on the Linux
-> >> side and we don't have good tests to catch bugs in the EFI
-> >> implementations. If the Linux loader hides the bugs and we don't hit
-> >> them with other operating systems they are never going to get fixed.
-> >> It would be good if we could track down some of these issues and make
-> >> a request for some tests that can help catch these issues. The tests
-> >> would be part of UEFI.org, but since some of us play in both worlds we
-> >> can forward the known issues to the UEFI test work group. 
-> > 
-> > I'm all for helping to develop tests that catch these kind of bugs.
-> > What's the next step?
-> > 
+> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [drm] No driver support for vblank timestamp query.
+> [drm] Initialized imx-drm 1.0.0 20120507 on minor 0
+> imx-ldb ldb.10: adding encoder failed with -16
+> imx-ldb: probe of ldb.10 failed with error -16
+> imx-ipuv3 2400000.ipu: IPUv3H probed
+> imx-ipuv3 2800000.ipu: IPUv3H probed
+> imx-ipuv3-crtc imx-ipuv3-crtc.0: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.0 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.1: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.1 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.2: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.2 failed with error -16
+> imx-ipuv3-crtc imx-ipuv3-crtc.3: adding crtc failed with -16.
+> imx-ipuv3-crtc: probe of imx-ipuv3-crtc.3 failed with error -16
 > 
-> I'll bring this up with UEFI.org.
- 
-For those attending the UEFI plugfest in New Orleans this would be a
-good topic for discussion - figuring out a collaboration process to get
-new tests in place.
+> The reason for the probe failure is that now 'imxdrm->references' is incremented
+> early in imx_drm_driver_load(), so the following checks in imx_drm_add_crtc()
+> and imx_drm_add_encoder():
+> 
+> 	if (imxdrm->references) {
+> 		ret = -EBUSY;
+> 		goto err_busy;
+> 	}
+> 
+> ,will always fail.
+> 
+> Instead of manually keeping the references in the imx-drm driver, let's use
+> drm->open_count.
+> 
+> After this patch, lvds panel is functional on a mx6qsabrelite board.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+> This one should go via Dave Airlie's tree instead of Greg's tree because
+> b5dc0d10 is in Dave's tree.
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
