@@ -1,136 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab3IBMJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 08:09:26 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:51868 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab3IBMJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 08:09:24 -0400
-Message-ID: <52247FDE.80306@gmail.com>
-Date: Mon, 02 Sep 2013 20:09:02 +0800
-From: Baoquan He <baoquan.he@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	id S1757772Ab3IBMOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:14:34 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52181 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076Ab3IBMOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 08:14:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Imre Kaloz <kaloz@openwrt.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / LPSS: don't crash if a device has no MMIO resources
+Date: Mon, 02 Sep 2013 14:25:22 +0200
+Message-ID: <2039525.IqjUGZ56ra@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1378117825-15852-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1378117825-15852-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-To: Ding Tianhong <dingtianhong@huawei.com>
-CC: Hillf Danton <dhillf@gmail.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Subject: Re: 3.11-rc7:BUG: soft lockup
-References: <522055D7.70002@gmail.com> <CAM_iQpW3F=inR0y6GFE64OgkhKSdzF-trrZamgThXTiyOYYmBw@mail.gmail.com> <CAJd=RBCT6dbLwX6z+1LxCvJ9-NOYQRe0zzBkEQosFgLvNgg4bg@mail.gmail.com> <52242AEA.9020502@gmail.com> <522441E9.8040809@huawei.com> <52244B44.4030703@gmail.com> <5224548C.8000603@huawei.com>
-In-Reply-To: <5224548C.8000603@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 05:04 PM, Ding Tianhong wrote:
-> On 2013/9/2 16:24, Baoquan He wrote:
->> Hi Tianhong,
->>
->> I applied your patch and execute below cmd. 
->> Then keyboard inputting problems happened, 
->> I can't enter user/password correctly, then reboot again, it's OK now.
-> Thanks for your work, I don't understand that the keyboard problem is the patch fault or your system problem, 
-> if it is not happen again, I think the problem is fixed.
+On Monday, September 02, 2013 01:30:25 PM Mika Westerberg wrote:
+> Intel LPSS devices that are enumerated from ACPI have both MMIO and IRQ
+> resources returned in their _CRS method. However, Apple Macbook Air with
+> Haswell has LPSS devices enumerated from PCI bus instead and _CRS method
+> returns only an interrupt number (but the device has _HID set that causes
+> the scan handler to match it).
+> 
+> The current ACPI / LPSS code sets pdata->dev_desc only when MMIO resource
+> is found for the device and in case of Macbook Air it is never found. That
+> leads to a NULL pointer dereference in register_device_clock().
+> 
+> Correct this by always setting the pdata->dev_desc.
+> 
+> Reported-and-tested-by: Imre Kaloz <kaloz@openwrt.org>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Cc: stable@vger.kernel.org # 3.10+
 
-Yeah,  I will wait and see if it will happen again. Up to now, it's OK.
+Queued up for 3.12, thanks for taking care of this Mika!
 
-Thank you all for help.
-
-Baoquan
-Thanks
-
->
->> The original bug still can't be reproduced.
->>
->> make SUBDIRS=net/bridge/netfilter/
->> cp /net/bridge/netfilter/ebtables.ko
->> /lib/modules/3.11.0-rc7+/kernel/net/bridge/netfilter/ebtables.ko
->> depmod
->> modprobe ebtables.ko
->> reboot
->>
->> Baoquan
->> Thanks
->>
->>> please try this patch and give me the result, thanks.
->>>
->>> Return the correct value if mutex_lock_interruptible() failed, avoid
->>> confusion with that the modules is not exist, and deal with the return
->>> value in right way.
->>>
->>> if mutex_lock_interrupt() failed, sh
->>>
->>> Signed-off-by: root <root@linux-yocto.site>
->>> ---
->>>  net/bridge/netfilter/ebtables.c | 17 +++++++----------
->>>  1 file changed, 7 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
->>> index ac78024..e7fe9f8 100644
->>> --- a/net/bridge/netfilter/ebtables.c
->>> +++ b/net/bridge/netfilter/ebtables.c
->>> @@ -322,17 +322,14 @@ static inline void *
->>>  find_inlist_lock_noload(struct list_head *head, const char *name, int *error,
->>>     struct mutex *mutex)
->>>  {
->>> -	struct {
->>> -		struct list_head list;
->>> -		char name[EBT_FUNCTION_MAXNAMELEN];
->>> -	} *e;
->>> +	struct ebt_table *e;
->>>  
->>>  	*error = mutex_lock_interruptible(mutex);
->>>  	if (*error != 0)
->>> -		return NULL;
->>> +		return ERR_PTR(-EINTR);
->>>  
->>>  	list_for_each_entry(e, head, list) {
->>> -		if (strcmp(e->name, name) == 0)
->>> +		 if (strcmp(e->name, name) == 0 && try_module_get(e->me))
->>>  			return e;
->>>  	}
->>>  	*error = -ENOENT;
->>> @@ -1005,7 +1002,7 @@ static int do_replace_finish(struct net *net, struct ebt_replace *repl,
->>>  		goto free_counterstmp;
->>>  
->>>  	t = find_table_lock(net, repl->name, &ret, &ebt_mutex);
->>> -	if (!t) {
->>> +	if (IS_ERR_OR_NULL(t)) {
->>>  		ret = -ENOENT;
->>>  		goto free_iterate;
->>>  	}
->>> @@ -1284,7 +1281,7 @@ static int do_update_counters(struct net *net, const char *name,
->>>  		return -ENOMEM;
->>>  
->>>  	t = find_table_lock(net, name, &ret, &ebt_mutex);
->>> -	if (!t)
->>> +	if (IS_ERR_OR_NULL(t))
->>>  		goto free_tmp;
->>>  
->>>  	if (num_counters != t->private->nentries) {
->>> @@ -1504,7 +1501,7 @@ static int do_ebt_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
->>>  		return -EFAULT;
->>>  
->>>  	t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->>> -	if (!t)
->>> +	if (IS_ERR_OR_NULL(t))
->>>  		return ret;
->>>  
->>>  	switch(cmd) {
->>> @@ -2319,7 +2316,7 @@ static int compat_do_ebt_get_ctl(struct sock *sk, int cmd,
->>>  		return -EFAULT;
->>>  
->>>  	t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->>> -	if (!t)
->>> +	if (IS_ERR_OR_NULL(t))
->>>  		return ret;
->>>  
->>>  	xt_compat_lock(NFPROTO_BRIDGE);
->>
->> .
->>
->
-
+> ---
+>  drivers/acpi/acpi_lpss.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 6a38218..fb78bb9 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -257,12 +257,13 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
+>  				pdata->mmio_size = resource_size(&rentry->res);
+>  			pdata->mmio_base = ioremap(rentry->res.start,
+>  						   pdata->mmio_size);
+> -			pdata->dev_desc = dev_desc;
+>  			break;
+>  		}
+>  
+>  	acpi_dev_free_resource_list(&resource_list);
+>  
+> +	pdata->dev_desc = dev_desc;
+> +
+>  	if (dev_desc->clk_required) {
+>  		ret = register_device_clock(adev, pdata);
+>  		if (ret) {
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
