@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab3IBUvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 16:51:02 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:56629 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758994Ab3IBUvA (ORCPT
+	id S1758988Ab3IBU4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 16:56:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48828 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758723Ab3IBU4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 16:51:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378138904.1953.72.camel@joe-AO722>
-References: <9606.1378129893@warthog.procyon.org.uk>
-	<1378138904.1953.72.camel@joe-AO722>
-Date: Mon, 2 Sep 2013 22:51:00 +0200
-X-Google-Sender-Auth: WWGV8QuBX7Hjw1gWSQokZnddbNM
-Message-ID: <CAMuHMdXMwnBqAM64yvhFNsbcnwOHRyN9c02GRyxATMwuMOKnUw@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: Make extern in .h prototypes quieter.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, hannes@stressinduktion.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Sep 2013 16:56:47 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 07/10] perf tools: Fix symbol offset computation for some dsos
+Date: Mon,  2 Sep 2013 17:56:30 -0300
+Message-Id: <1378155393-7993-8-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378155393-7993-1-git-send-email-acme@infradead.org>
+References: <1378155393-7993-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 6:21 PM, Joe Perches <joe@perches.com> wrote:
-> The use of extern in .h files is a bit contentious.
->
-> Make it emitted only when --strict is used on the
-> command-line.
+From: David Ahern <dsahern@gmail.com>
 
-IIRC, the original intention was to always use "extern" in external function or
-data declarations, and then complain if any "extern" keyword was found
-in *.c files. Always using the "extern" keyword makes it easier to flag those.
+For some dsos (e.g., libc, libpthread, kernel modules) the symbol offset
+is huge. e.g.,
 
-> -                       if (WARN("AVOID_EXTERNS",
-> -                                "extern prototypes should be avoided in .h files\n" . $herecurr) &&
-> +                       if (CHK("AVOID_EXTERNS",
-> +                               "extern prototypes should be avoided in .h files\n" . $herecurr) &&
+qemu-kvm 17238/17242 [007] 762235.640311:
+    ffffffff816288a1 __schedule+0x451 ([kernel.kallsyms])
+    ffffffff81629609 schedule+0x29 ([kernel.kallsyms])
+    ffffffffa00a6ded kvm_vcpu_block+0xffffffffa00a106d (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffffa00bae6b kvm_arch_vcpu_ioctl_run+0xffffffffa00a118b (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffffa00a4d7a kvm_vcpu_ioctl+0xffffffffa00a141a (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffff811a7bdb do_vfs_ioctl+0x8b ([kernel.kallsyms])
+    ffffffff811a80c1 sys_ioctl+0x91 ([kernel.kallsyms])
+    ffffffff81633182 system_call+0x72 ([kernel.kallsyms])
+        7f882a97af27 __GI___ioctl+0x7f882a891007 (/lib64/libc-2.14.90.so)
+           100000002 [unknown] ([unknown])
 
-I know it's not the subject of this patch, but shouldn't "extern prototypes"
-be "extern keywords"?
+It seems to be maps with a non-0 start. Taking that into account the
+offsets are correct:
 
->                             $fix) {
->                                 $fixed[$linenr - 1] =~ s/(.*)\bextern\s+(.*)/$1$2/;
->                         }
+qemu-kvm 17238/17242 [007] 762235.640311:
+    ffffffff816288a1 __schedule+0x451 ([kernel.kallsyms])
+    ffffffff81629609 schedule+0x29 ([kernel.kallsyms])
+    ffffffffa00a6ded kvm_vcpu_block+0x6d (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffffa00bae6b kvm_arch_vcpu_ioctl_run+0x18b (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffffa00a4d7a kvm_vcpu_ioctl+0x41a (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+    ffffffff811a7bdb do_vfs_ioctl+0x8b ([kernel.kallsyms])
+    ffffffff811a80c1 sys_ioctl+0x91 ([kernel.kallsyms])
+    ffffffff81633182 system_call+0x72 ([kernel.kallsyms])
+        7f882a97af27 __GI___ioctl+0x7 (/lib64/libc-2.14.90.so)
+           100000002 [unknown] ([unknown])
 
-Gr{oetje,eeting}s,
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1375026512-45826-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c | 1 +
+ tools/perf/util/symbol.c  | 5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-                        Geert
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 07642a7..1fc0c62 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1513,6 +1513,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 				printf(" ");
+ 				if (print_symoffset) {
+ 					al.addr = node->ip;
++					al.map  = node->map;
+ 					symbol__fprintf_symname_offs(node->sym, &al, stdout);
+ 				} else
+ 					symbol__fprintf_symname(node->sym, stdout);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 77f3b95..7eb0362 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -259,7 +259,10 @@ size_t symbol__fprintf_symname_offs(const struct symbol *sym,
+ 	if (sym && sym->name) {
+ 		length = fprintf(fp, "%s", sym->name);
+ 		if (al) {
+-			offset = al->addr - sym->start;
++			if (al->addr < sym->end)
++				offset = al->addr - sym->start;
++			else
++				offset = al->addr - al->map->start - sym->start;
+ 			length += fprintf(fp, "+0x%lx", offset);
+ 		}
+ 		return length;
+-- 
+1.8.1.4
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
