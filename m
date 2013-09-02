@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731Ab3IBJLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:11:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37690 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758300Ab3IBIzE (ORCPT
+	id S1758829Ab3IBJL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:11:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40508 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab3IBJLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 15/58] USB: mos7840: fix big-endian probe
-Date: Mon,  2 Sep 2013 09:54:00 +0100
-Message-Id: <1378112083-9475-16-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 2 Sep 2013 05:11:23 -0400
+Date: Mon, 2 Sep 2013 19:11:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cong Wang <amwang@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20130902191120.645dab701e2a68bb2ac6ba33@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Sep_2013_19_11_20_+1000_6C8R8lGtzEmq_WU/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Mon__2_Sep_2013_19_11_20_+1000_6C8R8lGtzEmq_WU/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi all,
 
-From: Johan Hovold <jhovold@gmail.com>
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-commit d551ec9b690f3de65b0091a2e767f1382adc792d upstream.
+drivers/net/vxlan.c: In function 'vxlan6_xmit_skb':
+drivers/net/vxlan.c:1441:3: error: implicit declaration of function 'csum_i=
+pv6_magic' [-Werror=3Dimplicit-function-declaration]
+   uh->check =3D csum_ipv6_magic(saddr, daddr, skb->len,
+   ^
 
-Fix bug in device-type detection on big-endian machines originally
-introduced by commit 0eafe4de ("USB: serial: mos7840: add support for
-MCS7810 devices") which always matched on little-endian product ids.
+Caused by commit e4c7ed415387 ("vxlan: add ipv6 support").
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Please read Rule 1 in Documentation/SubmitChecklist.
+
+I added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 2 Sep 2013 19:04:51 +1000
+Subject: [PATCH] vxlan: include the file that declares csum_ipv6_magic
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/usb/serial/mos7840.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vxlan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 0d51815..d9368be 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2405,7 +2405,7 @@ static int mos7810_check(struct usb_serial *serial)
- static int mos7840_probe(struct usb_serial *serial,
- 				const struct usb_device_id *id)
- {
--	u16 product = serial->dev->descriptor.idProduct;
-+	u16 product = le16_to_cpu(serial->dev->descriptor.idProduct);
- 	u8 *buf;
- 	int device_type;
- 
--- 
-1.8.3.2
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 3ffb22d..35c78b3 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -44,6 +44,7 @@
+ #include <net/ipv6.h>
+ #include <net/addrconf.h>
+ #include <net/ip6_tunnel.h>
++#include <net/ip6_checksum.h>
+ #endif
+=20
+ #define VXLAN_VERSION	"0.1"
+--=20
+1.8.4.rc3
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__2_Sep_2013_19_11_20_+1000_6C8R8lGtzEmq_WU/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJFY4AAoJEECxmPOUX5FEsQoP/ivHGLtqVNgi1PRd7WIuSvZS
+0BbO4i+L8c/rN7oHzelDk2/V6AZG585Crf8e3LMxQ9TotJ7iZQKNm7oA9KiWyxd1
+FYuXBOnf5VmglAdQxInIYYZOWSttCKsuQegohHlYHNowP/orGfhmdKbf9XfWpMb7
+AePqgsbYYhmr8uf2yB9NNsqgZMacRNuWPs621mqr4BV0IF5bQHgwLPwU8RTYz419
+hiCH6tsJR0dvGG/nGCQAOyiqOWqUMJkXI8PaeGgEYxzODPE6IXqGIVR3rYEf5wJh
+GkoVPznJOSoDJwkxClaowlWsd5VM3Kxho/JRyJ9olJz86XtIXnEYgzL2OeSPzBla
+VO6xMzalSZjLNxJJqPZntU2++oVNctcQJ9zTsKIDwXNor1sKv4KIl/c2lm974p8A
+wms4iVCj3Cp9OM067MCvckrNyIC/qVBqbZ3HGMf6NMBcBJkIyC2GQn29HH/HRM7S
+QBxPqvnl1TBfz9DgqTQqaQFFiNxO4PO6JJV5FmiO3oPCxi0GvCaLGBiCrAp7YssO
+ULHO1p/LMAgHiORJLUvbhBLprV8mJJOK4guxprde9h0Ofp3icI7wv1JYPBnpMcG2
+vG6RV2tcYCzx3MwZlKE71nBxb2JAYwA1JJjqh55XlCeG/RMlpduBOKcfCHLQinob
+ZF/v+4rMaDe/r2BTTWjH
+=hJpj
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Sep_2013_19_11_20_+1000_6C8R8lGtzEmq_WU/--
