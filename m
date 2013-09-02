@@ -1,161 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759120Ab3IBXTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 19:19:08 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47307 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3IBXTH (ORCPT
+	id S1759077Ab3IBXhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 19:37:18 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:51335 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab3IBXhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 19:19:07 -0400
-Date: Mon, 2 Sep 2013 16:19:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon updates for 3.12
-Message-ID: <20130902231903.GA20838@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Sep 2013 19:37:16 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page to avoid printk flood
+Date: Tue,  3 Sep 2013 07:36:43 +0800
+Message-Id: <1378165006-19435-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090223-4790-0000-0000-00000A1C0372
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+madvise_hwpoison won't check if the page is small page or huge page and traverse 
+in small page granularity against the range unconditional, which result in a printk 
+flood "MCE xxx: already hardware poisoned" if the page is huge page. This patch fix 
+it by increase compound_order(compound_head(page)) for huge page iterator.
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Testcase:
 
-Hi Linus,
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <errno.h>
 
-Please pull hwmon updates for Linux 3.12 from signed tag:
+#define PAGES_TO_TEST 3
+#define PAGE_SIZE	4096 * 512
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+int main(void)
+{
+	char *mem;
+	int i;
 
-Thanks,
-Guenter
+	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 0, 0);
 
-------
+	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
+		return -1;
+	
+	munmap(mem, PAGES_TO_TEST * PAGE_SIZE);
 
-The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+	return 0;
+}
 
-  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/madvise.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-are available in the git repository at:
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 6975bc8..539eeb9 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -343,10 +343,11 @@ static long madvise_remove(struct vm_area_struct *vma,
+  */
+ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ {
++	struct page *p;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+-	for (; start < end; start += PAGE_SIZE) {
+-		struct page *p;
++	for (; start < end; start += PAGE_SIZE <<
++				compound_order(compound_head(p))) {
+ 		int ret;
+ 
+ 		ret = get_user_pages_fast(start, 1, 0, &p);
+-- 
+1.8.1.2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to f060c658b820141f18abd7b71586d628464a03ea:
-
-  hwmon: (htu21) Add Measurement Specialties HTU21D support (2013-08-29 09:09:12 -0700)
-
-----------------------------------------------------------------
-New driver for HTU21D (humidity sensor)
-Add support for Fam16h (Kabini) to k10temp
-Add support for NCT6102D/6106D and NCT6791D to nct6775 driver
-Add support for ADS1115 to ads1015 driver
-Add support for hibernate to w83627ehf and nct6775 drivers
-Some minor cleanups
-
-----------------------------------------------------------------
-Dan Carpenter (2):
-      hwmon: (nct6775) Fix size of data->temp array
-      hwmon: (adt7462) ADT7462_REG_VOLT_MAX() should return 0
-
-Darrick J. Wong (1):
-      hwmon: Change my email address.
-
-David Bartley (1):
-      hwmon: (nct6775) Add support for NCT6791D
-
-Evgeniy Dushistov (1):
-      hwmon: (ads1015) Add support for ADS1115
-
-Guenter Roeck (7):
-      hwmon: (coretemp) Atom CPUs don't support TjMax; no warning needed
-      hwmon: (nct6775) Allocate attributes dynamically from templates
-      hwmon: (nct6775) Support two SuperIO chips in the same system
-      hwmon: (nct6775) Add support for NCT6102D/6106D
-      hwmon: (nct6775) Add support for critical low/high temperature limits on NCT6106
-      hwmon: (nct6775) Add support for beep attributes
-      hwmon: (nct6775) Avoid using device platform data outside probe function
-
-Harald Judt (2):
-      hwmon: (nct6775) Add support for hibernate
-      hwmon: (w83627ehf) Add support for hibernate
-
-Jingoo Han (1):
-      hwmon: use dev_get_platdata()
-
-Wei Hu (1):
-      hwmon: (k10temp) Add support for Fam16h (Kabini)
-
-William Markezana (1):
-      hwmon: (htu21) Add Measurement Specialties HTU21D support
-
- Documentation/hwmon/ads1015      |    8 +-
- Documentation/hwmon/htu21        |   46 +
- Documentation/hwmon/k10temp      |    1 +
- drivers/hwmon/Kconfig            |   18 +-
- drivers/hwmon/Makefile           |    1 +
- drivers/hwmon/acpi_power_meter.c |    4 +-
- drivers/hwmon/ads1015.c          |   27 +-
- drivers/hwmon/ads7828.c          |    2 +-
- drivers/hwmon/adt7462.c          |    8 +-
- drivers/hwmon/adt7470.c          |    4 +-
- drivers/hwmon/coretemp.c         |   14 +-
- drivers/hwmon/ds620.c            |    2 +-
- drivers/hwmon/f71805f.c          |    2 +-
- drivers/hwmon/f71882fg.c         |    2 +-
- drivers/hwmon/f75375s.c          |    3 +-
- drivers/hwmon/g762.c             |    2 +-
- drivers/hwmon/gpio-fan.c         |    2 +-
- drivers/hwmon/htu21.c            |  199 +++
- drivers/hwmon/i5k_amb.c          |    4 +-
- drivers/hwmon/ibmaem.c           |    4 +-
- drivers/hwmon/ibmpex.c           |    4 +-
- drivers/hwmon/ina2xx.c           |    4 +-
- drivers/hwmon/it87.c             |    6 +-
- drivers/hwmon/k10temp.c          |    3 +-
- drivers/hwmon/lm87.c             |    4 +-
- drivers/hwmon/max197.c           |    2 +-
- drivers/hwmon/max6639.c          |    2 +-
- drivers/hwmon/mcp3021.c          |    7 +-
- drivers/hwmon/nct6775.c          | 2531 +++++++++++++++++++-------------------
- drivers/hwmon/ntc_thermistor.c   |    2 +-
- drivers/hwmon/pc87427.c          |    4 +-
- drivers/hwmon/pmbus/pmbus_core.c |    2 +-
- drivers/hwmon/s3c-hwmon.c        |    6 +-
- drivers/hwmon/sht15.c            |    4 +-
- drivers/hwmon/smsc47m1.c         |    4 +-
- drivers/hwmon/w83627ehf.c        |   22 +-
- drivers/hwmon/w83627hf.c         |    6 +-
- drivers/misc/ics932s401.c        |    4 +-
- 38 files changed, 1618 insertions(+), 1352 deletions(-)
- create mode 100644 Documentation/hwmon/htu21
- create mode 100644 drivers/hwmon/htu21.c
-
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJRznAAoJEMsfJm/On5mBCrkP+wVNyG8Ab7nf9pWamyfqflaF
-mmQAvYVlqP9NHdUZjCwI87cWihGpYMPHuDeBbwFtzhxBtjYstzha6GpkgtEJTjnH
-CszYgaLBc7OGoOBw4PPloe2+IEFZcSWIPhnI/jJp1bbjD//zFS+3Wzr8wTu94Zv2
-8HrsIw4JqRkuMBPAKHRcKycKDOqLBko3EpVx/h1eosZUSbrpEOiWutJvsSLw+2EP
-22wvjaIZVDGHpVykRF9kOOt2XVGGD298YW9DpmEIfmPwv2Utm8NN50dOjNO8TT/l
-ukn0SC295acaIklkjJ+YScnc4keTZuK3gJ6ndlfmAWXnMwOSN60tBWNXG50IYMLt
-e15DGsQxNiM0OzSO84+NHGqinSTaW2NVHH9ZkLkIskGM0ALVoydjfKYLBoYxmQqV
-g0P2oNkwiljBRe3lood+eA3OOoKGTayKMUvEsZvaTUdroGHxJCJzYAToMrZSWyHb
-hXIchkuGL7JapdoChSw/wGGv7lb3UXZG3lprilTylbwPjsTynnoJm8fJBwJXZAyt
-cNhbj/YBNUzdzyF1PxWPnftVHtwwWKnRJ6L11WzWTtg+BPFPm3NGNAC9ce0p2R6L
-QvkxyvnsV5ZLSZCtRnDhQc7lGJ+vnbOvf3tZrtgegH9iAXnK1XhyJ4UNb2Jk5bv5
-9LEEieYBBZib5m5BVf1I
-=48w7
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
