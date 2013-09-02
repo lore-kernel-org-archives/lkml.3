@@ -1,108 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab3IBDM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 23:12:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58845 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3IBDMZ (ORCPT
+	id S1758093Ab3IBDOj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 23:14:39 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:58227 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757963Ab3IBDOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 23:12:25 -0400
-Date: Mon, 2 Sep 2013 13:12:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Byungho An <bh74.an@samsung.com>, Sonic Zhang <sonic.zhang@analog.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130902131212.4cd51e16f04732b01c58df34@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Sep_2013_13_12_12_+1000_8oIN2pp.lMwK7C0J"
+	Sun, 1 Sep 2013 23:14:37 -0400
+Message-ID: <52240295.7050608@ozlabs.ru>
+Date: Mon, 02 Sep 2013 13:14:29 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru> <1377679841-3822-1-git-send-email-aik@ozlabs.ru> <20130901120609.GJ22899@redhat.com>
+In-Reply-To: <20130901120609.GJ22899@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Sep_2013_13_12_12_+1000_8oIN2pp.lMwK7C0J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/01/2013 10:06 PM, Gleb Natapov wrote:
+> On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
+>> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
+>> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
+>> them to user space which saves time on switching to user space and back.
+>>
+>> Both real and virtual modes are supported. The kernel tries to
+>> handle a TCE request in the real mode, if fails it passes the request
+>> to the virtual mode to complete the operation. If it a virtual mode
+>> handler fails, the request is passed to user space.
+>>
+>> The first user of this is VFIO on POWER. Trampolines to the VFIO external
+>> user API functions are required for this patch.
+>>
+>> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
+>> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
+>> of map/unmap requests. The device supports a single attribute which is
+>> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
+>> establishes the connection between KVM and VFIO.
+>>
+>> Tests show that this patch increases transmission speed from 220MB/s
+>> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+>>
+>> Signed-off-by: Paul Mackerras <paulus@samba.org>
+>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>
+>> ---
+>>
+>> Changes:
+>> v9:
+>> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
+>> KVM device
+>> * release_spapr_tce_table() is not shared between different TCE types
+>> * reduced the patch size by moving VFIO external API
+>> trampolines to separate patche
+>> * moved documentation from Documentation/virtual/kvm/api.txt to
+>> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>
+>> v8:
+>> * fixed warnings from check_patch.pl
+>>
+>> 2013/07/11:
+>> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
+>> for KVM_BOOK3S_64
+>> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
+>> for this here but the next patch for hugepages support will use it more.
+>>
+>> 2013/07/06:
+>> * added realmode arch_spin_lock to protect TCE table from races
+>> in real and virtual modes
+>> * POWERPC IOMMU API is changed to support real mode
+>> * iommu_take_ownership and iommu_release_ownership are protected by
+>> iommu_table's locks
+>> * VFIO external user API use rewritten
+>> * multiple small fixes
+>>
+>> 2013/06/27:
+>> * tce_list page is referenced now in order to protect it from accident
+>> invalidation during H_PUT_TCE_INDIRECT execution
+>> * added use of the external user VFIO API
+>>
+>> 2013/06/05:
+>> * changed capability number
+>> * changed ioctl number
+>> * update the doc article number
+>>
+>> 2013/05/20:
+>> * removed get_user() from real mode handlers
+>> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
+>> translated TCEs, tries realmode_get_page() on those and if it fails, it
+>> passes control over the virtual mode handler which tries to finish
+>> the request handling
+>> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
+>> on a page
+>> * The only reason to pass the request to user mode now is when the user mode
+>> did not register TCE table in the kernel, in all other cases the virtual mode
+>> handler is expected to do the job
+>> ---
+>>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
+>>  arch/powerpc/include/asm/kvm_host.h                |   4 +
+>>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
+>>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
+>>  arch/powerpc/kvm/powerpc.c                         |   1 +
+>>  include/linux/kvm_host.h                           |   1 +
+>>  virt/kvm/kvm_main.c                                |   5 +
+>>  7 files changed, 477 insertions(+), 3 deletions(-)
+>>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>
+>> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>> new file mode 100644
+>> index 0000000..4bc8fc3
+>> --- /dev/null
+>> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>> @@ -0,0 +1,37 @@
+>> +SPAPR TCE IOMMU device
+>> +
+>> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
+>> +Architectures: powerpc
+>> +
+>> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
+>> +
+>> +Groups:
+>> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
+>> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
+>> +
+>> +This is completely made up device which provides API to link
+>> +logical bus number (LIOBN) and IOMMU group. The user space has
+>> +to create a new SPAPR TCE IOMMU device per a logical bus.
+>> +
+> Why not have one device that can handle multimple links?
 
-Hi all,
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c between commit
-64c3b252e9fc ("net: stmmac: fixed the pbl setting with DT") from the
-tree and commit e2a240c7d3bc ("driver:net:stmmac: Disable DMA store and
-forward mode if platform data force_thresh_dma_mode is set") from the
-net-next tree.
+I can do that. If I make it so, it won't even look as a device at all, just
+some weird interface to KVM but ok. What bothers me is it is just a
+question what I will have to do next. Because I can easily predict a
+suggestion to move kvmppc_spapr_tce_table's (a links list) from
+kvm->arch.spapr_tce_tables to that device but I cannot do that for obvious
+compatibility reasons caused by the fact that the list is already used for
+emulated devices (for the starter - they need mmap()).
 
-I fixed it up (I think - see below) and can carry the fix as necessary (no
-action is required).
+Or supporting all IOMMU links (and leaving emulated stuff as is) in on
+"device" is the last thing I have to do and then you'll ack the patch?
 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index 1c83a44,623ebc5..0000000
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@@ -71,18 -71,19 +71,23 @@@ static int stmmac_probe_config_dt(struc
-  		plat->force_sf_dma_mode =3D 1;
-  	}
- =20
- -	dma_cfg =3D devm_kzalloc(&pdev->dev, sizeof(*dma_cfg), GFP_KERNEL);
- -	if (!dma_cfg)
- -		return -ENOMEM;
- -
- -	plat->dma_cfg =3D dma_cfg;
- -	of_property_read_u32(np, "snps,pbl", &dma_cfg->pbl);
- -	dma_cfg->fixed_burst =3D of_property_read_bool(np, "snps,fixed-burst");
- -	dma_cfg->mixed_burst =3D of_property_read_bool(np, "snps,mixed-burst");
- +	if (of_find_property(np, "snps,pbl", NULL)) {
- +		dma_cfg =3D devm_kzalloc(&pdev->dev, sizeof(*dma_cfg),
- +				       GFP_KERNEL);
- +		if (!dma_cfg)
- +			return -ENOMEM;
- +		plat->dma_cfg =3D dma_cfg;
- +		of_property_read_u32(np, "snps,pbl", &dma_cfg->pbl);
- +		dma_cfg->fixed_burst =3D
- +			of_property_read_bool(np, "snps,fixed-burst");
- +		dma_cfg->mixed_burst =3D
- +			of_property_read_bool(np, "snps,mixed-burst");
- +	}
-+ 	plat->force_thresh_dma_mode =3D of_property_read_bool(np, "snps,force_th=
-resh_dma_mode");
-+ 	if (plat->force_thresh_dma_mode) {
-+ 		plat->force_sf_dma_mode =3D 0;
-+ 		pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set."=
-);
-+ 	}
- =20
-  	return 0;
-  }
+>> +LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
+>> +(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
+>> +IOMMU group is a minimal isolated device set which can be passed to
+>> +the user space via VFIO.
+>> +
+>> +Right after creation the device is in uninitlized state and requires
+>> +a KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE attribute to be set.
+>> +The attribute contains liobn, IOMMU fd and flags:
+>> +
+>> +struct kvm_create_spapr_tce_iommu_linkage {
+>> +	__u64 liobn;
+>> +	__u32 fd;
+>> +	__u32 flags;
+>> +};
+>> +
+>> +The user space creates the SPAPR TCE IOMMU device, obtains
+>> +an IOMMU fd via VFIO ABI and sets the attribute to the SPAPR TCE IOMMU
+>> +device. At the moment of setting the attribute, the SPAPR TCE IOMMU
+>> +device links LIOBN to IOMMU group and makes necessary steps
+>> +to make sure that VFIO group will not disappear before KVM destroys.
+>> +
+>> +The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
+> [skip]
 
---Signature=_Mon__2_Sep_2013_13_12_12_+1000_8oIN2pp.lMwK7C0J
-Content-Type: application/pgp-signature
+Yes, I read the other comment. So roughly speaking I'll replace the
+KVM_CAP_SPAPR_TCE_IOMMU check with the KVM_CAP_DEVICE_CTRL capability check
++ try to KVM_CREATE_DEVICE with the KVM_CREATE_DEVICE_TEST flag set, and we
+are fine.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSJAIQAAoJEECxmPOUX5FEPwIP/2sohm21ZbYNlvdJfHKjWgGW
-Qqjh1jtq/zZdNsRX//I4BS82Oj+JT8OVPB8WtSRrur1RpcPPr45i8JzRy42/PV8K
-uk0YV+mO3595Lhg0p9LIn+Lqx1ei6wShsP8JVLuU2edqpWMaXzooJ7aRuTfezaSD
-XBJM7VrswUADWRDblOgF+fEFPjxUitiircUB05C8KwzaKKtkVJoaC0sqrSr4DyQ8
-kJeRcst7/AqIYbkJiVeZ2lg8rsjaXOTM5ZSUVfYwoycBQQyBIuy94pSGzmL1uH9u
-FV47rI6QWc8LiwDtFNzyZSbYHtCbTr2Nwv9A5danIsPMX7e+DyJi8gRJWF6w4T0G
-fEw6XmH2MYWvjil5+KOP+qUsGbaxm4JN/w7Qd/gfB3yZ1ZLT5dlQd3c0P5X+gnAa
-LDUP70Z4HladEVuBjwjuAGzKIwhpCznAxX7wuN7OOmJvup4HpjRqgjYmSFIeoeTZ
-CigUQR6O7vnKXR/2G7Xon+iFiiCiDb41eSygu3zUflnMb4r3NyZHv4OeAs5MZ6fU
-SHnNz762CV8tQ9GYs7ll02Ugt5sK/NnEOTWmEyLmpaw6KibHosg5u8vGmlrhefin
-oq8lrN03TGZ6yVNgLqIdjrI+QdcXt6Lplx2kNsi2H/RzaQBnlSp17Y2u218qkS4Z
-uful+Zz6igaJIM+WORLB
-=O7OQ
------END PGP SIGNATURE-----
+>> +
+>> +static int kvmppc_spapr_tce_iommu_get_attr(struct kvm_device *dev,
+>> +		struct kvm_device_attr *attr)
+>> +{
+>> +	struct kvmppc_spapr_tce_table *tt = dev->private;
+>> +	void __user *argp = (void __user *) attr->addr;
+>> +
+>> +	switch (attr->group) {
+>> +	case KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE:
+>> +		if (!tt)
+>> +			return -EFAULT;
+> Does not look like correct error code to return here. EINVAL may be?
 
---Signature=_Mon__2_Sep_2013_13_12_12_+1000_8oIN2pp.lMwK7C0J--
+Yep, I'll fix this. Thanks.
+
+
+>> +		if (copy_to_user(&tt->link, argp, sizeof(tt->link)))
+>> +			return -EFAULT;
+>> +		return 0;
+>> +	}
+>> +	return -ENXIO;
+>> +}
+>> +
+
+
+-- 
+Alexey
