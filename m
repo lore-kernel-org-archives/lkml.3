@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab3IBJOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:14:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37630 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab3IBIyw (ORCPT
+	id S932336Ab3IBJPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:15:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50157 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab3IBJPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:54:52 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Yonghua Zheng <younghua.zheng@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 04/58] fs/proc/task_mmu.c: fix buffer overflow in add_page_map()
-Date: Mon,  2 Sep 2013 09:53:49 +0100
-Message-Id: <1378112083-9475-5-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 2 Sep 2013 05:15:02 -0400
+Date: Mon, 2 Sep 2013 11:14:57 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: gregkh@linuxfoundation.org, p.zabel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] imx-drm: imx-ldb: Staticize of_get_data_mapping()
+Message-ID: <20130902091457.GW30088@pengutronix.de>
+References: <1378084315-18154-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378084315-18154-1-git-send-email-festevam@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:14:43 up 8 days, 18:45, 37 users,  load average: 0.02, 0.06, 0.11
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
+On Sun, Sep 01, 2013 at 10:11:55PM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+> 
+> Staticize of_get_data_mapping() in order to fix the following sparse warning:
+> 
+> drivers/staging/imx-drm/imx-ldb.c:424:11: warning: symbol 'of_get_data_mapping' was not declared. Should it be static?
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-------------------
 
-From: yonghua zheng <younghua.zheng@gmail.com>
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit 8c8296223f3abb142be8fc31711b18a704c0e7d8 upstream.
+Sascha
 
-Recently we met quite a lot of random kernel panic issues after enabling
-CONFIG_PROC_PAGE_MONITOR.  After debuggind we found this has something
-to do with following bug in pagemap:
+> ---
+>  drivers/staging/imx-drm/imx-ldb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/imx-drm/imx-ldb.c b/drivers/staging/imx-drm/imx-ldb.c
+> index af733ea..b81ed41 100644
+> --- a/drivers/staging/imx-drm/imx-ldb.c
+> +++ b/drivers/staging/imx-drm/imx-ldb.c
+> @@ -421,7 +421,7 @@ static const char *imx_ldb_bit_mappings[] = {
+>  	[LVDS_BIT_MAP_JEIDA] = "jeida",
+>  };
+>  
+> -const int of_get_data_mapping(struct device_node *np)
+> +static const int of_get_data_mapping(struct device_node *np)
+>  {
+>  	const char *bm;
+>  	int ret, i;
+> -- 
+> 1.8.1.2
+> 
+> 
 
-In struct pagemapread:
-
-  struct pagemapread {
-      int pos, len;
-      pagemap_entry_t *buffer;
-      bool v2;
-  };
-
-pos is number of PM_ENTRY_BYTES in buffer, but len is the size of
-buffer, it is a mistake to compare pos and len in add_page_map() for
-checking buffer is full or not, and this can lead to buffer overflow and
-random kernel panic issue.
-
-Correct len to be total number of PM_ENTRY_BYTES in buffer.
-
-[akpm@linux-foundation.org: document pagemapread.pos and .len units, fix PM_ENTRY_BYTES definition]
-Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/proc/task_mmu.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4540b8f..1868fe1 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -693,14 +693,14 @@ typedef struct {
- } pagemap_entry_t;
- 
- struct pagemapread {
--	int pos, len;
-+	int pos, len;		/* units: PM_ENTRY_BYTES, not bytes */
- 	pagemap_entry_t *buffer;
- };
- 
- #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
- #define PAGEMAP_WALK_MASK	(PMD_MASK)
- 
--#define PM_ENTRY_BYTES      sizeof(u64)
-+#define PM_ENTRY_BYTES      sizeof(pagemap_entry_t)
- #define PM_STATUS_BITS      3
- #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
- #define PM_STATUS_MASK      (((1LL << PM_STATUS_BITS) - 1) << PM_STATUS_OFFSET)
-@@ -939,8 +939,8 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
- 	if (!count)
- 		goto out_task;
- 
--	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
--	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
-+	pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
-+	pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
- 	ret = -ENOMEM;
- 	if (!pm.buffer)
- 		goto out_task;
 -- 
-1.8.3.2
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
