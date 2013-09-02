@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab3IBRPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 13:15:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3965 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755285Ab3IBRPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 13:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1008,1367996400"; 
-   d="scan'208";a="390028080"
-Date: Mon, 2 Sep 2013 21:59:07 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: dma_slave_caps: remove sg entries
-Message-ID: <20130902162907.GB15824@intel.com>
-References: <1378124519-13900-1-git-send-email-vinod.koul@intel.com>
- <5224A616.2060501@metafoo.de>
- <20130902161247.GA15824@intel.com>
- <5224C69C.2090606@metafoo.de>
+	id S1758798Ab3IBRRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 13:17:23 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:55410 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab3IBRRV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 13:17:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5224C69C.2090606@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1377785602-10766-4-git-send-email-jkaluza@redhat.com>
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+ <1377785602-10766-1-git-send-email-jkaluza@redhat.com> <1377785602-10766-4-git-send-email-jkaluza@redhat.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 2 Sep 2013 19:17:00 +0200
+Message-ID: <CAPXgP120-PZHvEkAOgvUNkYYXnNfPt=SbxjRWY1hDXY9RWTJWQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] Send cgroup_path in SCM_CGROUP
+To: Jan Kaluza <jkaluza@redhat.com>
+Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
+        Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 07:10:52PM +0200, Lars-Peter Clausen wrote:
-> On 09/02/2013 06:12 PM, Vinod Koul wrote:
-> > On Mon, Sep 02, 2013 at 04:52:06PM +0200, Lars-Peter Clausen wrote:
-> >> On 09/02/2013 02:21 PM, Vinod Koul wrote:
-> >>> As pointed by Russell in [1], the sg properties are already availble in struct device,
-> >>> so no need to duplicate here.
-> >>>
-> >>> [1]: http://marc.info/?l=linux-omap&m=137416733628831
-> >>
-> >> Hm, I guess that will work as well, but shouldn't we update the drivers that
-> >> already implementing this interface first?
-> > Well thats why I cced you :). I have fixed up the pl330 driver. Have you used
-> > these values in any of the ASoC drivers?
-> 
-> Not in upstream yet, if the pl330 is fixed we are good.
-Thanks for the confirmation. I had a week old Takashi's tree, didnt find
-anything there, but still wanted your ack.
+On Thu, Aug 29, 2013 at 4:13 PM, Jan Kaluza <jkaluza@redhat.com> wrote:
+> Add new SCM type called SCM_CGROUP to send "cgroup_path" in SCM.
+> This is useful for journald (systemd logging daemon) to get additional context
+> with each log line received using UNIX socket.
+>
+> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
 
-Now on pl330 here is the update
+In many cases it's generally more useful to explain *why* something is
+done, not *where* it is used. It makes it easier for people to match
+the described problem to their own use-cases, where it possibly occurs
+too. The problem this patch solves is very generic and not so much
+specific to logging or the journal. Maybe something like this:
 
----
+"Server-like processes in many cases need credentials and other
+metadata of the peer, to decide if the calling process is allowed to
+request a specific action, or the server just wants to log away this
+type of information for auditing tasks.
 
-From: Vinod Koul <vinod.koul@intel.com>
-Date: Mon, 2 Sep 2013 21:54:48 +0530
-Subject: [PATCH] dmaengine: pl330: use dma_set_max_seg_size to set the sg limit
+The current practice to retrieve such process metadata is to look that
+information up in procfs with the $PID received over SCM_CREDENTIALS.
+This is sufficient for long-running tasks, but introduces a race which
+cannot be worked around for short-living processes; the calling
+process and all the information in /proc/$PID/ is gone before the
+receiver of the socket message can look it up.
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
-compile tested only
+This introduces a new SCM type called SCM_CGROUP to allow the direct
+attaching of "cgroup_path" to SCM, which is significantly more
+efficient and will reliably avoid the race with the round-trip over
+procfs."
 
- drivers/dma/pl330.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 36ed301..a562d24 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2886,13 +2886,6 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
- 	caps->cmd_pause = false;
- 	caps->cmd_terminate = true;
- 
--	/*
--	 * This is the limit for transfers with a buswidth of 1, larger
--	 * buswidths will have larger limits.
--	 */
--	caps->max_sg_len = 1900800;
--	caps->max_sg_nr = 0;
--
- 	return 0;
- }
- 
-@@ -3017,6 +3010,14 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 			"unable to register DMA to the generic DT DMA helpers\n");
- 		}
- 	}
-+	/*
-+	 * This is the limit for transfers with a buswidth of 1, larger
-+	 * buswidths will have larger limits.
-+	 */
-+	ret = dma_set_max_seg_size(&adev->dev, 1900800);
-+	if (ret)
-+		dev_err(&adev->dev, "unable to set the seg size\n");
-+
- 
- 	dev_info(&adev->dev,
- 		"Loaded driver for PL330 DMAC-%d\n", adev->periphid);
--- 
-1.7.0.4
+Thanks,
+Kay
