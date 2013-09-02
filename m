@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab3IBL6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 07:58:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4437 "EHLO mga14.intel.com"
+	id S1758471Ab3IBMBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:01:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52159 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755365Ab3IBL6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 07:58:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1006,1367996400"; 
-   d="scan'208";a="354819090"
-Date: Mon, 2 Sep 2013 16:42:00 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lu Jingchang-B35083 <B35083@freescale.com>
-Cc: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 3/3] dma: Add Freescale eDMA engine driver support
-Message-ID: <20130902111200.GP7376@intel.com>
-References: <1376633274-17850-1-git-send-email-b35083@freescale.com>
- <20130828081742.GC11414@intel.com>
- <B56CDBE15CE27145A4B77D2D24263E8520A8C7@039-SN1MPN1-003.039d.mgd.msft.net>
- <20130902045050.GE7376@intel.com>
- <B56CDBE15CE27145A4B77D2D24263E8520D0D4@039-SN1MPN1-004.039d.mgd.msft.net>
- <20130902063721.GK7376@intel.com>
- <B56CDBE15CE27145A4B77D2D24263E8520F101@039-SN1MPN1-004.039d.mgd.msft.net>
+	id S1757929Ab3IBMBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 08:01:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v2 0/6] Remove the duplicated _MAT evaluation and simplify _acpi_map_lsapic()
+Date: Mon, 02 Sep 2013 14:12:22 +0200
+Message-ID: <1961453.53nfG0bXEh@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1378094259-5922-1-git-send-email-hanjun.guo@linaro.org>
+References: <1378094259-5922-1-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B56CDBE15CE27145A4B77D2D24263E8520F101@039-SN1MPN1-004.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 07:32:53AM +0000, Lu Jingchang-B35083 wrote:
-> > > > > > > +	chan->private = fn_param;
-> > > > > > why do you need to use chan->private?
-> > > > > [Lu Jingchang]
-> > > > > The private used here is to store the slot_id information, which
-> > must
-> > > > be used
-> > > > > by the DMAMUX in alloc_chan_resources function. Thanks.
-> > > > Why dont you pass this in struct dma_slave_config memeber slave_id
-> > for
-> > > > this.
-> > > [Lu Jingchang-b35083]
-> > > I will drop this private and setup the slave_id directly in the filter
-> > function.
-> > why in filter? before calling prepare function you can set the slave
-> > config
-> How about change the filter_fn to follow:
-> static bool fsl_edma_filter_fn(struct dma_chan *chan, void *fn_param)
-> {
->         struct fsl_edma_filter_param *fparam = fn_param;
->         struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
->         unsigned char val;
+On Monday, September 02, 2013 11:57:33 AM Hanjun Guo wrote:
+> v1->v2: Return specific error value instead of just return -1, and
+> correct some grammar mistake in changelog.
 > 
->         if (fsl_chan->edmamux->mux_id != fparam->mux_id)
->                 return false;
+> For cpu hot add, evaluate _MAT or parse MADT will did twice to get
+> APIC id:
+> acpi_processor_add()
+> 	acpi_processor_get_info()
+> 		acpi_get_cpuid() will evaluate _MAT or parse MADT;
+>         acpi_processor_hotadd_init()
+>                 acpi_map_lsapic() will evaluate _MAT again;
 > 
->         val = EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(fparam->slot_id);
->         fsl_edmamux_config_chan(fsl_chan, val);
->         return true;
-> }
-> In fact the slot_id isn't need elsewhere, and if the filter return true, 
-> This channel should be to this request. So no need to save the slave id, Right?
-something like
+> This patch set introduces apic_id in struct processor to save parsed
+> APIC id, and use it to remove the duplicated _MAT evaluation.
+> 
+> Further more, the new logical cpu number will be generated in
+> acpi_register_lapic(), this can be returned to remove the cpumask
+> allocation and operation to simplify _acpi_map_lsapic().
+> 
+> There are also some cleanups for the ACPI processor dirver code.
 
-static bool fsl_edma_filter_fn(struct dma_chan *chan, void *fn_param)
-{
-	struct fsl_edma_filter_param *fparam = fn_param;
-	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+I like the series, so I've queued it up for 3.13.
 
-	if (fsl_chan->edmamux->mux_id != fparam->mux_id)
-		return false;
-	return true;
-}
+Thanks,
+Rafael
 
-in thedriver which calls this:
 
-before prep:
-
-	config->slave_id = val;
-
-	dma_set_slave_config(chan, slave);
-
-~Vinod
+> Hanjun Guo (2):
+>   ACPI / processor: remove unnecessary if (!pr) check
+>   ACPI / processor: Remove outdated comments
+> 
+> Jiang Liu (4):
+>   ACPI / processor: Introduce apic_id in struct processor to save
+>     parsed APIC id
+>   ACPI / processor: use apic_id and remove duplicated _MAT evaluation
+>   x86 / ACPI: simplify _acpi_map_lsapic()
+>   ACPI / processor: remove some dead code in acpi_processor_get_info()
+> 
+>  arch/ia64/kernel/acpi.c       |   38 ++----------------
+>  arch/x86/include/asm/mpspec.h |    2 +-
+>  arch/x86/kernel/acpi/boot.c   |   88 +++++++++--------------------------------
+>  arch/x86/kernel/apic/apic.c   |    8 ++--
+>  drivers/acpi/acpi_processor.c |   22 +++--------
+>  drivers/acpi/processor_core.c |   26 +++++++++---
+>  include/acpi/processor.h      |    3 ++
+>  include/linux/acpi.h          |    2 +-
+>  8 files changed, 60 insertions(+), 129 deletions(-)
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
