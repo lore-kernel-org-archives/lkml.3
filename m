@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759046Ab3IBWIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 18:08:17 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47737 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3IBWIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 18:08:16 -0400
-X-Originating-IP: 50.43.39.152
-Date: Mon, 2 Sep 2013 15:08:05 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+	id S1759026Ab3IBWOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 18:14:49 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49886 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753909Ab3IBWOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 18:14:48 -0400
+Message-ID: <1378160086.1953.129.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Report missing spaces around trigraphs with
+ --strict
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, Andy Whitcroft <apw@canonical.com>,
         ksummit-2013-discuss@lists.linuxfoundation.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
- updating Documentation/CodingStyle
-Message-ID: <20130902220800.GA934@leaf>
-References: <20130902195056.GB32628@leaf>
- <9976.1378132260@warthog.procyon.org.uk>
- <1378138205.1953.66.camel@joe-AO722>
- <20130902181510.GA29787@leaf>
- <20130902181856.GB29787@leaf>
- <20130902153945.6d7e510c@samsung.com>
- <1378148367.1953.98.camel@joe-AO722>
- <13834.1378155023@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13834.1378155023@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 02 Sep 2013 15:14:46 -0700
+In-Reply-To: <5224EF32.5060104@roeck-us.net>
+References: <9976.1378132260@warthog.procyon.org.uk>
+	 <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
+	 <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
+	 <1378148367.1953.98.camel@joe-AO722> <20130902195056.GB32628@leaf>
+	 <5224EF32.5060104@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 09:50:23PM +0100, David Howells wrote:
-> Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> > > There are many checkpatch rules (like semicolons) that
-> > > are not in CodingStyle.
-> > 
-> > It's a rule of thumb, not a mandate.  In *general*, checkpatch.pl should
-> > not be enforcing style rules that aren't documented in CodingStyle.
-> 
-> Except that it becomes a mandate when someone runs it automatically against
-> every one of your patches and then sends you an email for each patch it finds
-> a checkpatch niggle against...
+Spaces around trigraphs are specified by CodingStyle
+but checkpatch is currently silent about them because
+there are many current instances without them.
 
-I think we're talking about two different things.  I wasn't talking
-about checkpatch.pl itself; I was talking about the idea that every
-style rule in checkpatch.pl should corresponding documentation in
-CodingStyle.  That's what I was calling a rule of thumb rather than a
-mandate.
+Make missing spaces around trigraphs a --strict message.
 
-- Josh triplett
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+> Oddly enough, the opposite is true as well. 3.1, spaces around binary
+> and ternary operators, is for example not enforced, presumably because
+> it would generate too many positives. Since I like that rule, I have
+> my private version of checkpatch.pl which does check for it. After all,
+> it _is_ a CodingStyle rule.
+
+ scripts/checkpatch.pl | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9bb056c..bb34c11 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2817,7 +2817,7 @@ sub process {
+ 				\+=|-=|\*=|\/=|%=|\^=|\|=|&=|
+ 				=>|->|<<|>>|<|>|=|!|~|
+ 				&&|\|\||,|\^|\+\+|--|&|\||\+|-|\*|\/|%|
+-				\?|:
++				\?:|\?|:
+ 			}x;
+ 			my @elements = split(/($ops|;)/, $opline);
+ 
+@@ -3040,15 +3040,13 @@ sub process {
+ 					    	$ok = 1;
+ 					}
+ 
+-					# Ignore ?:
+-					if (($opv eq ':O' && $ca =~ /\?$/) ||
+-					    ($op eq '?' && $cc =~ /^:/)) {
+-					    	$ok = 1;
+-					}
+-
++					# messages are ERROR, but ?: are CHK
+ 					if ($ok == 0) {
+-						if (ERROR("SPACING",
+-							  "spaces required around that '$op' $at\n" . $hereptr)) {
++						my $msg_type = \&ERROR;
++						$msg_type = \&CHK if (($op eq '?:' || $op eq '?' || $op eq ':') && $ctx =~ /VxV/);
++
++						if (&{$msg_type}("SPACING",
++								 "spaces required around that '$op' $at\n" . $hereptr)) {
+ 							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
+ 							if (defined $fix_elements[$n + 2]) {
+ 								$fix_elements[$n + 2] =~ s/^\s+//;
+
+
