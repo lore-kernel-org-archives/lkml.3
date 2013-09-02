@@ -1,52 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab3IBJnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:43:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36485 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538Ab3IBJnI (ORCPT
+	id S1758103Ab3IBJoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:44:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57616 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab3IBJop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:43:08 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52245D94.5050702@jp.fujitsu.com>
-Date: Mon, 02 Sep 2013 18:42:44 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 05:44:45 -0400
+Message-ID: <52245DE0.1010701@huawei.com>
+Date: Mon, 2 Sep 2013 17:44:00 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: ebiederm@xmission.com, vgoyal@redhat.com, akpm@linux-foundation.org,
-        hpa@linux.intel.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, jingbai.ma@hp.com
-Subject: Re: [PATCH 2/2] x86, apic: Disable BSP if boot cpu is AP
-References: <20130829092458.5476.10277.stgit@localhost6.localdomain6> <20130829092804.5476.95588.stgit@localhost6.localdomain6> <20130831052252.GC12617@x1.alien8.de> <5223F8DB.3040506@jp.fujitsu.com> <20130902071318.GA3406@x1.alien8.de>
-In-Reply-To: <20130902071318.GA3406@x1.alien8.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] cgroup: fix css leaks on online_css() failure
+References: <1377723829-22814-1-git-send-email-tj@kernel.org> <1377723829-22814-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1377723829-22814-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/02 16:13), Borislav Petkov wrote:
-> On Mon, Sep 02, 2013 at 11:32:59AM +0900, HATAYAMA Daisuke wrote:
->> As you suggest, boot_cpu seems more understandable also to me. BTW,
->> please notice that it doesn't denote that the CPU we're booting on
->> currently, but that the CPU with BSP flag set.
->
-> Hmm, by "BSP flag set" you mean it is the first LAPIC entry in the MADT,
-> correct? At least this is the case when you set isbsp to true. Because,
-> there's also the BSC flag in APIC_BAR (MSR 0x1b) which denotes the
-> bootstrapping core on node 0.
->
+On 2013/8/29 5:03, Tejun Heo wrote:
+> ae7f164a09 ("cgroup: move cgroup->subsys[] assignment to
+> online_css()") moved cgroup->subsys[] assignements later in
+> cgroup_create() but didn't update error handling path accordingly
+> leaking later css's after an online_css() failure.
+> 
+> This patch moves reference bumping inside online_css() loop, clears
+> css_ar[] as css's are brought online successfully, and updates
+> err_destroy path so that either a css is fully online and destroyed by
+> cgroup_destroy_locked() or the error path frees it.  This creates a
+> duplicate css free logic in the error path but it will be cleaned up
+> soon.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  kernel/cgroup.c | 23 +++++++++++++++--------
+>  1 file changed, 15 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index b5f4989..a4168cf 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4489,14 +4489,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+>  	root->number_of_cgroups++;
+>  
+> -	/* each css holds a ref to the cgroup's dentry and the parent css */
+> -	for_each_root_subsys(root, ss) {
+> -		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+> -
+> -		dget(dentry);
+> -		css_get(css->parent);
+> -	}
+> -
+>  	/* hold a ref to the parent's dentry */
+>  	dget(parent->dentry);
+>  
+> @@ -4508,6 +4500,13 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  		if (err)
+>  			goto err_destroy;
 
-The reason why I don't lookup BSP flag in MSR is that it's impossible.
-To read MSR of some CPU, we need to use rdmsr instruction on the CPU.
-However, in case of this issue, the BSP is halting or running in
-the kdump 1st kernel.
+If online_css() returns -error, it means cgroup->subsys[ss->subsys_id] == NULL,
 
-A whole explanation is written in the patch description.
+>  
+> +		/* each css holds a ref to the cgroup's dentry and parent css */
+> +		dget(dentry);
+> +		css_get(css->parent);
+> +
+> +		/* mark it consumed for error path */
+> +		css_ar[ss->subsys_id] = NULL;
+> +
+>  		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+>  		    parent->parent) {
+>  			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
+> @@ -4554,6 +4553,14 @@ err_free_cgrp:
+>  	return err;
+>  
+>  err_destroy:
+> +	for_each_root_subsys(root, ss) {
+> +		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+> +
+> +		if (css) {
+> +			percpu_ref_cancel_init(&css->refcnt);
+> +			ss->css_free(css);
+> +		}
+> +	}
+>  	cgroup_destroy_locked(cgrp);
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Now cgroup_destroy_locked() is called:
+
+	for_each_root_subsys(cgrp->root, ss)
+		kill_css(cgroup_css(cgrp, ss));
+
+cgroup_css(cgrp, ss) will return NULL and pass it to kill_css(), which leads
+to NULL pointer deref ?
+
+>  	mutex_unlock(&cgroup_mutex);
+>  	mutex_unlock(&dentry->d_inode->i_mutex);
+> 
+
+(I'll go through the patchset tomorrow.)
 
