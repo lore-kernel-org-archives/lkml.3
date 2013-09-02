@@ -1,123 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3IBGVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 02:21:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55775 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3IBGVj (ORCPT
+	id S1757469Ab3IBGXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 02:23:16 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34421 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753498Ab3IBGXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 02:21:39 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <52242E1D.4020406@jp.fujitsu.com>
-Date: Mon, 2 Sep 2013 15:20:13 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 02:23:14 -0400
+Date: Mon, 2 Sep 2013 07:23:10 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: UEFI Plugfest 2013 -- New Orleans
+Message-ID: <20130902062310.GA28598@console-pimps.org>
+References: <20130816152030.GL2133@tuxdriver.com>
+ <1376900735.2322.26.camel@shinybook.infradead.org>
+ <20130819125507.GA19093@srcf.ucam.org>
+ <1376925765.2069.24.camel@dabdike.int.hansenpartnership.com>
+ <20130819160018.GA22532@srcf.ucam.org>
+ <1376931775.2069.46.camel@dabdike.int.hansenpartnership.com>
+ <20130819172139.GA24393@srcf.ucam.org>
+ <1376933926.2069.52.camel@dabdike.int.hansenpartnership.com>
+ <1376942994.2322.39.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <hannes@cmpxchg.org>,
-        <tony.luck@intel.com>, <matthew.garrett@nebula.com>, <dave@sr71.net>,
-        <riel@redhat.com>, <arjan@linux.intel.com>,
-        <srinivas.pandruvada@linux.intel.com>, <willy@linux.intel.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <lenb@kernel.org>, <rjw@sisk.pl>,
-        <gargankita@gmail.com>, <paulmck@linux.vnet.ibm.com>,
-        <svaidy@linux.vnet.ibm.com>, <andi@firstfloor.org>,
-        <santosh.shilimkar@ti.com>, <kosaki.motohiro@gmail.com>,
-        <linux-pm@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 04/35] mm: Initialize node memory regions during
- boot
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <20130830131504.4947.86008.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131504.4947.86008.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376942994.2322.39.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/30 22:15), Srivatsa S. Bhat wrote:
-> Initialize the node's memory-regions structures with the information about
-> the region-boundaries, at boot time.
->
-> Based-on-patch-by: Ankita Garg <gargankita@gmail.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->
->   include/linux/mm.h |    4 ++++
->   mm/page_alloc.c    |   28 ++++++++++++++++++++++++++++
->   2 files changed, 32 insertions(+)
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index f022460..18fdec4 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -627,6 +627,10 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
->   #define LAST_NID_MASK		((1UL << LAST_NID_WIDTH) - 1)
->   #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
->
-> +/* Hard-code memory region size to be 512 MB for now. */
-> +#define MEM_REGION_SHIFT	(29 - PAGE_SHIFT)
-> +#define MEM_REGION_SIZE		(1UL << MEM_REGION_SHIFT)
-> +
->   static inline enum zone_type page_zonenum(const struct page *page)
->   {
->   	return (page->flags >> ZONES_PGSHIFT) & ZONES_MASK;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b86d7e3..bb2d5d4 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4809,6 +4809,33 @@ static void __init_refok alloc_node_mem_map(struct pglist_data *pgdat)
->   #endif /* CONFIG_FLAT_NODE_MEM_MAP */
->   }
->
-> +static void __meminit init_node_memory_regions(struct pglist_data *pgdat)
-> +{
-> +	int nid = pgdat->node_id;
-> +	unsigned long start_pfn = pgdat->node_start_pfn;
-> +	unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
-> +	struct node_mem_region *region;
-> +	unsigned long i, absent;
-> +	int idx;
-> +
-> +	for (i = start_pfn, idx = 0; i < end_pfn;
-> +				i += region->spanned_pages, idx++) {
-> +
+On Mon, 19 Aug, at 09:09:54PM, David Woodhouse wrote:
+> 3. Even if we can't *remove* the code, sometimes we can disable it at
+> runtime if we detect the BIOS is new enough that it shouldn't be broken.
+ 
+Yes, this is definitely something we should be looking to implement.
 
-> +		region = &pgdat->node_regions[idx];
+It seems likely to me that we're eventually going to start hitting
+issues supporting the latest UEFI firmware because of the workarounds
+we're currently carrying in the kernel. The EDKII folks are surprised
+time and time again to hear of the hoops we jump through in the kernel
+to support buggy implementations.
 
-It seems that overflow easily occurs.
-node_regions[] has 256 entries and MEM_REGION_SIZE is 512MiB. So if
-the pgdat has more than 128 GiB, overflow will occur. Am I wrong?
+It's only going to be a matter of time until we *have* to disable some
+our workarounds in order to boot the most recent incarantions of UEFI.
+Not least because carrying these workarounds unconditionally and
+indefinitely severely limits our ability to innovate.
 
-Thanks,
-Yasuaki Ishimatsu
-
-> +		region->pgdat = pgdat;
-> +		region->start_pfn = i;
-> +		region->spanned_pages = min(MEM_REGION_SIZE, end_pfn - i);
-> +		region->end_pfn = region->start_pfn + region->spanned_pages;
-> +
-> +		absent = __absent_pages_in_range(nid, region->start_pfn,
-> +						 region->end_pfn);
-> +
-> +		region->present_pages = region->spanned_pages - absent;
-> +	}
-> +
-> +	pgdat->nr_node_regions = idx;
-> +}
-> +
->   void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->   		unsigned long node_start_pfn, unsigned long *zholes_size)
->   {
-> @@ -4837,6 +4864,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->
->   	free_area_init_core(pgdat, start_pfn, end_pfn,
->   			    zones_size, zholes_size);
-> +	init_node_memory_regions(pgdat);
->   }
->
->   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->
-
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
