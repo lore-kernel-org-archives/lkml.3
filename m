@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3IBCXf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 22:23:35 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:47788 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab3IBCXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 22:23:34 -0400
-Date: Mon, 2 Sep 2013 10:23:24 +0800
-From: Kevin Hao <haokexin@gmail.com>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] jump_label: factor out the base part of jump_label.h
- to a separate file
-Message-ID: <20130902022324.GA28673@pek-khao-d1.corp.ad.wrs.com>
-References: <1377414952-15995-1-git-send-email-haokexin@gmail.com>
- <1377414952-15995-2-git-send-email-haokexin@gmail.com>
- <20130830163732.GA2353@hpx.cz>
+	id S1758030Ab3IBCan (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 22:30:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42449 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601Ab3IBCam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 22:30:42 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
+        <n.a.balandin@gmail.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v3 1/3] gpio: pcf857x: change to devm_request_threaded_irq
+Date: Mon, 2 Sep 2013 08:00:02 +0530
+Message-ID: <1378089004-14478-2-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378089004-14478-1-git-send-email-george.cherian@ti.com>
+References: <1378089004-14478-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
-Content-Disposition: inline
-In-Reply-To: <20130830163732.GA2353@hpx.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove the request_irq and use devm_request_threaded_irq
+also cleanup free_irq. devm_* takes care of that.
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/gpio/gpio-pcf857x.c | 28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
 
-On Fri, Aug 30, 2013 at 06:37:33PM +0200, Radim Kr=C4=8Dm=C3=A1=C5=99 wrote:
-> 2013-08-25 15:15+0800, Kevin Hao:
-> > We plan to use the jump label in the cpu/mmu feature check on ppc.
-> > This will need to include the jump_label.h in several very basic header
-> > files of ppc which seems to be included by most of the other head
-> > files implicitly or explicitly. But in the current jump_label.h,
-> > it also include the "linux/workqueue.h" and this will cause recursive
-> > inclusion. In order to fix this, we choose to factor out the base
-> > part of jump_label.h to a separate header file and we can include
-> > that file instead of jump_label.h to avoid the recursive inclusion.
-> > No functional change.
->=20
-> "linux/workqueue.h" was included because of deferred keys and they are
-> split into "linux/jump_label_ratelimit.h" to solve the same problem in
-> paravirt ticket spinlock series.
-> (still in -next: 851cf6e7 jump_label: Split jumplabel ratelimit)
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 947cff4..4d0d28c 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -191,6 +191,25 @@ static int pcf857x_to_irq(struct gpio_chip *chip, unsigned offset)
+ 	return irq_create_mapping(gpio->irq_domain, offset);
+ }
+ 
++static irqreturn_t pcf857x_irq(int irq, void *data)
++{
++	struct pcf857x  *gpio = data;
++	unsigned long change, i, status, flags;
++
++	status = gpio->read(gpio->client);
++
++	spin_lock_irqsave(&gpio->slock, flags);
++
++	change = gpio->status ^ status;
++	for_each_set_bit(i, &change, gpio->chip.ngpio)
++		generic_handle_irq(irq_find_mapping(gpio->irq_domain, i));
++	gpio->status = status;
++
++	spin_unlock_irqrestore(&gpio->slock, flags);
++
++	return IRQ_HANDLED;
++}
++
+ static void pcf857x_irq_demux_work(struct work_struct *work)
+ {
+ 	struct pcf857x *gpio = container_of(work,
+@@ -241,8 +260,6 @@ static void pcf857x_irq_domain_cleanup(struct pcf857x *gpio)
+ 	if (gpio->irq_domain)
+ 		irq_domain_remove(gpio->irq_domain);
+ 
+-	if (gpio->irq)
+-		free_irq(gpio->irq, gpio);
+ }
+ 
+ static int pcf857x_irq_domain_init(struct pcf857x *gpio,
+@@ -258,8 +275,11 @@ static int pcf857x_irq_domain_init(struct pcf857x *gpio,
+ 		goto fail;
+ 
+ 	/* enable real irq */
+-	status = request_irq(client->irq, pcf857x_irq_demux, 0,
+-			     dev_name(&client->dev), gpio);
++	status = devm_request_threaded_irq(&client->dev, client->irq,
++				NULL, pcf857x_irq, IRQF_ONESHOT |
++				IRQF_TRIGGER_FALLING,
++				dev_name(&client->dev), gpio);
++
+ 	if (status)
+ 		goto fail;
+ 
+-- 
+1.8.1.4
 
-OK. I will respin a new version based on this patch. Thanks for the
-information Radim.
-
-Thanks,
-Kevin
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAEBAgAGBQJSI/acAAoJEJNY7TDerrFxQ5MH/3MX9C7Y8a9pfs45qTowt82/
-DMu9LMxdh8HouK1yHU5r4Lpfdzm0KXj31vqW/MCdKbvJdaYLx/GC9bDYTHetEveT
-ZiIA+w6Acs2xNoE318TAeJqlpOxbQInwVmbtIyYXpefXf3QtxNL1o4ITaiq1c2E7
-lz3UJ65nEymAW4JFNtJqpfFfFyRGu5KtyIV1hhAffo5MYr9uWbNpkWTlYKgKau2m
-wIwFrSD1mqZ6juQEGNKUXbgawp9ypVqCBq0LR9VuNuv/4eRrfCmx8IZGWcz12GHW
-ivWLo0pY/eh5Zfx4ViXBJ00ycyQPVHPzL/afuOLrA2O5TpM8LMAI9IJk1oF14g8=
-=aEQx
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
