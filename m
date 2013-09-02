@@ -1,162 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab3IBL1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 07:27:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757866Ab3IBL0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 07:26:11 -0400
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: linux-usb@vger.kernel.org
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
-        usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 3/5] uas: rename work list lock + list field
-Date: Mon,  2 Sep 2013 13:25:27 +0200
-Message-Id: <1378121129-32594-4-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1378121129-32594-1-git-send-email-kraxel@redhat.com>
-References: <1378121129-32594-1-git-send-email-kraxel@redhat.com>
+	id S932180Ab3IBL2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 07:28:12 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37352 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152Ab3IBL2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 07:28:10 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: anton@enomsg.org, sachin.kamat@linaro.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/4] ab8500-charger: Check return value of regulator_enable
+Date: Mon,  2 Sep 2013 16:40:22 +0530
+Message-Id: <1378120226-24805-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares for the addition of another list and renames the
-work list lock and the list_head field in struct uas_cmd_info.
+Check the return value of regulator_enable to silence the following
+type of warnings:
+drivers/power/ab8500_charger.c:1390:20: warning: ignoring return value
+of ‘regulator_enable’, declared with attribute warn_unused_result
+[-Wunused-result]
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/usb/storage/uas.c | 50 +++++++++++++++++++++++------------------------
- 1 file changed, 25 insertions(+), 25 deletions(-)
+ drivers/power/ab8500_charger.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index f89202f..a63972a 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -77,7 +77,7 @@ struct uas_cmd_info {
- 	struct urb *cmd_urb;
- 	struct urb *data_in_urb;
- 	struct urb *data_out_urb;
--	struct list_head list;
-+	struct list_head work;
- };
- 
- /* I hate forward declarations, but I actually have a loop */
-@@ -89,7 +89,7 @@ static void uas_configure_endpoints(struct uas_dev_info *devinfo);
- static void uas_free_streams(struct uas_dev_info *devinfo);
- 
- static DECLARE_WORK(uas_work, uas_do_work);
--static DEFINE_SPINLOCK(uas_work_lock);
-+static DEFINE_SPINLOCK(uas_lists_lock);
- static LIST_HEAD(uas_work_list);
- 
- static void uas_unlink_data_urbs(struct uas_dev_info *devinfo,
-@@ -124,11 +124,11 @@ static void uas_do_work(struct work_struct *work)
- 	unsigned long flags;
- 	int err;
- 
--	spin_lock_irq(&uas_work_lock);
-+	spin_lock_irq(&uas_lists_lock);
- 	list_replace_init(&uas_work_list, &list);
--	spin_unlock_irq(&uas_work_lock);
-+	spin_unlock_irq(&uas_lists_lock);
- 
--	list_for_each_entry_safe(cmdinfo, temp, &list, list) {
-+	list_for_each_entry_safe(cmdinfo, temp, &list, work) {
- 		struct scsi_pointer *scp = (void *)cmdinfo;
- 		struct scsi_cmnd *cmnd = container_of(scp,
- 							struct scsi_cmnd, SCp);
-@@ -139,10 +139,10 @@ static void uas_do_work(struct work_struct *work)
- 			cmdinfo->state &= ~IS_IN_WORK_LIST;
- 		spin_unlock_irqrestore(&devinfo->lock, flags);
- 		if (err) {
--			list_del(&cmdinfo->list);
--			spin_lock_irq(&uas_work_lock);
--			list_add_tail(&cmdinfo->list, &uas_work_list);
--			spin_unlock_irq(&uas_work_lock);
-+			list_del(&cmdinfo->work);
-+			spin_lock_irq(&uas_lists_lock);
-+			list_add_tail(&cmdinfo->work, &uas_work_list);
-+			spin_unlock_irq(&uas_lists_lock);
- 			schedule_work(&uas_work);
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index a4c4a10..fec0546 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -1387,7 +1387,12 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
+ 		 * the GPADC module independant of the AB8500 chargers
+ 		 */
+ 		if (!di->vddadc_en_ac) {
+-			regulator_enable(di->regu);
++			ret = regulator_enable(di->regu);
++			if (ret) {
++				dev_err(di->dev,
++					"Failed to enable regulator\n");
++				return ret;
++			}
+ 			di->vddadc_en_ac = true;
  		}
- 	}
-@@ -155,12 +155,12 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
- 	struct list_head list;
- 	unsigned long flags;
  
--	spin_lock_irq(&uas_work_lock);
-+	spin_lock_irq(&uas_lists_lock);
- 	list_replace_init(&uas_work_list, &list);
--	spin_unlock_irq(&uas_work_lock);
-+	spin_unlock_irq(&uas_lists_lock);
- 
- 	spin_lock_irqsave(&devinfo->lock, flags);
--	list_for_each_entry_safe(cmdinfo, temp, &list, list) {
-+	list_for_each_entry_safe(cmdinfo, temp, &list, work) {
- 		struct scsi_pointer *scp = (void *)cmdinfo;
- 		struct scsi_cmnd *cmnd = container_of(scp,
- 							struct scsi_cmnd, SCp);
-@@ -178,10 +178,10 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
- 			uas_try_complete(cmnd, __func__);
- 		} else {
- 			/* not our uas device, relink into list */
--			list_del(&cmdinfo->list);
--			spin_lock_irq(&uas_work_lock);
--			list_add_tail(&cmdinfo->list, &uas_work_list);
--			spin_unlock_irq(&uas_work_lock);
-+			list_del(&cmdinfo->work);
-+			spin_lock_irq(&uas_lists_lock);
-+			list_add_tail(&cmdinfo->work, &uas_work_list);
-+			spin_unlock_irq(&uas_lists_lock);
+@@ -1556,7 +1561,12 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
+ 		 * the GPADC module independant of the AB8500 chargers
+ 		 */
+ 		if (!di->vddadc_en_usb) {
+-			regulator_enable(di->regu);
++			ret = regulator_enable(di->regu);
++			if (ret) {
++				dev_err(di->dev,
++					"Failed to enable regulator\n");
++				return ret;
++			}
+ 			di->vddadc_en_usb = true;
  		}
- 	}
- 	spin_unlock_irqrestore(&devinfo->lock, flags);
-@@ -288,10 +288,10 @@ static void uas_xfer_data(struct urb *urb, struct scsi_cmnd *cmnd,
- 	cmdinfo->state |= direction | SUBMIT_STATUS_URB;
- 	err = uas_submit_urbs(cmnd, cmnd->device->hostdata, GFP_ATOMIC);
- 	if (err) {
--		spin_lock(&uas_work_lock);
--		list_add_tail(&cmdinfo->list, &uas_work_list);
-+		spin_lock(&uas_lists_lock);
-+		list_add_tail(&cmdinfo->work, &uas_work_list);
- 		cmdinfo->state |= IS_IN_WORK_LIST;
--		spin_unlock(&uas_work_lock);
-+		spin_unlock(&uas_lists_lock);
- 		schedule_work(&uas_work);
- 	}
- }
-@@ -694,10 +694,10 @@ static int uas_queuecommand_lck(struct scsi_cmnd *cmnd,
- 			spin_unlock_irqrestore(&devinfo->lock, flags);
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		}
--		spin_lock(&uas_work_lock);
--		list_add_tail(&cmdinfo->list, &uas_work_list);
-+		spin_lock(&uas_lists_lock);
-+		list_add_tail(&cmdinfo->work, &uas_work_list);
- 		cmdinfo->state |= IS_IN_WORK_LIST;
--		spin_unlock(&uas_work_lock);
-+		spin_unlock(&uas_lists_lock);
- 		schedule_work(&uas_work);
- 	}
  
-@@ -764,10 +764,10 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
- 	spin_lock_irqsave(&devinfo->lock, flags);
- 	cmdinfo->state |= COMMAND_ABORTED;
- 	if (cmdinfo->state & IS_IN_WORK_LIST) {
--		spin_lock(&uas_work_lock);
--		list_del(&cmdinfo->list);
-+		spin_lock(&uas_lists_lock);
-+		list_del(&cmdinfo->work);
- 		cmdinfo->state &= ~IS_IN_WORK_LIST;
--		spin_unlock(&uas_work_lock);
-+		spin_unlock(&uas_lists_lock);
- 	}
- 	if (cmdinfo->state & COMMAND_INFLIGHT) {
- 		spin_unlock_irqrestore(&devinfo->lock, flags);
 -- 
-1.8.3.1
+1.7.9.5
 
