@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab3IBMem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 08:34:42 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50411 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758290Ab3IBMeG (ORCPT
+	id S1758592Ab3IBMf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:35:57 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58408 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756418Ab3IBMf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 08:34:06 -0400
+	Mon, 2 Sep 2013 08:35:56 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 2/4] mm/hwpoison: fix miss catch transparent huge page 
-Date: Mon,  2 Sep 2013 20:33:42 +0800
-Message-Id: <1378125224-12794-2-git-send-email-liwanp@linux.vnet.ibm.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] mm/vmalloc: don't warning vmalloc allocation failure twice
+Date: Mon,  2 Sep 2013 20:35:44 +0800
+Message-Id: <1378125345-13228-2-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1378125224-12794-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1378125224-12794-1-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1378125345-13228-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1378125345-13228-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090212-0260-0000-0000-0000038EED7F
+x-cbid: 13090212-1618-0000-0000-0000048E34FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PageTransHuge() can't guarantee the page is transparent huge page since it 
-return true for both transparent huge and hugetlbfs pages. This patch fix 
-it by check the page is also !hugetlbfs page.
-
-Before patch:
-
-[  121.571128] Injecting memory failure at pfn 23a200
-[  121.571141] MCE 0x23a200: huge page recovery: Delayed
-[  140.355100] MCE: Memory failure is now running on 0x23a200
-
-After patch:
-
-[   94.290793] Injecting memory failure at pfn 23a000
-[   94.290800] MCE 0x23a000: huge page recovery: Delayed
-[  105.722303] MCE: Software-unpoisoned page 0x23a000
+Don't warning twice in __vmalloc_area_node and __vmalloc_node_range if 
+__vmalloc_area_node allocation failure.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory-failure.c | 2 +-
+ mm/vmalloc.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index e28ee77..b114570 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
- 	 * worked by memory_failure() and the page lock is not held yet.
- 	 * In such case, we yield to memory_failure() and make unpoison fail.
- 	 */
--	if (PageTransHuge(page)) {
-+	if (PageTransHuge(page) && !PageHuge(page)) {
- 		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
- 			return 0;
- 	}
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ee41cc6..e324d38 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1635,7 +1635,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+ 
+ 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
+ 	if (!addr)
+-		goto fail;
++		return NULL;
+ 
+ 	/*
+ 	 * In this function, newly allocated vm_struct has VM_UNINITIALIZED
 -- 
 1.8.1.2
 
