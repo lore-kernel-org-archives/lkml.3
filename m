@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3IBJMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:12:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37672 "EHLO
+	id S932307Ab3IBJMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:12:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37669 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758314Ab3IBIzA (ORCPT
+	with ESMTP id S1758309Ab3IBIzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Sep 2013 04:55:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 12/58] ALSA: 6fire: make buffers DMA-able (midi)
-Date: Mon,  2 Sep 2013 09:53:57 +0100
-Message-Id: <1378112083-9475-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 11/58] ALSA: 6fire: make buffers DMA-able (pcm)
+Date: Mon,  2 Sep 2013 09:53:56 +0100
+Message-Id: <1378112083-9475-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -29,89 +29,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Torsten Schenk <torsten.schenk@zoho.com>
 
-commit 4c2aee0032b70083dafebd733ed9c774633b2fa3 upstream.
+commit 5ece263f1d93fba8d992e67e3ab8a71acf674db9 upstream.
 
-Patch makes midi output buffer DMA-able by allocating it separately.
+Patch makes pcm buffers DMA-able by allocating each one separately.
 
 Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/6fire/midi.c | 16 +++++++++++++++-
- sound/usb/6fire/midi.h |  6 +-----
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ sound/usb/6fire/pcm.c | 41 ++++++++++++++++++++++++++++++++++++++++-
+ sound/usb/6fire/pcm.h |  2 +-
+ 2 files changed, 41 insertions(+), 2 deletions(-)
 
-diff --git a/sound/usb/6fire/midi.c b/sound/usb/6fire/midi.c
-index f0e5179..0c09867 100644
---- a/sound/usb/6fire/midi.c
-+++ b/sound/usb/6fire/midi.c
-@@ -19,6 +19,10 @@
- #include "chip.h"
- #include "comm.h"
+diff --git a/sound/usb/6fire/pcm.c b/sound/usb/6fire/pcm.c
+index 7c4f311..51e3f62f 100644
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -578,6 +578,33 @@ static void __devinit usb6fire_pcm_init_urb(struct pcm_urb *urb,
+ 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
+ }
  
-+enum {
-+	MIDI_BUFSIZE = 64
-+};
++static int usb6fire_pcm_buffers_init(struct pcm_runtime *rt)
++{
++	int i;
 +
- static void usb6fire_midi_out_handler(struct urb *urb)
++	for (i = 0; i < PCM_N_URBS; i++) {
++		rt->out_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
++				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
++		if (!rt->out_urbs[i].buffer)
++			return -ENOMEM;
++		rt->in_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
++				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
++		if (!rt->in_urbs[i].buffer)
++			return -ENOMEM;
++	}
++	return 0;
++}
++
++static void usb6fire_pcm_buffers_destroy(struct pcm_runtime *rt)
++{
++	int i;
++
++	for (i = 0; i < PCM_N_URBS; i++) {
++		kfree(rt->out_urbs[i].buffer);
++		kfree(rt->in_urbs[i].buffer);
++	}
++}
++
+ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
  {
- 	struct midi_runtime *rt = urb->context;
-@@ -156,6 +160,12 @@ int __devinit usb6fire_midi_init(struct sfire_chip *chip)
+ 	int i;
+@@ -589,6 +616,13 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
  	if (!rt)
  		return -ENOMEM;
  
-+	rt->out_buffer = kzalloc(MIDI_BUFSIZE, GFP_KERNEL);
-+	if (!rt->out_buffer) {
++	ret = usb6fire_pcm_buffers_init(rt);
++	if (ret) {
++		usb6fire_pcm_buffers_destroy(rt);
 +		kfree(rt);
-+		return -ENOMEM;
++		return ret;
 +	}
 +
  	rt->chip = chip;
- 	rt->in_received = usb6fire_midi_in_received;
- 	rt->out_buffer[0] = 0x80; /* 'send midi' command */
-@@ -169,6 +179,7 @@ int __devinit usb6fire_midi_init(struct sfire_chip *chip)
+ 	rt->stream_state = STREAM_DISABLED;
+ 	rt->rate = ARRAY_SIZE(rates);
+@@ -610,6 +644,7 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
  
- 	ret = snd_rawmidi_new(chip->card, "6FireUSB", 0, 1, 1, &rt->instance);
+ 	ret = snd_pcm_new(chip->card, "DMX6FireUSB", 0, 1, 1, &pcm);
  	if (ret < 0) {
-+		kfree(rt->out_buffer);
++		usb6fire_pcm_buffers_destroy(rt);
  		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX "unable to create midi.\n");
+ 		snd_printk(KERN_ERR PREFIX "cannot create pcm instance.\n");
  		return ret;
-@@ -197,6 +208,9 @@ void usb6fire_midi_abort(struct sfire_chip *chip)
+@@ -625,6 +660,7 @@ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
+ 			snd_dma_continuous_data(GFP_KERNEL),
+ 			MAX_BUFSIZE, MAX_BUFSIZE);
+ 	if (ret) {
++		usb6fire_pcm_buffers_destroy(rt);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX
+ 				"error preallocating pcm buffers.\n");
+@@ -669,6 +705,9 @@ void usb6fire_pcm_abort(struct sfire_chip *chip)
  
- void usb6fire_midi_destroy(struct sfire_chip *chip)
+ void usb6fire_pcm_destroy(struct sfire_chip *chip)
  {
--	kfree(chip->midi);
-+	struct midi_runtime *rt = chip->midi;
+-	kfree(chip->pcm);
++	struct pcm_runtime *rt = chip->pcm;
 +
-+	kfree(rt->out_buffer);
++	usb6fire_pcm_buffers_destroy(rt);
 +	kfree(rt);
- 	chip->midi = NULL;
+ 	chip->pcm = NULL;
  }
-diff --git a/sound/usb/6fire/midi.h b/sound/usb/6fire/midi.h
-index 5114ecc..d101ecb 100644
---- a/sound/usb/6fire/midi.h
-+++ b/sound/usb/6fire/midi.h
-@@ -16,10 +16,6 @@
+diff --git a/sound/usb/6fire/pcm.h b/sound/usb/6fire/pcm.h
+index 3104301..84610cf 100644
+--- a/sound/usb/6fire/pcm.h
++++ b/sound/usb/6fire/pcm.h
+@@ -32,7 +32,7 @@ struct pcm_urb {
+ 	struct urb instance;
+ 	struct usb_iso_packet_descriptor packets[PCM_N_PACKETS_PER_URB];
+ 	/* END DO NOT SEPARATE */
+-	u8 buffer[PCM_N_PACKETS_PER_URB * PCM_MAX_PACKET_SIZE];
++	u8 *buffer;
  
- #include "common.h"
- 
--enum {
--	MIDI_BUFSIZE = 64
--};
--
- struct midi_runtime {
- 	struct sfire_chip *chip;
- 	struct snd_rawmidi *instance;
-@@ -32,7 +28,7 @@ struct midi_runtime {
- 	struct snd_rawmidi_substream *out;
- 	struct urb out_urb;
- 	u8 out_serial; /* serial number of out packet */
--	u8 out_buffer[MIDI_BUFSIZE];
-+	u8 *out_buffer;
- 	int buffer_offset;
- 
- 	void (*in_received)(struct midi_runtime *rt, u8 *data, int length);
+ 	struct pcm_urb *peer;
+ };
 -- 
 1.8.3.2
 
