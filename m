@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3IBJJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:09:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37713 "EHLO
+	id S1758353Ab3IBIzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37654 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758359Ab3IBIzJ (ORCPT
+	with ESMTP id S1758295Ab3IBIy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:09 -0400
+	Mon, 2 Sep 2013 04:54:57 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 20/58] m68k: Truncate base in do_div()
-Date: Mon,  2 Sep 2013 09:54:05 +0100
-Message-Id: <1378112083-9475-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 08/58] iwl4965: reset firmware after rfkill off
+Date: Mon,  2 Sep 2013 09:53:53 +0100
+Message-Id: <1378112083-9475-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,95 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
+commit 788f7a56fce1bcb2067b62b851a086fca48a0056 upstream.
 
-Explicitly truncate the second operand of do_div() to 32 bits to guard
-against bogus code calling it with a 64-bit divisor.
+Using rfkill switch can make firmware unstable, what cause various
+Microcode errors and kernel warnings. Reseting firmware just after
+rfkill off (radio on) helped with that.
 
-[Thorsten]
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=977053
 
-After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
-
-btrfs: setting nodatacow, compression disabled
-btrfs: enabling auto recovery
-btrfs: disk space caching is enabled
-*** ZERO DIVIDE ***   FORMAT=2
-Current process id is 722
-BAD KERNEL TRAP: 00000000
-Modules linked in: evdev mac_hid ext4 crc16 jbd2 mbcache btrfs xor lzo_compress zlib_deflate raid6_pq crc32c libcrc32c
-PC: [<319535b2>] __btrfs_map_block+0x11c/0x119a [btrfs]
-SR: 2000  SP: 30c1fab4  a2: 30f0faf0
-d0: 00000000    d1: 00001000    d2: 00000000    d3: 00000000
-d4: 00010000    d5: 00000000    a0: 3085c72c    a1: 3085c72c
-Process mount (pid: 722, task=30f0faf0)
-Frame format=2 instr addr=319535ae
-Stack from 30c1faec:
-        00000000 00000020 00000000 00001000 00000000 01401000 30253928 300ffc00
-        00a843ac 3026f640 00000000 00010000 0009e250 00d106c0 00011220 00000000
-        00001000 301c6830 0009e32a 000000ff 00000009 3085c72c 00000000 00000000
-        30c1fd14 00000000 00000020 00000000 30c1fd14 0009e26c 00000020 00000003
-        00000000 0009dd8a 300b0b6c 30253928 00a843ac 00001000 00000000 00000000
-        0000a008 3194e76a 30253928 00a843ac 00001000 00000000 00000000 00000002
-Call Trace: [<00001000>] kernel_pg_dir+0x0/0x1000
-
-    [...]
-
-Code: 222e ff74 2a2e ff5c 2c2e ff60 4c45 1402 <2d40> ff64 2d41 ff68 2205 4c2e 1800 ff68 4c04 0800 2041 d1c0 2206 4c2e 1400 ff68
-
-[Geert]
-
-As diagnosed by Andreas, fs/btrfs/volumes.c:__btrfs_map_block()
-calls
-
-    do_div(stripe_nr, stripe_len);
-
-with stripe_len u64, while do_div() assumes the divisor is a 32-bit number.
-
-Due to the lack of truncation in the m68k-specific implementation of
-do_div(), the division is performed using the upper 32-bit word of
-stripe_len, which is zero.
-
-This was introduced by commit 53b381b3abeb86f12787a6c40fee9b2f71edc23b
-("Btrfs: RAID5 and RAID6"), which changed the divisor from
-map->stripe_len (struct map_lookup.stripe_len is int) to a 64-bit temporary.
-
-Reported-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reported-and-tested-by: Justin Pearce <whitefox@guardianfox.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/m68k/include/asm/div64.h | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlegacy/4965-mac.c | 10 +++++-----
+ drivers/net/wireless/iwlegacy/common.c   |  1 +
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/m68k/include/asm/div64.h b/arch/m68k/include/asm/div64.h
-index 444ea8a..ef881cf 100644
---- a/arch/m68k/include/asm/div64.h
-+++ b/arch/m68k/include/asm/div64.h
-@@ -15,16 +15,17 @@
- 		unsigned long long n64;				\
- 	} __n;							\
- 	unsigned long __rem, __upper;				\
-+	unsigned long __base = (base);				\
- 								\
- 	__n.n64 = (n);						\
- 	if ((__upper = __n.n32[0])) {				\
- 		asm ("divul.l %2,%1:%0"				\
--			: "=d" (__n.n32[0]), "=d" (__upper)	\
--			: "d" (base), "0" (__n.n32[0]));	\
-+		     : "=d" (__n.n32[0]), "=d" (__upper)	\
-+		     : "d" (__base), "0" (__n.n32[0]));		\
- 	}							\
- 	asm ("divu.l %2,%1:%0"					\
--		: "=d" (__n.n32[1]), "=d" (__rem)		\
--		: "d" (base), "1" (__upper), "0" (__n.n32[1]));	\
-+	     : "=d" (__n.n32[1]), "=d" (__rem)			\
-+	     : "d" (__base), "1" (__upper), "0" (__n.n32[1]));	\
- 	(n) = __n.n64;						\
- 	__rem;							\
- })
+diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
+index b7528ef..cbcf6f2 100644
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4411,12 +4411,12 @@ il4965_irq_tasklet(struct il_priv *il)
+ 		 * is killed. Hence update the killswitch state here. The
+ 		 * rfkill handler will care about restarting if needed.
+ 		 */
+-		if (!test_bit(S_ALIVE, &il->status)) {
+-			if (hw_rf_kill)
+-				set_bit(S_RFKILL, &il->status);
+-			else
+-				clear_bit(S_RFKILL, &il->status);
++		if (hw_rf_kill) {
++			set_bit(S_RFKILL, &il->status);
++		} else {
++			clear_bit(S_RFKILL, &il->status);
+ 			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
++			il_force_reset(il, true);
+ 		}
+ 
+ 		handled |= CSR_INT_BIT_RF_KILL;
+diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
+index e2b25eb..6f9c1fa 100644
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4659,6 +4659,7 @@ il_force_reset(struct il_priv *il, bool external)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(il_force_reset);
+ 
+ int
+ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 -- 
 1.8.3.2
 
