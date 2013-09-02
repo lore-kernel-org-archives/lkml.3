@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab3IBIy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:54:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37624 "EHLO
+	id S1758276Ab3IBIyy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:54:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37625 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757941Ab3IBIyv (ORCPT
+	with ESMTP id S1758249Ab3IBIyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Sep 2013 04:54:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>,
+Cc: Takashi Iwai <tiwai@suse.de>, Giacomo Comes <comes@naic.edu>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Haitao Zhang <haitao.zhang@canonical.com>,
+        Anthony Wong <anthony.wong@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 03/58] serial: mxs: fix buffer overflow
-Date: Mon,  2 Sep 2013 09:53:48 +0100
-Message-Id: <1378112083-9475-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 01/58] drm/i915/lvds: ditch ->prepare special case
+Date: Mon,  2 Sep 2013 09:53:46 +0100
+Message-Id: <1378112083-9475-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -29,35 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 4829e7650f8a40645e4e32b26a37fb833a5e75f0 upstream.
+commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b upstream.
 
-SMATCH correctly found an off-by-one error:
+LVDS is the first output where dpms on/off and prepare/commit don't
+perfectly match. Now the idea behind this special case seems to be
+that for simple resolution changes on the LVDS we don't need to stop
+the pipe, because (at least on newer chips) we can adjust the panel
+fitter on the fly.
 
-drivers/tty/serial/mxs-auart.c:889 auart_console_write() error: buffer overflow 'auart_port' 5 <= 5
+There are a few problems with the current code though:
+- We still stop and restart the pipe unconditionally, because the crtc
+  helper code isn't flexible enough.
+- We show some ugly flickering, especially when changing crtcs (this
+  the crtc helper would actually take into account, but we don't
+  implement the encoder->get_crtc callback required to make this work
+  properly).
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kamal Mostafa <kamal@canonical.com>
+So it doesn't even work as advertised. I agree that it would be nice
+to do resolution changes on LVDS (and also eDP) whithout blacking the
+screen where the panel fitter allows to do that. But imo we should
+implement this as a special case a few layers up in the mode set code,
+akin to how we already detect simple framebuffer changes (and only
+update the required registers with ->mode_set_base).
+
+Until this is all in place, make our lives easier and just rip it out.
+
+Also note that this seems to fix actual bugs with enabling the lvds
+output, see:
+
+http://lists.freedesktop.org/archives/intel-gfx/2012-July/018614.html
+
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Giacomo Comes <comes@naic.edu>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Takashi Iwai <tiwai@suse.de>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Haitao Zhang <haitao.zhang@canonical.com>
+Cc: Anthony Wong <anthony.wong@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/mxs-auart.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_lvds.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index 64565f8..5ceeed8 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -547,7 +547,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
- 	unsigned int old_ctrl0, old_ctrl2;
- 	unsigned int to = 20000;
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 440ed88..30a6a15 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -408,13 +408,7 @@ static void intel_lvds_prepare(struct drm_encoder *encoder)
+ {
+ 	struct intel_lvds *intel_lvds = to_intel_lvds(encoder);
  
--	if (co->index >	MXS_AUART_PORTS || co->index < 0)
-+	if (co->index >= MXS_AUART_PORTS || co->index < 0)
- 		return;
+-	/*
+-	 * Prior to Ironlake, we must disable the pipe if we want to adjust
+-	 * the panel fitter. However at all other times we can just reset
+-	 * the registers regardless.
+-	 */
+-	if (!HAS_PCH_SPLIT(encoder->dev) && intel_lvds->pfit_dirty)
+-		intel_lvds_disable(intel_lvds);
++	intel_lvds_disable(intel_lvds);
+ }
  
- 	s = auart_port[co->index];
+ static void intel_lvds_commit(struct drm_encoder *encoder)
 -- 
 1.8.3.2
 
