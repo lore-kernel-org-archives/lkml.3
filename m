@@ -1,128 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab3IBJtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:49:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758260Ab3IBJtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:49:20 -0400
-Date: Mon, 2 Sep 2013 12:49:07 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, glin@suse.de, agraf@suse.de, brogers@suse.de,
-        afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
-Message-ID: <20130902094907.GP22899@redhat.com>
-References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com>
- <20130901091744.GF22899@redhat.com>
- <52245D81.7060402@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52245D81.7060402@linux.vnet.ibm.com>
+	id S1757923Ab3IBJy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:54:28 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:11964
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754946Ab3IBJy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:54:26 -0400
+X-IronPort-AV: E=Sophos;i="4.89,1006,1367964000"; 
+   d="scan'208";a="25430802"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-spi@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
+Subject: [PATCH 0/2] delete premature free_irq
+Date: Mon,  2 Sep 2013 11:54:19 +0200
+Message-Id: <1378115661-5371-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 05:42:25PM +0800, Xiao Guangrong wrote:
-> On 09/01/2013 05:17 PM, Gleb Natapov wrote:
-> > On Fri, Aug 30, 2013 at 02:41:37PM +0200, Paolo Bonzini wrote:
-> >> Page tables in a read-only memory slot will currently cause a triple
-> >> fault because the page walker uses gfn_to_hva and it fails on such a slot.
-> >>
-> >> OVMF uses such a page table; however, real hardware seems to be fine with
-> >> that as long as the accessed/dirty bits are set.  Save whether the slot
-> >> is readonly, and later check it when updating the accessed and dirty bits.
-> >>
-> > The fix looks OK to me, but some comment below.
-> > 
-> >> Cc: stable@vger.kernel.org
-> >> Cc: gleb@redhat.com
-> >> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> >> ---
-> >> 	CCing to stable@ since the regression was introduced with
-> >> 	support for readonly memory slots.
-> >>
-> >>  arch/x86/kvm/paging_tmpl.h |  7 ++++++-
-> >>  include/linux/kvm_host.h   |  1 +
-> >>  virt/kvm/kvm_main.c        | 14 +++++++++-----
-> >>  3 files changed, 16 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> >> index 0433301..dadc5c0 100644
-> >> --- a/arch/x86/kvm/paging_tmpl.h
-> >> +++ b/arch/x86/kvm/paging_tmpl.h
-> >> @@ -99,6 +99,7 @@ struct guest_walker {
-> >>  	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
-> >>  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
-> >>  	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
-> >> +	bool pte_writable[PT_MAX_FULL_LEVELS];
-> >>  	unsigned pt_access;
-> >>  	unsigned pte_access;
-> >>  	gfn_t gfn;
-> >> @@ -235,6 +236,9 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
-> >>  		if (pte == orig_pte)
-> >>  			continue;
-> >>  
-> >> +		if (unlikely(!walker->pte_writable[level - 1]))
-> >> +			return -EACCES;
-> >> +
-> >>  		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
-> >>  		if (ret)
-> >>  			return ret;
-> >> @@ -309,7 +313,8 @@ retry_walk:
-> >>  			goto error;
-> >>  		real_gfn = gpa_to_gfn(real_gfn);
-> >>  
-> >> -		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
-> >> +		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
-> >> +					    &walker->pte_writable[walker->level - 1]);
-> > The use of gfn_to_hva_read is misleading. The code can still write into
-> > gfn. Lets rename gfn_to_hva_read to gfn_to_hva_prot() and gfn_to_hva()
-> > to gfn_to_hva_write().
-> 
-> Yes. I agreed.
-> 
-> > 
-> > This makes me think are there other places where gfn_to_hva() was
-> > used, but gfn_to_hva_prot() should have been?
-> >  - kvm_host_page_size() looks incorrect. We never use huge page to map
-> >    read only memory slots currently.
-> 
-> It only checks whether gfn have been mapped, I think we can use
-> gfn_to_hva_read() instead, the real permission will be checked when we translate
-> the gfn to pfn.
-> 
-Yes, all the cases I listed should be changed to use function that looks
-at both regular and RO slots.
+platform_get_request, or its wrapper platform_get_irq, doesn't allocate
+anything, so there is nothing to free.  Free_irq matches up with
+request_irq and related functions.
 
-> >  - kvm_handle_bad_page() also looks incorrect and may cause incorrect
-> >    address to be reported to userspace.
-> 
-> I have no idea on this point. kvm_handle_bad_page() is called when it failed to
-> translate the target gfn to pfn, then the emulator can detect the error on target gfn
-> properly. no? Or i misunderstood your meaning?
-> 
-I am talking about the following code:
+The complete semantic patch used is as follows
+(http://coccinelle.lip6.fr/)
 
-        if (pfn == KVM_PFN_ERR_HWPOISON) {
-                kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
-                return 0;
-        }
+// <smpl>
+@@
+identifier l;
+statement S1;
+expression e,e1;
+@@
 
-pfn will be KVM_PFN_ERR_HWPOISON gfn is backed by faulty memory, we need
-to report the liner address of the faulty memory to a userspace here,
-but if gfn is in a RO slot gfn_to_hva() will not return correct address
-here.
+*e = platform_get_irq(...);
+... when != request_irq(e,...)
+    when != request_threaded_irq(e,...)
+    when != request_any_context_irq(e,...)
+    when != if (...) { <+... request_irq(e,...) ...+> } else S1
+    when != if (...) { <+... request_threaded_irq(e,...) ...+> } else S1
+    when != if (...) { <+... request_any_context_irq(e,...) ...+> } else S1
+    when != e1 = e
+*goto l;
+...
+*free_irq(e,...)
 
-> >  - kvm_setup_async_pf() also incorrect. Makes all page fault on read
-> >    only slot to be sync.
-> >  - kvm_vm_fault() one looks OK since function assumes write only slots,
-> >    but it is obsolete and should be deleted anyway.
-> 
+@@
+identifier l;
+statement S,S1;
+expression e,e1;
+@@
 
---
-			Gleb.
+*e = platform_get_irq(...);
+... when != request_irq(e,...)
+    when != request_threaded_irq(e,...)
+    when != request_any_context_irq(e,...)
+    when != if (...) { <+... request_irq(e,...) ...+> } else S1
+    when != if (...) { <+... request_threaded_irq(e,...) ...+> } else S1
+    when != if (...) { <+... request_any_context_irq(e,...) ...+> } else S1
+*e1 = e;
+... when != request_irq(\(e\|e1\),...)
+    when != request_threaded_irq(\(e\|e1\),...)
+    when != request_any_context_irq(\(e\|e1\),...)
+    when != if (...) { <+... request_irq(\(e\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_threaded_irq(\(e\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_any_context_irq(\(e\|e1\),...) ...+> } else S
+*goto l;
+...
+*free_irq(\(e\|e1\),...)
+
+@@
+identifier l;
+statement S;
+expression e,e1;
+@@
+
+*e1 = e = platform_get_irq(...);
+... when != request_irq(\(e\|e1\),...)
+    when != request_threaded_irq(\(e\|e1\),...)
+    when != request_any_context_irq(\(e\|e1\),...)
+    when != if (...) { <+... request_irq(\(e\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_threaded_irq(\(e\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_any_context_irq(\(e\|e1\),...) ...+> } else S
+*goto l;
+...
+*free_irq(\(e\|e1\),...)
+
+// -------------------------------------------------------------------------
+
+@@
+identifier l;
+statement S,S1;
+expression e,e2,e3;
+@@
+
+*e = platform_get_resource(e2,IORESOURCE_IRQ,e3);
+... when != request_irq(e->start,...)
+    when != request_threaded_irq(e->start,...)
+    when != request_any_context_irq(e->start,...)
+    when != if (...) { <+... request_irq(e->start,...) ...+> } else S1
+    when != if (...) { <+... request_threaded_irq(e->start,...) ...+> } else S1
+    when != if (...) { <+... request_any_context_irq(e->start,...) ...+> } else S1
+*goto l;
+...
+*free_irq(e->start,...)
+
+@@
+identifier l;
+statement S,S1;
+expression e,e1,e2,e3;
+@@
+
+*e = platform_get_resource(e2,IORESOURCE_IRQ,e3);
+... when != request_irq(e->start,...)
+    when != request_threaded_irq(e->start,...)
+    when != request_any_context_irq(e->start,...)
+    when != if (...) { <+... request_irq(e->start,...) ...+> } else S1
+    when != if (...) { <+... request_threaded_irq(e->start,...) ...+> } else S1
+    when != if (...) { <+... request_any_context_irq(e->start,...) ...+> } else S1
+e1 = e->start;
+... when != request_irq(\(e->start\|e1\),...)
+    when != request_threaded_irq(\(e->start\|e1\),...)
+    when != request_any_context_irq(\(e->start\|e1\),...)
+    when != if (...) { <+... request_irq(\(e->start\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_threaded_irq(\(e->start\|e1\),...) ...+> } else S
+    when != if (...) { <+... request_any_context_irq(\(e->start\|e1\),...) ...+> } else S
+*goto l;
+...
+*free_irq(\(e->start\|e1\),...)
+// </smpl>
+
