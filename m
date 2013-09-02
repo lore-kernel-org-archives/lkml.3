@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab3IBITU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:19:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50073 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab3IBITS (ORCPT
+	id S1756453Ab3IBIUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:20:00 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60334 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753890Ab3IBIT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:19:18 -0400
-Date: Mon, 2 Sep 2013 10:19:14 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com, djbw@fb.com
-Subject: Re: [PATCH 1/1] dma: imx-dma: Remove redundant NULL check
-Message-ID: <20130902081914.GN30088@pengutronix.de>
-References: <1378108278-4051-1-git-send-email-sachin.kamat@linaro.org>
+	Mon, 2 Sep 2013 04:19:58 -0400
+Date: Mon, 2 Sep 2013 09:19:53 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Andrew Fish <afish@apple.com>
+Cc: edk2-devel@lists.sourceforge.net, Laszlo Ersek <lersek@redhat.com>,
+        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Brian Richardson <brian.richardson@intel.com>,
+        Colin Ian King <colin.king@canonical.com>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130902081953.GC28598@console-pimps.org>
+References: <52001896.1030509@redhat.com>
+ <20130805220808.GC14067@pd.tnic>
+ <20130806141036.GD14891@pd.tnic>
+ <520116D1.2010000@redhat.com>
+ <20130807151935.GJ17920@pd.tnic>
+ <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
+ <20130807201908.GG2515@console-pimps.org>
+ <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
+ <20130808101730.GJ2515@console-pimps.org>
+ <1AEC7AA8-D49E-485F-A634-31B4F0D07083@apple.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378108278-4051-1-git-send-email-sachin.kamat@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:18:59 up 8 days, 17:49, 36 users,  load average: 1.29, 1.31, 0.86
+In-Reply-To: <1AEC7AA8-D49E-485F-A634-31B4F0D07083@apple.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 01:21:18PM +0530, Sachin Kamat wrote:
-> kfree on a NULL pointer is a no-op. Null pointer check is
-> not necessary.
+On Thu, 08 Aug, at 06:46:02AM, Andrew Fish wrote:
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-Sascha
-
-> ---
->  drivers/dma/imx-dma.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+> On Aug 8, 2013, at 3:17 AM, Matt Fleming <matt@console-pimps.org> wrote:
 > 
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index ff2aab9..78f8ca5 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -805,10 +805,8 @@ static void imxdma_free_chan_resources(struct dma_chan *chan)
->  	}
->  	INIT_LIST_HEAD(&imxdmac->ld_free);
->  
-> -	if (imxdmac->sg_list) {
-> -		kfree(imxdmac->sg_list);
-> -		imxdmac->sg_list = NULL;
-> -	}
-> +	kfree(imxdmac->sg_list);
-> +	imxdmac->sg_list = NULL;
->  }
->  
->  static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
-> -- 
-> 1.7.9.5
+> > On Wed, 07 Aug, at 02:10:28PM, Andrew Fish wrote:
+> >> Well the issue I see is I don't think OS X or Windows are doing this.
+> >> So I'm guessing there is some unique thing beings done on the Linux
+> >> side and we don't have good tests to catch bugs in the EFI
+> >> implementations. If the Linux loader hides the bugs and we don't hit
+> >> them with other operating systems they are never going to get fixed.
+> >> It would be good if we could track down some of these issues and make
+> >> a request for some tests that can help catch these issues. The tests
+> >> would be part of UEFI.org, but since some of us play in both worlds we
+> >> can forward the known issues to the UEFI test work group. 
+> > 
+> > I'm all for helping to develop tests that catch these kind of bugs.
+> > What's the next step?
+> > 
 > 
-> 
+> I'll bring this up with UEFI.org.
+ 
+For those attending the UEFI plugfest in New Orleans this would be a
+good topic for discussion - figuring out a collaboration process to get
+new tests in place.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Matt Fleming, Intel Open Source Technology Center
