@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab3IBPyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 11:54:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44320 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756690Ab3IBPy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 11:54:29 -0400
-Message-ID: <5224B499.4010600@infradead.org>
-Date: Mon, 02 Sep 2013 08:54:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1758841Ab3IBP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 11:56:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756557Ab3IBP4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 11:56:23 -0400
+Message-ID: <5224B517.3000602@redhat.com>
+Date: Mon, 02 Sep 2013 17:56:07 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org
-Subject: [PATCH] of_irq.h: fix build warnings when CONFIG_OF is not enabled
+To: Gleb Natapov <gleb@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, glin@suse.de,
+        agraf@suse.de, brogers@suse.de, afaerber@suse.de, lnussel@suse.de,
+        edk2-devel@lists.sf.net, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <5224584F.6010409@linux.vnet.ibm.com> <20130902092518.GN22899@redhat.com> <522461C7.8090701@linux.vnet.ibm.com> <20130902100747.GQ22899@redhat.com>
+In-Reply-To: <20130902100747.GQ22899@redhat.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+Il 02/09/2013 12:07, Gleb Natapov ha scritto:
+> On Mon, Sep 02, 2013 at 06:00:39PM +0800, Xiao Guangrong wrote:
+>> On 09/02/2013 05:25 PM, Gleb Natapov wrote:
+>>> On Mon, Sep 02, 2013 at 05:20:15PM +0800, Xiao Guangrong wrote:
+>>>> On 08/30/2013 08:41 PM, Paolo Bonzini wrote:
+>>>>> Page tables in a read-only memory slot will currently cause a triple
+>>>>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+>>>>>
+>>>>> OVMF uses such a page table; however, real hardware seems to be fine with
+>>>>> that as long as the accessed/dirty bits are set.  Save whether the slot
+>>>>> is readonly, and later check it when updating the accessed and dirty bits.
+>>>>
+>>>> Paolo, do you know why OVMF is using readonly memory like this?
+>>>>
+>>> Just a guess, but perhaps they want to move to paging mode as early as
+>>> possible even before memory controller is fully initialized.
+>>>
+>>>> AFAIK, The fault trigged by this kind of access can hardly be fixed by
+>>>> userspace since the fault is trigged by pagetable walking not by the current
+>>>> instruction. Do you have any idea to let uerspace emulate it properly?
+>>> Not sure what userspace you mean here, but there shouldn't be a fault in the
+>>
+>> I just wonder how to fix this kind of fault. The current patch returns -EACCES
+>> but that will crash the guest. I think we'd better let userspace to fix this
+>> error (let userspace set the D/A bit.)
+>>
+> Ugh, this is not good. Missed that. Don't know what real HW will do
+> here, but the easy thing for us to do would be to just return success.
 
-Fix build warnings when CONFIG_OF is not enabled:
+Real hardware would just do a memory write.  What happens depends on
+what is on the bus, i.e. on what the ROM is used for.
 
-include/linux/of_irq.h:82:7: warning: 'struct device_node' declared inside parameter list [enabled by default]
-include/linux/of_irq.h:82:7: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-include/linux/of_irq.h:87:47: warning: 'struct device_node' declared inside parameter list [enabled by default]
+QEMU uses read-only slots for two things: actual read-only memory where
+writes go to the bitbucket, and "ROMD" memory where writes are treated
+as MMIO.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	Grant Likely <grant.likely@linaro.org>
-Cc:	Rob Herring <rob.herring@calxeda.com>
-Cc:	devicetree@vger.kernel.org
----
- include/linux/of_irq.h |    2 ++
- 1 file changed, 2 insertions(+)
+So, in the first case we would ignore the write.  In the second we would
+do an MMIO exit to userspace.  But ignoring the write isn't always
+correct, and doing an MMIO exit is complicated, so I would just kill the
+guest.
 
---- linux-next-20130830.orig/include/linux/of_irq.h
-+++ linux-next-20130830/include/linux/of_irq.h
-@@ -78,6 +78,8 @@ extern void of_irq_init(const struct of_
- #endif /* CONFIG_OF_IRQ */
- 
- #else /* !CONFIG_OF */
-+struct device_node;
-+
- static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
- 						int index)
- {
+EPT will probably write to the read-only slots without thinking much
+about it.
+
+My patch injects a page fault, which is very likely to escalate to a
+triple fault.  This is probably never what you want---on the other hand,
+I wasn't sure what level of accuracy we want in this case, given that
+EPT does it wrong too.
+
+Paolo
+
+>>> first place if ROM page tables have access/dirty bit set and they do.
+>>
+>> Yes, so we can not call x86_emulate_instruction() to fix this fault (that function
+>> emulates the access on the first place). Need directly return a MMIO-exit to
+>> userpsace when met this fault? What happen if this fault on pagetable-walking
+>> is trigged in x86_emulate_instruction().?
+> I think we should not return MMIO-exit to userspace. Either ignore write attempt
+> or kill a guest.
+> 
+> --
+> 			Gleb.
+> 
+
