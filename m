@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab3IBCak (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 22:30:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42441 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab3IBCaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 22:30:39 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
-        <n.a.balandin@gmail.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v3 0/3] cleanup of gpio_pcf857x.c 
-Date: Mon, 2 Sep 2013 08:00:01 +0530
-Message-ID: <1378089004-14478-1-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S932074Ab3IBCbD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 22:31:03 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57439 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758035Ab3IBCaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 22:30:52 -0400
+Message-ID: <5223F855.8070503@linaro.org>
+Date: Mon, 02 Sep 2013 10:30:45 +0800
+From: zhangfei <zhangfei.gao@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Vinod Koul'" <vinod.koul@intel.com>, "'Dan Williams'" <djbw@fb.com>,
+        linux-kernel@vger.kernel.org, "'Kai Yang'" <jean.yangkai@huawei.com>
+Subject: Re: [PATCH 2/2] dma: k3dma: use devm_ioremap_resource() instead of
+ devm_request_and_ioremap()
+References: <004c01cea77a$ffd30030$ff790090$%han@samsung.com> <005101cea77b$6fe297a0$4fa7c6e0$%han@samsung.com>
+In-Reply-To: <005101cea77b$6fe297a0$4fa7c6e0$%han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series
-        - removes the irq_demux_work
-        - Uses devm_request_threaded_irq
-        - Call the user handler iff gpio_to_irq is done.
+On 13-09-02 09:26 AM, Jingoo Han wrote:
+> Use devm_ioremap_resource() because devm_request_and_ioremap() is
+> obsoleted by devm_ioremap_resource().
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-v1 --> v2
-        Split v1 to 3 patches
-v2 --> v3
-	Remove the unnecessary dts patches.
+Thanks Jingoo for point out.
 
+Acked-by: Zhangfei Gao <zhangfei.gao@linaro.org>
 
-George Cherian (3):
-  gpio: pcf857x: change to devm_request_threaded_irq
-  gpio: pcf857x: remove the irq_demux_work
-  gpio: pcf857x: call the gpio user handler iff gpio_to_irq is done
-
- drivers/gpio/gpio-pcf857x.c | 51 +++++++++++++++++++++++----------------------
- 1 file changed, 26 insertions(+), 25 deletions(-)
-
--- 
-1.8.1.4
+> ---
+>   drivers/dma/k3dma.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
+> index ef7bc85..a2c330f 100644
+> --- a/drivers/dma/k3dma.c
+> +++ b/drivers/dma/k3dma.c
+> @@ -673,9 +673,9 @@ static int k3_dma_probe(struct platform_device *op)
+>   	if (!d)
+>   		return -ENOMEM;
+>
+> -	d->base = devm_request_and_ioremap(&op->dev, iores);
+> -	if (!d->base)
+> -		return -EADDRNOTAVAIL;
+> +	d->base = devm_ioremap_resource(&op->dev, iores);
+> +	if (IS_ERR(d->base))
+> +		return PTR_ERR(d->base);
+>
+>   	of_id = of_match_device(k3_pdma_dt_ids, &op->dev);
+>   	if (of_id) {
+>
 
