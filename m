@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab3IBOPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:15:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43882 "EHLO bear.ext.ti.com"
+	id S1758665Ab3IBORn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:17:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40743 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758350Ab3IBOPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:15:51 -0400
+	id S1754038Ab3IBORl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 10:17:41 -0400
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH RFC 1/6] reset: is_reset and clear_reset api's
-Date: Mon, 2 Sep 2013 19:45:14 +0530
-Message-ID: <5dcf227d360f748ddc965f6c13ff0b31c3e90dab.1378129416.git.afzal@ti.com>
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Pavel Machek <pavel@ucw.cz>, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH RFC 2/6] doc: dt: binding: omap: am43x/am335x prcm reset
+Date: Mon, 2 Sep 2013 19:46:56 +0530
+Message-ID: <4aa6c41809a53c6e91dacae9fc52e40c3ccf61c4.1378129416.git.afzal@ti.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <cover.1378129416.git.afzal@ti.com>
 References: <cover.1378129416.git.afzal@ti.com>
@@ -25,92 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance reset framework with "is_reset" and "clear_reset" api's.
-is_reset - used by client driver to know reset status
-clear_reset - used by client driver to clear reset status
+prcm reset binding for AM43x/AM335x SoC's.
 
-These functionalities may sometimes be achieved by using existing api
-like deassert. But in some scenarios, steps to achieve reset requires
-clearing reset, deassert reset, enabling clock to module and then
-checking reset status. Here enabling clock module is coming in between
-reset procedure, hence enhance framework with additional api's.
+This was started with an attempt to add reset binding without a clear
+idea on the device node where binding should appear. So a new node
+with compatible "am4372-reset" to represent reset managment in prcm
+was added. But finally ended up with a node to represent prcm (with
+compatible "am4372-prcm") which was felt to be the natural one.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- drivers/reset/core.c             | 32 ++++++++++++++++++++++++++++++++
- include/linux/reset-controller.h |  2 ++
- include/linux/reset.h            |  2 ++
- 3 files changed, 36 insertions(+)
+ Documentation/devicetree/bindings/arm/omap/prcm.txt | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/omap/prcm.txt
 
-diff --git a/drivers/reset/core.c b/drivers/reset/core.c
-index d1b6089..ba12171 100644
---- a/drivers/reset/core.c
-+++ b/drivers/reset/core.c
-@@ -127,6 +127,38 @@ int reset_control_deassert(struct reset_control *rstc)
- EXPORT_SYMBOL_GPL(reset_control_deassert);
- 
- /**
-+ * reset_control_is_reset - check reset status
-+ * @rstc: reset controller
-+ *
-+ * Returns a boolean or negative error code
-+ *
-+ */
-+int reset_control_is_reset(struct reset_control *rstc)
-+{
-+	if (rstc->rcdev->ops->is_reset)
-+		return rstc->rcdev->ops->is_reset(rstc->rcdev, rstc->id);
+diff --git a/Documentation/devicetree/bindings/arm/omap/prcm.txt b/Documentation/devicetree/bindings/arm/omap/prcm.txt
+new file mode 100644
+index 0000000..ad25abc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/omap/prcm.txt
+@@ -0,0 +1,13 @@
++TI Power Reset Clock Manager (PRCM)
 +
-+	return -ENOSYS;
-+}
-+EXPORT_SYMBOL_GPL(reset_control_is_reset);
++Properties:
++- compatible:	"ti,am4372-prcm" for prcm in am43x SoC's
++		"ti,am3352-prcm" for prcm in am335x SoC's
++- #reset-cells: 1 (refer generic reset bindings for details)
 +
-+/**
-+ * reset_control_clear_reset - clear the reset
-+ * @rstc: reset controller
-+ *
-+ * Returns zero on success or negative error code
-+ *
-+ */
-+int reset_control_clear_reset(struct reset_control *rstc)
-+{
-+	if (rstc->rcdev->ops->clear_reset)
-+		return rstc->rcdev->ops->clear_reset(rstc->rcdev, rstc->id);
-+
-+	return -ENOSYS;
-+}
-+EXPORT_SYMBOL_GPL(reset_control_clear_reset);
-+
-+/**
-  * reset_control_get - Lookup and obtain a reference to a reset controller.
-  * @dev: device to be reset by the controller
-  * @id: reset line name
-diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
-index 2f61311..c9bbadb 100644
---- a/include/linux/reset-controller.h
-+++ b/include/linux/reset-controller.h
-@@ -17,6 +17,8 @@ struct reset_control_ops {
- 	int (*reset)(struct reset_controller_dev *rcdev, unsigned long id);
- 	int (*assert)(struct reset_controller_dev *rcdev, unsigned long id);
- 	int (*deassert)(struct reset_controller_dev *rcdev, unsigned long id);
-+	int (*is_reset)(struct reset_controller_dev *rcdev, unsigned long id);
-+	int (*clear_reset)(struct reset_controller_dev *rcdev, unsigned long i);
- };
- 
- struct module;
-diff --git a/include/linux/reset.h b/include/linux/reset.h
-index 6082247..da59f9f 100644
---- a/include/linux/reset.h
-+++ b/include/linux/reset.h
-@@ -7,6 +7,8 @@ struct reset_control;
- int reset_control_reset(struct reset_control *rstc);
- int reset_control_assert(struct reset_control *rstc);
- int reset_control_deassert(struct reset_control *rstc);
-+int reset_control_is_reset(struct reset_control *rstc);
-+int reset_control_clear_reset(struct reset_control *rstc);
- 
- struct reset_control *reset_control_get(struct device *dev, const char *id);
- void reset_control_put(struct reset_control *rstc);
++example:
++	prcm: prcm@44df0000 {
++		compatible = "ti,am4372-prcm";
++		reg = <0x44df0000 0xa000>;
++		#reset-cells = <1>;
++	};
 -- 
 1.8.3.4
 
