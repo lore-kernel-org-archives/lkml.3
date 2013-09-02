@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758475Ab3IBIz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:55:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37780 "EHLO
+	id S1758868Ab3IBJEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:04:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758453Ab3IBIzZ (ORCPT
+	with ESMTP id S1758467Ab3IBIz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:25 -0400
+	Mon, 2 Sep 2013 04:55:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 34/58] iwlwifi: pcie: disable L1 Active after pci_enable_device
-Date: Mon,  2 Sep 2013 09:54:19 +0100
-Message-Id: <1378112083-9475-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 35/58] zd1201: do not use stack as URB transfer_buffer
+Date: Mon,  2 Sep 2013 09:54:20 +0100
+Message-Id: <1378112083-9475-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-commit eabc4ac5d7606a57ee2b7308cb7323ea8f60183b upstream.
+commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
 
-As Arjan pointed out, we mustn't do anything related to PCI
-configuration until the device is properly enabled with
-pci_enable_device().
+Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
+to be DMA-able, which stack is not.
 
-Reported-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backported to 3.5:
-  - file rename: drivers/net/wireless/iwlwifi/pcie/trans.c ->
-    drivers/net/wireless/iwlwifi/iwl-trans-pcie.c ]
+Patch is only compile tested.
+
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/wireless/zd1201.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-index 844d0f6..283b423 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -2107,16 +2107,16 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
- 	spin_lock_init(&trans_pcie->irq_lock);
- 	init_waitqueue_head(&trans_pcie->ucode_write_waitq);
+diff --git a/drivers/net/wireless/zd1201.c b/drivers/net/wireless/zd1201.c
+index 48273dd..4312eca 100644
+--- a/drivers/net/wireless/zd1201.c
++++ b/drivers/net/wireless/zd1201.c
+@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_device *dev, int apfw)
+ 		goto exit;
  
--	/* W/A - seems to solve weird behavior. We need to remove this if we
--	 * don't want to stay in L1 all the time. This wastes a lot of power */
--	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
--				PCIE_LINK_STATE_CLKPM);
--
- 	if (pci_enable_device(pdev)) {
- 		err = -ENODEV;
- 		goto out_no_pci;
- 	}
+ 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
+-	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
++	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
+ 	if (err < 0)
+ 		goto exit;
  
-+	/* W/A - seems to solve weird behavior. We need to remove this if we
-+	 * don't want to stay in L1 all the time. This wastes a lot of power */
-+	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
-+				PCIE_LINK_STATE_CLKPM);
++	memcpy(&ret, buf, sizeof(ret));
 +
- 	pci_set_master(pdev);
- 
- 	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(36));
+ 	if (ret & 0x80) {
+ 		err = -EIO;
+ 		goto exit;
 -- 
 1.8.3.2
 
