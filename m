@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758326Ab3IBMqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 08:46:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40686 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab3IBMqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 08:46:19 -0400
-Subject: Re: [PATCH v4 0/6] dma: edma: Support scatter-lists of any length
-From: Vinod Koul <vkoul@infradead.org>
-To: Joel Fernandes <joelf@ti.com>
-Cc: vinod.koul@intel.com, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>, Russell King <linux@arm.linux.org.uk>,
-        Sricharan R <r.sricharan@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Franklin Cooper <fcooper@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <1377817545-18015-1-git-send-email-joelf@ti.com>
-References: <1377817545-18015-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Sep 2013 17:29:53 +0530
-Message-ID: <1378123193.9854.1.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758264Ab3IBMxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:53:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62802 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076Ab3IBMxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 08:53:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1007,1367996400"; 
+   d="scan'208";a="395563235"
+Date: Mon, 2 Sep 2013 17:37:39 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] dma: replace devm_request_and_ioremap by
+ devm_ioremap_resource
+Message-ID: <20130902120739.GR7376@intel.com>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1376911241-27720-5-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376911241-27720-5-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 18:05 -0500, Joel Fernandes wrote:
-> The following series adds support to EDMA driver to enable DMA of
-> scatter-gather lists of arbitrary length, but still make use of only
-> a certain MAX number of slots at a time for a given channel. Thus
-> free-ing up the rest of the slots to other slaves/channels.  With this
-> there is no need for slave drivers to query the EDMA driver about how
-> much is the MAX it can send at a time as done in [1]. Drivers can send
-> SG lists of any number of entries to DMA. Reference discussion at [2].
+On Mon, Aug 19, 2013 at 01:20:38PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> With this, all the patches for MMC and EDMA related to "sg limits" can be
-> dropped.
+> Use devm_ioremap_resource instead of devm_request_and_ioremap.
 > 
-> Tested omap-aes and omap_hsmmc drivers with different MAX number of slots,
-> even just 1. In the case where it is 1, only 1-slot is used to DMA an
-> entire scatter list of arbitrary length.
-> Since this series touches EDMA private API code also shared with davinci-pcm,
-> playback of a 16-bit 44.1KHz audio file with davinci-pcm has been tested.
+> This was done using the semantic patch
+> scripts/coccinelle/api/devm_ioremap_resource.cocci
 > 
-> Sample test run with 1 vs 16 (MAX number of slots/SG) in omap-aes driver:
-> MAX slots = 1:
->  (128 bit key, 8192 byte blocks): 1266 operations in 1 seconds (10371072 bytes)
-> MAX slots = 16:
->  (128 bit key, 8192 byte blocks): 1601 operations in 1 seconds (13115392 bytes)
-> 
-> Note: For the above test, 8K buffer is mapped into SG list of size 2 so
-> only 2 slots are required. So beyond size 2, there will not be any noticeable
-> performance improvement. But above experiment just shows as proof of concept
-> that even using 1 slot is managed by just DMA'ing 1 SG entry at a time.
-much better series, thanks
+> The relevant call to platform_get_resource was manually moved down to the
+> call to devm_ioremap_resource.
+Applied, thanks
 
-I think i am okay with this, if anyone has objections pls speak up. Also
-I need ack on the ARM patch 3/6 before I can carry this.
-
--- 
-Vinod Koul
-Intel Corp.
+~Vinod
 
