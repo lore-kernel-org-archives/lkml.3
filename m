@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759104Ab3IBXqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 19:46:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49747 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847Ab3IBXqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 19:46:22 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5225234A.50407@roeck-us.net>
-Date: Mon, 02 Sep 2013 16:46:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com> <1378161032.32763.341.camel@haakon3.risingtidesystems.com> <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
-In-Reply-To: <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1759173Ab3IBXya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 19:54:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41592 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759051Ab3IBXy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 19:54:29 -0400
+Message-ID: <1378166065.1953.134.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Report missing spaces around trigraphs with
+ --strict
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Date: Mon, 02 Sep 2013 16:54:25 -0700
+In-Reply-To: <20130902231514.GA1163@leaf>
+References: <9976.1378132260@warthog.procyon.org.uk>
+	 <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
+	 <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
+	 <1378148367.1953.98.camel@joe-AO722> <20130902195056.GB32628@leaf>
+	 <5224EF32.5060104@roeck-us.net> <1378160086.1953.129.camel@joe-AO722>
+	 <20130902231514.GA1163@leaf>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 03:50 PM, Linus Torvalds wrote:
-> On Mon, Sep 2, 2013 at 3:30 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
->>
->> Unfortunately, this doesn't include the remaining target fixes for
->> v3.11:
->>
->> Re: [GIT PULL -v2] target fixes for v3.11
->> http://marc.info/?l=linux-kernel&m=137799048226191&w=2
->>
->> Is there a reason why these did not get PULLed..?
->
-> Very simple: I have no such email in my mailbox. I see the "target
-> updates for v3.11-rc1" email (and I pulled that), and there is nothing
-> since.
->
-> I don't even have that mail in my lkml archives, much less as a private email.
->
-> I see neither youe "-v2 PULL request" nor the "One more late v3.11
-> specific regression" one. In fact, I see no emails from you at all
-> from Aug 31.
->
-> It may be that gmail hates you for some reason...
->
-> [ time passes ]
->
-> Yup. It's in my spam-box, with gmail helpfully telling me:
->
->     Why is this message in Spam? We've found that lots of messages from
-> linux-iscsi.org are spam.  Learn more
->
-> so something is rotten in the state of linux-iscsi.org.
->
-> Recent messages from you were similarly tagged:
->
->   "[GIT PULL -v2] target fixes for 3.11"
->   "Re: LIO FC Target"
->   "Re: [GIT PULL] target fixes for v3.11-rc7"
->
-> there might have been more. You might want to try to figure out why
-> gmail thinks that linux-iscsi.org is spammy.
->
+> would you mind looking at why
+> it gives a false positive for spaces around '*' on my recent patch at
+> http://mid.gmane.org/20130901234251.GB25057@leaf ?  It appears to
+> mistake the '*' of a pointer for a multiply.
 
-I don't think it has anything to do with linux-iscsi.org.
-Possibly Nicholas' e-mail provider is not hosted in the US, meaning e-mail
-sent through it can not be logged and examined by a certain US government agency.
+Looks like checkpatch thinks this should be a multiplication.
 
-I had the same experience; Google blocks all e-mail from my private provider
-(located in Singapore). When asked by the provider, they claimed to know
-nothing about it. No, my provider doesn't forward more spam than other providers,
-and definitely less than, say, Yahoo.
+Try this:
+---
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I can only recommend for everyone to send pull requests through a gmail account.
-If you set it up correctly, you can keep using your non-gmail source address
-but still send it through a Google server. Just don't use it for anything else
-unless you don't mind Big Brother listening in.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9bb056c..e421b5e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3005,7 +3005,7 @@ sub process {
+ 					 $op eq '*' or $op eq '/' or
+ 					 $op eq '%')
+ 				{
+-					if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
++					if ($ctx =~ /Wx[^WCEB]|[^WCE]xW/) {
+ 						if (ERROR("SPACING",
+ 							  "need consistent spacing around '$op' $at\n" . $hereptr)) {
+ 							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
 
-Guenter
 
