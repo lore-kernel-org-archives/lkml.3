@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab3IBHmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 03:42:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52437 "EHLO
+	id S932157Ab3IBHmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 03:42:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52449 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757313Ab3IBHmA (ORCPT
+	with ESMTP id S932082Ab3IBHmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 03:42:00 -0400
-Date: Mon, 2 Sep 2013 00:41:27 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-ys201g4jwukj0h8xcamakxq1@git.kernel.org>
+	Mon, 2 Sep 2013 03:42:10 -0400
+Date: Mon, 2 Sep 2013 00:41:37 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-53ad0447208d3f5897f673ca0b16c776583eedba@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        pjt@google.com, peterz@infradead.org, tglx@linutronix.de
+        peterz@infradead.org, zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, pjt@google.com, tglx@linutronix.de
+        zheng.z.yan@intel.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
+References: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Fix the sd_parent_degenerate() code
-Git-Commit-ID: 10866e62e8a6907d9072f10f9a0561db0c0cf50b
+Subject: [tip:perf/core] perf/x86:
+  use INTEL_UEVENT_EXTRA_REG to define MSR_OFFCORE_RSP_X
+Git-Commit-ID: 53ad0447208d3f5897f673ca0b16c776583eedba
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,84 +28,94 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:41:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:41:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10866e62e8a6907d9072f10f9a0561db0c0cf50b
-Gitweb:     http://git.kernel.org/tip/10866e62e8a6907d9072f10f9a0561db0c0cf50b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 19 Aug 2013 16:57:04 +0200
+Commit-ID:  53ad0447208d3f5897f673ca0b16c776583eedba
+Gitweb:     http://git.kernel.org/tip/53ad0447208d3f5897f673ca0b16c776583eedba
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Thu, 18 Jul 2013 17:02:23 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 2 Sep 2013 08:27:40 +0200
+CommitDate: Mon, 2 Sep 2013 08:42:47 +0200
 
-sched/fair: Fix the sd_parent_degenerate() code
+perf/x86: use INTEL_UEVENT_EXTRA_REG to define MSR_OFFCORE_RSP_X
 
-I found that on my WSM box I had a redundant domain:
+Silvermont (22nm Atom) has two offcore response configuration MSRs,
+unlike other Intel CPU, its event code for MSR_OFFCORE_RSP_1 is 0x02b7.
 
-[    0.949769] CPU0 attaching sched-domain:
-[    0.953765]  domain 0: span 0,12 level SIBLING
-[    0.958335]   groups: 0 (cpu_power = 587) 12 (cpu_power = 588)
-[    0.964548]   domain 1: span 0-5,12-17 level MC
-[    0.969206]    groups: 0,12 (cpu_power = 1175) 1,13 (cpu_power = 1176) 2,14 (cpu_power = 1176) 3,15 (cpu_power = 1176) 4,16 (cpu_power = 1176) 5,17 (cpu_power = 1176)
-[    0.984993]    domain 2: span 0-5,12-17 level CPU
-[    0.989822]     groups: 0-5,12-17 (cpu_power = 7055)
-[    0.995049]     domain 3: span 0-23 level NUMA
-[    0.999620]      groups: 0-5,12-17 (cpu_power = 7055) 6-11,18-23 (cpu_power = 7056)
+To avoid complicating intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to
+define MSR_OFFCORE_RSP_X. So intel_fixup_er() can find the event code
+for OFFCORE_RSP_N by x86_pmu.extra_regs[N].event.
 
-Note how domain 2 has only a single group and spans the same CPUs as
-domain 1. We should not keep such domains and do in fact have code to
-prune these.
-
-It turns out that the 'new' SD_PREFER_SIBLING flag causes this, it
-makes sd_parent_degenerate() fail on the CPU domain. We can easily
-fix this by 'ignoring' the SD_PREFER_SIBLING bit and transfering it
-to whatever domain ends up covering the span.
-
-With this patch the domains now look like this:
-
-[    0.950419] CPU0 attaching sched-domain:
-[    0.954454]  domain 0: span 0,12 level SIBLING
-[    0.959039]   groups: 0 (cpu_power = 587) 12 (cpu_power = 588)
-[    0.965271]   domain 1: span 0-5,12-17 level MC
-[    0.969936]    groups: 0,12 (cpu_power = 1175) 1,13 (cpu_power = 1176) 2,14 (cpu_power = 1176) 3,15 (cpu_power = 1176) 4,16 (cpu_power = 1176) 5,17 (cpu_power = 1176)
-[    0.985737]    domain 2: span 0-23 level NUMA
-[    0.990231]     groups: 0-5,12-17 (cpu_power = 7055) 6-11,18-23 (cpu_power = 7056)
-
-Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-ys201g4jwukj0h8xcamakxq1@git.kernel.org
+Link: http://lkml.kernel.org/r/1374138144-17278-1-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cf8f100..4da0f4b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4914,7 +4914,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
- 				SD_BALANCE_FORK |
- 				SD_BALANCE_EXEC |
- 				SD_SHARE_CPUPOWER |
--				SD_SHARE_PKG_RESOURCES);
-+				SD_SHARE_PKG_RESOURCES |
-+				SD_PREFER_SIBLING);
- 		if (nr_node_ids == 1)
- 			pflags &= ~SD_SERIALIZE;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a45d8d4..0d59a42 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -81,7 +81,8 @@ static struct event_constraint intel_nehalem_event_constraints[] __read_mostly =
+ 
+ static struct extra_reg intel_nehalem_extra_regs[] __read_mostly =
+ {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
+ };
+@@ -143,8 +144,9 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
+ 
+ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
+ };
+@@ -163,15 +165,17 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ };
+ 
+ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+ 	EVENT_EXTRA_END
+ };
+ 
+ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+ 	EVENT_EXTRA_END
+ };
+@@ -1301,11 +1305,11 @@ static void intel_fixup_er(struct perf_event *event, int idx)
+ 
+ 	if (idx == EXTRA_REG_RSP_0) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+-		event->hw.config |= 0x01b7;
++		event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_0].event;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+ 	} else if (idx == EXTRA_REG_RSP_1) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+-		event->hw.config |= 0x01bb;
++		event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_1].event;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
  	}
-@@ -5118,6 +5119,13 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
- 			tmp->parent = parent->parent;
- 			if (parent->parent)
- 				parent->parent->child = tmp;
-+			/*
-+			 * Transfer SD_PREFER_SIBLING down in case of a
-+			 * degenerate parent; the spans match for this
-+			 * so the property transfers.
-+			 */
-+			if (parent->flags & SD_PREFER_SIBLING)
-+				tmp->flags |= SD_PREFER_SIBLING;
- 			destroy_sched_domain(parent, cpu);
- 		} else
- 			tmp = tmp->parent;
+ }
