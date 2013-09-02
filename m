@@ -1,203 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab3IBG5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 02:57:24 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:13051 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab3IBG5X (ORCPT
+	id S1757399Ab3IBHCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 03:02:19 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34333 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3IBHCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 02:57:23 -0400
-Message-ID: <522436CC.3080108@huawei.com>
-Date: Mon, 2 Sep 2013 14:57:16 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 03:02:17 -0400
+Message-ID: <522437EF.8040002@linux.vnet.ibm.com>
+Date: Mon, 02 Sep 2013 15:02:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Baoquan He <baoquan.he@gmail.com>
-CC: Hillf Danton <dhillf@gmail.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Subject: Re: 3.11-rc7:BUG: soft lockup
-References: <522055D7.70002@gmail.com> <CAM_iQpW3F=inR0y6GFE64OgkhKSdzF-trrZamgThXTiyOYYmBw@mail.gmail.com> <CAJd=RBCT6dbLwX6z+1LxCvJ9-NOYQRe0zzBkEQosFgLvNgg4bg@mail.gmail.com> <52242AEA.9020502@gmail.com>
-In-Reply-To: <52242AEA.9020502@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 09/12] KVM: MMU: introduce pte-list lockless walker
+References: <20130828094630.GR22899@redhat.com> <521DCD57.7000401@linux.vnet.ibm.com> <20130828104938.GT22899@redhat.com> <521DE9E8.2040908@linux.vnet.ibm.com> <20130828133635.GU22899@redhat.com> <521EEF4B.4040107@linux.vnet.ibm.com> <20130829090833.GA22899@redhat.com> <521F14FE.3070900@linux.vnet.ibm.com> <20130829095120.GD22899@redhat.com> <521F2FF0.9060105@linux.vnet.ibm.com> <20130830113805.GA1844@redhat.com>
+In-Reply-To: <20130830113805.GA1844@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090206-5490-0000-0000-00000414465E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/2 14:06, Baoquan He wrote:
-> Hi both,
-> 
-> Thanks for your patches. I tried to test your patches,  first the 2nd 
-> one, namely Hillf's patch, it's OK. Then when I wanted to reproduce and 
-> test Cong's patch, it failed to happen again. 
-> 
-> I remember this bug happened randomly at the very beginning, 
-> just after kernel compiling  it always happened one day. 
-> 
-> So maybe when it happened again, I will test your patch separately. 
-> 
-> Baoquan
-> Thanks 
-> 
-> On 08/31/2013 11:25 AM, Hillf Danton wrote:
->> On Fri, Aug 30, 2013 at 8:18 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
->>> Cc'ing netdev
->>>
->>> On Fri, Aug 30, 2013 at 4:20 PM, Baoquan He <baoquan.he@gmail.com> wrote:
->>>> Hi,
+On 08/30/2013 07:38 PM, Gleb Natapov wrote:
+> On Thu, Aug 29, 2013 at 07:26:40PM +0800, Xiao Guangrong wrote:
+>> On 08/29/2013 05:51 PM, Gleb Natapov wrote:
+>>> On Thu, Aug 29, 2013 at 05:31:42PM +0800, Xiao Guangrong wrote:
+>>>>> As Documentation/RCU/whatisRCU.txt says:
+>>>>>
+>>>>>         As with rcu_assign_pointer(), an important function of
+>>>>>         rcu_dereference() is to document which pointers are protected by
+>>>>>         RCU, in particular, flagging a pointer that is subject to changing
+>>>>>         at any time, including immediately after the rcu_dereference().
+>>>>>         And, again like rcu_assign_pointer(), rcu_dereference() is
+>>>>>         typically used indirectly, via the _rcu list-manipulation
+>>>>>         primitives, such as list_for_each_entry_rcu().
+>>>>>
+>>>>> The documentation aspect of rcu_assign_pointer()/rcu_dereference() is
+>>>>> important. The code is complicated, so self documentation will not hurt.
+>>>>> I want to see what is actually protected by rcu here. Freeing shadow
+>>>>> pages with call_rcu() further complicates matters: does it mean that
+>>>>> shadow pages are also protected by rcu? 
 >>>>
->>>> I tried the 3.11.0-rc7+ on x86_64, and after bootup, the soft lockup bug
->>>> happened.
+>>>> Yes, it stops shadow page to be freed when we do write-protection on
+>>>> it.
 >>>>
->>>> [   48.895000] BUG: soft lockup - CPU#1 stuck for 22s! [ebtables:444]
->>>> [   48.901191] Modules linked in: bnep(F) bluetooth(F) ebtables(F)
->>>> ip6table_filter(F) ip6_tables(F) rfkill(F) snd_hda_intel(F+)
->>>> snd_hda_codec(F) snd_hwdep(F) snd_seq(F) sn)
->>>> [   48.950034] CPU: 1 PID: 444 Comm: ebtables Tainted: GF     D
->>>> 3.11.0-rc7+ #1
->>>> [   48.957433] Hardware name: Hewlett-Packard HP Z420 Workstation/1589,
->>>> BIOS J61 v01.02 03/09/2012
->>>> [   48.966131] task: ffff88040c2dc650 ti: ffff8804187d2000 task.ti:
->>>> ffff8804187d2000
->>>> [   48.973610] RIP: 0010:[<ffffffff812e57a7>]  [<ffffffff812e57a7>]
->>>> strcmp+0x27/0x40
->>>> [   48.981119] RSP: 0018:ffff8804187d3db8  EFLAGS: 00000246
->>>> [   48.986430] RAX: 0000000000000000 RBX: 00007fffda942730 RCX:
->>>> ffff8804187d3fd8
->>>> [   48.993566] RDX: 0000000000000000 RSI: ffff8804187d3e01 RDI:
->>>> ffffffff81cb8a39
->>>> [   49.000707] RBP: ffff8804187d3db8 R08: 00000000fffffff2 R09:
->>>> 0000000000000000
->>>> [   49.007841] R10: 0000000000000163 R11: 0000000000000000 R12:
->>>> ffffffff8128300c
->>>> [   49.014972] R13: ffff8804187d3d98 R14: ffff8804187d3ef4 R15:
->>>> 0000000000000004
->>>> [   49.022112] FS:  00007faab6589740(0000) GS:ffff88042fc80000(0000)
->>>> knlGS:0000000000000000
->>>> [   49.030194] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>>> [   49.035942] CR2: 0000003f0d810414 CR3: 000000040d2cc000 CR4:
->>>> 00000000000407e0
->>>> [   49.043077] Stack:
->>>> [   49.045096]  ffff8804187d3de8 ffffffffa0249674 0000000000000080
->>>> ffffffff81cb8180
->>>> [   49.052559]  00007fffda942730 ffff8804187d3ef4 ffff8804187d3ea0
->>>> ffffffffa02497a9
->>>> [   49.060020]  0000000000000000 00007265746c6966 0000003f0d7b92c0
->>>> 00007fffda942850
->>>> [   49.067487] Call Trace:
->>>> [   49.069949]  [<ffffffffa0249674>]
->>>> find_inlist_lock.constprop.16+0x54/0x100 [ebtables]
->>>> [   49.077779]  [<ffffffffa02497a9>] do_ebt_get_ctl+0x89/0x1d0 [ebtables]
->>>> [   49.084306]  [<ffffffff81551ca8>] nf_getsockopt+0x68/0x90
->>>> [   49.089717]  [<ffffffff81560d40>] ip_getsockopt+0x80/0xa0
->>>> [   49.095113]  [<ffffffff815835c5>] raw_getsockopt+0x25/0x50
->>>> [   49.100588]  [<ffffffff8150ddd4>] sock_common_getsockopt+0x14/0x20
->>>> [   49.106766]  [<ffffffff8150d208>] SyS_getsockopt+0x68/0xd0
->>>> [   49.112257]  [<ffffffff8162c682>] system_call_fastpath+0x16/0x1b
->>>> [   49.118260] Code: 00 00 00 00 55 48 89 e5 eb 0e 66 2e 0f 1f 84 00 00
->>>> 00 00 00 84 c0 74 1c 48 83 c7 01 0f b6 47 ff 48 83 c6 01 3a 46 ff 74 eb
->>>> 19 c0 <83> c8 01 5d c3 0f 1
->>>> [   76.925880] BUG: soft lockup - CPU#1 stuck for 22s! [ebtables:444]
->>>> [   76.932069] Modules linked in: bnep(F) bluetooth(F) ebtables(F)
->>>> ip6table_filter(F) ip6_tables(F) rfkill(F) snd_hda_intel(F+)
->>>> snd_hda_codec(F) snd_hwdep(F) snd_seq(F) sn)
->>>> [   76.980847] CPU: 1 PID: 444 Comm: ebtables Tainted: GF     D
->>>> 3.11.0-rc7+ #1
->>>> [   76.988245] Hardware name: Hewlett-Packard HP Z420 Workstation/1589,
->>>> BIOS J61 v01.02 03/09/2012
->>>> [   76.996940] task: ffff88040c2dc650 ti: ffff8804187d2000 task.ti:
->>>> ffff8804187d2000
->>>> [   77.004426] RIP: 0010:[<ffffffff812e5784>]  [<ffffffff812e5784>]
->>>> strcmp+0x4/0x40
->>>> [   77.011849] RSP: 0018:ffff8804187d3db8  EFLAGS: 00000212
->>>> [   77.017163] RAX: 0000000000000001 RBX: 00007fffda942730 RCX:
->>>> ffff8804187d3fd8
->>>> [   77.024304] RDX: 0000000000000000 RSI: ffff8804187d3e00 RDI:
->>>> ffffffff81cb8a38
->>>> [   77.031434] RBP: ffff8804187d3db8 R08: 00000000fffffff2 R09:
->>>> 0000000000000000
->>>> [   77.038566] R10: 0000000000000163 R11: 0000000000000000 R12:
->>>> ffffffff8128300c
->>>> [   77.045699] R13: ffff8804187d3d98 R14: ffff8804187d3ef4 R15:
->>>> 0000000000000004
->>>> [   77.052842] FS:  00007faab6589740(0000) GS:ffff88042fc80000(0000)
->>>> knlGS:0000000000000000
->>>> [   77.060934] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>>> [   77.066668] CR2: 0000003f0d810414 CR3: 000000040d2cc000 CR4:
->>>> 00000000000407e0
->>>> [   77.073799] Stack:
->>>> [   77.075818]  ffff8804187d3de8 ffffffffa0249674 0000000000000080
->>>> ffffffff81cb8180
->>>> [   77.083287]  00007fffda942730 ffff8804187d3ef4 ffff8804187d3ea0
->>>> ffffffffa02497a9
->>>> [   77.090749]  0000000000000000 00007265746c6966 0000003f0d7b92c0
->>>> 00007fffda942850
->>>> [   77.098215] Call Trace:
->>>> [   77.100668]  [<ffffffffa0249674>]
->>>> find_inlist_lock.constprop.16+0x54/0x100 [ebtables]
->>>> [   77.108500]  [<ffffffffa02497a9>] do_ebt_get_ctl+0x89/0x1d0 [ebtables]
->>>> [   77.115035]  [<ffffffff81551ca8>] nf_getsockopt+0x68/0x90
->>>> [   77.120438]  [<ffffffff81560d40>] ip_getsockopt+0x80/0xa0
->>>> [   77.125845]  [<ffffffff815835c5>] raw_getsockopt+0x25/0x50
->>>> [   77.131328]  [<ffffffff8150ddd4>] sock_common_getsockopt+0x14/0x20
->>>> [   77.137515]  [<ffffffff8150d208>] SyS_getsockopt+0x68/0xd0
->>>> [   77.143011]  [<ffffffff8162c682>] system_call_fastpath+0x16/0x1b
->>>> [   77.149019] Code: 0f 1f 80 00 00 00 00 48 83 c6 01 0f b6 4e ff 48 83
->>>> c2 01 84 c9 88 4a ff 75 ed 5d c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48
->>>> 89 e5 <eb> 0e 66 2e 0f 1f 8
->>>
->>> Does the following patch help?
->>>
->>>
->>> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
->>> index ac78024..4a0ec8f 100644
->>> --- a/net/bridge/netfilter/ebtables.c
->>> +++ b/net/bridge/netfilter/ebtables.c
->>> @@ -1503,6 +1503,10 @@ static int do_ebt_get_ctl(struct sock *sk, int
->>> cmd, void __user *user, int *len)
->>>         if (copy_from_user(&tmp, user, sizeof(tmp)))
->>>                 return -EFAULT;
->>>
->>> +       if (memscan(tmp.name, '\0', EBT_TABLE_MAXNAMELEN) ==
->>> +                   (tmp.name + EBT_TABLE_MAXNAMELEN))
->>> +               return -EINVAL;
->>> +
->>>         t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->>>         if (!t)
->>>                 return ret;
->>> --
->>>
->> release lock!!
+>>> Yeah, I got the trick, what I am saying that we have a data structure
+>>> here protected by RCU, but we do not use RCU functions to access it...
 >>
->> --- a/net/bridge/netfilter/ebtables.c Sat Aug 31 11:12:54 2013
->> +++ b/net/bridge/netfilter/ebtables.c Sat Aug 31 11:15:24 2013
->> @@ -332,8 +332,10 @@ find_inlist_lock_noload(struct list_head
->>   return NULL;
+>> Yes, they are not used when insert a spte into rmap and get the rmap from
+>> the entry... but do we need to use these functions to guarantee the order?
 >>
->>   list_for_each_entry(e, head, list) {
->> - if (strcmp(e->name, name) == 0)
->> + if (strcmp(e->name, name) == 0) {
->> + mutex_unlock(mutex);
->>   return e;
->> + }
->>   }
->>   *error = -ENOENT;
->>   mutex_unlock(mutex);
->> --
+>> The worst case is, we fetch the spte from the desc but the spte is not
+>> updated yet, we can happily skip this spte since it will set the
+>> dirty-bitmap later, this is guaranteed by the barrier between mmu_spte_update()
+>> and mark_page_dirty(), the code is:
+>>
+>> set_spte():
+>>
+>> 	if (mmu_spte_update(sptep, spte))
+>> 		kvm_flush_remote_tlbs(vcpu->kvm);
+>>
+>> 	if (!remap) {
+>> 		if (rmap_add(vcpu, sptep, gfn) > RMAP_RECYCLE_THRESHOLD)
+>> 			rmap_recycle(vcpu, sptep, gfn);
+>>
+>> 		if (level > PT_PAGE_TABLE_LEVEL)
+>> 			++vcpu->kvm->stat.lpages;
+>> 	}
+>>
+>> 	smp_wmb();
+>>
+>> 	if (pte_access & ACC_WRITE_MASK)
+>> 		mark_page_dirty(vcpu->kvm, gfn);
+>>
+>> So, i guess if we can guaranteed the order by ourself, we do not need
+>> to call the rcu functions explicitly...
+>>
+>> But, the memory barres in the rcu functions are really light on x86 (store
+>> can not be reordered with store), so i do not mind to explicitly use them
+>> if you think this way is more safe. :)
+>>
+> I think the self documentation aspect of using rcu function is also
+> important.
 
-could not release lock here, otherwise there will unlock twice. I did not meet any problem about the drivers, maybe
-it is hard to occur.
+Okay. I will use these rcu functions and measure them to see whether it'll
+cause performance issue.
 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> BTW why not allocate sp->spt from SLAB_DESTROY_BY_RCU cache too? We may
+>>> switch write protection on a random spt occasionally if page is deleted
+>>> and reused for another spt though. For last level spt it should not be a
+>>> problem and for non last level we have is_last_spte() check in
+>>> __rmap_write_protect_lockless(). Can it work?
+>>
+>> Yes, i also considered this way. It can work if we handle is_last_spte()
+>> properly. Since the sp->spte can be reused, we can not get the mapping
+>> level from sp. We need to encode the mapping level into spte so that
+>> cmpxhg can understand if the page table has been moved to another mapping
+>> level.
+> Isn't one bit that says that spte is the last one enough? IIRC we
+> have one more ignored bit to spare in spte.
+
+Right. But i also want to use this way in fast_page_fault where mapping-level
+is needed.
+
 > 
-> .
-> 
+>>         Could you allow me to make this optimization separately after this
+>> patchset be merged?
+>>
+> If you think it will complicate the initial version I am fine with
+> postponing it for later.
+
+Thank you, Gleb!
 
 
