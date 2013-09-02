@@ -1,82 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab3IBT4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 15:56:38 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49554 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112Ab3IBT4h (ORCPT
+	id S932265Ab3IBT4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 15:56:44 -0400
+Received: from mail.centurylink.net ([205.219.233.9]:36691 "EHLO
+	mailrelay.embarq.synacor.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757112Ab3IBT4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 15:56:37 -0400
-X-Originating-IP: 50.43.39.152
-Date: Mon, 2 Sep 2013 12:56:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>,
-        David Howells <dhowells@redhat.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] checkpatch: Add warning about submitting patches using
- --file
-Message-ID: <20130902195627.GC32628@leaf>
-References: <9976.1378132260@warthog.procyon.org.uk>
- <1378138205.1953.66.camel@joe-AO722>
- <20130902181510.GA29787@leaf>
- <20130902181856.GB29787@leaf>
- <1378150847.1953.106.camel@joe-AO722>
+	Mon, 2 Sep 2013 15:56:41 -0400
+X_CMAE_Category: , ,
+X-CNFS-Analysis: v=2.0 cv=ULZf7Vjy c=1 sm=1 a=nhVEQYUhrNQA:10 a=FKkrIqjQGGEA:10 a=RerZJYKx3WsA:10 a=1poGYrevpj8A:10 a=IkcTkHD0fZMA:10 a=WRbyUc2vAAAA:8 a=1oqGTYSLAAAA:8 a=y6_Ua4ABIPoA:10 a=20gOMo0FAAAA:8 a=3j4BkbkPAAAA:8 a=r-s-O3B8oT2IFUygUowA:9 a=QEXdDO2ut3YA:10 a=BqkzGnv5d_gA:10 a=Z9puGo2VY4EA:10 a=A1oT-6ZcP_sA:10 a=89o90zixkrYA:10 a=SSdbxPwKFa8LZ0krVC0WLw==:117
+X-CM-Score: 0
+Authentication-Results: smtp01.agate.dfw.synacor.com smtp.mail=dsgnwnj@embarqmail.com; spf=neutral; sender-id=neutral
+Authentication-Results: smtp01.agate.dfw.synacor.com header.from=dsgnwnj@embarqmail.com; sender-id=neutral
+Date: Mon, 2 Sep 2013 15:56:37 -0400 (EDT)
+From: "ICC CRICKET ANNIVERSARY " <dsgnwnj@embarqmail.com>
+Message-ID: <1572499374.13534125.1378151797675.JavaMail.root@embarqmail.com>
+Subject: CONGRAT!!!  YOUR E-MAIL ADDRESS  WON 2 CRORE 60LAKH IN ICC
+ CRICKET ANNIVERSARY 2013 PROMO.FOR CLAIMS SEND YOUR FULL NAME,FULL ADDS
+ ,MOBILE NO, COUNTRY & PIN NO ICC147 TO EMAIL: iccdraw@london.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378150847.1953.106.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.40.0.32]
+X-Mailer: Zimbra 7.2.2_GA_2852 (zclient/7.2.2_GA_2852)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 12:40:47PM -0700, Joe Perches wrote:
-> Add a message describing the lack of value in using
-> --file to generate patches.
-> 
-> Exclude files in staging from this message.
-> 
-> A similar message was removed by commit cf655043d4b
-> ("update checkpatch.pl to version 0.15")
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-> ---
-> 
-> Maybe this sort of wordsmithing is valuable.
-> 
->  scripts/checkpatch.pl | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 9bb056c..f788a14 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -4280,6 +4280,19 @@ $vname has style problems, please review.
->  If any of these errors are false positives, please report
->  them to the maintainer, see CHECKPATCH in MAINTAINERS.
->  EOM
-> +		if ($file && $realfile !~ m@\bstaging/@) {
-> +			print << "EOM";
-> +
-> +WARNING: When using --file mode, do not send patches that just make
-> +whitespace or formatting changes unless more significant changes are
-> +also made for other reasons in another patch.
-> +
-> +Patches that are just code style changes have a real cost.
-> +
-> +These sort of patches can cause rejects with other changes and are
-> +thought of by many maintainers as more harmful and tiresome than useful.
-> +EOM
-> +		}
->  	}
->  
->  	return $clean;
-> 
-> 
+
+-- 
+Down Syndrome Group of NWNJ
+www.dsgnwnj.org
+Check us out on Facebook too!
+www.facebook.com/dsgnwnj
