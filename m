@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868Ab3IBJEp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:04:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37793 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758467Ab3IBIz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:28 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 35/58] zd1201: do not use stack as URB transfer_buffer
-Date: Mon,  2 Sep 2013 09:54:20 +0100
-Message-Id: <1378112083-9475-36-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1758848Ab3IBJEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:04:07 -0400
+Received: from [23.88.59.175] ([23.88.59.175]:52730 "EHLO smtp3.moriyishu.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758831Ab3IBJEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:04:04 -0400
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Sep 2013 05:04:04 EDT
+Date: Mon, 2 Sep 2013 16:52:27 +0800
+From: "Ffkq" <sales@menjiechem.com>
+Reply-To: sales@menjiechem.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: ATTN:Manager---supply polyaluminium chloride---menjie chemicals co
+Message-ID: <201309021652279376802@moriyishu.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8294fIW007184
 
-3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
+Dear Sir or Madam: 
+      Good Day! Glad to learn you`re on the market of water treatment chemicals products
+       We are a professional manufacturers of water treatment agent products with 17years experience, as well as the supplier for Kemira ,now our featured products are: 
+ Coagulant for water treatment : polyaluminium chloride(PAC)
 
-------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+    If you are interesting in any of our products, pls contact me, i will send you more details of the products for your reference!
+Best regards
 
-commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
-
-Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
-to be DMA-able, which stack is not.
-
-Patch is only compile tested.
-
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/zd1201.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/zd1201.c b/drivers/net/wireless/zd1201.c
-index 48273dd..4312eca 100644
---- a/drivers/net/wireless/zd1201.c
-+++ b/drivers/net/wireless/zd1201.c
-@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_device *dev, int apfw)
- 		goto exit;
- 
- 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
--	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
-+	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
- 	if (err < 0)
- 		goto exit;
- 
-+	memcpy(&ret, buf, sizeof(ret));
-+
- 	if (ret & 0x80) {
- 		err = -EIO;
- 		goto exit;
--- 
-1.8.3.2
-
+David tan
+Sales?Depart. Manager
+skype:tjyf512
+tel/fax:86 536 8980651
+company: Weifang Menjie Chemical Co.,Ltd     china
+Website: http://menjie.en.alibaba.com/
+                www.menjiechem.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
