@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759161Ab3IBWXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 18:23:20 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60611 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759092Ab3IBWXT (ORCPT
+	id S1759138Ab3IBWhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 18:37:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48482 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758993Ab3IBWhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 18:23:19 -0400
-Message-ID: <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
-Subject: Re: Linux 3.11
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Sep 2013 15:30:32 -0700
-In-Reply-To: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Sep 2013 18:37:41 -0400
+Date: Mon, 2 Sep 2013 23:37:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130902223737.GA14209@sirena.org.uk>
+References: <1378115661-5371-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1378115661-5371-2-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <1378115661-5371-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi: delete premature free_irq
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-02 at 14:10 -0700, Linus Torvalds wrote:
-> As some people noticed, I got distracted ("Ooh, look, a squirrel..")
-> and never wrote an announcement for -rc7. My bad. But it wasn't
-> actually all that interesting a release apart from the date, and it
-> had a silly compile error in ohci-pci if you hadn't enabled
-> CONFIG_PM_RUNTIME, so we'll just forget -rc7 ever happened, ok?
-> Instead, go and get the real 3.11 release, which is out there, all
-> shiny and ready to be compiled and loved.
-> 
-> Since rc7 (ok, I lied, it happened) there's been just small fixes.
-> Most of them came in from the networking tree, but there's some all
-> over: some random filesystem fixes, a couple of sound fixes, a
-> /proc/timer_list fix, things like that. Nothing really stands out
-> (unless you happened to use the new soft-dirty code, that had a buglet
-> that could really hurt), but let's hope we don't have some silly
-> configuration that doesn't even compile this time around.
-> 
-> Shortlog appended.
-> 
 
-Hi Linus,
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately, this doesn't include the remaining target fixes for
-v3.11:
+On Mon, Sep 02, 2013 at 11:54:20AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> Free_irq is not needed if there has been no request_irq.  Free_irq is
+> removed from both the probe and remove functions.  The correct request_irq
+> and free_irq appear to be in the add_host and remove_host functions in
+> spi-dw.c.
 
-Re: [GIT PULL -v2] target fixes for v3.11
-http://marc.info/?l=linux-kernel&m=137799048226191&w=2
+Applied, thanks.
 
-Is there a reason why these did not get PULLed..?
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
---nab
+iQIcBAEBAgAGBQJSJRMuAAoJELSic+t+oim9GxsP/A1zIlV32D5Zc0jVpwki24G4
+JXTJV7fNMkJUj+SgMBuiRZmgK4KU1MrnwfR82/PmCir6gEJKZmb9z4EffPmt7rUF
+V9jr4wIBeC17/tQIS19hzlm4GlGAqtN95mdWxsiYlHLAAtl1oS/51EZdvuazNTG0
+MyTHq4RwlCvHdCz3tvDRLwaXBHtwaVIQKO/pv1tjOCVthNfFhzxO+b0P7rIgb5nQ
+oz4TrGOFupCF8TSwx8Z0G3406H3qSIVIMsaOPn985qHxzTgIKbArCvdFEzBwLGTc
+RMCTIBbQNkL3AcIEJ50myp92YFFlHH0ahw7XHUlV0uYAmqKllmaIM+6fxfX/xVsX
+DV3NP7FYcpBh5v2SgtnaZuLjyBJlU3jHP27UhcGd2ZGETThZ1xLAm4wa/pMxCZDn
+/vli/wEwKFpiK/ruKTQSNf6tkEC3pFesKOlxy0VNjNgZWpWGF3bKEt2tWQkltmld
+wBzwWI8PPjpwSDbw2qD63Erl/CDfH+a9epRMS06dX1rG5IbXpubCYi3P9tCGwtsX
+HvvwFyJZY07Vu7Y5zyUKyWDTBOpp8+V//tvV0xtyJ1J16v2Vn9GZXduSTusRglKj
+a+4ijpnb1IXiLhDQCN0W9l4SY511QtlJEw+Fw4WHCjp0FggGwgybohm6/H1iEzmB
+dOTKr94YhHkPJVUDndmx
+=ETsu
+-----END PGP SIGNATURE-----
 
+--sdtB3X0nJg68CQEu--
