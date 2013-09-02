@@ -1,231 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab3IBXzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 19:55:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50988 "EHLO
+	id S1759261Ab3IBXzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 19:55:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3IBXzD (ORCPT
+	with ESMTP id S1756805Ab3IBXzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 19:55:03 -0400
-Date: Mon, 2 Sep 2013 16:57:37 -0700
+	Mon, 2 Sep 2013 19:55:49 -0400
+Date: Mon, 2 Sep 2013 16:58:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
+        Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] char/misc patches for 3.12-rc1
-Message-ID: <20130902235737.GB4544@kroah.com>
+Subject: [GIT PATCH] Driver core patches for 3.12-rc1
+Message-ID: <20130902235823.GC4544@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305fb:
+The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
 
-  Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
+  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.12-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.12-rc1
 
-for you to fetch changes up to 3cc1f95283a125cf54ccf1e25065321d4385133b:
+for you to fetch changes up to 1eeeef153c02f5856ec109fa532eb5f31c39f85c:
 
-  drivers: uio: Kconfig: add MMU dependancy for UIO (2013-08-30 14:19:46 -0700)
+  firmware loader: fix pending_fw_head list corruption (2013-08-30 12:04:27 -0700)
 
 ----------------------------------------------------------------
-Char/Misc patches for 3.12-rc1
+Driver core patches for 3.12-rc1
 
-Here is the big char/misc driver pull request for 3.12-rc1
+Here's the big driver core pull request for 3.12-rc1.
 
-Lots of driver updates all over the char/misc tree, full details in the
-shortlog below.
+Lots of tiny changes here fixing up the way sysfs attributes are
+created, to try to make drivers simpler, and fix a whole class race
+conditions with creations of device attributes after the device was
+announced to userspace.
+
+All the various pieces are acked by the different subsystem maintainers.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alessandro Rubini (1):
-      FMC: fix locking in sample chardev driver
+David Graham White (1):
+      drivers:base:core: Moved sym export macros to respective functions
 
-Alexandru Juncu (1):
-      pcmcia: synclink_cs: replace sum of bitmasks with OR operation.
+Geert Uytterhoeven (1):
+      Kconfig: Remove hotplug enable hints in CONFIG_KEXEC help texts
 
-Andy King (2):
-      VMCI: Remove non-blocking/pinned queuepair support
-      VMCI: Add support for virtual IOMMU
+Greg KH (2):
+      ACPI: bgrt: take advantage of binary sysfs groups
+      firmware: dcdbas: use binary attribute groups
 
-Chen Gang (2):
-      drivers: parport: Kconfig: exclude h8300 for PARPORT_PC
-      drivers: uio: Kconfig: add MMU dependancy for UIO
-
-Greg Kroah-Hartman (5):
+Greg Kroah-Hartman (92):
       misc: c2port: use dev_bin_attrs instead of hand-coding it
-      Revert "misc: c2port: use dev_bin_attrs instead of hand-coding it"
-      Merge 3.11-rc3 into char-misc-next.
-      Merge tag 'extcon-next-for-3.12' of git://git.kernel.org/.../chanwoo/extcon into char-misc-next
-      Merge 3.11-rc6 into char-misc-next
+      bsr: convert bsr_class to use dev_groups
+      tile: srom: convert srom_class to use dev_groups
+      c2port: convert class code to use dev_groups
+      enclosure: convert class code to use dev_groups
+      UIO: convert class code to use dev_groups
+      staging: comedi: convert class code to use dev_groups
+      c2port: convert class code to use bin_attrs in groups
+      char: tile-srom: fix build error
+      dma: convert dma_devclass to use dev_groups
+      extcon: convert extcon_class to use dev_groups
+      SCSI: OSD: convert class code to use dev_groups
+      video: backlight: convert class code to use dev_groups
+      video: backlight: lcd: convert class code to use dev_groups
+      net: wireless: convert class code to use dev_groups
+      net: rfkill: convert class code to use dev_groups
+      ISDN: convert class code to use dev_groups
+      leds: convert class code to use dev_groups
+      PTP: convert class code to use dev_groups
+      cuse: convert class code to use dev_groups
+      net: core: convert class code to use dev_groups
+      net: ieee802154: convert class code to use dev_groups
+      Merge 3.11-rc3 into driver-core-next
+      rtc: convert class code to use dev_groups
+      driver core: bus_type: add dev_groups
+      driver core: bus_type: add drv_groups
+      driver core: bus_type: add bus_groups
+      mips: convert vpe_class to use dev_groups
+      devfreq: convert devfreq_class to use dev_groups
+      HID: roccat: convert class code to use dev_groups
+      v4l2: convert class code to use dev_groups
+      x86: wmi: convert class code to use dev_groups
+      PPS: convert class code to use dev_groups
+      backing-dev: convert class code to use dev_groups
+      hid: roccat-arvo: convert class code to use bin_attrs in groups
+      hid: roccat-isku: convert class code to use bin_attrs in groups
+      hid: roccat-kone: convert class code to use bin_attrs in groups
+      hid: roccat-savu: convert class code to use bin_attrs in groups
+      hid: roccat-koneplus: convert class code to use bin_attrs in groups
+      hid: roccat-konepure: convert class code to use bin_attrs in groups
+      hid: roccat-kovaplus: convert class code to use bin_attrs in groups
+      hid: roccat-kone: fix off-by-one bug in attributes
+      sysfs.h: fix __BIN_ATTR_RW()
+      hid: roccat-pyra: convert class code to use bin_attrs in groups
+      sysfs: add sysfs_create/remove_groups()
+      sysfs: group.c: move EXPORT_SYMBOL_GPL() to the proper location
+      sysfs: group.c: fix trailing whitespace
+      sysfs: group.c: fix up some * coding style issues
+      sysfs: group.c: fix up broken string coding style
+      sysfs: group.c: add kerneldoc for sysfs_remove_group
+      sysfs: group: update copyright to add myself and the LF
+      sysfs: fix placement of EXPORT_SYMBOL()
+      sysfs: remove trailing whitespace
+      sysfs: fix up space coding style issues
+      sysfs: fix up 80 column coding style issues
+      sysfs: fix up uaccess.h coding style warnings
+      sysfs: dir.c: fix up odd do/while indentation
+      sysfs: file.c: fix up broken string warnings
+      sysfs: sysfs.h: fix coding style issues
+      sysfs: fix up minor coding style issues in sysfs.h
+      acpi: bgrt: fix build error due to attribute change
+      sysfs: group.c: fix up kerneldoc
+      sysfs.h: remove attr_name() macro
+      w1: remove race with sysfs file creation
+      w1: use default attribute groups for w1 slave devices
+      w1: add attribute groups to struct w1_family_ops
+      w1: slaves: w1_therm: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2408: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2413.c: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2423: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2431: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2433: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds28e04: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2780: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2760: convert to use w1_family_ops.groups
+      w1: slaves: w1_ds2781: convert to use w1_family_ops.groups
+      USB: serial: convert bus code to use drv_groups
+      MEI: convert bus code to use dev_groups
+      workqueue: convert bus code to use dev_groups
+      driver-core: platform: convert bus code to use dev_groups
+      sysfs: create __ATTR_WO()
+      driver core: create write-only attribute macros for devices and drivers
+      driver core: bus: use DRIVER_ATTR_WO()
+      driver core: core: use DEVICE_ATTR_RO
+      driver core: firmware: use __ATTR_RW()
+      Input: gameport: convert bus code to use drv_groups
+      Input: serio: convert bus code to use drv_groups
+      HID: convert bus code to use dev_groups
+      driver core: add #include <linux/sysfs.h> to core files.
+      sysfs: add sysfs_create/remove_groups for when SYSFS is not enabled
+      rbd: convert bus code to use bus_groups
+      sysfs: sysfs_create_groups returns a value.
 
-Heiko Stübner (1):
-      misc: sram: fix error path in sram_probe
+Gu Zheng (1):
+      drivers/base/memory.c: introduce help macro to_memory_block
 
-Jan-Simon Möller (1):
-      misc: vmw_balloon: Remove braces to fix build for clang.
+Hanjun Guo (6):
+      cpu topology: remove stale arch_provides_topology_pointers and define_siblings_show_map/list()
+      x86 / cpu topology: remove the stale macro arch_provides_topology_pointers
+      tile / cpu topology: remove stale Macro arch_provides_topology_pointers
+      drivers / base: Fix sysfs_deprecated_setup() __init attribute location
+      drivers / platform: Fix __init attribute location
+      drivers / dma-contiguous: Fix __init attribute location
 
-Jingoo Han (9):
-      FMC: Staticize local symbols
-      vme: vme_tsi148.c: add missing __iomem annotation
-      vme: vme_ca91cx42.c: add missing __iomem annotation
-      vme: vme_vmivme7805.c: add missing __iomem annotation
-      parport: amiga: remove unnecessary platform_set_drvdata()
-      uio: uio_pruss: remove unnecessary platform_set_drvdata()
-      drivers: uio_dmem_genirq: use dev_get_platdata()
-      drivers: uio_pruss: use dev_get_platdata()
-      drivers: uio_pdrv_genirq: use dev_get_platdata()
+Jingoo Han (1):
+      driver core: replace strict_strto*() with kstrto*()
 
-K. Y. Srinivasan (4):
-      Drivers: hv: util: Fix a bug in version negotiation code for util services
-      Drivers: hv: balloon: Initialize the transaction ID just before sending the packet
-      Drivers: hv: vmbus: Fix a bug in the handling of channel offers
-      Drivers: hv: vmbus: Do not attempt to negoatiate a new version prematurely
+Johannes Berg (1):
+      debugfs: provide debugfs_create_x64() when disabled
 
-Kees Cook (4):
-      lkdtm: fix stack protector trigger
-      lkdtm: add "WARNING" trigger
-      lkdtm: add "SPINLOCKUP" trigger
-      lkdtm: add "EXEC_*" triggers
+Lee, Jae-Hong (3):
+      Type fix on HOWTO in ko_KR
+      Type fix on stable_api_nonsense.txt
+      Correct unfaithful translation on HOWTO in ko_KR
 
-Kishon Vijay Abraham I (3):
-      extcon: Add an API to get extcon device from dt node
-      usb: dwc3: use extcon fwrk to receive connect/disconnect
-      extcon: palmas: remove assigning "edev.name" to palmas
+Maxime Bizon (1):
+      firmware loader: fix pending_fw_head list corruption
 
-Laxman Dewangan (6):
-      extcon: palmas: rename device tree binding matching with file name
-      extcon: palmas: devicetree: remove non-require property details
-      extcon: palmas: remove unused member from palams_usb structure
-      extcon: palmas: enable ID_GND and ID_FLOAT detection always
-      extcon: palams: add support for suspend/resume
-      extcon: palmas: Option to disable ID/VBUS detection based on platform
+Rafael J. Wysocki (1):
+      driver core / cpu: Check if NUMA node is valid before bringing CPU up
 
-Mark Brown (3):
-      extcon: arizona: Use power efficient workqueue
-      extcon: gpio: Use power efficient workqueue for debounce
-      extcon: adc-jack: Use power efficient workqueue
+Russell King (1):
+      kobject: delayed kobject release: help find buggy drivers
 
-Mark Rusk (1):
-      drivers/misc/hpilo: Correct panic when an AUX iLO is detected
+Seth Jennings (8):
+      drivers: base: move mutex lock out of add_memory_section()
+      drivers: base: remove unneeded variable
+      drivers: base: use device get/put functions
+      drivers: base: unshare add_memory_section() from hotplug
+      drivers: base: reduce add_memory_section() for boot-time only
+      drivers: base: remove improper get/put in add_memory_section()
+      drivers: base: refactor add_memory_section() to add_memory_block()
+      drivers: base: use standard device online/offline for state change
 
-Michal Simek (1):
-      uio: Remove uio_pdrv and use uio_pdrv_genirq instead
+jbaron@akamai.com (1):
+      dynamic debug: line queries failing due to uninitialized local variable
 
-Olaf Hering (7):
-      Drivers: hv: remove HV_DRV_VERSION
-      Tools: hv: fix send/recv buffer allocation
-      Tools: hv: check return value of daemon to fix compiler warning.
-      Tools: hv: in kvp_set_ip_info free mac_addr right after usage
-      Tools: hv: check return value of system in hv_kvp_daemon
-      Tools: hv: correct payload size in netlink_send
-      Tools: hv: use full nlmsghdr in netlink_send
-
-Oleksandr Kozaruk (1):
-      drivers: misc: ti-st: fix potential race if st_kim_start fails
-
-Rostislav Lisovy (1):
-      drivers: uio: Add driver for Humusoft MF624 DAQ PCI card
-
-Tomas Hozza (3):
-      tools: hv: Improve error logging in VSS daemon.
-      tools: hv: Check return value of poll call
-      tools: hv: Check return value of setsockopt call
-
-Tomas Winkler (4):
-      mei: wake also writers on reset
-      mei: bus: do not overflow the device name buffer
-      mei: don't get stuck in select during reset
-      mei: me: fix hardware reset flow
-
-Uwe Kleine-König (3):
-      mm: make generic_access_phys available for modules
-      uio: provide vm access to UIO_MEM_PHYS maps
-      uio: drop unused vma_count member in uio_device struct
-
-Wei Yongjun (1):
-      vme: vme_ca91cx42.c: fix to pass correct device identity to free_irq()
-
-Wolfram Sang (1):
-      drivers/misc: don't use devm_pinctrl_get_select_default() in probe
-
- .../extcon/{extcon-twl.txt => extcon-palmas.txt}   |   6 +-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   5 +
- drivers/char/pcmcia/synclink_cs.c                  |  26 +-
- drivers/extcon/Kconfig                             |   4 +
- drivers/extcon/Makefile                            |   2 +
- drivers/extcon/extcon-adc-jack.c                   |   3 +-
- drivers/extcon/extcon-arizona.c                    |  25 +-
- drivers/extcon/extcon-class.c                      |   3 +-
- drivers/extcon/extcon-gpio.c                       |   2 +-
- drivers/extcon/extcon-palmas.c                     | 134 ++++++---
- drivers/extcon/of_extcon.c                         |  64 +++++
- drivers/fmc/fmc-chardev.c                          |   9 +-
- drivers/fmc/fmc-write-eeprom.c                     |   4 +-
- drivers/hid/hid-hyperv.c                           |   1 -
- drivers/hv/channel_mgmt.c                          |  89 ++++--
- drivers/hv/connection.c                            |   5 +-
- drivers/hv/hv_balloon.c                            |   5 +-
- drivers/hv/hv_kvp.c                                |  26 +-
- drivers/hv/hv_snapshot.c                           |  18 +-
- drivers/hv/hv_util.c                               |  22 +-
- drivers/hv/vmbus_drv.c                             |   1 -
- drivers/misc/atmel-ssc.c                           |   8 -
- drivers/misc/hpilo.c                               |   4 +-
- drivers/misc/lkdtm.c                               |  63 ++++-
- drivers/misc/mei/amthif.c                          |  14 +-
- drivers/misc/mei/bus.c                             |   4 +-
- drivers/misc/mei/client.c                          |  15 +-
- drivers/misc/mei/client.h                          |   9 +-
- drivers/misc/mei/hw-me.c                           |   9 +-
- drivers/misc/mei/init.c                            |  11 +-
- drivers/misc/mei/main.c                            |  22 +-
- drivers/misc/sram.c                                |   3 +-
- drivers/misc/ti-st/st_core.c                       |   2 +
- drivers/misc/vmw_balloon.c                         |   2 +-
- drivers/misc/vmw_vmci/vmci_driver.c                |   2 +-
- drivers/misc/vmw_vmci/vmci_driver.h                |   7 +
- drivers/misc/vmw_vmci/vmci_guest.c                 |  22 +-
- drivers/misc/vmw_vmci/vmci_queue_pair.c            | 315 ++++++++-------------
- drivers/misc/vmw_vmci/vmci_queue_pair.h            |  18 --
- drivers/net/hyperv/netvsc_drv.c                    |   2 -
- drivers/parport/Kconfig                            |   2 +-
- drivers/parport/parport_amiga.c                    |   1 -
- drivers/scsi/storvsc_drv.c                         |   1 -
- drivers/uio/Kconfig                                |  21 +-
- drivers/uio/Makefile                               |   2 +-
- drivers/uio/uio.c                                  |  40 ++-
- drivers/uio/uio_dmem_genirq.c                      |   2 +-
- drivers/uio/uio_mf624.c                            | 247 ++++++++++++++++
- drivers/uio/uio_pdrv.c                             | 113 --------
- drivers/uio/uio_pdrv_genirq.c                      |   2 +-
- drivers/uio/uio_pruss.c                            |   3 +-
- drivers/usb/dwc3/Kconfig                           |   1 +
- drivers/usb/dwc3/dwc3-omap.c                       | 125 ++++++--
- drivers/video/hyperv_fb.c                          |   1 -
- drivers/vme/boards/vme_vmivme7805.c                |   2 +-
- drivers/vme/bridges/vme_ca91cx42.c                 |  10 +-
- drivers/vme/bridges/vme_tsi148.c                   |   4 +-
- include/linux/extcon/of_extcon.h                   |  31 ++
- include/linux/hyperv.h                             |  31 +-
- include/linux/mfd/palmas.h                         |   8 +-
- include/linux/usb/dwc3-omap.h                      |  30 --
- mm/memory.c                                        |   1 +
- tools/hv/hv_kvp_daemon.c                           |  44 +--
- tools/hv/hv_vss_daemon.c                           |  59 ++--
- 64 files changed, 1093 insertions(+), 674 deletions(-)
- rename Documentation/devicetree/bindings/extcon/{extcon-twl.txt => extcon-palmas.txt} (67%)
- create mode 100644 drivers/extcon/of_extcon.c
- create mode 100644 drivers/uio/uio_mf624.c
- delete mode 100644 drivers/uio/uio_pdrv.c
- create mode 100644 include/linux/extcon/of_extcon.h
- delete mode 100644 include/linux/usb/dwc3-omap.h
+ Documentation/ko_KR/HOWTO                   |  25 +--
+ Documentation/ko_KR/stable_api_nonsense.txt |   6 +-
+ arch/arm/Kconfig                            |   3 +-
+ arch/ia64/Kconfig                           |   6 +-
+ arch/mips/Kconfig                           |   6 +-
+ arch/mips/kernel/vpe.c                      |  17 +-
+ arch/powerpc/Kconfig                        |   6 +-
+ arch/sh/Kconfig                             |   6 +-
+ arch/tile/include/asm/topology.h            |   3 -
+ arch/x86/Kconfig                            |   6 +-
+ arch/x86/include/asm/topology.h             |   3 -
+ drivers/acpi/bgrt.c                         |  27 ++-
+ drivers/base/base.h                         |  10 ++
+ drivers/base/bus.c                          |  60 +++++--
+ drivers/base/class.c                        |   4 +-
+ drivers/base/core.c                         | 107 +++++-------
+ drivers/base/cpu.c                          |   6 +-
+ drivers/base/dma-contiguous.c               |   4 +-
+ drivers/base/driver.c                       |  31 +---
+ drivers/base/firmware_class.c               |  24 +--
+ drivers/base/memory.c                       | 258 +++++++++++++---------------
+ drivers/base/platform.c                     |  14 +-
+ drivers/base/power/sysfs.c                  |   2 +-
+ drivers/base/regmap/regmap-debugfs.c        |   2 +-
+ drivers/base/topology.c                     |  20 ---
+ drivers/block/rbd.c                         |  14 +-
+ drivers/char/bsr.c                          |  18 +-
+ drivers/char/tile-srom.c                    |  28 +--
+ drivers/devfreq/devfreq.c                   |  78 +++++----
+ drivers/dma/dmaengine.c                     |  26 +--
+ drivers/extcon/extcon-class.c               |  13 +-
+ drivers/firmware/dcdbas.c                   |  19 +-
+ drivers/hid/hid-core.c                      |  10 +-
+ drivers/hid/hid-roccat-arvo.c               |  53 +++---
+ drivers/hid/hid-roccat-isku.c               |  98 ++++++-----
+ drivers/hid/hid-roccat-kone.c               | 106 ++++++------
+ drivers/hid/hid-roccat-koneplus.c           | 175 +++++++++----------
+ drivers/hid/hid-roccat-konepure.c           |  67 +++++---
+ drivers/hid/hid-roccat-kovaplus.c           | 166 ++++++++----------
+ drivers/hid/hid-roccat-pyra.c               | 158 ++++++++---------
+ drivers/hid/hid-roccat-savu.c               |  58 ++++---
+ drivers/input/gameport/gameport.c           |  12 +-
+ drivers/input/serio/serio.c                 |  21 +--
+ drivers/isdn/mISDN/core.c                   |  64 ++++---
+ drivers/leds/led-class.c                    |  38 +++-
+ drivers/media/v4l2-core/v4l2-dev.c          |  30 ++--
+ drivers/misc/c2port/core.c                  |  83 +++++----
+ drivers/misc/enclosure.c                    |  29 ++--
+ drivers/misc/mei/bus.c                      |  10 +-
+ drivers/net/ethernet/sun/niu.c              |   2 +-
+ drivers/platform/x86/wmi.c                  |  10 +-
+ drivers/pps/pps.c                           |   2 +-
+ drivers/pps/sysfs.c                         |  55 +++---
+ drivers/ptp/ptp_clock.c                     |   2 +-
+ drivers/ptp/ptp_private.h                   |   2 +-
+ drivers/ptp/ptp_sysfs.c                     |  51 +++---
+ drivers/rtc/rtc-sysfs.c                     |  48 +++---
+ drivers/scsi/osd/osd_uld.c                  |  13 +-
+ drivers/staging/comedi/comedi_fops.c        |  39 +++--
+ drivers/uio/uio.c                           |  22 ++-
+ drivers/usb/serial/bus.c                    |  14 +-
+ drivers/video/backlight/backlight.c         |  44 ++---
+ drivers/video/backlight/lcd.c               |  26 +--
+ drivers/w1/slaves/w1_ds2408.c               | 174 ++++++-------------
+ drivers/w1/slaves/w1_ds2413.c               |  72 +++-----
+ drivers/w1/slaves/w1_ds2423.c               |  27 +--
+ drivers/w1/slaves/w1_ds2431.c               |  43 ++---
+ drivers/w1/slaves/w1_ds2433.c               |  47 +++--
+ drivers/w1/slaves/w1_ds2760.c               |  35 ++--
+ drivers/w1/slaves/w1_ds2780.c               |  36 ++--
+ drivers/w1/slaves/w1_ds2781.c               |  36 ++--
+ drivers/w1/slaves/w1_ds28e04.c              | 112 +++++-------
+ drivers/w1/slaves/w1_therm.c                |  24 +--
+ drivers/w1/w1.c                             | 164 ++++++++++--------
+ drivers/w1/w1_family.h                      |   1 +
+ fs/fuse/cuse.c                              |  13 +-
+ fs/sysfs/bin.c                              |  13 +-
+ fs/sysfs/dir.c                              |  41 +++--
+ fs/sysfs/file.c                             |  82 ++++-----
+ fs/sysfs/group.c                            |  92 ++++++++--
+ fs/sysfs/inode.c                            |  21 ++-
+ fs/sysfs/mount.c                            |   2 +-
+ fs/sysfs/symlink.c                          |  18 +-
+ fs/sysfs/sysfs.h                            |  18 +-
+ include/linux/debugfs.h                     |   7 +
+ include/linux/device.h                      |  16 +-
+ include/linux/kobject.h                     |   4 +
+ include/linux/memory.h                      |  14 +-
+ include/linux/pps_kernel.h                  |   2 +-
+ include/linux/sysfs.h                       |  36 +++-
+ kernel/workqueue.c                          |  27 +--
+ lib/Kconfig.debug                           |  19 ++
+ lib/dynamic_debug.c                         |   2 +-
+ lib/kobject.c                               |  22 ++-
+ mm/backing-dev.c                            |  19 +-
+ net/core/net-sysfs.c                        | 136 ++++++++-------
+ net/ieee802154/wpan-class.c                 |  23 +--
+ net/rfkill/core.c                           |  90 +++++-----
+ net/wireless/sysfs.c                        |  25 +--
+ 99 files changed, 1958 insertions(+), 1915 deletions(-)
