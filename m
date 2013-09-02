@@ -1,186 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3IBGG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 02:06:58 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:47458 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3IBGG4 (ORCPT
+	id S1756112Ab3IBGTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 02:19:40 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:65475 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3IBGTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 02:06:56 -0400
-Message-ID: <52242AEA.9020502@gmail.com>
-Date: Mon, 02 Sep 2013 14:06:34 +0800
-From: Baoquan He <baoquan.he@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	Mon, 2 Sep 2013 02:19:37 -0400
+Date: Mon, 2 Sep 2013 08:19:50 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH 0/2] vgaarb: Fixes for partial VGA opt-out
+Message-ID: <20130902061950.GH9374@phenom.ffwll.local>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20130815222835.27642.15330.stgit@bling.home>
+ <20130830124119.GH11428@intel.com>
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Subject: Re: 3.11-rc7:BUG: soft lockup
-References: <522055D7.70002@gmail.com> <CAM_iQpW3F=inR0y6GFE64OgkhKSdzF-trrZamgThXTiyOYYmBw@mail.gmail.com> <CAJd=RBCT6dbLwX6z+1LxCvJ9-NOYQRe0zzBkEQosFgLvNgg4bg@mail.gmail.com>
-In-Reply-To: <CAJd=RBCT6dbLwX6z+1LxCvJ9-NOYQRe0zzBkEQosFgLvNgg4bg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130830124119.GH11428@intel.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi both,
+On Fri, Aug 30, 2013 at 03:41:19PM +0300, Ville Syrjälä wrote:
+> On Thu, Aug 15, 2013 at 04:37:47PM -0600, Alex Williamson wrote:
+> > I'm trying to add support for VGA arbitration on newer Intel graphics
+> > devices.  The existing code attempts to do this, but appear to have
+> > not been updated since GMCH devices roamed the Earth.  On newer
+> > devices like Haswell, we can disable VGA memory through an MSR on the
+> > device, but we rely on the VGA arbiter to manage VGA IO using the PCI
+> > COMMAND register.  In trying to unregister legacy VGA memory, I found
+> > that the VGA arbiter still wanted to disable both memory and IO on
+> > the device and that it forgot to actually program the device to
+> > disable IO when the decoding is updated.  This series attempts to fix
+> > both of those.  Thanks,
+> 
+> The series looks good to me.
+> 
+> Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Thanks for your patches. I tried to test your patches,  first the 2nd 
-one, namely Hillf's patch, it's OK. Then when I wanted to reproduce and 
-test Cong's patch, it failed to happen again. 
-
-I remember this bug happened randomly at the very beginning, 
-just after kernel compiling  it always happened one day. 
-
-So maybe when it happened again, I will test your patch separately. 
-
-Baoquan
-Thanks 
-
-On 08/31/2013 11:25 AM, Hillf Danton wrote:
-> On Fri, Aug 30, 2013 at 8:18 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
->> Cc'ing netdev
->>
->> On Fri, Aug 30, 2013 at 4:20 PM, Baoquan He <baoquan.he@gmail.com> wrote:
->>> Hi,
->>>
->>> I tried the 3.11.0-rc7+ on x86_64, and after bootup, the soft lockup bug
->>> happened.
->>>
->>> [   48.895000] BUG: soft lockup - CPU#1 stuck for 22s! [ebtables:444]
->>> [   48.901191] Modules linked in: bnep(F) bluetooth(F) ebtables(F)
->>> ip6table_filter(F) ip6_tables(F) rfkill(F) snd_hda_intel(F+)
->>> snd_hda_codec(F) snd_hwdep(F) snd_seq(F) sn)
->>> [   48.950034] CPU: 1 PID: 444 Comm: ebtables Tainted: GF     D
->>> 3.11.0-rc7+ #1
->>> [   48.957433] Hardware name: Hewlett-Packard HP Z420 Workstation/1589,
->>> BIOS J61 v01.02 03/09/2012
->>> [   48.966131] task: ffff88040c2dc650 ti: ffff8804187d2000 task.ti:
->>> ffff8804187d2000
->>> [   48.973610] RIP: 0010:[<ffffffff812e57a7>]  [<ffffffff812e57a7>]
->>> strcmp+0x27/0x40
->>> [   48.981119] RSP: 0018:ffff8804187d3db8  EFLAGS: 00000246
->>> [   48.986430] RAX: 0000000000000000 RBX: 00007fffda942730 RCX:
->>> ffff8804187d3fd8
->>> [   48.993566] RDX: 0000000000000000 RSI: ffff8804187d3e01 RDI:
->>> ffffffff81cb8a39
->>> [   49.000707] RBP: ffff8804187d3db8 R08: 00000000fffffff2 R09:
->>> 0000000000000000
->>> [   49.007841] R10: 0000000000000163 R11: 0000000000000000 R12:
->>> ffffffff8128300c
->>> [   49.014972] R13: ffff8804187d3d98 R14: ffff8804187d3ef4 R15:
->>> 0000000000000004
->>> [   49.022112] FS:  00007faab6589740(0000) GS:ffff88042fc80000(0000)
->>> knlGS:0000000000000000
->>> [   49.030194] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [   49.035942] CR2: 0000003f0d810414 CR3: 000000040d2cc000 CR4:
->>> 00000000000407e0
->>> [   49.043077] Stack:
->>> [   49.045096]  ffff8804187d3de8 ffffffffa0249674 0000000000000080
->>> ffffffff81cb8180
->>> [   49.052559]  00007fffda942730 ffff8804187d3ef4 ffff8804187d3ea0
->>> ffffffffa02497a9
->>> [   49.060020]  0000000000000000 00007265746c6966 0000003f0d7b92c0
->>> 00007fffda942850
->>> [   49.067487] Call Trace:
->>> [   49.069949]  [<ffffffffa0249674>]
->>> find_inlist_lock.constprop.16+0x54/0x100 [ebtables]
->>> [   49.077779]  [<ffffffffa02497a9>] do_ebt_get_ctl+0x89/0x1d0 [ebtables]
->>> [   49.084306]  [<ffffffff81551ca8>] nf_getsockopt+0x68/0x90
->>> [   49.089717]  [<ffffffff81560d40>] ip_getsockopt+0x80/0xa0
->>> [   49.095113]  [<ffffffff815835c5>] raw_getsockopt+0x25/0x50
->>> [   49.100588]  [<ffffffff8150ddd4>] sock_common_getsockopt+0x14/0x20
->>> [   49.106766]  [<ffffffff8150d208>] SyS_getsockopt+0x68/0xd0
->>> [   49.112257]  [<ffffffff8162c682>] system_call_fastpath+0x16/0x1b
->>> [   49.118260] Code: 00 00 00 00 55 48 89 e5 eb 0e 66 2e 0f 1f 84 00 00
->>> 00 00 00 84 c0 74 1c 48 83 c7 01 0f b6 47 ff 48 83 c6 01 3a 46 ff 74 eb
->>> 19 c0 <83> c8 01 5d c3 0f 1
->>> [   76.925880] BUG: soft lockup - CPU#1 stuck for 22s! [ebtables:444]
->>> [   76.932069] Modules linked in: bnep(F) bluetooth(F) ebtables(F)
->>> ip6table_filter(F) ip6_tables(F) rfkill(F) snd_hda_intel(F+)
->>> snd_hda_codec(F) snd_hwdep(F) snd_seq(F) sn)
->>> [   76.980847] CPU: 1 PID: 444 Comm: ebtables Tainted: GF     D
->>> 3.11.0-rc7+ #1
->>> [   76.988245] Hardware name: Hewlett-Packard HP Z420 Workstation/1589,
->>> BIOS J61 v01.02 03/09/2012
->>> [   76.996940] task: ffff88040c2dc650 ti: ffff8804187d2000 task.ti:
->>> ffff8804187d2000
->>> [   77.004426] RIP: 0010:[<ffffffff812e5784>]  [<ffffffff812e5784>]
->>> strcmp+0x4/0x40
->>> [   77.011849] RSP: 0018:ffff8804187d3db8  EFLAGS: 00000212
->>> [   77.017163] RAX: 0000000000000001 RBX: 00007fffda942730 RCX:
->>> ffff8804187d3fd8
->>> [   77.024304] RDX: 0000000000000000 RSI: ffff8804187d3e00 RDI:
->>> ffffffff81cb8a38
->>> [   77.031434] RBP: ffff8804187d3db8 R08: 00000000fffffff2 R09:
->>> 0000000000000000
->>> [   77.038566] R10: 0000000000000163 R11: 0000000000000000 R12:
->>> ffffffff8128300c
->>> [   77.045699] R13: ffff8804187d3d98 R14: ffff8804187d3ef4 R15:
->>> 0000000000000004
->>> [   77.052842] FS:  00007faab6589740(0000) GS:ffff88042fc80000(0000)
->>> knlGS:0000000000000000
->>> [   77.060934] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [   77.066668] CR2: 0000003f0d810414 CR3: 000000040d2cc000 CR4:
->>> 00000000000407e0
->>> [   77.073799] Stack:
->>> [   77.075818]  ffff8804187d3de8 ffffffffa0249674 0000000000000080
->>> ffffffff81cb8180
->>> [   77.083287]  00007fffda942730 ffff8804187d3ef4 ffff8804187d3ea0
->>> ffffffffa02497a9
->>> [   77.090749]  0000000000000000 00007265746c6966 0000003f0d7b92c0
->>> 00007fffda942850
->>> [   77.098215] Call Trace:
->>> [   77.100668]  [<ffffffffa0249674>]
->>> find_inlist_lock.constprop.16+0x54/0x100 [ebtables]
->>> [   77.108500]  [<ffffffffa02497a9>] do_ebt_get_ctl+0x89/0x1d0 [ebtables]
->>> [   77.115035]  [<ffffffff81551ca8>] nf_getsockopt+0x68/0x90
->>> [   77.120438]  [<ffffffff81560d40>] ip_getsockopt+0x80/0xa0
->>> [   77.125845]  [<ffffffff815835c5>] raw_getsockopt+0x25/0x50
->>> [   77.131328]  [<ffffffff8150ddd4>] sock_common_getsockopt+0x14/0x20
->>> [   77.137515]  [<ffffffff8150d208>] SyS_getsockopt+0x68/0xd0
->>> [   77.143011]  [<ffffffff8162c682>] system_call_fastpath+0x16/0x1b
->>> [   77.149019] Code: 0f 1f 80 00 00 00 00 48 83 c6 01 0f b6 4e ff 48 83
->>> c2 01 84 c9 88 4a ff 75 ed 5d c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48
->>> 89 e5 <eb> 0e 66 2e 0f 1f 8
->>
->> Does the following patch help?
->>
->>
->> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
->> index ac78024..4a0ec8f 100644
->> --- a/net/bridge/netfilter/ebtables.c
->> +++ b/net/bridge/netfilter/ebtables.c
->> @@ -1503,6 +1503,10 @@ static int do_ebt_get_ctl(struct sock *sk, int
->> cmd, void __user *user, int *len)
->>         if (copy_from_user(&tmp, user, sizeof(tmp)))
->>                 return -EFAULT;
->>
->> +       if (memscan(tmp.name, '\0', EBT_TABLE_MAXNAMELEN) ==
->> +                   (tmp.name + EBT_TABLE_MAXNAMELEN))
->> +               return -EINVAL;
->> +
->>         t = find_table_lock(net, tmp.name, &ret, &ebt_mutex);
->>         if (!t)
->>                 return ret;
->> --
->>
-> release lock!!
->
-> --- a/net/bridge/netfilter/ebtables.c Sat Aug 31 11:12:54 2013
-> +++ b/net/bridge/netfilter/ebtables.c Sat Aug 31 11:15:24 2013
-> @@ -332,8 +332,10 @@ find_inlist_lock_noload(struct list_head
->   return NULL;
->
->   list_for_each_entry(e, head, list) {
-> - if (strcmp(e->name, name) == 0)
-> + if (strcmp(e->name, name) == 0) {
-> + mutex_unlock(mutex);
->   return e;
-> + }
->   }
->   *error = -ENOENT;
->   mutex_unlock(mutex);
-> --
-
+Merged to dinq with Dave's irc-ack. I'll shuffle my tree a bit so that
+this will be part of my 3.12 latecomers pull request to Dave.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
