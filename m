@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab3IBR36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 13:29:58 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50353 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab3IBR35 (ORCPT
+	id S1758877Ab3IBRdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 13:33:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10126 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756901Ab3IBRdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 13:29:57 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5224CB12.50206@roeck-us.net>
-Date: Mon, 02 Sep 2013 10:29:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Lennox Wu <lennox.wu@gmail.com>
-CC: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Liqin Chen <liqin299@gmail.com>
-Subject: Re: [PATCH] Remove support for score architecture
-References: <1377914435-24206-1-git-send-email-linux@roeck-us.net> <CAF0htA6gW3h82p2sBBpFEi4s0MkQ-NUn79VXWLieZmYNuUPA6w@mail.gmail.com> <5224247E.3050600@roeck-us.net> <CAF0htA6sYZOvLt_JczGpfjEJZep6cAquJV9tZ2FwYC+C6ngzXQ@mail.gmail.com>
-In-Reply-To: <CAF0htA6sYZOvLt_JczGpfjEJZep6cAquJV9tZ2FwYC+C6ngzXQ@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 2 Sep 2013 13:33:47 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=sh6OYvBCkPUA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Yk6RV3B9-jIA:10 a=tHz9FfFoAAAA:8 a=UbsFRRgfAAAA:8 a=WGW3EOYdAAAA:8 a=fIe0RpJzoax8M9H0VeAA:9 a=CjuIK1q_8ugA:10 a=lA4bp537W6cA:10 a=6O0IECtVFhoA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 2 Sep 2013 13:33:45 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Paul Bolle <pebolle@tiscali.nl>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation/trace: Correcting and extending
+ tracepoint documentation
+Message-ID: <20130902133345.1cddd3f1@gandalf.local.home>
+In-Reply-To: <5224C4B7.6090003@citrix.com>
+References: <1377421194.2737.118@driftwood>
+	<5224C4B7.6090003@citrix.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 08:18 AM, Lennox Wu wrote:
-> Before we start the development of the S+core, Sunplus had licensed
-> ARM and MIPS. We develop S+core for other reason such as the price.
-> Some products on the web of Sunplus adopt S+core , for example
-> the SPV7050.(http://w3.sunplus.com/products/spv7050.asp) These products
-> could still be bought from the market. Some high-end products adopt
-> ARM or MIPS. So, there is no conflict for a company adopts multiple
-> architectures.
->
-> As I said, we recognize that we rarely update because of the limited
-> applications and rare requests from customers. Maybe we don’t
-> understand the culture enough; we think that it is unnecessary if we
-> have no new bugs or new functions, the thought seems wrong. We can
-> commit some patches in the near future.
->
+On Mon, 2 Sep 2013 18:02:47 +0100
+Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
 
-The point is not about submitting patches, it is about maintaining the code.
-Even if you don't add functionality, one would expect that you ensure that
-new kernel versions compile and run on your hardware.
 
-Since January 2012, 68 patches have been applied to arch/score, pretty
-much all of them addressing kernel API changes or global cleanup.
-Only two of them got an Ack by one of the score maintainers.
-This strongly suggests that you don't keep track of what is going on,
-and at the very least raises the question if you do compile and test
-new kernel versions on a regular basis. Even if you do, no one knows
-about it, because ....
+> > Why? (Both why do you need to #include a header outside a multiple
+> > inclusion guard, and why is the additional header needed at all in
+> > _every_ subsystem trace header?)
+> I see only one inclusion guard here, the one above. define_trace.h 
+> should take effect at only one place, where CREATE_TRACE_POINTS is 
+> defined, to create the tracepoints exactly once. However I don't see as 
+> well why it should be outside protection. Maybe because the intentional 
+> header reinclusion in it?
 
-As part of this process, I would expect the architecture maintainer to
-accept incoming patches, test the same, and send pull requests to Linus.
-The last time this happened was early 2011; since then all score patches
-were sent to Linus through Andrew and a few other maintainers.
-Actually, I don't see many signoffs from a score maintainer at all,
-even from the very beginning.
+Because if it was inside the protection you can miss the
+CREATE_TRACE_POINTS define. These headers can be included by other
+headers (although they probably shouldn't be). But that's the point of
+the protection isn't it? In case multiple headers include the file?
 
-As pointed out, the MAINTAINERS entry for score points to a
-non-existing domain, as does the e-mail address of one of the
-maintainers.
+Anyway, lets say the header was include earlier, thus you can have this:
 
-I would not call that "maintained".
 
-Guenter
+#include <trace/foo.h> // include by another header
 
-> Best,
-> Lennox
->
-> 2013/9/2 Guenter Roeck <linux@roeck-us.net>:
->> On 09/01/2013 09:13 PM, Lennox Wu wrote:
->>>
->>> Dear all,
->>>
->>> Indeed, Sunplus S+core is not a popular architecture and there is no
->>> standalone to be sold so you should not find related news on the
->>> Internet.  However, the s+core is adopted by our SoCs and these SoCs
->>> are indeed adopted by some companies, we hope the architecture can be
->>> reserved to provide the more and more powerful Linux for our
->>> customers. It is true that we rarely update the code because that we
->>> are rarely requested to add new functions and to correct bugs by our
->>> customers, and it is also because we have no new product to release.
->>> In the near future, we will release some patches for the existed
->>> S+core architecture.
->>>
->>
->> Key question is not if the platform is popular, but if it is maintained.
->> The commit log over the last two years strongly suggests that this is
->> not the case. I suspect that the code is far from compilable at this point,
->> much less executable. Unfortunately this is hard to verify, as a pre-built
->> or even buildable toolchain is not easily available.
->>
->>  From a company perspective, you might want to decide if you want to put
->> resources into this architecture to keep it alive, or focus on more recent
->> chips and architectures. Information available on the internet suggests
->> that Suncore's more recent chips are based on ARM. Given that, it appears
->> somewhat unlikely that resources for maintaining S+core will be made
->> available. Guess we'll see if the situation changes.
->>
->> Guenter
->>
->>
->>> 2013/8/31 Guenter Roeck <linux@roeck-us.net>:
->>>>
->>>> The web site associated with the score architecture in MAINTAINERS
->>>> is non-functional and available for sale. The last Ack from one
->>>> of the maintainers was in December 2012. The main maintainer's last
->>>> commit was in 2011. The last maintainer pull request was early 2011.
->>>>
->>>> Cc: Lennox Wu <lennox.wu@gmail.com>
->>>> Cc: Chen Liqin <liqin.chen@sunplusct.com>
->>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>> ---
->>>> More housekeeping.
->>>>
->>>> Maybe this removal request is a bit early, but architecture support seems
->>>> to have vanished entirely. At the very least this puts interested parties
->>>> (if there are any) on notice.
->>>>
->>
->
->
+#define CREATE_TRACE_POINTS
 
+#include <trace/foo.h>
+
+
+Now if the include of define_trace.h was inside the protection, it will
+not get included again, and no trace points would be created.
+
+-- Steve
