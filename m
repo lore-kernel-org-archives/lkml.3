@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab3IBWhm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 18:37:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48482 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758993Ab3IBWhl (ORCPT
+	id S1759119Ab3IBWqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 18:46:46 -0400
+Received: from nm13-vm1.access.bullet.mail.gq1.yahoo.com ([216.39.63.11]:48052
+	"EHLO nm13-vm1.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759062Ab3IBWqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 18:37:41 -0400
-Date: Mon, 2 Sep 2013 23:37:37 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130902223737.GA14209@sirena.org.uk>
-References: <1378115661-5371-1-git-send-email-Julia.Lawall@lip6.fr>
- <1378115661-5371-2-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 2 Sep 2013 18:46:45 -0400
+X-Yahoo-Newman-Id: 653247.89008.bm@smtp109.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: aRmzdzMVM1m9LEFAJdETVNmQ1dyrrxo92w_mowyNOch_imo
+ QvleR77FxSgJPut18nP_IpPAn5FQs6zVNfLO1G0xWEVuXct5Wi4EBiO7gqnr
+ HvHoNWgG.eMzgf.7sP6LwOnet5Qzxc4ygIoiRfZc3EuAsW.5ndusX2MpRwjE
+ gbLf_PUdjmHyotr4yZ93p.C.rr1TYi.ya9Pi64ruUxRnkIXCO2W6x2CalN98
+ m7O3fGHZYRdVoxrmlSRPKWpS3mnljC5U9zwbiSnCiShO1FGRSZ1Z8ho4wxrn
+ QUWMj5799D6SmR7NBr7iXkzL5GG0l1eKvxYc5TIoz0xQqyWE6bZ_bEFQzHXN
+ Kc0loKsFojTF3XD28a_uzqdLXASVLFlWv9cxml_dUaY1sQJy_7rMzCdFXB4k
+ fUIp1CzI9dS5whMmhDTsMdmtmXmxce967O8SZOPdfb..0pNo_ogovUSkDE8U
+ zWboVLi5.jFh2.7n.mD_R5d3C6L.6VeT.kZohYxTCMMxwHprqXw--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with plain)
+        by smtp109.sbc.mail.ne1.yahoo.com with SMTP; 02 Sep 2013 15:46:44 -0700 PDT
+Message-ID: <52251562.5000208@att.net>
+Date: Mon, 02 Sep 2013 17:46:58 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <1378115661-5371-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi: delete premature free_irq
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>
+Subject: RESEND: Generating interrupts from a USB device driver?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello guys.  I didn't get a response the last time so hopefully with 
+3.11 out I'll get one this time.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I need to be able to generate interrupts from a USB device driver while 
+servicing the complete() function of an interrupt URB. While I realize 
+that this may seem strange, the purpose is for a USB to SPI/GPIO bridge 
+chip (the MCP2210). When something happens on the remote device where a 
+chip is expecting it's interrupt out pin to trigger an interrupt on some 
+local (to the board) microcontroller, the MCP2210 instead receives that 
+signal and communicates it to the host the next time it's queried. This 
+is the interrupt that I need to, in effect propagate locally. Since my 
+spi_master and gpio_chip are all functioning now, this is the last step 
+to get one of my spi protocol drivers working correctly.
 
-On Mon, Sep 02, 2013 at 11:54:20AM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Free_irq is not needed if there has been no request_irq.  Free_irq is
-> removed from both the probe and remove functions.  The correct request_irq
-> and free_irq appear to be in the add_host and remove_host functions in
-> spi-dw.c.
+I've been reading up on Documentation/IRQ-domain.txt, but IRQ 
+controllers are all new to me and there's a lot for me to learn, so I 
+just want to make sure I'm going down the correct path. Is the correct 
+method to create an IRQ domain with irq_domain_add_linear() or some 
+such? I can figure it out eventually, but if somebody can point me in 
+the right direction, it can save me a WHOLE lot of time.
 
-Applied, thanks.
+Thanks in advance
+Daniel
 
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJRMuAAoJELSic+t+oim9GxsP/A1zIlV32D5Zc0jVpwki24G4
-JXTJV7fNMkJUj+SgMBuiRZmgK4KU1MrnwfR82/PmCir6gEJKZmb9z4EffPmt7rUF
-V9jr4wIBeC17/tQIS19hzlm4GlGAqtN95mdWxsiYlHLAAtl1oS/51EZdvuazNTG0
-MyTHq4RwlCvHdCz3tvDRLwaXBHtwaVIQKO/pv1tjOCVthNfFhzxO+b0P7rIgb5nQ
-oz4TrGOFupCF8TSwx8Z0G3406H3qSIVIMsaOPn985qHxzTgIKbArCvdFEzBwLGTc
-RMCTIBbQNkL3AcIEJ50myp92YFFlHH0ahw7XHUlV0uYAmqKllmaIM+6fxfX/xVsX
-DV3NP7FYcpBh5v2SgtnaZuLjyBJlU3jHP27UhcGd2ZGETThZ1xLAm4wa/pMxCZDn
-/vli/wEwKFpiK/ruKTQSNf6tkEC3pFesKOlxy0VNjNgZWpWGF3bKEt2tWQkltmld
-wBzwWI8PPjpwSDbw2qD63Erl/CDfH+a9epRMS06dX1rG5IbXpubCYi3P9tCGwtsX
-HvvwFyJZY07Vu7Y5zyUKyWDTBOpp8+V//tvV0xtyJ1J16v2Vn9GZXduSTusRglKj
-a+4ijpnb1IXiLhDQCN0W9l4SY511QtlJEw+Fw4WHCjp0FggGwgybohm6/H1iEzmB
-dOTKr94YhHkPJVUDndmx
-=ETsu
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
