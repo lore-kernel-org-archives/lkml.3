@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab3IBJtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:49:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43957 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3IBJtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:49:16 -0400
-Date: Mon, 2 Sep 2013 10:48:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Miguel Aguilar <miguel.aguilar@ridgerun.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        alsa-devel@alsa-project.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130902094847.GK3084@sirena.org.uk>
-References: <20130831130741.GG18608@sirena.org.uk>
- <20130901144847.GM20329@zurbaran>
- <20130901150853.GG3084@sirena.org.uk>
- <20130902085534.GP20329@zurbaran>
+	id S1758295Ab3IBJtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:49:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5000 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758260Ab3IBJtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:49:20 -0400
+Date: Mon, 2 Sep 2013 12:49:07 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, glin@suse.de, agraf@suse.de, brogers@suse.de,
+        afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
+Message-ID: <20130902094907.GP22899@redhat.com>
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com>
+ <20130901091744.GF22899@redhat.com>
+ <52245D81.7060402@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7vAdt9JsdkkzRPKN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130902085534.GP20329@zurbaran>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/5] Remove ASoC-level I/O functions from cq93vc
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <52245D81.7060402@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 02, 2013 at 05:42:25PM +0800, Xiao Guangrong wrote:
+> On 09/01/2013 05:17 PM, Gleb Natapov wrote:
+> > On Fri, Aug 30, 2013 at 02:41:37PM +0200, Paolo Bonzini wrote:
+> >> Page tables in a read-only memory slot will currently cause a triple
+> >> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+> >>
+> >> OVMF uses such a page table; however, real hardware seems to be fine with
+> >> that as long as the accessed/dirty bits are set.  Save whether the slot
+> >> is readonly, and later check it when updating the accessed and dirty bits.
+> >>
+> > The fix looks OK to me, but some comment below.
+> > 
+> >> Cc: stable@vger.kernel.org
+> >> Cc: gleb@redhat.com
+> >> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> >> ---
+> >> 	CCing to stable@ since the regression was introduced with
+> >> 	support for readonly memory slots.
+> >>
+> >>  arch/x86/kvm/paging_tmpl.h |  7 ++++++-
+> >>  include/linux/kvm_host.h   |  1 +
+> >>  virt/kvm/kvm_main.c        | 14 +++++++++-----
+> >>  3 files changed, 16 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> >> index 0433301..dadc5c0 100644
+> >> --- a/arch/x86/kvm/paging_tmpl.h
+> >> +++ b/arch/x86/kvm/paging_tmpl.h
+> >> @@ -99,6 +99,7 @@ struct guest_walker {
+> >>  	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
+> >>  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
+> >>  	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
+> >> +	bool pte_writable[PT_MAX_FULL_LEVELS];
+> >>  	unsigned pt_access;
+> >>  	unsigned pte_access;
+> >>  	gfn_t gfn;
+> >> @@ -235,6 +236,9 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
+> >>  		if (pte == orig_pte)
+> >>  			continue;
+> >>  
+> >> +		if (unlikely(!walker->pte_writable[level - 1]))
+> >> +			return -EACCES;
+> >> +
+> >>  		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
+> >>  		if (ret)
+> >>  			return ret;
+> >> @@ -309,7 +313,8 @@ retry_walk:
+> >>  			goto error;
+> >>  		real_gfn = gpa_to_gfn(real_gfn);
+> >>  
+> >> -		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
+> >> +		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
+> >> +					    &walker->pte_writable[walker->level - 1]);
+> > The use of gfn_to_hva_read is misleading. The code can still write into
+> > gfn. Lets rename gfn_to_hva_read to gfn_to_hva_prot() and gfn_to_hva()
+> > to gfn_to_hva_write().
+> 
+> Yes. I agreed.
+> 
+> > 
+> > This makes me think are there other places where gfn_to_hva() was
+> > used, but gfn_to_hva_prot() should have been?
+> >  - kvm_host_page_size() looks incorrect. We never use huge page to map
+> >    read only memory slots currently.
+> 
+> It only checks whether gfn have been mapped, I think we can use
+> gfn_to_hva_read() instead, the real permission will be checked when we translate
+> the gfn to pfn.
+> 
+Yes, all the cases I listed should be changed to use function that looks
+at both regular and RO slots.
 
---7vAdt9JsdkkzRPKN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> >  - kvm_handle_bad_page() also looks incorrect and may cause incorrect
+> >    address to be reported to userspace.
+> 
+> I have no idea on this point. kvm_handle_bad_page() is called when it failed to
+> translate the target gfn to pfn, then the emulator can detect the error on target gfn
+> properly. no? Or i misunderstood your meaning?
+> 
+I am talking about the following code:
 
-On Mon, Sep 02, 2013 at 10:55:34AM +0200, Samuel Ortiz wrote:
+        if (pfn == KVM_PFN_ERR_HWPOISON) {
+                kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+                return 0;
+        }
 
-> I put a topic/for-asoc branch upstream for you to pull from:
+pfn will be KVM_PFN_ERR_HWPOISON gfn is backed by faulty memory, we need
+to report the liner address of the faulty memory to a userspace here,
+but if gfn is in a RO slot gfn_to_hva() will not return correct address
+here.
 
-Great, thanks!
+> >  - kvm_setup_async_pf() also incorrect. Makes all page fault on read
+> >    only slot to be sync.
+> >  - kvm_vm_fault() one looks OK since function assumes write only slots,
+> >    but it is obsolete and should be deleted anyway.
+> 
 
---7vAdt9JsdkkzRPKN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJF78AAoJELSic+t+oim930AP/0bYs5hZCOHq4vCqQE/tHQM0
-uYLnn4WTj+2aMMec109ogh07Zqk73RsC4iikTI+ty3AhAPP8f5Oyt775J0sCxbhu
-dW5jpEJcwSLYWQdqTyJeWP0mhDZ45uumLds4jtkaa4XRACxF2tkkqco4wcWmj7/6
-+8tLqBpCByUuZ2q/OblsU4Bwx4SycLKqaCOcc91fEqCh7hPNx+5B4gvYsGBzYPSo
-tzkCcOr3as+uU+Pjmn92p29fvpJnUE/3tUXvKkU6xeeMO04rGHH/JVFsp/kvR53n
-cyttMZoYG9z4slPx7V7O5Z1easbwLk4Et50LD+xAzWNkMcJj0AUhX5sFWynrRSpG
-kISLQ9MMsiDLCzWa4z7YbXUVOeI8fpw8DOAona5qqVcpz0lxVH1nSTZwcpLvDIeh
-9aED+Rso8XCLHNstw1G0JU/6/XXllpgXzUvGUYcv7NS9uxzKBc+J7hSdVFCnmA8w
-nD+qJFqVAMnRl03F39VbG4UTgw6aTHgBqZxE8ivrfcqdO2xDdoZ5dchLK7TnuDwf
-Ogd/4vwY8ng935QK7nM1LI7NJENEhibHPIlkZcG2lT09VlqPktYEXC8R1+Ans1eZ
-L02mpLsnyO+vla/aBHd5Fg+YNzz15gf189OrQOY3cUDJ+FMbKb/fBRcMLRol9cW2
-GivWAwSeStAHzcgmW4xH
-=0VMs
------END PGP SIGNATURE-----
-
---7vAdt9JsdkkzRPKN--
+--
+			Gleb.
