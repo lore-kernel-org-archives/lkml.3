@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab3IBHmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 03:42:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52461 "EHLO
+	id S932186Ab3IBHmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 03:42:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52468 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3IBHmU (ORCPT
+	with ESMTP id S932172Ab3IBHm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 03:42:20 -0400
-Date: Mon, 2 Sep 2013 00:41:47 -0700
-From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-1fa64180fbf7a33b7a30636a2f174a5cad68d48f@git.kernel.org>
+	Mon, 2 Sep 2013 03:42:29 -0400
+Date: Mon, 2 Sep 2013 00:41:58 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-13d7a2410fa637f450a29ecb515ac318ee40c741@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, zheng.z.yan@intel.com,
-        tglx@linutronix.de
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        viro@zeniv.linux.org.uk
 Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, zheng.z.yan@intel.com,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1374138144-17278-2-git-send-email-zheng.z.yan@intel.com>
-References: <1374138144-17278-2-git-send-email-zheng.z.yan@intel.com>
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        viro@zeniv.linux.org.uk
+In-Reply-To: <1377079825-19057-2-git-send-email-eranian@google.com>
+References: <1377079825-19057-2-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add Silvermont (22nm Atom) support
-Git-Commit-ID: 1fa64180fbf7a33b7a30636a2f174a5cad68d48f
+Subject: [tip:perf/core] perf: Add attr->mmap2 attribute to an event
+Git-Commit-ID: 13d7a2410fa637f450a29ecb515ac318ee40c741
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,264 +29,209 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:41:54 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:42:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1fa64180fbf7a33b7a30636a2f174a5cad68d48f
-Gitweb:     http://git.kernel.org/tip/1fa64180fbf7a33b7a30636a2f174a5cad68d48f
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Thu, 18 Jul 2013 17:02:24 +0800
+Commit-ID:  13d7a2410fa637f450a29ecb515ac318ee40c741
+Gitweb:     http://git.kernel.org/tip/13d7a2410fa637f450a29ecb515ac318ee40c741
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Wed, 21 Aug 2013 12:10:24 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 2 Sep 2013 08:42:47 +0200
+CommitDate: Mon, 2 Sep 2013 08:42:48 +0200
 
-perf/x86: Add Silvermont (22nm Atom) support
+perf: Add attr->mmap2 attribute to an event
 
-Compared to old atom, Silvermont has offcore and has more events
-that support PEBS.
+Adds a new PERF_RECORD_MMAP2 record type which is essence
+an expanded version of PERF_RECORD_MMAP.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Stephane Eranian <eranian@google.com>
+Used to request mmap records with more information about
+the mapping, including device major, minor and the inode
+number and generation for mappings associated with files
+or shared memory segments. Works for code and data
+(with attr->mmap_data set).
+
+Existing PERF_RECORD_MMAP record is unmodified by this patch.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1374138144-17278-2-git-send-email-zheng.z.yan@intel.com
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Link: http://lkml.kernel.org/r/1377079825-19057-2-git-send-email-eranian@google.com
+[ Added Al to the Cc:. Are the ino, maj/min exports of vma->vm_file OK? ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.h          |   2 +
- arch/x86/kernel/cpu/perf_event_intel.c    | 158 ++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  26 +++++
- 3 files changed, 186 insertions(+)
+ include/uapi/linux/perf_event.h | 24 ++++++++++++++++++++-
+ kernel/events/core.c            | 46 +++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 65 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 97e557b..cc16faa 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -641,6 +641,8 @@ extern struct event_constraint intel_core2_pebs_event_constraints[];
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 42cb7b6..a77f43a 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -276,8 +276,9 @@ struct perf_event_attr {
  
- extern struct event_constraint intel_atom_pebs_event_constraints[];
+ 				exclude_callchain_kernel : 1, /* exclude kernel callchains */
+ 				exclude_callchain_user   : 1, /* exclude user callchains */
++				mmap2          :  1, /* include mmap with inode data     */
  
-+extern struct event_constraint intel_slm_pebs_event_constraints[];
+-				__reserved_1   : 41;
++				__reserved_1   : 40;
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+@@ -651,6 +652,27 @@ enum perf_event_type {
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+ 
++	/*
++	 * The MMAP2 records are an augmented version of MMAP, they add
++	 * maj, min, ino numbers to be used to uniquely identify each mapping
++	 *
++	 * struct {
++	 *	struct perf_event_header	header;
++	 *
++	 *	u32				pid, tid;
++	 *	u64				addr;
++	 *	u64				len;
++	 *	u64				pgoff;
++	 *	u32				maj;
++	 *	u32				min;
++	 *	u64				ino;
++	 *	u64				ino_generation;
++	 *	char				filename[];
++	 * 	struct sample_id		sample_id;
++	 * };
++	 */
++	PERF_RECORD_MMAP2			= 10,
 +
- extern struct event_constraint intel_nehalem_pebs_event_constraints[];
- 
- extern struct event_constraint intel_westmere_pebs_event_constraints[];
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0d59a42..0abf674 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -164,6 +164,15 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
- 	EVENT_CONSTRAINT_END
+ 	PERF_RECORD_MAX,			/* non-ABI */
  };
  
-+static struct event_constraint intel_slm_event_constraints[] __read_mostly =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
- 	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
- 	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-@@ -886,6 +895,140 @@ static __initconst const u64 atom_hw_cache_event_ids
-  },
- };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 15d0f24..c7ee497 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4776,7 +4776,7 @@ next:
+ /*
+  * task tracking -- fork/exit
+  *
+- * enabled by: attr.comm | attr.mmap | attr.mmap_data | attr.task
++ * enabled by: attr.comm | attr.mmap | attr.mmap2 | attr.mmap_data | attr.task
+  */
  
-+static struct extra_reg intel_slm_extra_regs[] __read_mostly =
-+{
-+	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-+	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
-+	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
-+	EVENT_EXTRA_END
-+};
-+
-+#define SLM_DMND_READ		SNB_DMND_DATA_RD
-+#define SLM_DMND_WRITE		SNB_DMND_RFO
-+#define SLM_DMND_PREFETCH	(SNB_PF_DATA_RD|SNB_PF_RFO)
-+
-+#define SLM_SNP_ANY		(SNB_SNP_NONE|SNB_SNP_MISS|SNB_NO_FWD|SNB_HITM)
-+#define SLM_LLC_ACCESS		SNB_RESP_ANY
-+#define SLM_LLC_MISS		(SLM_SNP_ANY|SNB_NON_DRAM)
-+
-+static __initconst const u64 slm_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_READ|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_READ|SLM_LLC_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_WRITE|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_WRITE|SLM_LLC_MISS,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_PREFETCH|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_PREFETCH|SLM_LLC_MISS,
-+	},
-+ },
-+};
-+
-+static __initconst const u64 slm_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x0104, /* LD_DCU_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0380, /* ICACHE.ACCESSES */
-+		[ C(RESULT_MISS)   ] = 0x0280, /* ICACGE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x0804, /* LD_DTLB_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c0, /* INST_RETIRED.ANY_P */
-+		[ C(RESULT_MISS)   ] = 0x0282, /* ITLB.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ANY */
-+		[ C(RESULT_MISS)   ] = 0x00c5, /* BP_INST_RETIRED.MISPRED */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+ struct perf_task_event {
+@@ -4796,8 +4796,9 @@ struct perf_task_event {
+ 
+ static int perf_event_task_match(struct perf_event *event)
  {
- 	/* user explicitly requested branch sampling */
-@@ -2180,6 +2323,21 @@ __init int intel_pmu_init(void)
- 		pr_cont("Atom events, ");
- 		break;
+-	return event->attr.comm || event->attr.mmap ||
+-	       event->attr.mmap_data || event->attr.task;
++	return event->attr.comm  || event->attr.mmap ||
++	       event->attr.mmap2 || event->attr.mmap_data ||
++	       event->attr.task;
+ }
  
-+	case 55: /* Atom 22nm "Silvermont" */
-+		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
-+			sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
-+		       sizeof(hw_cache_extra_regs));
-+
-+		intel_pmu_lbr_init_atom();
-+
-+		x86_pmu.event_constraints = intel_slm_event_constraints;
-+		x86_pmu.pebs_constraints = intel_slm_pebs_event_constraints;
-+		x86_pmu.extra_regs = intel_slm_extra_regs;
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		pr_cont("Silvermont events, ");
-+		break;
-+
- 	case 37: /* 32 nm nehalem, "Clarkdale" */
- 	case 44: /* 32 nm nehalem, "Gulftown" */
- 	case 47: /* 32 nm Xeon E7 */
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..442fcc2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -517,6 +517,32 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
- 	EVENT_CONSTRAINT_END
- };
+ static void perf_event_task_output(struct perf_event *event,
+@@ -4992,6 +4993,9 @@ struct perf_mmap_event {
  
-+struct event_constraint intel_slm_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
-+	EVENT_CONSTRAINT_END
-+};
+ 	const char		*file_name;
+ 	int			file_size;
++	int			maj, min;
++	u64			ino;
++	u64			ino_generation;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5012,7 +5016,7 @@ static int perf_event_mmap_match(struct perf_event *event,
+ 	int executable = vma->vm_flags & VM_EXEC;
+ 
+ 	return (!executable && event->attr.mmap_data) ||
+-	       (executable && event->attr.mmap);
++	       (executable && (event->attr.mmap || event->attr.mmap2));
+ }
+ 
+ static void perf_event_mmap_output(struct perf_event *event,
+@@ -5027,6 +5031,13 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 	if (!perf_event_mmap_match(event, data))
+ 		return;
+ 
++	if (event->attr.mmap2) {
++		mmap_event->event_id.header.type = PERF_RECORD_MMAP2;
++		mmap_event->event_id.header.size += sizeof(mmap_event->maj);
++		mmap_event->event_id.header.size += sizeof(mmap_event->min);
++		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
++	}
 +
- struct event_constraint intel_nehalem_pebs_event_constraints[] = {
- 	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+ 	ret = perf_output_begin(&handle, event,
+ 				mmap_event->event_id.header.size);
+@@ -5037,6 +5048,14 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 	mmap_event->event_id.tid = perf_event_tid(event, current);
+ 
+ 	perf_output_put(&handle, mmap_event->event_id);
++
++	if (event->attr.mmap2) {
++		perf_output_put(&handle, mmap_event->maj);
++		perf_output_put(&handle, mmap_event->min);
++		perf_output_put(&handle, mmap_event->ino);
++		perf_output_put(&handle, mmap_event->ino_generation);
++	}
++
+ 	__output_copy(&handle, mmap_event->file_name,
+ 				   mmap_event->file_size);
+ 
+@@ -5051,6 +5070,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ {
+ 	struct vm_area_struct *vma = mmap_event->vma;
+ 	struct file *file = vma->vm_file;
++	int maj = 0, min = 0;
++	u64 ino = 0, gen = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5059,6 +5080,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	memset(tmp, 0, sizeof(tmp));
+ 
+ 	if (file) {
++		struct inode *inode;
++		dev_t dev;
+ 		/*
+ 		 * d_path works from the end of the rb backwards, so we
+ 		 * need to add enough zero bytes after the string to handle
+@@ -5074,6 +5097,13 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 			name = strncpy(tmp, "//toolong", sizeof(tmp));
+ 			goto got_name;
+ 		}
++		inode = file_inode(vma->vm_file);
++		dev = inode->i_sb->s_dev;
++		ino = inode->i_ino;
++		gen = inode->i_generation;
++		maj = MAJOR(dev);
++		min = MINOR(dev);
++
+ 	} else {
+ 		if (arch_vma_name(mmap_event->vma)) {
+ 			name = strncpy(tmp, arch_vma_name(mmap_event->vma),
+@@ -5104,6 +5134,10 @@ got_name:
+ 
+ 	mmap_event->file_name = name;
+ 	mmap_event->file_size = size;
++	mmap_event->maj = maj;
++	mmap_event->min = min;
++	mmap_event->ino = ino;
++	mmap_event->ino_generation = gen;
+ 
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5140,6 +5174,10 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 			.len    = vma->vm_end - vma->vm_start,
+ 			.pgoff  = (u64)vma->vm_pgoff << PAGE_SHIFT,
+ 		},
++		/* .maj (attr_mmap2 only) */
++		/* .min (attr_mmap2 only) */
++		/* .ino (attr_mmap2 only) */
++		/* .ino_generation (attr_mmap2 only) */
+ 	};
+ 
+ 	perf_event_mmap_event(&mmap_event);
