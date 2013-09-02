@@ -1,123 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab3IBI6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:58:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758149Ab3IBI6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:58:34 -0400
-Date: Mon, 2 Sep 2013 11:00:28 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
-References: <cover.1378111919.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1378111919.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758698Ab3IBI61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:58:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37915 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758586Ab3IBIzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:55:55 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Russ Anderson <rja@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 57/58] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+Date: Mon,  2 Sep 2013 09:54:42 +0100
+Message-Id: <1378112083-9475-58-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the new pci_enable_msi_block_part() interface
-and conserve on othewise wasted interrupt resources for 10
-of 16 unused MSI vectors on Intel chipsets.
+3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+------------------
+
+From: Russ Anderson <rja@sgi.com>
+
+commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
+
+"cat /sys/devices/system/memory/memory*/removable" crashed the system.
+
+The problem is that show_mem_removable() is passing a
+bad pfn to is_mem_section_removable(), which causes
+
+    if (!node_online(page_to_nid(page)))
+
+to blow up.  Why is it passing in a bad pfn?
+
+The reason is that show_mem_removable() will loop sections_per_block
+times.  sections_per_block is 16, but mem->section_count is 8,
+indicating holes in this memory block.  Checking that the memory section
+is present before checking to see if the memory section is removable
+fixes the problem.
+
+   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
+   0
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   BUG: unable to handle kernel paging request at ffffea00c3200000
+   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   PGD 83ffd4067 PUD 37bdfce067 PMD 0
+   Oops: 0000 [#1] SMP
+   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
+   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
+   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
+   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
+   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
+   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
+   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
+   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
+   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
+   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
+   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
+   Call Trace:
+     show_mem_removable+0x41/0x70
+     dev_attr_show+0x2a/0x60
+     sysfs_read_file+0xf7/0x1c0
+     vfs_read+0xc8/0x130
+     SyS_read+0x5d/0xa0
+     system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c |   48 +++++++++++++++++++++++++++++-------------------
- 1 files changed, 29 insertions(+), 19 deletions(-)
+ drivers/base/memory.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index db4380d..b0c1648 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1091,26 +1091,36 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- {}
- #endif
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 7dda4f7..d63a06b 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -154,6 +154,8 @@ static ssize_t show_mem_removable(struct device *dev,
+ 		container_of(dev, struct memory_block, dev);
  
--int ahci_init_interrupts(struct pci_dev *pdev, struct ahci_host_priv *hpriv)
-+int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
-+			 struct ahci_host_priv *hpriv)
- {
- 	int rc;
- 	unsigned int maxvec;
- 
--	if (!(hpriv->flags & AHCI_HFLAG_NO_MSI)) {
--		rc = pci_enable_msi_block_auto(pdev, &maxvec);
--		if (rc > 0) {
--			if ((rc == maxvec) || (rc == 1))
--				return rc;
--			/*
--			 * Assume that advantage of multipe MSIs is negated,
--			 * so fallback to single MSI mode to save resources
--			 */
--			pci_disable_msi(pdev);
--			if (!pci_enable_msi(pdev))
--				return 1;
--		}
--	}
-+	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
-+		goto intx;
-+
-+	rc = pci_enable_msi_block_part(pdev, n_ports, AHCI_MAX_PORTS);
-+	if (!rc)
-+		return AHCI_MAX_PORTS;
-+	if (rc < 0)
-+		goto intx;
-+
-+	maxvec = rc;
-+	rc = pci_enable_msi_block_part(pdev, n_ports, maxvec);
-+	if (!rc)
-+		return maxvec;
-+	if (rc < 0)
-+		goto intx;
-+
-+	/*
-+	 * Assume that advantage of multipe MSIs is negated,
-+	 * so fallback to single MSI mode to save resources
-+	 */
-+	if (!pci_enable_msi(pdev))
-+		return 1;
- 
-+intx:
- 	pci_intx(pdev, 1);
- 	return 0;
- }
-@@ -1277,10 +1287,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	hpriv->mmio = pcim_iomap_table(pdev)[ahci_pci_bar];
- 
--	n_msis = ahci_init_interrupts(pdev, hpriv);
--	if (n_msis > 1)
--		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
--
- 	/* save initial config */
- 	ahci_pci_save_initial_config(pdev, hpriv);
- 
-@@ -1327,6 +1333,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
-+	n_msis = ahci_init_interrupts(pdev, n_ports, hpriv);
-+	if (n_msis > 1)
-+		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
- 	if (!host)
- 		return -ENOMEM;
+ 	for (i = 0; i < sections_per_block; i++) {
++		if (!present_section_nr(mem->start_section_nr + i))
++			continue;
+ 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+ 	}
 -- 
-1.7.7.6
+1.8.3.2
 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
