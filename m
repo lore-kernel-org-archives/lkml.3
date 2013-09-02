@@ -1,173 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab3IBOdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:33:40 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40787 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3IBOdi (ORCPT
+	id S1758817Ab3IBOd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:33:56 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63956 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756399Ab3IBOdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:33:38 -0400
-From: Javi Merino <javi.merino@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Javi Merino <javi.merino@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] smp: harmonize prototypes of smp functions
-Date: Mon,  2 Sep 2013 15:33:13 +0100
-Message-Id: <1378132393-17089-1-git-send-email-javi.merino@arm.com>
+	Mon, 2 Sep 2013 10:33:54 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, david@fromorbit.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v2 4/7] xfsprogs: xfsio: add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+Date: Mon,  2 Sep 2013 23:33:39 +0900
+Message-Id: <1378132420-2953-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 02 Sep 2013 14:33:32.0861 (UTC) FILETIME=[6676E6D0:01CEA7E9]
-X-MC-Unique: 113090215333601901
-Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r82EXlJI009013
 
-Avoid unnecessary casts from int to bool in smp functions.  Some
-functions in kernel/smp.c have a wait parameter that can be set to one
-if you want to wait for the command to complete.  It's defined as bool
-in a few of them and int in the rest.  If a function with wait
-declared as int calls a function whose prototype has wait defined as
-bool, the compiler needs to test if the int is != 0 and change it to 1
-if so.  This useless check can be avoided if we are consistent and
-make all the functions use the same type for this parameter.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-For example in arm, before this patch:
+Add support FALLOC_FL_COLLAPSE_RANGE for fallocate.
 
-800464e4 <smp_call_function>:
-800464e4:       b538            push    {r3, r4, r5, lr}
-800464e6:       460d            mov     r5, r1
-800464e8:       4613            mov     r3, r2       ; move wait to r3
-800464ea:       f64f 448c       movw    r4, #64652
-800464ee:       3300            adds    r3, #0       ; test if wait is 0
-800464f0:       f2c8 0425       movt    r4, #32805
-800464f4:       4601            mov     r1, r0
-800464f6:       bf18            it      ne
-800464f8:       2301            movne   r3, #1       ; if it is not, wait = 1
-800464fa:       462a            mov     r2, r5
-800464fc:       6820            ldr     r0, [r4, #0]
-800464fe:       f7ff fea9       bl      80046254 <smp_call_function_many>
-80046502:       2000            movs    r0, #0
-80046504:       bd38            pop     {r3, r4, r5, pc}
-80046506:       bf00            nop
-
-After the patch:
-
-800464e4 <smp_call_function>:
-800464e4:	b538      	push	{r3, r4, r5, lr}
-800464e6:	460d      	mov	r5, r1
-800464e8:	4613      	mov	r3, r2      ; just move it to r3
-800464ea:	f64f 448c 	movw	r4, #64652
-800464ee:	4601      	mov	r1, r0
-800464f0:	f2c8 0425 	movt	r4, #32805
-800464f4:	462a      	mov	r2, r5
-800464f6:	6820      	ldr	r0, [r4, #0]
-800464f8:	f7ff feac 	bl	80046254 <smp_call_function_many>
-800464fc:	2000      	movs	r0, #0
-800464fe:	bd38      	pop	{r3, r4, r5, pc}
-
-Same for x86.  Before:
-
-ffffffff8109bf10 <smp_call_function>:
-ffffffff8109bf10:       55                      push   %rbp
-ffffffff8109bf11:       48 89 e5                mov    %rsp,%rbp
-ffffffff8109bf14:       31 c9                   xor    %ecx,%ecx  ; ecx = 0
-ffffffff8109bf16:       85 d2                   test   %edx,%edx  ; test if wait is 0
-ffffffff8109bf18:       48 89 f2                mov    %rsi,%rdx
-ffffffff8109bf1b:       48 89 fe                mov    %rdi,%rsi
-ffffffff8109bf1e:       48 8b 3d 4b d3 76 00    mov    0x76d34b(%rip),%rdi        # ffffffff81809270 <cpu_online_mask>
-ffffffff8109bf25:       0f 95 c1                setne  %cl        ; if it is not, ecx = 1
-ffffffff8109bf28:       e8 43 fc ff ff          callq  ffffffff8109bb70 <smp_call_function_many>
-ffffffff8109bf2d:       31 c0                   xor    %eax,%eax
-ffffffff8109bf2f:       5d                      pop    %rbp
-ffffffff8109bf30:       c3                      retq
-
-After:
-
-ffffffff8109bf20 <smp_call_function>:
-ffffffff8109bf20:       55                      push   %rbp
-ffffffff8109bf21:       48 89 e5                mov    %rsp,%rbp
-ffffffff8109bf24:       89 d1                   mov    %edx,%ecx  ; just move wait to ecx
-ffffffff8109bf26:       48 89 f2                mov    %rsi,%rdx
-ffffffff8109bf29:       48 89 fe                mov    %rdi,%rsi
-ffffffff8109bf2c:       48 8b 3d 3d d3 76 00    mov    0x76d33d(%rip),%rdi        # ffffffff81809270 <cpu_online_mask>
-ffffffff8109bf33:       e8 48 fc ff ff          callq  ffffffff8109bb80 <smp_call_function_many>
-ffffffff8109bf38:       31 c0                   xor    %eax,%eax
-ffffffff8109bf3a:       5d                      pop    %rbp
-ffffffff8109bf3b:       c3                      retq
-ffffffff8109bf3c:       0f 1f 40 00             nopl   0x0(%rax)
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- include/linux/smp.h |    6 +++---
- kernel/smp.c        |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ io/prealloc.c     |   39 ++++++++++++++++++++++++++++++++++++++-
+ man/man8/xfs_io.8 |    6 ++++++
+ 2 files changed, 44 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index c181399..a894405 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -72,7 +72,7 @@ extern void smp_cpus_done(unsigned int max_cpus);
-  */
- int smp_call_function(smp_call_func_t func, void *info, int wait);
- void smp_call_function_many(const struct cpumask *mask,
--			    smp_call_func_t func, void *info, bool wait);
-+			    smp_call_func_t func, void *info, int wait);
+diff --git a/io/prealloc.c b/io/prealloc.c
+index 8380646..e7ff940 100644
+--- a/io/prealloc.c
++++ b/io/prealloc.c
+@@ -29,6 +29,10 @@
+ #define FALLOC_FL_PUNCH_HOLE	0x02
+ #endif
  
- void __smp_call_function_single(int cpuid, struct call_single_data *data,
- 				int wait);
-@@ -104,7 +104,7 @@ int on_each_cpu(smp_call_func_t func, void *info, int wait);
-  * the local one.
-  */
- void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
--		void *info, bool wait);
-+		void *info, int wait);
++#ifndef FALLOC_FL_COLLAPSE_RANGE
++#define FALLOC_FL_COLLAPSE_RANGE 0x08
++#endif
++
+ static cmdinfo_t allocsp_cmd;
+ static cmdinfo_t freesp_cmd;
+ static cmdinfo_t resvsp_cmd;
+@@ -37,6 +41,7 @@ static cmdinfo_t zero_cmd;
+ #if defined(HAVE_FALLOCATE)
+ static cmdinfo_t falloc_cmd;
+ static cmdinfo_t fpunch_cmd;
++static cmdinfo_t fcollapse_cmd;
+ #endif
  
- /*
-  * Call a function on each processor for which the supplied function
-@@ -112,7 +112,7 @@ void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
-  * processor.
-  */
- void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
--		smp_call_func_t func, void *info, bool wait,
-+		smp_call_func_t func, void *info, int wait,
- 		gfp_t gfp_flags);
+ static int
+@@ -159,8 +164,11 @@ fallocate_f(
+ 	int		mode = 0;
+ 	int		c;
  
- /*
-diff --git a/kernel/smp.c b/kernel/smp.c
-index fe9f773..f614250 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -367,7 +367,7 @@ void __smp_call_function_single(int cpu, struct call_single_data *csd,
-  * must be disabled when calling this function.
-  */
- void smp_call_function_many(const struct cpumask *mask,
--			    smp_call_func_t func, void *info, bool wait)
-+			    smp_call_func_t func, void *info, int wait)
- {
- 	struct call_function_data *cfd;
- 	int cpu, next_cpu, this_cpu = smp_processor_id();
-@@ -590,7 +590,7 @@ EXPORT_SYMBOL(on_each_cpu);
-  * from a hardware interrupt handler or from a bottom half handler.
-  */
- void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
--			void *info, bool wait)
-+			void *info, int wait)
- {
- 	int cpu = get_cpu();
+-	while ((c = getopt(argc, argv, "kp")) != EOF) {
++	while ((c = getopt(argc, argv, "ckp")) != EOF) {
+ 		switch (c) {
++		case 'c':
++			mode = FALLOC_FL_COLLAPSE_RANGE;
++			break;
+ 		case 'k':
+ 			mode = FALLOC_FL_KEEP_SIZE;
+ 			break;
+@@ -203,6 +211,25 @@ fpunch_f(
+ 	}
+ 	return 0;
+ }
++
++static int
++fcollapse_f(
++	int		argc,
++	char		**argv)
++{
++	xfs_flock64_t	segment;
++	int		mode = FALLOC_FL_COLLAPSE_RANGE;
++
++	if(!offset_length(argv[1], argv[2], &segment))
++		return 0;
++
++	if (fallocate(file->fd, mode,
++			segment.l_start, segment.l_len)) {
++		perror("fallocate");
++		return 0;
++	}
++	return 0;
++}
+ #endif	/* HAVE_FALLOCATE */
  
-@@ -632,7 +632,7 @@ EXPORT_SYMBOL(on_each_cpu_mask);
-  * from a hardware interrupt handler or from a bottom half handler.
-  */
- void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
--			smp_call_func_t func, void *info, bool wait,
-+			smp_call_func_t func, void *info, int wait,
- 			gfp_t gfp_flags)
- {
- 	cpumask_var_t cpus;
+ void
+@@ -277,5 +304,15 @@ prealloc_init(void)
+ 	fpunch_cmd.oneline =
+ 		_("de-allocates space assocated with part of a file via fallocate");
+ 	add_command(&fpunch_cmd);
++
++	fcollapse_cmd.name = "fcollapse";
++	fcollapse_cmd.cfunc = fcollapse_f;
++	fcollapse_cmd.argmin = 2;
++	fcollapse_cmd.argmax = 2;
++	fcollapse_cmd.flags = CMD_NOMAP_OK | CMD_FOREIGN_OK;
++	fcollapse_cmd.args = _("off len");
++	fcollapse_cmd.oneline =
++		_("de-allocates space and nullify the hole by shifting extents into it");
++	add_command(&fcollapse_cmd);
+ #endif	/* HAVE_FALLOCATE */
+ }
+diff --git a/man/man8/xfs_io.8 b/man/man8/xfs_io.8
+index 767b50e..9543b20 100644
+--- a/man/man8/xfs_io.8
++++ b/man/man8/xfs_io.8
+@@ -380,6 +380,12 @@ will set the FALLOC_FL_KEEP_SIZE flag as described in
+ .PD
+ .RE
+ .TP
++.BI fcollapse " offset length"
++Call fallocate with FALLOC_FL_COLLAPSE_RANGE flag as described in the
++.BR fallocate (2)
++manual page to de-allocates blocks and eliminates the hole created in this process
++by shifting data blocks into the hole.
++.TP
+ .BI fpunch " offset length"
+ Punches (de-allocates) blocks in the file by calling fallocate with 
+ the FALLOC_FL_PUNCH_HOLE flag as described in the
 -- 
 1.7.9.5
-
 
