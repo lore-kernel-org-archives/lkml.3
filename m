@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab3IBIpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:45:44 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:37180 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab3IBIpn (ORCPT
+	id S1757389Ab3IBItK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:49:10 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:38819 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab3IBItI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:45:43 -0400
-Date: Mon, 2 Sep 2013 09:45:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] mfd: twl6040: Use regmap for register cache
-Message-ID: <20130902084538.GD12341@lee--X1>
-References: <1377967699-10277-1-git-send-email-broonie@kernel.org>
- <20130902081759.GC12341@lee--X1>
- <20130902082941.GN20329@zurbaran>
+	Mon, 2 Sep 2013 04:49:08 -0400
+Message-ID: <522450ED.1020704@synopsys.com>
+Date: Mon, 2 Sep 2013 14:18:45 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130902082941.GN20329@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave.hansen@intel.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Michel Lespinasse" <walken@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Paul Mundt" <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for
+ ARC
+References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com> <521F662F.4050003@intel.com> <52204E4D.3030602@synopsys.com> <5220B83A.6070709@intel.com>
+In-Reply-To: <5220B83A.6070709@intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Sep 2013, Samuel Ortiz wrote:
+On 08/30/2013 08:50 PM, Dave Hansen wrote:
+> On 08/30/2013 12:48 AM, Vineet Gupta wrote:
+>> If we had ARCH_FRAME_POINTER_UNAVAILABLE (def_bool n), we could potentially remove
+>> ARCH_FRAME_POINTER too:
 
-> Hi Lee,
+>> The issue is some (sparc, c6x...) which are neither in #1 or #2, and not present
+>> in anti-dependency list either. e.g. With sparc64_defconfig FP is not present, but
+>> if I enable LATENCY_TOP, FP is enabled. For such cases, what do we make default ?
 > 
-> On Mon, Sep 02, 2013 at 09:17:59AM +0100, Lee Jones wrote:
-> > On Sat, 31 Aug 2013, Mark Brown wrote:
-> > 
-> > > From: Mark Brown <broonie@linaro.org>
-> > > 
-> > > Rather then open coding a cache of the vibra control registers use the
-> > > regmap cache code.  Also cache the interrupt mask register, providing
-> > > a small performance improvement for the interrupt code.
-> > > 
-> > > Signed-off-by: Mark Brown <broonie@linaro.org>
-> > > ---
-> > > 
-> > > I'm hoping to have some ASoC improvements to build on top of this (there
-> > > is ASoC level register caching for the device) so it might make sense to
-> > > apply this via ASoC.
-> > > 
-> > >  drivers/mfd/twl6040.c       | 43 ++++++++++++++++++++++++++++++-------------
-> > >  include/linux/mfd/twl6040.h |  1 -
-> > >  2 files changed, 30 insertions(+), 14 deletions(-)
-> > 
-> > Applied with Peter's Ack, thanks.
-> Please hold on. I'm preparing a branch for Mark to pull from and it will
-> contain that patch.
+> You can list multiple defaults if you want, or have them depend on other
+> config variables:
+> 
+> config FOO
+> 	default BAR
+> 
+> or
+> 
+> config FOO
+> 	default y if BAR
+> 	default n if BAZ
+> 
+> ARCH_FRAME_POINTER_UNAVAILABLE doesn't make much sense if
+> FRAME_POINTER=n, right?  You can have it just plain depend on
+> FRAME_POINTER, I think.
 
-Ah, I thought that was another set.
 
-No problem. I've removed it from my branch.
+I think I was not very clear with the problem description.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+With a defbool 'n', FP will be by default enabled and arches not interested in FP
+will select ARCH_FRAME_POINTER_UNAVAILABLE. e.g. SPARC, so far so good.
+
+That however means that LATENCYTOP enabled in sparc64_defconfig will now build
+with !FP, whereas as of today it enables FP (and SPARC code must be OK with FP
+enabling in this config). So, we are changing semantics here, which might still be
+OK, but I'll only trust arch maintainers' NOD. So the change is not just
+mechanical from that perspective.
+
+My point is, before I cook the patch-set we must be in agreement to this
+semantical change.
+
+-Vineet
+
+
+
