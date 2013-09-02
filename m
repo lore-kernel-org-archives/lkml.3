@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3IBKAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 06:00:51 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:53666 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3IBKAt (ORCPT
+	id S1756750Ab3IBKFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 06:05:23 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33901 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369Ab3IBKFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 06:00:49 -0400
-Message-ID: <522461C7.8090701@linux.vnet.ibm.com>
-Date: Mon, 02 Sep 2013 18:00:39 +0800
+	Mon, 2 Sep 2013 06:05:21 -0400
+Message-ID: <522462D6.8090806@linux.vnet.ibm.com>
+Date: Mon, 02 Sep 2013 18:05:10 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
@@ -18,44 +18,111 @@ CC: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
         afaerber@suse.de, lnussel@suse.de, edk2-devel@lists.sf.net,
         stable@vger.kernel.org
 Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
-References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <5224584F.6010409@linux.vnet.ibm.com> <20130902092518.GN22899@redhat.com>
-In-Reply-To: <20130902092518.GN22899@redhat.com>
+References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <20130901091744.GF22899@redhat.com> <52245D81.7060402@linux.vnet.ibm.com> <20130902094907.GP22899@redhat.com>
+In-Reply-To: <20130902094907.GP22899@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090209-5490-0000-0000-000004148700
+x-cbid: 13090209-2000-0000-0000-00000D8DD2A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 05:25 PM, Gleb Natapov wrote:
-> On Mon, Sep 02, 2013 at 05:20:15PM +0800, Xiao Guangrong wrote:
->> On 08/30/2013 08:41 PM, Paolo Bonzini wrote:
->>> Page tables in a read-only memory slot will currently cause a triple
->>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+On 09/02/2013 05:49 PM, Gleb Natapov wrote:
+> On Mon, Sep 02, 2013 at 05:42:25PM +0800, Xiao Guangrong wrote:
+>> On 09/01/2013 05:17 PM, Gleb Natapov wrote:
+>>> On Fri, Aug 30, 2013 at 02:41:37PM +0200, Paolo Bonzini wrote:
+>>>> Page tables in a read-only memory slot will currently cause a triple
+>>>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
+>>>>
+>>>> OVMF uses such a page table; however, real hardware seems to be fine with
+>>>> that as long as the accessed/dirty bits are set.  Save whether the slot
+>>>> is readonly, and later check it when updating the accessed and dirty bits.
+>>>>
+>>> The fix looks OK to me, but some comment below.
 >>>
->>> OVMF uses such a page table; however, real hardware seems to be fine with
->>> that as long as the accessed/dirty bits are set.  Save whether the slot
->>> is readonly, and later check it when updating the accessed and dirty bits.
+>>>> Cc: stable@vger.kernel.org
+>>>> Cc: gleb@redhat.com
+>>>> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>>>> ---
+>>>> 	CCing to stable@ since the regression was introduced with
+>>>> 	support for readonly memory slots.
+>>>>
+>>>>  arch/x86/kvm/paging_tmpl.h |  7 ++++++-
+>>>>  include/linux/kvm_host.h   |  1 +
+>>>>  virt/kvm/kvm_main.c        | 14 +++++++++-----
+>>>>  3 files changed, 16 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+>>>> index 0433301..dadc5c0 100644
+>>>> --- a/arch/x86/kvm/paging_tmpl.h
+>>>> +++ b/arch/x86/kvm/paging_tmpl.h
+>>>> @@ -99,6 +99,7 @@ struct guest_walker {
+>>>>  	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
+>>>>  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
+>>>>  	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
+>>>> +	bool pte_writable[PT_MAX_FULL_LEVELS];
+>>>>  	unsigned pt_access;
+>>>>  	unsigned pte_access;
+>>>>  	gfn_t gfn;
+>>>> @@ -235,6 +236,9 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
+>>>>  		if (pte == orig_pte)
+>>>>  			continue;
+>>>>  
+>>>> +		if (unlikely(!walker->pte_writable[level - 1]))
+>>>> +			return -EACCES;
+>>>> +
+>>>>  		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
+>>>>  		if (ret)
+>>>>  			return ret;
+>>>> @@ -309,7 +313,8 @@ retry_walk:
+>>>>  			goto error;
+>>>>  		real_gfn = gpa_to_gfn(real_gfn);
+>>>>  
+>>>> -		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
+>>>> +		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
+>>>> +					    &walker->pte_writable[walker->level - 1]);
+>>> The use of gfn_to_hva_read is misleading. The code can still write into
+>>> gfn. Lets rename gfn_to_hva_read to gfn_to_hva_prot() and gfn_to_hva()
+>>> to gfn_to_hva_write().
 >>
->> Paolo, do you know why OVMF is using readonly memory like this?
+>> Yes. I agreed.
 >>
-> Just a guess, but perhaps they want to move to paging mode as early as
-> possible even before memory controller is fully initialized.
+>>>
+>>> This makes me think are there other places where gfn_to_hva() was
+>>> used, but gfn_to_hva_prot() should have been?
+>>>  - kvm_host_page_size() looks incorrect. We never use huge page to map
+>>>    read only memory slots currently.
+>>
+>> It only checks whether gfn have been mapped, I think we can use
+>> gfn_to_hva_read() instead, the real permission will be checked when we translate
+>> the gfn to pfn.
+>>
+> Yes, all the cases I listed should be changed to use function that looks
+> at both regular and RO slots.
 > 
->> AFAIK, The fault trigged by this kind of access can hardly be fixed by
->> userspace since the fault is trigged by pagetable walking not by the current
->> instruction. Do you have any idea to let uerspace emulate it properly?
-> Not sure what userspace you mean here, but there shouldn't be a fault in the
+>>>  - kvm_handle_bad_page() also looks incorrect and may cause incorrect
+>>>    address to be reported to userspace.
+>>
+>> I have no idea on this point. kvm_handle_bad_page() is called when it failed to
+>> translate the target gfn to pfn, then the emulator can detect the error on target gfn
+>> properly. no? Or i misunderstood your meaning?
+>>
+> I am talking about the following code:
+> 
+>         if (pfn == KVM_PFN_ERR_HWPOISON) {
+>                 kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+>                 return 0;
+>         }
+> 
+> pfn will be KVM_PFN_ERR_HWPOISON gfn is backed by faulty memory, we need
+> to report the liner address of the faulty memory to a userspace here,
+> but if gfn is in a RO slot gfn_to_hva() will not return correct address
+> here.
 
-I just wonder how to fix this kind of fault. The current patch returns -EACCES
-but that will crash the guest. I think we'd better let userspace to fix this
-error (let userspace set the D/A bit.)
+Got it, thanks for your explanation.
 
-> first place if ROM page tables have access/dirty bit set and they do.
-
-Yes, so we can not call x86_emulate_instruction() to fix this fault (that function
-emulates the access on the first place). Need directly return a MMIO-exit to
-userpsace when met this fault? What happen if this fault on pagetable-walking
-is trigged in x86_emulate_instruction().?
+BTW, if you and Paolo are busy on other things, i am happy to fix these issues. :)
 
