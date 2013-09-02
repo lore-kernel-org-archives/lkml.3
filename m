@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3IBQJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 12:09:20 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52067 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754338Ab3IBQJU (ORCPT
+	id S932135Ab3IBQJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 12:09:45 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:56970 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758315Ab3IBQJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 12:09:20 -0400
-Date: Mon, 2 Sep 2013 17:09:08 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Martin =?utf-8?Q?MOKREJ=C5=A0?= <mmokrejs@gmail.com>
-Cc: Max Filippov <jcmvbkbc@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10.9: kmemleak disables all CPUs except CPU0
-Message-ID: <20130902160908.GE13871@arm.com>
-References: <5221F119.4070000@gmail.com>
- <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com>
- <CAMo8BfLMex3H1QBk6gD7DDDgGJ4dh6+dvhLG=c7LdFZ8XuyM9Q@mail.gmail.com>
- <20130902154840.GC13871@arm.com>
- <5224B3F5.8090402@gmail.com>
+	Mon, 2 Sep 2013 12:09:42 -0400
+Message-ID: <5224B83F.7040503@gmail.com>
+Date: Mon, 02 Sep 2013 10:09:35 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5224B3F5.8090402@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: sedat.dilek@gmail.com
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com> <52200DAE.2020303@hp.com> <CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com> <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com> <CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com> <CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com> <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com> <CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com> <CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com> <CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com> <CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com> <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com> <CA+icZUWPUDorK+9KRD-H3FpbDeC_7LMatzrYk35jZk13vNuLBQ@mail.gmail.com> <CA+55aFzBBADPxK3mJrKt2Qx-y-VJjk9fOrN6A0YRPrujXBNeQg@mail.gmail.com> <CA+icZUWHS2QeWTN0a8DwmMJ1UnvKjvox8t9MTLXMMU8oQOHtCQ@mail.gmail.com>
+In-Reply-To: <CA+icZUWHS2QeWTN0a8DwmMJ1UnvKjvox8t9MTLXMMU8oQOHtCQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 04:51:17PM +0100, Martin MOKREJŠ wrote:
-> Catalin Marinas wrote:
-> > On Mon, Sep 02, 2013 at 04:44:52PM +0100, Max Filippov wrote:
-> >> On Mon, Sep 2, 2013 at 7:31 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >>> On 31 August 2013 14:35, Martin MOKREJŠ <mmokrejs@gmail.com> wrote:
-> >>>>   never realized that my CPUs are gone if I compile into kernel kmemleak.
-> >>>> Is that really the aim?
-> >>>>
-> >>>> CONFIG_HAVE_DEBUG_KMEMLEAK=y
-> >>>> CONFIG_DEBUG_KMEMLEAK=y
-> >>>> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
-> >>>> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
-> >>>> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
-> >>>>
-> >>>> 1.  Why isn't there /sys/devices/system/cpu/cpu0/online file?
-> >>>> Does not matter if it contains 0 or 1. It just should exist.
-> >>>
-> >>> I can't really see how kmemleak would do this, maybe other config
-> >>> options that get set/cleared in the process of selecting kmemleak. Can
-> >>
-> >> Seems to be kmemcheck: from arch/x86/mm/kmemcheck/kmemcheck.c:
-> >>
-> >> int __init kmemcheck_init(void)
-> >> {
-> >> #ifdef CONFIG_SMP
-> >>         /*
-> >>          * Limit SMP to use a single CPU. We rely on the fact that this code
-> >>          * runs before SMP is set up.
-> >>          */
-> >>         if (setup_max_cpus > 1) {
-> >>                 printk(KERN_INFO
-> >>                         "kmemcheck: Limiting number of CPUs to 1.\n");
-> >>                 setup_max_cpus = 1;
-> >>         }
-> >> #endif
-> > 
-> > Ah, ok, not my problem then ;)
-> 
-> Fine, so would somebody please update the help text accessible in "menuconfig"
-> for this entry? It should be clear that it has a huge performance impact if enabled.
-> And, by compiling in it is enabled by default.
+On 9/2/13 4:30 AM, Sedat Dilek wrote:
+> On Sun, Sep 1, 2013 at 5:55 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Sun, Sep 1, 2013 at 8:45 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>
+>>> Samples: 160K of event 'cycles:pp', Event count (approx.): 77003901089
+>>> +  12,46%  t_lockref_from-  [kernel.kallsyms]     [k] irq_return
+>>> +   4,86%  t_lockref_from-  [kernel.kallsyms]     [k] lockref_get_or_lock
+>>> +   4,42%  t_lockref_from-  [kernel.kallsyms]     [k] __ticket_spin_lock
+>>> +   4,28%  t_lockref_from-  [kernel.kallsyms]     [k] __acct_update_integrals
+>>
+>> You need to go into __ticket_spin_lock to see who the callers are.
+>>
+>> Just go down to it and press enter to expand it (and then you need to
+>> go and expand that entry too to get the callers)
+>>
+>
+> I am new to perf usage.
 
-Otherwise, of no-one volunteers, please feel free to send a patch ;)
+One option for you is 'perf report --stdio ..'. That bypasses the tui.
 
--- 
-Catalin
+David
