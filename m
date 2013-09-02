@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab3IBVhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 17:37:36 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59467 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758943Ab3IBVhf (ORCPT
+	id S932347Ab3IBVoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 17:44:34 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:39736 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758976Ab3IBVod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 17:37:35 -0400
-Message-ID: <5225051C.3030608@gmail.com>
-Date: Mon, 02 Sep 2013 15:37:32 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 17:44:33 -0400
+Date: Mon, 2 Sep 2013 23:44:24 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.12
+Message-ID: <alpine.DEB.2.02.1309022339040.10575@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: latest perf code fails to parse existing data file
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo/Adrian:
+	Hi Linus,
 
-Latest acme core tree fails to parse an existing data file:
+The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305fb:
 
-$ perf trace -i perf.data
-0x16b8 [0x40]: failed to process type: 1
-Failed to process events, error -22
+  Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
 
-git bisect traced it to:
-$ git bisect bad
-75562573bab35b129cfd342fc2bcf89da84a6644 is the first bad commit
-commit 75562573bab35b129cfd342fc2bcf89da84a6644
-Author: Adrian Hunter <adrian.hunter@intel.com>
-Date:   Tue Aug 27 11:23:09 2013 +0300
+are available in the git repository at:
 
-     perf tools: Add support for PERF_SAMPLE_IDENTIFIER
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-     Enable parsing of samples with sample format bit 
-PERF_SAMPLE_IDENTIFIER.
-     In addition, if the kernel supports it, prefer it to selecting
-     PERF_SAMPLE_ID thereby allowing non-matching sample types.
+for you to fetch changes up to 55490050df0f5d82ce070be11351c65f7696101c:
 
-     Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-     Cc: David Ahern <dsahern@gmail.com>
-     Cc: Frederic Weisbecker <fweisbec@gmail.com>
-     Cc: Ingo Molnar <mingo@kernel.org>
-     Cc: Jiri Olsa <jolsa@redhat.com>
-     Cc: Mike Galbraith <efault@gmx.de>
-     Cc: Namhyung Kim <namhyung@gmail.com>
-     Cc: Paul Mackerras <paulus@samba.org>
-     Cc: Peter Zijlstra <peterz@infradead.org>
-     Cc: Stephane Eranian <eranian@google.com>
-     Link: 
-http://lkml.kernel.org/r/1377591794-30553-8-git-send-email-adrian.hunter@intel.com
-     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+  m68k/atari: ARAnyM - Always use physical addresses in NatFeat calls (2013-08-23 12:49:01 +0200)
 
-:040000 040000 7df758341904d77c391b90ab6b6bac97324d144a 
-93839bad8ab2e6d88d3037f3dc8fd721be5e8870 M	tools
+----------------------------------------------------------------
+Geert Uytterhoeven (2):
+      m68k: Ignore disabled HSYNC interrupt on Atari for irqs_disabled()
+      m68k/atari: ARAnyM - Always use physical addresses in NatFeat calls
 
+Summary:
+  - Kill harmless warning messages when running a multi-platform kernel on
+    Atari,
+  - Correct virt/phys mixups that didn't actually hurt due to identity
+    mappings.
 
-If I revert the patch (and handle the missing __perf_evsel__sample_size 
-in the tests code to get it to compile) it works -- file is parsed 
-correctly.
+Thanks for pulling!
 
-David
+ arch/m68k/emu/natfeat.c          |   14 +++++++-------
+ arch/m68k/emu/nfblock.c          |    4 ++--
+ arch/m68k/emu/nfcon.c            |    8 +++++---
+ arch/m68k/emu/nfeth.c            |    7 ++++---
+ arch/m68k/include/asm/irqflags.h |    4 ++++
+ 5 files changed, 22 insertions(+), 15 deletions(-)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
