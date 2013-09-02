@@ -1,129 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab3IBRl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 13:41:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40941 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab3IBRl1 (ORCPT
+	id S1758834Ab3IBRrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 13:47:24 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50564 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab3IBRrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 13:41:27 -0400
-Date: Mon, 2 Sep 2013 18:41:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-Cc: Ashish Chavan <ashish.chavan@kpitcummins.com>, lrg <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kiran.padwal" <kiran.padwal@kpitcummins.com>
-Message-ID: <20130902174121.GV3084@sirena.org.uk>
-References: <1375110386.21326.6.camel@matrix>
- <20130729160157.GZ9858@sirena.org.uk>
- <1375689331.28910.5.camel@matrix>
- <20130805144201.GF9858@sirena.org.uk>
- <1375717898.29528.23.camel@matrix>
- <20130805162342.GS9858@sirena.org.uk>
- <1377778108.15438.6.camel@matrix>
- <2E89032DDAA8B9408CB92943514A033751E611AF@SW-EX-MBX01.diasemi.com>
- <20130902103843.GL3084@sirena.org.uk>
- <2E89032DDAA8B9408CB92943514A033751E612F5@SW-EX-MBX01.diasemi.com>
+	Mon, 2 Sep 2013 13:47:22 -0400
+Message-ID: <5224CE37.2070908@linux.vnet.ibm.com>
+Date: Mon, 02 Sep 2013 23:13:19 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PyWBHxIrsGpYNMFw"
-Content-Disposition: inline
-In-Reply-To: <2E89032DDAA8B9408CB92943514A033751E612F5@SW-EX-MBX01.diasemi.com>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
- fix breakage due to pmic driver with same name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, hannes@cmpxchg.org,
+        tony.luck@intel.com, matthew.garrett@nebula.com, dave@sr71.net,
+        riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        santosh.shilimkar@ti.com, kosaki.motohiro@gmail.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 04/35] mm: Initialize node memory regions during
+ boot
+References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <20130830131504.4947.86008.stgit@srivatsabhat.in.ibm.com> <52242E1D.4020406@jp.fujitsu.com>
+In-Reply-To: <52242E1D.4020406@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090217-8878-0000-0000-000008AC0C6C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/02/2013 11:50 AM, Yasuaki Ishimatsu wrote:
+> (2013/08/30 22:15), Srivatsa S. Bhat wrote:
+>> Initialize the node's memory-regions structures with the information
+>> about
+>> the region-boundaries, at boot time.
+>>
+>> Based-on-patch-by: Ankita Garg <gargankita@gmail.com>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>   include/linux/mm.h |    4 ++++
+>>   mm/page_alloc.c    |   28 ++++++++++++++++++++++++++++
+>>   2 files changed, 32 insertions(+)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index f022460..18fdec4 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -627,6 +627,10 @@ static inline pte_t maybe_mkwrite(pte_t pte,
+>> struct vm_area_struct *vma)
+>>   #define LAST_NID_MASK        ((1UL << LAST_NID_WIDTH) - 1)
+>>   #define ZONEID_MASK        ((1UL << ZONEID_SHIFT) - 1)
+>>
+>> +/* Hard-code memory region size to be 512 MB for now. */
+>> +#define MEM_REGION_SHIFT    (29 - PAGE_SHIFT)
+>> +#define MEM_REGION_SIZE        (1UL << MEM_REGION_SHIFT)
+>> +
+>>   static inline enum zone_type page_zonenum(const struct page *page)
+>>   {
+>>       return (page->flags >> ZONES_PGSHIFT) & ZONES_MASK;
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index b86d7e3..bb2d5d4 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -4809,6 +4809,33 @@ static void __init_refok
+>> alloc_node_mem_map(struct pglist_data *pgdat)
+>>   #endif /* CONFIG_FLAT_NODE_MEM_MAP */
+>>   }
+>>
+>> +static void __meminit init_node_memory_regions(struct pglist_data
+>> *pgdat)
+>> +{
+>> +    int nid = pgdat->node_id;
+>> +    unsigned long start_pfn = pgdat->node_start_pfn;
+>> +    unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
+>> +    struct node_mem_region *region;
+>> +    unsigned long i, absent;
+>> +    int idx;
+>> +
+>> +    for (i = start_pfn, idx = 0; i < end_pfn;
+>> +                i += region->spanned_pages, idx++) {
+>> +
+> 
+>> +        region = &pgdat->node_regions[idx];
+> 
+> It seems that overflow easily occurs.
+> node_regions[] has 256 entries and MEM_REGION_SIZE is 512MiB. So if
+> the pgdat has more than 128 GiB, overflow will occur. Am I wrong?
+>
 
---PyWBHxIrsGpYNMFw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No, you are right. It should be made dynamic to accommodate larger
+memory. I just used that value as a placeholder, since my focus was to
+demonstrate what algorithms and designs could be developed on top of
+this infrastructure, to help shape memory allocations. But certainly
+this needs to be modified to be flexible enough to work with any memory
+size. Thank you for your review!
 
-On Mon, Sep 02, 2013 at 03:38:18PM +0000, Opensource [Adam Thomson] wrote:
-> On Mon, Sep 02, 2013 at 11:39, Mark Brown wrote:
+Regards,
+Srivatsa S. Bhat
+ 
+> 
+>> +        region->pgdat = pgdat;
+>> +        region->start_pfn = i;
+>> +        region->spanned_pages = min(MEM_REGION_SIZE, end_pfn - i);
+>> +        region->end_pfn = region->start_pfn + region->spanned_pages;
+>> +
+>> +        absent = __absent_pages_in_range(nid, region->start_pfn,
+>> +                         region->end_pfn);
+>> +
+>> +        region->present_pages = region->spanned_pages - absent;
+>> +    }
+>> +
+>> +    pgdat->nr_node_regions = idx;
+>> +}
+>> +
+>>   void __paginginit free_area_init_node(int nid, unsigned long
+>> *zones_size,
+>>           unsigned long node_start_pfn, unsigned long *zholes_size)
+>>   {
+>> @@ -4837,6 +4864,7 @@ void __paginginit free_area_init_node(int nid,
+>> unsigned long *zones_size,
+>>
+>>       free_area_init_core(pgdat, start_pfn, end_pfn,
+>>                   zones_size, zholes_size);
+>> +    init_node_memory_regions(pgdat);
+>>   }
+>>
+>>   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+>>
+> 
+> 
 
-> > Please fix your mailer to wrap within 80 columns, it makes your mails
-> > very hard to read if you don't do this.
-
-> Yeah, sorry for that. Having to use Outlook and of course it doesn't seem to
-> have that feature (at least not that I could find), so trying to do it
-> manually.
-
-It's always been in there, can't remember where exactly and I don't have
-access to Outlook any more.
-
-> > They are not separate, they are soldered to the board as part of the
-> > same package - quite a few other devices use a similar scheme and are
-> > also handled in this fashion (the TI TWL devices are one example).
-
-> The difference here is that our combined devices can also be separate chips,
-> not just one HW package containing logically separate devices. I don't believe
-> that's the case with say the TI devices.
-
-That doesn't seem like a unique feature.
-
-> > This is roughly what ends up happening, you do need to instantiate
-> > another I2C client no matter what.  The important thing here is that the
-> > CODEC does not need to be separately registered by the user, if it
-> > really is only the I2C client that needs creating that's probably OK so
-> > long as the user doesn't need to worry about that implementation detail.
-
-> The only thing that would need populating is some small platform data for the
-> codec (MIC bias voltages, and such). You'd still have to do this, combined or
-> separate, as this is platform specific. Other than this, the I2C client
-> initialisation for the codec is simple, which is a reason why I don't think
-> the PMIC needs to initialise it, and you can just as simply do it from machine
-> code.
-
-It's the bit where the board has to register the CODEC separately at all
-that's the thing.  Think about it from the point of view of people
-writing and reviewing the machine bindings - they end up with this odd
-chip that appears twice with two names and registration schemas.
-
-> > The reasoning is simply that if the chip design solders a single device
-> > to the board then the software system integration should register a
-> > single device with the system.
-
-> Ok, but what about the scenario where the devices start life as separate chips
-> and are then later also packaged together as one chip but still with no
-> internal connection, like DA9055. The drivers were already written and accepted
-> as separate entities in the kernel, without chained initialisation. What would
-> be the approach there? To me, logically it makes sense to leave them separate.
-
-It doesn't seem to make much difference what order the drivers are added
-in here?  You're going to need to add a new device IDs for the SIP anyway
-since it'd presumably be badged as something new - if it wasn't then
-that's a bit different.
-
---PyWBHxIrsGpYNMFw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJM2+AAoJELSic+t+oim9LhUP/3N7VNhGkU0j1cEwGowp9Sf5
-FId+xLQ6qvHz3rLqjksNOoCz9tjsg9zX+Hzy9zh65EFHgJcX8FJVOfs2G5XMWX/h
-61ZOpGDjIBZVH87tvpD8IM/ATd8nBvrMGpvwmS9D0rfcZz4Zqo8+7ugX4cWJ9Rxf
-jc60XNPh0rtMbBDABZHI8iVzevvzPvhbgqrVKGs5FVSoH6zhcog0m4C5rZgXIQCJ
-kHOxHAY3aC/Jrfkl/ufarV3GkCU06OrTGGNT2IPVRWtr7notCRv3EP0XGowDTvGs
-4SI316/Hm8IWxV05odj0dNoHHLVTmDgyUbT0a7JOiSMlhHlsCyUSYXCTIjXfjDta
-55NN5xYitw08TinpE2mLzVRK+aVhRNHiVl4dqc7xWJq0puIZ9Nzft2B3/Nj2kzy5
-J6TMdfZeHrWSK0u26PS4jpabc/KDzXfDZGh/S7wXWwMFVA5kQpRR16+w+scxms6n
-3uiNkBak0xuyCLnxnKiibdHH5vOk+XcTzhsJHh6bsfZK9DTcC6Jq324H4zpz5fJN
-6R3+YZ2l2ZsB4fgFn7SThz4w9c7lGROWhkosokKZDgQlELpDj3hOK3D7e8jyuQ35
-eieGVnQvriAA4QbwB1/QqOHfvPuwfWc5tczPgvX2HfWfrHOw5pB28Nmz2cJnnNzC
-NbSUFZVPvaxy+dLvhHvN
-=mExI
------END PGP SIGNATURE-----
-
---PyWBHxIrsGpYNMFw--
