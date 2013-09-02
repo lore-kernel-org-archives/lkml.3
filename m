@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab3IBSq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 14:46:27 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:48701 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758720Ab3IBSqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 14:46:25 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] input: allow SERIO=m even without EXPERT=y
-Date: Mon,  2 Sep 2013 20:47:10 +0200
-Message-Id: <1378147630-12471-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.8.4
+	id S1758910Ab3IBS7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 14:59:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35995 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758849Ab3IBS73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 14:59:29 -0400
+Message-ID: <1378148367.1953.98.camel@joe-AO722>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Date: Mon, 02 Sep 2013 11:59:27 -0700
+In-Reply-To: <20130902153945.6d7e510c@samsung.com>
+References: <9976.1378132260@warthog.procyon.org.uk>
+	 <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
+	 <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is plenty of consumer hardware (e.g., mac books) that does not use
-AT keyboards or PS/2 mice. It therefore makes sense for distro kernels
-to build the related drivers as modules to avoid loading them on hardware
-that does not need them. As such, these options should no longer be protected
-by EXPERT.
+On Mon, 2013-09-02 at 15:39 -0300, Mauro Carvalho Chehab wrote:
+> Em Mon, 2 Sep 2013 11:19:01 -0700
+> Josh Triplett <josh@joshtriplett.org> escreveu:
+[]
+> > +# This file does not define the kernel coding style; Documentation/CodingStyle
+> > +# does.  If you add a new style test to this file, add the corresponding style
+> > +# rule it enforces to Documentation/CodingStyle.
 
-Moreover, building these drivers as modules gets rid of the following ugly
-error during boot:
+> Agreed with that.
 
-[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    3.439537] i8042: No controller found
+I do not.
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/keyboard/Kconfig | 4 ++--
- drivers/input/serio/Kconfig    | 6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+> I would also add another comment there: "in case of
+> conflicts between checkpatch.pl and Documentation/CodingStyle, the latter
+> takes precedence."
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 269d4c3..2d31cec 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
- 	default y
- 	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
- 
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 1e691a3..39c869d 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
- 
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
-@@ -170,7 +170,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
- 
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
--- 
-1.8.4
+There are many checkpatch rules (like semicolons) that
+are not in CodingStyle.
+
+CodingStyle should not become some intensely detailed
+document that specifies the "only one true way" to
+write code.
+
+I also think checkpatch should not be used by robots
+to determine that patches are bad or unacceptable.
+
+checkpatch is just a dumb little tool that has some
+utility but as Dan Carpenter once said, "it's less
+sentient than a squirrel".
+
+People should always use their own taste before
+relying on dumb tools.
+
 
