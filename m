@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab3IBBsy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 21:48:54 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:38398 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3IBBsx (ORCPT
+	id S1757930Ab3IBByV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 21:54:21 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:43631 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab3IBByU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 21:48:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH3kUhHkHxUVMPndG3bN9hUzheuxE5ji=CQ+93HyMOmhhD9v7Q@mail.gmail.com>
-References: <CAH3kUhE5BLt=373NYiA4-GDmz4v5g4ekxT=Bo6U35fn0uhwmOw@mail.gmail.com>
-	<20130901185933.GA23936@electric-eye.fr.zoreil.com>
-	<CAH3kUhENV0DD=oW94FVZ3bPvXXyHk5wN9ebmVHsoPoEO7+KA3w@mail.gmail.com>
-	<CAH3kUhFEkN9Bjxi2kAMZRAsPKJXiYf=+SOkSuspZbYJEaE8jDA@mail.gmail.com>
-	<CAH3kUhHkHxUVMPndG3bN9hUzheuxE5ji=CQ+93HyMOmhhD9v7Q@mail.gmail.com>
-Date: Sun, 1 Sep 2013 22:48:52 -0300
-Message-ID: <CAH3kUhFh_gXouc5qJxUytpQ0yXqL99TtuuywgSkcudmK_5zDpA@mail.gmail.com>
-Subject: Re: network stopped with a kernel error
-From: Roberto Spadim <roberto@spadim.com.br>
-To: Francois Romieu <romieu@fr.zoreil.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 1 Sep 2013 21:54:20 -0400
+Date: Mon, 2 Sep 2013 09:54:16 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: [PATCH] block: trace all devices plug operation.
+References: <201308210843204575191@gmail.com>
+X-Priority: 3
+X-GUID: 92976900-B816-4D32-8901-EBE6319275BE
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
+Mime-Version: 1.0
+Message-ID: <201309020954138877320@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r821sPn4004950
 
-lspci:
+Hi axboe:
+	How about this patch?
 
-01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
-04:01.0 Ethernet controller: SysKonnect SK-9871 V2.0 Gigabit Ethernet
-1000Base-ZX Adapter, PCI64, Fiber ZX/SC (rev 18)
-04:02.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8129 (rev 10)
-
-2013/9/1 Roberto Spadim <roberto@spadim.com.br>:
-> the XID:
-> good card:
+Thanks!
+Jianpeng Ma
+>In func blk_queue_bio, if list of plug is empty,it will call
+>blk_trace_plug.
+>If process deal with a single device,it't ok.But if process deal with
+>multi devices,it only trace the first device.
+>Using request_count to judge, it can soleve this problem.
 >
-> Sep  1 11:41:41 localhost kernel: [    4.332165] r8169 Gigabit
-> Ethernet driver 2.3LK-NAPI loaded
-> Sep  1 11:41:41 localhost kernel: [    4.332184] r8169 0000:01:00.0:
-> PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> Sep  1 11:41:41 localhost kernel: [    4.332236] r8169 0000:01:00.0:
-> setting latency timer to 64
-> Sep  1 11:41:41 localhost kernel: [    4.332283] r8169 0000:01:00.0:
-> irq 40 for MSI/MSI-X
-> Sep  1 11:41:41 localhost kernel: [    4.332490] r8169 0000:01:00.0:
-> eth0: RTL8168d/8111d at 0xffffc900057a2000, f4:6d:04:cc:e9:13, XID
-> 083000c0 IRQ 40
+>In addition, i modify the comment.
 >
+>Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>---
+> block/blk-core.c | 6 ++----
+> 1 file changed, 2 insertions(+), 4 deletions(-)
 >
->
-> bad card:
-> Sep  1 11:41:41 localhost kernel: [    4.356510] r8169 Gigabit
-> Ethernet driver 2.3LK-NAPI loaded
-> Sep  1 11:41:41 localhost kernel: [    4.356524] r8169 0000:04:02.0:
-> PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> Sep  1 11:41:41 localhost kernel: [    4.356561] r8169 0000:04:02.0:
-> (unregistered net_device): no PCI Express capability
-> Sep  1 11:41:41 localhost kernel: [    4.356569] r8169 0000:04:02.0:
-> (unregistered net_device): unknown MAC, using family default
-> Sep  1 11:41:41 localhost kernel: [    4.356815] r8169 0000:04:02.0:
-> eth2: RTL8169 at 0xffffc90005796000, ff:ff:ff:ff:ff:ff, XID 10400000
-> IRQ 17
-
-
-
--- 
-Roberto Spadim
-SPAEmpresarial
+>diff --git a/block/blk-core.c b/block/blk-core.c
+>index 93a18d1..91037f7 100644
+>--- a/block/blk-core.c
+>+++ b/block/blk-core.c
+>@@ -1549,11 +1549,9 @@ get_rq:
+> 	if (plug) {
+> 		/*
+> 		 * If this is the first request added after a plug, fire
+>-		 * of a plug trace. If others have been added before, check
+>-		 * if we have multiple devices in this plug. If so, make a
+>-		 * note to sort the list before dispatch.
+>+		 * of a plug trace.
+> 		 */
+>-		if (list_empty(&plug->list))
+>+		if (!request_count)
+> 			trace_block_plug(q);
+> 		else {
+> 			if (request_count >= BLK_MAX_REQUEST_COUNT) {
+>-- 
+>1.8.3ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
