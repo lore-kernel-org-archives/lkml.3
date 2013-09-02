@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab3IBJrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:47:36 -0400
-Received: from smtp1.goneo.de ([212.90.139.80]:45914 "EHLO smtp1.goneo.de"
+	id S1757864Ab3IBJrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:47:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52998 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab3IBJrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:47:32 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.719
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
-Date: Mon, 02 Sep 2013 11:43:26 +0200
-Message-ID: <1414118.3oldKCk0TC@lem-wkst-02>
-User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5220FBC9.1070602@wwwdotorg.org>
-References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdYz7Kn-y8LHpNBV3YyYFhyaU6N592BJE1newUZJpUMNfA@mail.gmail.com> <5220FBC9.1070602@wwwdotorg.org>
+	id S1754876Ab3IBJrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:47:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1006,1367996400"; 
+   d="scan'208";a="389875338"
+Date: Mon, 2 Sep 2013 11:47:27 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Final pull-request due for the v3.12 merge window
+Message-ID: <20130902094727.GQ20329@zurbaran>
+References: <20130902093747.GI12341@lee--X1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130902093747.GI12341@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 30. August 2013, 14:08:41 schrieb Stephen Warren:
-> On 08/29/2013 01:00 PM, Linus Walleij wrote:
-> > On Fri, Aug 23, 2013 at 9:52 PM, Stephen Warren <swarren@wwwdotorg.org> 
-wrote:
-> >> On 08/23/2013 12:45 PM, Linus Walleij wrote:
-> >>> This is a perfectly OK thing to do as long as it is done like
-> >>> this:
-> >>> 
-> >>> request_gpio(gpio);
-> >>> gpio_direction_input(gpio);
-> >>> request_irq(gpio_to_irq(gpio));
-> >> 
-> >> But I'm not aware that there's a rule saying it's illegal to:
-> >> 
-> >> request_irq(gpio_to_irq(gpio));
-> >> request_gpio(gpio);
-> >> gpio_direction_input(gpio);
-> > 
-> > No but I think there should be one ... maybe I'm an oddball
-> > but it seems natural to request a GPIO before tying
-> > IRQs to fire off it.
+Hi Lee,
+
+On Mon, Sep 02, 2013 at 10:37:47AM +0100, Lee Jones wrote:
+> The following changes since commit 2b274fe522e9d5ac7397e07e3516bb10e3c2ee92:
 > 
-> What if there is no GPIO?
-
-If there is no GPIO there is no gpio-controller and there is no problem.
-
-> There are plenty of chips with dedicated IRQ input pins that can't be
-> read as GPIOs, or treated as GPIOs in any way.
+>   mfd: 88pm805: Fix potential NULL pdata dereference (2013-09-02 11:00:16 +0200)
 > 
-> If a driver only needs IRQ input functionality, it should just request
-> an IRQ and be done with it. There should be no need at all for the
-> driver to know that the IRQ might be routed into a GPIO controller, and
-> hence that the driver may (or may not) need to additionally request the
-> GPIO before requesting the IRQ.
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.12-2
+> 
+> for you to fetch changes up to 02a0bf6e351de6bcda4ddeeb2af34197a4e6d591:
+> 
+>   mfd: ucb1x00-core: Rewrite ucb1x00_add_dev() (2013-09-02 10:22:46 +0100)
+> 
+> ----------------------------------------------------------------
+> mfd-lee-3.12-2
+> 
+> These are the final patches due for the v3.12 merge window.
+Pulled, thanks a lot.
 
-Yes, you're right, but reality is different. Legacy drivers / board-files do:
+Cheers,
+Samuel.
 
-request_gpio(gpio);
-gpio_direction_input(gpio);
-request_irq(gpio_to_irq(gpio));
- 
-> In other words, request_irq() must do everything necessary for the input
-> signal to operate as an IRQ input, irrespective of whether it might be
-> possible to use that input signal as a GPIO.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
