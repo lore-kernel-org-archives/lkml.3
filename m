@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728Ab3IBOwV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:52:21 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51910 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755Ab3IBOwU (ORCPT
+	id S1758803Ab3IBOyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:54:25 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:62792 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526Ab3IBOyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:52:20 -0400
-Date: Mon, 2 Sep 2013 15:50:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i2c: Fix broken TDA998x audio (was: Re: [PATCH v2
-	5/8] drm/i2c: tda998x: add video and audio input configuration)
-Message-ID: <20130902145057.GX6617@n2100.arm.linux.org.uk>
-References: <1376509413-1462-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376509413-1462-6-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 2 Sep 2013 10:54:24 -0400
+Message-ID: <5224A69C.9000600@linaro.org>
+Date: Mon, 02 Sep 2013 16:54:20 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376509413-1462-6-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ARM/ARM64 architected timer updates for v3.12, take
+ 2
+References: <5220CDD8.6090903@arm.com>
+In-Reply-To: <5220CDD8.6090903@arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:43:30PM +0200, Sebastian Hesselbarth wrote:
-> From: Russell King <rmk+kernel@arm.linux.org.uk>
-> 
-> This patch adds tda998x specific parameters to allow it to be configured
-> for different boards using it. Also, this implements rudimentary audio
-> support for S/PDIF attached controllers.
-> 
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Tested-by: Darren Etheridge <detheridge@ti.com>
-> ---
+On 08/30/2013 06:52 PM, Sudeep KarkadaNagesha wrote:
+> git://linux-arm.org/linux-skn.git timer_evtstrm
 
-It looks like there's been a bug introduced in this patch (which wasn't
-in my original).
+Hi Sudeep,
 
-> @@ -445,8 +681,7 @@ tda998x_encoder_dpms(struct drm_encoder *encoder, int mode)
->  
->  	switch (mode) {
->  	case DRM_MODE_DPMS_ON:
-> -		/* enable audio and video ports */
-> -		reg_write(encoder, REG_ENA_AP, 0xff);
-> +		/* enable video ports, audio will be enabled later */
->  		reg_write(encoder, REG_ENA_VP_0, 0xff);
->  		reg_write(encoder, REG_ENA_VP_1, 0xff);
->  		reg_write(encoder, REG_ENA_VP_2, 0xff);
+I don't see the acked-by from Olof or Kevin.
 
-I also disabled the writing to REG_ENA_AP in the DPMS off path as well,
-which clears this register.
+Your patchset touches files under arch/arm which are maintained by them
+and I won't take the patchset if they don't agree the modifications on
+the files falling under my umbrella that will pass through my tree.
 
-That seems to be missing from this patch, and it means that when the
-display is placed into DPMS-off mode, the audio inputs are disabled,
-never to be re-enabled.  There is no need to disable the audio input
-in DPMS-off mode.
+Please do it ASAP if you want a chance to hit 3.12, it is already very late.
 
-8<=============
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH] drm/i2c: Fix broken TDA998x audio
+Thanks
+  -- Daniel
 
-In patch "drm/i2c: tda998x: add video and audio input configuration" in
-its original version, disabling the audio input port was removed.  The
-version which was submitted for merging had this change deleted, which
-results in audio being non-functional.  Fix this by removing the write.
-While here, update the comment too.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
---- 
- drivers/gpu/drm/i2c/tda998x_drv.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 5742cfc..59878af 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -705,8 +705,7 @@ tda998x_encoder_dpms(struct drm_encoder *encoder, int mode)
- 		reg_write(encoder, REG_VIP_CNTRL_2, priv->vip_cntrl_2);
- 		break;
- 	case DRM_MODE_DPMS_OFF:
--		/* disable audio and video ports */
--		reg_write(encoder, REG_ENA_AP, 0x00);
-+		/* disable video ports */
- 		reg_write(encoder, REG_ENA_VP_0, 0x00);
- 		reg_write(encoder, REG_ENA_VP_1, 0x00);
- 		reg_write(encoder, REG_ENA_VP_2, 0x00);
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
