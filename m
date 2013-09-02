@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab3IBTZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 15:25:41 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57467 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757102Ab3IBTZk (ORCPT
+	id S1758937Ab3IBT0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 15:26:20 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:20538 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757112Ab3IBT0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 15:25:40 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Mon, 02 Sep 2013 14:25:37 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5224E62F.1050400@roeck-us.net>
-Date: Mon, 02 Sep 2013 12:25:35 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 15:26:18 -0400
+Message-ID: <5224E647.80303@hp.com>
+Date: Mon, 02 Sep 2013 15:25:59 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Introduce hwmon_device_register_with_groups and
-References: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+References: <5220E56A.80603@hp.com> <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com> <5220F090.5050908@hp.com> <20130830194059.GC13318@ZenIV.linux.org.uk> <5220F811.9060902@hp.com> <20130830202608.GD13318@ZenIV.linux.org.uk> <52210225.60805@hp.com> <20130830204852.GE13318@ZenIV.linux.org.uk> <52214EBC.90100@hp.com> <20130831023516.GI13318@ZenIV.linux.org.uk> <20130831024233.GJ13318@ZenIV.linux.org.uk>
+In-Reply-To: <20130831024233.GJ13318@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2013 07:48 PM, Guenter Roeck wrote:
-> This patch series introduces new hwmon API functions
-> hwmon_device_register_with_groups() and devm_hwmon_device_register_with_groups().
+On 08/30/2013 10:42 PM, Al Viro wrote:
+> On Sat, Aug 31, 2013 at 03:35:16AM +0100, Al Viro wrote:
 >
-> hwmon_device_register_with_groups() lets callers register hwmon devices
-> as well as associated sysfs attributes with a single call. This simplifies
-> hwmon device registration and avoids potential race conditions seen
-> if sysfs attributes are created after the initial hwmon device was
-> registered.
+>> Aha...  OK, I see what's going on.  We end up with shm_mnt *not* marked
+>> as long-living vfsmount, even though it lives forever.  See if the
+>> following helps; if it does (and I very much expect it to), we want to
+>> put it in -stable.  As it is, you get slow path in mntput() each time
+>> a file created by shmem_file_setup() gets closed.  For no reason whatsoever...
+> We still want MS_NOUSER on shm_mnt, so we'd better make sure that
+> shmem_fill_super() sets it on the internal instance...  Fixed variant
+> follows:
 >
-> devm_hwmon_device_register_with_groups() is the managed version of the same
-> function.
+> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index e43dc55..5261498 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2615,13 +2615,15 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
+>   	 * tmpfs instance, limiting inodes to one per page of lowmem;
+>   	 * but the internal instance is left unlimited.
+>   	 */
+> -	if (!(sb->s_flags&  MS_NOUSER)) {
+> +	if (!(sb->s_flags&  MS_KERNMOUNT)) {
+>   		sbinfo->max_blocks = shmem_default_max_blocks();
+>   		sbinfo->max_inodes = shmem_default_max_inodes();
+>   		if (shmem_parse_options(data, sbinfo, false)) {
+>   			err = -EINVAL;
+>   			goto failed;
+>   		}
+> +	} else {
+> +		sb->s_flags |= MS_NOUSER;
+>   	}
+>   	sb->s_export_op =&shmem_export_ops;
+>   	sb->s_flags |= MS_NOSEC;
+> @@ -2831,8 +2833,7 @@ int __init shmem_init(void)
+>   		goto out2;
+>   	}
 >
-Jean, any comments on this patch series ?
+> -	shm_mnt = vfs_kern_mount(&shmem_fs_type, MS_NOUSER,
+> -				 shmem_fs_type.name, NULL);
+> +	shm_mnt = kern_mount(&shmem_fs_type);
+>   	if (IS_ERR(shm_mnt)) {
+>   		error = PTR_ERR(shm_mnt);
+>   		printk(KERN_ERR "Could not kern_mount tmpfs\n");
 
-If you are ok with it, I would like to push the new API (patches 1 and 7 of the series)
-into 3.12, and keep the rest for 3.13.
+Yes, that patch worked. It eliminated the lglock as a bottleneck in the 
+AIM7 workload. The lg_global_lock did not show up in the perf profile, 
+whereas the lg_local_lock was only 0.07%.
 
-Thanks,
-Guenter
-
-> The rationale for the new API is that sysfs attributes should be created
-> synchronously with device creation to avoid race conditions, as outlined in
-> http://www.linuxfoundation.org/news-media/blogs/browse/2013/06/how-create-sysfs-file-correctly.
->
-> The first patch of the series introduces hwmon_device_register_with_groups().
->
-> Patches 2 to 6 convert some hwmon drivers to use the new API to show and
-> test its use. Only the ds1621 and nct6775 patches have been tested at this time;
-> the others are informational to show the potential of the new functions.
->
-> Patch 7 introduces devm_hwmon_device_register_with_groups() and
-> the matching function devm_hwmon_device_unregister(). Patch 8 and 9
-> convert the nct6775 and ds1621 drivers drivers to use this function.
->
-> hwmon attributes
->
-> The old hwmon API attaches hwmon attributes to the parent device, not to the
-> hwmon device itself. With the new API, hwmon attributes are attached to the
-> hwmon device itself.
->
-> Handling the 'name' attribute for hwmon drivers
->
-> Since sysfs attributes are no longer attached to the parent device, the
-> mandatory 'name' attribute has to be created explicitly. For some drivers,
-> this was already the case. I2c drivers, however, create the 'name' attribute
-> in the i2c core, and it was used by the hwmon driver.
->
-> To simplify name attribute handling, the value of the 'name' attribute is
-> passed as parameter to hwmon_device_register_with_groups(). The hwmon core
-> creates and manages the attribute. If a NULL pointer is passed instead of
-> a name, the attribute is not created.
->
-> Unfortunately, since we need a variable to store the pointer to 'name',
-> it was necessary to create an internal 'struct hwmon_device'. For this
-> reason, device_create(), or rather device_create_with_groups() can no
-> longer be used to create the actual device. device_register() is used
-> instead, and the device data structures are managed locally.
-> [ If there is a better solution for this problem, I am listening. ]
->
-> The series is based on my hwmon-next branch and should apply to the top of
-> linux-next.
->
-> ---------
->
-> v2: Rename API functions
-> 	device_create_groups -> device_create_with_groups
->      	hwmon_device_register_groups -> hwmon_device_register_with_groups
->      Additional parameter 'void *drvdata' for hwmon_device_register_groups.
->      Additional parameter 'name' for hwmon_device_register_groups.
->      Introduce devm_hwmon_device_register_with_groups().
->      Various fixes in hwmon driver conversions.
->
->
-
+Regards,
+Longman
