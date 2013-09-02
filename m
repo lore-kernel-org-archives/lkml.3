@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3IBOZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:25:50 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:48988 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab3IBOZt (ORCPT
+	id S1758677Ab3IBO2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:28:52 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:64382 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab3IBO2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:25:49 -0400
-Date: Mon, 2 Sep 2013 17:24:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130902142431.GC2368@swordfish.minsk.epam.com>
-References: <20130820111426.GA27828@swordfish.datadirectnet.com>
- <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902141350.GC2378@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130902141350.GC2378@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Sep 2013 10:28:50 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: viro@zeniv.linux.org.uk, mtk.manpages@gmail.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, david@fromorbit.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v2 0/7] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+Date: Mon,  2 Sep 2013 23:28:38 +0900
+Message-Id: <1378132118-2617-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (09/02/13 16:13), Frederic Weisbecker wrote:
-> > On Mon, Sep 02, 2013 at 03:07:45PM +0200, Frederic Weisbecker wrote:
-> > > > Hope this may help.
-> > > > I've added a silly check to make sure that `stime < rtime'
-> > > > 
-> > > > @@ -579,6 +582,10 @@ static void cputime_adjust(struct task_cputime *curr,
-> > > >         if (total) {
-> > > >                 stime = scale_stime((__force u64)stime,
-> > > >                                     (__force u64)rtime, (__force u64)total);
-> > > > +               if (stime > rtime) {
-> > > > +                       printk(KERN_ERR "Ooops: stime:%llu rtime:%llu\n", stime, rtime);
-> > > > +                       WARN_ON(1);
-> > > > +               }
-> > > >                 utime = rtime - stime;
-> > > >         } else {
-> > > >                 stime = rtime;
-> > [snip]
-> > 
-> > > Thanks a lot Sergey for testing this further!
-> > > 
-> > > Interesting results, so rtime is always one or two units off stime after scaling.
-> > > Stanislaw made the scaling code with Linus and he has a better idea on the math guts
-> > > here.
-> > 
-> > I don't think this is scale issue, but rather at scale_stime() input
-> > stime is already bigger then rtime. Sergey, could you verify that
-> > by adding check before scale_stime() ?
-> 
-> Note that having stime > rtime should be fine to handle. This can happen for
-> example if the task runs on tiny timeslices but is unlucky enough that all these
-> timeslices are interrupted by the tick.
->
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-even is stime > rtime, scale_stime() fixes it:
+This patch series is in response of the following post:
+http://lwn.net/Articles/556136/
+"ext4: introduce two new ioctls"
 
-	if (stime > rtime)
-		swap(rtime, stime);
+Dave chinner suggested that truncate_block_range (which was one of the ioctls name)
+should be an fallocate operation and not any fs specific ioctl, hence
+we add this functionality to fallocate.
 
-	-ss
+This patch series introduces new flag FALLOC_FL_COLLAPSE_RANGE for fallocate
+and implements it for XFS and Ext4.
+
+The semantics of this flag are following:
+1) It collapses the range lying between offset and length by removing any data
+   blocks which are present in this range and than updates all the logical
+   offsets of extents beyond "offset + len" to nullify the hole created by
+   removing blocks. In short, it does not leave a hole.
+2) It should be used exclusively. No other fallocate flag in combination.
+3) Offset and length supplied to fallocate should be fs block size aligned.
+
+This new functionality of collapsing range could be used by media editing tools
+which does non linear editing to quickly purge and edit parts of a media file.
+This will immensely improve the performance of these operations.
+The limitation of fs block size aligned offsets can be easily handled
+by media codecs which are encapsulated in a conatiner as they have to
+just change the offset to next keyframe value to match the proper alignment.
+
+Change log
+v2:
+ Fix review points from Dave Chinner.
+  - merge adjacent extents
+  - fix journal log usage.
+  - change reasonable function name.
+  - update xfsio, xfstest, manpage
+  - etc.
+
+Namjae Jeon (7):
+  fs: add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+  xfs: add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+  ext4: add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+  xfsprogs: xfsio: add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+  xfstest: Add test case to check various corner cases for collapsing range
+  xfstest: Add test case to test multiple collapse range call
+  manpage: update FALLOC_FL_COLLAPSE_RANGE flag in fallocate
+
+-- 
+1.7.9.5
+
