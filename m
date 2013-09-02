@@ -1,172 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab3IBOJu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:09:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43032 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab3IBOJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:09:44 -0400
-Message-ID: <52249C07.60806@ti.com>
-Date: Mon, 2 Sep 2013 10:09:11 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758650Ab3IBOMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:12:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52179 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754623Ab3IBOMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 10:12:51 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Pavel Machek <pavel@ucw.cz>, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH RFC 0/6] ARM: OMAP2+: AM43x/AM335x prcm reset driver
+Date: Mon, 2 Sep 2013 19:41:55 +0530
+Message-ID: <cover.1378129416.git.afzal@ti.com>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: <rui.zhang@intel.com>, <rjw@sisk.pl>, <wni@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCHv2 3/5] drivers: thermal: make usage of CONFIG_THERMAL_HWMON
- optional
-References: <1377648836.2335.252.camel@rzhang-lenovo> <1377807167-12206-1-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1377807167-12206-1-git-send-email-eduardo.valentin@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="0mIav62nf4FJ8O5QmP66SWVpUHboEg6uX"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0mIav62nf4FJ8O5QmP66SWVpUHboEg6uX
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On 29-08-2013 16:12, Eduardo Valentin wrote:
-> When registering a new thermal_device, the thermal framework
-> will always add a hwmon sysfs interface.
->=20
-> This patch adds a flag to make this behavior optional. Now
-> when registering a new thermal device, the caller can
-> optionally inform if hwmon interface is desirable. This can
-> be done by means of passing a thermal_zone_params.no_hwmon =3D=3D true.=
+This is an attempt to achieve reset on AM43x/AM335x based SoC's with
+reset driver making use of the reset framework.
 
->=20
-> In order to keep same behavior as of today, all current
-> calls will by default create the hwmon interface.
->=20
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Suggested-by: Wei Ni <wni@nvidia.com>
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  Documentation/thermal/sysfs-api.txt | 5 +++++
->  drivers/thermal/thermal_core.c      | 8 +++++---
->  include/linux/thermal.h             | 8 ++++++++
->  3 files changed, 18 insertions(+), 3 deletions(-)
-> ---
->=20
-> Hello all,
->=20
-> So, here is then a different way of implementing same feature.
-> As requested by Rui, now the flag goes via thermal_zone_params,
-> because this seams to be the preferred way, at least in near future.
->=20
-> Using this method the amount of subsystems involved is reduced to 1:
-> thermal, as requested by Raphael. I just made is a negative flag
-> in order to keep the same behavior of the existing drivers, without
-> changing them. The flag is documented though.
->=20
+prcm node is added in device tree, which would hold reset bindings.
+Initially node was made as a one that represents reset functionality
+of SoC. but ended up with node for prcm (which is felt to be natural
+choice) instead. I am a bit doubtful whether placement of prcm node in
+root node as in this series is the right thing.
 
-Objections on this way of adding this flag?
+Reset driver gets probed for specific prcm node, the same defines
+register details to be used for a particular SoC (using ".data" field
+associated with ".compatible" in driver match table).
 
-Rui,
+Another option to handle different SoC's would be to add register
+details to DT and let the driver extract it from DT. I vaguely
+remember seeing a thread mentioning that putting register details in
+DT is not preferred. But open to putting register level details
+instead in DT if that is being generally preferred. This would have
+advantage that adding reset support for a new SoC would be easier, but
+would have to put more thought before doing so as DT bindings should
+not change.
 
-If you are OK, I can add this series to my tree too.
+With the approach taken here, for supporting a new SoC with new prcm
+register details, driver would have to be updated much like the way a
+pci based ethernet driver would have to be updated to handle a new IP
+version that is not register level compatible with the existing ones.
 
+In this series out of the three IP's (gfx, m3, pruss) that would need
+reset support, here as a proof of concept only gfx is taken care.
+Other's can be easily supported by adding new register data array
+entries.
 
-> All best,
->=20
->=20
-> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/therma=
-l/sysfs-api.txt
-> index a71bd5b..37c5486 100644
-> --- a/Documentation/thermal/sysfs-api.txt
-> +++ b/Documentation/thermal/sysfs-api.txt
-> @@ -142,6 +142,11 @@ temperature) and throttle appropriate devices.
->      This is an optional feature where some platforms can choose not to=
+Two new reset API's are provided to check whether reset is ready and
+to clear reset. This would be required in case IP needs to mix reset
+handling procedure with power/clock managment procedure to achieve
+proper reset and these procedures are sometimes IP specific that would
+make it difficult to handle reset fully in pm_runtime platform support.
 
->      provide this data.
->      .governor_name: Name of the thermal governor used for this zone
-> +    .no_hwmon: a boolean to indicate if the thermal to hwmon sysfs int=
-erface
-> +               is required. when no_hwmon =3D=3D false, a hwmon sysfs =
-interface
-> +               will be created. when no_hwmon =3D=3D true, nothing wil=
-l be done.
-> +               In case the thermal_zone_params is NULL, the hwmon inte=
-rface
-> +               will be created (for backward compatibility).
->      .num_tbps: Number of thermal_bind_params entries for this zone
->      .tbp: thermal_bind_params entries
-> =20
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_c=
-ore.c
-> index 247528b..51648bf 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -1462,9 +1462,11 @@ struct thermal_zone_device *thermal_zone_device_=
-register(const char *type,
-> =20
->  	mutex_unlock(&thermal_governor_lock);
-> =20
-> -	result =3D thermal_add_hwmon_sysfs(tz);
-> -	if (result)
-> -		goto unregister;
-> +	if (!tz->tzp || !tz->tzp->no_hwmon) {
-> +		result =3D thermal_add_hwmon_sysfs(tz);
-> +		if (result)
-> +			goto unregister;
-> +	}
-> =20
->  	mutex_lock(&thermal_list_lock);
->  	list_add_tail(&tz->node, &thermal_tz_list);
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index a386a1c..b4a975f 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -214,6 +214,14 @@ struct thermal_bind_params {
->  /* Structure to define Thermal Zone parameters */
->  struct thermal_zone_params {
->  	char governor_name[THERMAL_NAME_LENGTH];
-> +
-> +	/*
-> +	 * a boolean to indicate if the thermal to hwmon sysfs interface
-> +	 * is required. when no_hwmon =3D=3D false, a hwmon sysfs interface
-> +	 * will be created. when no_hwmon =3D=3D true, nothing will be done
-> +	 */
-> +	bool no_hwmon;
-> +
->  	int num_tbps;	/* Number of tbp entries */
->  	struct thermal_bind_params *tbp;
->  };
->=20
+*------*
+client IP handling s/w (DT based) should do as follows:
+
+1. Specify reset handle in the relevant DT node, for eg.
+
+	myip@deadbeef {
+		:
+		:
+		/* here prcm is the handle to reset binding node */
+		resets = <&prcm 0>;
+	};
+
+2. In driver, that require reset to be deasserted,
+ (this is the sequence required for gfx on AM43x/AM335x, this would
+  depend on requirements of the IP)
+
+	mydriver_probe(struct platform device *pdev)
+	{
+		:
+		:
+		reset_control_get(&pdev->dev, NULL);
+		reset_control_clear_reset();
+		reset_control_deassert();
+		pm_runtime_get_sync();
+		if (reset_control_is_reset() != true)
+			goto err;
+		reset_control_put();
+		:
+		:
+	}
+
+*------*
+
+May be removing reset handling in hwmod can be considered by making
+use of reset driver.
+
+Or as another extreme, perhaps, other logic's in the prcm can be
+handled by a new prcm driver and then this reset driver can be a child
+of it.
+
+Regards
+Afzal
 
 
+Afzal Mohammed (6):
+  reset: is_reset and clear_reset api's
+  doc: dt: binding: omap: am43x/am335x prcm reset
+  reset: am43x/am335x support
+  ARM: OMAP2+: AM43x/AM335x: have reset controller
+  ARM: dts: AM335x: prcm node (for reset)
+  ARM: dts: AM4372: prcm node (for reset)
 
+ .../devicetree/bindings/arm/omap/prcm.txt          |  13 ++
+ arch/arm/boot/dts/am33xx.dtsi                      |   6 +
+ arch/arm/boot/dts/am4372.dtsi                      |   6 +
+ arch/arm/mach-omap2/Kconfig                        |   2 +
+ drivers/reset/Kconfig                              |  14 ++
+ drivers/reset/Makefile                             |   1 +
+ drivers/reset/amx3_reset.c                         | 157 +++++++++++++++++++++
+ drivers/reset/core.c                               |  32 +++++
+ include/linux/reset-controller.h                   |   2 +
+ include/linux/reset.h                              |   2 +
+ 10 files changed, 235 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/omap/prcm.txt
+ create mode 100644 drivers/reset/amx3_reset.c
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+-- 
+1.8.3.4
 
-Eduardo Valentin
-
-
---0mIav62nf4FJ8O5QmP66SWVpUHboEg6uX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlIknAcACgkQCXcVR3XQvP3vzwD/fiYJ3cVogc+jjYLNqQlZwDdH
-Hd5DjJM8r/UidZ8iZzAA/R+xQhW0Ct+5NwMI5fgu1BJ/GCh9W/AhX22TM0aSarno
-=U70H
------END PGP SIGNATURE-----
-
---0mIav62nf4FJ8O5QmP66SWVpUHboEg6uX--
