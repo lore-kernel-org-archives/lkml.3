@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab3IBUEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 16:04:06 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54756 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860Ab3IBUEE (ORCPT
+	id S1758952Ab3IBUcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 16:32:52 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:51074 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab3IBUcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 16:04:04 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5224EF32.5060104@roeck-us.net>
-Date: Mon, 02 Sep 2013 13:04:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 16:32:50 -0400
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
- updating Documentation/CodingStyle
-References: <9976.1378132260@warthog.procyon.org.uk> <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf> <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com> <1378148367.1953.98.camel@joe-AO722> <20130902195056.GB32628@leaf>
-In-Reply-To: <20130902195056.GB32628@leaf>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 2 Sep 2013 22:32:49 +0200
+Message-ID: <CAFLxGvwLJs0ZrOZN-g=fCDEN4eAOQMjW_Nojm9fm5Rq0GKk9AQ@mail.gmail.com>
+Subject: OCFS2: ocfs2_read_blocks:285 ERROR: block 532737 had the JBD bit set
+ while I was in lock_buffer!
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 12:50 PM, Josh Triplett wrote:
-> On Mon, Sep 02, 2013 at 11:59:27AM -0700, Joe Perches wrote:
->> On Mon, 2013-09-02 at 15:39 -0300, Mauro Carvalho Chehab wrote:
->>> Em Mon, 2 Sep 2013 11:19:01 -0700
->>> Josh Triplett <josh@joshtriplett.org> escreveu:
->> []
->>>> +# This file does not define the kernel coding style; Documentation/CodingStyle
->>>> +# does.  If you add a new style test to this file, add the corresponding style
->>>> +# rule it enforces to Documentation/CodingStyle.
->>
->>> Agreed with that.
->>
->> I do not.
->>
->>> I would also add another comment there: "in case of
->>> conflicts between checkpatch.pl and Documentation/CodingStyle, the latter
->>> takes precedence."
->>
->> There are many checkpatch rules (like semicolons) that
->> are not in CodingStyle.
->
-> It's a rule of thumb, not a mandate.  In *general*, checkpatch.pl should
-> not be enforcing style rules that aren't documented in CodingStyle.
->
+Hi!
 
-Oddly enough, the opposite is true as well. 3.1, spaces around binary
-and ternary operators, is for example not enforced, presumably because
-it would generate too many positives. Since I like that rule, I have
-my private version of checkpatch.pl which does check for it. After all,
-it _is_ a CodingStyle rule.
+Today one of my computers crashed with the following panic.
+The machine is heavily using reflinks.
+Looks like it managed to hit a CATCH_BH_JBD_RACES error check.
 
-Guenter
+<3>[37628.934461] (reflink,512,0):ocfs2_reflink_ioctl:4459 ERROR: status = -17
+<3>[37628.943160] (kworker/u:2,809,1):ocfs2_read_blocks:285 ERROR:
+block 532737 had the JBD bit set while I was in lock_buffer!
+<4>[37628.943169] ------------[ cut here ]------------
+<2>[37628.944464] kernel BUG at
+/home/rw/work/ssworkstation/maker/_source/kernel/fs/ocfs2/buffer_head_io.c:286!
+<4>[37628.945134] invalid opcode: 0000 [#1] PREEMPT SMP
+<4>[37628.945809] CPU 1
+<4>[37628.945817] Pid: 809, comm: kworker/u:2 Not tainted 3.8.4+ #46
+               /
+<4>[37628.947167] RIP: 0010:[<ffffffff8125afa0>]  [<ffffffff8125afa0>]
+ocfs2_read_blocks+0x410/0x610
+<4>[37628.947880] RSP: 0018:ffff880234631908  EFLAGS: 00010292
+<4>[37628.948593] RAX: 000000000000006d RBX: 0000000000000001 RCX:
+0000000000000067
+<4>[37628.949317] RDX: 0000000000000048 RSI: 0000000000000046 RDI:
+ffffffff8214c0dc
+Oops#1 Part3
+<4>[37628.950037] RBP: ffff880234631988 R08: 000000000000000a R09:
+000000000000d490
+<4>[37628.950758] R10: 0000000000000000 R11: 0000000000000004 R12:
+0000000000082101
+<4>[37628.951477] R13: ffff880233147980 R14: 0000000000000000 R15:
+ffff880216ca2208
+<4>[37628.952201] FS:  0000000000000000(0000)
+GS:ffff88023e280000(0000) knlGS:0000000000000000
+<4>[37628.952936] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[37628.953669] CR2: 00007fe7ea29fc62 CR3: 0000000006c0b000 CR4:
+00000000000407e0
+<4>[37628.954421] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+<4>[37628.955176] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+<4>[37628.955925] Process kworker/u:2 (pid: 809, threadinfo
+ffff880234630000, task ffff880234ba86e0)
+<4>[37628.956689] Stack:
+<4>[37628.957461]  0000000000082101 ffffea0008900880 ffff880234631948
+0000000000001000
+<4>[37628.958250]  0000000000082102 0000000000082102 ffffffff81295eb0
+0000000000000000
+Oops#1 Part2
+<4>[37628.959044]  ffff88023428c000 0000000100000000 0000000000000000
+ffff8802346319f0
+<4>[37628.959844] Call Trace:
+<4>[37628.960639]  [<ffffffff81295eb0>] ? ocfs2_read_refcount_block+0x50/0x50
+<4>[37628.961453]  [<ffffffff81295e8b>] ocfs2_read_refcount_block+0x2b/0x50
+<4>[37628.962249]  [<ffffffff81297417>] ocfs2_get_refcount_tree+0xa7/0x350
+<4>[37628.963042]  [<ffffffff8115c6d1>] ? __find_get_block+0xa1/0x1e0
+<4>[37628.963835]  [<ffffffff8129c5e8>] ocfs2_lock_refcount_tree+0x48/0x4f0
+<4>[37628.964645]  [<ffffffff8124fccb>] ocfs2_remove_btree_range+0xab/0xb30
+<4>[37628.965452]  [<ffffffff81253a99>] ocfs2_commit_truncate+0x139/0x550
+<4>[37628.966247]  [<ffffffff812844c0>] ? ocfs2_extend_trans+0x1c0/0x1c0
+<4>[37628.967049]  [<ffffffff8127e36e>] ocfs2_evict_inode+0x89e/0x2530
+<4>[37628.967851]  [<ffffffff81154a78>] ? __inode_wait_for_writeback+0x68/0xc0
+<4>[37628.968645]  [<ffffffff8114878f>] evict+0xaf/0x1b0
+<4>[37628.969432]  [<ffffffff81149495>] iput+0x105/0x1a0
+Oops#1 Part1
+<4>[37628.970213]  [<ffffffff8125b557>] __ocfs2_drop_dl_inodes.isra.14+0x47/0x80
+<4>[37628.971002]  [<ffffffff8125bd65>] ocfs2_drop_dl_inodes+0x25/0xa0
+<4>[37628.971788]  [<ffffffff81087dc7>] process_one_work+0x147/0x470
+<4>[37628.972580]  [<ffffffff810884bd>] worker_thread+0x14d/0x3f0
+<4>[37628.973381]  [<ffffffff81088370>] ? rescuer_thread+0x240/0x240
+<4>[37628.974175]  [<ffffffff8108db5b>] kthread+0xbb/0xc0
+<4>[37628.974960]  [<ffffffff8108daa0>] ? __kthread_parkme+0x80/0x80
+<4>[37628.975747]  [<ffffffff817dd9ec>] ret_from_fork+0x7c/0xb0
+<4>[37628.976529]  [<ffffffff8108daa0>] ? __kthread_parkme+0x80/0x80
+<4>[37628.977307] Code: 0f 0b 4c 89 ff e8 11 0b f0 ff e9 f2 fc ff ff
+48 b8 00 00 00 00 00 00 00 10 48 85 05 2b 58 9d 00 74 09 48 85 05 c2
+79 f4 00 74 02 <0f> 0b 65 48 8b 14 25 70 b8 00 00 48 8d 82 28 e0 ff ff
+4d 8b 67
+<1>[37628.979053] RIP  [<ffffffff8125afa0>] ocfs2_read_blocks+0x410/0x610
+<4>[37628.979893]  RSP <ffff880234631908>
+<4>[37628.983420] ---[ end trace c03a48f44cf30d5e ]---
 
->> CodingStyle should not become some intensely detailed
->> document that specifies the "only one true way" to
->> write code.
->
-> Any rule that maintainers are likely to enforce on patches they review
-> should live in Documentation/CodingStyle; unwritten rules are a bad
-> idea.  Any rule that maintainers are *not* likely to enforce shouldn't
-> go in scripts/checkpatch.pl.
->
-
-
+-- 
+Thanks,
+//richard
