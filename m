@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab3IBKan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 06:30:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7573 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754937Ab3IBKak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 06:30:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1006,1367996400"; 
-   d="scan'208";a="354790393"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>, <stable@vger.kernel.org>
-Subject: [char-misc-next 1/3] mei: make me client counters less error prone
-Date: Mon,  2 Sep 2013 13:29:45 +0300
-Message-Id: <1378117787-11528-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378117787-11528-1-git-send-email-tomas.winkler@intel.com>
-References: <1378117787-11528-1-git-send-email-tomas.winkler@intel.com>
+	id S1758386Ab3IBKa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 06:30:57 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:50986 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758268Ab3IBKar (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 06:30:47 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+55aFzBBADPxK3mJrKt2Qx-y-VJjk9fOrN6A0YRPrujXBNeQg@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
+	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+	<CA+icZUWPUDorK+9KRD-H3FpbDeC_7LMatzrYk35jZk13vNuLBQ@mail.gmail.com>
+	<CA+55aFzBBADPxK3mJrKt2Qx-y-VJjk9fOrN6A0YRPrujXBNeQg@mail.gmail.com>
+Date: Mon, 2 Sep 2013 12:30:45 +0200
+Message-ID: <CA+icZUWHS2QeWTN0a8DwmMJ1UnvKjvox8t9MTLXMMU8oQOHtCQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. u8 counters are prone to hard to detect overflow:
- make them unsigned long to match bit_ functions argument type
+On Sun, Sep 1, 2013 at 5:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Sep 1, 2013 at 8:45 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> Samples: 160K of event 'cycles:pp', Event count (approx.): 77003901089
+>> +  12,46%  t_lockref_from-  [kernel.kallsyms]     [k] irq_return
+>> +   4,86%  t_lockref_from-  [kernel.kallsyms]     [k] lockref_get_or_lock
+>> +   4,42%  t_lockref_from-  [kernel.kallsyms]     [k] __ticket_spin_lock
+>> +   4,28%  t_lockref_from-  [kernel.kallsyms]     [k] __acct_update_integrals
+>
+> You need to go into __ticket_spin_lock to see who the callers are.
+>
+> Just go down to it and press enter to expand it (and then you need to
+> go and expand that entry too to get the callers)
+>
 
-2. don't check me_clients_num for negativity, it is unsigned.
+I am new to perf usage.
 
-3. init all the me client counters from one place
+  4,60%  t_lockref_from-  [kernel.kallsyms]     [k] __ticket_spin_lock
 
-Cc:  <stable@vger.kernel.org> # 3.9+
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/hbm.c     | 10 ++++++----
- drivers/misc/mei/mei_dev.h |  6 +++---
- 2 files changed, 9 insertions(+), 7 deletions(-)
+Which entry to select?
 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index f706fe8..52afe1e 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -35,11 +35,15 @@ static void mei_hbm_me_cl_allocate(struct mei_device *dev)
- 	struct mei_me_client *clients;
- 	int b;
- 
-+	dev->me_clients_num = 0;
-+	dev->me_client_presentation_num = 0;
-+	dev->me_client_index = 0;
-+
- 	/* count how many ME clients we have */
- 	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
- 		dev->me_clients_num++;
- 
--	if (dev->me_clients_num <= 0)
-+	if (dev->me_clients_num == 0)
- 		return;
- 
- 	kfree(dev->me_clients);
-@@ -221,7 +225,7 @@ static int mei_hbm_prop_req(struct mei_device *dev)
- 	struct hbm_props_request *prop_req;
- 	const size_t len = sizeof(struct hbm_props_request);
- 	unsigned long next_client_index;
--	u8 client_num;
-+	unsigned long client_num;
- 
- 
- 	client_num = dev->me_client_presentation_num;
-@@ -680,8 +684,6 @@ void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
- 		if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
- 		    dev->hbm_state == MEI_HBM_ENUM_CLIENTS) {
- 				dev->init_clients_timer = 0;
--				dev->me_client_presentation_num = 0;
--				dev->me_client_index = 0;
- 				mei_hbm_me_cl_allocate(dev);
- 				dev->hbm_state = MEI_HBM_CLIENT_PROPERTIES;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 7b918b2..456b322 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -396,9 +396,9 @@ struct mei_device {
- 	struct mei_me_client *me_clients; /* Note: memory has to be allocated */
- 	DECLARE_BITMAP(me_clients_map, MEI_CLIENTS_MAX);
- 	DECLARE_BITMAP(host_clients_map, MEI_CLIENTS_MAX);
--	u8 me_clients_num;
--	u8 me_client_presentation_num;
--	u8 me_client_index;
-+	unsigned long me_clients_num;
-+	unsigned long me_client_presentation_num;
-+	unsigned long me_client_index;
- 
- 	struct mei_cl wd_cl;
- 	enum mei_wd_states wd_state;
--- 
-1.8.3.1
+Annotate __ticket_spin_lock
+Zoom into t_lockref_from-(3962) thread
+Zoom into the Kernel DSO
+Browse map details
+Run scripts for samples of thread [t_lockref_from-]
+Run scripts for samples of symbol [__ticket_spin_lock]
+Run scripts for all samples
+Switch to another data file in PWD
+Exit
 
+> I still don't know how you get to irq_return. It should use sysret. Odd.
+
+- Sedat -
