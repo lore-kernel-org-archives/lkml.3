@@ -1,152 +1,483 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3IBI5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:57:36 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:52947 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758128Ab3IBI5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:57:32 -0400
+	id S1758685Ab3IBI5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:57:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758228Ab3IBI5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:57:38 -0400
+Date: Mon, 2 Sep 2013 10:59:33 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 1/4] PCI/MSI: Introduce pci_enable_msi_block_part() interface
+Message-ID: <35d9a944d441e23fbbcb5dc3fb710cada0fa272c.1378111919.git.agordeev@redhat.com>
+References: <cover.1378111919.git.agordeev@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEH94Li5KuN4V7KVAYJ9YY72HWVS2_gf-_L4zscV1K5fMw58XQ@mail.gmail.com>
-References: <1377269106-26468-1-git-send-email-zwu.kernel@gmail.com>
-	<CANN689ET-2q_7WY+4HZjMqQEmLpOQyWOrOzRnP3ADc8TAzoEXw@mail.gmail.com>
-	<CAEH94Li5KuN4V7KVAYJ9YY72HWVS2_gf-_L4zscV1K5fMw58XQ@mail.gmail.com>
-Date: Mon, 2 Sep 2013 01:57:31 -0700
-Message-ID: <CANN689E4aCwMQwceUntqJiN7vj_m4g+3MYpBJb717VXR6mbpSA@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: Add some necessary condition checks
-From: Michel Lespinasse <walken@google.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1378111919.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 1, 2013 at 11:30 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
-> In Tue, Aug 27, 2013 at 6:01 AM, Michel Lespinasse <walken@google.com> wrote:
->> On Fri, Aug 23, 2013 at 7:45 AM,  <zwu.kernel@gmail.com> wrote:
->>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>>
->>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>> ---
->>>  include/linux/rbtree_augmented.h | 3 ++-
->>>  lib/rbtree.c                     | 5 +++--
->>>  2 files changed, 5 insertions(+), 3 deletions(-)
->>
->> So, you are saying that the checks are necessary, but you are not saying why.
->>
->> The way I see it, the checks are *not* necessary, because the rbtree
->> invariants guarantee them to be true. The only way for the checks to
->> fail would be if people directly manipulate the rbtrees without going
->> through the proper APIs, and if they do that then I think they're on
->> their own. So to me, I think it's the same situation as dereferencing
->> a pointer without checking if it's NULL, because you know it should
->> never be NULL - which in my eyes is perfectly acceptable.
-> In my patchset, some rbtree APIs to be invoked, and I think that those
-> rbtree APIs are used corrently, Below is the pointer of its code:
-> https://github.com/wuzhy/kernel/compare/torvalds:master...hot_tracking
-> But I hit some issues when using compilebench to do perf benchmark.
-> compile dir kernel-7 691MB in 8.92 seconds (77.53 MB/s)
+There are PCI devices that require a particular value written
+to the Multiple Message Enable (MME) register while aligned on
+power of 2 boundary value of actually used MSI vectors 'nvec'
+is a lesser of that MME value:
 
-Thanks for the link - I now better understand where you are coming
-from with these fixes.
+	roundup_pow_of_two(nvec) < 'Multiple Message Enable'
 
-Going back to the original message:
+However the existing pci_enable_msi_block() interface is not
+able to configure such devices, since the value written to the
+MME register is calculated from the number of requested MSIs
+'nvec':
 
-> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-> index fea49b5..7d19770 100644
-> --- a/include/linux/rbtree_augmented.h
-> +++ b/include/linux/rbtree_augmented.h
-> @@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
->                 }
->
->                 successor->rb_left = tmp = node->rb_left;
-> -               rb_set_parent(tmp, successor);
-> +               if (tmp)
-> +                       rb_set_parent(tmp, successor);
->
->                 pc = node->__rb_parent_color;
->                 tmp = __rb_parent(pc);
+	'Multiple Message Enable' = roundup_pow_of_two(nvec)
 
-Note that node->rb_left was already fetched at the top of
-__rb_erase_augmented(), and was checked to be non-NULL at the time -
-otherwise we would have executed 'Case 1' in that function. So, you
-are not expected to find tmp == NULL here.
+In this case the result written to the MME register may not
+satisfy the aforementioned PCI devices requirement and therefore
+the PCI functions will not operate in a desired mode.
 
-> diff --git a/lib/rbtree.c b/lib/rbtree.c
-> index c0e31fe..2cb01ba 100644
-> --- a/lib/rbtree.c
-> +++ b/lib/rbtree.c
-> @@ -214,7 +214,7 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
->                  */
->                 sibling = parent->rb_right;
->                 if (node != sibling) {  /* node == parent->rb_left */
-> -                       if (rb_is_red(sibling)) {
-> +                       if (sibling && rb_is_red(sibling)) {
->                                 /*
->                                  * Case 1 - left rotate at parent
->                                  *
+This update introduces pci_enable_msi_block_part() extension to
+pci_enable_msi_block() interface that accepts extra 'nvec_mme'
+argument which is then written to the MME register while the
+value of 'nvec' is still used to setup as many interrupts as
+requested.
 
-Note the loop invariants quoted just above:
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ Documentation/PCI/MSI-HOWTO.txt |   56 ++++++++++++++++++++++++----
+ arch/mips/pci/msi-octeon.c      |    2 +-
+ arch/powerpc/kernel/msi.c       |    4 +-
+ arch/s390/pci/pci.c             |    2 +-
+ arch/x86/include/asm/pci.h      |    8 +++--
+ arch/x86/include/asm/x86_init.h |    3 +-
+ arch/x86/kernel/apic/io_apic.c  |    3 +-
+ drivers/iommu/irq_remapping.c   |    2 +-
+ drivers/pci/msi.c               |   77 ++++++++++++++++++++++++++-------------
+ include/linux/msi.h             |    5 ++-
+ include/linux/pci.h             |    8 ++++
+ 11 files changed, 125 insertions(+), 45 deletions(-)
 
-                /*
-                 * Loop invariants:
-                 * - node is black (or NULL on first iteration)
-                 * - node is not the root (parent is not NULL)
-                 * - All leaf paths going through parent and node have a
-                 *   black node count that is 1 lower than other leaf paths.
-                 */
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index a091780..32d7d15 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -127,7 +127,47 @@ on the number of vectors that can be allocated; pci_enable_msi_block()
+ returns as soon as it finds any constraint that doesn't allow the
+ call to succeed.
+ 
+-4.2.3 pci_enable_msi_block_auto
++4.2.3 pci_enable_msi_block_part
++
++int pci_enable_msi_block_part(struct pci_dev *dev, int count, int alloc)
++
++This variation on the above call allows a device driver to request 'alloc'
++number of multiple MSIs while setup 'count' number of MSIs, which could be
++a lesser of 'alloc'.  The MSI specification only allows interrupts to be
++allocated in powers of two, up to a maximum of 2^5 (32).
++
++In case the driver wants to allocate a maximum possible number of MSIs
++for the device it may pass a negative number as 'alloc' parameter.
++
++If this function returns 0, it has succeeded in allocating 'alloc'
++interrupts and setting up 'count' interrupts. In this case, the function
++enables MSI on this device and updates dev->irq to be the lowest of the
++new interrupts assigned to it.  The other interrupts assigned to the
++device are in the range dev->irq to dev->irq + count - 1.
++
++If this function returns -ERANGE, it indicates 'count' is greater than
++'alloc' and the driver should adjust either or both parameters.
++
++If this function returns other negative number, it indicates an error
++and the driver should not attempt to request any more MSI interrupts
++for this device.  If this function returns a positive number, it is
++less than 'alloc' and indicates the number of interrupts that could have
++been allocated.  In neither case is the irq value updated or the device
++switched into MSI mode.
++
++The device driver must decide what action to take if
++pci_enable_msi_block_part() returns a value less than 'alloc'.  For
++instance, the driver could still make use of fewer interrupts; in this
++case the driver should possibly adjust 'count' parameter and call
++pci_enable_msi_block_part() again or even call pci_enable_msi_block()
++instead.  Note that it is not guaranteed to succeed, even when the
++'alloc' has been reduced to the value returned from a previous call to
++pci_enable_msi_block_part().  This is because there are multiple
++constraints on the number of vectors that can be allocated;
++pci_enable_msi_block_part() returns as soon as it finds any constraint
++that doesn't allow the call to succeed.
++
++4.2.4 pci_enable_msi_block_auto
+ 
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *count)
+ 
+@@ -153,16 +193,16 @@ succeeds, but returns a value less than the number of interrupts supported.
+ If the device driver does not need to know the number of interrupts
+ supported, it can set the pointer count to NULL.
+ 
+-4.2.4 pci_disable_msi
++4.2.5 pci_disable_msi
+ 
+ void pci_disable_msi(struct pci_dev *dev)
+ 
+-This function should be used to undo the effect of pci_enable_msi() or
+-pci_enable_msi_block() or pci_enable_msi_block_auto().  Calling it restores
+-dev->irq to the pin-based interrupt number and frees the previously
+-allocated message signaled interrupt(s).  The interrupt may subsequently be
+-assigned to another device, so drivers should not cache the value of
+-dev->irq.
++This function should be used to undo the effect of pci_enable_msi_block(),
++pci_enable_msi(), pci_enable_msi_block_auto() or pci_enable_msi_block_part().
++Calling it restores dev->irq to the pin-based interrupt number and frees the
++previously allocated message signaled interrupt(s). The interrupt may
++subsequently be assigned to another device, so drivers should not cache the
++value of dev->irq.
+ 
+ Before calling this function, a device driver must always call free_irq()
+ on any interrupt for which it previously called request_irq().
+diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
+index d37be36..c9aaf8d 100644
+--- a/arch/mips/pci/msi-octeon.c
++++ b/arch/mips/pci/msi-octeon.c
+@@ -177,7 +177,7 @@ msi_irq_allocated:
+ 	return 0;
+ }
+ 
+-int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type)
+ {
+ 	struct msi_desc *entry;
+ 	int ret;
+diff --git a/arch/powerpc/kernel/msi.c b/arch/powerpc/kernel/msi.c
+index 8bbc12d..fc70513 100644
+--- a/arch/powerpc/kernel/msi.c
++++ b/arch/powerpc/kernel/msi.c
+@@ -13,7 +13,7 @@
+ 
+ #include <asm/machdep.h>
+ 
+-int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
++int arch_msi_check_device(struct pci_dev* dev, int nvec, int nvec_mme, int type)
+ {
+ 	if (!ppc_md.setup_msi_irqs || !ppc_md.teardown_msi_irqs) {
+ 		pr_debug("msi: Platform doesn't provide MSI callbacks.\n");
+@@ -32,7 +32,7 @@ int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
+         return 0;
+ }
+ 
+-int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type)
+ {
+ 	return ppc_md.setup_msi_irqs(dev, nvec, type);
+ }
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index e2956ad..688a5db 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -538,7 +538,7 @@ static void zpci_teardown_msi(struct pci_dev *pdev)
+ 		aisb_max--;
+ }
+ 
+-int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
++int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int nvec_mme, int type)
+ {
+ 	pr_debug("%s: requesting %d MSI-X interrupts...", __func__, nvec);
+ 	if (type != PCI_CAP_ID_MSIX && type != PCI_CAP_ID_MSI)
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index d9e9e6c..620642f 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -101,9 +101,10 @@ extern void pci_iommu_alloc(void);
+ 
+ #ifdef CONFIG_PCI_MSI
+ /* MSI arch specific hooks */
+-static inline int x86_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++static inline int x86_setup_msi_irqs(struct pci_dev *dev,
++				     int nvec, int nvec_mme, int type)
+ {
+-	return x86_msi.setup_msi_irqs(dev, nvec, type);
++	return x86_msi.setup_msi_irqs(dev, nvec, nvec_mme, type);
+ }
+ 
+ static inline void x86_teardown_msi_irqs(struct pci_dev *dev)
+@@ -125,7 +126,8 @@ static inline void x86_restore_msi_irqs(struct pci_dev *dev, int irq)
+ #define arch_restore_msi_irqs x86_restore_msi_irqs
+ /* implemented in arch/x86/kernel/apic/io_apic. */
+ struct msi_desc;
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
++int native_setup_msi_irqs(struct pci_dev *dev,
++			  int nvec, int nvec_mme, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev, int irq);
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 828a156..04a8767 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -174,7 +174,8 @@ struct pci_dev;
+ struct msi_msg;
+ 
+ struct x86_msi_ops {
+-	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
++	int (*setup_msi_irqs)(struct pci_dev *dev,
++			      int nvec, int nvec_mme, int type);
+ 	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
+ 				unsigned int dest, struct msi_msg *msg,
+ 			       u8 hpet_id);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..21f6a44 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3132,7 +3132,8 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 	return 0;
+ }
+ 
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int native_setup_msi_irqs(struct pci_dev *dev,
++			  int nvec, int nvec_mme, int type)
+ {
+ 	unsigned int irq, irq_want;
+ 	struct msi_desc *msidesc;
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 39f81ae..1a220a0 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -142,7 +142,7 @@ error:
+ }
+ 
+ static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+-					int nvec, int type)
++					int nvec, int nvec_mme, int type)
+ {
+ 	if (type == PCI_CAP_ID_MSI)
+ 		return do_setup_msi_irqs(dev, nvec);
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index aca7578..a5c958f 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -31,7 +31,8 @@ static int pci_msi_enable = 1;
+ /* Arch hooks */
+ 
+ #ifndef arch_msi_check_device
+-int arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
++int arch_msi_check_device(struct pci_dev *dev,
++			  int nvec, int nvec_mme, int type)
+ {
+ 	return 0;
+ }
+@@ -43,7 +44,8 @@ int arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ #endif
+ 
+ #ifdef HAVE_DEFAULT_MSI_SETUP_IRQS
+-int default_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int default_setup_msi_irqs(struct pci_dev *dev,
++			   int nvec, int nvec_mme, int type)
+ {
+ 	struct msi_desc *entry;
+ 	int ret;
+@@ -540,6 +542,7 @@ out_unroll:
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+  * @nvec: number of interrupts to allocate
++ * @nvec_mme: number of interrupts to write to Multiple Message Enable register
+  *
+  * Setup the MSI capability structure of the device with the requested
+  * number of interrupts.  A return value of zero indicates the successful
+@@ -547,7 +550,7 @@ out_unroll:
+  * an error, and a positive return value indicates the number of interrupts
+  * which could have been allocated.
+  */
+-static int msi_capability_init(struct pci_dev *dev, int nvec)
++static int msi_capability_init(struct pci_dev *dev, int nvec, int nvec_mme)
+ {
+ 	struct msi_desc *entry;
+ 	int ret;
+@@ -582,7 +585,7 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 	list_add_tail(&entry->list, &dev->msi_list);
+ 
+ 	/* Configure MSI capability structure */
+-	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSI);
++	ret = arch_setup_msi_irqs(dev, nvec, nvec_mme, PCI_CAP_ID_MSI);
+ 	if (ret) {
+ 		msi_mask_irq(entry, mask, ~mask);
+ 		free_msi_irqs(dev);
+@@ -700,7 +703,8 @@ static int msix_capability_init(struct pci_dev *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSIX);
++	/* nvec_mme parameter does not make sense in case of MSI-X */
++	ret = arch_setup_msi_irqs(dev, nvec, -1, PCI_CAP_ID_MSIX);
+ 	if (ret)
+ 		goto error;
+ 
+@@ -755,13 +759,15 @@ error:
+  * pci_msi_check_device - check whether MSI may be enabled on a device
+  * @dev: pointer to the pci_dev data structure of MSI device function
+  * @nvec: how many MSIs have been requested ?
++ * @nvec_mme: how many MSIs write to Multiple Message Enable register ?
+  * @type: are we checking for MSI or MSI-X ?
+  *
+  * Look at global flags, the device itself, and its parent busses
+  * to determine if MSI/-X are supported for the device. If MSI/-X is
+  * supported return 0, else return an error code.
+  **/
+-static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
++static int pci_msi_check_device(struct pci_dev *dev,
++				int nvec, int nvec_mme, int type)
+ {
+ 	struct pci_bus *bus;
+ 	int ret;
+@@ -789,27 +795,15 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+ 		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
+ 			return -EINVAL;
+ 
+-	ret = arch_msi_check_device(dev, nvec, type);
++	ret = arch_msi_check_device(dev, nvec, nvec_mme, type);
+ 	if (ret)
+ 		return ret;
+ 
+ 	return 0;
+ }
+ 
+-/**
+- * pci_enable_msi_block - configure device's MSI capability structure
+- * @dev: device to configure
+- * @nvec: number of interrupts to configure
+- *
+- * Allocate IRQs for a device with the MSI capability.
+- * This function returns a negative errno if an error occurs.  If it
+- * is unable to allocate the number of interrupts requested, it returns
+- * the number of interrupts it might be able to allocate.  If it successfully
+- * allocates at least the number of interrupts requested, it returns 0 and
+- * updates the @dev's irq member to the lowest new interrupt number; the
+- * other interrupt numbers allocated to this device are consecutive.
+- */
+-int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
++int pci_enable_msi_block_part(struct pci_dev *dev,
++			      unsigned int nvec, int nvec_mme)
+ {
+ 	int status, maxvec;
+ 	u16 msgctl;
+@@ -819,10 +813,17 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ 
+ 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+ 	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+-	if (nvec > maxvec)
++
++	if (nvec_mme < 0)
++		nvec_mme = maxvec;
++	if (nvec_mme > maxvec)
+ 		return maxvec;
++	if (__roundup_pow_of_two(nvec_mme) != nvec_mme)
++		return -EINVAL;
++	if (nvec > nvec_mme)
++		return -ERANGE;
+ 
+-	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
++	status = pci_msi_check_device(dev, nvec, nvec_mme, PCI_CAP_ID_MSI);
+ 	if (status)
+ 		return status;
+ 
+@@ -835,9 +836,34 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ 		return -EINVAL;
+ 	}
+ 
+-	status = msi_capability_init(dev, nvec);
++	status = msi_capability_init(dev, nvec, nvec_mme);
+ 	return status;
+ }
++EXPORT_SYMBOL(pci_enable_msi_block_part);
++
++/**
++ * pci_enable_msi_block - configure device's MSI capability structure
++ * @dev: device to configure
++ * @nvec: number of interrupts to configure
++ *
++ * Allocate IRQs for a device with the MSI capability.
++ * This function returns a negative errno if an error occurs.  If it
++ * is unable to allocate the number of interrupts requested, it returns
++ * the number of interrupts it might be able to allocate.  If it successfully
++ * allocates at least the number of interrupts requested, it returns 0 and
++ * updates the @dev's irq member to the lowest new interrupt number; the
++ * other interrupt numbers allocated to this device are consecutive.
++ */
++int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
++{
++	/*
++	 * Archtectures which do not support nvec_mme should ignore it.
++	 * However, it would be surprising if an architecture write to
++	 * the Multiple Message Enable register something else than nvec
++	 * rounded up to the power of two.
++	 */
++	return pci_enable_msi_block_part(dev, nvec, __roundup_pow_of_two(nvec));
++}
+ EXPORT_SYMBOL(pci_enable_msi_block);
+ 
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
+@@ -941,7 +967,8 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
+ 	if (!entries || !dev->msix_cap)
+ 		return -EINVAL;
+ 
+-	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
++	/* nvec_mme parameter does not make sense in case of MSI-X */
++	status = pci_msi_check_device(dev, nvec, -1, PCI_CAP_ID_MSIX);
+ 	if (status)
+ 		return status;
+ 
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index ee66f3a..e27ad31 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -55,8 +55,9 @@ struct msi_desc {
+  */
+ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
+ void arch_teardown_msi_irq(unsigned int irq);
+-int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
++int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type);
+ void arch_teardown_msi_irqs(struct pci_dev *dev);
+-int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
++int arch_msi_check_device(struct pci_dev* dev,
++			  int nvec, int nvec_mme, int type);
+ 
+ #endif /* LINUX_MSI_H */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..6552cee 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1122,6 +1122,12 @@ struct msix_entry {
+ 
+ 
+ #ifndef CONFIG_PCI_MSI
++static inline int
++pci_enable_msi_block_part(struct pci_dev *dev, unsigned int nvec, int nvec_mme)
++{
++	return -1;
++}
++
+ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ {
+ 	return -1;
+@@ -1163,6 +1169,8 @@ static inline int pci_msi_enabled(void)
+ 	return 0;
+ }
+ #else
++int pci_enable_msi_block_part(struct pci_dev *dev,
++			      unsigned int nvec, int nvec_mme);
+ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+ int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
+-- 
+1.7.7.6
 
-Because of these, each path from sibling to a leaf must include at
-least one black node, which implies that sibling can't be NULL - or to
-put it another way, if sibling is null then the expected invariants
-were violated before we even got there.
-
-> @@ -226,7 +226,8 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
->                                  */
->                                 parent->rb_right = tmp1 = sibling->rb_left;
->                                 sibling->rb_left = parent;
-> -                               rb_set_parent_color(tmp1, parent, RB_BLACK);
-> +                               if (tmp1)
-> +                                       rb_set_parent_color(tmp1, parent, RB_BLACK);
->                                 __rb_rotate_set_parents(parent, sibling, root,
->                                                         RB_RED);
->                                 augment_rotate(parent, sibling);
-
-This is actually the same invariant here - each path from sibling to a
-leaf must include at least one black node, and sibling is now known to
-be red, so it must have two black children.
-
-
-Now I had a quick look at your code and I couldn't tell at which point
-the invariants are violated. However I did notice a couple suspicious
-things in the very first patch
-(f5c8f2b256d87ac0bf789a787e6b795ac0c736e8):
-
-1- In both hot_range_tree_free() and and hot_tree_exit(), you try to
-destroy rb trees by iterating on each node with rb_next() and then
-freeing them. Note that rb_next() can reference prior nodes, which
-have already been freed in your scheme, so that seems quite unsafe.
-
-The simplest fix would be to do a full rb_erase() on each node before
-freeing it. (you may be able to avoid rebalancing the tree here as
-you're going to destroy it all, but if you really have that need it
-would be better to come up with a new API to cover it rather than
-hardcode it where you need it - I think it's easiest to start with the
-simple dumb fix of using rb_erase).
-
-2- I did not look long enough to understand the locking, but it wasn't
-clear to me if you lock the rbtrees when doing rb_erase() on them
-(while I could more clearly see that you do it for insertions).
-
-I'm really not sure if either of these will fix the issues you're
-seeing, though. What I would try next would be to add explicit rbtree
-invariant checks before and after rbtree manipulations, like what the
-check() function does in lib/rbtree_test.c, to see at which point do
-they get broken.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
