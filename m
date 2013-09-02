@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab3IBRZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 13:25:52 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:47658 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756914Ab3IBRZv (ORCPT
+	id S1758846Ab3IBR1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 13:27:04 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:43021 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab3IBR1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 13:25:51 -0400
-Message-ID: <5224CA1A.6070004@cogentembedded.com>
-Date: Mon, 02 Sep 2013 21:25:46 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 2 Sep 2013 13:27:01 -0400
+Date: Mon, 2 Sep 2013 19:26:59 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: eranian@gmail.com, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: perf_event: rdpmc self-monitoring overhead issue
+Message-ID: <20130902172659.GJ19750@two.firstfloor.org>
+References: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+ <CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
+ <87ob8cdji8.fsf@tassilo.jf.intel.com>
+ <CAMsRxfLf4mSVEMnDr1AqD-=qrhBoeVWK6H0Jhb5kcHK7=OajmQ@mail.gmail.com>
+ <alpine.DEB.2.10.1309020914030.26568@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>
-CC: kernel list <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        linux-usb@vger.kernel.org
-Subject: Re: Fix style in s3c-hsotg.c
-References: <20130902135832.GA22300@amd.pavel.ucw.cz>
-In-Reply-To: <20130902135832.GA22300@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1309020914030.26568@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+> I assume he means MAP_POPULATE
 
-On 09/02/2013 05:58 PM, Pavel Machek wrote:
+Yes.
 
-> checkpatch.pl has some valid complaints about style in s3c-hsotg.c :
-> macro with if should be really enclosed in do {} while, and puts is
-> going to be slightly faster.
+> 
+> which does improve things, from ~3000 cycles to ~219 cycles but that's 
+> still more overhead than the ~130 or so you get by manually touching the 
+> page first.
 
-> Here's suggested patch. I don't have the hardware, so it is completely
-> untested.
+That seems odd. It should be the same.
 
-> Signed-off-by: Pavel Machek, <pavel@denx.de>
+Can you do a trace-cmd function trace and compare the two cases?
 
-> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> index af22f24..f8e762a 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.c
-> +++ b/drivers/usb/gadget/s3c-hsotg.c
-> @@ -2091,12 +2091,14 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
->   }
->
->   #define call_gadget(_hs, _entry) \
-> +do { \
->   	if ((_hs)->gadget.speed != USB_SPEED_UNKNOWN &&	\
->   	    (_hs)->driver && (_hs)->driver->_entry) { \
->   		spin_unlock(&_hs->lock); \
->   		(_hs)->driver->_entry(&(_hs)->gadget); \
->   		spin_lock(&_hs->lock); \
->   		}
+trace-cmd record -p function_graph ...
+trace-cmd report
 
-    Indentation also needs fixing on this line, maybe in another patch...
+(as usual for tracing perf remove the useless -pg removal for perf in
+kernel/events/Makefile and arch/x86/kernel/cpu/Makefile first)
 
-> +} while (0)
-
-WBR, Sergei
-
+-Andi
