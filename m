@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab3IBJhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:37:53 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:57303 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3IBJhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:37:52 -0400
-Date: Mon, 2 Sep 2013 10:37:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] Final pull-request due for the v3.12 merge window
-Message-ID: <20130902093747.GI12341@lee--X1>
+	id S1757491Ab3IBJkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:40:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755538Ab3IBJkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 05:40:32 -0400
+Date: Mon, 2 Sep 2013 11:40:02 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 24/25] perf tools: Add multi file '-M' option for record
+ command
+Message-ID: <20130902094002.GA2713@krava.brq.redhat.com>
+References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
+ <1378031796-17892-25-git-send-email-jolsa@redhat.com>
+ <522443CE.5030703@intel.com>
+ <20130902083737.GA1067@krava.brq.redhat.com>
+ <52245647.1040503@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52245647.1040503@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 2b274fe522e9d5ac7397e07e3516bb10e3c2ee92:
+On Mon, Sep 02, 2013 at 12:11:35PM +0300, Adrian Hunter wrote:
+> On 02/09/13 11:37, Jiri Olsa wrote:
+> > On Mon, Sep 02, 2013 at 10:52:46AM +0300, Adrian Hunter wrote:
+> >> On 01/09/13 13:36, Jiri Olsa wrote:
+> >>> split event data into multiple files based on the file
+> >>> size or time delta specified as an argument to the option.
+> >>>
+> >>> Adding multi file '-M' option for record command to store
+> >>> output perf.data into multiple files based on the size
+> >>> threshold.
+> >>>
+> >>> The threshold is specified either as size (B/K/M/G) or time
+> >>> (s/m/h) by appending the size with appropriate unit, like:
+> >>>   -M 5M for 5 megabytes threshold
+> >>>   -M 1h for 1 hour threshold
+> >>> The generated name for each data file is appended with sequential
+> >>> number (prepended by 5 zeros).For default output file name it
+> >>> will be:
+> >>>   perf.data-00000
+> >>>   perf.data-00001
+> >>>   perf.data-00002
+> >>>   ...
+> >>>
+> >>> Also watermark/wakeup_watermark is set accordingly to get
+> >>> wake ups more often so we could get close enough to the
+> >>> file size promise.
+> >>>
+> >>> Example:
+> >>>   $ perf record -M 5M yes > /dev/null
+> >>>   ^C[ perf record: Woken up 228 times to write data ]
+> >>>   [ perf record: Captured and wrote 20.246 MB perf.data-[0-4](~884542 samples) ]
+> >>>   yes: Interrupt
+> >>>   $ ls -l perf.data-0*
+> >>>   -rw------- 1 jolsa jolsa 5289856 Aug 16 16:07 perf.data-00000
+> >>>   -rw------- 1 jolsa jolsa 5296008 Aug 16 16:08 perf.data-00001
+> >>>   -rw------- 1 jolsa jolsa 5344968 Aug 16 16:09 perf.data-00002
+> >>>   -rw------- 1 jolsa jolsa 5309144 Aug 16 16:09 perf.data-00003
+> >>>   -rw------- 1 jolsa jolsa 2358268 Aug 16 16:09 perf.data-00004
+> >>
+> >> Did you consider doing this with "perf inject" instead of "perf record"?
+> >> That way you could get the split exactly right, and you could split the same
+> >> file different ways.
+> > 
+> > right, this could be added into inject command as well
+> 
+> I was really thinking "instead" not "as well" e.g.
+> 
+> 	perf record yes | perf inject -M 5M
+> 
 
-  mfd: 88pm805: Fix potential NULL pdata dereference (2013-09-02 11:00:16 +0200)
+yep, got it.. this gives you more fine grained size resolution
+and lets you split already stored data files, nice
 
-are available in the git repository at:
+But while I think this is nice feature to have, two things keeps
+me thinking we should leave the support in record command as well:
+  - the extra inject command overhead, that needs to parse the whole
+    stream, which might not be wanted in some cases
+  - AFAIU the vast majority of perf users do just record/report
+    and would be restrained from this feature ;-)
 
-  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.12-2
-
-for you to fetch changes up to 02a0bf6e351de6bcda4ddeeb2af34197a4e6d591:
-
-  mfd: ucb1x00-core: Rewrite ucb1x00_add_dev() (2013-09-02 10:22:46 +0100)
-
-----------------------------------------------------------------
-mfd-lee-3.12-2
-
-These are the final patches due for the v3.12 merge window.
-
-----------------------------------------------------------------
-Lee Jones (3):
-      mfd: ab8500-debugfs: Apply a check for -ENOMEM after allocating memory for sysfs
-      mfd: ab8500-debugfs: Apply a check for -ENOMEM after allocating memory for event name
-      mfd: ucb1x00-core: Rewrite ucb1x00_add_dev()
-
-Sachin Kamat (7):
-      mfd: omap-usb-host: Staticize usbhs_driver_name
-      mfd: db8500-prcmu: Use ANSI function declaration
-      mfd: db8500-prcmu: Staticize clk_mgt
-      mfd: ab8500-debugfs: Staticize local variables
-      mfd: timberdale: Staticize local variables
-      mfd: timberdale: Remove redundant break
-      mfd: timberdale: Use module_pci_driver
-
- drivers/mfd/ab8500-debugfs.c | 14 ++++++++++----
- drivers/mfd/db8500-prcmu.c   |  4 ++--
- drivers/mfd/omap-usb-host.c  |  2 +-
- drivers/mfd/timberdale.c     | 34 +++-------------------------------
- drivers/mfd/ucb1x00-core.c   | 28 +++++++++++++++-------------
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+jirka
