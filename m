@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3IBIaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:30:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29232 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab3IBIaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:30:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1005,1367996400"; 
-   d="scan'208";a="372142087"
-Date: Mon, 2 Sep 2013 10:29:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] mfd: twl6040: Use regmap for register cache
-Message-ID: <20130902082941.GN20329@zurbaran>
-References: <1377967699-10277-1-git-send-email-broonie@kernel.org>
- <20130902081759.GC12341@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130902081759.GC12341@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756338Ab3IBIcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:32:46 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:41044 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3IBIco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 04:32:44 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, vinod.koul@intel.com,
+        linus.walleij@linaro.org
+Subject: [PATCH 1/2] dma: ste_dma40: Remove duplicate const
+Date: Mon,  2 Sep 2013 13:44:58 +0530
+Message-Id: <1378109699-25245-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+'const' was added twice.
 
-On Mon, Sep 02, 2013 at 09:17:59AM +0100, Lee Jones wrote:
-> On Sat, 31 Aug 2013, Mark Brown wrote:
-> 
-> > From: Mark Brown <broonie@linaro.org>
-> > 
-> > Rather then open coding a cache of the vibra control registers use the
-> > regmap cache code.  Also cache the interrupt mask register, providing
-> > a small performance improvement for the interrupt code.
-> > 
-> > Signed-off-by: Mark Brown <broonie@linaro.org>
-> > ---
-> > 
-> > I'm hoping to have some ASoC improvements to build on top of this (there
-> > is ASoC level register caching for the device) so it might make sense to
-> > apply this via ASoC.
-> > 
-> >  drivers/mfd/twl6040.c       | 43 ++++++++++++++++++++++++++++++-------------
-> >  include/linux/mfd/twl6040.h |  1 -
-> >  2 files changed, 30 insertions(+), 14 deletions(-)
-> 
-> Applied with Peter's Ack, thanks.
-Please hold on. I'm preparing a branch for Mark to pull from and it will
-contain that patch.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/dma/ste_dma40.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
-Samuel.
-
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 7bbcabb..df0a606 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -3485,7 +3485,7 @@ static int __init d40_of_probe(struct platform_device *pdev,
+ {
+ 	struct stedma40_platform_data *pdata;
+ 	int num_phy = 0, num_memcpy = 0, num_disabled = 0;
+-	const const __be32 *list;
++	const __be32 *list;
+ 
+ 	pdata = devm_kzalloc(&pdev->dev,
+ 			     sizeof(struct stedma40_platform_data),
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
