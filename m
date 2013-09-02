@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab3IBMeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 08:34:00 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52222 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756086Ab3IBMd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 08:33:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
-Date: Mon, 02 Sep 2013 14:44:47 +0200
-Message-ID: <59922407.8jDJDIWysm@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpon1VsoUnw=t0c9wQ2Zfva5nnXoKjNNNxLXV7Frto1BFug@mail.gmail.com>
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <11222156.oKTjYXFZjG@vostro.rjw.lan> <CAKohpon1VsoUnw=t0c9wQ2Zfva5nnXoKjNNNxLXV7Frto1BFug@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758372Ab3IBMeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:34:07 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:40469 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758284Ab3IBMeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 08:34:03 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 1/4] mm/hwpoison: fix traverse hugetlbfs page to avoid printk flood
+Date: Mon,  2 Sep 2013 20:33:41 +0800
+Message-Id: <1378125224-12794-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090212-1396-0000-0000-0000037D54F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, September 01, 2013 09:30:49 PM Viresh Kumar wrote:
-> On 1 September 2013 18:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Sunday, September 01, 2013 10:56:02 AM Viresh Kumar wrote:
-> >> We can't take a big lock around __cpufreq_governor() as this causes recursive
-> >> locking for some cases. But calls to this routine must be serialized for every
-> >> policy.
-> >
-> > Care to explain here why it must be serialized?
-> 
-> Yes, added that to the attached patches (Added reported-by too):
+madvise_hwpoison won't check if the page is small page or huge page and traverse 
+in small page granularity against the range unconditional, which result in a printk 
+flood "MCE xxx: already hardware poisoned" if the page is huge page. This patch fix 
+it by increase compound_order(compound_head(page)) for huge page iterator.
 
-OK, the attached patches queued up for 3.12.
+Testcase:
 
-Thanks,
-Rafael
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#define PAGES_TO_TEST 3
+#define PAGE_SIZE	4096 * 512
+
+int main(void)
+{
+	char *mem;
+	int i;
+
+	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 0, 0);
+
+	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
+		return -1;
+	
+	munmap(mem, PAGES_TO_TEST * PAGE_SIZE);
+
+	return 0;
+}
+
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/madvise.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 6975bc8..539eeb9 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -343,10 +343,11 @@ static long madvise_remove(struct vm_area_struct *vma,
+  */
+ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ {
++	struct page *p;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+-	for (; start < end; start += PAGE_SIZE) {
+-		struct page *p;
++	for (; start < end; start += PAGE_SIZE <<
++				compound_order(compound_head(p))) {
+ 		int ret;
+ 
+ 		ret = get_user_pages_fast(start, 1, 0, &p);
+-- 
+1.8.1.2
 
