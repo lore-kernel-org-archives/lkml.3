@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab3IBJJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:09:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37709 "EHLO
+	id S1758581Ab3IBJKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:10:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37695 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758299Ab3IBIzI (ORCPT
+	with ESMTP id S1758345Ab3IBIzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:08 -0400
+	Mon, 2 Sep 2013 04:55:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 19/58] m68k/atari: ARAnyM - Fix NatFeat module support
-Date: Mon,  2 Sep 2013 09:54:04 +0100
-Message-Id: <1378112083-9475-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 16/58] USB: adutux: fix big-endian device-type reporting
+Date: Mon,  2 Sep 2013 09:54:01 +0100
+Message-Id: <1378112083-9475-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -27,82 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit e8184e10f89736a23ea6eea8e24cd524c5c513d2 upstream.
+commit d482b9d558602a9cacab063b1c8779f9b5214da7 upstream.
 
-As pointed out by Andreas Schwab, pointers passed to ARAnyM NatFeat calls
-should be physical addresses, not virtual addresses.
+Make sure the reported device-type on big-endian machines is the same as
+on little-endian ones.
 
-Fortunately on Atari, physical and virtual kernel addresses are the same,
-as long as normal kernel memory is concerned, so this usually worked fine
-without conversion.
-
-But for modules, pointers to literal strings are located in vmalloc()ed
-memory. Depending on the version of ARAnyM, this causes the nf_get_id()
-call to just fail, or worse, crash ARAnyM itself with e.g.
-
-    Gotcha! Illegal memory access. Atari PC = $968c
-
-This is a big issue for distro kernels, who want to have all drivers as
-loadable modules in an initrd.
-
-Add a wrapper for nf_get_id() that copies the literal to the stack to
-work around this issue.
-
-Reported-by: Thorsten Glaser <tg@debian.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/m68k/emu/natfeat.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+ drivers/usb/misc/adutux.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-index 2291a7d..fa277ae 100644
---- a/arch/m68k/emu/natfeat.c
-+++ b/arch/m68k/emu/natfeat.c
-@@ -18,9 +18,11 @@
- #include <asm/machdep.h>
- #include <asm/natfeat.h>
+diff --git a/drivers/usb/misc/adutux.c b/drivers/usb/misc/adutux.c
+index 284b854..14d9142 100644
+--- a/drivers/usb/misc/adutux.c
++++ b/drivers/usb/misc/adutux.c
+@@ -829,7 +829,7 @@ static int adu_probe(struct usb_interface *interface,
  
-+extern long nf_get_id2(const char *feature_name);
-+
- asm("\n"
--"	.global nf_get_id,nf_call\n"
--"nf_get_id:\n"
-+"	.global nf_get_id2,nf_call\n"
-+"nf_get_id2:\n"
- "	.short	0x7300\n"
- "	rts\n"
- "nf_call:\n"
-@@ -29,12 +31,25 @@ asm("\n"
- "1:	moveq.l	#0,%d0\n"
- "	rts\n"
- "	.section __ex_table,\"a\"\n"
--"	.long	nf_get_id,1b\n"
-+"	.long	nf_get_id2,1b\n"
- "	.long	nf_call,1b\n"
- "	.previous");
--EXPORT_SYMBOL_GPL(nf_get_id);
- EXPORT_SYMBOL_GPL(nf_call);
- 
-+long nf_get_id(const char *feature_name)
-+{
-+	/* feature_name may be in vmalloc()ed memory, so make a copy */
-+	char name_copy[32];
-+	size_t n;
-+
-+	n = strlcpy(name_copy, feature_name, sizeof(name_copy));
-+	if (n >= sizeof(name_copy))
-+		return 0;
-+
-+	return nf_get_id2(name_copy);
-+}
-+EXPORT_SYMBOL_GPL(nf_get_id);
-+
- void nfprint(const char *fmt, ...)
- {
- 	static char buf[256];
+ 	/* let the user know what node this device is now attached to */
+ 	dev_info(&interface->dev, "ADU%d %s now attached to /dev/usb/adutux%d\n",
+-		 udev->descriptor.idProduct, dev->serial_number,
++		 le16_to_cpu(udev->descriptor.idProduct), dev->serial_number,
+ 		 (dev->minor - ADU_MINOR_BASE));
+ exit:
+ 	dbg(2," %s : leave, return value %p (dev)", __func__, dev);
 -- 
 1.8.3.2
 
