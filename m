@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab3IBJFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:05:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37791 "EHLO
+	id S1758454Ab3IBIzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37747 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758459Ab3IBIz1 (ORCPT
+	with ESMTP id S1758411Ab3IBIzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:27 -0400
+	Mon, 2 Sep 2013 04:55:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Will Deacon <will.deacon@arm.com>, Michael Cree <mcree@orcon.net.nz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Paul Bolle <pebolle@tiscali.nl>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 28/58] alpha: makefile: don't enforce small data model for kernel builds
-Date: Mon,  2 Sep 2013 09:54:13 +0100
-Message-Id: <1378112083-9475-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 27/58] sound: Fix make allmodconfig on MIPS correctly
+Date: Mon,  2 Sep 2013 09:54:12 +0100
+Message-Id: <1378112083-9475-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -30,42 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit cd8d2331756751b6aeb855a3c9cb0a92fbd9c725 upstream.
+commit a62ee234a572b4c98fe98cf5fb18e4e8b0f6e43d upstream.
 
-Due to all of the goodness being packed into today's kernels, the
-resulting image isn't as slim as it once was.
+Commit d4702b189c ("sound: Fix make allmodconfig on MIPS") added a
+(negative) dependency on ISA_DMA_SUPPORT_BROKEN. Since that Kconfig
+symbol doesn't exist, this dependency will always evaluate to true.
+Apparently GENERIC_ISA_DMA_SUPPORT_BROKEN was meant to be used here.
 
-In light of this, don't pass -msmall-data to gcc, which otherwise results
-in link failures due to impossible relocations when compiling anything but
-the most trivial configurations.
-
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Reviewed-by: Matt Turner <mattst88@gmail.com>
-Tested-by: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/alpha/Makefile | 2 +-
+ sound/oss/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/alpha/Makefile b/arch/alpha/Makefile
-index 4759fe7..2cc3cc5 100644
---- a/arch/alpha/Makefile
-+++ b/arch/alpha/Makefile
-@@ -12,7 +12,7 @@ NM := $(NM) -B
- 
- LDFLAGS_vmlinux	:= -static -N #-relax
- CHECKFLAGS	+= -D__alpha__ -m64
--cflags-y	:= -pipe -mno-fp-regs -ffixed-8 -msmall-data
-+cflags-y	:= -pipe -mno-fp-regs -ffixed-8
- cflags-y	+= $(call cc-option, -fno-jump-tables)
- 
- cpuflags-$(CONFIG_ALPHA_EV4)		:= -mcpu=ev4
+diff --git a/sound/oss/Kconfig b/sound/oss/Kconfig
+index 51c4ba9..1a96402 100644
+--- a/sound/oss/Kconfig
++++ b/sound/oss/Kconfig
+@@ -250,7 +250,7 @@ config MSND_FIFOSIZE
+ menuconfig SOUND_OSS
+ 	tristate "OSS sound modules"
+ 	depends on ISA_DMA_API && VIRT_TO_BUS
+-	depends on !ISA_DMA_SUPPORT_BROKEN
++	depends on !GENERIC_ISA_DMA_SUPPORT_BROKEN
+ 	help
+ 	  OSS is the Open Sound System suite of sound card drivers.  They make
+ 	  sound programming easier since they provide a common API.  Say Y or
 -- 
 1.8.3.2
 
