@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab3IBJC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:02:59 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:42334 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758481Ab3IBJC4 (ORCPT
+	id S1758504Ab3IBIzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:55:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37804 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758453Ab3IBIz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 05:02:56 -0400
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
-References: <1377592285-21148-1-git-send-email-vgupta@synopsys.com>
-Date: Mon, 2 Sep 2013 12:02:55 +0300
-Message-ID: <CAOtvUMcKprmyKdi-+TJNvCNqaDv=6WLxeATkJtFe+b1c1bSSGA@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig.debug: Add FRAME_POINTER anti-dependency for ARC
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Sep 2013 04:55:29 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 38/58] drm/i915: Invalidate TLBs for the rings after a reset
+Date: Mon,  2 Sep 2013 09:54:23 +0100
+Message-Id: <1378112083-9475-39-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.5.7.21 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Aug 27, 2013 at 11:31 AM, Vineet Gupta
-<Vineet.Gupta1@synopsys.com> wrote:
->
-> Frame pointer on ARC doesn't serve the conventional purpose of stack
-> unwinding due to the typical way ABI designates it's usage.
+------------------
 
-More out of curiosity to understand the platform better than actual
-review - can you explain a little what
-you meant by this statement?
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-Is this statement because of the use of write back mode with ld/st to
-or not related?
+commit 884020bf3d2a3787a1cc6df902e98e0eec60330b upstream.
 
-Thanks,
-Gilad
+After any "soft gfx reset" we must manually invalidate the TLBs
+associated with each ring. Empirically, it seems that a
+suspend/resume or D3-D0 cycle count as a "soft reset". The symptom is
+that the hardware would fail to note the new address for its status
+page, and so it would continue to write the shadow registers and
+breadcrumbs into the old physical address (now used by something
+completely different, scary). Whereas the driver would read the new
+status page and never see any progress, it would appear that the GPU
+hung immediately upon resume.
 
+Based on a patch by naresh kumar kachhi <naresh.kumar.kacchi@intel.com>
 
+Reported-by: Thiago Macieira <thiago@kde.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64725
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Thiago Macieira <thiago@kde.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_reg.h         |  2 ++
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 12 ++++++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 26b8bba..70bfc0f 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -572,6 +572,8 @@
+ 					will not assert AGPBUSY# and will only
+ 					be delivered when out of C3. */
+ #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
++#define   INSTPM_TLB_INVALIDATE	(1<<9)
++#define   INSTPM_SYNC_FLUSH	(1<<5)
+ #define ACTHD	        0x020c8
+ #define FW_BLC		0x020d8
+ #define FW_BLC2		0x020dc
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 78486c7..7e9d3db 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -773,6 +773,18 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
+ 
+ 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
+ 	POSTING_READ(mmio);
++
++	/* Flush the TLB for this page */
++	if (INTEL_INFO(dev)->gen >= 6) {
++		u32 reg = RING_INSTPM(ring->mmio_base);
++		I915_WRITE(reg,
++			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
++					      INSTPM_SYNC_FLUSH));
++		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
++			     1000))
++			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
++				  ring->name);
++	}
+ }
+ 
+ static int
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+1.8.3.2
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
