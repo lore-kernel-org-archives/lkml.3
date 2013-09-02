@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab3IBT0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 15:26:20 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:20538 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757112Ab3IBT0S (ORCPT
+	id S1758892Ab3IBTfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 15:35:08 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:39806 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757070Ab3IBTfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 15:26:18 -0400
-Message-ID: <5224E647.80303@hp.com>
-Date: Mon, 02 Sep 2013 15:25:59 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 2 Sep 2013 15:35:07 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 2 Sep 2013 12:34:56 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+Message-ID: <20130902193456.GA32628@leaf>
+References: <9976.1378132260@warthog.procyon.org.uk>
+ <1378138205.1953.66.camel@joe-AO722>
+ <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf>
+ <20130902153945.6d7e510c@samsung.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-References: <5220E56A.80603@hp.com> <CA+55aFzv9BZ2+B2NrNRRtTqnfgbH3LRSvSsUZVsy-g9OpM-8HA@mail.gmail.com> <5220F090.5050908@hp.com> <20130830194059.GC13318@ZenIV.linux.org.uk> <5220F811.9060902@hp.com> <20130830202608.GD13318@ZenIV.linux.org.uk> <52210225.60805@hp.com> <20130830204852.GE13318@ZenIV.linux.org.uk> <52214EBC.90100@hp.com> <20130831023516.GI13318@ZenIV.linux.org.uk> <20130831024233.GJ13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130831024233.GJ13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130902153945.6d7e510c@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 10:42 PM, Al Viro wrote:
-> On Sat, Aug 31, 2013 at 03:35:16AM +0100, Al Viro wrote:
->
->> Aha...  OK, I see what's going on.  We end up with shm_mnt *not* marked
->> as long-living vfsmount, even though it lives forever.  See if the
->> following helps; if it does (and I very much expect it to), we want to
->> put it in -stable.  As it is, you get slow path in mntput() each time
->> a file created by shmem_file_setup() gets closed.  For no reason whatsoever...
-> We still want MS_NOUSER on shm_mnt, so we'd better make sure that
-> shmem_fill_super() sets it on the internal instance...  Fixed variant
-> follows:
->
-> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index e43dc55..5261498 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2615,13 +2615,15 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
->   	 * tmpfs instance, limiting inodes to one per page of lowmem;
->   	 * but the internal instance is left unlimited.
->   	 */
-> -	if (!(sb->s_flags&  MS_NOUSER)) {
-> +	if (!(sb->s_flags&  MS_KERNMOUNT)) {
->   		sbinfo->max_blocks = shmem_default_max_blocks();
->   		sbinfo->max_inodes = shmem_default_max_inodes();
->   		if (shmem_parse_options(data, sbinfo, false)) {
->   			err = -EINVAL;
->   			goto failed;
->   		}
-> +	} else {
-> +		sb->s_flags |= MS_NOUSER;
->   	}
->   	sb->s_export_op =&shmem_export_ops;
->   	sb->s_flags |= MS_NOSEC;
-> @@ -2831,8 +2833,7 @@ int __init shmem_init(void)
->   		goto out2;
->   	}
->
-> -	shm_mnt = vfs_kern_mount(&shmem_fs_type, MS_NOUSER,
-> -				 shmem_fs_type.name, NULL);
-> +	shm_mnt = kern_mount(&shmem_fs_type);
->   	if (IS_ERR(shm_mnt)) {
->   		error = PTR_ERR(shm_mnt);
->   		printk(KERN_ERR "Could not kern_mount tmpfs\n");
+On Mon, Sep 02, 2013 at 03:39:45PM -0300, Mauro Carvalho Chehab wrote:
+> Em Mon, 2 Sep 2013 11:19:01 -0700
+> Josh Triplett <josh@joshtriplett.org> escreveu:
+> 
+> > Patches to checkpatch that add new style rules should also change
+> > Documentation/CodingStyle to document those new style rules; add a
+> > comment to that effect to the top of scripts/checkpatch.pl.
+> 
+> Well, you forgot to c/c LKML on this patch; I think that KS2013 is not the
+> proper list to review this patch ;)
 
-Yes, that patch worked. It eliminated the lglock as a bottleneck in the 
-AIM7 workload. The lg_global_lock did not show up in the perf profile, 
-whereas the lg_local_lock was only 0.07%.
+My mail went to LKML; it had:
+To: linux-kernel@vger.kernel.org
 
-Regards,
-Longman
+> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > ---
+> >  scripts/checkpatch.pl | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > index 2ee9eb7..ba65ea6 100755
+> > --- a/scripts/checkpatch.pl
+> > +++ b/scripts/checkpatch.pl
+> > @@ -4,6 +4,10 @@
+> >  # (c) 2007,2008, Andy Whitcroft <apw@uk.ibm.com> (new conditions, test suite)
+> >  # (c) 2008-2010 Andy Whitcroft <apw@canonical.com>
+> >  # Licensed under the terms of the GNU GPL License version 2
+> > +#
+> > +# This file does not define the kernel coding style; Documentation/CodingStyle
+> > +# does.  If you add a new style test to this file, add the corresponding style
+> > +# rule it enforces to Documentation/CodingStyle.
+> >  
+> 
+> Agreed with that. I would also add another comment there: "in case of
+> conflicts between checkpatch.pl and Documentation/CodingStyle, the latter
+> takes precedence."
+
+Good point.
+
+> Anyway,
+> 
+> Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+
+Thanks.
+
+- Josh Triplett
