@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758898Ab3IBQAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 12:00:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758110Ab3IBQAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 12:00:36 -0400
-Message-ID: <5224B608.3080303@redhat.com>
-Date: Mon, 02 Sep 2013 18:00:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1757968Ab3IBQJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 12:09:20 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52067 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754338Ab3IBQJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 12:09:20 -0400
+Date: Mon, 2 Sep 2013 17:09:08 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Martin =?utf-8?Q?MOKREJ=C5=A0?= <mmokrejs@gmail.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10.9: kmemleak disables all CPUs except CPU0
+Message-ID: <20130902160908.GE13871@arm.com>
+References: <5221F119.4070000@gmail.com>
+ <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com>
+ <CAMo8BfLMex3H1QBk6gD7DDDgGJ4dh6+dvhLG=c7LdFZ8XuyM9Q@mail.gmail.com>
+ <20130902154840.GC13871@arm.com>
+ <5224B3F5.8090402@gmail.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, glin@suse.de,
-        agraf@suse.de, brogers@suse.de, afaerber@suse.de, lnussel@suse.de,
-        edk2-devel@lists.sf.net, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: mmu: allow page tables to be in read-only slots
-References: <1377866497-3866-1-git-send-email-pbonzini@redhat.com> <5224584F.6010409@linux.vnet.ibm.com> <20130902092518.GN22899@redhat.com>
-In-Reply-To: <20130902092518.GN22899@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5224B3F5.8090402@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/09/2013 11:25, Gleb Natapov ha scritto:
-> On Mon, Sep 02, 2013 at 05:20:15PM +0800, Xiao Guangrong wrote:
->> On 08/30/2013 08:41 PM, Paolo Bonzini wrote:
->>> Page tables in a read-only memory slot will currently cause a triple
->>> fault because the page walker uses gfn_to_hva and it fails on such a slot.
->>>
->>> OVMF uses such a page table; however, real hardware seems to be fine with
->>> that as long as the accessed/dirty bits are set.  Save whether the slot
->>> is readonly, and later check it when updating the accessed and dirty bits.
->>
->> Paolo, do you know why OVMF is using readonly memory like this?
->>
-> Just a guess, but perhaps they want to move to paging mode as early as
-> possible even before memory controller is fully initialized.
+On Mon, Sep 02, 2013 at 04:51:17PM +0100, Martin MOKREJŠ wrote:
+> Catalin Marinas wrote:
+> > On Mon, Sep 02, 2013 at 04:44:52PM +0100, Max Filippov wrote:
+> >> On Mon, Sep 2, 2013 at 7:31 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >>> On 31 August 2013 14:35, Martin MOKREJŠ <mmokrejs@gmail.com> wrote:
+> >>>>   never realized that my CPUs are gone if I compile into kernel kmemleak.
+> >>>> Is that really the aim?
+> >>>>
+> >>>> CONFIG_HAVE_DEBUG_KMEMLEAK=y
+> >>>> CONFIG_DEBUG_KMEMLEAK=y
+> >>>> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+> >>>> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
+> >>>> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
+> >>>>
+> >>>> 1.  Why isn't there /sys/devices/system/cpu/cpu0/online file?
+> >>>> Does not matter if it contains 0 or 1. It just should exist.
+> >>>
+> >>> I can't really see how kmemleak would do this, maybe other config
+> >>> options that get set/cleared in the process of selecting kmemleak. Can
+> >>
+> >> Seems to be kmemcheck: from arch/x86/mm/kmemcheck/kmemcheck.c:
+> >>
+> >> int __init kmemcheck_init(void)
+> >> {
+> >> #ifdef CONFIG_SMP
+> >>         /*
+> >>          * Limit SMP to use a single CPU. We rely on the fact that this code
+> >>          * runs before SMP is set up.
+> >>          */
+> >>         if (setup_max_cpus > 1) {
+> >>                 printk(KERN_INFO
+> >>                         "kmemcheck: Limiting number of CPUs to 1.\n");
+> >>                 setup_max_cpus = 1;
+> >>         }
+> >> #endif
+> > 
+> > Ah, ok, not my problem then ;)
+> 
+> Fine, so would somebody please update the help text accessible in "menuconfig"
+> for this entry? It should be clear that it has a huge performance impact if enabled.
+> And, by compiling in it is enabled by default.
 
-More precisely they want to move to 64-bit mode as early as possible,
-and that requires paging.
+Otherwise, of no-one volunteers, please feel free to send a patch ;)
 
->> AFAIK, The fault trigged by this kind of access can hardly be fixed by
->> userspace since the fault is trigged by pagetable walking not by the current
->> instruction. Do you have any idea to let uerspace emulate it properly?
->
-> Not sure what userspace you mean here, but there shouldn't be a fault in the
-> first place if ROM page tables have access/dirty bit set and they do.
-
-Yep.  Actually they do not set dirty on the PD/PDP/PML4, only on the
-bottom level (which is also fine).
-
-Paolo
-
+-- 
+Catalin
