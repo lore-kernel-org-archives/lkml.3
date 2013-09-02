@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758530Ab3IBON4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:13:56 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63843 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3IBONz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:13:55 -0400
-Date: Mon, 2 Sep 2013 16:13:51 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130902141350.GC2378@somewhere>
-References: <20130820111426.GA27828@swordfish.datadirectnet.com>
- <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
+	id S1758610Ab3IBOPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:15:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43882 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758350Ab3IBOPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 10:15:51 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Pavel Machek <pavel@ucw.cz>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH RFC 1/6] reset: is_reset and clear_reset api's
+Date: Mon, 2 Sep 2013 19:45:14 +0530
+Message-ID: <5dcf227d360f748ddc965f6c13ff0b31c3e90dab.1378129416.git.afzal@ti.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <cover.1378129416.git.afzal@ti.com>
+References: <cover.1378129416.git.afzal@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130902135033.GA1686@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 03:50:34PM +0200, Stanislaw Gruszka wrote:
-> On Mon, Sep 02, 2013 at 03:07:45PM +0200, Frederic Weisbecker wrote:
-> > > Hope this may help.
-> > > I've added a silly check to make sure that `stime < rtime'
-> > > 
-> > > @@ -579,6 +582,10 @@ static void cputime_adjust(struct task_cputime *curr,
-> > >         if (total) {
-> > >                 stime = scale_stime((__force u64)stime,
-> > >                                     (__force u64)rtime, (__force u64)total);
-> > > +               if (stime > rtime) {
-> > > +                       printk(KERN_ERR "Ooops: stime:%llu rtime:%llu\n", stime, rtime);
-> > > +                       WARN_ON(1);
-> > > +               }
-> > >                 utime = rtime - stime;
-> > >         } else {
-> > >                 stime = rtime;
-> [snip]
-> 
-> > Thanks a lot Sergey for testing this further!
-> > 
-> > Interesting results, so rtime is always one or two units off stime after scaling.
-> > Stanislaw made the scaling code with Linus and he has a better idea on the math guts
-> > here.
-> 
-> I don't think this is scale issue, but rather at scale_stime() input
-> stime is already bigger then rtime. Sergey, could you verify that
-> by adding check before scale_stime() ?
+Enhance reset framework with "is_reset" and "clear_reset" api's.
+is_reset - used by client driver to know reset status
+clear_reset - used by client driver to clear reset status
 
-Note that having stime > rtime should be fine to handle. This can happen for
-example if the task runs on tiny timeslices but is unlucky enough that all these
-timeslices are interrupted by the tick.
+These functionalities may sometimes be achieved by using existing api
+like deassert. But in some scenarios, steps to achieve reset requires
+clearing reset, deassert reset, enabling clock to module and then
+checking reset status. Here enabling clock module is coming in between
+reset procedure, hence enhance framework with additional api's.
 
-> 
-> Stanislaw
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ drivers/reset/core.c             | 32 ++++++++++++++++++++++++++++++++
+ include/linux/reset-controller.h |  2 ++
+ include/linux/reset.h            |  2 ++
+ 3 files changed, 36 insertions(+)
+
+diff --git a/drivers/reset/core.c b/drivers/reset/core.c
+index d1b6089..ba12171 100644
+--- a/drivers/reset/core.c
++++ b/drivers/reset/core.c
+@@ -127,6 +127,38 @@ int reset_control_deassert(struct reset_control *rstc)
+ EXPORT_SYMBOL_GPL(reset_control_deassert);
+ 
+ /**
++ * reset_control_is_reset - check reset status
++ * @rstc: reset controller
++ *
++ * Returns a boolean or negative error code
++ *
++ */
++int reset_control_is_reset(struct reset_control *rstc)
++{
++	if (rstc->rcdev->ops->is_reset)
++		return rstc->rcdev->ops->is_reset(rstc->rcdev, rstc->id);
++
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(reset_control_is_reset);
++
++/**
++ * reset_control_clear_reset - clear the reset
++ * @rstc: reset controller
++ *
++ * Returns zero on success or negative error code
++ *
++ */
++int reset_control_clear_reset(struct reset_control *rstc)
++{
++	if (rstc->rcdev->ops->clear_reset)
++		return rstc->rcdev->ops->clear_reset(rstc->rcdev, rstc->id);
++
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(reset_control_clear_reset);
++
++/**
+  * reset_control_get - Lookup and obtain a reference to a reset controller.
+  * @dev: device to be reset by the controller
+  * @id: reset line name
+diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
+index 2f61311..c9bbadb 100644
+--- a/include/linux/reset-controller.h
++++ b/include/linux/reset-controller.h
+@@ -17,6 +17,8 @@ struct reset_control_ops {
+ 	int (*reset)(struct reset_controller_dev *rcdev, unsigned long id);
+ 	int (*assert)(struct reset_controller_dev *rcdev, unsigned long id);
+ 	int (*deassert)(struct reset_controller_dev *rcdev, unsigned long id);
++	int (*is_reset)(struct reset_controller_dev *rcdev, unsigned long id);
++	int (*clear_reset)(struct reset_controller_dev *rcdev, unsigned long i);
+ };
+ 
+ struct module;
+diff --git a/include/linux/reset.h b/include/linux/reset.h
+index 6082247..da59f9f 100644
+--- a/include/linux/reset.h
++++ b/include/linux/reset.h
+@@ -7,6 +7,8 @@ struct reset_control;
+ int reset_control_reset(struct reset_control *rstc);
+ int reset_control_assert(struct reset_control *rstc);
+ int reset_control_deassert(struct reset_control *rstc);
++int reset_control_is_reset(struct reset_control *rstc);
++int reset_control_clear_reset(struct reset_control *rstc);
+ 
+ struct reset_control *reset_control_get(struct device *dev, const char *id);
+ void reset_control_put(struct reset_control *rstc);
+-- 
+1.8.3.4
+
