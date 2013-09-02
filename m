@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758795Ab3IBJCO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:02:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37832 "EHLO
+	id S1758781Ab3IBJCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:02:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758419Ab3IBIzh (ORCPT
+	with ESMTP id S1758524Ab3IBIzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Sep 2013 04:55:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wladislav Wiebe <wladislav.kw@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 44/58] of: fdt: fix memory initialization for expanded DT
-Date: Mon,  2 Sep 2013 09:54:29 +0100
-Message-Id: <1378112083-9475-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 43/58] xen/events: initialize local per-cpu mask for all possible events
+Date: Mon,  2 Sep 2013 09:54:28 +0100
+Message-Id: <1378112083-9475-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wladislav Wiebe <wladislav.kw@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
+commit 84ca7a8e45dafb49cd5ca90a343ba033e2885c17 upstream.
 
-Already existing property flags are filled wrong for properties created from
-initial FDT. This could cause problems if this DYNAMIC device-tree functions
-are used later, i.e. properties are attached/detached/replaced. Simply dumping
-flags from the running system show, that some initial static (not allocated via
-kzmalloc()) nodes are marked as dynamic.
+The sizeof() argument in init_evtchn_cpu_bindings() is incorrect
+resulting in only the first 64 (or 32 in 32-bit guests) ports having
+their bindings being initialized to VCPU 0.
 
-I putted some debug extensions to property_proc_show(..) :
-..
-+       if (OF_IS_DYNAMIC(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
-+       if (OF_IS_DETACHED(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
+In most cases this does not cause a problem as request_irq() will set
+the irq affinity which will set the correct local per-cpu mask.
+However, if the request_irq() is called on a VCPU other than 0, there
+is a window between the unmasking of the event and the affinity being
+set were an event may be lost because it is not locally unmasked on
+any VCPU. If request_irq() is called on VCPU 0 then local irqs are
+disabled during the window and the race does not occur.
 
-when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
-will see that those flags are filled wrong, basically in most cases it will dump
-a DYNAMIC or DETACHED status, which is in not true.
-(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
-make a test_bit(OF_DETACHED, &x->_flags)
+Fix this by initializing all NR_EVENT_CHANNEL bits in the local
+per-cpu masks.
 
-If nodes are dynamic kernel is allowed to kfree() them. But it will crash
-attempting to do so on the nodes from FDT -- they are not allocated via
-kzmalloc().
-
-Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/of/fdt.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/xen/events.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 91a375f..17fad3b 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -390,6 +390,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
- 	mem = (unsigned long)
- 		dt_alloc(size + 4, __alignof__(struct device_node));
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index b5b559a..025e98b 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -324,7 +324,7 @@ static void init_evtchn_cpu_bindings(void)
  
-+	memset((void *)mem, 0, size);
-+
- 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
+ 	for_each_possible_cpu(i)
+ 		memset(per_cpu(cpu_evtchn_mask, i),
+-		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
++		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
+ }
  
- 	pr_debug("  unflattening %lx...\n", mem);
+ static inline void clear_evtchn(int port)
 -- 
 1.8.3.2
 
