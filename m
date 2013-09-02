@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3IBImG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:42:06 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54089 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab3IBImE (ORCPT
+	id S1756918Ab3IBIpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:45:44 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:37180 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab3IBIpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:42:04 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, sachin.kamat@linaro.org,
-        Saeed Bishara <saeed@marvell.com>
-Subject: [PATCH 1/1] dma: mv_xor: Fix incorrect error path
-Date: Mon,  2 Sep 2013 13:54:20 +0530
-Message-Id: <1378110260-2374-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 2 Sep 2013 04:45:43 -0400
+Date: Mon, 2 Sep 2013 09:45:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] mfd: twl6040: Use regmap for register cache
+Message-ID: <20130902084538.GD12341@lee--X1>
+References: <1377967699-10277-1-git-send-email-broonie@kernel.org>
+ <20130902081759.GC12341@lee--X1>
+ <20130902082941.GN20329@zurbaran>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130902082941.GN20329@zurbaran>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return directly if memory allocation fails. There is no need
-of dma_free_coherent().
+On Mon, 02 Sep 2013, Samuel Ortiz wrote:
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Saeed Bishara <saeed@marvell.com>
----
- drivers/dma/mv_xor.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+> Hi Lee,
+> 
+> On Mon, Sep 02, 2013 at 09:17:59AM +0100, Lee Jones wrote:
+> > On Sat, 31 Aug 2013, Mark Brown wrote:
+> > 
+> > > From: Mark Brown <broonie@linaro.org>
+> > > 
+> > > Rather then open coding a cache of the vibra control registers use the
+> > > regmap cache code.  Also cache the interrupt mask register, providing
+> > > a small performance improvement for the interrupt code.
+> > > 
+> > > Signed-off-by: Mark Brown <broonie@linaro.org>
+> > > ---
+> > > 
+> > > I'm hoping to have some ASoC improvements to build on top of this (there
+> > > is ASoC level register caching for the device) so it might make sense to
+> > > apply this via ASoC.
+> > > 
+> > >  drivers/mfd/twl6040.c       | 43 ++++++++++++++++++++++++++++++-------------
+> > >  include/linux/mfd/twl6040.h |  1 -
+> > >  2 files changed, 30 insertions(+), 14 deletions(-)
+> > 
+> > Applied with Peter's Ack, thanks.
+> Please hold on. I'm preparing a branch for Mark to pull from and it will
+> contain that patch.
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index 856ea77..536dcb8 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -1036,10 +1036,8 @@ mv_xor_channel_add(struct mv_xor_device *xordev,
- 	struct dma_device *dma_dev;
- 
- 	mv_chan = devm_kzalloc(&pdev->dev, sizeof(*mv_chan), GFP_KERNEL);
--	if (!mv_chan) {
--		ret = -ENOMEM;
--		goto err_free_dma;
--	}
-+	if (!mv_chan)
-+		return ERR_PTR(-ENOMEM);
- 
- 	mv_chan->idx = idx;
- 	mv_chan->irq = irq;
+Ah, I thought that was another set.
+
+No problem. I've removed it from my branch.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
