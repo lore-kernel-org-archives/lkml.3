@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758918Ab3IBTkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 15:40:51 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54540 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757074Ab3IBTku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 15:40:50 -0400
-Message-ID: <1378150847.1953.106.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Add warning about submitting patches using
- --file
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        David Howells <dhowells@redhat.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	id S1758927Ab3IBTsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 15:48:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35027 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757074Ab3IBTsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 15:48:39 -0400
+Date: Mon, 2 Sep 2013 16:48:24 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Mon, 02 Sep 2013 12:40:47 -0700
-In-Reply-To: <20130902181856.GB29787@leaf>
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+Message-ID: <20130902164824.76da7032@infradead.org>
+In-Reply-To: <1378148367.1953.98.camel@joe-AO722>
 References: <9976.1378132260@warthog.procyon.org.uk>
-	 <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
-	 <20130902181856.GB29787@leaf>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	<1378138205.1953.66.camel@joe-AO722>
+	<20130902181510.GA29787@leaf>
+	<20130902181856.GB29787@leaf>
+	<20130902153945.6d7e510c@samsung.com>
+	<1378148367.1953.98.camel@joe-AO722>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a message describing the lack of value in using
---file to generate patches.
+Em Mon, 02 Sep 2013 11:59:27 -0700
+Joe Perches <joe@perches.com> escreveu:
 
-Exclude files in staging from this message.
+> On Mon, 2013-09-02 at 15:39 -0300, Mauro Carvalho Chehab wrote:
+> > Em Mon, 2 Sep 2013 11:19:01 -0700
+> > Josh Triplett <josh@joshtriplett.org> escreveu:
+> []
+> > > +# This file does not define the kernel coding style; Documentation/CodingStyle
+> > > +# does.  If you add a new style test to this file, add the corresponding style
+> > > +# rule it enforces to Documentation/CodingStyle.
+> 
+> > Agreed with that.
+> 
+> I do not.
+> 
+> > I would also add another comment there: "in case of
+> > conflicts between checkpatch.pl and Documentation/CodingStyle, the latter
+> > takes precedence."
+> 
+> There are many checkpatch rules (like semicolons) that
+> are not in CodingStyle.
 
-A similar message was removed by commit cf655043d4b
-("update checkpatch.pl to version 0.15")
+Well, document them there, please.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
+> CodingStyle should not become some intensely detailed
+> document that specifies the "only one true way" to
+> write code.
 
-Maybe this sort of wordsmithing is valuable.
+There will always be things that will be freed to the programmer to
+use, but CodingStyle should reflect what is the coding style we're
+adopting at the Kernel, or putting it on another way: what things
+will make the patch to be rejected because of its style.
 
- scripts/checkpatch.pl | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+> I also think checkpatch should not be used by robots
+> to determine that patches are bad or unacceptable.
+> 
+> checkpatch is just a dumb little tool that has some
+> utility but as Dan Carpenter once said, "it's less
+> sentient than a squirrel".
+> 
+> People should always use their own taste before
+> relying on dumb tools.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9bb056c..f788a14 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4280,6 +4280,19 @@ $vname has style problems, please review.
- If any of these errors are false positives, please report
- them to the maintainer, see CHECKPATCH in MAINTAINERS.
- EOM
-+		if ($file && $realfile !~ m@\bstaging/@) {
-+			print << "EOM";
-+
-+WARNING: When using --file mode, do not send patches that just make
-+whitespace or formatting changes unless more significant changes are
-+also made for other reasons in another patch.
-+
-+Patches that are just code style changes have a real cost.
-+
-+These sort of patches can cause rejects with other changes and are
-+thought of by many maintainers as more harmful and tiresome than useful.
-+EOM
-+		}
- 	}
- 
- 	return $clean;
+That's easier said than done. There are lots of stupid changes that are
+done by developers (like enforcing 80 cols whitespace breaks) just
+because of the checkpatch warnings. That happens before those patches 
+got sent to the ML's, as most people know that maintainers will curse 
+them if the coding style is crap[1].
 
+[1] BTW, most of the time that checkpatch complains, the code is
+really crap.
 
+In any case, Documentation/CodingStyle is the reference document that
+maintainers and coders should use to know that a code is following the
+style (and not checkpatch). So, it requires updates when new
+CodingStyle enforcements are created.
+
+In the specific example pointed by David, if "extern", will start
+to become a bad word that should be avoided, that should be documented
+there at CodingStyle, and checkpatch should just be the dumb monkey
+that will check that.
+
+Cheers,
+Mauro
