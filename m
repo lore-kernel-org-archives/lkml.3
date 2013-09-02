@@ -1,123 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab3IBAuP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 20:50:15 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:34552 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab3IBAuN convert rfc822-to-8bit (ORCPT
+	id S1757887Ab3IBA5Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 20:57:24 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:62432 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3IBA5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 20:50:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
-References: <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
-	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
-	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
-	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
-	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
-	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
-	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
-	<20130901212355.GU13318@ZenIV.linux.org.uk>
-	<CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
-	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
-	<20130901233005.GX13318@ZenIV.linux.org.uk>
-	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
-Date: Sun, 1 Sep 2013 17:50:11 -0700
-X-Google-Sender-Auth: qUgLb4WmwYBBBs-jdgnlKqO0zP8
-Message-ID: <CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Waiman Long <waiman.long@hp.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 Sep 2013 20:57:22 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: vinod.koul@intel.com
+Cc: s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] dma: imx-sdma: Staticize sdma_driver_data structures
+Date: Sun,  1 Sep 2013 21:57:12 -0300
+Message-Id: <1378083432-15728-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 1, 2013 at 5:12 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> It *is* one of the few locked accesses remaining, and it's clearly
-> getting called a lot (three calls per system call: two mntput's  - one
-> for the root path, one for the result path, and one from path_init ->
-> rcu_walk_init), but with up to 8% CPU time for basically that one
-> "lock xadd" instruction is damn odd. I can't see how that could happen
-> without seriously nasty cacheline bouncing, but I can't see how *that*
-> can happen when all the accesses seem to be from the current CPU.
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-So, I wanted to double-check that "it can only be that expensive if
-there's cacheline bouncing" statement. Thinking "maybe it's just
-really expensive. Even when running just a single thread".
+Sparse report the following warnings:
 
-So I set MAX_THREADS to 1 in my stupid benchmark, just to see what happens..
+drivers/dma/imx-sdma.c:330:25: warning: symbol 'sdma_imx31' was not declared. Should it be static?
+drivers/dma/imx-sdma.c:351:25: warning: symbol 'sdma_imx25' was not declared. Should it be static?
+drivers/dma/imx-sdma.c:357:25: warning: symbol 'sdma_imx35' was not declared. Should it be static?
+drivers/dma/imx-sdma.c:375:25: warning: symbol 'sdma_imx51' was not declared. Should it be static?
+drivers/dma/imx-sdma.c:395:25: warning: symbol 'sdma_imx53' was not declared. Should it be static?
+drivers/dma/imx-sdma.c:414:25: warning: symbol 'sdma_imx6q' was not declared. Should it be static?
 
-And almost everything changes as expected: now we don't have any
-cacheline bouncing any more, so lockref_put_or_lock() and
-lockref_get_or_lock() no longer dominate - instead of being 20%+ each,
-they are now just 3%.
+Make the sdma_driver_data structures static.
 
-What _didn't_ change? Right. lg_local_lock() is still 6.40%. Even when
-single-threaded. It's now the #1 function in my profile:
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/dma/imx-sdma.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-   6.40%   lg_local_lock
-   5.42%   copy_user_enhanced_fast_string
-   5.14%   sysret_check
-   4.79%   link_path_walk
-   4.41%   0x00007ff861834ee3
-   4.33%   avc_has_perm_flags
-   4.19%   __lookup_mnt
-   3.83%   lookup_fast
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 59bf9f5..fc43603 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -327,7 +327,7 @@ struct sdma_engine {
+ 	const struct sdma_driver_data	*drvdata;
+ };
+ 
+-struct sdma_driver_data sdma_imx31 = {
++static struct sdma_driver_data sdma_imx31 = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX31,
+ 	.num_events = 32,
+ };
+@@ -348,13 +348,13 @@ static struct sdma_script_start_addrs sdma_script_imx25 = {
+ 	.shp_2_mcu_addr = 979,
+ };
+ 
+-struct sdma_driver_data sdma_imx25 = {
++static struct sdma_driver_data sdma_imx25 = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+ 	.num_events = 48,
+ 	.script_addrs = &sdma_script_imx25,
+ };
+ 
+-struct sdma_driver_data sdma_imx35 = {
++static struct sdma_driver_data sdma_imx35 = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+ 	.num_events = 48,
+ };
+@@ -372,7 +372,7 @@ static struct sdma_script_start_addrs sdma_script_imx51 = {
+ 	.shp_2_mcu_addr = 892,
+ };
+ 
+-struct sdma_driver_data sdma_imx51 = {
++static struct sdma_driver_data sdma_imx51 = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+ 	.num_events = 48,
+ 	.script_addrs = &sdma_script_imx51,
+@@ -392,7 +392,7 @@ static struct sdma_script_start_addrs sdma_script_imx53 = {
+ 	.mcu_2_firi_addr = 1290,
+ };
+ 
+-struct sdma_driver_data sdma_imx53 = {
++static struct sdma_driver_data sdma_imx53 = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+ 	.num_events = 48,
+ 	.script_addrs = &sdma_script_imx53,
+@@ -411,7 +411,7 @@ static struct sdma_script_start_addrs sdma_script_imx6q = {
+ 	.mcu_2_spdif_addr = 1134,
+ };
+ 
+-struct sdma_driver_data sdma_imx6q = {
++static struct sdma_driver_data sdma_imx6q = {
+ 	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+ 	.num_events = 48,
+ 	.script_addrs = &sdma_script_imx6q,
+-- 
+1.8.1.2
 
-(that "copy_user_enhanced_fast_string" is when we copy the "struct
-stat" from kernel space to user space)
-
-The instruction-level profile just looking like
-
-       │    ffffffff81078e70 <lg_local_lock>:
-  2.06 │      push   %rbp
-  1.06 │      mov    %rsp,%rbp
-  0.11 │      mov    (%rdi),%rdx
-  2.13 │      add    %gs:0xcd48,%rdx
-  0.92 │      mov    $0x100,%eax
- 85.87 │      lock   xadd   %ax,(%rdx)
-  0.04 │      movzbl %ah,%ecx
-       │      cmp    %al,%cl
-  3.60 │    ↓ je     31
-       │      nop
-       │28:   pause
-       │      movzbl (%rdx),%eax
-       │      cmp    %cl,%al
-       │    ↑ jne    28
-       │31:   pop    %rbp
-  4.22 │    ← retq
-
-so that instruction sequence is just expensive, and it is expensive
-without any cacheline bouncing. The expense seems to be 100% simply
-due to the fact that it's an atomic serializing instruction, and it
-just gets called way too much.
-
-So lockref_[get|put]_or_lock() are each called once per pathname
-lookup (because the RCU accesses to the dentries get turned into a
-refcount, and then that refcount gets dropped). But lg_local_lock()
-gets called twice: once for path_init(), and once for mntput() - I
-think I was wrong about mntput getting called twice.
-
-So it doesn't seem to be cacheline bouncing at all. It's just
-"serializing instructions are really expensive" together with calling
-that function too much. And we've optimized pathname lookup so much
-that even a single locked instruction shows up like a sort thumb.
-
-I guess we should be proud.
-
-              Linus
