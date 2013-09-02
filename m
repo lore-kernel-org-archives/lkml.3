@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab3IBI7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 04:59:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37896 "EHLO
+	id S1758738Ab3IBI7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 04:59:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37890 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758570Ab3IBIzu (ORCPT
+	with ESMTP id S1758567Ab3IBIzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Sep 2013 04:55:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
-        Michael Schroeder <mls@suse.com>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Hui Wang <hui.wang@canonical.com>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 50/58] efivars: explicitly calculate length of VariableName
-Date: Mon,  2 Sep 2013 09:54:35 +0100
-Message-Id: <1378112083-9475-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 51/58] workqueue: fix possible stall on try_to_grab_pending() of a delayed work item
+Date: Mon,  2 Sep 2013 09:54:36 +0100
+Message-Id: <1378112083-9475-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -31,95 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
+commit 3aa62497594430ea522050b75c033f71f2c60ee6 upstream.
 
-It's not wise to assume VariableNameSize represents the length of
-VariableName, as not all firmware updates VariableNameSize in the same
-way (some don't update it at all if EFI_SUCCESS is returned). There
-are even implementations out there that update VariableNameSize with
-values that are both larger than the string returned in VariableName
-and smaller than the buffer passed to GetNextVariableName(), which
-resulted in the following bug report from Michael Schroeder,
+Currently, when try_to_grab_pending() grabs a delayed work item, it
+leaves its linked work items alone on the delayed_works.  The linked
+work items are always NO_COLOR and will cause future
+cwq_activate_first_delayed() increase cwq->nr_active incorrectly, and
+may cause the whole cwq to stall.  For example,
 
-  > On HP z220 system (firmware version 1.54), some EFI variables are
-  > incorrectly named :
-  >
-  > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-  > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+state: cwq->max_active = 1, cwq->nr_active = 1
+       one work in cwq->pool, many in cwq->delayed_works.
 
-The issue here is that because we blindly use VariableNameSize without
-verifying its value, we can potentially read garbage values from the
-buffer containing VariableName if VariableNameSize is larger than the
-length of VariableName.
+step1: try_to_grab_pending() removes a work item from delayed_works
+       but leaves its NO_COLOR linked work items on it.
 
-Since VariableName is a string, we can calculate its size by searching
-for the terminating NULL character.
+step2: Later on, cwq_activate_first_delayed() activates the linked
+       work item increasing ->nr_active.
 
-Reported-by: Frederic Crozat <fcrozat@suse.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Michael Schroeder <mls@suse.com>
-Cc: Lee, Chun-Yi <jlee@suse.com>
-Cc: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Cc: Hui Wang <hui.wang@canonical.com>
-[ Hui Wang: backported to 3.5: adjusted context ]
+step3: cwq->nr_active = 1, but all activated work items of the cwq are
+       NO_COLOR.  When they finish, cwq->nr_active will not be
+       decreased due to NO_COLOR, and no further work items will be
+       activated from cwq->delayed_works. the cwq stalls.
+
+Fix it by ensuring the target work item is activated before stealing
+PENDING in try_to_grab_pending().  This ensures that all the linked
+work items are activated without incorrectly bumping cwq->nr_active.
+
+tj: Updated comment and description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+[ luis: backported to 3.5: based on Li Zefan's backport to 3.4 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firmware/efivars.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ kernel/workqueue.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index d7c3540..8c7a8cf 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1006,6 +1006,31 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index dd488af..0395ca8 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1744,10 +1744,9 @@ static void move_linked_works(struct work_struct *work, struct list_head *head,
+ 		*nextp = n;
  }
  
- /*
-+ * Returns the size of variable_name, in bytes, including the
-+ * terminating NULL character, or variable_name_size if no NULL
-+ * character is found among the first variable_name_size bytes.
-+ */
-+static unsigned long var_name_strnsize(efi_char16_t *variable_name,
-+				       unsigned long variable_name_size)
+-static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++static void cwq_activate_delayed_work(struct work_struct *work)
+ {
+-	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+-						    struct work_struct, entry);
++	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
+ 
+ 	trace_workqueue_activate_work(work);
+@@ -1756,6 +1755,14 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
+ 	cwq->nr_active++;
+ }
+ 
++static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
 +{
-+	unsigned long len;
-+	efi_char16_t c;
++	struct work_struct *work = list_first_entry(&cwq->delayed_works,
++						    struct work_struct, entry);
 +
-+	/*
-+	 * The variable name is, by definition, a NULL-terminated
-+	 * string, so make absolutely sure that variable_name_size is
-+	 * the value we expect it to be. If not, return the real size.
-+	 */
-+	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
-+		c = variable_name[(len / sizeof(c)) - 1];
-+		if (!c)
-+			break;
-+	}
-+
-+	return min(len, variable_name_size);
++	cwq_activate_delayed_work(work);
 +}
 +
-+/*
-  * Let's not leave out systab information that snuck into
-  * the efivars driver
-  */
-@@ -1232,6 +1257,8 @@ int register_efivars(struct efivars *efivars,
- 						&vendor_guid);
- 		switch (status) {
- 		case EFI_SUCCESS:
-+			variable_name_size = var_name_strnsize(variable_name,
-+							       variable_name_size);
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name,
+ /**
+  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+  * @cwq: cwq of interest
+@@ -2653,6 +2660,18 @@ static int try_to_grab_pending(struct work_struct *work)
+ 		smp_rmb();
+ 		if (gcwq == get_work_gcwq(work)) {
+ 			debug_work_deactivate(work);
++
++			/*
++			 * A delayed work item cannot be grabbed directly
++			 * because it might have linked NO_COLOR work items
++			 * which, if left on the delayed_list, will confuse
++			 * cwq->nr_active management later on and cause
++			 * stall.  Make sure the work item is activated
++			 * before grabbing.
++			 */
++			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
++				cwq_activate_delayed_work(work);
++
+ 			list_del_init(&work->entry);
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+ 				get_work_color(work),
 -- 
 1.8.3.2
 
