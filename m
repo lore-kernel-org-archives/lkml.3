@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758657Ab3IBMiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 08:38:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38247 "EHLO mga02.intel.com"
+	id S1758459Ab3IBMi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 08:38:59 -0400
+Received: from mout.gmx.net ([212.227.17.22]:49703 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab3IBMiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 08:38:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1007,1367996400"; 
-   d="scan'208";a="372236214"
-Date: Mon, 2 Sep 2013 17:21:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: kgene.kim@samsung.com, Dan Williams <djbw@fb.com>,
-        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
-Message-ID: <20130902115157.GQ7376@intel.com>
-References: <201308280012.41638.heiko@sntech.de>
- <201308280013.52076.heiko@sntech.de>
+	id S1756348Ab3IBMi5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 08:38:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201308280013.52076.heiko@sntech.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <trinity-fee99cd2-c238-496b-97c5-988038f82beb-1378125536617@3capp-gmx-bs38>
+From: "Super Eichtig" <dbextern@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: tsc2007 driver, read data abort after i2c timeout
+Content-Type: text/plain; charset=UTF-8
+Date: Mon, 2 Sep 2013 14:38:56 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:mvo3vEgkhPdx2FOvx8sLWeWuxDut3tZK3dTfPYscgjV
+ Upo3paqiB5hI9DZ/BMpWuLbjWSgvdM3d1WFuHzhXOVAWR7/p/y
+ RtWCBVsg8I7iSyJuQnThDn3vtJJaxN/KsVUqpSFtmmeMMafCNC
+ 4YEA3118VRayRndxuziSMEHUBFHc4MTv3BM4H095YT77zUaAi2
+ go2PJuXorx7bqVxz7f01juEmdHqwFynJ4V54RgbtVlQgu4DkYJ
+ H7UHuGEGZayycFHeLjbjLZ0H6+OZOI7Vxxu8xTNzz2RsQnHPEE WceG6c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 12:13:51AM +0200, Heiko St�bner wrote:
-> This adds a new driver to support the s3c24xx dma using the dmaengine
-> and makes the old one in mach-s3c24xx obsolete in the long run.
-> 
-> Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
-> with numerous virtual channels being mapped to a lot less physical ones.
-> The driver therefore borrows a lot from the amba-pl08x driver in this
-> regard. Functionality-wise the driver gains a memcpy ability in addition
-> to the slave_sg one.
-> 
-> The driver supports both the method for requesting the peripheral used
-> by SoCs before the S3C2443 and the different method for S3C2443 and later.
-> 
-> On earlier SoCs the hardware channels usable for specific peripherals is
-> constrainted while on later SoCs all channels can be used for any peripheral.
-> 
-> Tested on a s3c2416-based board, memcpy using the dmatest module and
-> slave_sg partially using the spi-s3c64xx driver.
-> 
-
-> +static int s3c24xx_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-> +			 unsigned long arg)
-> +{
-> +	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-> +	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-> +	unsigned long flags;
-> +	int ret = 0;
-> +
-> +	/* Controls applicable to inactive channels */
-> +	if (cmd == DMA_SLAVE_CONFIG)
-> +		return s3c24xx_dma_set_runtime_config(s3cchan,
-> +					      (struct dma_slave_config *)arg);
-> +
-> +	/*
-> +	 * Anything succeeds on channels with no physical allocation and
-> +	 * no queued transfers.
-> +	 */
-> +	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-> +	if (!s3cchan->phy && !s3cchan->at) {
-> +		spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-> +		return 0;
-this can be bad cmd or terminating already closed channel, return 0 doesnt make
-sense
-> +	}
-> +
-> +	switch (cmd) {
-> +	case DMA_TERMINATE_ALL:
-why not DMA_SLAVE_CONFIG in this switch to make it look simpler...
-
-
-> +static enum dma_status s3c24xx_dma_tx_status(struct dma_chan *chan,
-> +		dma_cookie_t cookie, struct dma_tx_state *txstate)
-> +{
-> +	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-> +	struct virt_dma_desc *vd;
-> +	unsigned long flags;
-> +	enum dma_status ret;
-> +	size_t bytes = 0;
-> +
-> +	ret = dma_cookie_status(chan, cookie, txstate);
-> +	if (ret == DMA_SUCCESS)
-> +		return ret;
-> +
-> +	/*
-> +	 * There's no point calculating the residue if there's
-> +	 * no txstate to store the value.
-> +	 */
-> +	if (!txstate)
-> +		return ret;
-> +
-> +	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-> +	ret = dma_cookie_status(chan, cookie, txstate);
-you are checking the cookie status twice, if you check txstate (which should be
-valid anyways), then you avoid the duplication
-
-> +	if (ret != DMA_SUCCESS) {
-> +		struct s3c24xx_txd *txd;
-> +		struct s3c24xx_sg *dsg;
-> +
-> +		vd = vchan_find_desc(&s3cchan->vc, cookie);
-> +		if (vd) {
-> +			/* On the issued list, so hasn't been processed yet */
-> +			txd = to_s3c24xx_txd(&vd->tx);
-> +
-> +			list_for_each_entry(dsg, &txd->dsg_list, node)
-> +				bytes += dsg->len;
-> +		} else {
-> +			/*
-> +			 * Currently running, so sum over the pending sg's and
-> +			 * the currently active one.
-> +			 */
-> +			txd = s3cchan->at;
-> +
-> +			dsg = list_entry(txd->at, struct s3c24xx_sg, node);
-> +			list_for_each_entry_from(dsg, &txd->dsg_list, node);
-> +				bytes += dsg->len;
-> +
-> +			bytes += s3c24xx_dma_getbytes_chan(s3cchan);
-> +		}
-> +	}
-> +	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-> +
-> +	/*
-> +	 * This cookie not complete yet
-> +	 * Get number of bytes left in the active transactions and queue
-> +	 */
-> +	dma_set_residue(txstate, bytes);
-> +
-> +	/* Whether waiting or running, we're in progress */
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Initialize a descriptor to be used by memcpy submit
-> + */
-> +static struct dma_async_tx_descriptor *s3c24xx_dma_prep_memcpy(
-> +		struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
-> +		size_t len, unsigned long flags)
-> +{
-> +	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-> +	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-> +	struct s3c24xx_txd *txd;
-> +	struct s3c24xx_sg *dsg;
-> +
-> +	dev_dbg(&s3cdma->pdev->dev, "prepare memcpy of %d bytes from %s\n",
-> +			len, s3cchan->name);
-> +
-> +	if ((len & S3C24XX_DCON_TC_MASK) != len) {
-> +		dev_err(&s3cdma->pdev->dev, "memcpy size %d to large\n", len);
-> +		return NULL;
-> +	}
-> +
-> +	txd = s3c24xx_dma_get_txd();
-> +	if (!txd)
-> +		return NULL;
-> +
-> +	dsg = kzalloc(sizeof(struct s3c24xx_sg), GFP_NOWAIT);
-sizeof(*dsg)
-
-~Vinod
+Hello!
+ 
+In the last few weeks I worked on a problem I had with I2C errors and the effect they had on the touchscreen performance with a TI TSC2007 IC.
+For I'm stuck with an old kernel (2.6.28) i used the tsc2003 driver, but the code seems to be close to the tsc2007.c .
+ 
+I came across the funktion "tsc2003_read_values" where 5 I2C transfers are executed after a PenIRQ event (read x,y,z1,z2 and power down).
+In this function the return values of the tsc2007_xfer function are ignored. So there will always be 5 tries to access the bus.
+In the I2C driver there is a timeout for failed transfers of 5 second. This leads to an overall time for the above function of 25s in case of an error on the i2c bus.
+ 
+In my case it helped a lot to abort the read_values function after an error return value from the _xfer function.
+ 
+I obviously don't know all the details of the tsc code. To this day I don't understand how the transfer recovers and reacts to the next penirq when the first transfer is interrupted and so the tsc-chip is never returned to the "power down and listen to the penirq" state. Maybe there are good reasons not to interrupt the function.
+Can you comment on this change? Is it a grave mistake or could this work. It does right now but not understanding all implications means it probably bites me in the ass at one point.
+ 
+Attached you'll find a patch for the tsc2003.c file.
+ 
+Best regards
+Sebastian
+ 
+ 
+diff --git a/drivers/input/touchscreen/tsc2003.c b/drivers/input/touchscreen/tsc2003.c
+index 4f3a2c9..7ad62f2 100644
+--- a/drivers/input/touchscreen/tsc2003.c
++++ b/drivers/input/touchscreen/tsc2003.c
+@@ -115,15 +115,31 @@ static inline int tsc2003_xfer(struct tsc2003 *tsc, u8 cmd)
+ 
+ static void tsc2003_read_values(struct tsc2003 *tsc, struct ts_event *tc)
+ {
++    s32 temp;
++
++    tc->y = 0;
++    tc->x = 0;
++    tc->z1 = 0;
++    tc->z2 = 0;
++
+     /* y- still on; turn on only y+ (and ADC) */
+-    tc->y = tsc2003_xfer(tsc, READ_Y);
++    temp = tsc2003_xfer(tsc, READ_Y);
++    if (temp > 0) tc->y = temp;
++    else return;
+ 
+     /* turn y- off, x+ on, then leave in lowpower */
+-    tc->x = tsc2003_xfer(tsc, READ_X);
++    temp = tsc2003_xfer(tsc, READ_X);
++    if (temp > 0) tc->x = temp;
++    else return;
+ 
+     /* turn y+ off, x- on; we'll use formula #1 */
+-    tc->z1 = tsc2003_xfer(tsc, READ_Z1);
+-    tc->z2 = tsc2003_xfer(tsc, READ_Z2);
++    temp = tsc2003_xfer(tsc, READ_Z1);
++    if (temp > 0) tc->z1 = temp;
++    else return;
++
++    temp = tsc2003_xfer(tsc, READ_Z2);
++    if (temp > 0) tc->z2 = temp;
++    else return;
+ 
+     /* Prepare for next touch reading - power down ADC, enable PENIRQ */
+     tsc2003_xfer(tsc, PWRDOWN);
+ 
+ 
