@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab3IBJGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 05:06:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37786 "EHLO
+	id S1758884Ab3IBJGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 05:06:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37773 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758458Ab3IBIz0 (ORCPT
+	with ESMTP id S1758444Ab3IBIzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 04:55:26 -0400
+	Mon, 2 Sep 2013 04:55:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 33/58] iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
-Date: Mon,  2 Sep 2013 09:54:18 +0100
-Message-Id: <1378112083-9475-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 32/58] ARM: 7810/1: perf: Fix array out of bounds access in armpmu_map_hw_event()
+Date: Mon,  2 Sep 2013 09:54:17 +0100
+Message-Id: <1378112083-9475-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
 References: <1378112083-9475-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 9186a1fd9ed190739423db84bc344d258ef3e3d7 upstream.
+commit d9f966357b14e356dbd83b8f4a197a287ab4ff83 upstream.
 
-If channel switch is pending and we remove interface we can
-crash like showed below due to passing NULL vif to mac80211:
+Vince Weaver reports an oops in the ARM perf event code while
+running his perf_fuzzer tool on a pandaboard running v3.11-rc4.
 
-BUG: unable to handle kernel paging request at fffffffffffff8cc
-IP: [<ffffffff8130924d>] strnlen+0xd/0x40
-Call Trace:
- [<ffffffff8130ad2e>] string.isra.3+0x3e/0xd0
- [<ffffffff8130bf99>] vsnprintf+0x219/0x640
- [<ffffffff8130c481>] vscnprintf+0x11/0x30
- [<ffffffff81061585>] vprintk_emit+0x115/0x4f0
- [<ffffffff81657bd5>] printk+0x61/0x63
- [<ffffffffa048987f>] ieee80211_chswitch_done+0xaf/0xd0 [mac80211]
- [<ffffffffa04e7b34>] iwl_chswitch_done+0x34/0x40 [iwldvm]
- [<ffffffffa04f83c3>] iwlagn_commit_rxon+0x2a3/0xdc0 [iwldvm]
- [<ffffffffa04ebc50>] ? iwlagn_set_rxon_chain+0x180/0x2c0 [iwldvm]
- [<ffffffffa04e5e76>] iwl_set_mode+0x36/0x40 [iwldvm]
- [<ffffffffa04e5f0d>] iwlagn_mac_remove_interface+0x8d/0x1b0 [iwldvm]
- [<ffffffffa0459b3d>] ieee80211_do_stop+0x29d/0x7f0 [mac80211]
+Unable to handle kernel paging request at virtual address 73fd14cc
+pgd = eca6c000
+[73fd14cc] *pgd=00000000
+Internal error: Oops: 5 [#1] SMP ARM
+Modules linked in: snd_soc_omap_hdmi omapdss snd_soc_omap_abe_twl6040 snd_soc_twl6040 snd_soc_omap snd_soc_omap_hdmi_card snd_soc_omap_mcpdm snd_soc_omap_mcbsp snd_soc_core snd_compress regmap_spi snd_pcm snd_page_alloc snd_timer snd soundcore
+CPU: 1 PID: 2790 Comm: perf_fuzzer Not tainted 3.11.0-rc4 #6
+task: eddcab80 ti: ed892000 task.ti: ed892000
+PC is at armpmu_map_event+0x20/0x88
+LR is at armpmu_event_init+0x38/0x280
+pc : [<c001c3e4>]    lr : [<c001c17c>]    psr: 60000013
+sp : ed893e40  ip : ecececec  fp : edfaec00
+r10: 00000000  r9 : 00000000  r8 : ed8c3ac0
+r7 : ed8c3b5c  r6 : edfaec00  r5 : 00000000  r4 : 00000000
+r3 : 000000ff  r2 : c0496144  r1 : c049611c  r0 : edfaec00
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: aca6c04a  DAC: 00000015
+Process perf_fuzzer (pid: 2790, stack limit = 0xed892240)
+Stack: (0xed893e40 to 0xed894000)
+3e40: 00000800 c001c17c 00000002 c008a748 00000001 00000000 00000000 c00bf078
+3e60: 00000000 edfaee50 00000000 00000000 00000000 edfaec00 ed8c3ac0 edfaec00
+3e80: 00000000 c073ffac ed893f20 c00bf180 00000001 00000000 c00bf078 ed893f20
+3ea0: 00000000 ed8c3ac0 00000000 00000000 00000000 c0cb0818 eddcab80 c00bf440
+3ec0: ed893f20 00000000 eddcab80 eca76800 00000000 eca76800 00000000 00000000
+3ee0: 00000000 ec984c80 eddcab80 c00bfe68 00000000 00000000 00000000 00000080
+3f00: 00000000 ed892000 00000000 ed892030 00000004 ecc7e3c8 ecc7e3c8 00000000
+3f20: 00000000 00000048 ecececec 00000000 00000000 00000000 00000000 00000000
+3f40: 00000000 00000000 00297810 00000000 00000000 00000000 00000000 00000000
+3f60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+3f80: 00000002 00000002 000103a4 00000002 0000016c c00128e8 ed892000 00000000
+3fa0: 00090998 c0012700 00000002 000103a4 00090ab8 00000000 00000000 0000000f
+3fc0: 00000002 000103a4 00000002 0000016c 00090ab0 00090ab8 000107a0 00090998
+3fe0: bed92be0 bed92bd0 0000b785 b6e8f6d0 40000010 00090ab8 00000000 00000000
+[<c001c3e4>] (armpmu_map_event+0x20/0x88) from [<c001c17c>] (armpmu_event_init+0x38/0x280)
+[<c001c17c>] (armpmu_event_init+0x38/0x280) from [<c00bf180>] (perf_init_event+0x108/0x180)
+[<c00bf180>] (perf_init_event+0x108/0x180) from [<c00bf440>] (perf_event_alloc+0x248/0x40c)
+[<c00bf440>] (perf_event_alloc+0x248/0x40c) from [<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc)
+[<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc) from [<c0012700>] (ret_fast_syscall+0x0/0x48)
+Code: 0a000005 e3540004 0a000016 e3540000 (0791010c)
 
-This is because we nulify ctx->vif in iwlagn_mac_remove_interface()
-before calling some other functions that teardown interface. To fix
-just check ctx->vif on iwl_chswitch_done(). We should not call
-ieee80211_chswitch_done() as channel switch works were already canceled
-by mac80211 in ieee80211_do_stop() -> ieee80211_mgd_stop().
+This is because event->attr.config in armpmu_event_init()
+contains a very large number copied directly from userspace and
+is never checked against the size of the array indexed in
+armpmu_map_hw_event(). Fix the problem by checking the value of
+config before indexing the array and rejecting invalid config
+values.
 
-Resolve:
-https://bugzilla.redhat.com/show_bug.cgi?id=979581
-
-Reported-by: Lukasz Jagiello <jagiello.lukasz@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backported to 3.5: adjusted context ]
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-mac80211.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/kernel/perf_event.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-mac80211.c b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-index 2c86c55..40bf6ad 100644
---- a/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-@@ -958,7 +958,10 @@ void iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
- 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
- 		return;
- 
--	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
-+	if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
-+		return;
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 522c11d..54fbd46 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -109,7 +109,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
+ static int
+ armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
+ {
+-	int mapping = (*event_map)[config];
++	int mapping;
 +
-+	if (ctx->vif)
- 		ieee80211_chswitch_done(ctx->vif, is_success);
++	if (config >= PERF_COUNT_HW_MAX)
++		return -EINVAL;
++
++	mapping = (*event_map)[config];
+ 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
  }
  
 -- 
