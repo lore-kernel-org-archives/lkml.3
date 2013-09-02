@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab3IBSen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 14:34:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756484Ab3IBSej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 14:34:39 -0400
-Date: Mon, 02 Sep 2013 14:34:20 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        gong.chen@linux.intel.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1378146860-wzqztoop-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1378125224-12794-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1378125224-12794-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1378125224-12794-2-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/4] mm/hwpoison: fix miss catch transparent huge page
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1378125224-12794-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1758930Ab3IBSjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 14:39:54 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:46089 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758818Ab3IBSjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 14:39:52 -0400
+X-AuditID: cbfec372-b7fe76d000003347-a2-5224db770af2
+Date: Mon, 02 Sep 2013 15:39:45 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+Message-id: <20130902153945.6d7e510c@samsung.com>
+In-reply-to: <20130902181856.GB29787@leaf>
+References: <9976.1378132260@warthog.procyon.org.uk>
+ <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/hQN3y2ypBBu0/mSw+rNWwmH3/MYvF
+	/wX5Frd+zGWyuLxrDpvFo7637A5sHrMaetk8br229Tgx4zeLx+8fkxk9vqy6xuzxeZNcAFsU
+	l01Kak5mWWqRvl0CV8bDFd3sBZu4K6bd/M/UwDiDs4uRk0NCwETiaNNGdghbTOLCvfVsXYxc
+	HEICSxgljp1dzALhdDNJTP/+nBmkikVAVWLhob2sIDabgJHEq8YWIJuDQ0RAU2L6ZiWQemaB
+	k4wSK/v3s4HUCAvkSXRMWwS2gVfAUKJl0z2wOZwCWhL3mmawQyyYyShxsOEpC8ggCQEnia1T
+	fSHqBSV+TL7HAmIzA9Vv3tbECmHLS2xe85Z5AqPALCRls5CUzUJStoCReRWjaGlxckFxUnqu
+	oV5xYm5xaV66XnJ+7iZGSIAX7WB8tsHqEKMAB6MSDy/HXpUgIdbEsuLK3EOMEhzMSiK8vycD
+	hXhTEiurUovy44tKc1KLDzEycXBKNTDulTHKOb92+d6Q3ooluVXlAZJ/tmhfu8SyO9lwRbtp
+	+Z+M1+bf7U7YaSvduBir2P7pfXX+qQMfa0umON0L/PK3YlO0/6YjvpU3Z6zMLr3Ofundg6jw
+	Hy0H1xQx7iq2eVv+aVWE0jzDfRklO38+K9iTlJy/Pu2Xlf7TpxJ8z7s7zkmbTMmZxfZAiaU4
+	I9FQi7moOBEAFNpabk4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 08:33:42PM +0800, Wanpeng Li wrote:
-> PageTransHuge() can't guarantee the page is transparent huge page since it 
-> return true for both transparent huge and hugetlbfs pages. This patch fix 
-> it by check the page is also !hugetlbfs page.
-> 
-> Before patch:
-> 
-> [  121.571128] Injecting memory failure at pfn 23a200
-> [  121.571141] MCE 0x23a200: huge page recovery: Delayed
-> [  140.355100] MCE: Memory failure is now running on 0x23a200
-> 
-> After patch:
-> 
-> [   94.290793] Injecting memory failure at pfn 23a000
-> [   94.290800] MCE 0x23a000: huge page recovery: Delayed
-> [  105.722303] MCE: Software-unpoisoned page 0x23a000
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Em Mon, 2 Sep 2013 11:19:01 -0700
+Josh Triplett <josh@joshtriplett.org> escreveu:
 
-PageTransHuge doesn't care about hugetlbfs at all, assuming that it
-shouldn't be called hugetlbfs context as commented.
+> Patches to checkpatch that add new style rules should also change
+> Documentation/CodingStyle to document those new style rules; add a
+> comment to that effect to the top of scripts/checkpatch.pl.
 
-  /*                                                                    
-   * PageHuge() only returns true for hugetlbfs pages, but not for      
-   * normal or transparent huge pages.                                  
-   *                                                                    
-   * PageTransHuge() returns true for both transparent huge and         
-   * hugetlbfs pages, but not normal pages. PageTransHuge() can only be 
-   * called only in the core VM paths where hugetlbfs pages can't exist.
-   */
-  static inline int PageTransHuge(struct page *page)
+Well, you forgot to c/c LKML on this patch; I think that KS2013 is not the
+proper list to review this patch ;)
 
-I think it's for the ultra optimization of thp, so we can't change that.
-So we need to follow the pattern whenever possible.
-
-  if (PageHuge) {
-    hugetlb specific code
-  } else if (PageTransHuge) {
-    thp specific code
-  }
-  normal page code / common code
-
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 > ---
->  mm/memory-failure.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  scripts/checkpatch.pl | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index e28ee77..b114570 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
->  	 * worked by memory_failure() and the page lock is not held yet.
->  	 * In such case, we yield to memory_failure() and make unpoison fail.
->  	 */
-> -	if (PageTransHuge(page)) {
-> +	if (PageTransHuge(page) && !PageHuge(page)) {
->  		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
->  			return 0;
->  	}
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 2ee9eb7..ba65ea6 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -4,6 +4,10 @@
+>  # (c) 2007,2008, Andy Whitcroft <apw@uk.ibm.com> (new conditions, test suite)
+>  # (c) 2008-2010 Andy Whitcroft <apw@canonical.com>
+>  # Licensed under the terms of the GNU GPL License version 2
+> +#
+> +# This file does not define the kernel coding style; Documentation/CodingStyle
+> +# does.  If you add a new style test to this file, add the corresponding style
+> +# rule it enforces to Documentation/CodingStyle.
+>  
 
-I think that we can effectively follow the above pattern by reversing
-these two checks.
+Agreed with that. I would also add another comment there: "in case of
+conflicts between checkpatch.pl and Documentation/CodingStyle, the latter
+takes precedence."
 
-Thanks,
-Naoya Horiguchi
+Anyway,
+
+Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+
+>  use strict;
+>  use POSIX;
+
+Regard
+-- 
+
+Cheers,
+Mauro
