@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab3IBHmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 03:42:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52482 "EHLO
+	id S932218Ab3IBHm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 03:42:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52484 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172Ab3IBHmr (ORCPT
+	with ESMTP id S932172Ab3IBHmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 03:42:47 -0400
-Date: Mon, 2 Sep 2013 00:42:08 -0700
-From: tip-bot for Vince Weaver <tipbot@zytor.com>
-Message-ID: <tip-274481de6cb69abdb49403ff32abb63c23743413@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, vincent.weaver@maine.edu, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, vincent.weaver@maine.edu,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu>
+	Mon, 2 Sep 2013 03:42:55 -0400
+Date: Mon, 2 Sep 2013 00:42:18 -0700
+From: tip-bot for Joe Perches <tipbot@zytor.com>
+Message-ID: <tip-7bfb7e6bdd906f11ee9e751b3fec4f4fc728e818@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        joe@perches.com, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joe@perches.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <f58599ae1a8d7b32d37e9cf283e95fba6452f7f6.1377809875.git.joe@perches.com>
+References: <f58599ae1a8d7b32d37e9cf283e95fba6452f7f6.1377809875.git.joe@perches.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Export struct perf_branch_entry to userspace
-Git-Commit-ID: 274481de6cb69abdb49403ff32abb63c23743413
+Subject: [tip:perf/core] perf: Convert kmalloc_node(...GFP_ZERO...)
+  to kzalloc_node()
+Git-Commit-ID: 7bfb7e6bdd906f11ee9e751b3fec4f4fc728e818
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,106 +28,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:42:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 02 Sep 2013 00:42:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  274481de6cb69abdb49403ff32abb63c23743413
-Gitweb:     http://git.kernel.org/tip/274481de6cb69abdb49403ff32abb63c23743413
-Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Fri, 23 Aug 2013 15:51:03 -0400
+Commit-ID:  7bfb7e6bdd906f11ee9e751b3fec4f4fc728e818
+Gitweb:     http://git.kernel.org/tip/7bfb7e6bdd906f11ee9e751b3fec4f4fc728e818
+Author:     Joe Perches <joe@perches.com>
+AuthorDate: Thu, 29 Aug 2013 13:59:17 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 2 Sep 2013 08:42:48 +0200
+CommitDate: Mon, 2 Sep 2013 08:42:49 +0200
 
-perf: Export struct perf_branch_entry to userspace
+perf: Convert kmalloc_node(...GFP_ZERO...) to kzalloc_node()
 
-If PERF_SAMPLE_BRANCH_STACK is enabled then samples are returned
-with the format { u64 from, to, flags } but the flags layout
-is not specified.
+Use the convenience function instead of __GFP_ZERO.
 
-This field has the type struct perf_branch_entry; move this
-definition into include/uapi/linux/perf_event.h so users can
-access these fields.
-
-This is similar to the existing inclusion of perf_mem_data_src in
-the include/uapi/linux/perf_event.h file.
-
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu
+Link: http://lkml.kernel.org/r/f58599ae1a8d7b32d37e9cf283e95fba6452f7f6.1377809875.git.joe@perches.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/perf_event.h      | 24 ------------------------
- include/uapi/linux/perf_event.h | 24 ++++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd.c          | 3 +--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     | 6 +++---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c43f6ea..4019d82 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -64,30 +64,6 @@ struct perf_raw_record {
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 4cbe032..beeb7cc 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -347,8 +347,7 @@ static struct amd_nb *amd_alloc_nb(int cpu)
+ 	struct amd_nb *nb;
+ 	int i;
  
- /*
-- * single taken branch record layout:
-- *
-- *      from: source instruction (may not always be a branch insn)
-- *        to: branch target
-- *   mispred: branch target was mispredicted
-- * predicted: branch target was predicted
-- *
-- * support for mispred, predicted is optional. In case it
-- * is not supported mispred = predicted = 0.
-- *
-- *     in_tx: running in a hardware transaction
-- *     abort: aborting a hardware transaction
-- */
--struct perf_branch_entry {
--	__u64	from;
--	__u64	to;
--	__u64	mispred:1,  /* target mispredicted */
--		predicted:1,/* target predicted */
--		in_tx:1,    /* in transaction */
--		abort:1,    /* transaction abort */
--		reserved:60;
--};
--
--/*
-  * branch stack layout:
-  *  nr: number of taken branches stored in entries[]
-  *
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index a77f43a..408b8c7 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -757,4 +757,28 @@ union perf_mem_data_src {
- #define PERF_MEM_S(a, s) \
- 	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
+-	nb = kmalloc_node(sizeof(struct amd_nb), GFP_KERNEL | __GFP_ZERO,
+-			  cpu_to_node(cpu));
++	nb = kzalloc_node(sizeof(struct amd_nb), GFP_KERNEL, cpu_to_node(cpu));
+ 	if (!nb)
+ 		return NULL;
  
-+/*
-+ * single taken branch record layout:
-+ *
-+ *      from: source instruction (may not always be a branch insn)
-+ *        to: branch target
-+ *   mispred: branch target was mispredicted
-+ * predicted: branch target was predicted
-+ *
-+ * support for mispred, predicted is optional. In case it
-+ * is not supported mispred = predicted = 0.
-+ *
-+ *     in_tx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-+ */
-+struct perf_branch_entry {
-+	__u64	from;
-+	__u64	to;
-+	__u64	mispred:1,  /* target mispredicted */
-+		predicted:1,/* target predicted */
-+		in_tx:1,    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
-+};
-+
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 442fcc2..63438aa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -224,7 +224,7 @@ static int alloc_pebs_buffer(int cpu)
+ 	if (!x86_pmu.pebs)
+ 		return 0;
+ 
+-	buffer = kmalloc_node(PEBS_BUFFER_SIZE, GFP_KERNEL | __GFP_ZERO, node);
++	buffer = kzalloc_node(PEBS_BUFFER_SIZE, GFP_KERNEL, node);
+ 	if (unlikely(!buffer))
+ 		return -ENOMEM;
+ 
+@@ -262,7 +262,7 @@ static int alloc_bts_buffer(int cpu)
+ 	if (!x86_pmu.bts)
+ 		return 0;
+ 
+-	buffer = kmalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_ZERO, node);
++	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL, node);
+ 	if (unlikely(!buffer))
+ 		return -ENOMEM;
+ 
+@@ -295,7 +295,7 @@ static int alloc_ds_buffer(int cpu)
+ 	int node = cpu_to_node(cpu);
+ 	struct debug_store *ds;
+ 
+-	ds = kmalloc_node(sizeof(*ds), GFP_KERNEL | __GFP_ZERO, node);
++	ds = kzalloc_node(sizeof(*ds), GFP_KERNEL, node);
+ 	if (unlikely(!ds))
+ 		return -ENOMEM;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 34c11ae..fd8011e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2713,7 +2713,7 @@ struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type, int cp
+ 
+ 	size = sizeof(*box) + type->num_shared_regs * sizeof(struct intel_uncore_extra_reg);
+ 
+-	box = kmalloc_node(size, GFP_KERNEL | __GFP_ZERO, cpu_to_node(cpu));
++	box = kzalloc_node(size, GFP_KERNEL, cpu_to_node(cpu));
+ 	if (!box)
+ 		return NULL;
+ 
