@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3IBCmt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Sep 2013 22:42:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20607 "EHLO mga02.intel.com"
+	id S1758016Ab3IBCum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Sep 2013 22:50:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44437 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab3IBCmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Sep 2013 22:42:47 -0400
+	id S1754889Ab3IBCul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Sep 2013 22:50:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,1003,1367996400"; 
-   d="scan'208";a="396869046"
-Date: Sun, 1 Sep 2013 19:42:47 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHv2 00/25] perf tool: Add support for multiple data file
- storage
-Message-ID: <20130902024247.GI16724@tassilo.jf.intel.com>
-References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
+   d="scan'208";a="372038067"
+From: Andi Kleen <andi@firstfloor.org>
+To: eranian@gmail.com
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-perf-users@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: perf_event: rdpmc self-monitoring overhead issue
+References: <alpine.DEB.2.10.1308301334410.19094@vincent-weaver-1.um.maine.edu>
+	<CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
+Date: Sun, 01 Sep 2013 19:50:39 -0700
+In-Reply-To: <CAMsRxfLSnNi_vESxYHM5w0tQrOtOPsEy3ythoViRMBbEi+XHGw@mail.gmail.com>
+	(Stephane Eranian's message of "Fri, 30 Aug 2013 20:05:05 +0200")
+Message-ID: <87ob8cdji8.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 01, 2013 at 12:36:11PM +0200, Jiri Olsa wrote:
-> hi,
-> sending the support for multiple file storage. Initial
-> RFC is here:
-> http://marc.info/?l=linux-kernel&m=137408381902423&w=2
+Stephane Eranian <eranian@googlemail.com> writes:
 
-Just a general comment. If you repost please always keep the overview
-description/motivation in 0/0.
+> I don't see a flag in mmap() to fault it in immediately.
+
+MAP_PRESENT
 
 -Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
