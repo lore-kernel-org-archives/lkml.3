@@ -1,139 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab3IBOMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 10:12:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52179 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab3IBOMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 10:12:51 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Pavel Machek <pavel@ucw.cz>, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH RFC 0/6] ARM: OMAP2+: AM43x/AM335x prcm reset driver
-Date: Mon, 2 Sep 2013 19:41:55 +0530
-Message-ID: <cover.1378129416.git.afzal@ti.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1758530Ab3IBON4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 10:13:56 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63843 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab3IBONz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 10:13:55 -0400
+Date: Mon, 2 Sep 2013 16:13:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130902141350.GC2378@somewhere>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
+ <20130830230402.GA14760@somewhere>
+ <20130902122845.GA2457@swordfish.minsk.epam.com>
+ <20130902130744.GB2378@somewhere>
+ <20130902135033.GA1686@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130902135033.GA1686@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 02, 2013 at 03:50:34PM +0200, Stanislaw Gruszka wrote:
+> On Mon, Sep 02, 2013 at 03:07:45PM +0200, Frederic Weisbecker wrote:
+> > > Hope this may help.
+> > > I've added a silly check to make sure that `stime < rtime'
+> > > 
+> > > @@ -579,6 +582,10 @@ static void cputime_adjust(struct task_cputime *curr,
+> > >         if (total) {
+> > >                 stime = scale_stime((__force u64)stime,
+> > >                                     (__force u64)rtime, (__force u64)total);
+> > > +               if (stime > rtime) {
+> > > +                       printk(KERN_ERR "Ooops: stime:%llu rtime:%llu\n", stime, rtime);
+> > > +                       WARN_ON(1);
+> > > +               }
+> > >                 utime = rtime - stime;
+> > >         } else {
+> > >                 stime = rtime;
+> [snip]
+> 
+> > Thanks a lot Sergey for testing this further!
+> > 
+> > Interesting results, so rtime is always one or two units off stime after scaling.
+> > Stanislaw made the scaling code with Linus and he has a better idea on the math guts
+> > here.
+> 
+> I don't think this is scale issue, but rather at scale_stime() input
+> stime is already bigger then rtime. Sergey, could you verify that
+> by adding check before scale_stime() ?
 
-This is an attempt to achieve reset on AM43x/AM335x based SoC's with
-reset driver making use of the reset framework.
+Note that having stime > rtime should be fine to handle. This can happen for
+example if the task runs on tiny timeslices but is unlucky enough that all these
+timeslices are interrupted by the tick.
 
-prcm node is added in device tree, which would hold reset bindings.
-Initially node was made as a one that represents reset functionality
-of SoC. but ended up with node for prcm (which is felt to be natural
-choice) instead. I am a bit doubtful whether placement of prcm node in
-root node as in this series is the right thing.
-
-Reset driver gets probed for specific prcm node, the same defines
-register details to be used for a particular SoC (using ".data" field
-associated with ".compatible" in driver match table).
-
-Another option to handle different SoC's would be to add register
-details to DT and let the driver extract it from DT. I vaguely
-remember seeing a thread mentioning that putting register details in
-DT is not preferred. But open to putting register level details
-instead in DT if that is being generally preferred. This would have
-advantage that adding reset support for a new SoC would be easier, but
-would have to put more thought before doing so as DT bindings should
-not change.
-
-With the approach taken here, for supporting a new SoC with new prcm
-register details, driver would have to be updated much like the way a
-pci based ethernet driver would have to be updated to handle a new IP
-version that is not register level compatible with the existing ones.
-
-In this series out of the three IP's (gfx, m3, pruss) that would need
-reset support, here as a proof of concept only gfx is taken care.
-Other's can be easily supported by adding new register data array
-entries.
-
-Two new reset API's are provided to check whether reset is ready and
-to clear reset. This would be required in case IP needs to mix reset
-handling procedure with power/clock managment procedure to achieve
-proper reset and these procedures are sometimes IP specific that would
-make it difficult to handle reset fully in pm_runtime platform support.
-
-*------*
-client IP handling s/w (DT based) should do as follows:
-
-1. Specify reset handle in the relevant DT node, for eg.
-
-	myip@deadbeef {
-		:
-		:
-		/* here prcm is the handle to reset binding node */
-		resets = <&prcm 0>;
-	};
-
-2. In driver, that require reset to be deasserted,
- (this is the sequence required for gfx on AM43x/AM335x, this would
-  depend on requirements of the IP)
-
-	mydriver_probe(struct platform device *pdev)
-	{
-		:
-		:
-		reset_control_get(&pdev->dev, NULL);
-		reset_control_clear_reset();
-		reset_control_deassert();
-		pm_runtime_get_sync();
-		if (reset_control_is_reset() != true)
-			goto err;
-		reset_control_put();
-		:
-		:
-	}
-
-*------*
-
-May be removing reset handling in hwmod can be considered by making
-use of reset driver.
-
-Or as another extreme, perhaps, other logic's in the prcm can be
-handled by a new prcm driver and then this reset driver can be a child
-of it.
-
-Regards
-Afzal
-
-
-Afzal Mohammed (6):
-  reset: is_reset and clear_reset api's
-  doc: dt: binding: omap: am43x/am335x prcm reset
-  reset: am43x/am335x support
-  ARM: OMAP2+: AM43x/AM335x: have reset controller
-  ARM: dts: AM335x: prcm node (for reset)
-  ARM: dts: AM4372: prcm node (for reset)
-
- .../devicetree/bindings/arm/omap/prcm.txt          |  13 ++
- arch/arm/boot/dts/am33xx.dtsi                      |   6 +
- arch/arm/boot/dts/am4372.dtsi                      |   6 +
- arch/arm/mach-omap2/Kconfig                        |   2 +
- drivers/reset/Kconfig                              |  14 ++
- drivers/reset/Makefile                             |   1 +
- drivers/reset/amx3_reset.c                         | 157 +++++++++++++++++++++
- drivers/reset/core.c                               |  32 +++++
- include/linux/reset-controller.h                   |   2 +
- include/linux/reset.h                              |   2 +
- 10 files changed, 235 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/omap/prcm.txt
- create mode 100644 drivers/reset/amx3_reset.c
-
--- 
-1.8.3.4
-
+> 
+> Stanislaw
