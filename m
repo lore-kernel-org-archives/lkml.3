@@ -1,201 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab3IBQRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 12:17:34 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51159 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756900Ab3IBQRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 12:17:32 -0400
-Date: Mon, 2 Sep 2013 17:17:15 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 2/2] media: i2c: adv7343: add OF support
-Message-ID: <20130902161715.GB18206@e106331-lin.cambridge.arm.com>
-References: <1374301266-26726-1-git-send-email-prabhakar.csengg@gmail.com>
- <1374301266-26726-3-git-send-email-prabhakar.csengg@gmail.com>
- <5217A3E7.50706@samsung.com>
- <CA+V-a8tStFRbELAmZL=418VpR9SJgp8uo_4hrtny2UEMEoXakg@mail.gmail.com>
- <20130827152405.GQ19893@e106331-lin.cambridge.arm.com>
- <CA+V-a8vuYNNiXJ+iGgceaTqHdM_Q9X2dVDyiHHZPJ+-rSbJgLQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+V-a8vuYNNiXJ+iGgceaTqHdM_Q9X2dVDyiHHZPJ+-rSbJgLQ@mail.gmail.com>
-Thread-Topic: [PATCH v3 2/2] media: i2c: adv7343: add OF support
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758822Ab3IBQVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 12:21:46 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59069 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758204Ab3IBQVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 12:21:45 -0400
+Message-ID: <1378138904.1953.72.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Make extern in .h prototypes quieter.
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: akpm@linux-foundation.org, hannes@stressinduktion.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Date: Mon, 02 Sep 2013 09:21:44 -0700
+In-Reply-To: <9606.1378129893@warthog.procyon.org.uk>
+References: <9606.1378129893@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 28, 2013 at 03:43:04AM +0100, Prabhakar Lad wrote:
-> Hi Mark,
-> 
-> On Tue, Aug 27, 2013 at 8:54 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> > [fixing up devicetree list address]
-> >
-> Thanks!
-> 
-> > On Mon, Aug 26, 2013 at 03:41:45AM +0100, Prabhakar Lad wrote:
-> >> Hi Sylwester,
-> >>
-> >> On Fri, Aug 23, 2013 at 11:33 PM, Sylwester Nawrocki
-> >> <s.nawrocki@samsung.com> wrote:
-> >> > Cc: DT binding maintainers
-> >
-> > Cheers!
-> >
-> >> >
-> >> > On 07/20/2013 08:21 AM, Lad, Prabhakar wrote:
-> >> >> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> >> >>
-> >> >> add OF support for the adv7343 driver.
-> >> >>
-> >> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> >> ---
-> >> > [...]
-> >> >>  .../devicetree/bindings/media/i2c/adv7343.txt      |   48 ++++++++++++++++++++
-> >> >>  drivers/media/i2c/adv7343.c                        |   46 ++++++++++++++++++-
-> >> >>  2 files changed, 93 insertions(+), 1 deletion(-)
-> >> >>  create mode 100644 Documentation/devicetree/bindings/media/i2c/adv7343.txt
-> >> >>
-> >> >> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7343.txt b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
-> >> >> new file mode 100644
-> >> >> index 0000000..5653bc2
-> >> >> --- /dev/null
-> >> >> +++ b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
-> >> >> @@ -0,0 +1,48 @@
-> >> >> +* Analog Devices adv7343 video encoder
-> >> >> +
-> >> >> +The ADV7343 are high speed, digital-to-analog video encoders in a 64-lead LQFP
-> >> >> +package. Six high speed, 3.3 V, 11-bit video DACs provide support for composite
-> >> >> +(CVBS), S-Video (Y-C), and component (YPrPb/RGB) analog outputs in standard
-> >> >> +definition (SD), enhanced definition (ED), or high definition (HD) video
-> >> >> +formats.
-> >> >> +
-> >> >> +Required Properties :
-> >> >> +- compatible: Must be "adi,adv7343"
-> >> >> +
-> >> >> +Optional Properties :
-> >> >> +- adi,power-mode-sleep-mode: on enable the current consumption is reduced to
-> >> >> +                           micro ampere level. All DACs and the internal PLL
-> >> >> +                           circuit are disabled.
-> >
-> > This seems to be a boolean property, and I couldn't find any description
-> > in the linked datasheet of the constraints under which the unit may be
-> > put into sleep mode.
-> >
-> > Why do we require this property in the dt? Can the driver not always put
-> > a adv734x into sleep mode if it wants to, and then wake it up as
-> > required?
-> >
-> The adv7343 decoder, fits on da850/dm6467 etc.. For the da850 it supports
-> only SD where as the dm6467 supports HD/SD/ED for which DAC 1-6 of
-> Register 0x0 varies for this board so I added them as the platform data
-> but I got a review comment in the ML asking to add entire register as
-> the pdata instead of DAC 1-6, so because of which it is being converted
-> in the same way for DT.
+The use of extern in .h files is a bit contentious.
 
-Not everything that appears in platform data should appear in the dt.
-This seems more like a run-time decision that a description of the
-hardware. 
+Make it emitted only when --strict is used on the
+command-line.
 
-I don't see why we need the "adi,power-mode-sleep-mode" property.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> 
-> >> >
-> >> > Sorry for getting back so late to this. I realize this is already queued in
-> >> > the media tree. But this binding doesn't look good enough to me. I think it
-> >> > will need to be corrected during upcoming -rc period.
-> >> >
-> >> Thanks for the catch :-)
-> >>
-> >> > It might be hard to figure out only from the chip's datasheet what
-> >> > adi,power-mode-sleep-mode really refers to. AFAICS it is for assigning some
-> >> > value to a specific register. If we really need to specify register values
-> >> > in the device tree then it would probably make sense to describe to which
-> >> > register this apply. Now the name looks like derived from some structure
-> >> > member name in the Linux driver of the device.
-> >> >
-> >> the property is derived from the datasheet itself for example the
-> >> 'adi,power-mode-sleep-mode' --> Register 0x0 power mode bit 0
-> >> 'adi,power-mode-pll-ctrl' ---> Register 0x0 power mode bit 1
-> >> 'adi,dac-enable' ----> Register 0x0 power mode bit 2-7
-> >> 'adi,sd-dac-enable' ---> Register 0x82 SD mode register bit 1-2
-> >>
-> >> [1] http://www.analog.com/static/imported-files/data_sheets/ADV7342_7343.pdf
-> >>
-> >> >> +- adi,power-mode-pll-ctrl: PLL and oversampling control. This control allows
-> >> >> +                        internal PLL 1 circuit to be powered down and the
-> >> >> +                        oversampling to be switched off.
-> >
-> > This affects whether or not oversampling is possible. That sounds like
-> > it should be a run-time configurable rather than a fixed property of the
-> > device.
-> >
-> ditto
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9bb056c..13165ea 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3927,8 +3927,8 @@ sub process {
+ # check for new externs in .h files.
+ 		if ($realfile =~ /\.h$/ &&
+ 		    $line =~ /^\+\s*(extern\s+)$Type\s*$Ident\s*\((?!\s*\*)/) {
+-			if (WARN("AVOID_EXTERNS",
+-				 "extern prototypes should be avoided in .h files\n" . $herecurr) &&
++			if (CHK("AVOID_EXTERNS",
++				"extern prototypes should be avoided in .h files\n" . $herecurr) &&
+ 			    $fix) {
+ 				$fixed[$linenr - 1] =~ s/(.*)\bextern\s+(.*)/$1$2/;
+ 			}
 
-Not all platform data is suitable for dt. This seems like a decision as
-to how to use the hardware, rather than a description of the hardware.
-Hardware description should go in the dt, decisions should go in the
-driver.
 
-> 
-> >> >
-> >> > Similar comments applies to this property.
-> >> >
-> >> >> +- ad,adv7343-power-mode-dac: array configuring the power on/off DAC's 1..6,
-> >> >> +                           0 = OFF and 1 = ON, Default value when this
-> >> >> +                           property is not specified is <0 0 0 0 0 0>.
-> >> >
-> >> > Name of the property is incorrect here. It has changed to "adi,dac-enable".
-> >> >
-> >> OK
-> >
-> > Why do we need this property at all? Might some DACs not be wired up to
-> > anything?
-> >
-> > Surely this could be configured at run-time as and when the user wants
-> > to use the DACs.
-> >
-> >>
-> >> >> +- ad,adv7343-sd-config-dac-out: array configure SD DAC Output's 1 and 2, 0 = OFF
-> >> >> +                              and 1 = ON, Default value when this property is
-> >> >> +                              not specified is <0 0>.
-> >> >
-> >> > Similarly, "adi,sd-dac-enable.
-> >> >
-> >> OK
-> >
-> > Again, couldn't this be done at run-time?
-> >
-> > Do we need to permanently disable/enable some DACs? If so, why?
-> >
-> ditto.
-
-And ditto to my points above.
-
-Cheers,
-Mark.
-
-> 
-> > I also note from the spec that the unit has two clocks, CLKIN_A and
-> > CLKIN_B that aren't in the binding, but should be. Some regulators
-> > too (VDD, PVDD, VAA, VDD_IO, VREF?).
-> >
-> OK
-> 
-> Regards,
-> --Prabhakar Lad
-> 
