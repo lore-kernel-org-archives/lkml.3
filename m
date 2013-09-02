@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759156Ab3IBWvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 18:51:00 -0400
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:65258 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3IBWu6 (ORCPT
+	id S1759177Ab3IBXFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 19:05:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50585 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759081Ab3IBXFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 18:50:58 -0400
+	Mon, 2 Sep 2013 19:05:04 -0400
+Date: Mon, 2 Sep 2013 16:07:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>
+Subject: Re: RESEND: Generating interrupts from a USB device driver?
+Message-ID: <20130902230738.GA22494@kroah.com>
+References: <52251562.5000208@att.net>
 MIME-Version: 1.0
-In-Reply-To: <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
-	<1378161032.32763.341.camel@haakon3.risingtidesystems.com>
-Date: Mon, 2 Sep 2013 15:50:57 -0700
-X-Google-Sender-Auth: kNDjjleFboiTmJ75qCNGcam0n9Q
-Message-ID: <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
-Subject: Re: Linux 3.11
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52251562.5000208@att.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 3:30 PM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
->
-> Unfortunately, this doesn't include the remaining target fixes for
-> v3.11:
->
-> Re: [GIT PULL -v2] target fixes for v3.11
-> http://marc.info/?l=linux-kernel&m=137799048226191&w=2
->
-> Is there a reason why these did not get PULLed..?
+On Mon, Sep 02, 2013 at 05:46:58PM -0500, Daniel Santos wrote:
+> Hello guys.  I didn't get a response the last time so hopefully with 
+> 3.11 out I'll get one this time.
+> 
+> I need to be able to generate interrupts from a USB device driver while 
+> servicing the complete() function of an interrupt URB.
 
-Very simple: I have no such email in my mailbox. I see the "target
-updates for v3.11-rc1" email (and I pulled that), and there is nothing
-since.
+No you don't :)
 
-I don't even have that mail in my lkml archives, much less as a private email.
+> While I realize that this may seem strange, the purpose is for a USB
+> to SPI/GPIO bridge chip (the MCP2210). When something happens on the
+> remote device where a chip is expecting it's interrupt out pin to
+> trigger an interrupt on some local (to the board) microcontroller, the
+> MCP2210 instead receives that signal and communicates it to the host
+> the next time it's queried. This is the interrupt that I need to, in
+> effect propagate locally. Since my spi_master and gpio_chip are all
+> functioning now, this is the last step to get one of my spi protocol
+> drivers working correctly.
 
-I see neither youe "-v2 PULL request" nor the "One more late v3.11
-specific regression" one. In fact, I see no emails from you at all
-from Aug 31.
+Just pass the data up the spi stack in your interrupt endpoint handler.
+No need to try to create a "real" interrupt.  There are other USB SPI
+drivers that should give you the idea of how to do it.
 
-It may be that gmail hates you for some reason...
+thanks,
 
-[ time passes ]
-
-Yup. It's in my spam-box, with gmail helpfully telling me:
-
-   Why is this message in Spam? We've found that lots of messages from
-linux-iscsi.org are spam.  Learn more
-
-so something is rotten in the state of linux-iscsi.org.
-
-Recent messages from you were similarly tagged:
-
- "[GIT PULL -v2] target fixes for 3.11"
- "Re: LIO FC Target"
- "Re: [GIT PULL] target fixes for v3.11-rc7"
-
-there might have been more. You might want to try to figure out why
-gmail thinks that linux-iscsi.org is spammy.
-
-                Linus
-
-
-                Linus
+greg k-h
