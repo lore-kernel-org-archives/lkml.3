@@ -1,75 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3IBGTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 02:19:38 -0400
-Received: from contumacia.investici.org ([178.255.144.35]:46470 "EHLO
-	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab3IBGTd (ORCPT
+	id S1757362Ab3IBGVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 02:21:32 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62636 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978Ab3IBGVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 02:19:33 -0400
-X-Greylist: delayed 1333 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Sep 2013 02:19:32 EDT
-X-DKIM: OpenDKIM Filter v2.6.8 contumacia.investici.org 2D7B3E8178
-Date: Mon, 2 Sep 2013 07:54:26 +0200
-From: Antonio Quartulli <ordex@autistici.org>
-To: Joe Perches <joe@perches.com>
-Cc: Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] batman: Remove reference to compare_ether_addr
-Message-ID: <20130902055426.GD1871@ritirata.org>
-References: <1378075508.1953.27.camel@joe-AO722>
+	Mon, 2 Sep 2013 02:21:31 -0400
+Date: Mon, 2 Sep 2013 08:21:44 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH v3] i915: Update VGA arbiter support for
+ newer devices
+Message-ID: <20130902062144.GI9374@phenom.ffwll.local>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	Alex Williamson <alex.williamson@redhat.com>, airlied@redhat.com,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20130828153700.10255.67664.stgit@bling.home>
+ <20130830124305.GI11428@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1378075508.1953.27.camel@joe-AO722>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130830124305.GI11428@intel.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 30, 2013 at 03:43:05PM +0300, Ville Syrjälä wrote:
+> On Wed, Aug 28, 2013 at 09:39:08AM -0600, Alex Williamson wrote:
+> > This is intended to add VGA arbiter support for Intel HD graphics on
+> > Core processors.  The old GMCH registers no longer exist, so even
+> > though it appears that i915 participates in VGA arbitration, it doesn't
+> > work.  On Intel HD graphics we already attempt to disable VGA regions
+> > of the device.  This makes registering as a VGA client unnecessary since
+> > we don't intend to operate differently depending on how many VGA devices
+> > are present.  We can disable VGA memory regions by clearing the memory
+> > enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+> > the VGA arbiter to know that we don't participate in VGA memory
+> > arbitration.  We also add a hook on unload to re-enable memory and
+> > reinstate VGA memory arbitration.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> 
+> Looking good.
+> 
+> Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
---wxDdMuZNg1r63Hyj
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Queued for -next, thanks for the patch.
+> 
+> > ---
+> > 
+> > v3: Use explicit LEGACY_IO | LEGACY_MEM when restoring rather than
+> >     LEGACY_MASK, per Ville's comments.
+> > 
+> > v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
+> >     directly.  Also, on the driver unbind VGA enable path, acquire legacy
+> >     IO to re-enable VGA memory.  Correct comment.
 
-On Sun, Sep 01, 2013 at 03:45:08PM -0700, Joe Perches wrote:
-> This function is being removed, rename the reference.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
+I've added the patch changelog here to the commmit message - I kinda
+prefer to keep this bit of information around ...
+-Daniel
 
-Acked-by: Antonio Quartulli <ordex@autistici.org>
+> > 
+> > As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
+> > all patches I'm able to assign a discrete PEG VGA device to a guest and
+> > execute the VBIOS w/o interference from IGD or corruption of the IGD
+> > framebuffer.
+> > 
+> >  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+> >  drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
+> >  2 files changed, 31 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> > index f466980..d9cf216 100644
+> > --- a/drivers/gpu/drm/i915/i915_dma.c
+> > +++ b/drivers/gpu/drm/i915/i915_dma.c
+> > @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+> >  	 * then we do not take part in VGA arbitration and the
+> >  	 * vga_client_register() fails with -ENODEV.
+> >  	 */
+> > -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+> > -	if (ret && ret != -ENODEV)
+> > -		goto out;
+> > +	if (!HAS_PCH_SPLIT(dev)) {
+> > +		ret = vga_client_register(dev->pdev, dev, NULL,
+> > +					  i915_vga_set_decode);
+> > +		if (ret && ret != -ENODEV)
+> > +			goto out;
+> > +	}
+> >  
+> >  	intel_register_dsm_handler();
+> >  
+> > diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> > index 5fb3058..2807760 100644
+> > --- a/drivers/gpu/drm/i915/intel_display.c
+> > +++ b/drivers/gpu/drm/i915/intel_display.c
+> > @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
+> >  	outb(SR01, VGA_SR_INDEX);
+> >  	sr1 = inb(VGA_SR_DATA);
+> >  	outb(sr1 | 1<<5, VGA_SR_DATA);
+> > +
+> > +	/* Disable VGA memory on Intel HD */
+> > +	if (HAS_PCH_SPLIT(dev)) {
+> > +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+> > +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
+> > +						   VGA_RSRC_NORMAL_IO |
+> > +						   VGA_RSRC_NORMAL_MEM);
+> > +	}
+> > +
+> >  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+> >  	udelay(300);
+> >  
+> > @@ -9526,6 +9535,20 @@ static void i915_disable_vga(struct drm_device *dev)
+> >  	POSTING_READ(vga_reg);
+> >  }
+> >  
+> > +static void i915_enable_vga(struct drm_device *dev)
+> > +{
+> > +	/* Enable VGA memory on Intel HD */
+> > +	if (HAS_PCH_SPLIT(dev)) {
+> > +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
+> > +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+> > +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
+> > +						   VGA_RSRC_LEGACY_MEM |
+> > +						   VGA_RSRC_NORMAL_IO |
+> > +						   VGA_RSRC_NORMAL_MEM);
+> > +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+> > +	}
+> > +}
+> > +
+> >  void intel_modeset_init_hw(struct drm_device *dev)
+> >  {
+> >  	intel_init_power_well(dev);
+> > @@ -9983,6 +10006,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+> >  
+> >  	intel_disable_fbc(dev);
+> >  
+> > +	i915_enable_vga(dev);
+> > +
+> >  	intel_disable_gt_powersave(dev);
+> >  
+> >  	ironlake_teardown_rc6(dev);
+> 
+> -- 
+> Ville Syrjälä
+> Intel OTC
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
-Thanks a lot Joe
-
---=20
-Antonio Quartulli
-
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
-
---wxDdMuZNg1r63Hyj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSJCgSAAoJEADl0hg6qKeOox4P/0IoajFQuuet06ot0bKWVCUO
-wpDvkDlLyoFzc07JqWde9GmqEU2lgRIaINBvbuwuqRUGOSiC/TGzJ6c2xJ6dcYh/
-LueY/o0kfJ7JhvmYACYncCrnXK6RZrcYeigkY04z3HY7l5fCzumydgTQmX5M21a1
-nYDuSXIu02hmZVUYs4yrQdcMYvZaO/3O7F4Kt55xKkLERPpxznvow3+6kt5hGi9a
-vsl6zlprxy9Il/nwZCTwcV9XOZQJi4EvCpyVcOTZzPD+wdZE03C5uBZJwtp0RZig
-44YdCZh7TsbbvArGP+kJ7VY+FFbiF8crR1dPkPfyckae2q+bIKcEqXITOVOII0ud
-u7UgjHJZt8WLXuu265WRyKmvlrQE/4NNXgWkHxKfU53vC03zB9oJyoyLh6LgKXeH
-sBKi1MpekbWixvi3pnA7Xi6bGRFCd9djgu8L6ZWibG908mzmXE4Rz8SUkpHm5r6W
-wUKZfvZrlYNKJCoJh0pyaY4IlVeW3YAADkulQup3tqjqOI6dNOxpS6cZ780a/w3Z
-bLhcRKiBLxRYeSMoN+XeDsTaNPsyVjXiskaLvLY2833C8HVkxdZNZpVIo4R0xeWU
-9zVmg2yLFVUXuUmY38wetFFX8717WEjoy439Xrdn/Ygsuu3wr0HbpLE2F5IdCb++
-1YLkbEmxrglYFzKdz3rl
-=k085
------END PGP SIGNATURE-----
-
---wxDdMuZNg1r63Hyj--
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
