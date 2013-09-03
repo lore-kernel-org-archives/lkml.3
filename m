@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107Ab3ICN0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:26:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3313 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759933Ab3ICN0R (ORCPT
+	id S1760112Ab3ICN2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:28:36 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:41569 "EHLO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759956Ab3ICN2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:26:17 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=NO13L3veMrYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=hcrmJ-Ldf6sA:10 a=VnNF1IyMAAAA:8 a=SYfl2ZiqAAAA:8 a=Jjh85GMx7G4daeu3Zc8A:9 a=CjuIK1q_8ugA:10 a=bo4z3Be4H8AA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 3 Sep 2013 09:26:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 05/18 v2] ftrace: Do not display non safe RCU
- functions in available_filter_functions
-Message-ID: <20130903092615.6310f13d@gandalf.local.home>
-In-Reply-To: <20130831205430.GB3871@linux.vnet.ibm.com>
-References: <20130831051117.884125230@goodmis.org>
-	<20130831051701.256486055@goodmis.org>
-	<20130831194602.GM3871@linux.vnet.ibm.com>
-	<1377981303.26624.2.camel@pippen.local.home>
-	<20130831205430.GB3871@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 09:28:35 -0400
+Message-ID: <5225E3DB.5070507@gmail.com>
+Date: Tue, 03 Sep 2013 15:27:55 +0200
+From: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Max Filippov <jcmvbkbc@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10.9: kmemleak disables all CPUs except CPU0
+References: <5221F119.4070000@gmail.com> <CAHkRjk4g4-ig1zyX7qYO2byVhQQK0kZ4rgRCWU141hd-3c3==w@mail.gmail.com> <CAMo8BfLMex3H1QBk6gD7DDDgGJ4dh6+dvhLG=c7LdFZ8XuyM9Q@mail.gmail.com> <20130902154840.GC13871@arm.com> <5224B3F5.8090402@gmail.com> <20130902160908.GE13871@arm.com>
+In-Reply-To: <20130902160908.GE13871@arm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Aug 2013 13:54:30 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-> On Sat, Aug 31, 2013 at 04:35:03PM -0400, Steven Rostedt wrote:
-> > On Sat, 2013-08-31 at 12:46 -0700, Paul E. McKenney wrote:
-> > 
-> > > >  void arch_ftrace_update_code(int command);
-> > > > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > > > index 06504b2..be87ac9 100644
-> > > > --- a/kernel/trace/ftrace.c
-> > > > +++ b/kernel/trace/ftrace.c
-> > > > @@ -2645,7 +2645,10 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
-> > > >  		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
-> > > > 
-> > > >  		    ((iter->flags & FTRACE_ITER_ENABLED) &&
-> > > > -		     !(rec->flags & FTRACE_FL_ENABLED))) {
-> > > > +		     !(rec->flags & FTRACE_FL_ENABLED)) ||
-> > > > +
-> > > 
-> > > OK, I'll bite...  Why the blank line?
-> > 
-> > For readability. Here's the full if statement:
-> > 
-> >                 if (((iter->flags & FTRACE_ITER_FILTER) &&
-> >                      !(ftrace_lookup_ip(ops->filter_hash, rec->ip))) ||
-> > 
-> >                     ((iter->flags & FTRACE_ITER_NOTRACE) &&
-> >                      !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
-> > 
-> >                     ((iter->flags & FTRACE_ITER_ENABLED) &&
-> >                      !(rec->flags & FTRACE_FL_ENABLED)) ||
-> > 
-> >                     ((iter->flags & FTRACE_ITER_UNSAFE_ONLY) &&
-> >                      !ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip)) ||
-> > 
-> >                     ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
-> >                      ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
-> > 
-> > 
-> > They are grouped in pairs.
+
+Catalin Marinas wrote:
+> On Mon, Sep 02, 2013 at 04:51:17PM +0100, Martin MOKREJŠ wrote:
+>> Catalin Marinas wrote:
+>>> On Mon, Sep 02, 2013 at 04:44:52PM +0100, Max Filippov wrote:
+>>>> On Mon, Sep 2, 2013 at 7:31 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>>>> On 31 August 2013 14:35, Martin MOKREJŠ <mmokrejs@gmail.com> wrote:
+>>>>>>   never realized that my CPUs are gone if I compile into kernel kmemleak.
+>>>>>> Is that really the aim?
+>>>>>>
+>>>>>> CONFIG_HAVE_DEBUG_KMEMLEAK=y
+>>>>>> CONFIG_DEBUG_KMEMLEAK=y
+>>>>>> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+>>>>>> # CONFIG_DEBUG_KMEMLEAK_TEST is not set
+>>>>>> # CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF is not set
+>>>>>>
+>>>>>> 1.  Why isn't there /sys/devices/system/cpu/cpu0/online file?
+>>>>>> Does not matter if it contains 0 or 1. It just should exist.
+>>>>>
+>>>>> I can't really see how kmemleak would do this, maybe other config
+>>>>> options that get set/cleared in the process of selecting kmemleak. Can
+>>>>
+>>>> Seems to be kmemcheck: from arch/x86/mm/kmemcheck/kmemcheck.c:
+>>>>
+>>>> int __init kmemcheck_init(void)
+>>>> {
+>>>> #ifdef CONFIG_SMP
+>>>>         /*
+>>>>          * Limit SMP to use a single CPU. We rely on the fact that this code
+>>>>          * runs before SMP is set up.
+>>>>          */
+>>>>         if (setup_max_cpus > 1) {
+>>>>                 printk(KERN_INFO
+>>>>                         "kmemcheck: Limiting number of CPUs to 1.\n");
+>>>>                 setup_max_cpus = 1;
+>>>>         }
+>>>> #endif
+>>>
+>>> Ah, ok, not my problem then ;)
+>>
+>> Fine, so would somebody please update the help text accessible in "menuconfig"
+>> for this entry? It should be clear that it has a huge performance impact if enabled.
+>> And, by compiling in it is enabled by default.
 > 
-> Fair enough!
+> Otherwise, of no-one volunteers, please feel free to send a patch ;)
 
-Can I take this as an Acked-by?
+No, I am not a kernel developer. Please someone else do so update the "help text".
 
--- Steve
+Moreover, it does not explain why /sys/devices/system/cpu/cpu0/online file is missing
+while /sys/devices/system/cpu/cpu[1-3]/online do exist at the same time.
 
-> 
-> 							Thanx, Paul
-> 
-> > -- Steve
-> > 
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > > +		    ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
-> > > > +		     ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
-> > > > 
-> > > >  			rec = NULL;
-> > > >  			goto retry;
-> > > > @@ -2773,6 +2776,7 @@ ftrace_avail_open(struct inode *inode, struct file *file)
-> > > >  	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
-> > > >  	if (iter) {
-> > > >  		iter->pg = ftrace_pages_start;
-> > > > +		iter->flags = FTRACE_ITER_NO_UNSAFE;
-> > > >  		iter->ops = &global_ops;
-> > > >  	}
-> > > > 
-> > > > -- 
-> > > > 1.7.10.4
-> > > > 
-> > > > 
-> > 
-> > 
-
+Thank you,
+Martin
