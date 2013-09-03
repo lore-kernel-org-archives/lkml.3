@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab3ICQ0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:26:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46482 "EHLO
+	id S1759389Ab3ICQ07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:26:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46487 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3ICQ0u (ORCPT
+	with ESMTP id S1754571Ab3ICQ04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:26:50 -0400
+	Tue, 3 Sep 2013 12:26:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 57/58] nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-Date: Tue,  3 Sep 2013 09:24:01 -0700
-Message-Id: <1378225442-20654-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 47/58] arm64: perf: fix event validation for software group leaders
+Date: Tue,  3 Sep 2013 09:23:51 -0700
+Message-Id: <1378225442-20654-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -29,39 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 2df37a19c686c2d7c4e9b4ce1505b5141e3e5552 upstream.
+commit ee7538a008a45050c8f706d38b600f55953169f9 upstream.
 
-Remove double call of bio_put() in nilfs_end_bio_write() for the case of
-BIO_EOPNOTSUPP error detection.  The issue was found by Dan Carpenter
-and he suggests first version of the fix too.
+This is a port of c95eb3184ea1 ("ARM: 7809/1: perf: fix event validation
+for software group leaders") to arm64, which fixes a panic in the arm64
+perf backend found as a result of Vince's fuzzing tool.
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nilfs2/segbuf.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm64/kernel/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/fs/nilfs2/segbuf.c b/fs/nilfs2/segbuf.c
-index dc9a913..5bacf46 100644
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct bio *bio, int err)
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index 8a724a1..34e1bca 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -322,6 +322,9 @@ validate_event(struct pmu_hw_events *hw_events,
+ 	struct hw_perf_event fake_event = event->hw;
+ 	struct pmu *leader_pmu = event->group_leader->pmu;
  
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		bio_put(bio);
--		/* to be detected by submit_seg_bio() */
-+		/* to be detected by nilfs_segbuf_submit_bio() */
- 	}
++	if (is_software_event(event))
++		return 1;
++
+ 	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
+ 		return 1;
  
- 	if (!uptodate)
 -- 
 1.8.1.2
 
