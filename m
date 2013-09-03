@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860Ab3ICNSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:18:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19801 "EHLO mga03.intel.com"
+	id S932881Ab3ICNSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:18:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46662 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab3ICNSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:18:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1014,1367996400"; 
-   d="scan'208";a="355241859"
-Message-ID: <5225E320.8090307@intel.com>
-Date: Tue, 03 Sep 2013 16:24:48 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932782Ab3ICNSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 09:18:37 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <rui.zhang@intel.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] soc-thermal: fixes on 3.12
+Date: Tue, 3 Sep 2013 09:18:32 -0400
+Message-ID: <1378214312-30788-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: latest perf code fails to parse existing data file
-References: <5225051C.3030608@gmail.com> <5225844E.3090700@intel.com> <5225DAFB.1070406@gmail.com>
-In-Reply-To: <5225DAFB.1070406@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/13 15:50, David Ahern wrote:
-> On 9/3/13 12:40 AM, Adrian Hunter wrote:
->> On 03/09/13 00:37, David Ahern wrote:
->>> Arnaldo/Adrian:
->>>
->>> Latest acme core tree fails to parse an existing data file:
->>>
->>> $ perf trace -i perf.data
->>> 0x16b8 [0x40]: failed to process type: 1
->>> Failed to process events, error -22
->>
->> I can't reproduce this.  The following works:
->>
->>     $ perf --version
->>     perf version 3.9.10-100.fc17.x86_64
->>     $ sudo perf record -e raw_syscalls:* ls
->>     ...
->>     $ tools/perf/perf --version
->>     perf version 3.11.rc4.g31cd38
->>     $ sudo tools/perf/perf script
->>     ...
->>     $ sudo tools/perf/perf trace -i perf.data
->>     ...
-> 
-> Kernel version? Is your kernel side support there?
 
-The kernel version is the same as the perf version i.e. 3.9
+Hello Rui,
 
-> 
-> For me data was collected on 2.6.34 about a week ago. Processed fine up to
-> the point of this patch getting added.
+Please consider this pull request. It contains:
+- Fixes on TI-SoC-Thermal driver
+- Fixes on Exynos driver
+- Fixes on core thermal driver
+- Reordanization of hwmon layer inside thermal driver (no functional change)
 
-Is it only "perf trace" that fails or does "perf script" fail too?
 
+All best,
+
+The following changes since commit f61d5b4d52e077756ce9dbc47ce737da898ad01d:
+
+  Merge branch 'fixes' of .git into next (2013-08-15 15:49:30 +0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
+
+for you to fetch changes up to 50e66c7ed8a1cd7e933628f9f5cf2617394adf5a:
+
+  drivers: thermal: add check when unregistering cpu cooling (2013-09-03 09:10:34 -0400)
+
+----------------------------------------------------------------
+Eduardo Valentin (5):
+      thermal: hwmon: move hwmon support to single file
+      drivers: thermal: parent virtual hwmon with thermal zone
+      drivers: thermal: make usage of CONFIG_THERMAL_HWMON optional
+      thermal: thermal_core: allow binding with limits on bind_params
+      drivers: thermal: add check when unregistering cpu cooling
+
+Ranganath Krishnan (3):
+      thermal: ti-soc-thermal: Initialize counter_delay field for TI DRA752 sensors
+      thermal: ti-soc-thermal: Set the bandgap mask counter delay value
+      thermal: ti-soc-thermal: Ensure to compute thermal trend
+
+Sachin Kamat (3):
+      thermal: exynos: Fix typos in Kconfig
+      thermal: exynos: Fix potential NULL pointer dereference
+      thermal: exynos: Clean up non-DT remnants
+
+ Documentation/thermal/sysfs-api.txt                |  12 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   3 +
+ drivers/thermal/cpu_cooling.c                      |   6 +-
+ drivers/thermal/samsung/Kconfig                    |  12 +-
+ drivers/thermal/samsung/exynos_thermal_common.c    |   6 +-
+ drivers/thermal/samsung/exynos_tmu.c               |  30 +--
+ drivers/thermal/thermal_core.c                     | 282 ++-------------------
+ drivers/thermal/thermal_hwmon.c                    | 269 ++++++++++++++++++++
+ drivers/thermal/thermal_hwmon.h                    |  49 ++++
+ .../thermal/ti-soc-thermal/dra752-thermal-data.c   |   5 +
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c        |   6 +-
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c |   7 +
+ include/linux/thermal.h                            |  18 ++
+ 14 files changed, 424 insertions(+), 290 deletions(-)
+ create mode 100644 drivers/thermal/thermal_hwmon.c
+ create mode 100644 drivers/thermal/thermal_hwmon.h
