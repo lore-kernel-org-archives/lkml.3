@@ -1,112 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab3ICSIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:08:00 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43114 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3ICSH7 (ORCPT
+	id S1758659Ab3ICSJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:09:53 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:35345 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab3ICSJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:07:59 -0400
-Date: Tue, 3 Sep 2013 10:59:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
-        dipankar@in.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no
- callbacks.
-Message-ID: <20130903175910.GX3871@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5212E7BB.4020602@asianux.com>
- <20130820041832.GY29406@linux.vnet.ibm.com>
- <5212F3E5.7080700@asianux.com>
- <5212F467.8090407@asianux.com>
- <52145741.7000008@asianux.com>
- <20130821142301.GX29406@linux.vnet.ibm.com>
- <52157F21.5080200@asianux.com>
- <20130825191839.GA22515@linux.vnet.ibm.com>
- <521ABB9E.1050209@gmail.com>
- <5225766F.4000907@asianux.com>
+	Tue, 3 Sep 2013 14:09:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5225766F.4000907@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090318-4834-0000-0000-00000AB0B8DD
+In-Reply-To: <20130903003958.GA6855@localhost>
+References: <20130902195056.GB32628@leaf> <9976.1378132260@warthog.procyon.org.uk>
+ <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
+ <1378148367.1953.98.camel@joe-AO722> <13834.1378155023@warthog.procyon.org.uk>
+ <1378156296.1953.117.camel@joe-AO722> <20130903003958.GA6855@localhost>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 3 Sep 2013 12:09:31 -0600
+Message-ID: <CAErSpo7jg1CU-tw3Rp60gJky2OE6g2QaQbEWFHE1Y_2GG2u37g@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Joe Perches <joe@perches.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Wang Shilong <wangshilong1991@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 01:41:03PM +0800, Chen Gang wrote:
-> Hello Maintainers:
-> 
-> Is this issue finished ?
-> 
-> If need additional help from me (e.g. some test things, or others, if
-> you have no time, can let me try), please let me know, I should try.
+On Mon, Sep 2, 2013 at 6:39 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-Ah, sorry, here is the patch.
+> Thanks! Yes I'm now running checkpatch these days because some people
+> suggested to me that some of the checkpatch warnings do help catch
+> real bugs.
+>
+> However I do try to avoid upsetting people with maybe-subjective
+> warnings. A checkpatch report will only be sent when a small fraction
+> of error types are detected. Comments are very welcome on how to
+> improve this list:
 
-							Thanx, Paul
+How hard would it be to make this configurable per-git tree?  I think
+the robot is quite useful and I don't push branches very often, so I'd
+probably be OK with just getting all the checkpatch warnings along
+with the build warnings and filtering the noise myself.  But I know
+other people have different styles and opinions.
 
-------------------------------------------------------------------------
-
-    rcu: Micro-optimize rcu_cpu_has_callbacks()
-    
-    The for_each_rcu_flavor() loop unconditionally scans all flavors, even
-    when the first flavor might have some non-lazy callbacks.  Once the
-    loop has seen a non-lazy callback, further passes through the loop
-    cannot change the state.  This is not a huge problem, given that there
-    can be at most three RCU flavors (RCU-bh, RCU-preempt, and RCU-sched),
-    but this code is on the path to idle, so speeding it up even a small
-    amount would have some benefit.
-    
-    This commit therefore does two things:
-    
-    1.	Rearranges the order of the list of RCU flavors in order to
-    	place the most active flavor first in the list.  The most active
-    	RCU flavor is RCU-preempt, or, if there is no RCU-preempt,
-    	RCU-sched.
-    
-    2.	Reworks the for_each_rcu_flavor() to exit early when the first
-    	non-lazy callback is seen, or, in the case where the caller
-    	does not care about non-lazy callbacks (RCU_FAST_NO_HZ=n),
-    	when the first callback is seen.
-    
-    Reported-by: Chen Gang <gang.chen@asianux.com>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index b1b959d..38596be 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2756,10 +2756,13 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
- 
- 	for_each_rcu_flavor(rsp) {
- 		rdp = per_cpu_ptr(rsp->rda, cpu);
--		if (rdp->qlen != rdp->qlen_lazy)
-+		if (!rdp->nxtlist)
-+			continue;
-+		hc = true;
-+		if (rdp->qlen != rdp->qlen_lazy || !all_lazy) {
- 			al = false;
--		if (rdp->nxtlist)
--			hc = true;
-+			break;
-+		}
- 	}
- 	if (all_lazy)
- 		*all_lazy = al;
-@@ -3326,8 +3329,8 @@ void __init rcu_init(void)
- 
- 	rcu_bootup_announce();
- 	rcu_init_geometry();
--	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
-+	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	__rcu_init_preempt();
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
- 
-
+> MEMSET
+> IN_ATOMIC
+> UAPI_INCLUDE
+> MALFORMED_INCLUDE
+> SIZEOF_ADDRESS
+> KREALLOC_ARG_REUSE
+> EXECUTE_PERMISSIONS
+> ERROR:BAD_SIGN_OFF
+> LO_MACRO
+> HI_MACRO
+> CSYNC
+> SSYNC
+> HOTPLUG_SECTION
+> INDENTED_LABEL
+> INLINE_LOCATION
+> STORAGE_CLASS
+> USLEEP_RANGE
+> UNNECESSARY_CASTS
+> ALLOC_SIZEOF_STRUCT
+> KREALLOC_ARG_REUSE
+> USE_FUNC
+> LOCKDEP
+> EXPORTED_WORLD_WRITABLE
+> WHITESPACE_AFTER_LINE_CONTINUATION
+> MISSING_VMLINUX_SYMBOL
+> NEEDLESS_IF
+> PRINTF_L
+>
+> Once the decision is made to send a checkpatch error/warning, the
+> report email will use the triggering error (the one that matters) as
+> the email subject, with the complete output of checkpatch.pl included
+> in email body.
+>
+> Thanks,
+> Fengguang
+> _______________________________________________
+> Ksummit-2013-discuss mailing list
+> Ksummit-2013-discuss@lists.linuxfoundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
