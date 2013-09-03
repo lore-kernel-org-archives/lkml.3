@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab3ICSK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:10:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52982 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760244Ab3ICSKz (ORCPT
+	id S1760244Ab3ICSLl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:11:41 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:63417 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445Ab3ICSLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:10:55 -0400
-Message-ID: <52262629.8010605@wwwdotorg.org>
-Date: Tue, 03 Sep 2013 12:10:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 3 Sep 2013 14:11:38 -0400
+Date: Tue, 3 Sep 2013 11:11:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrey Moiseev <o2g.org.ru@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: input: i8042 possible bug
+Message-ID: <20130903181134.GD25985@core.coreip.homeip.net>
+References: <52261EBE.5010007@gmail.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-tegra@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] clk: tegra: convert Tegra114 gate clocks to table
-References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com> <1378215105-12145-3-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1378215105-12145-3-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52261EBE.5010007@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 07:31 AM, Peter De Schrijver wrote:
-> This patch converts the Tegra114 gate clock registration to be table driven
-> like the periph clocks. The same struct tegra_periph_init_data is used for the
-> table, but some fields are unused. This makes the code easier to read and also
-> paves the way to share clock data between Tegra SoCs.
+On Tue, Sep 03, 2013 at 09:39:10PM +0400, Andrey Moiseev wrote:
+> Here is an extract from drivers/input/serio/i8042.c:
+> > 
+> > static int i8042_flush(void)
+> > {
+> > 	unsigned long flags;
+> > 	unsigned char data, str;
+> > 	int i = 0;
+> > 
+> > 	spin_lock_irqsave(&i8042_lock, flags);
+> > 
+> > 	while (((str = i8042_read_status()) & I8042_STR_OBF) && (i < I8042_BUFFER_SIZE)) {
+> > 		udelay(50);
+> > 		data = i8042_read_data();
+> > 		i++;
+> > 		dbg("%02x <- i8042 (flush, %s)\n",
+> > 		    data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
+> > 	}
+> > 
+> > 	spin_unlock_irqrestore(&i8042_lock, flags);
+> > 
+> > 	return i;
+> > }
+> > 
+> > static int i8042_controller_check(void)
+> > {
+> > 	if (i8042_flush() == I8042_BUFFER_SIZE) {
+> Doesn't it panic needlessly, while the buffer was initially full?
 
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+It appears so. We probably want to change it to return -1 if we still
+see OBF after fetching I8042_BUFFER_SIZE characters.
 
-> +static const char *clk_32k[] = {
-> +	"clk_32k",
-> +};
+Thanks.
 
-
-I think those new arrays of strings are only used ...
-
-> @@ -2114,6 +2023,26 @@ static __init void tegra114_periph_clk_init(void __iomem *clk_base)
-
-> +	for (i = 0; i < ARRAY_SIZE(tegra_periph_gate_clk_list); i++) {
-> +		int reg_bank;
-> +
-> +		data = &tegra_periph_gate_clk_list[i];
-> +		reg_bank = get_reg_bank(data->periph.gate.clk_num);
-> +
-> +		if (reg_bank >= 0) {
-> +			clk = tegra_clk_register_periph_gate(data->name,
-> +					data->parent_names[0],
-
-... here. If so, why make them arrays? Surely they could just be a const
-char * inside tegra_periph_gate_clk_list[i]?
+-- 
+Dmitry
