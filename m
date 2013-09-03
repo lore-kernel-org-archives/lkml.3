@@ -1,51 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab3ICMwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:52:34 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:42859 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932710Ab3ICMwc (ORCPT
+	id S932924Ab3ICMyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:54:24 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60633 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932859Ab3ICMyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:52:32 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] clocksource: of: respect device tree node status
-Date: Tue,  3 Sep 2013 14:52:23 +0200
-Message-Id: <1378212743-27843-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 3 Sep 2013 08:54:23 -0400
+Date: Tue, 3 Sep 2013 14:54:21 +0200
+From: Pavel Machek <pavel@denx.de>
+To: kernel list <linux-kernel@vger.kernel.org>, matthijs@stdin.nl,
+        paulz@synopsys.com
+Cc: gregkh@linuxfoundation.org
+Subject: TODO list for drivers/staging/dwc2?
+Message-ID: <20130903125421.GA11846@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clocksource devices provided by DT can be disabled (status != "okay").
-Instead of registering clocksource drivers for disabled nodes, respect
-the device's status by skiping disabled nodes.
+Hi!
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
----
- drivers/clocksource/clksrc-of.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Is there TODO list for `subj`? I'll need that code on socfpga cyclone
+5, so it makes sense to help with cleanups, but it looks in pretty
+good shape already... 
 
-diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-index 37f5325..b9ddd9e 100644
---- a/drivers/clocksource/clksrc-of.c
-+++ b/drivers/clocksource/clksrc-of.c
-@@ -30,6 +30,9 @@ void __init clocksource_of_init(void)
- 	clocksource_of_init_fn init_func;
- 
- 	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
-+		if (!of_device_is_available(np))
-+			continue;
-+
- 		init_func = match->data;
- 		init_func(np);
- 	}
+									Pavel
 -- 
-1.7.2.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
