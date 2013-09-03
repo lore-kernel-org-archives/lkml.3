@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3ICOkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:40:00 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:48995 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755057Ab3ICOj7 (ORCPT
+	id S1755495Ab3ICOlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:41:37 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64305 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3ICOlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:39:59 -0400
-Date: Tue, 3 Sep 2013 14:39:57 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Will Deacon <will.deacon@arm.com>
-cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-In-Reply-To: <20130830100105.GF25628@mudshark.cambridge.arm.com>
-Message-ID: <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
-References: <20130828193457.140443630@linux.com> <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com> <20130830100105.GF25628@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 3 Sep 2013 10:41:36 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="376175846-1704481339-1378219230=:17065"
-X-SES-Outgoing: 2013.09.03-54.240.9.78
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Tue, 3 Sep 2013 18:41:16 +0400
+Message-ID: <CACT4Y+Y6r=HV7nFgbu=B=d-4ka3J4yotRjgX1M1xGkNkFn1sOQ@mail.gmail.com>
+Subject: Out-of-bounds access in get_wchan (arch/x86/kernel/process_64.c)
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: ak@linux.intel.com, Paul Turner <pjt@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>,
+        Kostya Serebryany <kcc@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---376175846-1704481339-1378219230=:17065
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+We are working on a memory error detector AddressSanitizer for Linux
+kernel (https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel),
+it can detect use-after-free and buffer-overflow errors.
 
-On Fri, 30 Aug 2013, Will Deacon wrote:
+Here is a new report from the tool:
 
-> This is the flavour we have for ARM's hw_breakpoint code, where we have an
-> array of perf_event * instead of int...
->
-> > Index: linux/arch/arm/kernel/hw_breakpoint.c
-> > ===================================================================
-> > --- linux.orig/arch/arm/kernel/hw_breakpoint.c  2013-08-26 13:48:40.956794980 -0500
-> > +++ linux/arch/arm/kernel/hw_breakpoint.c       2013-08-26 13:48:40.952795024 -0500
-> > @@ -344,13 +344,13 @@ int arch_install_hw_breakpoint(struct pe
-> >                 /* Breakpoint */
-> >                 ctrl_base = ARM_BASE_BCR;
-> >                 val_base = ARM_BASE_BVR;
-> > -               slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
-> > +               slots = (struct perf_event **)__this_cpu_read(bp_on_reg);
->
-> ...so I don't think this is quite right, and indeed, we get a bunch of errors
-> from GCC:
->
-> arch/arm/kernel/hw_breakpoint.c: In function ‘arch_install_hw_breakpoint’:
-> arch/arm/kernel/hw_breakpoint.c:347:33: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-> arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-> arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
-> arch/arm/kernel/hw_breakpoint.c:347:1: error: incompatible types when assigning to type ‘struct perf_event *[16]’ from type ‘struct perf_event **’
+[  124.575597] ERROR: AddressSanitizer: heap-buffer-overflow on
+address ffff88002e280000
+[  124.576801] ffff88002e280000 is located 131938492886538 bytes to
+the left of 28857600-byte region [ffffffff81282e0a, ffffffff82e0830a)
+[  124.578633] Accessed by thread T10915:
+[  124.579295]          inlined      in describe_heap_address
+./arch/x86/mm/asan/report.c:164
+[  124.579295]   #0 ffffffff810dd277 in asan_report_error
+./arch/x86/mm/asan/report.c:278
+[  124.580137]   #1 ffffffff810dc6a0 in asan_check_region
+./arch/x86/mm/asan/asan.c:37
+[  124.581050]   #2 ffffffff810dd423 in __tsan_read8 ??:0
+[  124.581893]   #3 ffffffff8107c093 in get_wchan
+./arch/x86/kernel/process_64.c:444
+[  124.582763]   #4 ffffffff81342108 in do_task_stat array.c:0
+[  124.583634]   #5 ffffffff81342dcc in proc_tgid_stat ??:0
+[  124.584548]   #6 ffffffff8133c984 in proc_single_show base.c:0
+[  124.585461]   #7 ffffffff812d18cc in seq_read ./fs/seq_file.c:222
+[  124.586313]   #8 ffffffff8129e503 in vfs_read ??:0
+[  124.587137]   #9 ffffffff8129f800 in SyS_read ??:0
+[  124.587827]   #10 ffffffff81929bf5 in sysenter_dispatch
+./arch/x86/ia32/ia32entry.S:164
+[  124.588738]
+[  124.588964] Allocated by thread T0:
+[  124.592379]   #4 ffffffff00000008 in __per_cpu_start ??:0
+[  124.593217]
+[  124.593434] Shadow bytes around the buggy address:
+[  124.594270]   ffff88002e27fd80: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.595339]   ffff88002e27fe00: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.596453]   ffff88002e27fe80: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.597466]   ffff88002e27ff00: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.598501]   ffff88002e27ff80: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.599629] =>ffff88002e280000:[fa]fa fa fa fa fa fa fa fa fa 00 00
+00 00 00 00
+[  124.600873]   ffff88002e280080: 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00
+[  124.601892]   ffff88002e280100: 00 fa fa fa fa fa fa fa fa fa fa fa
+fa fa fa fa
+[  124.603037]   ffff88002e280180: fa fa fa fa fa fa fa fa fa fa fa fa
+fa fa fa fa
+[  124.604047]   ffff88002e280200: fa fa fa fa fa fa fa fd fd fd fd fd
+fd fd fd fd
+[  124.605054]   ffff88002e280280: fd fd fd fd fd fd fd fd fd fd fd fd
+fd fd fa fa
+[  124.605993] Shadow byte legend (one shadow byte represents 8
+application bytes):
+[  124.606958]   Addressable:           00
+[  124.607483]   Partially addressable: 01 02 03 04 05 06 07
+[  124.608219]   Heap redzone:          fa
+[  124.608724]   Heap kmalloc redzone:  fb
+[  124.609249]   Freed heap region:     fd
+[  124.609753]   Shadow gap:            fe
+[  124.610292] =========================================================================
 
-Did you apply the first patch of this series which is a bug fix?
+Indeed, get_wchan ensures that fp<stack+THREAD_SIZE, but then dereferences fp+8:
 
-> changing to match your recipe still doesn't work, however:
->
-> arch/arm/kernel/hw_breakpoint.c: In function ‘arch_install_hw_breakpoint’:
-> arch/arm/kernel/hw_breakpoint.c:347:33: error: cast specifies array type
+434                 if (fp < (unsigned long)stack ||
+435                     fp >= (unsigned long)stack+THREAD_SIZE)
+436                         return 0;
+437                 ip = *(u64 *)(fp+8);
 
-Yep that is the macro bug that was fixed in the first patch.
-
-> >
-> >         WARN_ON(preemptible());
-> >
-> > -       if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
-> > +       if (this_cpu_inc_return(mde_ref_count) == 1)
-> >                 enable = DBG_MDSCR_MDE;
->
-> I'm not sure that this is safe. We rely on local_inc_return to be atomic
-> with respect to the current CPU, which will end up being a wrapper around
-> atomic64_inc_return. However, this_cpu_inc_return simply uses a lock, so
-> other people accessing the count in a different manner (local_dec_and_test
-> below) may break local atomicity unless we start disabling interrupts or
-> something horrible like that.
-
-I do not see any special code for ARM for this_cpu_inc_return. The
-fallback solution in the core code is to disable interrupts for the
-inc_return and arch/arm/include/asm/percpu.h includes
-asm-generic/percpu.h.
-
-Where did you see it using a lock?
-
---376175846-1704481339-1378219230=:17065--
+It must check that fp+8<stack+THREAD_SIZE.
+As far as I see, the bug can lead to garbage return values or in the
+worst case to crash.
