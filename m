@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab3ICJC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:02:56 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52440 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932717Ab3ICJCz (ORCPT
+	id S932746Ab3ICJEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:04:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51997 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab3ICJEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:02:55 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-32-5225a5beca04
-From: Namhyung Kim <namhyung@kernel.org>
-To: Chenggang Qin <chenggang.qin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chenggang Qin <chenggang.qcg@taobao.com>,
-        David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] perf core: Fix a memory leak bug because symbol__delete is ignored
-References: <1378049385-4466-1-git-send-email-chenggang.qin@gmail.com>
-	<1378049385-4466-3-git-send-email-chenggang.qin@gmail.com>
-Date: Tue, 03 Sep 2013 18:02:54 +0900
-In-Reply-To: <1378049385-4466-3-git-send-email-chenggang.qin@gmail.com>
-	(Chenggang Qin's message of "Sun, 1 Sep 2013 23:29:45 +0800")
-Message-ID: <87r4d6tgzl.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 3 Sep 2013 05:04:38 -0400
+Date: Tue, 3 Sep 2013 10:04:14 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: build failure after merge of the final tree (arm
+	tree related)
+Message-ID: <20130903090414.GA25658@flint.arm.linux.org.uk>
+References: <20130903181824.796e74465274b23387d3e715@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903181824.796e74465274b23387d3e715@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  1 Sep 2013 23:29:45 +0800, Chenggang Qin wrote:
-> From: Chenggang Qin <chenggang.qcg@taobao.com>
->
-> In function symbols__fixup_duplicate(), while the duplicated symbols are found,
-> only the rb_node are deleted. The symbol structures themself are ignored.
-> Then, these memory areas are lost.
-> This patch fixed the bug. 
-> Thanks.
+On Tue, Sep 03, 2013 at 06:18:24PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (arm defconfig)
+> failed like this:
+> 
+> arch/arm/kernel/built-in.o: In function `setup_arch':
+> io.c:(.init.text+0x594): undefined reference to `erratum_a15_798181_init'
+> 
+> Presumably caused by commit 34905a33184a ("ARM: 7804/2: Add check for
+> Cortex-A15 errata 798181 ECO").  This build does not have CONFIG_SMP set.
+> 
+> I have reverted that commit for today.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Yep, and I think I'm going to do the same, rather than try and fix it.
 
-Thanks,
-Namhyung
+-- 
+Russell King
