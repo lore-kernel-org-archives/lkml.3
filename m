@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3ICLji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 07:39:38 -0400
-Received: from imap.thunk.org ([74.207.234.97]:53769 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab3ICLjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 07:39:37 -0400
-Date: Tue, 3 Sep 2013 07:39:33 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11
-Message-ID: <20130903113933.GB15457@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
- <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
- <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
- <5225234A.50407@roeck-us.net>
- <20130903021753.GA15457@thunk.org>
- <1378176973.32763.355.camel@haakon3.risingtidesystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378176973.32763.355.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S932803Ab3ICLmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 07:42:33 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:54107 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab3ICLmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 07:42:32 -0400
+From: Dan Aloni <alonid@postram.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>
+Subject: [PATCH bluetooth-next] Bluetooth: Add support for BCM20702A0 [0a5c, 21e6]
+Date: Tue,  3 Sep 2013 14:42:22 +0300
+Message-Id: <1378208542-30729-1-git-send-email-alonid@postram.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 07:56:13PM -0700, Nicholas A. Bellinger wrote:
-> 
-> Enabling DKIM now, and just waiting for the TXT records to update to
-> verify.
+Tested with this patch and a Bluetooth mouse on 3.10.10, on ThinkPad W530.
 
-The best way to verify is to send your test-email e-mail to GMail, and
-then select "Show Original" from the per-message drop-down menu when
-you view the message using GMail.  Then look for the
-"Authentication-Results" mail header:
+Bus 001 Device 004: ID 0a5c:21e6 Broadcom Corp. BCM20702 Bluetooth 4.0 [ThinkPad]
 
-Authentication-Results: mx.google.com;
-       spf=pass (google.com: domain of tytso@thunk.org designates 2600:3c02::f03c:91ff:fe96:be03 as permitted sender) smtp.mail=tytso@thunk.org;
-       dkim=pass header.i=@thunk.org
+T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0a5c ProdID=21e6 Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=F4B7E2F6E438
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-This will confirm whether or not you got all of the details right.
-And note that Google is IPv6-enabled, which means that if you are
-using SPF, and your mail server on Rackspace also has IPv6 enabled
-(which is likely), do make sure your SPF records includes both its
-IPV4 and IPV6 addresses; or else you might be getting an SPF soft- or
-hard- fail that could end up marking your mail as possibly being spam,
-even if other mail servers which are not IPv6 enabled think it's fine.
+Signed-off-by: Dan Aloni <alonid@postram.com>
+---
+ drivers/bluetooth/btusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Good luck,
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index de4cf4d..e6313f8 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -104,6 +104,7 @@ static struct usb_device_id btusb_table[] = {
+ 	{ USB_DEVICE(0x0b05, 0x17b5) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
++	{ USB_DEVICE(0x0a5c, 0x21e6) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
+ 
+ 	/* Foxconn - Hon Hai */
+-- 
+1.8.1.4
 
-						- Ted
