@@ -1,58 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016Ab3ICNq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:46:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17539 "EHLO mx1.redhat.com"
+	id S932998Ab3ICNqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:46:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62486 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932850Ab3ICNqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932792Ab3ICNqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 09:46:53 -0400
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: linux-usb@vger.kernel.org
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
+Cc: Gerd Hoffmann <kraxel@redhat.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
-        usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/5] uas: properly reinitialize in uas_eh_bus_reset_handler
-Date: Tue,  3 Sep 2013 15:46:42 +0200
-Message-Id: <1378216005-10326-3-git-send-email-kraxel@redhat.com>
+Subject: [PATCH 1/5] xhci: fix usb3 streams
+Date: Tue,  3 Sep 2013 15:46:41 +0200
+Message-Id: <1378216005-10326-2-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1378216005-10326-1-git-send-email-kraxel@redhat.com>
 References: <1378216005-10326-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+xhci maintains a radix tree for each stream endpoint because it must
+be able to map a trb address to the stream ring.  Each ring segment
+must be added to the ring for this to work.  Currently xhci sticks
+only the first segment of each stream ring into the radix tree.
+
+Result is that things work initially, but as soon as the first segment
+is full xhci can't map the trb address from the completion event to the
+stream ring any more -> BOOM.  You'll find this message in the logs:
+
+  ERROR Transfer event for disabled endpoint or incorrect stream ring
+
+This patch adds a helper function to update the radix tree.  It can
+both insert and remove ring segments.  It loops over the segment list
+and handles all segments instead of just the first.  It is called
+whenever an update is needed:  When allocating a ring, when expanding
+a ring and when releasing a ring.
+
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/usb/storage/uas.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/host/xhci-mem.c | 53 ++++++++++++++++++++++++++++++++++-----------
+ drivers/usb/host/xhci.h     |  2 ++
+ 2 files changed, 42 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index d966b59..fc08ee9 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -85,6 +85,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
- 				struct uas_dev_info *devinfo, gfp_t gfp);
- static void uas_do_work(struct work_struct *work);
- static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller);
-+static void uas_configure_endpoints(struct uas_dev_info *devinfo);
-+static void uas_free_streams(struct uas_dev_info *devinfo);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 6f8c2fd..de8b006 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -154,8 +154,11 @@ void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
+ 	if (!ring)
+ 		return;
  
- static DECLARE_WORK(uas_work, uas_do_work);
- static DEFINE_SPINLOCK(uas_work_lock);
-@@ -800,7 +802,10 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
- 	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
- 	usb_kill_anchored_urbs(&devinfo->sense_urbs);
- 	usb_kill_anchored_urbs(&devinfo->data_urbs);
-+	uas_free_streams(devinfo);
- 	err = usb_reset_device(udev);
-+	if (!err)
-+		uas_configure_endpoints(devinfo);
- 	devinfo->resetting = 0;
+-	if (ring->first_seg)
++	if (ring->first_seg) {
++		if (ring->type == TYPE_STREAM)
++			xhci_update_stream_ring(ring, false);
+ 		xhci_free_segments_for_ring(xhci, ring->first_seg);
++	}
  
- 	if (err) {
+ 	kfree(ring);
+ }
+@@ -351,6 +354,11 @@ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
+ 	xhci_dbg(xhci, "ring expansion succeed, now has %d segments\n",
+ 			ring->num_segs);
+ 
++	if (ring->type == TYPE_STREAM) {
++		ret = xhci_update_stream_ring(ring, true);
++		WARN_ON(ret); /* FIXME */
++	}
++
+ 	return 0;
+ }
+ 
+@@ -601,6 +609,35 @@ static int xhci_test_radix_tree(struct xhci_hcd *xhci,
+  * extended systems (where the DMA address can be bigger than 32-bits),
+  * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
+  */
++
++int xhci_update_stream_ring(struct xhci_ring *ring, bool insert)
++{
++	struct xhci_segment *seg;
++	unsigned long key;
++	bool present;
++	int ret;
++
++	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
++		return 0;
++
++	seg = ring->first_seg;
++	do {
++		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
++		present = radix_tree_lookup(ring->trb_address_map, key) != NULL;
++		if (!present && insert) {
++			ret = radix_tree_insert(ring->trb_address_map,
++						key, ring);
++			if (ret)
++				return ret;
++		}
++		if (present && !insert)
++			radix_tree_delete(ring->trb_address_map, key);
++		seg = seg->next;
++	} while (seg != ring->first_seg);
++
++	return 0;
++}
++
+ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
+ 		unsigned int num_stream_ctxs,
+ 		unsigned int num_streams, gfp_t mem_flags)
+@@ -608,7 +645,6 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
+ 	struct xhci_stream_info *stream_info;
+ 	u32 cur_stream;
+ 	struct xhci_ring *cur_ring;
+-	unsigned long key;
+ 	u64 addr;
+ 	int ret;
+ 
+@@ -663,6 +699,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
+ 		if (!cur_ring)
+ 			goto cleanup_rings;
+ 		cur_ring->stream_id = cur_stream;
++		cur_ring->trb_address_map = &stream_info->trb_address_map;
+ 		/* Set deq ptr, cycle bit, and stream context type */
+ 		addr = cur_ring->first_seg->dma |
+ 			SCT_FOR_CTX(SCT_PRI_TR) |
+@@ -672,10 +709,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
+ 		xhci_dbg(xhci, "Setting stream %d ring ptr to 0x%08llx\n",
+ 				cur_stream, (unsigned long long) addr);
+ 
+-		key = (unsigned long)
+-			(cur_ring->first_seg->dma >> TRB_SEGMENT_SHIFT);
+-		ret = radix_tree_insert(&stream_info->trb_address_map,
+-				key, cur_ring);
++		ret = xhci_update_stream_ring(cur_ring, true);
+ 		if (ret) {
+ 			xhci_ring_free(xhci, cur_ring);
+ 			stream_info->stream_rings[cur_stream] = NULL;
+@@ -702,9 +736,6 @@ cleanup_rings:
+ 	for (cur_stream = 1; cur_stream < num_streams; cur_stream++) {
+ 		cur_ring = stream_info->stream_rings[cur_stream];
+ 		if (cur_ring) {
+-			addr = cur_ring->first_seg->dma;
+-			radix_tree_delete(&stream_info->trb_address_map,
+-					addr >> TRB_SEGMENT_SHIFT);
+ 			xhci_ring_free(xhci, cur_ring);
+ 			stream_info->stream_rings[cur_stream] = NULL;
+ 		}
+@@ -764,7 +795,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
+ {
+ 	int cur_stream;
+ 	struct xhci_ring *cur_ring;
+-	dma_addr_t addr;
+ 
+ 	if (!stream_info)
+ 		return;
+@@ -773,9 +803,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
+ 			cur_stream++) {
+ 		cur_ring = stream_info->stream_rings[cur_stream];
+ 		if (cur_ring) {
+-			addr = cur_ring->first_seg->dma;
+-			radix_tree_delete(&stream_info->trb_address_map,
+-					addr >> TRB_SEGMENT_SHIFT);
+ 			xhci_ring_free(xhci, cur_ring);
+ 			stream_info->stream_rings[cur_stream] = NULL;
+ 		}
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index c338741..b525cfc 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1334,6 +1334,7 @@ struct xhci_ring {
+ 	unsigned int		num_trbs_free_temp;
+ 	enum xhci_ring_type	type;
+ 	bool			last_td_was_short;
++	struct radix_tree_root	*trb_address_map;
+ };
+ 
+ struct xhci_erst_entry {
+@@ -1702,6 +1703,7 @@ int xhci_endpoint_init(struct xhci_hcd *xhci, struct xhci_virt_device *virt_dev,
+ void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring);
+ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
+ 				unsigned int num_trbs, gfp_t flags);
++int xhci_update_stream_ring(struct xhci_ring *ring, bool insert);
+ void xhci_free_or_cache_endpoint_ring(struct xhci_hcd *xhci,
+ 		struct xhci_virt_device *virt_dev,
+ 		unsigned int ep_index);
 -- 
 1.8.3.1
 
