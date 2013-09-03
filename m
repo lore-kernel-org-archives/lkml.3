@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3ICP06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:26:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52709 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756054Ab3ICP0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:26:53 -0400
-Message-ID: <5225FF63.6080608@ti.com>
-Date: Tue, 3 Sep 2013 20:55:23 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756407Ab3ICP1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:27:39 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62822 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3ICP1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 11:27:38 -0400
+Date: Tue, 3 Sep 2013 08:27:31 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Introduce hwmon_device_register_with_groups and
+Message-ID: <20130903152731.GB20159@roeck-us.net>
+References: <1378003742-18685-1-git-send-email-linux@roeck-us.net>
+ <5224E62F.1050400@roeck-us.net>
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>, Andrew Morton <akpm@linux-foundation.org>
-CC: <balbi@ti.com>, <kyungmin.park@samsung.com>, <jg1.han@samsung.com>,
-        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
-        <stern@rowland.harvard.edu>, <broonie@kernel.org>,
-        <tomasz.figa@gmail.com>, <arnd@arndb.de>, <grant.likely@linaro.org>,
-        <tony@atomide.com>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v11 0/8] PHY framework
-References: <1377063973-22044-1-git-send-email-kishon@ti.com> <521B0E79.6060506@ti.com> <20130827192059.GZ3005@radagast>
-In-Reply-To: <20130827192059.GZ3005@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5224E62F.1050400@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Wednesday 28 August 2013 12:50 AM, Felipe Balbi wrote:
-> Hi,
+On Mon, Sep 02, 2013 at 12:25:35PM -0700, Guenter Roeck wrote:
+> On 08/31/2013 07:48 PM, Guenter Roeck wrote:
+> >This patch series introduces new hwmon API functions
+> >hwmon_device_register_with_groups() and devm_hwmon_device_register_with_groups().
+> >
+> >hwmon_device_register_with_groups() lets callers register hwmon devices
+> >as well as associated sysfs attributes with a single call. This simplifies
+> >hwmon device registration and avoids potential race conditions seen
+> >if sysfs attributes are created after the initial hwmon device was
+> >registered.
+> >
+> >devm_hwmon_device_register_with_groups() is the managed version of the same
+> >function.
+> >
+> Jean, any comments on this patch series ?
 > 
-> On Mon, Aug 26, 2013 at 01:44:49PM +0530, Kishon Vijay Abraham I wrote:
->> On Wednesday 21 August 2013 11:16 AM, Kishon Vijay Abraham I wrote:
->>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
->>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
->>> the PHY with or without using phandle.
->>>
->>> This framework will be of use only to devices that uses external PHY (PHY
->>> functionality is not embedded within the controller).
->>>
->>> The intention of creating this framework is to bring the phy drivers spread
->>> all over the Linux kernel to drivers/phy to increase code re-use and to
->>> increase code maintainability.
->>>
->>> Comments to make PHY as bus wasn't done because PHY devices can be part of
->>> other bus and making a same device attached to multiple bus leads to bad
->>> design.
->>>
->>> If the PHY driver has to send notification on connect/disconnect, the PHY
->>> driver should make use of the extcon framework. Using this susbsystem
->>> to use extcon framwork will have to be analysed.
->>>
->>> You can find this patch series @
->>> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
->>
->> Looks like there are not further comments on this series. Can you take this in
->> your misc tree?
+> If you are ok with it, I would like to push the new API (patches 1 and 7 of the series)
+> into 3.12, and keep the rest for 3.13.
 > 
-> Do you want me to queue these for you ? There are quite a few users for
-> this framework already and I know of at least 2 others which will show
-> up for v3.13.
+The commit window opened up, so this will have to wait for 3.13.
 
-Can you queue this patch series? There are quite a few users already for this
-framework.
-
-Thanks
-Kishon
+Guenter
