@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab3ICJ1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:27:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54090 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932313Ab3ICJ1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:27:21 -0400
-Date: Tue, 3 Sep 2013 11:27:14 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Li Zefan <lizefan@huawei.com>, Joe Perches <joe@perches.com>,
-        Jens Axboe <axboe@kernel.dk>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] block/ioctl.c: let code match 'kernel code
- style'
-In-Reply-To: <5225A685.5040507@asianux.com>
-Message-ID: <alpine.LNX.2.00.1309031126250.20551@pobox.suse.cz>
-References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <5220254E.3050704@roeck-us.net> <52203CF0.5040600@asianux.com> <52207F74.6000702@roeck-us.net> <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com>
- <52208DFD.20105@roeck-us.net> <52240566.3040201@asianux.com> <52259DDE.6070401@asianux.com> <5225A3F8.5070008@huawei.com> <5225A685.5040507@asianux.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932721Ab3ICJbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:31:01 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:35396 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932701Ab3ICJa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 05:30:58 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] m68k/m68knommu: Implement __get_user_unaligned/__put_user_unaligned()
+Date: Tue,  3 Sep 2013 11:30:34 +0200
+Message-Id: <1378200634-24716-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Sep 2013, Chen Gang wrote:
+fs/btrfs/ioctl.c: In function ‘btrfs_ioctl_file_extent_same’:
+fs/btrfs/ioctl.c:2802: error: implicit declaration of function ‘__put_user_unaligned’
 
-> Do you mean "coding style", not "colding style"? (or it is my
-> misunderstanding?).
-> 
-> 
-> > You're not going to run checkpatch.pl on the whole kernel tree and fix
-> > all the complaints, are you?
-> > 
-> 
-> I am not going to, it seems that may be the 'job' of Joe and
-> trivial@kernel.org?
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/9455452/
 
-FWIW, I am not generally accepting pure code reformatting patches.
+Btrfs is the first user of __put_user_unaligned() outside the compat code,
+hence now all 32-bit architectures should make sure to implement this, too.
 
+ arch/m68k/include/asm/uaccess.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/m68k/include/asm/uaccess.h b/arch/m68k/include/asm/uaccess.h
+index 639c731..3fadc4a 100644
+--- a/arch/m68k/include/asm/uaccess.h
++++ b/arch/m68k/include/asm/uaccess.h
+@@ -3,3 +3,10 @@
+ #else
+ #include <asm/uaccess_mm.h>
+ #endif
++
++#ifdef CONFIG_CPU_HAS_NO_UNALIGNED
++#include <asm-generic/uaccess-unaligned.h>
++#else
++#define __get_user_unaligned(x, ptr)	__get_user((x), (ptr))
++#define __put_user_unaligned(x, ptr)	__put_user((x), (ptr))
++#endif
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
