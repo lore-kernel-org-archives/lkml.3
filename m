@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758659Ab3ICSJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:09:53 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:35345 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab3ICSJv (ORCPT
+	id S1760242Ab3ICSKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:10:31 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:42325 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760208Ab3ICSKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:09:51 -0400
+	Tue, 3 Sep 2013 14:10:30 -0400
+Date: Tue, 3 Sep 2013 21:09:12 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130903180912.GA2340@swordfish>
+References: <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
+ <20130830230402.GA14760@somewhere>
+ <20130902122845.GA2457@swordfish.minsk.epam.com>
+ <20130902130744.GB2378@somewhere>
+ <20130902135033.GA1686@redhat.com>
+ <20130902140015.GB2368@swordfish.minsk.epam.com>
+ <20130903084306.GA2694@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130903003958.GA6855@localhost>
-References: <20130902195056.GB32628@leaf> <9976.1378132260@warthog.procyon.org.uk>
- <1378138205.1953.66.camel@joe-AO722> <20130902181510.GA29787@leaf>
- <20130902181856.GB29787@leaf> <20130902153945.6d7e510c@samsung.com>
- <1378148367.1953.98.camel@joe-AO722> <13834.1378155023@warthog.procyon.org.uk>
- <1378156296.1953.117.camel@joe-AO722> <20130903003958.GA6855@localhost>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 3 Sep 2013 12:09:31 -0600
-Message-ID: <CAErSpo7jg1CU-tw3Rp60gJky2OE6g2QaQbEWFHE1Y_2GG2u37g@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
- updating Documentation/CodingStyle
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Joe Perches <joe@perches.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Wang Shilong <wangshilong1991@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903084306.GA2694@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 6:39 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+On (09/03/13 10:43), Stanislaw Gruszka wrote:
+> Ok, I see now, utime is 0 . This seems to be problem with dynamic ticks
+> as you told that your application is kernel compilation, so we utilize
+> lot of cpu time in user-space.
+> 
+> Anyway we should handle utime == 0 situation on scaling code. We work
+> well when rtime & stime are not big (variables and results fit in
+> 32 bit), otherwise we have that stime bigger than rtime problem. Let's
+> try to handle the problem by below patch. Sergey, does it work for you ?
 
-> Thanks! Yes I'm now running checkpatch these days because some people
-> suggested to me that some of the checkpatch warnings do help catch
-> real bugs.
->
-> However I do try to avoid upsetting people with maybe-subjective
-> warnings. A checkpatch report will only be sent when a small fraction
-> of error types are detected. Comments are very welcome on how to
-> improve this list:
+checked on -current and -next -- works fine, good job.
 
-How hard would it be to make this configurable per-git tree?  I think
-the robot is quite useful and I don't push branches very often, so I'd
-probably be OK with just getting all the checkpatch warnings along
-with the build warnings and filtering the noise myself.  But I know
-other people have different styles and opinions.
+here are my:
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-> MEMSET
-> IN_ATOMIC
-> UAPI_INCLUDE
-> MALFORMED_INCLUDE
-> SIZEOF_ADDRESS
-> KREALLOC_ARG_REUSE
-> EXECUTE_PERMISSIONS
-> ERROR:BAD_SIGN_OFF
-> LO_MACRO
-> HI_MACRO
-> CSYNC
-> SSYNC
-> HOTPLUG_SECTION
-> INDENTED_LABEL
-> INLINE_LOCATION
-> STORAGE_CLASS
-> USLEEP_RANGE
-> UNNECESSARY_CASTS
-> ALLOC_SIZEOF_STRUCT
-> KREALLOC_ARG_REUSE
-> USE_FUNC
-> LOCKDEP
-> EXPORTED_WORLD_WRITABLE
-> WHITESPACE_AFTER_LINE_CONTINUATION
-> MISSING_VMLINUX_SYMBOL
-> NEEDLESS_IF
-> PRINTF_L
->
-> Once the decision is made to send a checkpatch error/warning, the
-> report email will use the triggering error (the one that matters) as
-> the email subject, with the complete output of checkpatch.pl included
-> in email body.
->
-> Thanks,
-> Fengguang
-> _______________________________________________
-> Ksummit-2013-discuss mailing list
-> Ksummit-2013-discuss@lists.linuxfoundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
+	-ss
+
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index a7959e0..25cc35d 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -557,7 +557,7 @@ static void cputime_adjust(struct task_cputime *curr,
+>  			   struct cputime *prev,
+>  			   cputime_t *ut, cputime_t *st)
+>  {
+> -	cputime_t rtime, stime, utime, total;
+> +	cputime_t rtime, stime, utime;
+>  
+>  	if (vtime_accounting_enabled()) {
+>  		*ut = curr->utime;
+> @@ -565,9 +565,6 @@ static void cputime_adjust(struct task_cputime *curr,
+>  		return;
+>  	}
+>  
+> -	stime = curr->stime;
+> -	total = stime + curr->utime;
+> -
+>  	/*
+>  	 * Tick based cputime accounting depend on random scheduling
+>  	 * timeslices of a task to be interrupted or not by the timer.
+> @@ -588,13 +585,19 @@ static void cputime_adjust(struct task_cputime *curr,
+>  	if (prev->stime + prev->utime >= rtime)
+>  		goto out;
+>  
+> -	if (total) {
+> +	stime = curr->stime;
+> +	utime = curr->utime;
+> +
+> +	if (utime == 0) {
+> +		stime = rtime;
+> +	} else if (stime == 0) {
+> +		utime = rtime;
+> +	} else {
+> +		cputime_t total = stime + utime;
+> +
+>  		stime = scale_stime((__force u64)stime,
+>  				    (__force u64)rtime, (__force u64)total);
+>  		utime = rtime - stime;
+> -	} else {
+> -		stime = rtime;
+> -		utime = 0;
+>  	}
+>  
+>  	/*
+> 
