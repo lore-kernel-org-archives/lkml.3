@@ -1,161 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab3ICH44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:56:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32387 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039Ab3ICH4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:56:55 -0400
-Date: Tue, 3 Sep 2013 09:58:50 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v2 4/4] PCI/MSI: Get rid of pci_enable_msi_block_auto()
- interface
-Message-ID: <20130903075849.GA14221@dhcp-26-207.brq.redhat.com>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <22d32807482ab4a2131116c50fe217c111849ec0.1378111919.git.agordeev@redhat.com>
+	id S1759623Ab3ICIIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 04:08:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26627 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab3ICII0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 04:08:26 -0400
+Message-ID: <52259910.4030405@oracle.com>
+Date: Tue, 03 Sep 2013 16:08:48 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <22d32807482ab4a2131116c50fe217c111849ec0.1378111919.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Ocfs2-Devel <ocfs2-devel@oss.oracle.com>
+Subject: Re: OCFS2: ocfs2_read_blocks:285 ERROR: block 532737 had the JBD
+ bit set while I was in lock_buffer!
+References: <CAFLxGvwLJs0ZrOZN-g=fCDEN4eAOQMjW_Nojm9fm5Rq0GKk9AQ@mail.gmail.com> <522554D6.4070000@oracle.com> <522584DD.8070401@nod.at>
+In-Reply-To: <522584DD.8070401@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no consumers of pci_enable_msi_block_auto()
-interface have left. Eliminate it for now.
+On 09/03/2013 02:42 PM, Richard Weinberger wrote:
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- Documentation/PCI/MSI-HOWTO.txt |   40 ++++++--------------------------------
- drivers/pci/msi.c               |   25 ------------------------
- include/linux/pci.h             |    7 ------
- 3 files changed, 7 insertions(+), 65 deletions(-)
+> Hi!
+> 
+> Am 03.09.2013 05:17, schrieb Jeff Liu:
+>> Hello,
+>>
+>> It seems like Sunil has fixed a similar issue against ocfs2-1.4
+>> several years ago:
+>> https://oss.oracle.com/git/?p=ocfs2-1.4.git;a=commitdiff_plain;h=2fd250839d0f5073af8d42e97f1db74beb621674;hp=e882faf84930431524f84598caea7d4e9a9529c5
+>> https://oss.oracle.com/git/?p=ocfs2-1.4.git;a=commitdiff_plain;h=eccff85213d4c2762f787d9e7cb1503042ba75b9;hp=edc147473ffd9c03790dc4502b893823f44a9ec4
+>>
+>> The old bug ticket for the discussion:
+>> https://oss.oracle.com/bugzilla/show_bug.cgi?id=1235
+>>
+>> This fix is specifically for ocfs2-1.4, but Mark once mentioned that
+>> the BUG() there can be removed if we have a good explanation for this
+>> sort of behavior, is it time to have it in mainline?
+> 
+> Hmm, not fun.
+> In my case I'm not using NFS or any other network filesystem.
+> The OCFS2 is also used in local mode (no cluster).
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index 32d7d15..0c318c8 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -167,42 +167,16 @@ constraints on the number of vectors that can be allocated;
- pci_enable_msi_block_part() returns as soon as it finds any constraint
- that doesn't allow the call to succeed.
- 
--4.2.4 pci_enable_msi_block_auto
--
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *count)
--
--This variation on pci_enable_msi() call allows a device driver to request
--the maximum possible number of MSIs.  The MSI specification only allows
--interrupts to be allocated in powers of two, up to a maximum of 2^5 (32).
--
--If this function returns a positive number, it indicates that it has
--succeeded and the returned value is the number of allocated interrupts. In
--this case, the function enables MSI on this device and updates dev->irq to
--be the lowest of the new interrupts assigned to it.  The other interrupts
--assigned to the device are in the range dev->irq to dev->irq + returned
--value - 1.
--
--If this function returns a negative number, it indicates an error and
--the driver should not attempt to request any more MSI interrupts for
--this device.
--
--If the device driver needs to know the number of interrupts the device
--supports it can pass the pointer count where that number is stored. The
--device driver must decide what action to take if pci_enable_msi_block_auto()
--succeeds, but returns a value less than the number of interrupts supported.
--If the device driver does not need to know the number of interrupts
--supported, it can set the pointer count to NULL.
--
--4.2.5 pci_disable_msi
-+4.2.4 pci_disable_msi
- 
- void pci_disable_msi(struct pci_dev *dev)
- 
--This function should be used to undo the effect of pci_enable_msi_block(),
--pci_enable_msi(), pci_enable_msi_block_auto() or pci_enable_msi_block_part().
--Calling it restores dev->irq to the pin-based interrupt number and frees the
--previously allocated message signaled interrupt(s). The interrupt may
--subsequently be assigned to another device, so drivers should not cache the
--value of dev->irq.
-+This function should be used to undo the effect of pci_enable_msi() or
-+pci_enable_msi_block() or pci_enable_msi_block_part().  Calling it restores
-+dev->irq to the pin-based interrupt number and frees the previously
-+allocated message signaled interrupt(s).  The interrupt may subsequently be
-+assigned to another device, so drivers should not cache the value of
-+dev->irq.
- 
- Before calling this function, a device driver must always call free_irq()
- on any interrupt for which it previously called request_irq().
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index a5c958f..d99f022 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -866,31 +866,6 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
- }
- EXPORT_SYMBOL(pci_enable_msi_block);
- 
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
--{
--	int ret, nvec;
--	u16 msgctl;
--
--	if (!dev->msi_cap)
--		return -EINVAL;
--
--	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
--	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
--
--	if (maxvec)
--		*maxvec = ret;
--
--	do {
--		nvec = ret;
--		ret = pci_enable_msi_block(dev, nvec);
--	} while (ret > 0);
--
--	if (ret < 0)
--		return ret;
--	return nvec;
--}
--EXPORT_SYMBOL(pci_enable_msi_block_auto);
--
- void pci_msi_shutdown(struct pci_dev *dev)
- {
- 	struct msi_desc *desc;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 6552cee..89935b4 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1133,12 +1133,6 @@ static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
- 	return -1;
- }
- 
--static inline int
--pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
--{
--	return -1;
--}
--
- static inline void pci_msi_shutdown(struct pci_dev *dev)
- { }
- static inline void pci_disable_msi(struct pci_dev *dev)
-@@ -1172,7 +1166,6 @@ static inline int pci_msi_enabled(void)
- int pci_enable_msi_block_part(struct pci_dev *dev,
- 			      unsigned int nvec, int nvec_mme);
- int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
- int pci_msix_table_size(struct pci_dev *dev);
--- 
-1.7.7.6
+It seems that this problem is irrelevant to cluster/network mode.
+Any test case can help reproducing this problem if possible.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> 
+> What really worries me is that this another proof that Oracles OCFS2 branch is out of sync with mainline.
+
+Andrew help us merging OCFS2 mainlines fixes, you can fetch the updated
+from his tree.
+
+> 
+> - Are there more fixes pending?
+
+Sure.  That depends on how many fixes have been posted and how many person
+are got involved in the patch review over a period of time.
+
+> - Why aren't you pushing things back to mainline?
+
+Because am not dedicated developer for OCFS2, although it spent me some time
+to take care of OCFS2 issues recently.
+
+Thanks,
+-Jeff
+
+> 
+> Thanks,
+> //richard
+> 
+>> Thanks,
+>> -Jeff
+>> On 09/03/2013 04:32 AM, richard -rw- weinberger wrote:
+>>
+>>> Hi!
+>>>
+>>> Today one of my computers crashed with the following panic.
+>>> The machine is heavily using reflinks.
+>>> Looks like it managed to hit a CATCH_BH_JBD_RACES error check.
+>>>
+>>> <3>[37628.934461] (reflink,512,0):ocfs2_reflink_ioctl:4459 ERROR: status = -17
+>>> <3>[37628.943160] (kworker/u:2,809,1):ocfs2_read_blocks:285 ERROR:
+>>> block 532737 had the JBD bit set while I was in lock_buffer!
+>>> <4>[37628.943169] ------------[ cut here ]------------
+>>> <2>[37628.944464] kernel BUG at
+>>> /home/rw/work/ssworkstation/maker/_source/kernel/fs/ocfs2/buffer_head_io.c:286!
+>>> <4>[37628.945134] invalid opcode: 0000 [#1] PREEMPT SMP
+>>> <4>[37628.945809] CPU 1
+>>> <4>[37628.945817] Pid: 809, comm: kworker/u:2 Not tainted 3.8.4+ #46
+>>>                /
+>>> <4>[37628.947167] RIP: 0010:[<ffffffff8125afa0>]  [<ffffffff8125afa0>]
+>>> ocfs2_read_blocks+0x410/0x610
+>>> <4>[37628.947880] RSP: 0018:ffff880234631908  EFLAGS: 00010292
+>>> <4>[37628.948593] RAX: 000000000000006d RBX: 0000000000000001 RCX:
+>>> 0000000000000067
+>>> <4>[37628.949317] RDX: 0000000000000048 RSI: 0000000000000046 RDI:
+>>> ffffffff8214c0dc
+>>> Oops#1 Part3
+>>> <4>[37628.950037] RBP: ffff880234631988 R08: 000000000000000a R09:
+>>> 000000000000d490
+>>> <4>[37628.950758] R10: 0000000000000000 R11: 0000000000000004 R12:
+>>> 0000000000082101
+>>> <4>[37628.951477] R13: ffff880233147980 R14: 0000000000000000 R15:
+>>> ffff880216ca2208
+>>> <4>[37628.952201] FS:  0000000000000000(0000)
+>>> GS:ffff88023e280000(0000) knlGS:0000000000000000
+>>> <4>[37628.952936] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> <4>[37628.953669] CR2: 00007fe7ea29fc62 CR3: 0000000006c0b000 CR4:
+>>> 00000000000407e0
+>>> <4>[37628.954421] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+>>> 0000000000000000
+>>> <4>[37628.955176] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+>>> 0000000000000400
+>>> <4>[37628.955925] Process kworker/u:2 (pid: 809, threadinfo
+>>> ffff880234630000, task ffff880234ba86e0)
+>>> <4>[37628.956689] Stack:
+>>> <4>[37628.957461]  0000000000082101 ffffea0008900880 ffff880234631948
+>>> 0000000000001000
+>>> <4>[37628.958250]  0000000000082102 0000000000082102 ffffffff81295eb0
+>>> 0000000000000000
+>>> Oops#1 Part2
+>>> <4>[37628.959044]  ffff88023428c000 0000000100000000 0000000000000000
+>>> ffff8802346319f0
+>>> <4>[37628.959844] Call Trace:
+>>> <4>[37628.960639]  [<ffffffff81295eb0>] ? ocfs2_read_refcount_block+0x50/0x50
+>>> <4>[37628.961453]  [<ffffffff81295e8b>] ocfs2_read_refcount_block+0x2b/0x50
+>>> <4>[37628.962249]  [<ffffffff81297417>] ocfs2_get_refcount_tree+0xa7/0x350
+>>> <4>[37628.963042]  [<ffffffff8115c6d1>] ? __find_get_block+0xa1/0x1e0
+>>> <4>[37628.963835]  [<ffffffff8129c5e8>] ocfs2_lock_refcount_tree+0x48/0x4f0
+>>> <4>[37628.964645]  [<ffffffff8124fccb>] ocfs2_remove_btree_range+0xab/0xb30
+>>> <4>[37628.965452]  [<ffffffff81253a99>] ocfs2_commit_truncate+0x139/0x550
+>>> <4>[37628.966247]  [<ffffffff812844c0>] ? ocfs2_extend_trans+0x1c0/0x1c0
+>>> <4>[37628.967049]  [<ffffffff8127e36e>] ocfs2_evict_inode+0x89e/0x2530
+>>> <4>[37628.967851]  [<ffffffff81154a78>] ? __inode_wait_for_writeback+0x68/0xc0
+>>> <4>[37628.968645]  [<ffffffff8114878f>] evict+0xaf/0x1b0
+>>> <4>[37628.969432]  [<ffffffff81149495>] iput+0x105/0x1a0
+>>> Oops#1 Part1
+>>> <4>[37628.970213]  [<ffffffff8125b557>] __ocfs2_drop_dl_inodes.isra.14+0x47/0x80
+>>> <4>[37628.971002]  [<ffffffff8125bd65>] ocfs2_drop_dl_inodes+0x25/0xa0
+>>> <4>[37628.971788]  [<ffffffff81087dc7>] process_one_work+0x147/0x470
+>>> <4>[37628.972580]  [<ffffffff810884bd>] worker_thread+0x14d/0x3f0
+>>> <4>[37628.973381]  [<ffffffff81088370>] ? rescuer_thread+0x240/0x240
+>>> <4>[37628.974175]  [<ffffffff8108db5b>] kthread+0xbb/0xc0
+>>> <4>[37628.974960]  [<ffffffff8108daa0>] ? __kthread_parkme+0x80/0x80
+>>> <4>[37628.975747]  [<ffffffff817dd9ec>] ret_from_fork+0x7c/0xb0
+>>> <4>[37628.976529]  [<ffffffff8108daa0>] ? __kthread_parkme+0x80/0x80
+>>> <4>[37628.977307] Code: 0f 0b 4c 89 ff e8 11 0b f0 ff e9 f2 fc ff ff
+>>> 48 b8 00 00 00 00 00 00 00 10 48 85 05 2b 58 9d 00 74 09 48 85 05 c2
+>>> 79 f4 00 74 02 <0f> 0b 65 48 8b 14 25 70 b8 00 00 48 8d 82 28 e0 ff ff
+>>> 4d 8b 67
+>>> <1>[37628.979053] RIP  [<ffffffff8125afa0>] ocfs2_read_blocks+0x410/0x610
+>>> <4>[37628.979893]  RSP <ffff880234631908>
+>>> <4>[37628.983420] ---[ end trace c03a48f44cf30d5e ]---
+>>>
+>>
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
