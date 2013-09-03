@@ -1,357 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab3ICHQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:16:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36033 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759613Ab3ICHQM (ORCPT
+	id S932462Ab3ICHQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:16:53 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:65114 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759669Ab3ICHQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:16:12 -0400
-Date: Tue, 3 Sep 2013 00:15:40 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-395c307089c9f5f0d82c63c11c79227b57bb7ac5@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1377975053-3811-4-git-send-email-adrian.hunter@intel.com>
-References: <1377975053-3811-4-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add 'keep tracking' test
-Git-Commit-ID: 395c307089c9f5f0d82c63c11c79227b57bb7ac5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 3 Sep 2013 03:16:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <5224BCF6.2080401@colorfullife.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+	<1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
+	<CA+icZUXgOd=URJBH5MGAZKdvdkMpFt+5mRxtzuDzq_vFHpoc2A@mail.gmail.com>
+	<1372202983.1888.22.camel@buesod1.americas.hpqcorp.net>
+	<521DE5D7.4040305@synopsys.com>
+	<CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
+	<CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
+	<52205597.3090609@synopsys.com>
+	<CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
+	<CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
+	<CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
+	<CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com>
+	<C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com>
+	<5224BCF6.2080401@colorfullife.com>
+Date: Tue, 3 Sep 2013 09:16:48 +0200
+Message-ID: <CA+icZUVc6fhW+TTB56x68LooS8DqhA8n3CQzgKkXQmbyH+ryUQ@mail.gmail.com>
+Subject: Re: ipc-msg broken again on 3.11-rc7?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <dave.bueso@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 03 Sep 2013 00:15:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  395c307089c9f5f0d82c63c11c79227b57bb7ac5
-Gitweb:     http://git.kernel.org/tip/395c307089c9f5f0d82c63c11c79227b57bb7ac5
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Sat, 31 Aug 2013 21:50:53 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 2 Sep 2013 14:58:20 -0300
+On Mon, Sep 2, 2013 at 6:29 PM, Manfred Spraul <manfred@colorfullife.com> wrote:
+> Hi,
+>
+> [forgot to cc everyone, thus I'll summarize some mails...]
+>
+> On 09/02/2013 06:58 AM, Vineet Gupta wrote:
+>>
+>> On 08/31/2013 11:20 PM, Linus Torvalds wrote:
+>>>
+>>> Vineet, actual patch for what Davidlohr suggests attached. Can you try
+>>> it?
+>>>
+>>>               Linus
+>>
+>> Apologies for late in getting back to this - I was away from my computer
+>> for a bit.
+>>
+>> Unfortunately, with a quick test, this patch doesn't help.
+>> FWIW, this is latest mainline (.config attached).
+>>
+>> Let me know what diagnostics I can add to help with this.
+>
+>
+> msgctl08 is a bulk message send/receive test. I had to look at it once
+> before, then it was a broken hardware:
+> https://lkml.org/lkml/2008/6/12/365
+> This can be ruled out, because it works with 3.10.
+>
+> msgctl08 uses pairs of threads: one thread does msgsnd(), the other one
+> msgrcv().
+> There is no synchronization, i.e. the msgsnd() can race ahead until the
+> kernel buffer is full and then a block with msgrcv() follows or it could be
+> pairs of alternating msgsnd()/msgrcv() operations.
+> No special features are used: each pair of threads has it's own message
+> queues, all messages have type=1.
+>
+> Vineet ran strace - and just before the signal from killing msgctl08, there
+> are only msgsnd()/msgrcv() calls.
+> Vineet:
+> a) could you run strace tomorrow again, with '-ttt' as an additional option?
+> I don't see where exactly it hangs.
+> b) Could you check that it is not just a performance regression?
+>     Does ./msgctl08 1000 16 hang, too?
+>
+> In ipc/msg.c, I haven't seen any obvious reason why it should hang.
+> The only race I spotted so far is this one:
+>>
+>>       for (;;) {
+>>                 struct msg_sender s;
+>>
+>>                 err = -EACCES;
+>>                 if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+>>                         goto out_unlock1;
+>>
+>>
+>>                 err = security_msg_queue_msgsnd(msq, msg, msgflg);
+>>                 if (err)
+>>                         goto out_unlock1;
+>>
+>>                 if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
+>>                                 1 + msq->q_qnum <= msq->q_qbytes) {
+>>                         break;
+>>                 }
+>>
+> [snip]
+>>
+>>         if (!pipelined_send(msq, msg)) {
+>>                 /* no one is waiting for this message, enqueue it */
+>>                 list_add_tail(&msg->m_list, &msq->q_messages);
+>>                 msq->q_cbytes += msgsz;
+>>                 msq->q_qnum++;
+>>                 atomic_add(msgsz, &ns->msg_bytes);
+>
+>
+> The access to msq->q_cbytes is not protected. Thus two parallel msgsnd()
+> calls could succeed, even if both together brings the queue length above the
+> limit.
+> But it can't explain why 3.11-rc7 hangs: As explained above, msgctl08 uses
+> one queue for each thread pair.
+>
 
-perf tests: Add 'keep tracking' test
+Just FYI:
 
-Add a test for the newly added PERF_COUNT_SW_DUMMY event.  The test
-checks that tracking events continue when an event is disabled but a
-dummy software event is not disabled.
+Linux Testing Project (LTP) will do a new release in the 1st September week.
+Some IPC test-suites were reworked.
+Manfred can you look at them ("...msgctl08 uses one queue for each
+thread pair.").
+( Might be worth to throw some words at the LTP mailing-list (that
+test-case is not ideal, etc.)? )
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1377975053-3811-4-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile              |   1 +
- tools/perf/tests/builtin-test.c  |   4 +
- tools/perf/tests/keep-tracking.c | 154 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h         |   1 +
- tools/perf/util/evlist.c         |  42 ++++++++++-
- tools/perf/util/evlist.h         |   5 ++
- 6 files changed, 205 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ecebfd0..c5dc1ad 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -465,6 +465,7 @@ endif # NO_LIBELF
- ifndef NO_LIBUNWIND
-   LIB_OBJS += $(OUTPUT)util/unwind.o
- endif
-+LIB_OBJS += $(OUTPUT)tests/keep-tracking.o
- 
- ifndef NO_LIBAUDIT
-   BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 8ad9415..8bbeba3 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -108,6 +108,10 @@ static struct test {
- 		.func = test__sample_parsing,
- 	},
- 	{
-+		.desc = "Test using a dummy software event to keep tracking",
-+		.func = test__keep_tracking,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
-new file mode 100644
-index 0000000..d444ea2
---- /dev/null
-+++ b/tools/perf/tests/keep-tracking.c
-@@ -0,0 +1,154 @@
-+#include <sys/types.h>
-+#include <unistd.h>
-+#include <sys/prctl.h>
-+
-+#include "parse-events.h"
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "thread_map.h"
-+#include "cpumap.h"
-+#include "tests.h"
-+
-+#define CHECK__(x) {				\
-+	while ((x) < 0) {			\
-+		pr_debug(#x " failed!\n");	\
-+		goto out_err;			\
-+	}					\
-+}
-+
-+#define CHECK_NOT_NULL__(x) {			\
-+	while ((x) == NULL) {			\
-+		pr_debug(#x " failed!\n");	\
-+		goto out_err;			\
-+	}					\
-+}
-+
-+static int find_comm(struct perf_evlist *evlist, const char *comm)
-+{
-+	union perf_event *event;
-+	int i, found;
-+
-+	found = 0;
-+	for (i = 0; i < evlist->nr_mmaps; i++) {
-+		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
-+			if (event->header.type == PERF_RECORD_COMM &&
-+			    (pid_t)event->comm.pid == getpid() &&
-+			    (pid_t)event->comm.tid == getpid() &&
-+			    strcmp(event->comm.comm, comm) == 0)
-+				found += 1;
-+		}
-+	}
-+	return found;
-+}
-+
-+/**
-+ * test__keep_tracking - test using a dummy software event to keep tracking.
-+ *
-+ * This function implements a test that checks that tracking events continue
-+ * when an event is disabled but a dummy software event is not disabled.  If the
-+ * test passes %0 is returned, otherwise %-1 is returned.
-+ */
-+int test__keep_tracking(void)
-+{
-+	struct perf_record_opts opts = {
-+		.mmap_pages	     = UINT_MAX,
-+		.user_freq	     = UINT_MAX,
-+		.user_interval	     = ULLONG_MAX,
-+		.freq		     = 4000,
-+		.target		     = {
-+			.uses_mmap   = true,
-+		},
-+	};
-+	struct thread_map *threads = NULL;
-+	struct cpu_map *cpus = NULL;
-+	struct perf_evlist *evlist = NULL;
-+	struct perf_evsel *evsel = NULL;
-+	int found, err = -1;
-+	const char *comm;
-+
-+	threads = thread_map__new(-1, getpid(), UINT_MAX);
-+	CHECK_NOT_NULL__(threads);
-+
-+	cpus = cpu_map__new(NULL);
-+	CHECK_NOT_NULL__(cpus);
-+
-+	evlist = perf_evlist__new();
-+	CHECK_NOT_NULL__(evlist);
-+
-+	perf_evlist__set_maps(evlist, cpus, threads);
-+
-+	CHECK__(parse_events(evlist, "dummy:u"));
-+	CHECK__(parse_events(evlist, "cycles:u"));
-+
-+	perf_evlist__config(evlist, &opts);
-+
-+	evsel = perf_evlist__first(evlist);
-+
-+	evsel->attr.comm = 1;
-+	evsel->attr.disabled = 1;
-+	evsel->attr.enable_on_exec = 0;
-+
-+	if (perf_evlist__open(evlist) < 0) {
-+		fprintf(stderr, " (not supported)");
-+		err = 0;
-+		goto out_err;
-+	}
-+
-+	CHECK__(perf_evlist__mmap(evlist, UINT_MAX, false));
-+
-+	/*
-+	 * First, test that a 'comm' event can be found when the event is
-+	 * enabled.
-+	 */
-+
-+	perf_evlist__enable(evlist);
-+
-+	comm = "Test COMM 1";
-+	CHECK__(prctl(PR_SET_NAME, (unsigned long)comm, 0, 0, 0));
-+
-+	perf_evlist__disable(evlist);
-+
-+	found = find_comm(evlist, comm);
-+	if (found != 1) {
-+		pr_debug("First time, failed to find tracking event.\n");
-+		goto out_err;
-+	}
-+
-+	/*
-+	 * Secondly, test that a 'comm' event can be found when the event is
-+	 * disabled with the dummy event still enabled.
-+	 */
-+
-+	perf_evlist__enable(evlist);
-+
-+	evsel = perf_evlist__last(evlist);
-+
-+	CHECK__(perf_evlist__disable_event(evlist, evsel));
-+
-+	comm = "Test COMM 2";
-+	CHECK__(prctl(PR_SET_NAME, (unsigned long)comm, 0, 0, 0));
-+
-+	perf_evlist__disable(evlist);
-+
-+	found = find_comm(evlist, comm);
-+	if (found != 1) {
-+		pr_debug("Seconf time, failed to find tracking event.\n");
-+		goto out_err;
-+	}
-+
-+	err = 0;
-+
-+out_err:
-+	if (evlist) {
-+		perf_evlist__disable(evlist);
-+		perf_evlist__munmap(evlist);
-+		perf_evlist__close(evlist);
-+		perf_evlist__delete(evlist);
-+	}
-+	if (cpus)
-+		cpu_map__delete(cpus);
-+	if (threads)
-+		thread_map__delete(threads);
-+
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 83d5b71..c048b58 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -38,5 +38,6 @@ int test__sw_clock_freq(void);
- int test__perf_time_to_tsc(void);
- int test__code_reading(void);
- int test__sample_parsing(void);
-+int test__keep_tracking(void);
- 
- #endif /* TESTS_H */
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 5df4ca9..b8727ae 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -246,7 +246,7 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- 
- 	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
--			if (!perf_evsel__is_group_leader(pos))
-+			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
- 				continue;
- 			for (thread = 0; thread < nr_threads; thread++)
- 				ioctl(FD(pos, cpu, thread),
-@@ -264,7 +264,7 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 
- 	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
--			if (!perf_evsel__is_group_leader(pos))
-+			if (!perf_evsel__is_group_leader(pos) || !pos->fd)
- 				continue;
- 			for (thread = 0; thread < nr_threads; thread++)
- 				ioctl(FD(pos, cpu, thread),
-@@ -273,6 +273,44 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 	}
- }
- 
-+int perf_evlist__disable_event(struct perf_evlist *evlist,
-+			       struct perf_evsel *evsel)
-+{
-+	int cpu, thread, err;
-+
-+	if (!evsel->fd)
-+		return 0;
-+
-+	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+		for (thread = 0; thread < evlist->threads->nr; thread++) {
-+			err = ioctl(FD(evsel, cpu, thread),
-+				    PERF_EVENT_IOC_DISABLE, 0);
-+			if (err)
-+				return err;
-+		}
-+	}
-+	return 0;
-+}
-+
-+int perf_evlist__enable_event(struct perf_evlist *evlist,
-+			      struct perf_evsel *evsel)
-+{
-+	int cpu, thread, err;
-+
-+	if (!evsel->fd)
-+		return -EINVAL;
-+
-+	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+		for (thread = 0; thread < evlist->threads->nr; thread++) {
-+			err = ioctl(FD(evsel, cpu, thread),
-+				    PERF_EVENT_IOC_ENABLE, 0);
-+			if (err)
-+				return err;
-+		}
-+	}
-+	return 0;
-+}
-+
- static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
- 	int nr_cpus = cpu_map__nr(evlist->cpus);
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 841a394..880d713 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -110,6 +110,11 @@ void perf_evlist__munmap(struct perf_evlist *evlist);
- void perf_evlist__disable(struct perf_evlist *evlist);
- void perf_evlist__enable(struct perf_evlist *evlist);
- 
-+int perf_evlist__disable_event(struct perf_evlist *evlist,
-+			       struct perf_evsel *evsel);
-+int perf_evlist__enable_event(struct perf_evlist *evlist,
-+			      struct perf_evsel *evsel);
-+
- void perf_evlist__set_selected(struct perf_evlist *evlist,
- 			       struct perf_evsel *evsel);
- 
+- Sedat -
