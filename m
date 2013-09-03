@@ -1,157 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505Ab3ICG6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 02:58:11 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:45753 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab3ICG6K (ORCPT
+	id S932351Ab3ICG7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:59:01 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47951 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab3ICG7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 02:58:10 -0400
+	Tue, 3 Sep 2013 02:59:00 -0400
+Date: Tue, 3 Sep 2013 08:58:32 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Xiubo Li-B47053 <B47053@freescale.com>
+Cc: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Lu Jingchang-B35083 <B35083@freescale.com>
+Subject: Re: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20130903065832.GB30088@pengutronix.de>
+Mail-Followup-To: Xiubo Li-B47053 <B47053@freescale.com>,
+	Guo Shawn-R65073 <r65073@freescale.com>,
+	"thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+	"grant.likely@linaro.org" <grant.likely@linaro.org>,
+	"linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+	"rob@landley.net" <rob@landley.net>,
+	"ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+	"swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+	"mark.rutland@arm.com" <mark.rutland@arm.com>,
+	"pawel.moll@arm.com" <pawel.moll@arm.com>,
+	"rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Lu Jingchang-B35083 <B35083@freescale.com>
+References: <1377856132-11290-1-git-send-email-Li.Xiubo@freescale.com>
+ <1377856132-11290-2-git-send-email-Li.Xiubo@freescale.com>
+ <20130830174909.GF30088@pengutronix.de>
+ <1DD289F6464F0949A2FCA5AA6DC23F827F785F@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130902085630.GS30088@pengutronix.de>
+ <1DD289F6464F0949A2FCA5AA6DC23F827F7C59@039-SN2MPN1-011.039d.mgd.msft.net>
 MIME-Version: 1.0
-In-Reply-To: <CANN689GKX4Wyo48+3L6-auTCEE3HKwj0-pCZDZs8bM=xCKPOcA@mail.gmail.com>
-References: <1377269106-26468-1-git-send-email-zwu.kernel@gmail.com>
-	<CANN689ET-2q_7WY+4HZjMqQEmLpOQyWOrOzRnP3ADc8TAzoEXw@mail.gmail.com>
-	<CAEH94Li5KuN4V7KVAYJ9YY72HWVS2_gf-_L4zscV1K5fMw58XQ@mail.gmail.com>
-	<CANN689E4aCwMQwceUntqJiN7vj_m4g+3MYpBJb717VXR6mbpSA@mail.gmail.com>
-	<CAEH94LgTa6k7eQzPijeKfaxXMo94a-Wtw11Tnbm_ezpgY12O8w@mail.gmail.com>
-	<CANN689GKX4Wyo48+3L6-auTCEE3HKwj0-pCZDZs8bM=xCKPOcA@mail.gmail.com>
-Date: Tue, 3 Sep 2013 14:58:09 +0800
-Message-ID: <CAEH94LiaAMCO9zXWx5AEqh_bwJiaVY829ka4hTdJ9iDaibVkNg@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: Add some necessary condition checks
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F827F7C59@039-SN2MPN1-011.039d.mgd.msft.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:22:45 up 9 days, 15:53, 38 users,  load average: 0.03, 0.04, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 1:48 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Mon, Sep 2, 2013 at 9:45 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
->> On Mon, Sep 2, 2013 at 4:57 PM, Michel Lespinasse <walken@google.com> wrote:
->>> Thanks for the link - I now better understand where you are coming
->>> from with these fixes.
->>>
->>> Going back to the original message:
->>>
->>>> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
->>>> index fea49b5..7d19770 100644
->>>> --- a/include/linux/rbtree_augmented.h
->>>> +++ b/include/linux/rbtree_augmented.h
->>>> @@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
->>>>                 }
->>>>
->>>>                 successor->rb_left = tmp = node->rb_left;
->>>> -               rb_set_parent(tmp, successor);
->>>> +               if (tmp)
->>>> +                       rb_set_parent(tmp, successor);
->>>>
->>>>                 pc = node->__rb_parent_color;
->>>>                 tmp = __rb_parent(pc);
->>>
->>> Note that node->rb_left was already fetched at the top of
->>> __rb_erase_augmented(), and was checked to be non-NULL at the time -
->>> otherwise we would have executed 'Case 1' in that function. So, you
->> If 'Case 1' is executed, this line of code is also done, how about the result?
->> 'Case 1' seems *not* to change node->rb_left at all.
->
-> Wait, I believe this line of code is executed only in Case 2 and Case 3 ?
->
->>>> diff --git a/lib/rbtree.c b/lib/rbtree.c
->>>> index c0e31fe..2cb01ba 100644
->>>> --- a/lib/rbtree.c
->>>> +++ b/lib/rbtree.c
->>>> @@ -214,7 +214,7 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
->>>>                  */
->>>>                 sibling = parent->rb_right;
->>>>                 if (node != sibling) {  /* node == parent->rb_left */
->>>> -                       if (rb_is_red(sibling)) {
->>>> +                       if (sibling && rb_is_red(sibling)) {
->>>>                                 /*
->>>>                                  * Case 1 - left rotate at parent
->>>>                                  *
->>>
->>> Note the loop invariants quoted just above:
->>>
->>>                 /*
->>>                  * Loop invariants:
->>>                  * - node is black (or NULL on first iteration)
->>>                  * - node is not the root (parent is not NULL)
->>>                  * - All leaf paths going through parent and node have a
->>>                  *   black node count that is 1 lower than other leaf paths.
->>>                  */
->>>
->>> Because of these, each path from sibling to a leaf must include at
->>> least one black node, which implies that sibling can't be NULL - or to
->>> put it another way, if sibling is null then the expected invariants
->>> were violated before we even got there.
->> In theory, i can understand what you mean, But don't know why and
->> where it got violated.
->
-> Same here. My point is, I don't think we can fix the issue without
-> answering that question.
->
->>> Now I had a quick look at your code and I couldn't tell at which point
->>> the invariants are violated. However I did notice a couple suspicious
->>> things in the very first patch
->>> (f5c8f2b256d87ac0bf789a787e6b795ac0c736e8):
->>>
->>> 1- In both hot_range_tree_free() and and hot_tree_exit(), you try to
->>> destroy rb trees by iterating on each node with rb_next() and then
->> yes, but this item may not been freed immediately, You can know each item
->> has its ref count.
->
-> Are items guaranteed to have another refcount than the one we're dropping ?
->
->>> freeing them. Note that rb_next() can reference prior nodes, which
->>> have already been freed in your scheme, so that seems quite unsafe.
->> I checked rb_next() function, and found that if its prior nodes are
->> freed, is this node's parent  not NULL?
->
-> No, if the parent was freed with just a put() operation, the child
-> will still have a pointer to it. This is why I suggested using
-> rb_erase() on each node before freeing them, so that we don't keep
-> pointers to freed nodes.
->
->>> The simplest fix would be to do a full rb_erase() on each node before
->> full rb_erase()? sorry, i don't get what you mean. Do you mean we
->> should erase all nodes from rbtree, then begin to free them? If yes,
->> how to iterate them? If no, can you elaborate it?
->
-> No, I meant to call rb_erase() on each individual node right before
-> the corresponding put() operation.
-It has been done in current code.
->
->>> 2- I did not look long enough to understand the locking, but it wasn't
->>> clear to me if you lock the rbtrees when doing rb_erase() on them
->>> (while I could more clearly see that you do it for insertions).
->> Yes, it get locking when doing rb_erase() or rb_insert(). You can see
->> there are multiple functions maybe rbtree at the same time. To sync
->> them, we need to lock the rbtree.
->
-> Yes, agree we need to lock rbtree in all such operations. I just
-> wasn't able to determine if it's done around rb_erase() calls, but it
-Yes, the locking has been done around rb_erase().
-> definitely needs to be.
->
->>> I'm really not sure if either of these will fix the issues you're
->>> seeing, though. What I would try next would be to add explicit rbtree
->>> invariant checks before and after rbtree manipulations, like what the
->>> check() function does in lib/rbtree_test.c, to see at which point do
->>> they get broken.
->> Great, any progress so far? :)
->
-> Unfortunately no.
-Look forward to seeing it.
->
-> --
-> Michel "Walken" Lespinasse
-> A program is never fully debugged until the last user dies.
+On Tue, Sep 03, 2013 at 04:17:09AM +0000, Xiubo Li-B47053 wrote:
+> > Subject: Re: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+> > 
+> > You simply don't need the available field. You don't need to track
+> > whether they are available. If a user enables a pwm which is not routed
+> > out of the SoC (disabled in the iomux) simply nothing will happen except
+> > for a slightly increased power consumption.
+> > 
+> If the there is not need to explicitly specify the channels are
+> available or not, so there is no doubt that the 'available' field will
+> be dropt.  Why I added this here is because that the 4th and 5th
+> channels' pinctrls are used as UART TX and RX as I have mentioned
+> before, so here if you configure these two pinctrls, the UART TX and
+> RX will be polluted, there maybe some other cases like this.
 
+If you misconfigure your iomux then usually unexptected things happen.
+That is not the problem of the PWM driver, but the problem of the one
+writing the devicetree. The kernel will print a message for conflicting
+iomux settings. That should be hint enough to fix it.
 
+Sascha
 
 -- 
-Regards,
-
-Zhi Yong Wu
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
