@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760336Ab3ICQe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:34:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46533 "EHLO
+	id S932495Ab3ICQe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:34:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46523 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932315Ab3ICQ1T (ORCPT
+	with ESMTP id S932169Ab3ICQ1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:19 -0400
+	Tue, 3 Sep 2013 12:27:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Neil Brown <neilb@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 55/58] [SCSI] zfcp: fix schedule-inside-lock in scsi_device list loops
-Date: Tue,  3 Sep 2013 09:23:59 -0700
-Message-Id: <1378225442-20654-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 51/58] block: Add bio_for_each_segment_all()
+Date: Tue,  3 Sep 2013 09:23:55 -0700
+Message-Id: <1378225442-20654-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -29,172 +28,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+From: Kent Overstreet <koverstreet@google.com>
 
-commit 924dd584b198a58aa7cb3efefd8a03326550ce8f upstream.
+commit d74c6d514fe314b8bdab58b487b25992291577ec upstream.
 
-BUG: sleeping function called from invalid context at kernel/workqueue.c:2752
-in_atomic(): 1, irqs_disabled(): 1, pid: 360, name: zfcperp0.0.1700
-CPU: 1 Not tainted 3.9.3+ #69
-Process zfcperp0.0.1700 (pid: 360, task: 0000000075b7e080, ksp: 000000007476bc30)
-<snip>
-Call Trace:
-([<00000000001165de>] show_trace+0x106/0x154)
- [<00000000001166a0>] show_stack+0x74/0xf4
- [<00000000006ff646>] dump_stack+0xc6/0xd4
- [<000000000017f3a0>] __might_sleep+0x128/0x148
- [<000000000015ece8>] flush_work+0x54/0x1f8
- [<00000000001630de>] __cancel_work_timer+0xc6/0x128
- [<00000000005067ac>] scsi_device_dev_release_usercontext+0x164/0x23c
- [<0000000000161816>] execute_in_process_context+0x96/0xa8
- [<00000000004d33d8>] device_release+0x60/0xc0
- [<000000000048af48>] kobject_release+0xa8/0x1c4
- [<00000000004f4bf2>] __scsi_iterate_devices+0xfa/0x130
- [<000003ff801b307a>] zfcp_erp_strategy+0x4da/0x1014 [zfcp]
- [<000003ff801b3caa>] zfcp_erp_thread+0xf6/0x2b0 [zfcp]
- [<000000000016b75a>] kthread+0xf2/0xfc
- [<000000000070c9de>] kernel_thread_starter+0x6/0xc
- [<000000000070c9d8>] kernel_thread_starter+0x0/0xc
+__bio_for_each_segment() iterates bvecs from the specified index
+instead of bio->bv_idx.  Currently, the only usage is to walk all the
+bvecs after the bio has been advanced by specifying 0 index.
 
-Apparently, the ref_count for some scsi_device drops down to zero,
-triggering device removal through execute_in_process_context(), while
-the lldd error recovery thread iterates through a scsi device list.
-Unfortunately, execute_in_process_context() decides to immediately
-execute that device removal function, instead of scheduling asynchronous
-execution, since it detects process context and thinks it is safe to do
-so. But almost all calls to shost_for_each_device() in our lldd are
-inside spin_lock_irq, even in thread context. Obviously, schedule()
-inside spin_lock_irq sections is a bad idea.
+For immutable bvecs, we need to split these apart;
+bio_for_each_segment() is going to have a different implementation.
+This will also help document the intent of code that's using it -
+bio_for_each_segment_all() is only legal to use for code that owns the
+bio.
 
-Change the lldd to use the proper iterator function,
-__shost_for_each_device(), in combination with required locking.
-
-Occurences that need to be changed include all calls in zfcp_erp.c,
-since those might be executed in zfcp error recovery thread context
-with a lock held.
-
-Other occurences of shost_for_each_device() in zfcp_fsf.c do not
-need to be changed (no process context, no surrounding locking).
-
-The problem was introduced in Linux 2.6.37 by commit
-b62a8d9b45b971a67a0f8413338c230e3117dff5
-"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit".
-
-Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Neil Brown <neilb@suse.de>
+CC: Boaz Harrosh <bharrosh@panasas.com>
+[ kamal: 3.8.y-prereq for:
+  35dc248 [SCSI] sg: Fix user memory corruption when SG_IO is interrupted by a signal ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/s390/scsi/zfcp_erp.c | 29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ drivers/block/rbd.c |  2 +-
+ drivers/md/raid1.c  |  2 +-
+ fs/bio.c            | 12 ++++++------
+ fs/exofs/ore.c      |  2 +-
+ fs/exofs/ore_raid.c |  2 +-
+ include/linux/bio.h | 17 ++++++++++++++---
+ mm/bounce.c         |  2 +-
+ 7 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/s390/scsi/zfcp_erp.c b/drivers/s390/scsi/zfcp_erp.c
-index 4133ab6..8e8f353 100644
---- a/drivers/s390/scsi/zfcp_erp.c
-+++ b/drivers/s390/scsi/zfcp_erp.c
-@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port(struct zfcp_port *port)
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 992dd78..5ac4a17 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -867,7 +867,7 @@ static struct bio *bio_clone_range(struct bio *bio_src,
+ 	/* Find first affected segment... */
  
- 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
- 		zfcp_erp_action_dismiss(&port->erp_action);
--	else
--		shost_for_each_device(sdev, port->adapter->scsi_host)
-+	else {
-+		spin_lock(port->adapter->scsi_host->host_lock);
-+		__shost_for_each_device(sdev, port->adapter->scsi_host)
- 			if (sdev_to_zfcp(sdev)->port == port)
- 				zfcp_erp_action_dismiss_lun(sdev);
-+		spin_unlock(port->adapter->scsi_host->host_lock);
-+	}
- }
+ 	resid = offset;
+-	__bio_for_each_segment(bv, bio_src, idx, 0) {
++	bio_for_each_segment(bv, bio_src, idx) {
+ 		if (resid < bv->bv_len)
+ 			break;
+ 		resid -= bv->bv_len;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 7116798..a382d84 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1306,7 +1306,7 @@ read_again:
+ 			 * know the original bi_idx, so we just free
+ 			 * them all
+ 			 */
+-			__bio_for_each_segment(bvec, mbio, j, 0)
++			bio_for_each_segment_all(bvec, mbio, j)
+ 				bvec->bv_page = r1_bio->behind_bvecs[j].bv_page;
+ 			if (test_bit(WriteMostly, &conf->mirrors[i].rdev->flags))
+ 				atomic_inc(&r1_bio->behind_remaining);
+diff --git a/fs/bio.c b/fs/bio.c
+index b96fc6c..18e10cc 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -714,7 +714,7 @@ static int __bio_copy_iov(struct bio *bio, struct bio_vec *iovecs,
+ 	int iov_idx = 0;
+ 	unsigned int iov_off = 0;
  
- static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
-@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(struct zfcp_port *port, int clear,
- {
- 	struct scsi_device *sdev;
+-	__bio_for_each_segment(bvec, bio, i, 0) {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		char *bv_addr = page_address(bvec->bv_page);
+ 		unsigned int bv_len = iovecs[i].bv_len;
  
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock(port->adapter->scsi_host->host_lock);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
-+	spin_unlock(port->adapter->scsi_host->host_lock);
- }
+@@ -896,7 +896,7 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
+ 	return bio;
+ cleanup:
+ 	if (!map_data)
+-		bio_for_each_segment(bvec, bio, i)
++		bio_for_each_segment_all(bvec, bio, i)
+ 			__free_page(bvec->bv_page);
  
- static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
-@@ -1435,8 +1440,10 @@ void zfcp_erp_set_adapter_status(struct zfcp_adapter *adapter, u32 mask)
- 		atomic_set_mask(common_mask, &port->status);
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 	bio_put(bio);
+@@ -1110,7 +1110,7 @@ static void __bio_unmap_user(struct bio *bio)
+ 	/*
+ 	 * make sure we dirty pages we wrote to
+ 	 */
+-	__bio_for_each_segment(bvec, bio, i, 0) {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		if (bio_data_dir(bio) == READ)
+ 			set_page_dirty_lock(bvec->bv_page);
  
--	shost_for_each_device(sdev, adapter->scsi_host)
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host)
- 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
- }
+@@ -1216,7 +1216,7 @@ static void bio_copy_kern_endio(struct bio *bio, int err)
+ 	int i;
+ 	char *p = bmd->sgvecs[0].iov_base;
  
- /**
-@@ -1470,11 +1477,13 @@ void zfcp_erp_clear_adapter_status(struct zfcp_adapter *adapter, u32 mask)
- 	}
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+-	__bio_for_each_segment(bvec, bio, i, 0) {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		char *addr = page_address(bvec->bv_page);
+ 		int len = bmd->iovecs[i].bv_len;
  
--	shost_for_each_device(sdev, adapter->scsi_host) {
-+	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, adapter->scsi_host) {
- 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
- 		if (clear_counter)
- 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 	}
-+	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
- }
+@@ -1256,7 +1256,7 @@ struct bio *bio_copy_kern(struct request_queue *q, void *data, unsigned int len,
+ 	if (!reading) {
+ 		void *p = data;
  
- /**
-@@ -1488,16 +1497,19 @@ void zfcp_erp_set_port_status(struct zfcp_port *port, u32 mask)
- {
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
-+	unsigned long flags;
+-		bio_for_each_segment(bvec, bio, i) {
++		bio_for_each_segment_all(bvec, bio, i) {
+ 			char *addr = page_address(bvec->bv_page);
  
- 	atomic_set_mask(mask, &port->status);
+ 			memcpy(addr, p, bvec->bv_len);
+@@ -1541,7 +1541,7 @@ sector_t bio_sector_offset(struct bio *bio, unsigned short index,
+ 	if (index >= bio->bi_idx)
+ 		index = bio->bi_vcnt - 1;
  
- 	if (!common_mask)
- 		return;
+-	__bio_for_each_segment(bv, bio, i, 0) {
++	bio_for_each_segment_all(bv, bio, i) {
+ 		if (i == index) {
+ 			if (offset > bv->bv_offset)
+ 				sectors += (offset - bv->bv_offset) / sector_sz;
+diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
+index f936cb5..b744228 100644
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -401,7 +401,7 @@ static void _clear_bio(struct bio *bio)
+ 	struct bio_vec *bv;
+ 	unsigned i;
  
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port)
- 			atomic_set_mask(common_mask,
- 					&sdev_to_zfcp(sdev)->status);
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
+-	__bio_for_each_segment(bv, bio, i, 0) {
++	bio_for_each_segment_all(bv, bio, i) {
+ 		unsigned this_count = bv->bv_len;
  
- /**
-@@ -1512,6 +1524,7 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	struct scsi_device *sdev;
- 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
- 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
-+	unsigned long flags;
+ 		if (likely(PAGE_SIZE == this_count))
+diff --git a/fs/exofs/ore_raid.c b/fs/exofs/ore_raid.c
+index b963f38..7682b97 100644
+--- a/fs/exofs/ore_raid.c
++++ b/fs/exofs/ore_raid.c
+@@ -432,7 +432,7 @@ static void _mark_read4write_pages_uptodate(struct ore_io_state *ios, int ret)
+ 		if (!bio)
+ 			continue;
  
- 	atomic_clear_mask(mask, &port->status);
+-		__bio_for_each_segment(bv, bio, i, 0) {
++		bio_for_each_segment_all(bv, bio, i) {
+ 			struct page *page = bv->bv_page;
  
-@@ -1521,13 +1534,15 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
- 	if (clear_counter)
- 		atomic_set(&port->erp_counter, 0);
+ 			SetPageUptodate(page);
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 820e7aa..d203d1e 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -136,16 +136,27 @@ static inline int bio_has_allocated_vec(struct bio *bio)
+ #define bio_io_error(bio) bio_endio((bio), -EIO)
  
--	shost_for_each_device(sdev, port->adapter->scsi_host)
-+	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
-+	__shost_for_each_device(sdev, port->adapter->scsi_host)
- 		if (sdev_to_zfcp(sdev)->port == port) {
- 			atomic_clear_mask(common_mask,
- 					  &sdev_to_zfcp(sdev)->status);
- 			if (clear_counter)
- 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
- 		}
-+	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
- }
+ /*
+- * drivers should not use the __ version unless they _really_ want to
+- * run through the entire bio and not just pending pieces
++ * drivers should not use the __ version unless they _really_ know what
++ * they're doing
+  */
+ #define __bio_for_each_segment(bvl, bio, i, start_idx)			\
+ 	for (bvl = bio_iovec_idx((bio), (start_idx)), i = (start_idx);	\
+ 	     i < (bio)->bi_vcnt;					\
+ 	     bvl++, i++)
  
- /**
++/*
++ * drivers should _never_ use the all version - the bio may have been split
++ * before it got to the driver and the driver won't own all of it
++ */
++#define bio_for_each_segment_all(bvl, bio, i)				\
++	for (i = 0;							\
++	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
++	     i++)
++
+ #define bio_for_each_segment(bvl, bio, i)				\
+-	__bio_for_each_segment(bvl, bio, i, (bio)->bi_idx)
++	for (i = (bio)->bi_idx;						\
++	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
++	     i++)
+ 
+ /*
+  * get a reference to a bio, so it won't disappear. the intended use is
+diff --git a/mm/bounce.c b/mm/bounce.c
+index 0420867..9bc26f3 100644
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -134,7 +134,7 @@ static void bounce_end_io(struct bio *bio, mempool_t *pool, int err)
+ 	/*
+ 	 * free up bounce indirect pages used
+ 	 */
+-	__bio_for_each_segment(bvec, bio, i, 0) {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		org_vec = bio_orig->bi_io_vec + i;
+ 		if (bvec->bv_page == org_vec->bv_page)
+ 			continue;
 -- 
 1.8.1.2
 
