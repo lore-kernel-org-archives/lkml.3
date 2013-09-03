@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab3ICNkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:40:11 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:56277 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932888Ab3ICNkJ (ORCPT
+	id S932980Ab3ICNk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:40:27 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:63341 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932892Ab3ICNkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:40:09 -0400
+	Tue, 3 Sep 2013 09:40:23 -0400
 From: Tom Gundersen <teg@jklm.no>
 To: linux-input@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 1/2] input: allow SERIO=m even without EXPERT=y
-Date: Tue,  3 Sep 2013 15:40:55 +0200
-Message-Id: <1378215656-11827-1-git-send-email-teg@jklm.no>
+Subject: [PATCH 2/2] input: allow MOUSEDEV=m even without EXPERT=y
+Date: Tue,  3 Sep 2013 15:40:56 +0200
+Message-Id: <1378215656-11827-2-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1378215656-11827-1-git-send-email-teg@jklm.no>
+References: <1378215656-11827-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is plenty of consumer hardware (e.g., mac books) that does not use
-AT keyboards or PS/2 mice. It therefore makes sense for distro kernels
-to build the related drivers as modules to avoid loading them on hardware
-that does not need them. As such, these options should no longer be protected
-by EXPERT.
-
-Moreover, building these drivers as modules gets rid of the following ugly
-error during boot:
-
-[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    3.439537] i8042: No controller found
+Moust (if not all) modern software, including X, uses /dev/eventX rather than
+the legacy /dev/mouseX devices. It therefore makes sense for general-purpose
+(distro) kernels to use MOUSEDV=m (or even n), so let's drop the EXPERT=y
+requirement.
 
 Signed-off-by: Tom Gundersen <teg@jklm.no>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/input/keyboard/Kconfig | 4 ++--
- drivers/input/serio/Kconfig    | 6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/input/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 269d4c3..2d31cec 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
+diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
+index 38b523a..a11ff74 100644
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -80,7 +80,7 @@ config INPUT_MATRIXKMAP
+ comment "Userland interfaces"
+ 
+ config INPUT_MOUSEDEV
+-	tristate "Mouse interface" if EXPERT
++	tristate "Mouse interface"
  	default y
  	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
- 
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 1e691a3..39c869d 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
- 
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
-@@ -170,7 +170,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
- 
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
+ 	  Say Y here if you want your mouse to be accessible as char devices
 -- 
 1.8.4
 
