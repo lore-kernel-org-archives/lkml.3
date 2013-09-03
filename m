@@ -1,130 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab3ICSHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:07:13 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:22289 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab3ICSHL (ORCPT
+	id S1760192Ab3ICSIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:08:00 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43114 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab3ICSH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:07:11 -0400
-Message-ID: <1378231630.17792.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc/msg.c: Fix lost wakeup in msgsnd().
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <dave.bueso@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Date: Tue, 03 Sep 2013 11:07:10 -0700
-In-Reply-To: <1378216808-2564-1-git-send-email-manfred@colorfullife.com>
-References: <1378216808-2564-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 14:07:59 -0400
+Date: Tue, 3 Sep 2013 10:59:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        dipankar@in.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no
+ callbacks.
+Message-ID: <20130903175910.GX3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5212E7BB.4020602@asianux.com>
+ <20130820041832.GY29406@linux.vnet.ibm.com>
+ <5212F3E5.7080700@asianux.com>
+ <5212F467.8090407@asianux.com>
+ <52145741.7000008@asianux.com>
+ <20130821142301.GX29406@linux.vnet.ibm.com>
+ <52157F21.5080200@asianux.com>
+ <20130825191839.GA22515@linux.vnet.ibm.com>
+ <521ABB9E.1050209@gmail.com>
+ <5225766F.4000907@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5225766F.4000907@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090318-4834-0000-0000-00000AB0B8DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-03 at 16:00 +0200, Manfred Spraul wrote:
-> The check if the queue is full and adding current to the wait queue of pending
-> msgsnd() operations (ss_add()) must be atomic.
+On Tue, Sep 03, 2013 at 01:41:03PM +0800, Chen Gang wrote:
+> Hello Maintainers:
 > 
-> Otherwise:
-> - the thread that performs msgsnd() finds a full queue and decides to sleep.
-> - the thread that performs msgrcv() calls first reads all messages from the
->   queue and then sleep, because the queue is empty.
-> - the msgrcv() calls do not perform any wakeups, because the msgsnd() task
->   has not yet called ss_add().
-> - then the msgsnd()-thread first calls ss_add() and then sleeps.
-> Net result: msgsnd() and msgrcv() both sleep forever.
+> Is this issue finished ?
 > 
-> Observed with msgctl08 from ltp with a preemptible kernel.
+> If need additional help from me (e.g. some test things, or others, if
+> you have no time, can let me try), please let me know, I should try.
 
-Good catch, thanks for looking into this Manfred. 
+Ah, sorry, here is the patch.
 
-FWIW similar changes that aim at reducing the kern_ipc_perm.lock
-contention in shm have already been in linux-next for a good while and
-should be going into 3.12. While both Sedat and I have tested them
-through LTP, I will keep an eye open for regressions so that we don't
-run into issues like this, late in the release cycle.
+							Thanx, Paul
 
-> 
-> Fix: Call ipc_lock_object() before performing the check.
-> 
-> The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
-> - msgctl(IPC_SET) explicitely mentions that it tries to expunge any pending
->   operations that are not allowed anymore with the new permissions.
->   If security_msg_queue_msgsnd() is called without locks, then there might be
->   races.
+------------------------------------------------------------------------
 
-Right.
+    rcu: Micro-optimize rcu_cpu_has_callbacks()
+    
+    The for_each_rcu_flavor() loop unconditionally scans all flavors, even
+    when the first flavor might have some non-lazy callbacks.  Once the
+    loop has seen a non-lazy callback, further passes through the loop
+    cannot change the state.  This is not a huge problem, given that there
+    can be at most three RCU flavors (RCU-bh, RCU-preempt, and RCU-sched),
+    but this code is on the path to idle, so speeding it up even a small
+    amount would have some benefit.
+    
+    This commit therefore does two things:
+    
+    1.	Rearranges the order of the list of RCU flavors in order to
+    	place the most active flavor first in the list.  The most active
+    	RCU flavor is RCU-preempt, or, if there is no RCU-preempt,
+    	RCU-sched.
+    
+    2.	Reworks the for_each_rcu_flavor() to exit early when the first
+    	non-lazy callback is seen, or, in the case where the caller
+    	does not care about non-lazy callbacks (RCU_FAST_NO_HZ=n),
+    	when the first callback is seen.
+    
+    Reported-by: Chen Gang <gang.chen@asianux.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> - it makes the patch much simpler.
-> 
-> Reported-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-
-> ---
->  ipc/msg.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index 9f29d9e..b65fdf1 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
->  		goto out_unlock1;
->  	}
->  
-> +	ipc_lock_object(&msq->q_perm);
-> +
->  	for (;;) {
->  		struct msg_sender s;
->  
->  		err = -EACCES;
->  		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
-> -			goto out_unlock1;
-> +			goto out_unlock0;
->  
->  		err = security_msg_queue_msgsnd(msq, msg, msgflg);
->  		if (err)
-> -			goto out_unlock1;
-> +			goto out_unlock0;
->  
->  		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
->  				1 + msq->q_qnum <= msq->q_qbytes) {
-> @@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
->  		/* queue full, wait: */
->  		if (msgflg & IPC_NOWAIT) {
->  			err = -EAGAIN;
-> -			goto out_unlock1;
-> +			goto out_unlock0;
->  		}
->  
-> -		ipc_lock_object(&msq->q_perm);
->  		ss_add(msq, &s);
->  
->  		if (!ipc_rcu_getref(msq)) {
-> @@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
->  			goto out_unlock0;
->  		}
->  
-> -		ipc_unlock_object(&msq->q_perm);
->  	}
-> -
-> -	ipc_lock_object(&msq->q_perm);
->  	msq->q_lspid = task_tgid_vnr(current);
->  	msq->q_stime = get_seconds();
->  
-
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index b1b959d..38596be 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2756,10 +2756,13 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
+ 
+ 	for_each_rcu_flavor(rsp) {
+ 		rdp = per_cpu_ptr(rsp->rda, cpu);
+-		if (rdp->qlen != rdp->qlen_lazy)
++		if (!rdp->nxtlist)
++			continue;
++		hc = true;
++		if (rdp->qlen != rdp->qlen_lazy || !all_lazy) {
+ 			al = false;
+-		if (rdp->nxtlist)
+-			hc = true;
++			break;
++		}
+ 	}
+ 	if (all_lazy)
+ 		*all_lazy = al;
+@@ -3326,8 +3329,8 @@ void __init rcu_init(void)
+ 
+ 	rcu_bootup_announce();
+ 	rcu_init_geometry();
+-	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
+ 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
++	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
+ 	__rcu_init_preempt();
+ 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
+ 
 
