@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab3ICPin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:38:43 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:55920 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab3ICPil (ORCPT
+	id S1756526Ab3ICPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:41:29 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43924 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab3ICPl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:38:41 -0400
+	Tue, 3 Sep 2013 11:41:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUVqKBVgmOMviVDojR9i65SgrubdCWJVD1y_kUjtgYtQMw@mail.gmail.com>
-References: <5220F090.5050908@hp.com>
-	<20130830194059.GC13318@ZenIV.linux.org.uk>
-	<5220F811.9060902@hp.com>
-	<20130830202608.GD13318@ZenIV.linux.org.uk>
-	<52210225.60805@hp.com>
-	<20130830204852.GE13318@ZenIV.linux.org.uk>
-	<52214EBC.90100@hp.com>
-	<20130831023516.GI13318@ZenIV.linux.org.uk>
-	<20130831024233.GJ13318@ZenIV.linux.org.uk>
-	<5224E647.80303@hp.com>
-	<20130903060130.GD16261@gmail.com>
-	<CA+icZUVqKBVgmOMviVDojR9i65SgrubdCWJVD1y_kUjtgYtQMw@mail.gmail.com>
-Date: Tue, 3 Sep 2013 08:38:40 -0700
-X-Google-Sender-Auth: _D8IN9AnppAgBQ5dcctlS6WD2Xc
-Message-ID: <CA+55aFwHk20Go1bZwwNpNXaLsQEV2DC4tsbfOp21ufz7VGq_VQ@mail.gmail.com>
+In-Reply-To: <20130903101522.GA22369@gmail.com>
+References: <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
+	<20130901212355.GU13318@ZenIV.linux.org.uk>
+	<CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+	<20130902070538.GA31639@gmail.com>
+	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	<20130903101522.GA22369@gmail.com>
+Date: Tue, 3 Sep 2013 08:41:26 -0700
+X-Google-Sender-Auth: VMf3bl3qp-QhUnONEmeUbglAscg
+Message-ID: <CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
 Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
  update of refcount
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <waiman.long@hp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -38,23 +37,22 @@ Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <waiman.long@hp.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 12:24 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Tue, Sep 3, 2013 at 3:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> Can someone summarize this thread (70+ postings)?
-> Which patches are needed? And fixing what?
-> ( Can people provide separate patches with a proper changelog? )
-> Improvements?
+> One more thing to try would be a regular '-e cycles' non-PEBS run and see
+> whether there's still largish overhead visible around that instruction.
 
-The core lockref part is now merged and available in my git tree (and
-yes, as individual patches with proper logs).
+I've done that, and it matches the PEBS runs, except obviously with
+the instruction skew (so then depending on run it's 95% the
+instruction after the xadd). So the PEBS profiles are entirely
+consistent with other data.
 
-Al's patch to avoid the lg_lock is still pending, I'm assuming I'll
-get it through his VFS tree.
-
-            Linus
+              Linus
