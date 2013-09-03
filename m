@@ -1,190 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab3ICNqz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:46:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62486 "EHLO mx1.redhat.com"
+	id S933050Ab3ICNsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:48:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62873 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792Ab3ICNqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:46:53 -0400
+	id S932945Ab3ICNqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 09:46:54 -0400
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: linux-usb@vger.kernel.org
-Cc: Gerd Hoffmann <kraxel@redhat.com>,
+Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
+        usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/5] xhci: fix usb3 streams
-Date: Tue,  3 Sep 2013 15:46:41 +0200
-Message-Id: <1378216005-10326-2-git-send-email-kraxel@redhat.com>
+Subject: [PATCH 3/5] uas: rename work list lock + list field
+Date: Tue,  3 Sep 2013 15:46:43 +0200
+Message-Id: <1378216005-10326-4-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1378216005-10326-1-git-send-email-kraxel@redhat.com>
 References: <1378216005-10326-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xhci maintains a radix tree for each stream endpoint because it must
-be able to map a trb address to the stream ring.  Each ring segment
-must be added to the ring for this to work.  Currently xhci sticks
-only the first segment of each stream ring into the radix tree.
-
-Result is that things work initially, but as soon as the first segment
-is full xhci can't map the trb address from the completion event to the
-stream ring any more -> BOOM.  You'll find this message in the logs:
-
-  ERROR Transfer event for disabled endpoint or incorrect stream ring
-
-This patch adds a helper function to update the radix tree.  It can
-both insert and remove ring segments.  It loops over the segment list
-and handles all segments instead of just the first.  It is called
-whenever an update is needed:  When allocating a ring, when expanding
-a ring and when releasing a ring.
+This patch prepares for the addition of another list and renames the
+work list lock and the list_head field in struct uas_cmd_info.
 
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/usb/host/xhci-mem.c | 53 ++++++++++++++++++++++++++++++++++-----------
- drivers/usb/host/xhci.h     |  2 ++
- 2 files changed, 42 insertions(+), 13 deletions(-)
+ drivers/usb/storage/uas.c | 50 +++++++++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 6f8c2fd..de8b006 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -154,8 +154,11 @@ void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
- 	if (!ring)
- 		return;
- 
--	if (ring->first_seg)
-+	if (ring->first_seg) {
-+		if (ring->type == TYPE_STREAM)
-+			xhci_update_stream_ring(ring, false);
- 		xhci_free_segments_for_ring(xhci, ring->first_seg);
-+	}
- 
- 	kfree(ring);
- }
-@@ -351,6 +354,11 @@ int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
- 	xhci_dbg(xhci, "ring expansion succeed, now has %d segments\n",
- 			ring->num_segs);
- 
-+	if (ring->type == TYPE_STREAM) {
-+		ret = xhci_update_stream_ring(ring, true);
-+		WARN_ON(ret); /* FIXME */
-+	}
-+
- 	return 0;
- }
- 
-@@ -601,6 +609,35 @@ static int xhci_test_radix_tree(struct xhci_hcd *xhci,
-  * extended systems (where the DMA address can be bigger than 32-bits),
-  * if we allow the PCI dma mask to be bigger than 32-bits.  So don't do that.
-  */
-+
-+int xhci_update_stream_ring(struct xhci_ring *ring, bool insert)
-+{
-+	struct xhci_segment *seg;
-+	unsigned long key;
-+	bool present;
-+	int ret;
-+
-+	if (WARN_ON_ONCE(ring->trb_address_map == NULL))
-+		return 0;
-+
-+	seg = ring->first_seg;
-+	do {
-+		key = (unsigned long)(seg->dma >> TRB_SEGMENT_SHIFT);
-+		present = radix_tree_lookup(ring->trb_address_map, key) != NULL;
-+		if (!present && insert) {
-+			ret = radix_tree_insert(ring->trb_address_map,
-+						key, ring);
-+			if (ret)
-+				return ret;
-+		}
-+		if (present && !insert)
-+			radix_tree_delete(ring->trb_address_map, key);
-+		seg = seg->next;
-+	} while (seg != ring->first_seg);
-+
-+	return 0;
-+}
-+
- struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
- 		unsigned int num_stream_ctxs,
- 		unsigned int num_streams, gfp_t mem_flags)
-@@ -608,7 +645,6 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
- 	struct xhci_stream_info *stream_info;
- 	u32 cur_stream;
- 	struct xhci_ring *cur_ring;
--	unsigned long key;
- 	u64 addr;
- 	int ret;
- 
-@@ -663,6 +699,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
- 		if (!cur_ring)
- 			goto cleanup_rings;
- 		cur_ring->stream_id = cur_stream;
-+		cur_ring->trb_address_map = &stream_info->trb_address_map;
- 		/* Set deq ptr, cycle bit, and stream context type */
- 		addr = cur_ring->first_seg->dma |
- 			SCT_FOR_CTX(SCT_PRI_TR) |
-@@ -672,10 +709,7 @@ struct xhci_stream_info *xhci_alloc_stream_info(struct xhci_hcd *xhci,
- 		xhci_dbg(xhci, "Setting stream %d ring ptr to 0x%08llx\n",
- 				cur_stream, (unsigned long long) addr);
- 
--		key = (unsigned long)
--			(cur_ring->first_seg->dma >> TRB_SEGMENT_SHIFT);
--		ret = radix_tree_insert(&stream_info->trb_address_map,
--				key, cur_ring);
-+		ret = xhci_update_stream_ring(cur_ring, true);
- 		if (ret) {
- 			xhci_ring_free(xhci, cur_ring);
- 			stream_info->stream_rings[cur_stream] = NULL;
-@@ -702,9 +736,6 @@ cleanup_rings:
- 	for (cur_stream = 1; cur_stream < num_streams; cur_stream++) {
- 		cur_ring = stream_info->stream_rings[cur_stream];
- 		if (cur_ring) {
--			addr = cur_ring->first_seg->dma;
--			radix_tree_delete(&stream_info->trb_address_map,
--					addr >> TRB_SEGMENT_SHIFT);
- 			xhci_ring_free(xhci, cur_ring);
- 			stream_info->stream_rings[cur_stream] = NULL;
- 		}
-@@ -764,7 +795,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
- {
- 	int cur_stream;
- 	struct xhci_ring *cur_ring;
--	dma_addr_t addr;
- 
- 	if (!stream_info)
- 		return;
-@@ -773,9 +803,6 @@ void xhci_free_stream_info(struct xhci_hcd *xhci,
- 			cur_stream++) {
- 		cur_ring = stream_info->stream_rings[cur_stream];
- 		if (cur_ring) {
--			addr = cur_ring->first_seg->dma;
--			radix_tree_delete(&stream_info->trb_address_map,
--					addr >> TRB_SEGMENT_SHIFT);
- 			xhci_ring_free(xhci, cur_ring);
- 			stream_info->stream_rings[cur_stream] = NULL;
- 		}
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index c338741..b525cfc 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1334,6 +1334,7 @@ struct xhci_ring {
- 	unsigned int		num_trbs_free_temp;
- 	enum xhci_ring_type	type;
- 	bool			last_td_was_short;
-+	struct radix_tree_root	*trb_address_map;
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index fc08ee9..db09bda 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -77,7 +77,7 @@ struct uas_cmd_info {
+ 	struct urb *cmd_urb;
+ 	struct urb *data_in_urb;
+ 	struct urb *data_out_urb;
+-	struct list_head list;
++	struct list_head work;
  };
  
- struct xhci_erst_entry {
-@@ -1702,6 +1703,7 @@ int xhci_endpoint_init(struct xhci_hcd *xhci, struct xhci_virt_device *virt_dev,
- void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring);
- int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,
- 				unsigned int num_trbs, gfp_t flags);
-+int xhci_update_stream_ring(struct xhci_ring *ring, bool insert);
- void xhci_free_or_cache_endpoint_ring(struct xhci_hcd *xhci,
- 		struct xhci_virt_device *virt_dev,
- 		unsigned int ep_index);
+ /* I hate forward declarations, but I actually have a loop */
+@@ -89,7 +89,7 @@ static void uas_configure_endpoints(struct uas_dev_info *devinfo);
+ static void uas_free_streams(struct uas_dev_info *devinfo);
+ 
+ static DECLARE_WORK(uas_work, uas_do_work);
+-static DEFINE_SPINLOCK(uas_work_lock);
++static DEFINE_SPINLOCK(uas_lists_lock);
+ static LIST_HEAD(uas_work_list);
+ 
+ static void uas_unlink_data_urbs(struct uas_dev_info *devinfo,
+@@ -124,11 +124,11 @@ static void uas_do_work(struct work_struct *work)
+ 	unsigned long flags;
+ 	int err;
+ 
+-	spin_lock_irq(&uas_work_lock);
++	spin_lock_irq(&uas_lists_lock);
+ 	list_replace_init(&uas_work_list, &list);
+-	spin_unlock_irq(&uas_work_lock);
++	spin_unlock_irq(&uas_lists_lock);
+ 
+-	list_for_each_entry_safe(cmdinfo, temp, &list, list) {
++	list_for_each_entry_safe(cmdinfo, temp, &list, work) {
+ 		struct scsi_pointer *scp = (void *)cmdinfo;
+ 		struct scsi_cmnd *cmnd = container_of(scp,
+ 							struct scsi_cmnd, SCp);
+@@ -139,10 +139,10 @@ static void uas_do_work(struct work_struct *work)
+ 			cmdinfo->state &= ~IS_IN_WORK_LIST;
+ 		spin_unlock_irqrestore(&devinfo->lock, flags);
+ 		if (err) {
+-			list_del(&cmdinfo->list);
+-			spin_lock_irq(&uas_work_lock);
+-			list_add_tail(&cmdinfo->list, &uas_work_list);
+-			spin_unlock_irq(&uas_work_lock);
++			list_del(&cmdinfo->work);
++			spin_lock_irq(&uas_lists_lock);
++			list_add_tail(&cmdinfo->work, &uas_work_list);
++			spin_unlock_irq(&uas_lists_lock);
+ 			schedule_work(&uas_work);
+ 		}
+ 	}
+@@ -155,12 +155,12 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
+ 	struct list_head list;
+ 	unsigned long flags;
+ 
+-	spin_lock_irq(&uas_work_lock);
++	spin_lock_irq(&uas_lists_lock);
+ 	list_replace_init(&uas_work_list, &list);
+-	spin_unlock_irq(&uas_work_lock);
++	spin_unlock_irq(&uas_lists_lock);
+ 
+ 	spin_lock_irqsave(&devinfo->lock, flags);
+-	list_for_each_entry_safe(cmdinfo, temp, &list, list) {
++	list_for_each_entry_safe(cmdinfo, temp, &list, work) {
+ 		struct scsi_pointer *scp = (void *)cmdinfo;
+ 		struct scsi_cmnd *cmnd = container_of(scp,
+ 							struct scsi_cmnd, SCp);
+@@ -178,10 +178,10 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
+ 			uas_try_complete(cmnd, __func__);
+ 		} else {
+ 			/* not our uas device, relink into list */
+-			list_del(&cmdinfo->list);
+-			spin_lock_irq(&uas_work_lock);
+-			list_add_tail(&cmdinfo->list, &uas_work_list);
+-			spin_unlock_irq(&uas_work_lock);
++			list_del(&cmdinfo->work);
++			spin_lock_irq(&uas_lists_lock);
++			list_add_tail(&cmdinfo->work, &uas_work_list);
++			spin_unlock_irq(&uas_lists_lock);
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&devinfo->lock, flags);
+@@ -288,10 +288,10 @@ static void uas_xfer_data(struct urb *urb, struct scsi_cmnd *cmnd,
+ 	cmdinfo->state |= direction | SUBMIT_STATUS_URB;
+ 	err = uas_submit_urbs(cmnd, cmnd->device->hostdata, GFP_ATOMIC);
+ 	if (err) {
+-		spin_lock(&uas_work_lock);
+-		list_add_tail(&cmdinfo->list, &uas_work_list);
++		spin_lock(&uas_lists_lock);
++		list_add_tail(&cmdinfo->work, &uas_work_list);
+ 		cmdinfo->state |= IS_IN_WORK_LIST;
+-		spin_unlock(&uas_work_lock);
++		spin_unlock(&uas_lists_lock);
+ 		schedule_work(&uas_work);
+ 	}
+ }
+@@ -694,10 +694,10 @@ static int uas_queuecommand_lck(struct scsi_cmnd *cmnd,
+ 			spin_unlock_irqrestore(&devinfo->lock, flags);
+ 			return SCSI_MLQUEUE_DEVICE_BUSY;
+ 		}
+-		spin_lock(&uas_work_lock);
+-		list_add_tail(&cmdinfo->list, &uas_work_list);
++		spin_lock(&uas_lists_lock);
++		list_add_tail(&cmdinfo->work, &uas_work_list);
+ 		cmdinfo->state |= IS_IN_WORK_LIST;
+-		spin_unlock(&uas_work_lock);
++		spin_unlock(&uas_lists_lock);
+ 		schedule_work(&uas_work);
+ 	}
+ 
+@@ -764,10 +764,10 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
+ 	spin_lock_irqsave(&devinfo->lock, flags);
+ 	cmdinfo->state |= COMMAND_ABORTED;
+ 	if (cmdinfo->state & IS_IN_WORK_LIST) {
+-		spin_lock(&uas_work_lock);
+-		list_del(&cmdinfo->list);
++		spin_lock(&uas_lists_lock);
++		list_del(&cmdinfo->work);
+ 		cmdinfo->state &= ~IS_IN_WORK_LIST;
+-		spin_unlock(&uas_work_lock);
++		spin_unlock(&uas_lists_lock);
+ 	}
+ 	if (cmdinfo->state & COMMAND_INFLIGHT) {
+ 		spin_unlock_irqrestore(&devinfo->lock, flags);
 -- 
 1.8.3.1
 
