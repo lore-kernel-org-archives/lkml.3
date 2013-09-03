@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760365Ab3ICSu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:50:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34447 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756709Ab3ICSu5 convert rfc822-to-8bit (ORCPT
+	id S1760270Ab3ICSwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:52:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47385 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab3ICSwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:50:57 -0400
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1378230767-54931-1-git-send-email-s-anna@ti.com>
-Date: Tue, 3 Sep 2013 13:50:53 -0500
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org>
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com>
-To: Suman Anna <s-anna@ti.com>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 3 Sep 2013 14:52:08 -0400
+Message-ID: <1378234316.20316.403.camel@fourier>
+Subject: Re: [PATCH] drm/i915: i915.disable_pch_pwm overrides PCH_PWM_ENABLE
+ quirk
+From: Kamal Mostafa <kamal@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Sep 2013 11:51:56 -0700
+In-Reply-To: <CAKMK7uHUr-qw491-kPjX=qHE+wtcYHC-bMyGehHDuF7w0Jkp7w@mail.gmail.com>
+References: <1378229848-29113-1-git-send-email-kamal@canonical.com>
+	 <CAKMK7uHUr-qw491-kPjX=qHE+wtcYHC-bMyGehHDuF7w0Jkp7w@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-FtuG/ICUXMHUSAHm5dKH"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
+--=-FtuG/ICUXMHUSAHm5dKH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
-> which are all device-tree boot only. This patch adds the
-> base support for parsing the DT nodes, and removes the code
-> dealing with the traditional platform device instantiation.
-> 
-> Signed-off-by: Suman Anna <s-anna@ti.com>
-> ---
-> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
-> arch/arm/mach-omap2/Makefile                       |  3 --
-> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
-> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
-> 4 files changed, 45 insertions(+), 67 deletions(-)
-> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
-> 
-> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> new file mode 100644
-> index 0000000..adfb8ad
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
-> @@ -0,0 +1,28 @@
-> +OMAP4+ HwSpinlock Driver
-> +
-> +Required properties:
-> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
-> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
-> +- reg:			Contains the hwspinlock register address range (base
-> +			address and length)
-> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
-> +
-> +Optional properties:
-> +- base_id:		Base Id for the locks for a particular hwspinlock
-> +			device. If not mentioned, a default value of 0 is used.
-> +			This property is mandatory ONLY if a SoC has several
-> +			hwspinlock devices. There are currently no such OMAP
-> +			SoCs.
+On Tue, 2013-09-03 at 19:50 +0200, Daniel Vetter wrote:
+> On Tue, Sep 3, 2013 at 7:37 PM, Kamal Mostafa <kamal@canonical.com> wrote=
+:
+> > BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=3D47941
+> >
+> > Some BIOS configurations of Dell XPS13 are adversely affected by e85843=
+b
+> > ("drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight") so provi=
+de a
+> > boot param to inhibit the quirk, or force it on.
+> >
+> > i915.disable_pch_pwm can be set to
+> >  -1: auto (default; allows the disabling of pch_pwm by dmi quirk table =
+match)
+> >   0: inhibits the disabling of pch_pwm (overrides dmi quirk table match=
+)
+> >   1: forces the disabling of pch_pwm
+> >
+> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+>=20
+> Nack. Piling quirk over quirk isn't the right approach
 
-Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+I understand your reluctance, but this isn't actually any new quirk
+functionality, just a way to manually enable/disable the original
+PCH_PWM_ENABLE quirk.  I think this is the least crazy approach,
+because:
 
-> +
-> +			See documentation on struct hwspinlock_pdata in
-> +			linux/hwspinlock.h for more details.
-> +
-> +
-> +Example:
-> +
-> +/* OMAP4 */
-> +hwspinlock: spinlock@4a0f6000 {
-> +	compatible = "ti,omap4-hwspinlock";
-> +	reg = <0x4a0f6000 0x1000>;
-> +	ti,hwmods = "spinlock";
-> +};
+Most XPS13 configurations do need the quirk (and maybe some other yet to
+be identified machines also), but dmi matching cannot discern the one
+particular XPS13 configuration ("Ivy Bridge booting UEFI mode without
+Legacy Option ROM") that is adversely affected by it.  We could
+alternately consider trying to detect that specific configuration with
+code in i915, but that seemed a lot crazier (and less generally useful)
+than just providing an override switch for rare or yet-to-be-discovered
+configurations.
 
-[ snip ]
+Hmmm.  What if we had a pair of boot params "i915.quirks_set" and
+"i915.quirks_mask" boot params that could be used to manually set or
+mask _all_ the bits in dev_priv->quirks?  Such params would surely come
+in handy for cases just like this one, and would be useful for testing
+future machines easily.  (Would you take that if I submitted it?)
 
-- k
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+>  and I think I
+> should just revert the pch_pwm enable quirk again.
+> -Daniel
+
+But reverting the original quirk would break ALL the XPS13
+configurations, which nobody is requesting.  Please don't revert the
+quirk.  At most, you might want to disable the Ivy Bridge dmi match (but
+I don't recommend this either):
+
+        /* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
+        { 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+
+ -Kamal
+
+--=-FtuG/ICUXMHUSAHm5dKH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCAAGBQJSJi/NAAoJEHqwmdxYrXhZdYgP/0VcZju2kElOu2n4bHDR1twL
+dz3O9xBfnKzJVsrG9PUEIKPxYJDeYupBiMSLhEFnL/1mmQUfbbutQr5mvt6pXzvv
+12gc1n8oGZhlK0TCNrfBPmYx9aclErU9yCoARn/OWEixkYqsd+fHnLAJV1b1M10v
+GnHPWSxmmnLLI3vwiGlubQtRviRBvs8dpTHThzD5qiccOtS1Uh2nF/bIhFC63aHx
+ah9yEi0YX8Exx/O511eKqFMAe42qQ9dLdSFXyivsMB8uBkgPiAjYRwAyqI6IkXpE
+glK9GDVV/QQNpdhgfvSBs5yUtUwrPCNKg4Q+VXCblE1BuFJ7Qp9Yhqnw2deGcxsw
+RdzvEvqEN62Pipfz1R9gGu2Nvu8ko5kKbSyUKQ1v3hotMOf/V8gJ44X4SoFIA+Sh
+OmVMaxfi+asp2JJZry420fue1vRB43dvY24Mk3YgJlju8A1HSFU88SCMbAjbGsMJ
+rEPXAfhqjhqKfw+9B2MhoAxUQ0/dIXAcLTbHl+ZxWMua3gmkyQ+imb3ial921Prq
+UcvCz6+oOwHm8ndvSkl9DS9wUmnTw1N7B8HojBuIthiRonQyEVSjjwGDcz9gPFc4
+/qKVh/2OJ/45TPtDeXfshrQ/toUeAlprbVl7KTiWyU+tCYt+sw+vD0RG+lFCgql6
+IxQw9ipSq7tWJvGbrgmP
+=ifz6
+-----END PGP SIGNATURE-----
+
+--=-FtuG/ICUXMHUSAHm5dKH--
 
