@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab3ICPl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:41:29 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43924 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab3ICPl1 (ORCPT
+	id S1756713Ab3ICPpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:45:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29221 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab3ICPo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:41:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130903101522.GA22369@gmail.com>
-References: <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
-	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
-	<20130901212355.GU13318@ZenIV.linux.org.uk>
-	<CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
-	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
-	<20130901233005.GX13318@ZenIV.linux.org.uk>
-	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
-	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
-	<20130902070538.GA31639@gmail.com>
-	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
-	<20130903101522.GA22369@gmail.com>
-Date: Tue, 3 Sep 2013 08:41:26 -0700
-X-Google-Sender-Auth: VMf3bl3qp-QhUnONEmeUbglAscg
-Message-ID: <CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Waiman Long <waiman.long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Sep 2013 11:44:58 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=LpxhMNE_n7QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qNUMAmISgnoA:10 a=pGLkceISAAAA:8 a=NufY4J3AAAAA:8 a=x9zbOqYJgs6x7dz7IGYA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 3 Sep 2013 11:44:54 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
+        linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [gcv v3 06/35] scheduler: Replace __get_cpu_var uses
+Message-ID: <20130903114454.2a995f41@gandalf.local.home>
+In-Reply-To: <CAFTL4hyEuePJC4GG60DqQCfu-JiV9krRCf3FwWAy15Hyzu2AUw@mail.gmail.com>
+References: <20130828193457.140443630@linux.com>
+	<00000140c67817eb-b582280a-f059-499f-a24c-a11f3d59b86e-000000@email.amazonses.com>
+	<20130829075818.GW10002@twins.programming.kicks-ass.net>
+	<20130829100143.GA29672@gmail.com>
+	<00000140cb02576f-e106763c-d382-4b66-bb85-d7a9cb266b81-000000@email.amazonses.com>
+	<20130829173256.GB6276@home.goodmis.org>
+	<00000140cb49bdde-1279ffb0-5c49-400d-970c-a481d527e98a-000000@email.amazonses.com>
+	<20130829143053.3fc2caa8@gandalf.local.home>
+	<00000140e4373c9e-ea44cb7f-985f-4d33-86ed-cfd54ec7327b-000000@email.amazonses.com>
+	<CAFTL4hyEuePJC4GG60DqQCfu-JiV9krRCf3FwWAy15Hyzu2AUw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 3:15 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> One more thing to try would be a regular '-e cycles' non-PEBS run and see
-> whether there's still largish overhead visible around that instruction.
+On Tue, 3 Sep 2013 16:45:45 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-I've done that, and it matches the PEBS runs, except obviously with
-the instruction skew (so then depending on run it's 95% the
-instruction after the xadd). So the PEBS profiles are entirely
-consistent with other data.
+> 2013/9/3 Christoph Lameter <cl@linux.com>:
+> > On Thu, 29 Aug 2013, Steven Rostedt wrote:
+> >
+> >> How many places use the this_cpu_*() without preemption disabled? I
+> >> wouldn't think there's many. I never complained about another variant,
+> >> so you need to ask those that have. The tough question for me is what
+> >> that variant name should be ;-)
+> >
+> > Tried to add preemption checks but the basic issue is that many of the
+> > checks themselves use this_cpu_ops. percpu.h is very basic to the
+> > operation of fundamental primitives for preempt etc. Use of a BUG_ON needs
+> > a seris of includes in percpu.h that cause more trouble.
+> >
+> > If I switch __this_cpu ops to check for preemption then the logic for
+> > preemption etc must use the raw_this_cpu ops.
+> 
+> IIUC the issue is that preempt debug checks themselves use per cpu
+> operations that can result in preempt debug checks? Hence a recursion.
+> Do you have an example of that?
+> 
+> Also in this case this must be fixed anyway given the checks that
+> already exist in smp_processor_id(), __get_cpu_var(), ...
 
-              Linus
+Right, that's why there's a raw_smp_processor_id() and
+__raw_get_cpu_var(). Those two are the ones without checks, and they
+are called by the non "raw" versions after the check is done.
+
+Really, what's so damn hard about this?
+
+-- Steve
