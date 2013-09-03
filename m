@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab3ICR7g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 13:59:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3ICR7e (ORCPT
+	id S932306Ab3ICSEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:04:21 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:34748 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab3ICSET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 13:59:34 -0400
-Date: Tue, 3 Sep 2013 10:59:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-gpio <linux-gpio@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        linux-spi <linux-spi@vger.kernel.org>
-Subject: Re: RESEND: Generating interrupts from a USB device driver?
-Message-ID: <20130903175933.GA8463@kroah.com>
-References: <52251562.5000208@att.net>
- <20130902230738.GA22494@kroah.com>
- <52253E1F.6000101@att.net>
+	Tue, 3 Sep 2013 14:04:19 -0400
+Date: Tue, 3 Sep 2013 11:04:16 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Correct the USB IDs for the new Macbook Air 6
+Message-ID: <20130903180416.GB25985@core.coreip.homeip.net>
+References: <1378042304-1400-1-git-send-email-rydberg@euromail.se>
+ <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52253E1F.6000101@att.net>
+In-Reply-To: <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 08:40:47PM -0500, Daniel Santos wrote:
-> On 09/02/2013 06:07 PM, Greg KH wrote:
-> >On Mon, Sep 02, 2013 at 05:46:58PM -0500, Daniel Santos wrote:
-> >>Hello guys.  I didn't get a response the last time so hopefully with
-> >>3.11 out I'll get one this time.
-> >>
-> >>I need to be able to generate interrupts from a USB device driver while
-> >>servicing the complete() function of an interrupt URB.
-> >No you don't :)
-> >
-> >>While I realize that this may seem strange, the purpose is for a USB
-> >>to SPI/GPIO bridge chip (the MCP2210). When something happens on the
-> >>remote device where a chip is expecting it's interrupt out pin to
-> >>trigger an interrupt on some local (to the board) microcontroller, the
-> >>MCP2210 instead receives that signal and communicates it to the host
-> >>the next time it's queried. This is the interrupt that I need to, in
-> >>effect propagate locally. Since my spi_master and gpio_chip are all
-> >>functioning now, this is the last step to get one of my spi protocol
-> >>drivers working correctly.
-> >Just pass the data up the spi stack in your interrupt endpoint handler.
-> >No need to try to create a "real" interrupt.  There are other USB SPI
-> >drivers that should give you the idea of how to do it.
-> Thanks for your response! I haven't been able to find these drivers,
-> can you please point me to one? I guess I don't know the "spi stack"
-> well enough to know how to propagate that notification up to the
-> driver for the spi device (let alone that it was called a "stack" :)
+On Mon, Sep 02, 2013 at 01:30:07PM +0200, Jiri Kosina wrote:
+> On Sun, 1 Sep 2013, Henrik Rydberg wrote:
+> 
+> > A recent patch (9d9a04ee) added support for the new machine, but got
+> > the sequence of USB ids wrong. Reports from both Ian and Linus T show
+> > that the 0x0291 id is for ISO, not ANSI, which should have the missing
+> > number 0x0290. This patchs moves the three numbers accordingly, fixing
+> > the problem.
+> > 
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
+> > Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi Jiri, Dmitry,
+> > 
+> > it looks like this change has been sufficiently tested now, in
+> > addition to making perfect sense. Jiri, would you mind taking it, if
+> > Dmitry approves?
+> 
+> Absolutely ... waiting for Dmitry's Ack.
 
-Hm, I thought we used to have some of them, I guess people have been
-saying they would write a driver for this type of hardware for a long
-time now :(
+And here it is:
 
-Anyway, look at the spi core, I think you want to tie into the
-spi_new_device() call in your usb driver, and start sending/receiving
-data through the SPI interfaces the spi core provides.
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-The Linux SPI mailing list should be able to help you out a lot more
-here than I can.
+Thanks.
 
-greg k-h
+-- 
+Dmitry
