@@ -1,43 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab3ICMLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:11:41 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:55684 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932753Ab3ICMLk (ORCPT
+	id S1760028Ab3ICMPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:15:34 -0400
+Received: from mail.funcionjudicial-pichincha.gob.ec ([190.152.14.17]:58041
+	"EHLO mailsrv.funcionjudicial-pichincha.gob.ec"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752612Ab3ICMPd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:11:40 -0400
+	Tue, 3 Sep 2013 08:15:33 -0400
+X-Greylist: delayed 4647 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 08:15:33 EDT
+Date: Tue, 03 Sep 2013 05:28:23 -0500 (ECT)
+From: WEBMAIL <henny.barragan@funcionjudicial-pichincha.gob.ec>
+Reply-To: WEBMAIL <vinalng@tv2.fr>
+Subject: Alerta =?utf-8?B?ZmluYWzigI8=?=
+Message-ID: <685541ec-b77b-4735-9172-19d26a201335@mailsrv.funcionjudicial-pichincha.gob.ec>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1378204768-18013-2-git-send-email-treding@nvidia.com>
-References: <1378204768-18013-1-git-send-email-treding@nvidia.com>
-	<1378204768-18013-2-git-send-email-treding@nvidia.com>
-Date: Tue, 3 Sep 2013 14:11:39 +0200
-Message-ID: <CACRpkdZth+7FZbcSwTUSug9cCfw8xW3XVbaUv3dEA_cTuFX8Jw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: Use proper indentation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [41.138.184.87]
+X-Mailer: Zimbra 7.1.1_GA_3196 (zclient/7.1.1_GA_3196)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 12:39 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-
-> Indentation should be done using tabs, not a combination of tabs and
-> spaces.
->
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
-> Linus,
->
-> Feel free to squash this into the commit that introduced these:
->
->         fc9bbfb: gpio: improve error path in gpiolib
-
-This part I actually fixed up properly yesterday, but thanks anyway.
-
-Thanks,
-Linus Walleij
+Su contraseña caducará en 3 días formulario llenar y enviar de inmediato para validar su dirección de e-mail.
+Nombre de Usuario: .................
+Contraseña anterior: .................
+Nueva Contraseña: ................
+gracias
+administrador del sistema
