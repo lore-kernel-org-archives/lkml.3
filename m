@@ -1,161 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759848Ab3ICJP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:15:59 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:40336 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab3ICJP4 (ORCPT
+	id S1759889Ab3ICJQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:16:56 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:34021 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759874Ab3ICJQy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:15:56 -0400
-Date: Tue, 3 Sep 2013 11:15:48 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [GIT PULL] s390 updates for 3.12-rc1
-Message-ID: <20130903091548.GA3926@osiris>
+	Tue, 3 Sep 2013 05:16:54 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <dave.bueso@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        "Jonathan Gonzalez" <jgonzalez@linets.cl>
+Subject: Re: ipc-msg broken again on 3.11-rc7?
+Thread-Topic: ipc-msg broken again on 3.11-rc7?
+Thread-Index: AQHOpZ5oa2zPW4yZMkWQwZduFtEUDA==
+Date: Tue, 3 Sep 2013 09:16:41 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514165E@IN01WEMBXA.internal.synopsys.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+ <1372202983.1888.22.camel@buesod1.americas.hpqcorp.net>
+ <521DE5D7.4040305@synopsys.com>
+ <CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
+ <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
+ <52205597.3090609@synopsys.com>
+ <CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
+ <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
+ <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
+ <CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com>
+ <5224BCF6.2080401@colorfullife.com>
+ <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com>
+ <5225A466.2080303@colorfullife.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.235]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090309-1948-0000-0000-0000062C8F89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 09/03/2013 02:27 PM, Manfred Spraul wrote:
+> On 09/03/2013 10:44 AM, Vineet Gupta wrote:
+>>> b) Could you check that it is not just a performance regression?
+>>>       Does ./msgctl08 1000 16 hang, too?
+>> Nope that doesn't hang. The minimal configuration that hangs reliably is msgctl
+>> 50000 2
+>>
+>> With this config there are 3 processes.
+>> ...
+>>    555   554 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+>>    554   551 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+>>    551   496 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+>> ...
+>>
+>> [ARCLinux]$ cat /proc/551/stack
+>> [<80aec3c6>] do_wait+0xa02/0xc94
+>> [<80aecad2>] SyS_wait4+0x52/0xa4
+>> [<80ae24fc>] ret_from_system_call+0x0/0x4
+>>
+>> [ARCLinux]$ cat /proc/555/stack
+>> [<80c2950e>] SyS_msgrcv+0x252/0x420
+>> [<80ae24fc>] ret_from_system_call+0x0/0x4
+>>
+>> [ARCLinux]$ cat /proc/554/stack
+>> [<80c28c82>] do_msgsnd+0x116/0x35c
+>> [<80ae24fc>] ret_from_system_call+0x0/0x4
+>>
+>> Is this a case of lost wakeup or some such. I'm running with some more diagnostics
+>> and will report soon ...
+> What is the output of ipcs -q? Is the queue full or empty when it hangs?
+> I.e. do we forget to wake up a receiver or forget to wake up a sender?
+/ # ipcs -q
 
-please pull from
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages   
+0x72d83160 163841     root       600        0            0      
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
-
-to receive the first batch of s390 updates for 3.12.
-
-The most interesting change is that Martin converted s390 to generic hardirqs.
-Which means that all current architectures have been converted and that
-CONFIG_GENERIC_HARDIRQS can be removed.
-Martin prepared a patch for that already (see genirq branch), but the best
-time to merge that is probably at the end of the merge window / begin of -rc1.
-
-Another patch converts s390 to software referenced bits instead of relying
-on the reference bit in the storage key. Therefore s390 doesn't use storage
-keys anymore, except for kvm.
-
-Besides that we have improvements, cleanups and fixes in PCI, DASD and all
-over the place.
-
-Thanks,
-Heiko
-
----
-
-Heiko Carstens (6):
-      s390: replace remaining strict_strtoul() with kstrtoul()
-      s390/mm: remove dead pfmf inline assembly
-      s390/sclp: reword cpu capability change message
-      s390/bitops: fix inline assembly constraints
-      s390/switch_to: fix save_access_regs() / restore_access_regs()
-      s390/kprobes: add support for compare and branch instructions
-
-Jingoo Han (1):
-      s390: replace strict_strtoul() with kstrtoul()
-
-Martin Schwidefsky (13):
-      s390/airq: introduce adapter interrupt vector helper
-      s390/pci: cleanup function names
-      s390/pci: use adapter interrupt vector helpers
-      s390: convert interrupt handling to use generic hardirq
-      s390/mm: cleanup page table definitions
-      s390/pgtable: skip pgste updates on full flush
-      s390/pgtable: add pgste_get helper
-      s390/time: clock comparator revalidation
-      s390/mm: introduce ptep_flush_lazy helper
-      s390/time: return with irqs disabled from psw_idle
-      s390/pgtable: fix mprotect for single-threaded KVM guests
-      s390/tx: allow program interruption filtering in user space
-      s390/mm: implement software referenced bits
-
-Sebastian Ott (9):
-      s390/pci/hotplug: convert to be builtin only
-      s390/pci: use claim_resource
-      s390/pci: add recover sysfs knob
-      s390/hibernate: add early resume function
-      s390/pci: split lpf
-      s390/pci: try harder to modify a function
-      s390/pci: update function handle after resume from hibernate
-      s390/cio: fix unlocked access of global bitmap
-      s390/pci: use virtual memory for iommu bitmap
-
-Stefan Weinhuber (3):
-      s390/dasd: cleanup timeout and transport error messages
-      s390/dasd: enable raw_track_access reads without direct I/O
-      s390/dasd: fix statistics for recovered requests
-
- arch/s390/Kconfig                   |  11 +
- arch/s390/include/asm/airq.h        |  67 ++++
- arch/s390/include/asm/bitops.h      |  12 +-
- arch/s390/include/asm/cio.h         |   1 +
- arch/s390/include/asm/hardirq.h     |   5 +
- arch/s390/include/asm/hugetlb.h     | 135 ++------
- arch/s390/include/asm/hw_irq.h      |  17 +-
- arch/s390/include/asm/irq.h         |  35 +-
- arch/s390/include/asm/mmu_context.h |   3 +-
- arch/s390/include/asm/page.h        |  19 --
- arch/s390/include/asm/pci.h         |  54 ++-
- arch/s390/include/asm/pci_insn.h    |  12 +-
- arch/s390/include/asm/pci_io.h      |  10 +-
- arch/s390/include/asm/pgtable.h     | 637 +++++++++++++++++++-----------------
- arch/s390/include/asm/serial.h      |   6 +
- arch/s390/include/asm/switch_to.h   |   9 +-
- arch/s390/include/asm/tlb.h         |   3 +-
- arch/s390/include/asm/tlbflush.h    |   6 +-
- arch/s390/kernel/entry.S            |  16 +-
- arch/s390/kernel/entry64.S          |  11 +-
- arch/s390/kernel/irq.c              | 160 ++++-----
- arch/s390/kernel/kprobes.c          |  21 +-
- arch/s390/kernel/nmi.c              |   5 +-
- arch/s390/kernel/process.c          |   1 +
- arch/s390/kernel/ptrace.c           |   8 +-
- arch/s390/kernel/suspend.c          |  11 +
- arch/s390/kernel/swsusp_asm64.S     |   7 +-
- arch/s390/kernel/time.c             |   1 -
- arch/s390/kernel/vdso.c             |   6 +-
- arch/s390/lib/delay.c               |   2 -
- arch/s390/lib/uaccess_pt.c          |  16 +-
- arch/s390/mm/dump_pagetables.c      |  18 +-
- arch/s390/mm/gup.c                  |   6 +-
- arch/s390/mm/hugetlbpage.c          | 124 ++++++-
- arch/s390/mm/pageattr.c             |   2 +-
- arch/s390/mm/pgtable.c              |  83 +++--
- arch/s390/mm/vmem.c                 |  15 +-
- arch/s390/pci/Makefile              |   2 +-
- arch/s390/pci/pci.c                 | 575 +++++++++++++-------------------
- arch/s390/pci/pci_clp.c             | 146 ++++++---
- arch/s390/pci/pci_dma.c             |  16 +-
- arch/s390/pci/pci_event.c           |   2 +-
- arch/s390/pci/pci_insn.c            |  18 +-
- arch/s390/pci/pci_msi.c             | 142 --------
- arch/s390/pci/pci_sysfs.c           |  27 ++
- drivers/pci/hotplug/Kconfig         |   2 +-
- drivers/pci/hotplug/s390_pci_hpc.c  |  63 +---
- drivers/s390/block/dasd_devmap.c    |   8 +-
- drivers/s390/block/dasd_eckd.c      |  54 ++-
- drivers/s390/block/dasd_erp.c       |  14 +-
- drivers/s390/char/sclp_config.c     |   2 +-
- drivers/s390/cio/airq.c             | 174 +++++++++-
- drivers/s390/cio/ccwgroup.c         |   2 +-
- drivers/s390/cio/cio.c              |  46 +--
- drivers/s390/cio/cio.h              |   3 -
- drivers/s390/cio/cmf.c              |   2 +-
- drivers/s390/cio/css.c              |   4 +-
- drivers/s390/cio/css.h              |   2 -
- drivers/s390/cio/device.c           |   2 +-
- drivers/s390/net/qeth_l3_sys.c      |   2 +-
- include/asm-generic/pgtable.h       |   4 -
- mm/rmap.c                           |   3 -
- 62 files changed, 1468 insertions(+), 1402 deletions(-)
- create mode 100644 arch/s390/include/asm/serial.h
- delete mode 100644 arch/s390/pci/pci_msi.c
 
