@@ -1,1181 +1,1055 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab3ICHml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:42:41 -0400
+	id S932655Ab3ICHmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:42:40 -0400
 Received: from ausxippc101.us.dell.com ([143.166.85.207]:44884 "EHLO
 	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab3ICHmh (ORCPT
+	with ESMTP id S932565Ab3ICHmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:42:37 -0400
+	Tue, 3 Sep 2013 03:42:38 -0400
 X-LoopCount0: from 10.48.28.48
 X-IronPort-AV: E=Sophos;i="4.89,1012,1367989200"; 
-   d="scan'208";a="249012955"
+   d="scan'208";a="249012957"
 Date: Tue, 3 Sep 2013 10:42:32 +0300
 From: Menny Hamburger <Menny_Hamburger@Dell.com>
-Message-Id: <201309030742.r837gWBJ012538@bldhmenny.dell-idc.com>
+Message-Id: <201309030742.r837gWk0012544@bldhmenny.dell-idc.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] Per IP network statistics: SNMP MIB subsets
+Subject: [PATCH 3/4] Per IP network statistics: socket API
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff -r -U 4 a/include/linux/snmp.h b/include/linux/snmp.h
---- a/include/linux/snmp.h	2013-09-01 09:03:35.355639246 +0300
-+++ b/include/linux/snmp.h	2013-09-01 09:03:35.410960814 +0300
-@@ -261,5 +261,18 @@
- 	LINUX_MIB_XFRMOUTPOLERROR,		/* XfrmOutPolError */
- 	__LINUX_MIB_XFRMMAX
- };
- 
-+enum {
-+	SNMP_IPSTATS_MIB = 0,
-+	SNMP_ICMP_MIB,
-+	SNMP_ICMPMSG_MIB,
-+	SNMP_ICMP6_MIB,
-+	SNMP_ICMP6MSG_MIB,
-+	SNMP_TCP_MIB,
-+	SNMP_UDP_MIB,
-+        SNMP_LINUX_MIB,
-+	SNMP_LINUX_XFRM_MIB,
-+	__SNMP_MIB_MAX,
-+};
+diff -r -U 4 a/include/net/ip.h b/include/net/ip.h
+--- a/include/net/ip.h	2013-08-27 17:15:42.952712200 +0300
++++ b/include/net/ip.h	2013-08-27 17:15:43.027698865 +0300
+@@ -189,13 +189,20 @@
+ #define IP_ADD_STATS(net, field, val)	SNMP_ADD_STATS((net)->mib.ip_statistics, field, val)
+ #define IP_ADD_STATS_BH(net, field, val) SNMP_ADD_STATS_BH((net)->mib.ip_statistics, field, val)
+ #define IP_UPD_PO_STATS(net, field, val) SNMP_UPD_PO_STATS((net)->mib.ip_statistics, field, val)
+ #define IP_UPD_PO_STATS_BH(net, field, val) SNMP_UPD_PO_STATS_BH((net)->mib.ip_statistics, field, val)
+-#define NET_INC_STATS(net, field)	SNMP_INC_STATS((net)->mib.net_statistics, field)
+-#define NET_INC_STATS_BH(net, field)	SNMP_INC_STATS_BH((net)->mib.net_statistics, field)
+-#define NET_INC_STATS_USER(net, field) 	SNMP_INC_STATS_USER((net)->mib.net_statistics, field)
+-#define NET_ADD_STATS_BH(net, field, adnd) SNMP_ADD_STATS_BH((net)->mib.net_statistics, field, adnd)
+-#define NET_ADD_STATS_USER(net, field, adnd) SNMP_ADD_STATS_USER((net)->mib.net_statistics, field, adnd)
 +
- #endif	/* _LINUX_SNMP_H */
-diff -r -U 4 a/include/linux/sysctl.h b/include/linux/sysctl.h
---- a/include/linux/sysctl.h	2013-09-01 09:03:35.361639131 +0300
-+++ b/include/linux/sysctl.h	2013-09-01 09:03:35.428631683 +0300
-@@ -433,8 +433,11 @@
- 	NET_TCP_AVAIL_CONG_CONTROL=122,
- 	NET_TCP_ALLOWED_CONG_CONTROL=123,
- 	NET_TCP_MAX_SSTHRESH=124,
- 	NET_TCP_FRTO_RESPONSE=125,
-+#ifdef CONFIG_NET_IPV4_SNMP_MAPPING
-+	NET_IPV4_SNMP_MAP_LEVEL=126,
-+#endif
- };
++#define __NET_INC_STATS(net, field)     SNMP_INC_STATS((net)->mib.net_statistics, field)
++#define __NET_INC_STATS_BH(net, field)  SNMP_INC_STATS_BH((net)->mib.net_statistics, field)
++#define __NET_INC_STATS_USER(net, field)        SNMP_INC_STATS_USER((net)->mib.net_statistics, field)
++#define __NET_ADD_STATS_BH(net, field, adnd) SNMP_ADD_STATS_BH((net)->mib.net_statistics, field, adnd)
++#define __NET_ADD_STATS_USER(net, field, adnd) SNMP_ADD_STATS_USER((net)->mib.net_statistics, field, adnd)
++
++#define NET_INC_STATS(net, field) __NET_INC_STATS(net, field)
++#define NET_INC_STATS_BH(net, field)  __NET_INC_STATS_BH(net, field)
++#define NET_INC_STATS_USER(net, field) __NET_INC_STATS_USER(net, field)
++#define NET_ADD_STATS_BH(net, field, adnd) __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_STATS_USER(net, field, adnd) __NET_ADD_STATS_USER(net, field, adnd)
  
- enum {
- 	NET_IPV4_ROUTE_FLUSH=1,
-diff -r -U 4 a/include/net/snmp_map.h b/include/net/snmp_map.h
---- a/include/net/snmp_map.h	2013-09-01 09:03:35.367639297 +0300
-+++ b/include/net/snmp_map.h	2013-09-01 09:03:35.442635908 +0300
-@@ -0,0 +1,374 @@
+ extern unsigned long snmp_fold_field(void *mib[], int offt);
+ extern int snmp_mib_init(void *ptr[2], size_t mibsize);
+ extern void snmp_mib_free(void *ptr[2]);
+diff -r -U 4 a/include/net/stat_sk_hashtable.h b/include/net/stat_sk_hashtable.h
+--- a/include/net/stat_sk_hashtable.h	2013-08-27 17:15:42.958691937 +0300
++++ b/include/net/stat_sk_hashtable.h	2013-08-27 17:15:43.041673380 +0300
+@@ -0,0 +1,664 @@
 +/*
-+ *
-+ *		SNMP MIB mapping for maintaining a subset of the statistical counters.
++ *		Per-ip statistics socket interface to hashtables
 + *
 + *		Menny Hamburger<menny_hamburger@dell.com>
-+ *
-+ *		The purpose of SNMP MIB mapping is to reduce the memory overhead of maintaining the full set
-+ *		of counters, which is essential if we need to allocate counters dynamically.
-+ *		A Mapping includes a u8 array that includes indecies into the per CPU counter array.
-+ *
 + */
 +
++#ifndef _STAT_SK_HASHTABLE_H
++#define _STAT_SK_HASHTABLE_H
 +
-+#ifndef _SNMP_MAP_H
-+#define _SNMP_MAP_H
++#ifdef CONFIG_NET_IPV4_SOCK_STATS
 +
-+#ifdef CONFIG_NET_IPV4_SNMP_MAPPING
++#include <net/ipv6.h>
++#include <net/stat_hashtable.h>
 +
-+#include <net/snmp.h>
++#define STAT_NET_INITVAL(net) 0
++/* Not sure if we need an intival different than 0 - leave it here in case we do */
++//#define STAT_NET_INITVAL(net)	inet_ehash_secret + net_hash_mix(net)
++#define STAT_SOCK_INITVAL(sk)	STAT_NET_INITVAL(sock_net(sk))
++#define STAT_SK_INITVAL		STAT_SOCK_INITVAL(sk)
 +
-+/*
-+ * By keeping several levels of mappings, we define what counters will be maintained in each level.
-+ * This helps reduce the CPU overhead of usage and memory allocation to a minimum in the default level.
-+ */
++/* This function is used to pass insert calls onto stat_hash_get_entry given a pointer to the cookie contained in sock. */
++extern int stat_hash_insert(u32 initval, struct stat_hash_addr *addr, bool existing, 
++			    int alloc_flag, struct stat_hash_cookie *cookie);
++
++#define STAT_SK_PREFIX "stat_sk_hash: "
++
++#ifdef CONFIG_NET_IPV4_STAT_HASHTABLE_DEBUG
++#define stat_sk_dprintk(level, format...) \
++	if ((stat_hash_debug_level) >= (level)) \
++		printk(KERN_DEBUG STAT_SK_PREFIX format)
++#else
++#define stat_sk_dprintk(level, format...)
++#endif
++
++
++/* Direction of data transfer - used when inserting a new entry into the hash */
 +enum {
-+        SNMP_MAP_LEVEL_DEFAULT,
-+        SNMP_MAP_LEVEL_DIAG,
-+        SNMP_MAP_LEVEL_MAX,
++	STAT_HASH_SK_IN = 1,
++	STAT_HASH_SK_OUT,
++	STAT_HASH_SK_DONTCARE,
++	STAT_HASH_SK_INOUT,
 +};
 +
-+struct snmp_mib_mapped_data {
-+	unsigned long mibs[0];
-+};
++/*
++ * Filter out addresses from entering the hashtable.
++ * The current filter code tests that the the remote address is not on the loopback.
++ * When the remote address is on the loopback, the address is filtered out by default because of the potential overhead 
++ * of updating their counters - specifically counters that are incremented each time a packet comes in or goes out.
++ * net_stat_hash_loopback can be toggled via sysctl to allow loopback remote addresses to enter the hash.
++ * The direction is needed in order to identify the remote address from the two addresses defined in struct stat_hash_addr.
++ */
++extern int stat_hash_filter_addr(struct stat_hash_addr *addr, u8 direction);
 +
-+struct snmp_mib_mapped_data_aligned  {
-+	unsigned long mibs[0];
-+} __SNMP_MIB_ALIGN__;
++/* Access the cookie contained in the socket */
++static inline struct stat_hash_cookie *
++sk_cookie(struct sock *sk)
++{
++	if (sk == NULL)
++		return NULL;
 +
-+#ifndef SNMP_ARRAY_SZ
-+#define SNMP_ARRAY_SZ 2
-+#elif (SNMP_ARRAY_SZ == 1)
-+#error "counters without Top/Bottom half separations are not yet supported"
++	return &sk_extended(sk)->hash_cookie;
++}
++
++/* Clone the cookie from one socket to another */
++static inline void 
++sk_cookie_clone(struct sock *newsk, struct sock *sk)
++{
++	stat_hash_copy_cookie_atomic(sk_cookie(newsk), sk_cookie(sk));
++}
++
++static inline bool 
++sk_operation_allowed(u16 family)
++{
++	/* 
++	 * We only start inserting into the hashtable when it is specifically requested by the user.
++	 * Control is done using stat_hash_start_data_collection/stat_hash_stop_data_collection methods.
++	 */
++        if (!stat_hash_data_collection_started) {
++                stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "data collection has not been started\n");
++                return false;
++        }
++
++ 	/* Data collection can be toggled on and off via sysctl */
++        if (!net_stat_hashtable) {
++                stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "hashing is disabled\n");
++                return false;
++        }
++
++	/* IPV6 support */
++	if (family == AF_INET6) {
++#ifdef CONFIG_IPV6_STAT_HASHTABLES
++		if (net_stat_hashtable_ipv6 == 0) {
++			stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "disabled statistics hashing for address family %d\n", family);
++			return false;
++		}
++#else
++		stat_sk_dprintk(STAT_HASH_MESSAGE_NOTICE, "unsupported family %d\n", family);
++		return false;
 +#endif
-+
-+#define DEFINE_SNMP_STAT_MAPPED(type, name)    \
-+        __typeof__(type) *name[SNMP_ARRAY_SZ]
-+#define DECLARE_SNMP_STAT_MAPPED(type, name)   \
-+        extern __typeof__(type) *name[SNMP_ARRAY_SZ]
-+
-+#define DEFINE_SNMP_STAT_MAPPING(type, name)    \
-+	u8 maplvl; \
-+	u8 mibid; \
-+	__typeof__(type) name
-+
-+struct ipstats_mib_mapping {
-+	u8 mapping[__IPSTATS_MIB_MAX];
-+};
-+
-+struct ipstats_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct ipstats_mib_mapping, map);
-+};
-+
-+
-+
-+struct icmp_mib_mapping {
-+	u8 mapping[__ICMP_MIB_MAX];
-+};
-+
-+struct icmp_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct icmp_mib_mapping, map);
-+};
-+
-+
-+
-+struct icmpmsg_mib_mapping {
-+	u8 mapping[__ICMPMSG_MIB_MAX];
-+};
-+
-+struct icmpmsg_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct icmpmsg_mib_mapping, map);	
-+};
-+
-+
-+struct icmpv6_mib_mapping {
-+	u8 mapping[__ICMP6_MIB_MAX];
-+};
-+
-+struct icmpv6_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct icmpv6_mib_mapping, map);
-+};
-+
-+
-+struct icmpv6msg_mib_mapping {
-+	u8 mapping[__ICMP6MSG_MIB_MAX];
-+};
-+
-+struct icmpv6msg_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct icmpv6msg_mib_mapping, map);
-+};
-+
-+
-+struct tcp_mib_mapping {
-+	u8 mapping[__TCP_MIB_MAX];
-+};
-+
-+struct tcp_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct tcp_mib_mapping, map);	
-+};
-+
-+
-+struct udp_mib_mapping {
-+	u8 mapping[__UDP_MIB_MAX];
-+};
-+
-+struct udp_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct udp_mib_mapping, map);
-+};
-+
-+
-+struct linux_mib_mapping {
-+	u8 mapping[__LINUX_MIB_MAX];
-+};
-+
-+struct linux_mib_map {
-+	DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data, stats);
-+	DEFINE_SNMP_STAT_MAPPING(struct linux_mib_mapping, map);
-+};
-+
-+
-+struct linux_xfrm_mib_mapping {
-+        u8 mapping[__LINUX_MIB_XFRMMAX];
-+};
-+
-+struct linux_xfrm_mib_map {
-+        DEFINE_SNMP_STAT_MAPPED(struct snmp_mib_mapped_data_aligned, stats);
-+        DEFINE_SNMP_STAT_MAPPING(struct linux_xfrm_mib_mapping, map);
-+};
-+
-+
-+#define DEFINE_SNMP_MIB_MAP(type, name)    \
-+	__typeof__(type) name; 
-+
-+
-+union mib_mapping {
-+	u8 mapping[0];
-+	u8 ipstats_mapping[__IPSTATS_MIB_MAX];
-+	u8 icmp_mapping[__ICMP_MIB_MAX];
-+	u8 icmpmsg_mapping[__ICMPMSG_MIB_MAX];
-+	u8 icmp6_mapping[__ICMP6_MIB_MAX];
-+	u8 icmp6msg_mapping[__ICMP6MSG_MIB_MAX];
-+	u8 tcp_mapping[__TCP_MIB_MAX];
-+	u8 udp_mapping[__UDP_MIB_MAX];
-+	u8 linux_mapping[__LINUX_MIB_MAX];
-+	u8 linux_xfrm_mapping[__LINUX_MIB_XFRMMAX];
-+};
-+
-+struct mib_mapped {
-+	struct snmp_mib_mapped_data *stats[SNMP_ARRAY_SZ];
-+};
-+
-+struct snmp_mib_map {
-+        struct mib_mapped stats;
-+        u8 maplvl;
-+        u8 mibid;
-+        union mib_mapping map;
-+};
-+
-+/* Counter bitmap used to apply behavior on specific counters within an SNMP MIB */
-+struct snmp_mib_map_bitmap_container {
-+        unsigned long bitmap[0];
-+};
-+
-+#define DEFINE_SNMP_MAP_BITMAP_CONTAINER(type) \
-+	type##_map_bitmap_container { \
-+		DECLARE_BITMAP(bitmap, sizeof(type##_mapping)); \
 +	}
 +
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct ipstats_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct icmp_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct icmpmsg_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct icmpv6_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct icmpv6msg_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct tcp_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct udp_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct linux_mib);
-+DEFINE_SNMP_MAP_BITMAP_CONTAINER(struct linux_xfrm_mib);
++	return true;	
++}
 +
-+union snmp_mib_map_bitmaps {
-+	struct snmp_mib_map_bitmap_container bmap;
-+	struct ipstats_mib_map_bitmap_container ipstats_bmap;
-+	struct icmp_mib_map_bitmap_container icmp_bmap;
-+	struct icmpmsg_mib_map_bitmap_container icmpmsg_bmap;
-+	struct icmpv6_mib_map_bitmap_container icmpv6_bmap;
-+	struct icmpv6msg_mib_map_bitmap_container icmpv6msg_bmap;
-+	struct tcp_mib_map_bitmap_container tcp_bmap;
-+	struct udp_mib_map_bitmap_container udp_bmap;
-+	struct linux_mib_map_bitmap_container linux_bmap;
-+	struct linux_xfrm_mib_map_bitmap_container linux_xfrm_bmap;
-+};
-+
-+
-+
-+
-+/* Basic counter update macros just the original counters */
-+#define SNMP_INC_STATS_MAP_BH(mib, field) SNMP_INC_STATS_BH(mib, field)
-+#define SNMP_INC_STATS_MAP_USER(mib, field) SNMP_INC_STATS_USER(mib, field)
-+#define SNMP_INC_STATS_MAP(mib, field) SNMP_INC_STATS(mib, field)
-+#define SNMP_DEC_STATS_MAP(mib, field) SNMP_DEC_STATS(mib, field)
-+#define SNMP_ADD_STATS_MAP(mib, field, addend) SNMP_ADD_STATS(mib, field, addend)
-+#define SNMP_ADD_STATS_MAP_BH(mib, field, addend) SNMP_ADD_STATS_BH(mib, field, addend)
-+#define SNMP_ADD_STATS_MAP_USER(mib, field, addend) SNMP_ADD_STATS_USER(mib, field, addend)
-+
-+#define SNMP_MAP_UNMAPPED 255
-+
-+static inline u8 
-+snmp_map_get_mapping(struct snmp_mib_map *m, u8 field) 
++/* Process IPV4 address before inserting it into the hashtable, possibly filtering it out */
++static inline struct stat_hash_addr *
++sk_addr_ipv4(u16 family, __be32 saddr, __be32 daddr, struct stat_hash_addr *addr, u8 direction)
 +{
-+	if (m != NULL) {
-+		u8 mappedto = m->map.mapping[field];
-+		if (mappedto != SNMP_MAP_UNMAPPED)
-+			return mappedto;
++	if (!sk_operation_allowed(family)) 
++		return NULL;
++
++	addr->family = family;
++	addr->saddr.ip = saddr;
++	addr->daddr.ip = daddr;
++
++	if ((direction == STAT_HASH_SK_DONTCARE) || (stat_hash_filter_addr(addr, direction) == 0))
++		return addr;
++	 
++
++	return NULL;
++}
++
++#ifdef CONFIG_IPV6_STAT_HASHTABLES
++/* Process IPV6 address before inserting it into the hashtable, possibly filtering out */
++static inline struct stat_hash_addr *
++sk_addr_ipv6(u16 family, struct in6_addr *saddr, struct in6_addr *daddr, struct stat_hash_addr *addr, u8 direction)
++{
++	if (!sk_operation_allowed(family))
++		return NULL;
++
++	addr->family = family;
++	ipv6_addr_copy(&addr->saddr.in6, saddr);
++	ipv6_addr_copy(&addr->daddr.in6, daddr);
++
++	if ((direction == STAT_HASH_SK_DONTCARE) || (stat_hash_filter_addr(addr, direction) == 0))
++		return addr;
++
++        return NULL;
++}
++#endif
++
++/* Pre-process address taken from inet_sk/inet6_sk of the socket */
++static inline struct stat_hash_addr *
++sk_addr_inet(struct sock *sk, struct stat_hash_addr *addr, u8 direction)
++{
++	struct stat_hash_addr *addr_out = NULL;
++
++	switch (sk->sk_family) {
++		case AF_INET:
++			addr_out = sk_addr_ipv4(sk->sk_family, inet_sk(sk)->saddr, inet_sk(sk)->daddr, addr, direction);
++			break;
++#ifdef CONFIG_IPV6_STAT_HASHTABLES
++		case AF_INET6:
++			addr_out = sk_addr_ipv6(sk->sk_family, &inet6_sk(sk)->saddr, &inet6_sk(sk)->daddr, addr, direction);
++			break;
++#endif
++		default:
++			break;
++
 +	}
 +
-+	return SNMP_MAP_UNMAPPED;
++	return addr_out;
 +}
-+
-+/* Macros that look up field in mapping and accesses it's location in the counter array */
-+#define SNMP_INC_STATS_MAPPING_BH(m, field)   \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_INC_STATS_MAP_BH((m)->stats.stats, mappedto); \
-+	} while (0)
-+#define SNMP_INC_STATS_MAPPING_USER(m, field)   \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_INC_STATS_MAP_USER((m)->stats.stats, mappedto); \
-+	} while (0)
-+#define SNMP_INC_STATS_MAPPING(m, field)      \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_INC_STATS_MAP((m)->stats.stats, mappedto); \
-+	} while (0)
-+#define SNMP_DEC_STATS_MAPPING(m, field)      \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_DEC_STATS_MAP((m)->stats.stats,  mappedto); \
-+	} while (0)
-+#define SNMP_ADD_STATS_MAPPING(m, field, addend)      \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_ADD_STATS_MAP((m)->stats.stats, mappedto, addend); \
-+	} while (0)
-+#define SNMP_ADD_STATS_MAPPING_BH(m, field, addend)   \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_ADD_STATS_MAP_BH((m)->stats.stats, mappedto, addend); \
-+	} while (0)
-+#define SNMP_ADD_STATS_MAPPING_USER(m, field, addend)         \
-+	do { \
-+		u8 mappedto = snmp_map_get_mapping((struct snmp_mib_map *) (m), field); \
-+		if (mappedto != SNMP_MAP_UNMAPPED) \
-+			SNMP_ADD_STATS_MAP_USER((m)->stats.stats, mappedto, addend); \
-+	} while (0)
-+
-+
-+/* Register the labels used for displaying the counters */
-+extern int snmp_map_register_labels(u8 mibid, const struct snmp_mib *labels, int n);
 +
 +/* 
-+ * Define a global mapping for counters specified in 'mapping' per SNMP MIB and map level
-+ * When mapping is NULL, the function maps all the counters not added in previous map levels, unless
-+ * they are excluded via exmapping.
++ * Acquire address from socket buffer so we can use it to lookup the entry in the hash table.
++ * We use this when a a socket (and it's containing cookie) are not available.
 + */
-+extern int snmp_map_add_mapping(u8 maplvl, u8 mibid, u8 *mapping, int count, u8 *exmapping, int excount);
-+/*
-+ * Add an empty mapping - all counters are left SNMP_MAP_UNMAPPED. 
-+ * This is used so upper layers can test that mapping is initialized even if it has no mappings.
-+ */
-+extern int snmp_map_add_empty_mapping(u8 maplvl, u8 mibid);
-+/* Undefine a mapping for a specified SNMP MIB and map level */
-+extern int snmp_map_del_mapping(u8 maplvl, u8 mibid);
++static inline struct stat_hash_addr *
++skb_addr(struct sk_buff *skb, struct stat_hash_addr *addr)
++{
++	if (skb == NULL)
++		return NULL;
++
++	if ((ntohs(skb->protocol) == ETH_P_IP) || (skb->protocol == ETH_P_IP)) {
++		addr->family = AF_INET;
++		addr->saddr.ip = ip_hdr(skb)->saddr;
++		addr->daddr.ip = ip_hdr(skb)->daddr;
++		return addr;
++	}
++#ifdef CONFIG_IPV6_STAT_HASHTABLES
++	if (net_stat_hashtable_ipv6 != 0) {
++		if ((ntohs(skb->protocol) == ETH_P_IPV6) || (skb->protocol == ETH_P_IPV6)) {
++			addr->family = AF_INET6;
++			ipv6_addr_copy(&addr->saddr.in6, &ipv6_hdr(skb)->saddr);
++			ipv6_addr_copy(&addr->daddr.in6, &ipv6_hdr(skb)->daddr);
++			return addr;
++		}
++	}
++#endif
++
++	return NULL;
++}
++
++/* Init the hash cookie contained in the socket */
++#define STAT_HASH_SK_INIT(sk)    STAT_INIT_COOKIE(sk_cookie(sk))	
++#define STAT_HASH_COOKIE_CLONE(newsk, sk)	\
++			sk_cookie_clone((struct sock *) (newsk), (struct sock *) (sk))
 +
 +/*
-+ * Get the number of counters currently registered for the specific SNMP MIB and map level.
-+ * We use this when dumping the counters so we don't display any output if no counters were registered.
++ * Basic macro used for acquiering a cookie of either an existing entry or a new entry in the hashtable.
++ * STAT_COOKIE_EMPTY makes sure that we do not operate on a socket that contains a non zero cookie 
++ * (non zero sequence number). This also ensures that when cookie is polluted we won't use it again during
++ * the lifetime of the socket.
 + */
-+extern int snmp_map_count(struct snmp_mib_map *m);
++#define STAT_HASH_SK_INSERT_BASE(sk, direction, existing, alloc_flag)	\
++			if (STAT_COOKIE_EMPTY(sk_cookie(sk))) \
++				do { \
++					struct stat_hash_addr addr, *addr_in; \
++					addr_in = sk_addr_inet(sk, &addr, direction); \
++					if (addr_in) \
++						stat_hash_insert(STAT_SK_INITVAL, (&addr), existing, \
++								 alloc_flag, sk_cookie(sk)); \
++				}  while (0)
++
++
 +
 +/* 
-+ * Initialize a mapping - no allocation yet.
-+ * This must be called before allocating the counters to set the map level and SNMP MIB ID in a newly 
-+ * allocated mapping.
++ * Insert a new address entry into the hash if it doesn't already exist, possibly
++ * allocating the per CPU counters in one or more of the mappings.
++ * Should not be called from within an atomic context or inside a spinlock.
 + */
-+int snmp_map_init_map(u8 maplvl, u8 mibid, struct snmp_mib_map *m);
++#define STAT_HASH_SK_INSERT_NONATOMIC(sk, direction) \
++	STAT_HASH_SK_INSERT_BASE(sk, direction, false, STAT_HASH_ALLOC_FLAG_ALLOC)
 +
-+/* Allocate per CPU counters */
-+int  snmp_map_mib_init(struct snmp_mib_map *m);
-+
-+/* 
-+ * In cases where a counter is both incremented and decremented, a specific counter may overflow when decremening zero.
-+ * This can happen in two situation:
-+ * 1) Missed increment
-+ * 2) Counters are artificially decremented to zero.
-+ * Since a counter value can be higher the LONG_MAX, we can't destinguish between an overflow and a real value in the 
-+ * range of LONG_MAX - ULONG_MAX.  If we know that a specific counter is both incremented and decremented, 
-+ * it is logical to assume that we will never reach LONG_MAX, so in this case we can test the value of the counter and zero
-+ * it if it is negative.
-+ *
-+ * This function Displays the counters countained in a mapping.
-+ * bitmap argument specifies which counters to test for negative and zero.
-+ */
-+extern int snmp_map_print_stats(struct seq_file *seq, struct snmp_mib_map *m, union snmp_mib_map_bitmaps *bitmap);
-+/* Zero a negative counter */
-+extern void snmp_map_zero_negative(struct snmp_mib_map *m, u8 field);
-+
-+/* Zero per CPU counters */
-+void snmp_map_mib_zero(struct snmp_mib_map *m); 
-+/* Free per CPU memory allocated for counters */
-+void snmp_map_mib_free(struct snmp_mib_map *m); 
-+
-+/* Global map level used for determining the set of counters to be allocated and updated */
-+extern int snmp_map_level;
-+extern int snmp_map_level_handler(ctl_table *table, int write, void __user *buffer, size_t *length, loff_t *ppos);
 +
 +/*
-+ * Maintain a global array that maps a field in specific MIB to a map level.
-+ * The array is used to determine whether a specific counter needs to be updated in the current map level (snmp_map_level).
++ *  Insert a new address entry into the hash if it doesn't already exist, possibly 
++ *  allocating the per CPU counters in one or more of the mappings.
++ *  Should be used withing spinlocks or when we are sure we are in an atomic context.
 + */
-+struct snmp_map_mapper {
-+        u32 len;
-+	union mib_mapping map_map;	
-+};
++#define STAT_HASH_SK_INSERT_ATOMIC(sk, direction) \
++	STAT_HASH_SK_INSERT_BASE(sk, direction, false, STAT_HASH_ALLOC_FLAG_DELAYED_ALLOC) 
 +
-+extern struct snmp_map_mapper *map_mappings[__SNMP_MIB_MAX];
++/* 
++ * Insert a new address entry into the hash if it doesn't already exist, possibly
++ * allocating the per CPU counters in one or more of the mappings.
++ * If call is from is an atomic context, per CPU allocation is done in delayed work.
++ * Not intended to be used within spinlocks.
++ */
++#define STAT_HASH_SK_INSERT(sk, direction) \
++	STAT_HASH_SK_INSERT_BASE(sk, direction, false, \
++			 (in_atomic() ? STAT_HASH_ALLOC_FLAG_DELAYED_ALLOC : \
++					STAT_HASH_ALLOC_FLAG_ALLOC))
 +
-+static inline struct snmp_map_mapper *
-+snmp_map_get_mapper(u8 mibid)
-+{
-+	return ((mibid >= __SNMP_MIB_MAX) ? NULL : map_mappings[mibid]);
-+}
 +
-+static inline u8
-+snmp_map_get_map_level(u8 mibid, u8 field)
-+{
-+	struct snmp_map_mapper *mapper = snmp_map_get_mapper(mibid);
++/*
++ * Store cookie associated with an existing entry in the hashtable, possibly 
++ * allocating the per CPU counters in one or more of the mappings.
++ * Should not be called from within an atomic context or inside a spinlock.
++ */
++#define STAT_HASH_SK_INSERT_EXISTING_NONATOMIC(sk) \
++	STAT_HASH_SK_INSERT_BASE(sk, STAT_HASH_SK_DONTCARE, true, STAT_HASH_ALLOC_FLAG_ALLOC)	
 +
-+	return ((mapper != NULL) ? mapper->map_map.mapping[field] : SNMP_MAP_UNMAPPED);
-+}
++/*
++ * Store cookie associated with an existing entry in the hashtable, possibly
++ * allocating the per CPU counters in one or more of the mappings with delayed work.
++ * Should be used withing spinlocks or when we are sure we are in an atomic context.
++ */
++#define STAT_HASH_SK_INSERT_EXISTING_ATOMIC(sk) \
++	STAT_HASH_SK_INSERT_BASE(sk, STAT_HASH_SK_DONTCARE, true, STAT_HASH_ALLOC_FLAG_DELAYED_ALLOC)
 +
-+/* Upper layers should test this before calling the actual macro that updates the counter. */
-+static inline bool
-+snmp_map_allow_update(u8 mibid, u8 field)
-+{
-+	u8 maplvl = snmp_map_get_map_level(mibid, field);
++/*
++ * Store cookie associated with an existing entry in the hashtable, possibly
++ * allocating the per CPU counters in one or more of the mappings.
++ * If call is from is an atomic context, per CPU allocation is done in delayed work.
++ * Not intended to be used within spinlocks.
++ */
++#define STAT_HASH_SK_INSERT_EXISTING(sk) \
++	STAT_HASH_SK_INSERT_BASE(sk, STAT_HASH_SK_DONTCARE, true, \
++			 (in_atomic() ? STAT_HASH_ALLOC_FLAG_DELAYED_ALLOC : \
++					STAT_HASH_ALLOC_FLAG_ALLOC))
 +
-+	return ((maplvl == SNMP_MAP_UNMAPPED) ? false : maplvl <= snmp_map_level);
-+}
++/* 
++ * Store cookie associated with an existing entry in the hashtable without modifying
++ * the entry. This is used in those frequent and sensitive places where we want to make sure that the socket 
++ * contains a cookie, but we don't want any per CPU allocation to take place.
++ * It can be used several times on the same socket due to STAT_COOKIE_EMPTY test.
++ */
++#define STAT_HASH_SK_INSERT_EXISTING_NOALLOC(sk) \
++	STAT_HASH_SK_INSERT_BASE(sk, STAT_HASH_SK_DONTCARE, true, STAT_HASH_ALLOC_FLAG_NOALLOC)
++					  
++
++/*************************************************************************************
++ * Replacement to NET_INC, NET_ADD macros to interract with hashed Linux MIB counters.
++ *************************************************************************************/
++
++/* Macros that interract with Linux MIB via cookie contained in struct sock */
++
++/* Update Linux MIB counter via a "struct sock *" of any name */
++#define __NET_INC_SOCK_STATS(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_LINUX_MIB, field)) \
++		SNMP_INC_STATS_HASH(sk_cookie(sk), lnx_stats, field)
++#define __NET_INC_SOCK_STATS_BH(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_LINUX_MIB, field)) \
++		SNMP_INC_STATS_HASH_BH(sk_cookie(sk), lnx_stats, field)
++#define __NET_INC_SOCK_STATS_USER(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_LINUX_MIB, field)) \
++		SNMP_INC_STATS_HASH_USER(sk_cookie(sk), lnx_stats, field)
++#define __NET_ADD_SOCK_STATS_BH(sk, net, field, adnd) \
++	if (snmp_map_allow_update(SNMP_LINUX_MIB, field)) \
++		SNMP_ADD_STATS_HASH_BH(sk_cookie(sk), lnx_stats, field, adnd)
++#define __NET_ADD_SOCK_STATS_USER(sk, net, field, adnd) \
++	if (snmp_map_allow_update(SNMP_LINUX_MIB, field)) \
++		SNMP_ADD_STATS_HASH_USER(sk_cookie(sk), lnx_stats, field, adnd)
++
++
++/* Update Linux MIB counter via a "struct sock *" of any name + update original counter */
++#define NET_INC_SOCK_STATS(sk, net, field)  \
++	do { \
++		__NET_INC_STATS(net, field); \
++		__NET_INC_SOCK_STATS((sk), net, field); \
++        } while (0)
++#define NET_INC_SOCK_STATS_BH(sk, net, field) \
++	do { \
++		__NET_INC_STATS_BH(net, field); \
++		__NET_INC_SOCK_STATS_BH((sk), net, field); \
++	} while (0)
++#define NET_INC_SOCK_STATS_USER(sk, net, field) \
++	do { \
++		__NET_INC_STATS_USER(net, field); \
++		__NET_INC_SOCK_STATS_USER((sk), net, field); \
++	} while (0)
++#define NET_ADD_SOCK_STATS_BH(sk, net, field, adnd) \
++	do { \
++		__NET_ADD_STATS_BH(net, field, adnd); \
++		__NET_ADD_SOCK_STATS_BH((sk), net, field, adnd); \
++	} while (0)
++#define NET_ADD_SOCK_STATS_USER(sk, net, field, adnd) \
++	do { \
++		__NET_ADD_STATS_USER(net, field, adnd); \
++		__NET_ADD_SOCK_STATS_USER((sk), net, field, adnd); \
++	} while (0)
++
++/*
++ * Update Linux MIB counter via a "struct sock *" named sk.
++ * This is the case in most situations so these macros are used for overriding the originals.
++ */
++#define NET_INC_SK_STATS(net, field)                 NET_INC_SOCK_STATS(sk, net, field)
++#define NET_INC_SK_STATS_BH(net, field)              NET_INC_SOCK_STATS_BH(sk, net, field)
++#define NET_INC_SK_STATS_USER(net, field)            NET_INC_SOCK_STATS_USER(sk, net, field)
++#define NET_ADD_SK_STATS_BH(net, field, adnd)        NET_ADD_SOCK_STATS_BH(sk, net, field, adnd)
++#define NET_ADD_SK_STATS_USER(net, field, adnd)      NET_ADD_SOCK_STATS_USER(sk, net, field, adnd)
++
++
++/* Macros that interract with Linux MIB via socket buffer */
++
++/* Update Linux MIB counter via a "struct sk_buff *" of any name */
++#define __NET_INC_SKBUFF_STATS(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_LINUX_MIB, field))  { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR(STAT_NET_INITVAL(net), addr_in, lnx_stats, field); \
++		} \
++	} while (0)
++#define __NET_INC_SKBUFF_STATS_BH(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_LINUX_MIB, field))  { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR_BH(STAT_NET_INITVAL(net), addr_in, lnx_stats, field); \
++		} \
++	} while (0)
++#define __NET_INC_SKBUFF_STATS_USER(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_LINUX_MIB, field))  { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR_USER(STAT_NET_INITVAL(net), addr_in, lnx_stats, field); \
++		} \
++	} while (0)
++#define __NET_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) \
++	do { \
++		if (snmp_map_allow_update(SNMP_LINUX_MIB, field))  { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_ADD_STATS_HASH_ADDR_BH(STAT_NET_INITVAL(net), addr_in, lnx_stats, field, adnd); \
++		} \
++	} while (0)
++#define __NET_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) \
++	do { \
++		if (snmp_map_allow_update(SNMP_LINUX_MIB, field))  { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_ADD_STATS_HASH_ADDR_USER(STAT_NET_INITVAL(net), addr_in, lnx_stats, field, adnd); \
++		} \
++	} while (0)
++
++
++/* Update Linux MIB counter via a "struct sk_buff *" of any name + update original counter */
++#define NET_INC_SKBUFF_STATS(skb, field) \
++	do { \
++		__NET_INC_STATS(net, field); \
++		__NET_INC_SKBUFF_STATS((skb), net, field); \
++	} while (0)
++#define NET_INC_SKBUFF_STATS_BH(skb, net, field) \
++	do { \
++		__NET_INC_STATS_BH(net, field); \
++		__NET_INC_SKBUFF_STATS_BH((skb), net, field); \
++	} while (0)
++#define NET_INC_SKBUFF_STATS_USER(skb, net, field) \
++	do { \
++		__NET_INC_STATS_USER(net, field); \
++		__NET_INC_SKBUFF_STATS_USER((skb), net, field); \
++	} while (0)
++#define NET_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) \
++	do { \
++		__NET_ADD_STATS_BH(net, field, adnd); \
++		__NET_ADD_SKBUFF_STATS_BH((skb), net, field, adnd); \
++	} while (0)
++#define NET_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) \
++	do { \
++		__NET_ADD_STATS_USER(net, field, adnd); \
++		__NET_ADD_SKBUFF_STATS_USER((skb), net, field, adnd); \
++	} while (0)
++
++
++/* Update Linux MIB counter via a "struct sk_buff *" named skb. */
++#define NET_INC_SKB_STATS(net, field)			NET_INC_SKBUFF_STATS(skb, net, field)
++#define NET_INC_SKB_STATS_BH(net, field)		NET_INC_SKBUFF_STATS_BH(skb, net, field)
++#define NET_INC_SKB_STATS_USER(net, field)		NET_INC_SKBUFF_STATS_USER(skb, net, field)
++#define NET_ADD_SKB_STATS_BH(net, field, adnd)		NET_ADD_SKBUFF_STATS_BH(skb, net, field, adnd)
++#define NET_ADD_SKB_STATS_USER(net, field, adnd)	NET_ADD_SKBUFF_STATS_USER(skb, net, field, adnd)
++
++
++/*********************************************************************************************
++ * Replacement to TCP_INC, TCP_DEC, TCP__ADD macros to interract with hashed TCP MIB counters.
++ *********************************************************************************************/
++
++/* Macros that interract with TCP MIB via cookie contained in struct sock */
++
++/* Update TCP MIB counter via a "struct sock *" of any name */
++#define __TCP_INC_SOCK_STATS(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_INC_STATS_HASH(sk_cookie(sk), tcp_stats, field)
++#define __TCP_INC_SOCK_STATS_BH(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_INC_STATS_HASH_BH(sk_cookie(sk), tcp_stats, field)
++#define __TCP_INC_SOCK_STATS_USER(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_INC_STATS_HASH_USER(sk_cookie(sk), tcp_stats, field)
++#define __TCP_DEC_SOCK_STATS(sk, net, field)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_DEC_STATS_HASH(sk_cookie(sk), tcp_stats, field)
++#define __TCP_ADD_SOCK_STATS_BH(sk, net, field, val)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_ADD_STATS_HASH_BH(sk_cookie(sk), tcp_stats, field, val)
++#define __TCP_ADD_SOCK_STATS_USER(sk, net, field, val)  \
++	if (snmp_map_allow_update(SNMP_TCP_MIB, field)) \
++		SNMP_ADD_STATS_HASH_USER(sk_cookie(sk), tcp_stats, field, val)
++
++/* Update TCP MIB counter via a "struct sock *" of any name + update original counter */
++#define TCP_INC_SOCK_STATS(sk, net, field)  \
++	do { \
++		__TCP_INC_STATS(net, field); \
++		__TCP_INC_SOCK_STATS((sk), net, field); \
++	} while (0)
++#define TCP_INC_SOCK_STATS_BH(sk, net, field) \
++	do { \
++		__TCP_INC_STATS_BH(net, field); \
++		__TCP_INC_SOCK_STATS_BH((sk), net, field); \
++	} while (0)
++#define TCP_INC_SOCK_STATS_USER(sk, net, field) \
++	do { \
++		__TCP_INC_STATS_USER(net, field); \
++		__TCP_INC_SOCK_STATS_USER((sk), net, field); \
++	} while (0)
++#define TCP_DEC_SOCK_STATS(sk, net, field)  \
++	do { \
++		__TCP_DEC_STATS(net, field); \
++		__TCP_DEC_SOCK_STATS((sk), net, field); \
++	} while (0)
++#define TCP_ADD_SOCK_STATS_BH(sk, net, field, adnd) \
++	do { \
++		__TCP_ADD_STATS_BH(net, field, adnd); \
++		__TCP_ADD_SOCK_STATS_BH((sk), net, field, adnd); \
++	} while (0)
++#define TCP_ADD_SOCK_STATS_USER(sk, net, field, adnd) \
++	do { \
++		__TCP_ADD_STATS_USER(net, field, adnd); \
++		__TCP_ADD_SOCK_STATS_USER((sk), net, field, adnd); \
++	} while (0)
++
++/*
++ * Update TCP MIB counter via a "struct sock *" named sk.
++ * This is the case in most situations so these macros are used for overriding the originals.
++ */
++#define TCP_INC_SK_STATS(net, field)			TCP_INC_SOCK_STATS(sk, net, field)
++#define TCP_INC_SK_STATS_BH(net, field)			TCP_INC_SOCK_STATS_BH(sk, net, field)
++#define TCP_INC_SK_STATS_USER(net, field)		TCP_INC_SOCK_STATS_USER(sk, net, field)
++#define TCP_DEC_SK_STATS(net, field)			TCP_DEC_SOCK_STATS(sk, net, field)
++#define TCP_ADD_SK_STATS_BH(net, field, adnd)		TCP_ADD_SOCK_STATS_BH(sk, net, field, adnd)
++#define TCP_ADD_SK_STATS_USER(net, field, adnd)		TCP_ADD_SOCK_STATS_USER(sk, net, field, adnd)
++
++/* Macros that interract with Linux TCP via socket buffer */
++
++/* Update TCP MIB counter via a "struct sk_buff *" of any name */
++#define __TCP_INC_SKBUFF_STATS(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR(STAT_NET_INITVAL(net), addr_in, tcp_stats, field); \
++		} \
++	} while (0)
++#define __TCP_INC_SKBUFF_STATS_BH(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR_BH(STAT_NET_INITVAL(net), addr_in, tcp_stats, field); \
++		} \
++	} while (0)
++#define __TCP_INC_SKBUFF_STATS_USER(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_INC_STATS_HASH_ADDR_USER(STAT_NET_INITVAL(net), addr_in, tcp_stats, field); \
++		} \
++	} while (0)
++#define __TCP_DEC_SKBUFF_STATS(skb, net, field) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_DEC_STATS_HASH_ADDR(STAT_NET_INITVAL(net), addr_in, tcp_stats, field); \
++		} \
++	} while (0)
++#define __TCP_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_ADD_STATS_HASH_ADDR_BH(STAT_NET_INITVAL(net), addr_in, tcp_stats, field, adnd); \
++		} \
++	} while (0)
++#define __TCP_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) \
++	do { \
++		if (snmp_map_allow_update(SNMP_TCP_MIB, field)) { \
++			struct stat_hash_addr addr, *addr_in; \
++			addr_in = skb_addr((skb), &addr); \
++			if (addr_in) \
++				SNMP_ADD_STATS_HASH_ADDR_USER(STAT_NET_INITVAL(net), addr_in, tcp_stats, field, adnd); \
++		} \
++	} while (0)
++
++
++/* Update TCP MIB counter via a "struct sk_buff *" of any name + update original counter */
++#define TCP_INC_SKBUFF_STATS(skb, net, field) \
++	do { \
++		__TCP_INC_STATS(net, field); \
++		__TCP_INC_SKBUFF_STATS((skb), net, field); \
++	} while (0)
++#define TCP_INC_SKBUFF_STATS_BH(skb, net, field) \
++	do { \
++		__TCP_INC_STATS_BH(net, field); \
++		__TCP_INC_SKBUFF_STATS_BH((skb), net, field); \
++	} while (0)
++#define TCP_INC_SKBUFF_STATS_USER(skb, net, field) \
++	do { \
++		__TCP_INC_STATS_USER(net, field); \
++		__TCP_INC_SKBUFF_STATS_USER((skb), net, field); \
++	} while (0)
++#define TCP_DEC_SKBUFF_STATS(skb, net, field) \
++	do { \
++		__TCP_DEC_STATS(net, field); \
++		__TCP_DEC_SKBUFF_STATS((skb), net, field); \
++	} while (0)
++#define TCP_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) \
++	do { \
++		__TCP_ADD_STATS_BH(net, field, adnd); \
++		__TCP_ADD_SKBUFF_STATS_BH((skb), net, field, adnd); \
++	} while (0)
++#define TCP_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) \
++	do { \
++		__TCP_ADD_STATS_USER(net, field, adnd); \
++		__TCP_ADD_SKBUFF_STATS_USER((skb), net, field, adnd); \
++	} while (0)
++
++
++/* Update TCP MIB counter via a "struct sk_buff *" named skb. */
++#define TCP_INC_SKB_STATS(net, field)			TCP_INC_SKBUFF_STATS(skb, net, field)
++#define TCP_INC_SKB_STATS_BH(net, field)		TCP_INC_SKBUFF_STATS_BH(skb, net, field)
++#define TCP_INC_SKB_STATS_USER(net, field)		TCP_INC_SKBUFF_STATS_USER(skb, net, field)
++#define TCP_DEC_SKB_STATS(net, field)			TCP_DEC_SKBUFF_STATS(skb, net, field)
++#define TCP_ADD_SKB_STATS_BH(net, field, adnd)		TCP_ADD_SKBUFF_STATS_BH(skb, net, field, adnd)
++#define TCP_ADD_SKB_STATS_USER(net, field, adnd)	TCP_ADD_SKBUFF_STATS_USER(skb, net, field, adnd)
++
++#else
++
++#define STAT_HASH_SK_INIT(sk) 
++#define STAT_HASH_COOKIE_CLONE(newsk, sk)                          
++#define STAT_HASH_SK_INSERT(sk, direction)
++#define STAT_HASH_SK_INSERT_ATOMIC(sk, direction)
++#define STAT_HASH_SK_INSERT_EXISTING(sk)
++#define STAT_HASH_SK_INSERT_EXISTING_NOALLOC(sk)
++
++#define NET_INC_SOCK_STATS(sk, net, field) __NET_INC_STATS(net, field)
++#define NET_INC_SOCK_STATS_BH(sk, net, field) __NET_INC_STATS_BH(net, field)
++#define NET_INC_SOCK_STATS_USER(sk, net, field) __NET_INC_STATS_USER(net, field)
++#define NET_ADD_SOCK_STATS_BH(sk, net, field, adnd) __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_SOCK_STATS_USER(sk, net, field, adnd) __NET_ADD_STATS_USER(net, field, adnd)
++
++#define NET_INC_SK_STATS(net, field)  __NET_INC_STATS(net, field)
++#define NET_INC_SK_STATS_BH(net, field)  __NET_INC_STATS_BH(net, field)
++#define NET_INC_SK_STATS_USER(net, field)  __NET_INC_STATS_USER(net, field)
++#define NET_ADD_SK_STATS_BH(net, field, adnd)  __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_SK_STATS_USER(net, field, adnd)  __NET_ADD_STATS_USER(net, field, adnd)
++
++#define NET_INC_SKBUFF_STATS(skb, net, field) __NET_INC_STATS(net, field)
++#define NET_INC_SKBUFF_STATS_BH(skb, net, field) __NET_INC_STATS_BH(net, field)
++#define NET_INC_SKBUFF_STATS_USER(skb, net, field) __NET_INC_STATS_USER(net, field)
++#define NET_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) __NET_ADD_STATS_USER(net, field, adnd)
++
++#define NET_INC_SKB_STATS(net, field)  __NET_INC_STATS(net, field)
++#define NET_INC_SKB_STATS_BH(net, field)   __NET_INC_STATS_BH(net, field)
++#define NET_INC_SKB_STATS_USER(net, field) __NET_INC_STATS_USER(net, field)
++#define NET_ADD_SKB_STATS_BH(net, field, adnd)  __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_SKB_STATS_USER(net, field, adnd)  __NET_ADD_STATS_USER(net, field, adnd)
++
++#define TCP_INC_SOCK_STATS(sk, net, field) __TCP_INC_STATS(net, field)
++#define TCP_INC_SOCK_STATS_BH(sk, net, field) __TCP_INC_STATS_BH(net, field)
++#define TCP_INC_SOCK_STATS_USER(sk, net, field) __TCP_INC_STATS_USER(net, field)
++#define TCP_DEC_SOCK_STATS(sk, net, field) __TCP_DEC_STATS(net, field)
++#define TCP_ADD_SOCK_STATS_BH(sk, net, field, val) __TCP_ADD_STATS_BH(net, field, val)
++#define TCP_ADD_SOCK_STATS_USER(sk, net, field, val) __TCP_ADD_STATS_USER(net, field, val)
++
++#define TCP_INC_SK_STATS(net, field)  __TCP_INC_STATS(net, field)
++#define TCP_INC_SK_STATS_BH(net, field)  __TCP_INC_STATS_BH(net, field)
++#define TCP_INC_SK_STATS_USER(net, field)  __TCP_INC_STATS_USER(net, field)
++#define TCP_DEC_SK_STATS(net, field)  __TCP_DEC_STATS(net, field)
++#define TCP_ADD_SK_STATS_BH(net, field, val)  __TCP_ADD_STATS_BH(net, field, val)
++#define TCP_ADD_SK_STATS_USER(net, field, val)  __TCP_ADD_STATS_USER(net, field, val)
++
++#define TCP_INC_SKBUFF_STATS(skb, net, field) __TCP_INC_STATS(net, field)
++#define TCP_INC_SKBUFF_STATS_BH(skb, net, field) __TCP_INC_STATS_BH(net, field)
++#define TCP_INC_SKBUFF_STATS_USER(skb, net, field) __TCP_INC_STATS_USER(net, field)
++#define TCP_DEC_SKBUFF_STATS(skb, net, field) __TCP_DEC_STATS(net, field)
++#define TCP_ADD_SKBUFF_STATS_BH(skb, net, field, adnd) __TCP_ADD_STATS_BH(net, field, val)
++#define TCP_ADD_SKBUFF_STATS_USER(skb, net, field, adnd) __TCP_ADD_STATS_USER(net, field, val)
++
++#define TCP_INC_SKB_STATS(net, field)  __TCP_INC_STATS(net, field)
++#define TCP_INC_SKB_STATS_BH(net, field)  __TCP_INC_STATS_BH(net, field)
++#define TCP_INC_SKB_STATS_USER(net, field)  __TCP_INC_STATS_USER(net, field)
++#define TCP_DEC_SKB_STATS(net, field)  __TCP_DEC_STATS(net, field)
++#define TCP_ADD_SKB_STATS_BH(net, field, val)  __TCP_ADD_STATS_BH(net, field, val)
++#define TCP_ADD_SKB_STATS_USER(net, field, val)  __TCP_ADD_STATS_USER(net, field, val)
 +
 +#endif
 +
 +#endif
+diff -r -U 4 a/include/net/stat_sk_hashtable_net_overrides.h b/include/net/stat_sk_hashtable_net_overrides.h
+--- a/include/net/stat_sk_hashtable_net_overrides.h	2013-08-27 17:15:42.965623755 +0300
++++ b/include/net/stat_sk_hashtable_net_overrides.h	2013-08-27 17:15:43.055664650 +0300
+@@ -0,0 +1,26 @@
++#ifndef _STAT_SK_HASHTABLE_NET_OVERRIDES_H
++#define _STAT_SK_HASHTABLE_NET_OVERRIDES_H
++
++#include <net/stat_sk_hashtable.h>
++
++#ifdef CONFIG_NET_IPV4_SOCK_STATS
++
++#undef NET_INC_STATS
++#define NET_INC_STATS(net, field) NET_INC_SK_STATS(net, field)
++
++#undef NET_INC_STATS_BH
++#define NET_INC_STATS_BH(net, field) NET_INC_SK_STATS_BH(net, field)
++
++#undef NET_INC_STATS_USER
++#define NET_INC_STATS_USER(net, field)  NET_INC_SK_STATS_USER(net, field)
++
++#undef NET_ADD_STATS_BH
++#define NET_ADD_STATS_BH(net, field, adnd) NET_ADD_SK_STATS_BH(net, field, adnd)
++
++#undef NET_ADD_STATS_USER
++#define NET_ADD_STATS_USER(net, field, adnd) NET_ADD_SK_STATS_USER(net, field, adnd)
++
++#endif
++
++#endif
++
+diff -r -U 4 a/include/net/stat_sk_hashtable_tcp_overrides.h b/include/net/stat_sk_hashtable_tcp_overrides.h
+--- a/include/net/stat_sk_hashtable_tcp_overrides.h	2013-08-27 17:15:42.972623592 +0300
++++ b/include/net/stat_sk_hashtable_tcp_overrides.h	2013-08-27 17:15:43.069671924 +0300
+@@ -0,0 +1,29 @@
++#ifndef _STAT_SK_HASHTABLE_TCP_OVERRIDES_H
++#define _STAT_SK_HASHTABLE_TCP_OVERRIDES_H
++
++#include <net/stat_sk_hashtable.h>
++
++#ifdef CONFIG_NET_IPV4_SOCK_STATS
++
++#undef TCP_INC_STATS
++#define TCP_INC_STATS(net, field) TCP_INC_SK_STATS(net, field)
++
++#undef TCP_INC_STATS_BH
++#define TCP_INC_STATS_BH(net, field) TCP_INC_SK_STATS_BH(net, field)
++
++#undef TCP_INC_STATS_USER
++#define TCP_INC_STATS_USER(net, field) TCP_INC_SK_STATS_USER(net, field)
++
++#undef TCP_DEC_STATS
++#define TCP_DEC_STATS(net, field) TCP_DEC_SK_STATS(net, field)
++
++#undef TCP_ADD_STATS_BH
++#define TCP_ADD_STATS_BH(net, field, val) TCP_ADD_SK_STATS_BH(net, field, val)
++
++#undef TCP_ADD_STATS_USER
++#define TCP_ADD_STATS_USER(net, field, val) TCP_ADD_SK_STATS_USER(net, field, val)
++
++#endif
++
++#endif
++
+diff -r -U 4 a/include/net/stat_sk_hashtable_undo_overrides.h b/include/net/stat_sk_hashtable_undo_overrides.h
+--- a/include/net/stat_sk_hashtable_undo_overrides.h	2013-08-27 17:15:42.979623650 +0300
++++ b/include/net/stat_sk_hashtable_undo_overrides.h	2013-08-27 17:15:43.084645034 +0300
+@@ -0,0 +1,49 @@
++#ifdef CONFIG_NET_IPV4_SOCK_STATS
++
++#undef NET_INC_STATS
++#undef NET_INC_STATS_BH
++#undef NET_INC_STATS_USER
++#undef NET_ADD_STATS_BH
++#undef NET_ADD_STATS_USER
++
++#define NET_INC_STATS(net, field) __NET_INC_STATS(net, field)
++#define NET_INC_STATS_BH(net, field) __NET_INC_STATS_BH(net, field)
++#define NET_INC_STATS_USER(net, field)  __NET_INC_STATS_USER(net, field)
++#define NET_ADD_STATS_BH(net, field, adnd) __NET_ADD_STATS_BH(net, field, adnd)
++#define NET_ADD_STATS_USER(net, field, adnd) __NET_ADD_STATS_USER(net, field, adnd)
++
++#undef TCP_INC_STATS
++#undef TCP_INC_STATS_BH
++#undef TCP_INC_STATS_USER
++#undef TCP_DEC_STATS
++#undef TCP_ADD_STATS_BH
++#undef TCP_ADD_STATS_USER
++
++#define TCP_INC_STATS(net, field) __TCP_INC_STATS(net, field)
++#define TCP_INC_STATS_BH(net, field) __TCP_INC_STATS_BH(net, field)
++#define TCP_INC_STATS_USER(net, field) __TCP_INC_STATS_USER(net, field)
++#define TCP_DEC_STATS(net, field) __TCP_DEC_STATS(net, field)
++#define TCP_ADD_STATS_BH(net, field, val) __TCP_ADD_STATS_BH(net, field, val)
++#define TCP_ADD_STATS_USER(net, field, val) __TCP_ADD_STATS_USER(net, field, val)
++
++#undef STAT_HASH_SK_INIT
++#undef STAT_HASH_COOKIE_CLONE
++#undef STAT_HASH_SK_INSERT_NONATOMIC
++#undef STAT_HASH_SK_INSERT_ATOMIC
++#undef STAT_HASH_SK_INSERT
++#undef STAT_HASH_SK_INSERT_EXISTING_NONATOMIC
++#undef STAT_HASH_SK_INSERT_EXISTING_ATOMIC
++#undef STAT_HASH_SK_INSERT_EXISTING
++#undef STAT_HASH_SK_INSERT_EXISTING_NOALLOC
++
++#define STAT_HASH_SK_INIT(sk)
++#define STAT_HASH_COOKIE_CLONE(newsk, sk)
++#define STAT_HASH_SK_INSERT_NONATOMIC(sk, direction) 
++#define STAT_HASH_SK_INSERT_ATOMIC(sk, direction) 
++#define STAT_HASH_SK_INSERT(sk, direction) 
++#define STAT_HASH_SK_INSERT_EXISTING_NONATOMIC(sk) 
++#define STAT_HASH_SK_INSERT_EXISTING_ATOMIC(sk) 
++#define STAT_HASH_SK_INSERT_EXISTING(sk) 
++#define STAT_HASH_SK_INSERT_EXISTING_NOALLOC(sk)
++
++#endif
+diff -r -U 4 a/include/net/tcp.h b/include/net/tcp.h
+--- a/include/net/tcp.h	2013-08-27 17:15:42.986623640 +0300
++++ b/include/net/tcp.h	2013-08-27 17:15:43.103606236 +0300
+@@ -297,12 +297,17 @@
+ }
+ 
+ extern struct proto tcp_prot;
+ 
+-#define TCP_INC_STATS(net, field)	SNMP_INC_STATS((net)->mib.tcp_statistics, field)
+-#define TCP_INC_STATS_BH(net, field)	SNMP_INC_STATS_BH((net)->mib.tcp_statistics, field)
+-#define TCP_DEC_STATS(net, field)	SNMP_DEC_STATS((net)->mib.tcp_statistics, field)
+-#define TCP_ADD_STATS_USER(net, field, val) SNMP_ADD_STATS_USER((net)->mib.tcp_statistics, field, val)
++#define __TCP_INC_STATS(net, field)	SNMP_INC_STATS((net)->mib.tcp_statistics, field)
++#define __TCP_INC_STATS_BH(net, field)	SNMP_INC_STATS_BH((net)->mib.tcp_statistics, field)
++#define __TCP_DEC_STATS(net, field)	SNMP_DEC_STATS((net)->mib.tcp_statistics, field)
++#define __TCP_ADD_STATS_USER(net, field, val) SNMP_ADD_STATS_USER((net)->mib.tcp_statistics, field, val)
++
++#define TCP_INC_STATS(net, field)       __TCP_INC_STATS(net, field)
++#define TCP_INC_STATS_BH(net, field)    __TCP_INC_STATS_BH(net, field)
++#define TCP_DEC_STATS(net, field)       __TCP_DEC_STATS(net, field)
++#define TCP_ADD_STATS_USER(net, field, val) __TCP_ADD_STATS_USER(net, field, val)
+ 
+ extern void			tcp_v4_err(struct sk_buff *skb, u32);
+ 
+ extern void			tcp_shutdown (struct sock *sk, int how);
+@@ -1108,12 +1113,12 @@
+ 
+ static inline void tcp_mib_init(struct net *net)
+ {
+ 	/* See RFC 2012 */
+-	TCP_ADD_STATS_USER(net, TCP_MIB_RTOALGORITHM, 1);
+-	TCP_ADD_STATS_USER(net, TCP_MIB_RTOMIN, TCP_RTO_MIN*1000/HZ);
+-	TCP_ADD_STATS_USER(net, TCP_MIB_RTOMAX, TCP_RTO_MAX*1000/HZ);
+-	TCP_ADD_STATS_USER(net, TCP_MIB_MAXCONN, -1);
++	__TCP_ADD_STATS_USER(net, TCP_MIB_RTOALGORITHM, 1);
++	__TCP_ADD_STATS_USER(net, TCP_MIB_RTOMIN, TCP_RTO_MIN*1000/HZ);
++	__TCP_ADD_STATS_USER(net, TCP_MIB_RTOMAX, TCP_RTO_MAX*1000/HZ);
++	__TCP_ADD_STATS_USER(net, TCP_MIB_MAXCONN, -1);
+ }
+ 
+ /* from STCP */
+ static inline void tcp_clear_retrans_hints_partial(struct tcp_sock *tp)
 diff -r -U 4 a/net/ipv4/Kconfig b/net/ipv4/Kconfig
---- a/net/ipv4/Kconfig	2013-09-01 09:03:35.373637542 +0300
-+++ b/net/ipv4/Kconfig	2013-09-01 09:03:35.461631233 +0300
-@@ -640,4 +640,14 @@
- 	  on the Internet.
+--- a/net/ipv4/Kconfig	2013-08-27 17:15:42.993704555 +0300
++++ b/net/ipv4/Kconfig	2013-08-27 17:15:43.129606087 +0300
+@@ -669,4 +669,13 @@
+ 	default n
+ 	---help---
+ 	Debug statistics hash table functionality
  
- 	  If unsure, say N.
- 
-+config NET_IPV4_SNMP_MAPPING
-+	boolean "Allow defining a subset of counters in a stat mib to reduce size"
-+	depends on INET
-+	default n
++config NET_IPV4_SOCK_STATS
++	boolean "Access stat hashtable from socket structure"
++	depends on NET_IPV4_STAT_HASHTABLES
++	default y
 +	---help---
-+	The statistics footprint in memory can be quite large due to the fact that
-+	the counters are allocated per CPU and each counter is 8 bytes.
-+	This feature enables allocation of only a subset of counters from within a stat mib
-+	by defining a mapping between the whole range of counters to a smaller set.
++	Stores the cookie for accessing the statistics hash in the socket structure.
++
++
 +
 diff -r -U 4 a/net/ipv4/Makefile b/net/ipv4/Makefile
---- a/net/ipv4/Makefile	2013-09-01 09:03:35.379639110 +0300
-+++ b/net/ipv4/Makefile	2013-09-01 09:03:35.479601685 +0300
-@@ -51,4 +51,6 @@
- obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
- 
+--- a/net/ipv4/Makefile	2013-08-27 17:15:42.999718205 +0300
++++ b/net/ipv4/Makefile	2013-08-27 17:15:43.151652445 +0300
+@@ -53,5 +53,6 @@
  obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
  		      xfrm4_output.o
-+obj-$(CONFIG_NET_IPV4_SNMP_MAPPING) += snmp_map.o
-+
-diff -r -U 4 a/net/ipv4/snmp_map.c b/net/ipv4/snmp_map.c
---- a/net/ipv4/snmp_map.c	2013-09-01 09:03:35.385639309 +0300
-+++ b/net/ipv4/snmp_map.c	2013-09-01 09:03:35.494590279 +0300
-@@ -0,0 +1,690 @@
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/sort.h>
-+
-+#include <net/ip.h>
-+#include <net/snmp_map.h>
-+
-+/* Structures for maintaining mapping information on every (SNMP MIB, map level) */
-+struct snmp_mib_map_info {
-+	spinlock_t lock;
-+	atomic_t initialized;
-+	u32 len;
-+	atomic_t count;
-+	u8 mibid;
-+	union mib_mapping map;
-+};
-+
-+#define DEFINE_SNMP_MAP_INFO(type) \
-+        type##_map_info { \
-+		spinlock_t lock; \
-+		atomic_t initialized; \
-+		u32 len; \
-+		atomic_t count; \
-+		u8 mibid; \
-+		type##_mapping map; \
-+        }
-+
-+DEFINE_SNMP_MAP_INFO(struct ipstats_mib);
-+DEFINE_SNMP_MAP_INFO(struct icmp_mib);
-+DEFINE_SNMP_MAP_INFO(struct icmpmsg_mib);
-+DEFINE_SNMP_MAP_INFO(struct icmpv6_mib);
-+DEFINE_SNMP_MAP_INFO(struct icmpv6msg_mib);
-+DEFINE_SNMP_MAP_INFO(struct tcp_mib);
-+DEFINE_SNMP_MAP_INFO(struct udp_mib);
-+DEFINE_SNMP_MAP_INFO(struct linux_mib);
-+DEFINE_SNMP_MAP_INFO(struct linux_xfrm_mib);
-+
-+#define DECLARE_SNMP_MAP_INFO(type, mtype, name) \
-+	__typeof__(type##_map_info) name  = { \
-+		.lock = SPIN_LOCK_UNLOCKED, \
-+		.initialized = ATOMIC_INIT(0), \
-+		.len = sizeof(type##_mapping), \
-+		.count = ATOMIC_INIT(0), \
-+		.mibid = (mtype), \
-+	}
-+
-+static DECLARE_SNMP_MAP_INFO(struct ipstats_mib, SNMP_IPSTATS_MIB, ipstats_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct icmp_mib, SNMP_ICMP_MIB, icmp_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct icmpmsg_mib, SNMP_ICMPMSG_MIB, icmpmsg_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct icmpv6_mib, SNMP_ICMP6_MIB, icmpv6_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct icmpv6msg_mib, SNMP_ICMP6MSG_MIB, icmpv6msg_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct tcp_mib, SNMP_TCP_MIB, tcp_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct udp_mib, SNMP_UDP_MIB, udp_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct linux_mib, SNMP_LINUX_MIB, linux_map_info);
-+static DECLARE_SNMP_MAP_INFO(struct linux_xfrm_mib, SNMP_LINUX_XFRM_MIB, linux_xfrm_map_info);
-+
-+static struct snmp_mib_map_info *map_info_default[__SNMP_MIB_MAX] = {
-+	(struct snmp_mib_map_info *) &ipstats_map_info,
-+	(struct snmp_mib_map_info *) &icmp_map_info,
-+	(struct snmp_mib_map_info *) &icmpmsg_map_info,
-+	(struct snmp_mib_map_info *) &icmpv6_map_info,
-+	(struct snmp_mib_map_info *) &icmpv6msg_map_info,
-+	(struct snmp_mib_map_info *) &tcp_map_info,
-+	(struct snmp_mib_map_info *) &udp_map_info,
-+	(struct snmp_mib_map_info *) &linux_map_info,
-+	(struct snmp_mib_map_info *) &linux_xfrm_map_info,
-+};
-+
-+static DECLARE_SNMP_MAP_INFO(struct ipstats_mib, SNMP_IPSTATS_MIB, ipstats_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct icmp_mib, SNMP_ICMP_MIB, icmp_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct icmpmsg_mib, SNMP_ICMPMSG_MIB, icmpmsg_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct icmpv6_mib, SNMP_ICMP6_MIB, icmpv6_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct icmpv6msg_mib, SNMP_ICMP6MSG_MIB, icmpv6msg_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct tcp_mib, SNMP_TCP_MIB, tcp_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct udp_mib, SNMP_UDP_MIB, udp_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct linux_mib, SNMP_LINUX_MIB, linux_map_info_diag);
-+static DECLARE_SNMP_MAP_INFO(struct linux_xfrm_mib, SNMP_LINUX_XFRM_MIB, linux_xfrm_map_info_diag);
-+
-+static struct snmp_mib_map_info *map_info_diag[__SNMP_MIB_MAX] = {
-+	(struct snmp_mib_map_info *) &ipstats_map_info_diag,
-+	(struct snmp_mib_map_info *) &icmp_map_info_diag,
-+	(struct snmp_mib_map_info *) &icmpmsg_map_info_diag,
-+	(struct snmp_mib_map_info *) &icmpv6_map_info_diag,
-+	(struct snmp_mib_map_info *) &icmpv6msg_map_info_diag,
-+	(struct snmp_mib_map_info *) &tcp_map_info_diag,
-+	(struct snmp_mib_map_info *) &udp_map_info_diag,
-+	(struct snmp_mib_map_info *) &linux_map_info_diag,
-+	(struct snmp_mib_map_info *) &linux_xfrm_map_info_diag,
-+};
-+
-+static struct snmp_mib_map_info **map_info[] = {
-+	map_info_default,
-+	map_info_diag,
-+};
-+
-+
-+
-+/* Structures for maintaining labels of each counter in every SNMP MIB */
-+struct snmp_mib_map_labels {
-+	u32 len;
-+	u32 registered; 
-+	char *names[0];
-+};
-+
-+#define DEFINE_SNMP_MAP_LABELS(type) \
-+	type##_labels { \
-+		u32 len; \
-+		u32 registered; \
-+		char *names[sizeof(type##_mapping)]; \
-+	}
-+
-+DEFINE_SNMP_MAP_LABELS(struct ipstats_mib);
-+DEFINE_SNMP_MAP_LABELS(struct icmp_mib);
-+DEFINE_SNMP_MAP_LABELS(struct icmpmsg_mib);
-+DEFINE_SNMP_MAP_LABELS(struct icmpv6_mib);
-+DEFINE_SNMP_MAP_LABELS(struct icmpv6msg_mib);
-+DEFINE_SNMP_MAP_LABELS(struct tcp_mib);
-+DEFINE_SNMP_MAP_LABELS(struct udp_mib);
-+DEFINE_SNMP_MAP_LABELS(struct linux_mib);
-+DEFINE_SNMP_MAP_LABELS(struct linux_xfrm_mib);
-+
-+#define DECLARE_SNMP_MAP_LABELS(type, name) \
-+	__typeof__(type##_labels) name= { \
-+		.len = sizeof(type##_mapping), \
-+		.registered = 0, \
-+	}
-+
-+static DECLARE_SNMP_MAP_LABELS(struct ipstats_mib, ipstats_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct icmp_mib, icmp_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct icmpmsg_mib, icmpmsg_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct icmpv6_mib, icmpv6_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct icmpv6msg_mib, icmpv6msg_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct tcp_mib, tcp_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct udp_mib, udp_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct linux_mib, linux_labels);
-+static DECLARE_SNMP_MAP_LABELS(struct linux_xfrm_mib, linux_xfrm_labels);
-+
-+static DEFINE_SPINLOCK(snmp_map_label_lock);
-+static struct snmp_mib_map_labels *map_labels[__SNMP_MIB_MAX] = {
-+        (struct snmp_mib_map_labels *) &ipstats_labels,
-+        (struct snmp_mib_map_labels *) &icmp_labels,
-+        (struct snmp_mib_map_labels *) &icmpmsg_labels,
-+        (struct snmp_mib_map_labels *) &icmpv6_labels,
-+        (struct snmp_mib_map_labels *) &icmpv6msg_labels,
-+        (struct snmp_mib_map_labels *) &tcp_labels,
-+        (struct snmp_mib_map_labels *) &udp_labels,
-+        (struct snmp_mib_map_labels *) &linux_labels,
-+        (struct snmp_mib_map_labels *) &linux_xfrm_labels,
-+};
-+
-+
-+/* Structures for maitainig a mapping from each counter in an SNMP MIB to the assigned map level*/
-+#define DEFINE_MAP_MAPPING(type) \
-+	type##_map_mapping_info { \
-+		u32 len; \
-+		type##_mapping map_map; \
-+	}
-+
-+DEFINE_MAP_MAPPING(struct ipstats_mib);
-+DEFINE_MAP_MAPPING(struct icmp_mib);
-+DEFINE_MAP_MAPPING(struct icmpmsg_mib);
-+DEFINE_MAP_MAPPING(struct icmpv6_mib);
-+DEFINE_MAP_MAPPING(struct icmpv6msg_mib);
-+DEFINE_MAP_MAPPING(struct tcp_mib);
-+DEFINE_MAP_MAPPING(struct udp_mib);
-+DEFINE_MAP_MAPPING(struct linux_mib);
-+DEFINE_MAP_MAPPING(struct linux_xfrm_mib);
-+
-+#define DECLARE_MAP_MAPPING(type, name) \
-+	__typeof__(type##_map_mapping_info) name = { \
-+		.len = sizeof(type##_mapping), \
-+	}
-+
-+static DECLARE_MAP_MAPPING(struct ipstats_mib, ipstats_map_mapping);
-+static DECLARE_MAP_MAPPING(struct icmp_mib, icmp_map_mapping);
-+static DECLARE_MAP_MAPPING(struct icmpmsg_mib, icmpmsg_map_mapping);
-+static DECLARE_MAP_MAPPING(struct icmpv6_mib, icmpv6_map_mapping);
-+static DECLARE_MAP_MAPPING(struct icmpv6msg_mib, icmpv6msg_map_mapping);
-+static DECLARE_MAP_MAPPING(struct tcp_mib, tcp_map_mapping);
-+static DECLARE_MAP_MAPPING(struct udp_mib, udp_map_mapping);
-+static DECLARE_MAP_MAPPING(struct linux_mib, lnx_map_mapping);
-+static DECLARE_MAP_MAPPING(struct linux_xfrm_mib, lnx_xfrm_map_mapping);
-+
-+struct snmp_map_mapper *map_mappings[__SNMP_MIB_MAX] = {
-+	(struct snmp_map_mapper *) &ipstats_map_mapping,
-+	(struct snmp_map_mapper *) &icmp_map_mapping,
-+	(struct snmp_map_mapper *) &icmpmsg_map_mapping,
-+	(struct snmp_map_mapper *) &icmpv6_map_mapping,
-+	(struct snmp_map_mapper *) &icmpv6msg_map_mapping,
-+	(struct snmp_map_mapper *) &tcp_map_mapping,
-+	(struct snmp_map_mapper *) &udp_map_mapping,
-+	(struct snmp_map_mapper *) &lnx_map_mapping,
-+	(struct snmp_map_mapper *) &lnx_xfrm_map_mapping,
-+};
-+EXPORT_SYMBOL(map_mappings);
-+
-+int snmp_map_level = SNMP_MAP_LEVEL_DEFAULT;
-+EXPORT_SYMBOL(snmp_map_level);
-+
-+#define SNMP_MAP_PREFIX "snmp_map: "
-+
-+#ifdef SNMP_MAP_DEBUG
-+#define snmp_map_dprintk(level, format...) \
-+		printk(KERN_DEBUG SNMP_MAP_PREFIX format)
-+#else
-+#define snmp_map_dprintk(level, format...)
-+#endif
-+
-+static inline struct snmp_mib_map_info *
-+snmp_map_get_info(u8 maplvl, u8 mibid) 
-+{
-+	struct snmp_mib_map_info *info = NULL;
-+
-+	if (maplvl >= SNMP_MAP_LEVEL_MAX) {
-+		printk(KERN_NOTICE SNMP_MAP_PREFIX "invalid map level %d\n", maplvl);
-+		return NULL;
-+	}
-+
-+	if (mibid >= __SNMP_MIB_MAX) {
-+		printk(KERN_NOTICE SNMP_MAP_PREFIX "invalid SNMP MIB ID %d\n", mibid);
-+		return NULL;
-+	}
-+
-+	info = map_info[maplvl][mibid];
-+
-+	return info;
-+}
-+
-+static inline struct snmp_mib_map_info *
-+snmp_map_get_initialized_info(u8 maplvl, u8 mibid) 
-+{
-+	struct snmp_mib_map_info *info = snmp_map_get_info(maplvl, mibid);
-+
-+	return (((info != NULL) && (atomic_read(&info->initialized) == 1)) ? info : NULL);
-+}
-+
-+static inline bool
-+snmp_map_initialized(struct snmp_mib_map_info *info)
-+{
-+	return (atomic_read(&info->initialized) == 1);
-+}
-+
-+int
-+snmp_map_count(struct snmp_mib_map *m)
-+{
-+	struct snmp_mib_map_info *info = snmp_map_get_initialized_info(m->maplvl, m->mibid);
-+
-+	return ((info != NULL) ? atomic_read(&info->count): 0);
-+}
-+EXPORT_SYMBOL(snmp_map_count);
-+		
-+static int
-+snmp_map_get_count(u8 maplvl, u8 mibid)
-+{
-+	struct snmp_mib_map_info *info = NULL;
-+
-+	if ((info = snmp_map_get_info(maplvl, mibid)) == NULL)
-+		return -EINVAL;
-+
-+	return (atomic_read(&info->count));
-+}
-+
-+static int
-+snmp_map_size(u8 maplvl, u8 mibid)
-+{
-+	return (snmp_map_get_count(maplvl, mibid) * sizeof(unsigned long));
-+}
-+
-+static inline void
-+snmp_map_zero_mapping(u8 *mapping, int len)
-+{
-+	memset(mapping, SNMP_MAP_UNMAPPED, len);
-+}
-+
-+static inline void
-+snmp_map_copy_mapping(u8 *mapping, struct snmp_mib_map_info *info)
-+{
-+	memcpy(mapping, info->map.mapping, info->len * sizeof(info->map.mapping[0]));
-+}
-+
-+int 
-+snmp_map_register_labels(u8 mibid, const struct snmp_mib *l, int len)
-+{
-+	int err = 0, i;
-+	static struct snmp_mib_map_labels *labels;
-+
-+	if (mibid >= __SNMP_MIB_MAX) {
-+		printk(KERN_NOTICE SNMP_MAP_PREFIX "invalid SNMP MIB ID %d\n", mibid);
-+		return -ENOENT;
-+	}
-+
-+	labels = map_labels[mibid];
-+	spin_lock(&snmp_map_label_lock);
-+
-+	if (labels->registered == 0)
-+		memset(labels->names, 0, labels->len * sizeof(labels->names[0]));
-+
-+	for (i = 0; i < len; i++) {
-+		if (l[i].name == NULL)
-+			break;
-+
-+		if (l[i].entry < 1 || l[i].entry >= labels->len) {
-+			printk(KERN_NOTICE SNMP_MAP_PREFIX "label counter %d not in range (%d-%d) for SNMP MIB %d\n",
-+			       l[i].entry, 1, labels->len - 1, mibid);
-+			continue;
-+		}
-+
-+		if (labels->names[l[i].entry] != NULL) {
-+			printk(KERN_NOTICE SNMP_MAP_PREFIX "overwritting counter label %s for SNMP MIB %d\n", l[i].name, mibid);
-+			kfree(labels->names[l[i].entry]);
-+		}
-+
-+		labels->names[l[i].entry] = kstrdup(l[i].name, GFP_KERNEL);
-+		if (labels->names[l[i].entry] == NULL) {
-+			err = -ENOMEM;
-+			printk(KERN_NOTICE SNMP_MAP_PREFIX "OOM while trying to allocate labels for SNMP MIB %d\n", mibid);
-+			break;
-+		}
-+
-+		labels->registered++;
-+	}
-+	spin_unlock(&snmp_map_label_lock);
-+
-+	printk(KERN_INFO SNMP_MAP_PREFIX "registered %d labels for SNMP MIB %d\n", labels->registered, mibid);
-+
-+	return err;	
-+}
-+
-+static int cmp_mappings(const void *va, const void *vb)
-+{
-+	const u8 *a = (const u8 *) va, *b = (const u8 *) vb;
-+
-+	return (*a == *b)? 0 : (*a > *b)? 1 : -1;
-+}
-+
-+static void
-+snmp_map_print_mapping(u8 maplvl, u8 mibid, u8 *m, int count, int len)
-+{
-+#ifdef SNMP_MAP_DEBUG
-+	int i;
-+	struct snmp_map_mapper *mapper;
-+#endif
-+
-+	printk(KERN_INFO SNMP_MAP_PREFIX "registered map level %d, SNMP MIB %d with %d mappings\n", maplvl, mibid, count);
-+
-+#ifdef SNMP_MAP_DEBUG
-+	printk(KERN_INFO SNMP_MAP_PREFIX "current mappings for SNMP MIB %d:\n", mibid);	
-+	for (i = 1; i < len; i++) {
-+		if (map_labels[mibid]->names[i] != NULL) 
-+			printk("%s: %d, ", map_labels[mibid]->names[i], m[i]);
-+		else
-+			printk("%d: %d, ", i, m[i]);
-+	}
-+	printk("\n\n");
-+
-+	printk(KERN_INFO SNMP_MAP_PREFIX "current map level registration for SNMP MIB %d:\n", mibid);
-+	mapper = snmp_map_get_mapper(mibid);
-+	if (mapper) {
-+		for (i = 1; i < len; i++) {
-+			if (map_labels[mibid]->names[i] != NULL)
-+				printk("%s: %d, ", map_labels[mibid]->names[i], mapper->map_map.mapping[i]);
-+			else
-+				printk("%d: %d, ", i, mapper->map_map.mapping[i]);
-+		}
-+		printk("\n\n");
-+	}
-+#endif
-+}
-+
-+int  
-+snmp_map_add_empty_mapping(u8 maplvl, u8 mibid) 
-+{
-+	struct snmp_mib_map_info *info;
-+
-+	info = snmp_map_get_info(maplvl, mibid);
-+	if (info == NULL)
-+		return -EINVAL;
-+
-+	if (snmp_map_initialized(info)) {
-+		printk(KERN_NOTICE SNMP_MAP_PREFIX "map level %d, SNMP MIB %d is already initialized\n", maplvl, mibid);
-+		return -EINVAL;
-+	}
-+
-+	spin_lock(&info->lock);
-+	
-+	snmp_map_zero_mapping(info->map.mapping, info->len * sizeof(info->map.mapping[0]));
-+
-+	atomic_set(&info->initialized, 1);
-+
-+	spin_unlock(&info->lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(snmp_map_add_empty_mapping);
-+
-+int
-+snmp_map_add_mapping(u8 maplvl, u8 mibid, u8 *m, int c, u8 *me, int ce)
-+{
-+        int i, j, field, fields = c, count = c, mappedto = 0;
-+	bool exclude = false;
-+        struct snmp_mib_map_info *info;
-+	struct snmp_map_mapper *mapper;
-+
-+        info = snmp_map_get_info(maplvl, mibid);
-+	if (info == NULL) 
-+		return -EINVAL;
-+
-+	if (snmp_map_initialized(info)) {
-+                printk(KERN_NOTICE "snmp_map: map level %d, SNMP MIB %d is already initialized\n", maplvl, mibid);
-+                return -EINVAL;
-+        }
-+
-+	mapper = snmp_map_get_mapper(mibid);
-+	if (unlikely(mapper == NULL))
-+		return -EFAULT;
-+
-+	spin_lock(&info->lock);
-+
-+	snmp_map_zero_mapping(info->map.mapping, info->len * sizeof(info->map.mapping[0]));
-+
-+	if (m != NULL)
-+		sort(m, count, sizeof(m[0]), cmp_mappings, NULL);
-+	else
-+		count = fields = info->len;
-+
-+	if (me != NULL)
-+		sort(me, ce, sizeof(me[0]), cmp_mappings, NULL);
-+
-+	for (i = ((m != NULL) ? 0 : 1); i < count; i++) {
-+		exclude = false;
-+		field = ((m != NULL) ? m[i] : i);
-+		if (field <= 0 || field >= info->len) {
-+			printk(KERN_NOTICE SNMP_MAP_PREFIX "counter %d not in range (%d-%d) for SNMP MIB %d\n", 
-+			       field, 1, info->len - 1, mibid);
-+			fields -= 1;
-+			continue;
-+		}
-+
-+		if (me != NULL) {
-+			for (j = 0; j < ce; j++) {
-+				if (me[j] == field) {
-+					exclude = true;
-+					break;
-+				}
-+			}
-+			if (exclude)  {
-+				fields -= 1;
-+				continue;
-+			}
-+		}
-+			
-+		/* A mapping can exist on only one level so we can have a one to one mapping from a field to a level */
-+		if (mapper->map_map.mapping[field] == SNMP_MAP_UNMAPPED) {
-+			info->map.mapping[field] = mappedto++;
-+			mapper->map_map.mapping[field] = maplvl;
-+		} else {
-+			fields -= 1;
-+			if (m != NULL)
-+				printk(KERN_NOTICE SNMP_MAP_PREFIX "counter %d already mapped for SNMP MIB %d\n", field, mibid);
-+		}
-+	}			
-+
-+	if (fields > 0) {
-+		atomic_set(&info->count, fields);
-+		atomic_set(&info->initialized, 1);
-+	}
-+
-+	spin_unlock(&info->lock);
-+
-+        if (fields > 0) {
-+		snmp_map_print_mapping(maplvl, mibid, info->map.mapping, fields, info->len);
-+	}
-+
-+        return 0;
-+}
-+EXPORT_SYMBOL(snmp_map_add_mapping);
-+
-+int 
-+snmp_map_del_mapping(u8 maplvl, u8 mibid)
-+{
-+	struct snmp_mib_map_info *info;
-+	int i;
-+        struct snmp_map_mapper *mapper;
-+
-+	info = snmp_map_get_info(maplvl, mibid);
-+	if (info == NULL)
-+		return -EINVAL;
-+
-+	mapper = snmp_map_get_mapper(mibid);
-+	if (unlikely(mapper == NULL))
-+		return -EFAULT;
-+
-+	if (!snmp_map_initialized(info)) {
-+		printk(KERN_NOTICE SNMP_MAP_PREFIX "map level %d, SNMP MIB %d is not initialized - nothing to delete\n", maplvl, mibid);
-+		return 0;
-+	}
-+
-+	spin_lock(&info->lock);
-+	atomic_set(&info->initialized, 0);
-+	atomic_set(&info->count, 0);
-+	for (i = 0; i < info->len; i++) {
-+		if (mapper->map_map.mapping[i] == maplvl) {
-+			mapper->map_map.mapping[i] = SNMP_MAP_UNMAPPED;
-+		}
-+	}
-+	snmp_map_zero_mapping(info->map.mapping, info->len * sizeof(info->map.mapping[0]));
-+	spin_unlock(&info->lock);
-+
-+	printk(KERN_INFO SNMP_MAP_PREFIX "cleared map level %d, SNMP MIB %d mappings\n", maplvl, mibid);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(snmp_map_del_mapping);
-+
-+int 
-+snmp_map_init_map(u8 maplvl, u8 mibid, struct snmp_mib_map *m)
-+{
-+	struct snmp_mib_map_info *info;
-+
-+	info = snmp_map_get_info(maplvl, mibid);
-+	if (info == NULL)
-+		return -EINVAL;
-+
-+	m->maplvl = maplvl;
-+	m->mibid = mibid;
-+	snmp_map_copy_mapping(m->map.mapping, info);
-+	m->stats.stats[0] = NULL;
-+	m->stats.stats[1] = NULL;
-+
-+	return 0;	
-+}
-+
-+int
-+snmp_map_mib_init(struct snmp_mib_map *m)
-+{
-+	int err = -EINVAL, sz = snmp_map_size(m->maplvl, m->mibid);
-+
-+	if (sz == 0)
-+		return 0;
-+
-+	if ((m->stats.stats[0] == NULL) && (m->stats.stats[1] == NULL))
-+		err = snmp_mib_init((void **) &m->stats, sz);
-+
-+	return err;
-+}
-+
-+void
-+snmp_map_mib_free(struct snmp_mib_map *m)
-+{
-+	int sz = snmp_map_size(m->maplvl, m->mibid);
-+
-+	if (sz == 0)
-+		return;
-+
-+	if ((m->stats.stats[0] != NULL) && (m->stats.stats[1] != NULL)) 
-+		snmp_mib_free((void **) &m->stats);
-+}
-+
-+void 
-+snmp_map_mib_zero(struct snmp_mib_map *m)
-+{
-+	struct snmp_mib_map_info *info = NULL;
-+	int sz;
-+
-+	if ((info = snmp_map_get_info(m->maplvl, m->mibid)) == NULL)
-+		return;
-+
-+	if (!snmp_map_initialized(info))
-+		return;
-+
-+	sz = atomic_read(&info->count) * sizeof(unsigned long);
-+	if (sz > 0 && (m->stats.stats[0] != NULL ) && (m->stats.stats[1] != NULL)) {
-+		unsigned long *p0, *p1;
-+		int i;
-+
-+		for_each_possible_cpu(i) {
-+			p0 = (unsigned long *) per_cpu_ptr(m->stats.stats[0], i);
-+			p1 = (unsigned long *) per_cpu_ptr(m->stats.stats[1], i);
-+			memset(p0, 0, sz);
-+			memset(p1, 0, sz);
-+			smp_mb();
-+		}
-+	}	
-+}
-+
-+static unsigned long
-+snmp_map_fold_field(struct snmp_mib_map *m, int mappedto, bool test_negative)
-+{
-+	unsigned long ures = 0;
-+
-+	if (m != NULL && snmp_map_count(m) != 0) {
-+		ures = snmp_fold_field((void **) &m->stats, mappedto);
-+		if (test_negative) {
-+			long res = (long) ures;
-+			if (res < 0) {
-+				unsigned long *p = (unsigned long *) per_cpu_ptr(m->stats.stats[!in_softirq()], get_cpu());
-+				p[mappedto] += (-res);
-+				put_cpu();
-+				ures = 0;
-+			}
-+		}
-+	}
-+
-+	return ures;
-+}
-+
-+void 
-+snmp_map_zero_negative(struct snmp_mib_map *m, u8 field) 
-+{
-+	long res;
-+	int mappedto = m->map.mapping[field];
-+
-+	res = (long) snmp_fold_field((void **) &m->stats, mappedto);
-+	if (res < 0) {
-+		unsigned long *p = (unsigned long *) per_cpu_ptr(m->stats.stats[!in_softirq()], get_cpu());
-+		p[mappedto] += (-res);
-+		put_cpu();
-+	}
-+}
-+
-+
-+int
-+snmp_map_print_stats(struct seq_file *seq, struct snmp_mib_map *m, union snmp_mib_map_bitmaps *b)
-+{
-+	int i;
-+	struct snmp_mib_map_info *info;
-+	unsigned long counter;
-+	bool first = true;
-+
-+	info = snmp_map_get_info(m->maplvl, m->mibid);
-+	if (info == NULL)
-+		return -EINVAL;
-+
-+	if (snmp_map_initialized(info) && atomic_read(&info->count) > 0) {
-+		for (i = 1; i < info->len; i++) {
-+			int mappedto;
-+			bool test_negative = ((b != NULL) && test_bit(i, b->bmap.bitmap));
-+
-+			mappedto = m->map.mapping[i];
-+			if (mappedto != SNMP_MAP_UNMAPPED) {
-+				counter = snmp_map_fold_field(m, mappedto, test_negative);
-+				if (map_labels[m->mibid]->names[i] != NULL)
-+					seq_printf(seq, "%s%s: %lu", (first) ? "" : ",  ", map_labels[m->mibid]->names[i], counter);
-+				else
-+					seq_printf(seq, "%s%d:  %lu", (first) ? "" : ",  ", i, counter);
-+				first = false;
-+			}
-+		}
-+
-+		seq_putc(seq, '\n');
-+	}
-+
-+	return 0;	
-+}
-+
-+int
-+snmp_map_level_handler(ctl_table *table, int write, void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	int oldval = snmp_map_level, err = 0;
-+
-+	proc_dointvec_minmax(table, write, buffer, length, ppos);
-+	if (write) {
-+		if (snmp_map_level < 0 || snmp_map_level >= SNMP_MAP_LEVEL_MAX) {
-+			snmp_map_level = oldval;
-+			printk(KERN_NOTICE SNMP_MAP_PREFIX "invalid map level (valid argument: %d - %d)\n", 0, SNMP_MAP_LEVEL_MAX - 1);
-+			err = -EINVAL;
-+		}
-+		smp_mb();
-+	}
-+
-+	return err;
-+}
-+
-+static __init int
-+snmp_map_init(void)
-+{
-+	int i;
-+	struct snmp_map_mapper *mapper;
-+
-+	for (i = 0; i < __SNMP_MIB_MAX; i++) {
-+		mapper = map_mappings[i];
-+		snmp_map_zero_mapping(mapper->map_map.mapping, mapper->len * sizeof(mapper->map_map.mapping[0]));
-+	}
-+
-+	return 0;
-+}
-+
-+__initcall(snmp_map_init);
-+
-diff -r -U 4 a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
---- a/net/ipv4/sysctl_net_ipv4.c	2013-09-01 09:03:35.391639189 +0300
-+++ b/net/ipv4/sysctl_net_ipv4.c	2013-09-01 09:03:35.511694388 +0300
-@@ -814,8 +814,19 @@
- 		.proc_handler	= proc_dointvec_minmax,
- 		.strategy	= sysctl_intvec,
- 		.extra1		= &zero
- 	},
-+#ifdef CONFIG_NET_IPV4_SNMP_MAPPING
-+	{
-+		.ctl_name       = NET_IPV4_SNMP_MAP_LEVEL,
-+		.procname       = "perip_stats_diagnose",
-+		.data           = &snmp_map_level,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = snmp_map_level_handler,
-+		.strategy       = &sysctl_intvec,
-+	},
-+#endif
- 	{ .ctl_name = 0 }
- };
+ obj-$(CONFIG_NET_IPV4_SNMP_MAPPING) += snmp_map.o
+ obj-$(CONFIG_NET_IPV4_STAT_HASHTABLES) += stat_hashtable.o
++obj-$(CONFIG_NET_IPV4_SOCK_STATS) += stat_sk_hashtable.o
  
- static struct ctl_table ipv4_net_table[] = {
+diff -r -U 4 a/net/ipv4/stat_sk_hashtable.c b/net/ipv4/stat_sk_hashtable.c
+--- a/net/ipv4/stat_sk_hashtable.c	2013-08-27 17:15:43.005707986 +0300
++++ b/net/ipv4/stat_sk_hashtable.c	2013-08-27 17:15:43.165606451 +0300
+@@ -0,0 +1,148 @@
++#include <linux/module.h>
++#include <linux/random.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/wait.h>
++
++#include <net/inet_connection_sock.h>
++#include <net/inet_hashtables.h>
++#include <net/secure_seq.h>
++#include <net/ip.h>
++
++#if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
++#include <linux/in6.h>
++#include <linux/ipv6.h>
++#include <net/ipv6.h>
++#endif
++
++#include <net/snmp_map.h>
++#include <net/stat_hashtable.h>
++#include <net/stat_sk_hashtable.h>
++
++static inline bool 
++ipv4_addr_loopback(__be32 addr)
++{
++	return (addr & htonl(0xff000000)) == htonl(0x7f000000);
++}
++
++static int
++stat4_hash_filter_addr(struct stat_hash_addr *addr, u8 direction)
++{
++	__be32 local_addr;
++	__be32 remote_addr;
++
++	if (direction == STAT_HASH_SK_IN) {
++		local_addr = addr->daddr.ip;
++		remote_addr = addr->saddr.ip;
++	} else { 	/* STAT_HASH_SK_OUT + STAT_HASH_SK_INOUT */
++		local_addr = addr->saddr.ip;
++		remote_addr = addr->daddr.ip;
++	}
++
++	if (remote_addr == 0) {
++		stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "zero IPV4 address\n");
++		return -EINVAL;
++	}
++
++	if (net_stat_hash_loopback == 0) {
++		if (local_addr == remote_addr) {
++			stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "local and remote IPV4 addresses are the same\n");
++			return -EINVAL;
++		}
++
++		if (ipv4_addr_loopback(remote_addr)) {
++			stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "IPV4 address is on the loopback\n");
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++	
++static int 
++stat6_hash_filter_address(struct stat_hash_addr *addr, u8 direction)
++{
++	struct in6_addr local_addr;
++	struct in6_addr remote_addr;
++	struct in6_addr zero_addr;
++
++	if (net_stat_hashtable_ipv6 == 0) {
++		stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG_VERBOSE, "disabled hashing for address family %d\n", addr->family);
++		return -EINVAL;
++	}
++
++	memset(&zero_addr, 0, sizeof(zero_addr));
++	if (direction == STAT_HASH_SK_IN) {
++		ipv6_addr_copy(&local_addr, &addr->daddr.in6);
++		ipv6_addr_copy(&remote_addr, &addr->saddr.in6);
++	} else { 	/* STAT_HASH_SK_OUT + STAT_HASH_SK_INOUT */
++		ipv6_addr_copy(&local_addr, &addr->saddr.in6);
++		ipv6_addr_copy(&remote_addr, &addr->daddr.in6);
++	}
++
++	if (!memcmp(&zero_addr, &remote_addr, sizeof(zero_addr)))  {
++		stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "zero IPV6 address\n");
++		return -EINVAL;
++	}
++
++	if (net_stat_hash_loopback == 0) {
++		if (ipv6_addr_equal(&local_addr, &remote_addr)) {
++			stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "local and remote IPV6 addresses are the same\n");
++			return -EINVAL;
++		}
++
++		if (ipv6_addr_loopback(&remote_addr)) {
++			stat_sk_dprintk(STAT_HASH_MESSAGE_DEBUG, "IPV6 address is on the loopback\n");
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++int
++stat_hash_filter_addr(struct stat_hash_addr *addr, u8 direction)
++{
++	int rc = -EINVAL;
++
++	switch (addr->family) {
++                case AF_INET:
++			rc = stat4_hash_filter_addr(addr, direction);
++                        break;
++#ifdef CONFIG_IPV6_STAT_HASHTABLES
++		case AF_INET6:
++			rc = stat6_hash_filter_address(addr, direction);
++			break;
++#endif
++                default:
++			break;
++        }
++
++#ifdef CONFIG_NET_IPV4_STAT_HASHTABLE_DEBUG
++	if (stat_hash_debug_level >= STAT_HASH_MESSAGE_DEBUG_VERBOSE) {
++		printk("%s address: ", (rc == 0) ? "accepted" : "rejected");
++		stat_hash_dump_address(addr);
++	}
++#endif
++
++	return rc;
++}
++EXPORT_SYMBOL(stat_hash_filter_addr);
++
++int 
++stat_hash_insert(u32 initval, struct stat_hash_addr *addr, bool existing, 
++		 int alloc_flag, struct stat_hash_cookie *cookie)
++{
++	struct stat_hash_entry *entry = NULL;
++	struct stat_hash_cookie ck;
++	int err = -EFAULT;
++
++	STAT_INIT_COOKIE(&ck);
++	if ((entry = stat_hash_get_entry(initval, addr, existing, alloc_flag, &ck)) != NULL) {
++		stat_hash_copy_cookie_atomic(cookie, &ck);
++		err = 0;
++	}
++
++	return err;
++}
++EXPORT_SYMBOL(stat_hash_insert);
