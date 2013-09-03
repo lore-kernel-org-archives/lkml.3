@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760370Ab3ICSNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:13:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57769 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760065Ab3ICSNg (ORCPT
+	id S1757058Ab3ICSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:16:26 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:49809 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab3ICSQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:13:36 -0400
-Message-ID: <522626CC.70804@wwwdotorg.org>
-Date: Tue, 03 Sep 2013 12:13:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 3 Sep 2013 14:16:25 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-tegra@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introduce table driven initializations
-References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
+Date: Tue, 3 Sep 2013 14:16:24 -0400
+Message-ID: <CANP1eJFCtZphaiZXz74421L8NY6Ggjek48sU+=qKD0tkVBbQmg@mail.gmail.com>
+Subject: Question on vma_operations readpages and locking
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 07:31 AM, Peter De Schrijver wrote:
-> This patchset introduces a table driven initialization method for the
-> audio, PMC and gate clocks. It's similar to the table we already have for
-> the periph clocks.
+Can anyone help me reason about the readpages() callback in vma_operations?
 
-I assume these patches will all go through Mike's clock tree for 3.13.
+Do the pages that come in the argument list from readahead come
+locked? The documentation in the kernel says nothing about locking on
+the way in (Documentation/filesystems/Locking) unlike readpage. It
+does say that the pages should be unlocked when the operation is done.
 
-Aside from the one issue I mentioned, the series,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Should I assume that the readpages implementer needs to take care to
+lock those pages her / his self?
 
-I assume this will be followed by changes to convert the Tegra20/30
-clock drivers to be table-based too?
+I've been reading through the code for different filesystems to
+understand what should happen but I'm not a 100% clear on it. Thanks
+in advance,
 
->  2 files changed, 455 insertions(+), 550 deletions(-)
-
-That didn't work out as much of a line-count-reduction as I had naively
-hoped. Are there any more large blocks of repetitive code left to be
-converted?
+- Milosz
