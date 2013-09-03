@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab3ICQhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:37:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46432 "EHLO
+	id S933146Ab3ICQhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:37:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46434 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab3ICQYO (ORCPT
+	with ESMTP id S1756054Ab3ICQYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 12:24:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 19/58] usb: add two quirky touchscreen
-Date: Tue,  3 Sep 2013 09:23:23 -0700
-Message-Id: <1378225442-20654-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 10/58] jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
+Date: Tue,  3 Sep 2013 09:23:14 -0700
+Message-Id: <1378225442-20654-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 304ab4ab079a8ed03ce39f1d274964a532db036b upstream.
+commit 91aa11fae1cf8c2fd67be0609692ea9741cdcc43 upstream.
 
-These devices tend to become unresponsive after S3
+When jbd2_journal_dirty_metadata() returns error,
+__ext4_handle_dirty_metadata() stops the handle. However callers of this
+function do not count with that fact and still happily used now freed
+handle. This use after free can result in various issues but very likely
+we oops soon.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The motivation of adding __ext4_journal_stop() into
+__ext4_handle_dirty_metadata() in commit 9ea7a0df seems to be only to
+improve error reporting. So replace __ext4_journal_stop() with
+ext4_journal_abort_handle() which was there before that commit and add
+WARN_ON_ONCE() to dump stack to provide useful information.
+
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/quirks.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/ext4_jbd2.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index e14346a..be54c80 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -78,6 +78,12 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
+diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+index b4323ba..6d7abb1 100644
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -109,10 +109,10 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
  
-+	/* CarrolTouch 4000U */
-+	{ USB_DEVICE(0x04e7, 0x0009), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* CarrolTouch 4500U */
-+	{ USB_DEVICE(0x04e7, 0x0030), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
- 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 	if (ext4_handle_valid(handle)) {
+ 		err = jbd2_journal_dirty_metadata(handle, bh);
+-		if (err) {
+-			/* Errors can only happen if there is a bug */
+-			handle->h_err = err;
+-			__ext4_journal_stop(where, line, handle);
++		/* Errors can only happen if there is a bug */
++		if (WARN_ON_ONCE(err)) {
++			ext4_journal_abort_handle(where, line, __func__, bh,
++						  handle, err);
+ 		}
+ 	} else {
+ 		if (inode)
 -- 
 1.8.1.2
 
