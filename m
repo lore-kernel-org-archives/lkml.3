@@ -1,473 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761372Ab3ICWiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:38:46 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:45267 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761165Ab3ICWin (ORCPT
+	id S1761377Ab3ICWlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:41:35 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:33838 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761228Ab3ICWlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:38:43 -0400
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 18:38:42 EDT
-Message-ID: <00000140e5f47ead-c488db44-e7ac-430e-b3d0-f18ec391795d-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Tue, 3 Sep 2013 22:32:20 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 08/38] time: Replace __get_cpu_var uses
-References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 2013.09.03-54.240.9.70
+	Tue, 3 Sep 2013 18:41:31 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <5225FCEE.7030901@hp.com>
+References: <5220F090.5050908@hp.com>
+	<20130830194059.GC13318@ZenIV.linux.org.uk>
+	<5220F811.9060902@hp.com>
+	<20130830202608.GD13318@ZenIV.linux.org.uk>
+	<52210225.60805@hp.com>
+	<20130830204852.GE13318@ZenIV.linux.org.uk>
+	<52214EBC.90100@hp.com>
+	<20130831023516.GI13318@ZenIV.linux.org.uk>
+	<20130831024233.GJ13318@ZenIV.linux.org.uk>
+	<5224E647.80303@hp.com>
+	<20130903060130.GD16261@gmail.com>
+	<5225FCEE.7030901@hp.com>
+Date: Wed, 4 Sep 2013 00:41:29 +0200
+Message-ID: <CA+icZUXsPTXT8TYoVp+_xnhB5EgnR4FyadaVVzXBFOVA=9fQ9g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: multipart/mixed; boundary=f46d0438952dcd04db04e582632d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+--f46d0438952dcd04db04e582632d
+Content-Type: text/plain; charset=UTF-8
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+On Tue, Sep 3, 2013 at 5:14 PM, Waiman Long <waiman.long@hp.com> wrote:
+> On 09/03/2013 02:01 AM, Ingo Molnar wrote:
+>>
+>> * Waiman Long<waiman.long@hp.com>  wrote:
+>>
+>>> Yes, that patch worked. It eliminated the lglock as a bottleneck in the
+>>> AIM7 workload. The lg_global_lock did not show up in the perf profile,
+>>> whereas the lg_local_lock was only 0.07%.
+>>
+>> Just curious: what's the worst bottleneck now in the optimized kernel? :-)
+>>
+>> Thanks,
+>>
+>>         Ingo
+>
+> With the following patches on v3.11:
+> 1. Linus's version of lockref patch
+> 2. Al's lglock patch
+> 3. My preliminary patch to convert prepend_path under RCU
+>
 
-__get_cpu_var() is defined as :
+With no reference where to get those patches, it's a bit hard to follow.
 
+I will try some perf benchmarking with the attached patch against
+Linux "WfW" edition.
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+- Sedat -
 
+--f46d0438952dcd04db04e582632d
+Content-Type: application/octet-stream; name="3.11.0-1-lockref-small.patch"
+Content-Disposition: attachment; filename="3.11.0-1-lockref-small.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hl5paqqm0
 
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
-and less registers are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/kernel/hrtimer.c
-===================================================================
---- linux.orig/kernel/hrtimer.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/hrtimer.c	2013-08-26 14:21:24.540227691 -0500
-@@ -597,7 +597,7 @@ hrtimer_force_reprogram(struct hrtimer_c
- static int hrtimer_reprogram(struct hrtimer *timer,
- 			     struct hrtimer_clock_base *base)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
- 	ktime_t expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
- 	int res;
- 
-@@ -680,7 +680,7 @@ static inline ktime_t hrtimer_update_bas
-  */
- static void retrigger_next_event(void *arg)
- {
--	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
-+	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
- 
- 	if (!hrtimer_hres_active())
- 		return;
-@@ -954,7 +954,7 @@ remove_hrtimer(struct hrtimer *timer, st
- 		 */
- 		debug_deactivate(timer);
- 		timer_stats_hrtimer_clear_start_info(timer);
--		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
-+		reprogram = base->cpu_base == this_cpu_ptr(&hrtimer_bases);
- 		/*
- 		 * We must preserve the CALLBACK state flag here,
- 		 * otherwise we could move the timer base in
-@@ -1009,7 +1009,7 @@ int __hrtimer_start_range_ns(struct hrti
- 	 *
- 	 * XXX send_remote_softirq() ?
- 	 */
--	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-+	if (leftmost && new_base->cpu_base == this_cpu_ptr(&hrtimer_bases)
- 		&& hrtimer_enqueue_reprogram(timer, new_base)) {
- 		if (wakeup) {
- 			/*
-@@ -1142,7 +1142,7 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining)
-  */
- ktime_t hrtimer_get_next_event(void)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
- 	struct hrtimer_clock_base *base = cpu_base->clock_base;
- 	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
- 	unsigned long flags;
-@@ -1183,7 +1183,7 @@ static void __hrtimer_init(struct hrtime
- 
- 	memset(timer, 0, sizeof(struct hrtimer));
- 
--	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
-+	cpu_base = __this_cpu_ptr(&hrtimer_bases);
- 
- 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
- 		clock_id = CLOCK_MONOTONIC;
-@@ -1226,7 +1226,7 @@ int hrtimer_get_res(const clockid_t whic
- 	struct hrtimer_cpu_base *cpu_base;
- 	int base = hrtimer_clockid_to_base(which_clock);
- 
--	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
-+	cpu_base = __this_cpu_ptr(&hrtimer_bases);
- 	*tp = ktime_to_timespec(cpu_base->clock_base[base].resolution);
- 
- 	return 0;
-@@ -1281,7 +1281,7 @@ static void __run_hrtimer(struct hrtimer
-  */
- void hrtimer_interrupt(struct clock_event_device *dev)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
- 	int i, retries = 0;
- 
-@@ -1415,7 +1415,7 @@ static void __hrtimer_peek_ahead_timers(
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	td = &__get_cpu_var(tick_cpu_device);
-+	td = this_cpu_ptr(&tick_cpu_device);
- 	if (td && td->evtdev)
- 		hrtimer_interrupt(td->evtdev);
- }
-@@ -1479,7 +1479,7 @@ void hrtimer_run_pending(void)
- void hrtimer_run_queues(void)
- {
- 	struct timerqueue_node *node;
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
- 	struct hrtimer_clock_base *base;
- 	int index, gettime = 1;
- 
-@@ -1717,7 +1717,7 @@ static void migrate_hrtimers(int scpu)
- 
- 	local_irq_disable();
- 	old_base = &per_cpu(hrtimer_bases, scpu);
--	new_base = &__get_cpu_var(hrtimer_bases);
-+	new_base = this_cpu_ptr(&hrtimer_bases);
- 	/*
- 	 * The caller is globally serialized and nobody else
- 	 * takes two locks at once, deadlock is not possible.
-Index: linux/kernel/irq_work.c
-===================================================================
---- linux.orig/kernel/irq_work.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/irq_work.c	2013-08-26 14:21:24.540227691 -0500
-@@ -70,7 +70,7 @@ void irq_work_queue(struct irq_work *wor
- 	/* Queue the entry and raise the IPI if needed. */
- 	preempt_disable();
- 
--	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-+	llist_add(&work->llnode, this_cpu_ptr(&irq_work_list));
- 
- 	/*
- 	 * If the work is not "lazy" or the tick is stopped, raise the irq
-@@ -90,7 +90,7 @@ bool irq_work_needs_cpu(void)
- {
- 	struct llist_head *this_list;
- 
--	this_list = &__get_cpu_var(irq_work_list);
-+	this_list = this_cpu_ptr(&irq_work_list);
- 	if (llist_empty(this_list))
- 		return false;
- 
-@@ -115,7 +115,7 @@ static void __irq_work_run(void)
- 	__this_cpu_write(irq_work_raised, 0);
- 	barrier();
- 
--	this_list = &__get_cpu_var(irq_work_list);
-+	this_list = this_cpu_ptr(&irq_work_list);
- 	if (llist_empty(this_list))
- 		return;
- 
-Index: linux/kernel/sched/clock.c
-===================================================================
---- linux.orig/kernel/sched/clock.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/sched/clock.c	2013-08-26 14:21:24.540227691 -0500
-@@ -94,7 +94,7 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(str
- 
- static inline struct sched_clock_data *this_scd(void)
- {
--	return &__get_cpu_var(sched_clock_data);
-+	return this_cpu_ptr(&sched_clock_data);
- }
- 
- static inline struct sched_clock_data *cpu_sdc(int cpu)
-Index: linux/kernel/softirq.c
-===================================================================
---- linux.orig/kernel/softirq.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/softirq.c	2013-08-26 14:21:24.540227691 -0500
-@@ -466,7 +466,7 @@ static void tasklet_action(struct softir
- 	local_irq_disable();
- 	list = __this_cpu_read(tasklet_vec.head);
- 	__this_cpu_write(tasklet_vec.head, NULL);
--	__this_cpu_write(tasklet_vec.tail, &__get_cpu_var(tasklet_vec).head);
-+	__this_cpu_write(tasklet_vec.tail, this_cpu_ptr(&tasklet_vec.head));
- 	local_irq_enable();
- 
- 	while (list) {
-@@ -501,7 +501,7 @@ static void tasklet_hi_action(struct sof
- 	local_irq_disable();
- 	list = __this_cpu_read(tasklet_hi_vec.head);
- 	__this_cpu_write(tasklet_hi_vec.head, NULL);
--	__this_cpu_write(tasklet_hi_vec.tail, &__get_cpu_var(tasklet_hi_vec).head);
-+	__this_cpu_write(tasklet_hi_vec.tail, this_cpu_ptr(&tasklet_hi_vec.head));
- 	local_irq_enable();
- 
- 	while (list) {
-@@ -618,7 +618,7 @@ EXPORT_PER_CPU_SYMBOL(softirq_work_list)
- 
- static void __local_trigger(struct call_single_data *cp, int softirq)
- {
--	struct list_head *head = &__get_cpu_var(softirq_work_list[softirq]);
-+	struct list_head *head = this_cpu_ptr(&softirq_work_list[softirq]);
- 
- 	list_add_tail(&cp->list, head);
- 
-@@ -718,7 +718,7 @@ static int remote_softirq_cpu_notify(str
- 			if (list_empty(head))
- 				continue;
- 
--			local_head = &__get_cpu_var(softirq_work_list[i]);
-+			local_head = this_cpu_ptr(&softirq_work_list[i]);
- 			list_splice_init(head, local_head);
- 			raise_softirq_irqoff(i);
- 		}
-Index: linux/kernel/time/tick-common.c
-===================================================================
---- linux.orig/kernel/time/tick-common.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/time/tick-common.c	2013-08-26 14:21:24.544227649 -0500
-@@ -208,7 +208,7 @@ static void tick_setup_device(struct tic
- 
- void tick_install_replacement(struct clock_event_device *newdev)
- {
--	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-+	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
- 	int cpu = smp_processor_id();
- 
- 	clockevents_exchange_device(td->evtdev, newdev);
-@@ -358,14 +358,14 @@ void tick_shutdown(unsigned int *cpup)
- 
- void tick_suspend(void)
- {
--	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-+	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
- 
- 	clockevents_shutdown(td->evtdev);
- }
- 
- void tick_resume(void)
- {
--	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-+	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
- 	int broadcast = tick_resume_broadcast();
- 
- 	clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_RESUME);
-Index: linux/kernel/time/tick-oneshot.c
-===================================================================
---- linux.orig/kernel/time/tick-oneshot.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/time/tick-oneshot.c	2013-08-26 14:21:24.544227649 -0500
-@@ -59,7 +59,7 @@ void tick_setup_oneshot(struct clock_eve
-  */
- int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *))
- {
--	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-+	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
- 	struct clock_event_device *dev = td->evtdev;
- 
- 	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT) ||
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/time/tick-sched.c	2013-08-26 14:21:24.540227691 -0500
-@@ -199,7 +199,7 @@ static void tick_nohz_restart_sched_tick
-  */
- void tick_nohz_full_check(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 
- 	if (tick_nohz_full_cpu(smp_processor_id())) {
- 		if (ts->tick_stopped && !is_idle_task(current)) {
-@@ -225,7 +225,7 @@ static DEFINE_PER_CPU(struct irq_work, n
- void tick_nohz_full_kick(void)
- {
- 	if (tick_nohz_full_cpu(smp_processor_id()))
--		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+		irq_work_queue(this_cpu_ptr(&nohz_full_kick_work));
- }
- 
- static void nohz_full_kick_ipi(void *info)
-@@ -536,7 +536,7 @@ static ktime_t tick_nohz_stop_sched_tick
- 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
- 	ktime_t last_update, expires, ret = { .tv64 = 0 };
- 	unsigned long rcu_delta_jiffies;
--	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
-+	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
- 	u64 time_delta;
- 
- 	/* Read jiffies and the time when jiffies were updated last */
-@@ -801,7 +801,7 @@ void tick_nohz_idle_enter(void)
- 
- 	local_irq_disable();
- 
--	ts = &__get_cpu_var(tick_cpu_sched);
-+	ts = this_cpu_ptr(&tick_cpu_sched);
- 	/*
- 	 * set ts->inidle unconditionally. even if the system did not
- 	 * switch to nohz mode the cpu frequency governers rely on the
-@@ -824,7 +824,7 @@ EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
-  */
- void tick_nohz_irq_exit(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 
- 	if (ts->inidle)
- 		__tick_nohz_idle_enter(ts);
-@@ -839,7 +839,7 @@ void tick_nohz_irq_exit(void)
-  */
- ktime_t tick_nohz_get_sleep_length(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 
- 	return ts->sleep_length;
- }
-@@ -953,7 +953,7 @@ static int tick_nohz_reprogram(struct ti
-  */
- static void tick_nohz_handler(struct clock_event_device *dev)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 	struct pt_regs *regs = get_irq_regs();
- 	ktime_t now = ktime_get();
- 
-@@ -973,7 +973,7 @@ static void tick_nohz_handler(struct clo
-  */
- static void tick_nohz_switch_to_nohz(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 	ktime_t next;
- 
- 	if (!tick_nohz_enabled)
-@@ -1111,7 +1111,7 @@ early_param("skew_tick", skew_tick);
-  */
- void tick_setup_sched_timer(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 	ktime_t now = ktime_get();
- 
- 	/*
-@@ -1178,7 +1178,7 @@ void tick_clock_notify(void)
-  */
- void tick_oneshot_notify(void)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 
- 	set_bit(0, &ts->check_clocks);
- }
-@@ -1193,7 +1193,7 @@ void tick_oneshot_notify(void)
-  */
- int tick_check_oneshot_change(int allow_nohz)
- {
--	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
- 
- 	if (!test_and_clear_bit(0, &ts->check_clocks))
- 		return 0;
-Index: linux/kernel/timer.c
-===================================================================
---- linux.orig/kernel/timer.c	2013-08-26 14:19:14.000000000 -0500
-+++ linux/kernel/timer.c	2013-08-26 14:21:24.544227649 -0500
-@@ -621,7 +621,7 @@ static inline void debug_assert_init(str
- static void do_init_timer(struct timer_list *timer, unsigned int flags,
- 			  const char *name, struct lock_class_key *key)
- {
--	struct tvec_base *base = __raw_get_cpu_var(tvec_bases);
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
- 
- 	timer->entry.next = NULL;
- 	timer->base = (void *)((unsigned long)base | flags);
-
+TGludXMgVG9ydmFsZHMgKDQpOgogICAgICBsb2NrcmVmOiBhZGQgJ2xvY2tyZWZfZ2V0X29yX2xv
+Y2soKSBoZWxwZXIKICAgICAgdmZzOiByZWltcGxlbWVudCBkX3JjdV90b19yZWZjb3VudCgpIHVz
+aW5nIGxvY2tyZWZfZ2V0X29yX2xvY2soKQogICAgICBsb2NrcmVmOiB1bmlubGluZSBsb2NrcmVm
+IGhlbHBlciBmdW5jdGlvbnMKICAgICAgbG9ja3JlZjogaW1wbGVtZW50IGxvY2tsZXNzIHJlZmVy
+ZW5jZSBjb3VudCB1cGRhdGVzIHVzaW5nIGNtcHhjaGcoKQoKU2VkYXQgRGlsZWsgKDYpOgogICAg
+ICBrYnVpbGQ6IGRlYi1wa2c6IFRyeSB0byBkZXRlcm1pbmUgZGlzdHJpYnV0aW9uCiAgICAgIGti
+dWlsZDogZGViLXBrZzogQnVtcCB5ZWFyIGluIGRlYmlhbi9jb3B5cmlnaHQgZmlsZQogICAgICBr
+YnVpbGQ6IGRlYi1wa2c6IFVwZGF0ZSBnaXQgcmVwb3NpdG9yeSBVUkwgaW4gZGViaWFuL2NvcHly
+aWdodCBmaWxlCiAgICAgIE1lcmdlIGJyYW5jaCAnZGViLXBrZy0zLjEwLWZpeGVzJyBpbnRvIDMu
+MTEuMC0xLWxvY2tyZWYtc21hbGwKICAgICAgTWVyZ2UgYnJhbmNoICdsb2NrZWQtcmVmZXJlbmNl
+LWNvdW50cycgaW50byAzLjExLjAtMS1sb2NrcmVmLXNtYWxsCiAgICAgIE1lcmdlIGJyYW5jaCAn
+bG9ja3JlZi0zLjEyLWZpeGVzJyBpbnRvIDMuMTEuMC0xLWxvY2tyZWYtc21hbGwKClRvbnkgTHVj
+ayAoMSk6CiAgICAgIGxvY2tyZWY6IFJlbGF4IGluIGNtcHhjaGcgbG9vcAoKV2FpbWFuIExvbmcg
+KDEpOgogICAgICB2ZnM6IHVzZSBsb2NrcmVmX2dldF9ub3RfemVybygpIGZvciBvcHRpbWlzdGlj
+IGxvY2tsZXNzIGRnZXRfcGFyZW50KCkKCiBhcmNoL3g4Ni9LY29uZmlnICAgICAgICAgICAgICAg
+IHwgICAxICsKIGFyY2gveDg2L2luY2x1ZGUvYXNtL3NwaW5sb2NrLmggfCAgIDUgKysKIGZzL2Rj
+YWNoZS5jICAgICAgICAgICAgICAgICAgICAgfCAgMTcgKysrKystCiBmcy9uYW1laS5jICAgICAg
+ICAgICAgICAgICAgICAgIHwgIDkwICsrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0KIGluY2x1
+ZGUvbGludXgvZGNhY2hlLmggICAgICAgICAgfCAgMjIgLS0tLS0tLQogaW5jbHVkZS9saW51eC9s
+b2NrcmVmLmggICAgICAgICB8ICA2MSArKysrLS0tLS0tLS0tLS0tLS0tCiBsaWIvS2NvbmZpZyAg
+ICAgICAgICAgICAgICAgICAgIHwgIDEwICsrKysKIGxpYi9NYWtlZmlsZSAgICAgICAgICAgICAg
+ICAgICAgfCAgIDEgKwogbGliL2xvY2tyZWYuYyAgICAgICAgICAgICAgICAgICB8IDEyOCArKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrCiBzY3JpcHRzL3BhY2thZ2UvYnVp
+bGRkZWIgICAgICAgIHwgIDE5ICsrKysrLQogMTAgZmlsZXMgY2hhbmdlZCwgMjU0IGluc2VydGlv
+bnMoKyksIDEwMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9LY29uZmlnIGIv
+YXJjaC94ODYvS2NvbmZpZwppbmRleCBiMzJlYmY5Li42N2UwMDc0IDEwMDY0NAotLS0gYS9hcmNo
+L3g4Ni9LY29uZmlnCisrKyBiL2FyY2gveDg2L0tjb25maWcKQEAgLTE2LDYgKzE2LDcgQEAgY29u
+ZmlnIFg4Nl82NAogCWRlZl9ib29sIHkKIAlkZXBlbmRzIG9uIDY0QklUCiAJc2VsZWN0IFg4Nl9E
+RVZfRE1BX09QUworCXNlbGVjdCBBUkNIX1VTRV9DTVBYQ0hHX0xPQ0tSRUYKIAogIyMjIEFyY2gg
+c2V0dGluZ3MKIGNvbmZpZyBYODYKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3Nw
+aW5sb2NrLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9zcGlubG9jay5oCmluZGV4IGUzZGRkN2Qu
+LmUwZTY2ODQgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3NwaW5sb2NrLmgKKysr
+IGIvYXJjaC94ODYvaW5jbHVkZS9hc20vc3BpbmxvY2suaApAQCAtMzQsNiArMzQsMTEgQEAKICMg
+ZGVmaW5lIFVOTE9DS19MT0NLX1BSRUZJWAogI2VuZGlmCiAKK3N0YXRpYyBfX2Fsd2F5c19pbmxp
+bmUgaW50IGFyY2hfc3Bpbl92YWx1ZV91bmxvY2tlZChhcmNoX3NwaW5sb2NrX3QgbG9jaykKK3sK
+KwlyZXR1cm4gbG9jay50aWNrZXRzLmhlYWQgPT0gbG9jay50aWNrZXRzLnRhaWw7Cit9CisKIC8q
+CiAgKiBUaWNrZXQgbG9ja3MgYXJlIGNvbmNlcHR1YWxseSB0d28gcGFydHMsIG9uZSBpbmRpY2F0
+aW5nIHRoZSBjdXJyZW50IGhlYWQgb2YKICAqIHRoZSBxdWV1ZSwgYW5kIHRoZSBvdGhlciBpbmRp
+Y2F0aW5nIHRoZSBjdXJyZW50IHRhaWwuIFRoZSBsb2NrIGlzIGFjcXVpcmVkCmRpZmYgLS1naXQg
+YS9mcy9kY2FjaGUuYyBiL2ZzL2RjYWNoZS5jCmluZGV4IGI5NDlhZjguLjk2NjU1ZjQgMTAwNjQ0
+Ci0tLSBhL2ZzL2RjYWNoZS5jCisrKyBiL2ZzL2RjYWNoZS5jCkBAIC02MTEsOCArNjExLDIzIEBA
+IHN0YXRpYyBpbmxpbmUgdm9pZCBfX2RnZXQoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQogCiBzdHJ1
+Y3QgZGVudHJ5ICpkZ2V0X3BhcmVudChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCiB7CisJaW50IGdv
+dHJlZjsKIAlzdHJ1Y3QgZGVudHJ5ICpyZXQ7CiAKKwkvKgorCSAqIERvIG9wdGltaXN0aWMgcGFy
+ZW50IGxvb2t1cCB3aXRob3V0IGFueQorCSAqIGxvY2tpbmcuCisJICovCisJcmN1X3JlYWRfbG9j
+aygpOworCXJldCA9IEFDQ0VTU19PTkNFKGRlbnRyeS0+ZF9wYXJlbnQpOworCWdvdHJlZiA9IGxv
+Y2tyZWZfZ2V0X25vdF96ZXJvKCZyZXQtPmRfbG9ja3JlZik7CisJcmN1X3JlYWRfdW5sb2NrKCk7
+CisJaWYgKGxpa2VseShnb3RyZWYpKSB7CisJCWlmIChsaWtlbHkocmV0ID09IEFDQ0VTU19PTkNF
+KGRlbnRyeS0+ZF9wYXJlbnQpKSkKKwkJCXJldHVybiByZXQ7CisJCWRwdXQocmV0KTsKKwl9CisK
+IHJlcGVhdDoKIAkvKgogCSAqIERvbid0IG5lZWQgcmN1X2RlcmVmZXJlbmNlIGJlY2F1c2Ugd2Ug
+cmUtY2hlY2sgaXQgd2FzIGNvcnJlY3QgdW5kZXIKQEAgLTE3NzEsNyArMTc4Niw3IEBAIHN0YXRp
+YyBub2lubGluZSBlbnVtIHNsb3dfZF9jb21wYXJlIHNsb3dfZGVudHJ5X2NtcCgKICAqIHdpdGhv
+dXQgdGFraW5nIGRfbG9jayBhbmQgY2hlY2tpbmcgZF9zZXEgc2VxdWVuY2UgY291bnQgYWdhaW5z
+dCBAc2VxCiAgKiByZXR1cm5lZCBoZXJlLgogICoKLSAqIEEgcmVmY291bnQgbWF5IGJlIHRha2Vu
+IG9uIHRoZSBmb3VuZCBkZW50cnkgd2l0aCB0aGUgX19kX3JjdV90b19yZWZjb3VudAorICogQSBy
+ZWZjb3VudCBtYXkgYmUgdGFrZW4gb24gdGhlIGZvdW5kIGRlbnRyeSB3aXRoIHRoZSBkX3JjdV90
+b19yZWZjb3VudAogICogZnVuY3Rpb24uCiAgKgogICogQWx0ZXJuYXRpdmVseSwgX19kX2xvb2t1
+cF9yY3UgbWF5IGJlIGNhbGxlZCBhZ2FpbiB0byBsb29rIHVwIHRoZSBjaGlsZCBvZgpkaWZmIC0t
+Z2l0IGEvZnMvbmFtZWkuYyBiL2ZzL25hbWVpLmMKaW5kZXggNzcyMGZiZC4uMmMzMGM4NCAxMDA2
+NDQKLS0tIGEvZnMvbmFtZWkuYworKysgYi9mcy9uYW1laS5jCkBAIC00OTQsNiArNDk0LDUwIEBA
+IHN0YXRpYyBpbmxpbmUgdm9pZCB1bmxvY2tfcmN1X3dhbGsodm9pZCkKIAlicl9yZWFkX3VubG9j
+aygmdmZzbW91bnRfbG9jayk7CiB9CiAKKy8qCisgKiBXaGVuIHdlIG1vdmUgb3ZlciBmcm9tIHRo
+ZSBSQ1UgZG9tYWluIHRvIHByb3Blcmx5IHJlZmNvdW50ZWQKKyAqIGxvbmctbGl2ZWQgZGVudHJp
+ZXMsIHdlIG5lZWQgdG8gY2hlY2sgdGhlIHNlcXVlbmNlIG51bWJlcnMKKyAqIHdlIGdvdCBiZWZv
+cmUgbG9va3VwIHZlcnkgY2FyZWZ1bGx5LgorICoKKyAqIFdlIGNhbm5vdCBibGluZGx5IGluY3Jl
+bWVudCBhIGRlbnRyeSByZWZjb3VudCAtIGV2ZW4gaWYgaXQKKyAqIGlzIG5vdCBsb2NrZWQgLSBp
+ZiBpdCBpcyB6ZXJvLCBiZWNhdXNlIGl0IG1heSBoYXZlIGdvbmUKKyAqIHRocm91Z2ggdGhlIGZp
+bmFsIGRfa2lsbCgpIGxvZ2ljIGFscmVhZHkuCisgKgorICogU28gZm9yIGEgemVybyByZWZjb3Vu
+dCwgd2UgbmVlZCB0byBnZXQgdGhlIHNwaW5sb2NrICh3aGljaCBpcworICogc2FmZSBldmVuIGZv
+ciBhIGRlYWQgZGVudHJ5IGJlY2F1c2UgdGhlIGRlLWFsbG9jYXRpb24gaXMKKyAqIFJDVS1kZWxh
+eWVkKSwgYW5kIGNoZWNrIHRoZSBzZXF1ZW5jZSBjb3VudCB1bmRlciB0aGUgbG9jay4KKyAqCisg
+KiBPbmNlIHdlIGhhdmUgY2hlY2tlZCB0aGUgc2VxdWVuY2UgY291bnQsIHdlIGtub3cgaXQgaXMg
+bGl2ZSwKKyAqIGFuZCBzaW5jZSB3ZSBob2xkIHRoZSBzcGlubG9jayBpdCBjYW5ub3QgZGllIGZy
+b20gdW5kZXIgdXMuCisgKgorICogSW4gY29udHJhc3QsIGlmIHRoZSByZWZlcmVuY2UgY291bnQg
+d2Fzbid0IHplcm8sIHdlIGNhbiBqdXN0CisgKiBpbmNyZW1lbnQgdGhlIGxvY2tyZWYgd2l0aG91
+dCBoYXZpbmcgdG8gdGFrZSB0aGUgc3BpbmxvY2suCisgKiBFdmVuIGlmIHRoZSBzZXF1ZW5jZSBu
+dW1iZXIgZW5kcyB1cCBiZWluZyBzdGFsZSwgd2UgaGF2ZW4ndAorICogZ29uZSB0aHJvdWdoIHRo
+ZSBmaW5hbCBkcHV0KCkgYW5kIGtpbGxlZCB0aGUgZGVudHJ5IHlldC4KKyAqLworc3RhdGljIGlu
+bGluZSBpbnQgZF9yY3VfdG9fcmVmY291bnQoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBzZXFjb3Vu
+dF90ICp2YWxpZGF0ZSwgdW5zaWduZWQgc2VxKQoreworCWludCBnb3RyZWY7CisKKwlnb3RyZWYg
+PSBsb2NrcmVmX2dldF9vcl9sb2NrKCZkZW50cnktPmRfbG9ja3JlZik7CisKKwkvKiBEb2VzIHRo
+ZSBzZXF1ZW5jZSBudW1iZXIgc3RpbGwgbWF0Y2g/ICovCisJaWYgKHJlYWRfc2VxY291bnRfcmV0
+cnkodmFsaWRhdGUsIHNlcSkpIHsKKwkJaWYgKGdvdHJlZikKKwkJCWRwdXQoZGVudHJ5KTsKKwkJ
+ZWxzZQorCQkJc3Bpbl91bmxvY2soJmRlbnRyeS0+ZF9sb2NrKTsKKwkJcmV0dXJuIC1FQ0hJTEQ7
+CisJfQorCisJLyogR2V0IHRoZSByZWYgbm93LCBpZiB3ZSBjb3VsZG4ndCBnZXQgaXQgb3JpZ2lu
+YWxseSAqLworCWlmICghZ290cmVmKSB7CisJCWRlbnRyeS0+ZF9sb2NrcmVmLmNvdW50Kys7CisJ
+CXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9jayk7CisJfQorCXJldHVybiAwOworfQorCiAvKioK
+ICAqIHVubGF6eV93YWxrIC0gdHJ5IHRvIHN3aXRjaCB0byByZWYtd2FsayBtb2RlLgogICogQG5k
+OiBuYW1laWRhdGEgcGF0aHdhbGsgZGF0YQpAQCAtNTE4LDI5ICs1NjIsMjggQEAgc3RhdGljIGlu
+dCB1bmxhenlfd2FsayhzdHJ1Y3QgbmFtZWlkYXRhICpuZCwgc3RydWN0IGRlbnRyeSAqZGVudHJ5
+KQogCQkJCW5kLT5yb290LmRlbnRyeSAhPSBmcy0+cm9vdC5kZW50cnkpCiAJCQlnb3RvIGVycl9y
+b290OwogCX0KLQlzcGluX2xvY2soJnBhcmVudC0+ZF9sb2NrKTsKKworCS8qCisJICogRm9yIGEg
+bmVnYXRpdmUgbG9va3VwLCB0aGUgbG9va3VwIHNlcXVlbmNlIHBvaW50IGlzIHRoZSBwYXJlbnRz
+CisJICogc2VxdWVuY2UgcG9pbnQsIGFuZCBpdCBvbmx5IG5lZWRzIHRvIHJldmFsaWRhdGUgdGhl
+IHBhcmVudCBkZW50cnkuCisJICoKKwkgKiBGb3IgYSBwb3NpdGl2ZSBsb29rdXAsIHdlIG5lZWQg
+dG8gbW92ZSBib3RoIHRoZSBwYXJlbnQgYW5kIHRoZQorCSAqIGRlbnRyeSBmcm9tIHRoZSBSQ1Ug
+ZG9tYWluIHRvIGJlIHByb3Blcmx5IHJlZmNvdW50ZWQuIEFuZCB0aGUKKwkgKiBzZXF1ZW5jZSBu
+dW1iZXIgaW4gdGhlIGRlbnRyeSB2YWxpZGF0ZXMgKmJvdGgqIGRlbnRyeSBjb3VudGVycywKKwkg
+KiBzaW5jZSB3ZSBjaGVja2VkIHRoZSBzZXF1ZW5jZSBudW1iZXIgb2YgdGhlIHBhcmVudCBhZnRl
+ciB3ZSBnb3QKKwkgKiB0aGUgY2hpbGQgc2VxdWVuY2UgbnVtYmVyLiBTbyB3ZSBrbm93IHRoZSBw
+YXJlbnQgbXVzdCBzdGlsbAorCSAqIGJlIHZhbGlkIGlmIHRoZSBjaGlsZCBzZXF1ZW5jZSBudW1i
+ZXIgaXMgc3RpbGwgdmFsaWQuCisJICovCiAJaWYgKCFkZW50cnkpIHsKLQkJaWYgKCFfX2RfcmN1
+X3RvX3JlZmNvdW50KHBhcmVudCwgbmQtPnNlcSkpCi0JCQlnb3RvIGVycl9wYXJlbnQ7CisJCWlm
+IChkX3JjdV90b19yZWZjb3VudChwYXJlbnQsICZwYXJlbnQtPmRfc2VxLCBuZC0+c2VxKSA8IDAp
+CisJCQlnb3RvIGVycl9yb290OwogCQlCVUdfT04obmQtPmlub2RlICE9IHBhcmVudC0+ZF9pbm9k
+ZSk7CiAJfSBlbHNlIHsKLQkJaWYgKGRlbnRyeS0+ZF9wYXJlbnQgIT0gcGFyZW50KQorCQlpZiAo
+ZF9yY3VfdG9fcmVmY291bnQoZGVudHJ5LCAmZGVudHJ5LT5kX3NlcSwgbmQtPnNlcSkgPCAwKQor
+CQkJZ290byBlcnJfcm9vdDsKKwkJaWYgKGRfcmN1X3RvX3JlZmNvdW50KHBhcmVudCwgJmRlbnRy
+eS0+ZF9zZXEsIG5kLT5zZXEpIDwgMCkKIAkJCWdvdG8gZXJyX3BhcmVudDsKLQkJc3Bpbl9sb2Nr
+X25lc3RlZCgmZGVudHJ5LT5kX2xvY2ssIERFTlRSWV9EX0xPQ0tfTkVTVEVEKTsKLQkJaWYgKCFf
+X2RfcmN1X3RvX3JlZmNvdW50KGRlbnRyeSwgbmQtPnNlcSkpCi0JCQlnb3RvIGVycl9jaGlsZDsK
+LQkJLyoKLQkJICogSWYgdGhlIHNlcXVlbmNlIGNoZWNrIG9uIHRoZSBjaGlsZCBkZW50cnkgcGFz
+c2VkLCB0aGVuCi0JCSAqIHRoZSBjaGlsZCBoYXMgbm90IGJlZW4gcmVtb3ZlZCBmcm9tIGl0cyBw
+YXJlbnQuIFRoaXMKLQkJICogbWVhbnMgdGhlIHBhcmVudCBkZW50cnkgbXVzdCBiZSB2YWxpZCBh
+bmQgYWJsZSB0byB0YWtlCi0JCSAqIGEgcmVmZXJlbmNlIGF0IHRoaXMgcG9pbnQuCi0JCSAqLwot
+CQlCVUdfT04oIUlTX1JPT1QoZGVudHJ5KSAmJiBkZW50cnktPmRfcGFyZW50ICE9IHBhcmVudCk7
+Ci0JCUJVR19PTighcGFyZW50LT5kX2xvY2tyZWYuY291bnQpOwotCQlwYXJlbnQtPmRfbG9ja3Jl
+Zi5jb3VudCsrOwotCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOwogCX0KLQlzcGluX3Vu
+bG9jaygmcGFyZW50LT5kX2xvY2spOwogCWlmICh3YW50X3Jvb3QpIHsKIAkJcGF0aF9nZXQoJm5k
+LT5yb290KTsKIAkJc3Bpbl91bmxvY2soJmZzLT5sb2NrKTsKQEAgLTU1MSwxMCArNTk0LDggQEAg
+c3RhdGljIGludCB1bmxhenlfd2FsayhzdHJ1Y3QgbmFtZWlkYXRhICpuZCwgc3RydWN0IGRlbnRy
+eSAqZGVudHJ5KQogCW5kLT5mbGFncyAmPSB+TE9PS1VQX1JDVTsKIAlyZXR1cm4gMDsKIAotZXJy
+X2NoaWxkOgotCXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9jayk7CiBlcnJfcGFyZW50OgotCXNw
+aW5fdW5sb2NrKCZwYXJlbnQtPmRfbG9jayk7CisJZHB1dChkZW50cnkpOwogZXJyX3Jvb3Q6CiAJ
+aWYgKHdhbnRfcm9vdCkKIAkJc3Bpbl91bmxvY2soJmZzLT5sb2NrKTsKQEAgLTU4NSwxNCArNjI2
+LDExIEBAIHN0YXRpYyBpbnQgY29tcGxldGVfd2FsayhzdHJ1Y3QgbmFtZWlkYXRhICpuZCkKIAkJ
+bmQtPmZsYWdzICY9IH5MT09LVVBfUkNVOwogCQlpZiAoIShuZC0+ZmxhZ3MgJiBMT09LVVBfUk9P
+VCkpCiAJCQluZC0+cm9vdC5tbnQgPSBOVUxMOwotCQlzcGluX2xvY2soJmRlbnRyeS0+ZF9sb2Nr
+KTsKLQkJaWYgKHVubGlrZWx5KCFfX2RfcmN1X3RvX3JlZmNvdW50KGRlbnRyeSwgbmQtPnNlcSkp
+KSB7Ci0JCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOworCisJCWlmIChkX3JjdV90b19y
+ZWZjb3VudChkZW50cnksICZkZW50cnktPmRfc2VxLCBuZC0+c2VxKSA8IDApIHsKIAkJCXVubG9j
+a19yY3Vfd2FsaygpOwogCQkJcmV0dXJuIC1FQ0hJTEQ7CiAJCX0KLQkJQlVHX09OKG5kLT5pbm9k
+ZSAhPSBkZW50cnktPmRfaW5vZGUpOwotCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOwog
+CQltbnRnZXQobmQtPnBhdGgubW50KTsKIAkJdW5sb2NrX3JjdV93YWxrKCk7CiAJfQpkaWZmIC0t
+Z2l0IGEvaW5jbHVkZS9saW51eC9kY2FjaGUuaCBiL2luY2x1ZGUvbGludXgvZGNhY2hlLmgKaW5k
+ZXggZWZkYzk0NC4uOTE2OWI5MSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9kY2FjaGUuaAor
+KysgYi9pbmNsdWRlL2xpbnV4L2RjYWNoZS5oCkBAIC0zMDQsMjggKzMwNCw2IEBAIGV4dGVybiBz
+dHJ1Y3QgZGVudHJ5ICpfX2RfbG9va3VwKGNvbnN0IHN0cnVjdCBkZW50cnkgKiwgY29uc3Qgc3Ry
+dWN0IHFzdHIgKik7CiBleHRlcm4gc3RydWN0IGRlbnRyeSAqX19kX2xvb2t1cF9yY3UoY29uc3Qg
+c3RydWN0IGRlbnRyeSAqcGFyZW50LAogCQkJCWNvbnN0IHN0cnVjdCBxc3RyICpuYW1lLCB1bnNp
+Z25lZCAqc2VxKTsKIAotLyoqCi0gKiBfX2RfcmN1X3RvX3JlZmNvdW50IC0gdGFrZSBhIHJlZmNv
+dW50IG9uIGRlbnRyeSBpZiBzZXF1ZW5jZSBjaGVjayBpcyBvawotICogQGRlbnRyeTogZGVudHJ5
+IHRvIHRha2UgYSByZWYgb24KLSAqIEBzZXE6IHNlcWNvdW50IHRvIHZlcmlmeSBhZ2FpbnN0Ci0g
+KiBSZXR1cm5zOiAwIG9uIGZhaWx1cmUsIGVsc2UgMS4KLSAqCi0gKiBfX2RfcmN1X3RvX3JlZmNv
+dW50IG9wZXJhdGVzIG9uIGEgZGVudHJ5LHNlcSBwYWlyIHRoYXQgd2FzIHJldHVybmVkCi0gKiBi
+eSBfX2RfbG9va3VwX3JjdSwgdG8gZ2V0IGEgcmVmZXJlbmNlIG9uIGFuIHJjdS13YWxrIGRlbnRy
+eS4KLSAqLwotc3RhdGljIGlubGluZSBpbnQgX19kX3JjdV90b19yZWZjb3VudChzdHJ1Y3QgZGVu
+dHJ5ICpkZW50cnksIHVuc2lnbmVkIHNlcSkKLXsKLQlpbnQgcmV0ID0gMDsKLQotCWFzc2VydF9z
+cGluX2xvY2tlZCgmZGVudHJ5LT5kX2xvY2spOwotCWlmICghcmVhZF9zZXFjb3VudF9yZXRyeSgm
+ZGVudHJ5LT5kX3NlcSwgc2VxKSkgewotCQlyZXQgPSAxOwotCQlkZW50cnktPmRfbG9ja3JlZi5j
+b3VudCsrOwotCX0KLQotCXJldHVybiByZXQ7Ci19Ci0KIHN0YXRpYyBpbmxpbmUgdW5zaWduZWQg
+ZF9jb3VudChjb25zdCBzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCiB7CiAJcmV0dXJuIGRlbnRyeS0+
+ZF9sb2NrcmVmLmNvdW50OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9sb2NrcmVmLmggYi9p
+bmNsdWRlL2xpbnV4L2xvY2tyZWYuaAppbmRleCAwMTIzM2UwLi5jYTA3YjUwIDEwMDY0NAotLS0g
+YS9pbmNsdWRlL2xpbnV4L2xvY2tyZWYuaAorKysgYi9pbmNsdWRlL2xpbnV4L2xvY2tyZWYuaApA
+QCAtMTcsNTUgKzE3LDIwIEBACiAjaW5jbHVkZSA8bGludXgvc3BpbmxvY2suaD4KIAogc3RydWN0
+IGxvY2tyZWYgewotCXNwaW5sb2NrX3QgbG9jazsKLQl1bnNpZ25lZCBpbnQgY291bnQ7CisJdW5p
+b24geworI2lmZGVmIENPTkZJR19DTVBYQ0hHX0xPQ0tSRUYKKwkJYWxpZ25lZF91NjQgbG9ja19j
+b3VudDsKKyNlbmRpZgorCQlzdHJ1Y3QgeworCQkJc3BpbmxvY2tfdCBsb2NrOworCQkJdW5zaWdu
+ZWQgaW50IGNvdW50OworCQl9OworCX07CiB9OwogCi0vKioKLSAqIGxvY2tyZWZfZ2V0IC0gSW5j
+cmVtZW50cyByZWZlcmVuY2UgY291bnQgdW5jb25kaXRpb25hbGx5Ci0gKiBAbG9ja2NudDogcG9p
+bnRlciB0byBsb2NrcmVmIHN0cnVjdHVyZQotICoKLSAqIFRoaXMgb3BlcmF0aW9uIGlzIG9ubHkg
+dmFsaWQgaWYgeW91IGFscmVhZHkgaG9sZCBhIHJlZmVyZW5jZQotICogdG8gdGhlIG9iamVjdCwg
+c28geW91IGtub3cgdGhlIGNvdW50IGNhbm5vdCBiZSB6ZXJvLgotICovCi1zdGF0aWMgaW5saW5l
+IHZvaWQgbG9ja3JlZl9nZXQoc3RydWN0IGxvY2tyZWYgKmxvY2tyZWYpCi17Ci0Jc3Bpbl9sb2Nr
+KCZsb2NrcmVmLT5sb2NrKTsKLQlsb2NrcmVmLT5jb3VudCsrOwotCXNwaW5fdW5sb2NrKCZsb2Nr
+cmVmLT5sb2NrKTsKLX0KLQotLyoqCi0gKiBsb2NrcmVmX2dldF9ub3RfemVybyAtIEluY3JlbWVu
+dHMgY291bnQgdW5sZXNzIHRoZSBjb3VudCBpcyAwCi0gKiBAbG9ja2NudDogcG9pbnRlciB0byBs
+b2NrcmVmIHN0cnVjdHVyZQotICogUmV0dXJuOiAxIGlmIGNvdW50IHVwZGF0ZWQgc3VjY2Vzc2Z1
+bGx5IG9yIDAgaWYgY291bnQgaXMgMAotICovCi1zdGF0aWMgaW5saW5lIGludCBsb2NrcmVmX2dl
+dF9ub3RfemVybyhzdHJ1Y3QgbG9ja3JlZiAqbG9ja3JlZikKLXsKLQlpbnQgcmV0dmFsID0gMDsK
+LQotCXNwaW5fbG9jaygmbG9ja3JlZi0+bG9jayk7Ci0JaWYgKGxvY2tyZWYtPmNvdW50KSB7Ci0J
+CWxvY2tyZWYtPmNvdW50Kys7Ci0JCXJldHZhbCA9IDE7Ci0JfQotCXNwaW5fdW5sb2NrKCZsb2Nr
+cmVmLT5sb2NrKTsKLQlyZXR1cm4gcmV0dmFsOwotfQotCi0vKioKLSAqIGxvY2tyZWZfcHV0X29y
+X2xvY2sgLSBkZWNyZW1lbnRzIGNvdW50IHVubGVzcyBjb3VudCA8PSAxIGJlZm9yZSBkZWNyZW1l
+bnQKLSAqIEBsb2NrY250OiBwb2ludGVyIHRvIGxvY2tyZWYgc3RydWN0dXJlCi0gKiBSZXR1cm46
+IDEgaWYgY291bnQgdXBkYXRlZCBzdWNjZXNzZnVsbHkgb3IgMCBpZiBjb3VudCA8PSAxIGFuZCBs
+b2NrIHRha2VuCi0gKi8KLXN0YXRpYyBpbmxpbmUgaW50IGxvY2tyZWZfcHV0X29yX2xvY2soc3Ry
+dWN0IGxvY2tyZWYgKmxvY2tyZWYpCi17Ci0Jc3Bpbl9sb2NrKCZsb2NrcmVmLT5sb2NrKTsKLQlp
+ZiAobG9ja3JlZi0+Y291bnQgPD0gMSkKLQkJcmV0dXJuIDA7Ci0JbG9ja3JlZi0+Y291bnQtLTsK
+LQlzcGluX3VubG9jaygmbG9ja3JlZi0+bG9jayk7Ci0JcmV0dXJuIDE7Ci19CitleHRlcm4gdm9p
+ZCBsb2NrcmVmX2dldChzdHJ1Y3QgbG9ja3JlZiAqKTsKK2V4dGVybiBpbnQgbG9ja3JlZl9nZXRf
+bm90X3plcm8oc3RydWN0IGxvY2tyZWYgKik7CitleHRlcm4gaW50IGxvY2tyZWZfZ2V0X29yX2xv
+Y2soc3RydWN0IGxvY2tyZWYgKik7CitleHRlcm4gaW50IGxvY2tyZWZfcHV0X29yX2xvY2soc3Ry
+dWN0IGxvY2tyZWYgKik7CiAKICNlbmRpZiAvKiBfX0xJTlVYX0xPQ0tSRUZfSCAqLwpkaWZmIC0t
+Z2l0IGEvbGliL0tjb25maWcgYi9saWIvS2NvbmZpZwppbmRleCA3MWQ5ZjgxLi42NTU2MTcxIDEw
+MDY0NAotLS0gYS9saWIvS2NvbmZpZworKysgYi9saWIvS2NvbmZpZwpAQCAtNDgsNiArNDgsMTYg
+QEAgY29uZmlnIFNUTVBfREVWSUNFCiBjb25maWcgUEVSQ1BVX1JXU0VNCiAJYm9vbGVhbgogCitj
+b25maWcgQVJDSF9VU0VfQ01QWENIR19MT0NLUkVGCisJYm9vbAorCitjb25maWcgQ01QWENIR19M
+T0NLUkVGCisJZGVmX2Jvb2wgeSBpZiBBUkNIX1VTRV9DTVBYQ0hHX0xPQ0tSRUYKKwlkZXBlbmRz
+IG9uIFNNUAorCWRlcGVuZHMgb24gIUdFTkVSSUNfTE9DS0JSRUFLCisJZGVwZW5kcyBvbiAhREVC
+VUdfU1BJTkxPQ0sKKwlkZXBlbmRzIG9uICFERUJVR19MT0NLX0FMTE9DCisKIGNvbmZpZyBDUkNf
+Q0NJVFQKIAl0cmlzdGF0ZSAiQ1JDLUNDSVRUIGZ1bmN0aW9ucyIKIAloZWxwCmRpZmYgLS1naXQg
+YS9saWIvTWFrZWZpbGUgYi9saWIvTWFrZWZpbGUKaW5kZXggN2JhY2NmZC4uZjJjYjMwOCAxMDA2
+NDQKLS0tIGEvbGliL01ha2VmaWxlCisrKyBiL2xpYi9NYWtlZmlsZQpAQCAtMjAsNiArMjAsNyBA
+QCBsaWItJChDT05GSUdfTU1VKSArPSBpb3JlbWFwLm8KIGxpYi0kKENPTkZJR19TTVApICs9IGNw
+dW1hc2subwogCiBsaWIteQkrPSBrb2JqZWN0Lm8ga2xpc3Qubworb2JqLXkJKz0gbG9ja3JlZi5v
+CiAKIG9iai15ICs9IGJjZC5vIGRpdjY0Lm8gc29ydC5vIHBhcnNlci5vIGhhbGZtZDQubyBkZWJ1
+Z19sb2Nrcy5vIHJhbmRvbTMyLm8gXAogCSBidXN0X3NwaW5sb2Nrcy5vIGhleGR1bXAubyBrYXNw
+cmludGYubyBiaXRtYXAubyBzY2F0dGVybGlzdC5vIFwKZGlmZiAtLWdpdCBhL2xpYi9sb2NrcmVm
+LmMgYi9saWIvbG9ja3JlZi5jCm5ldyBmaWxlIG1vZGUgMTAwNjQ0CmluZGV4IDAwMDAwMDAuLjlk
+NzZmNDAKLS0tIC9kZXYvbnVsbAorKysgYi9saWIvbG9ja3JlZi5jCkBAIC0wLDAgKzEsMTI4IEBA
+CisjaW5jbHVkZSA8bGludXgvZXhwb3J0Lmg+CisjaW5jbHVkZSA8bGludXgvbG9ja3JlZi5oPgor
+CisjaWZkZWYgQ09ORklHX0NNUFhDSEdfTE9DS1JFRgorCisvKgorICogTm90ZSB0aGF0IHRoZSAi
+Y21weGNoZygpIiByZWxvYWRzIHRoZSAib2xkIiB2YWx1ZSBmb3IgdGhlCisgKiBmYWlsdXJlIGNh
+c2UuCisgKi8KKyNkZWZpbmUgQ01QWENIR19MT09QKENPREUsIFNVQ0NFU1MpIGRvIHsJCQkJCVwK
+KwlzdHJ1Y3QgbG9ja3JlZiBvbGQ7CQkJCQkJCVwKKwlCVUlMRF9CVUdfT04oc2l6ZW9mKG9sZCkg
+IT0gOCk7CQkJCQkJXAorCW9sZC5sb2NrX2NvdW50ID0gQUNDRVNTX09OQ0UobG9ja3JlZi0+bG9j
+a19jb3VudCk7CQkJXAorCXdoaWxlIChsaWtlbHkoYXJjaF9zcGluX3ZhbHVlX3VubG9ja2VkKG9s
+ZC5sb2NrLnJsb2NrLnJhd19sb2NrKSkpIHsgIAlcCisJCXN0cnVjdCBsb2NrcmVmIG5ldyA9IG9s
+ZCwgcHJldiA9IG9sZDsJCQkJXAorCQlDT0RFCQkJCQkJCQlcCisJCW9sZC5sb2NrX2NvdW50ID0g
+Y21weGNoZygmbG9ja3JlZi0+bG9ja19jb3VudCwJCQlcCisJCQkJCSBvbGQubG9ja19jb3VudCwg
+bmV3LmxvY2tfY291bnQpOwlcCisJCWlmIChsaWtlbHkob2xkLmxvY2tfY291bnQgPT0gcHJldi5s
+b2NrX2NvdW50KSkgewkJXAorCQkJU1VDQ0VTUzsJCQkJCQlcCisJCX0JCQkJCQkJCVwKKwkJY3B1
+X3JlbGF4KCk7CQkJCQkJCVwKKwl9CQkJCQkJCQkJXAorfSB3aGlsZSAoMCkKKworI2Vsc2UKKwor
+I2RlZmluZSBDTVBYQ0hHX0xPT1AoQ09ERSwgU1VDQ0VTUykgZG8geyB9IHdoaWxlICgwKQorCisj
+ZW5kaWYKKworLyoqCisgKiBsb2NrcmVmX2dldCAtIEluY3JlbWVudHMgcmVmZXJlbmNlIGNvdW50
+IHVuY29uZGl0aW9uYWxseQorICogQGxvY2tjbnQ6IHBvaW50ZXIgdG8gbG9ja3JlZiBzdHJ1Y3R1
+cmUKKyAqCisgKiBUaGlzIG9wZXJhdGlvbiBpcyBvbmx5IHZhbGlkIGlmIHlvdSBhbHJlYWR5IGhv
+bGQgYSByZWZlcmVuY2UKKyAqIHRvIHRoZSBvYmplY3QsIHNvIHlvdSBrbm93IHRoZSBjb3VudCBj
+YW5ub3QgYmUgemVyby4KKyAqLwordm9pZCBsb2NrcmVmX2dldChzdHJ1Y3QgbG9ja3JlZiAqbG9j
+a3JlZikKK3sKKwlDTVBYQ0hHX0xPT1AoCisJCW5ldy5jb3VudCsrOworCSwKKwkJcmV0dXJuOwor
+CSk7CisKKwlzcGluX2xvY2soJmxvY2tyZWYtPmxvY2spOworCWxvY2tyZWYtPmNvdW50Kys7CisJ
+c3Bpbl91bmxvY2soJmxvY2tyZWYtPmxvY2spOworfQorRVhQT1JUX1NZTUJPTChsb2NrcmVmX2dl
+dCk7CisKKy8qKgorICogbG9ja3JlZl9nZXRfbm90X3plcm8gLSBJbmNyZW1lbnRzIGNvdW50IHVu
+bGVzcyB0aGUgY291bnQgaXMgMAorICogQGxvY2tjbnQ6IHBvaW50ZXIgdG8gbG9ja3JlZiBzdHJ1
+Y3R1cmUKKyAqIFJldHVybjogMSBpZiBjb3VudCB1cGRhdGVkIHN1Y2Nlc3NmdWxseSBvciAwIGlm
+IGNvdW50IHdhcyB6ZXJvCisgKi8KK2ludCBsb2NrcmVmX2dldF9ub3RfemVybyhzdHJ1Y3QgbG9j
+a3JlZiAqbG9ja3JlZikKK3sKKwlpbnQgcmV0dmFsOworCisJQ01QWENIR19MT09QKAorCQluZXcu
+Y291bnQrKzsKKwkJaWYgKCFvbGQuY291bnQpCisJCQlyZXR1cm4gMDsKKwksCisJCXJldHVybiAx
+OworCSk7CisKKwlzcGluX2xvY2soJmxvY2tyZWYtPmxvY2spOworCXJldHZhbCA9IDA7CisJaWYg
+KGxvY2tyZWYtPmNvdW50KSB7CisJCWxvY2tyZWYtPmNvdW50Kys7CisJCXJldHZhbCA9IDE7CisJ
+fQorCXNwaW5fdW5sb2NrKCZsb2NrcmVmLT5sb2NrKTsKKwlyZXR1cm4gcmV0dmFsOworfQorRVhQ
+T1JUX1NZTUJPTChsb2NrcmVmX2dldF9ub3RfemVybyk7CisKKy8qKgorICogbG9ja3JlZl9nZXRf
+b3JfbG9jayAtIEluY3JlbWVudHMgY291bnQgdW5sZXNzIHRoZSBjb3VudCBpcyAwCisgKiBAbG9j
+a2NudDogcG9pbnRlciB0byBsb2NrcmVmIHN0cnVjdHVyZQorICogUmV0dXJuOiAxIGlmIGNvdW50
+IHVwZGF0ZWQgc3VjY2Vzc2Z1bGx5IG9yIDAgaWYgY291bnQgd2FzIHplcm8KKyAqIGFuZCB3ZSBn
+b3QgdGhlIGxvY2sgaW5zdGVhZC4KKyAqLworaW50IGxvY2tyZWZfZ2V0X29yX2xvY2soc3RydWN0
+IGxvY2tyZWYgKmxvY2tyZWYpCit7CisJQ01QWENIR19MT09QKAorCQluZXcuY291bnQrKzsKKwkJ
+aWYgKCFvbGQuY291bnQpCisJCQlicmVhazsKKwksCisJCXJldHVybiAxOworCSk7CisKKwlzcGlu
+X2xvY2soJmxvY2tyZWYtPmxvY2spOworCWlmICghbG9ja3JlZi0+Y291bnQpCisJCXJldHVybiAw
+OworCWxvY2tyZWYtPmNvdW50Kys7CisJc3Bpbl91bmxvY2soJmxvY2tyZWYtPmxvY2spOworCXJl
+dHVybiAxOworfQorRVhQT1JUX1NZTUJPTChsb2NrcmVmX2dldF9vcl9sb2NrKTsKKworLyoqCisg
+KiBsb2NrcmVmX3B1dF9vcl9sb2NrIC0gZGVjcmVtZW50cyBjb3VudCB1bmxlc3MgY291bnQgPD0g
+MSBiZWZvcmUgZGVjcmVtZW50CisgKiBAbG9ja2NudDogcG9pbnRlciB0byBsb2NrcmVmIHN0cnVj
+dHVyZQorICogUmV0dXJuOiAxIGlmIGNvdW50IHVwZGF0ZWQgc3VjY2Vzc2Z1bGx5IG9yIDAgaWYg
+Y291bnQgPD0gMSBhbmQgbG9jayB0YWtlbgorICovCitpbnQgbG9ja3JlZl9wdXRfb3JfbG9jayhz
+dHJ1Y3QgbG9ja3JlZiAqbG9ja3JlZikKK3sKKwlDTVBYQ0hHX0xPT1AoCisJCW5ldy5jb3VudC0t
+OworCQlpZiAob2xkLmNvdW50IDw9IDEpCisJCQlicmVhazsKKwksCisJCXJldHVybiAxOworCSk7
+CisKKwlzcGluX2xvY2soJmxvY2tyZWYtPmxvY2spOworCWlmIChsb2NrcmVmLT5jb3VudCA8PSAx
+KQorCQlyZXR1cm4gMDsKKwlsb2NrcmVmLT5jb3VudC0tOworCXNwaW5fdW5sb2NrKCZsb2NrcmVm
+LT5sb2NrKTsKKwlyZXR1cm4gMTsKK30KK0VYUE9SVF9TWU1CT0wobG9ja3JlZl9wdXRfb3JfbG9j
+ayk7CmRpZmYgLS1naXQgYS9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIgYi9zY3JpcHRzL3BhY2th
+Z2UvYnVpbGRkZWIKaW5kZXggYWNiODY1MC4uN2Q3YzlkOCAxMDA2NDQKLS0tIGEvc2NyaXB0cy9w
+YWNrYWdlL2J1aWxkZGViCisrKyBiL3NjcmlwdHMvcGFja2FnZS9idWlsZGRlYgpAQCAtMTcyLDkg
+KzE3MiwyMiBAQCBlbHNlCiBmaQogbWFpbnRhaW5lcj0iJG5hbWUgPCRlbWFpbD4iCiAKKyMgVHJ5
+IHRvIGRldGVybWluZSBkaXN0cmlidXRpb24KK2lmIFsgLWUgJCh3aGljaCBsc2JfcmVsZWFzZSkg
+XTsgdGhlbgorICAgICAgIGNvZGVuYW1lPSQobHNiX3JlbGVhc2UgLS1jb2RlbmFtZSAtLXNob3J0
+KQorICAgICAgIGlmIFsgIiRjb2RlbmFtZSIgIT0gIiIgXTsgdGhlbgorCQlkaXN0cmlidXRpb249
+JGNvZGVuYW1lCisgICAgICAgZWxzZQorCQlkaXN0cmlidXRpb249IlVOUkVMRUFTRUQiCisJCWVj
+aG8gIldBUk5JTkc6IFRoZSBkaXN0cmlidXRpb24gY291bGQgTk9UIGJlIGRldGVybWluZWQhIgor
+ICAgICAgIGZpCitlbHNlCisgICAgICAgZWNobyAiSElOVDogSW5zdGFsbCBsc2JfcmVsZWFzZSBi
+aW5hcnksIHRoaXMgaGVscHMgdG8gaWRlbnRpZnkgeW91ciBkaXN0cmlidXRpb24hIgorZmkKKwog
+IyBHZW5lcmF0ZSBhIHNpbXBsZSBjaGFuZ2Vsb2cgdGVtcGxhdGUKIGNhdCA8PEVPRiA+IGRlYmlh
+bi9jaGFuZ2Vsb2cKLWxpbnV4LXVwc3RyZWFtICgkcGFja2FnZXZlcnNpb24pIHVuc3RhYmxlOyB1
+cmdlbmN5PWxvdworbGludXgtdXBzdHJlYW0gKCRwYWNrYWdldmVyc2lvbikgJGRpc3RyaWJ1dGlv
+bjsgdXJnZW5jeT1sb3cKIAogICAqIEN1c3RvbSBidWlsdCBMaW51eCBrZXJuZWwuCiAKQEAgLTE4
+OCwxMCArMjAxLDEwIEBAIFRoaXMgaXMgYSBwYWNrYWNrZWQgdXBzdHJlYW0gdmVyc2lvbiBvZiB0
+aGUgTGludXgga2VybmVsLgogVGhlIHNvdXJjZXMgbWF5IGJlIGZvdW5kIGF0IG1vc3QgTGludXgg
+ZnRwIHNpdGVzLCBpbmNsdWRpbmc6CiBmdHA6Ly9mdHAua2VybmVsLm9yZy9wdWIvbGludXgva2Vy
+bmVsCiAKLUNvcHlyaWdodDogMTk5MSAtIDIwMDkgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4K
+K0NvcHlyaWdodDogMTk5MSAtIDIwMTMgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4KIAogVGhl
+IGdpdCByZXBvc2l0b3J5IGZvciBtYWlubGluZSBrZXJuZWwgZGV2ZWxvcG1lbnQgaXMgYXQ6Ci1n
+aXQ6Ly9naXQua2VybmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvdG9ydmFsZHMvbGlu
+dXgtMi42LmdpdAorZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0
+L3RvcnZhbGRzL2xpbnV4LmdpdAogCiAgICAgVGhpcyBwcm9ncmFtIGlzIGZyZWUgc29mdHdhcmU7
+IHlvdSBjYW4gcmVkaXN0cmlidXRlIGl0IGFuZC9vciBtb2RpZnkKICAgICBpdCB1bmRlciB0aGUg
+dGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQo=
+--f46d0438952dcd04db04e582632d--
