@@ -1,66 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab3ICObp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:31:45 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55806 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752604Ab3ICObo (ORCPT
+	id S1755895Ab3ICObz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:31:55 -0400
+Received: from smtpretry2.9services.com ([84.96.93.153]:54229 "EHLO
+	smtpretry2.9services.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab3ICObx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:31:44 -0400
-Message-ID: <1378218699.1279.7.camel@x61.thuisdomein>
-Subject: Re: [PATCH] x86, tsc: downgrade fast calibration failure message
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
-Date: Tue, 03 Sep 2013 16:31:39 +0200
-In-Reply-To: <1378217395-1241-1-git-send-email-jerome.oufella@savoirfairelinux.com>
-References: <1378217395-1241-1-git-send-email-jerome.oufella@savoirfairelinux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2013 14:31:39.0841 (UTC) FILETIME=[4D832B10:01CEA8B2]
-X-RcptDomain: vger.kernel.org
+	Tue, 3 Sep 2013 10:31:53 -0400
+X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 10:31:52 EDT
+X-IMPR2: ??
+X-VRSPAM-SCORE: -100.00
+Message-ID: <5225F0A9.5040100@efixo.com>
+Date: Tue, 03 Sep 2013 16:22:33 +0200
+From: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+Reply-To: emmanuel.deloget@efixo.com
+Organization: Efixo
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "[ML] linux-kernel" <linux-kernel@vger.kernel.org>
+CC: Emmanuel Deloget <emmanuel.deloget@efixo.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: /proc/$PID/sched does not take PID namespace into account
+Content-Type: multipart/mixed;
+ boundary="------------040602030406050808030401"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-03 at 10:09 -0400, Jerome Oufella wrote:
-> As pointed out by Paul Bolle in https://lkml.org/lkml/2012/9/24/221, the
-> fast TSC calibration method may fail on some machines and result in an
-> error level message that does not reflect the severity of the case.
-> 
-> Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-> ---
-> This patch lost momentum and wordsmithing the message was evoked in
-> subsequent posts but imho reducing the level does the job just fine.
+This is a multi-part message in MIME format.
+--------------040602030406050808030401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-I've carried an identical patch locally ever since I submitted the patch
-referenced by Jerome. Ie, I'm now running v3.11 with that patch applied.
-Jerome's commit explanation is a bit terse when compared to my
-verbosity, but otherwise I'm fine with this. So:
+Hello,
 
-Acked-by: Paul Bolle <pebolle@tiscali.nl>
+(please CC me when answering this mail ; and sorry for my borken
+English).
+
+I noticed that when a process is executed in a PID namespace it can
+still find his real PID by parsing /proc/$PID_IN_NS/sched.
+
+(in this example I created a new PID namespace and ran /bin/bash at
+PID 1)
+
+  # uname -a
+  Linux my-thinkpad 3.9-1-amd64 #1 SMP Debian 3.9.6-1 x86_64 GNU/Linux
+  #
+  # pidof bash
+  1
+  # head -n 1 /proc/1/sched
+  bash (14957, #threads: 1)
+  # cat /proc/1/stat
+  1 (bash) S 0 1 0 34823 220 4202752 11359 (...)
+
+In the root PID namespace
+
+  # pidof bash
+  (...) 14957 (...)
+  # head -n 1 /proc/14957/sched
+  bash (14957, #threads: 1)
+  # cat /proc/14957/stat
+  14957 (bash) S 14956 14957 23465 34823 14957 4202752 11386 (...)
+
+The principle of least surprise tells me that if my PID is n in a
+particular PID namespace then every stat or debug info should tell
+me that my PID is n (i.e. I should not be able to get the real PID
+of my program). This is a consistency issue: if I get different
+information from different sources I may not be able to tell which
+one is the right one.
+
+The issue (if this is really an issue) lies in kernel/sched/debug.c,
+function proc_sched_show_task(). The code says [1]:
+
+    SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
+                        get_nr_threads(p));
+
+I understand that you're not supposed to use the content of a /proc
+file that has been generated by a kernel source file named "debug.c"
+in a production environment yet several distributions out there seems
+to enable this by default (at least the Debian distribution I'm using
+does it).
+
+I see a few options:
+
+* either it's a bug and it should be corrected (I'm not sure how to
+  do it; the printed PID should reflect the current PID namespace
+  and I don't how how to get this information).
+
+* or it has been decided on purpose (i.e. it's not a bug);
+  /proc/$PID/sched then offers a reliable way to get the real PID
+  of any process, including processes that run in a child PID
+  namespace.
+
+* or it's a bug but it cannot be corrected (kernel ABI ; it has been
+  here for a looooong time - possibly since the PID namespace
+  integration).
+
+(There might be other options here).
+
+In the two last cases there is no need for a patch but I'd be happy
+if someone explains the reasoning.
+
+Best regards,
+
+-- Emmanuel Deloget
+
+[1]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/kernel/sched/debug.c?id=refs/tags/v3.11#n495
+[2]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/kernel/sched/debug.c?id=refs/tags/v3.11#n118
 
 
-Paul Bolle
-> ---
->  arch/x86/kernel/tsc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 6ff4924..e518724 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -380,7 +380,7 @@ static unsigned long quick_pit_calibrate(void)
->  			goto success;
->  		}
->  	}
-> -	pr_err("Fast TSC calibration failed\n");
-> +	pr_info("Fast TSC calibration failed\n");
->  	return 0;
->  
->  success:
 
+--------------040602030406050808030401
+Content-Type: text/x-vcard; charset=utf-8;
+ name="emmanuel_deloget.vcf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="emmanuel_deloget.vcf"
+
+YmVnaW46dmNhcmQNCmZuOkVtbWFudWVsIERlbG9nZXQNCm46RGVsb2dldDtFbW1hbnVlbA0K
+b3JnOmVmaXhvIC8gU0ZSO0RBVEENCmFkcjtxdW90ZWQtcHJpbnRhYmxlOjs7NjcgbW9udD1D
+Mz1BOWUgZGUgU3QgTWVuZXQ7TUFSU0VJTExFOzsxMzAxMTtGUkFOQ0UNCmVtYWlsO2ludGVy
+bmV0OmVtbWFudWVsLmRlbG9nZXRAZWZpeG8uY29tDQp0aXRsZTpUZWFtIExlYWRlcg0KdGVs
+O3dvcms6MDQgODggMTUgNTAgNzcNCnVybDp3d3cuc2ZyLmZyDQp2ZXJzaW9uOjIuMQ0KZW5k
+OnZjYXJkDQoNCg==
+--------------040602030406050808030401--
