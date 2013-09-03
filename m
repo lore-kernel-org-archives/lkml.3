@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab3ICJEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:04:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51997 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab3ICJEi (ORCPT
+	id S1755612Ab3ICJHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:07:22 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:54063 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3ICJHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:04:38 -0400
-Date: Tue, 3 Sep 2013 10:04:14 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: linux-next: build failure after merge of the final tree (arm
-	tree related)
-Message-ID: <20130903090414.GA25658@flint.arm.linux.org.uk>
-References: <20130903181824.796e74465274b23387d3e715@canb.auug.org.au>
+	Tue, 3 Sep 2013 05:07:21 -0400
+X-Spam-Score: -100.9
+Message-ID: <5225A685.5040507@asianux.com>
+Date: Tue, 03 Sep 2013 17:06:13 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903181824.796e74465274b23387d3e715@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Li Zefan <lizefan@huawei.com>
+CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] block/ioctl.c: let code match 'kernel code style'
+References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <5220254E.3050704@roeck-us.net> <52203CF0.5040600@asianux.com> <52207F74.6000702@roeck-us.net> <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com> <52208DFD.20105@roeck-us.net> <52240566.3040201@asianux.com> <52259DDE.6070401@asianux.com> <5225A3F8.5070008@huawei.com>
+In-Reply-To: <5225A3F8.5070008@huawei.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 06:18:24PM +1000, Stephen Rothwell wrote:
-> Hi all,
+On 09/03/2013 04:55 PM, Li Zefan wrote:
+> Please don't. Pure colding style cleanup is discouraged.
 > 
-> After merging the final tree, today's linux-next build (arm defconfig)
-> failed like this:
-> 
-> arch/arm/kernel/built-in.o: In function `setup_arch':
-> io.c:(.init.text+0x594): undefined reference to `erratum_a15_798181_init'
-> 
-> Presumably caused by commit 34905a33184a ("ARM: 7804/2: Add check for
-> Cortex-A15 errata 798181 ECO").  This build does not have CONFIG_SMP set.
-> 
-> I have reverted that commit for today.
 
-Yep, and I think I'm going to do the same, rather than try and fix it.
+Pardon?
+
+Do you mean "coding style", not "colding style"? (or it is my
+misunderstanding?).
+
+
+> You're not going to run checkpatch.pl on the whole kernel tree and fix
+> all the complaints, are you?
+> 
+
+I am not going to, it seems that may be the 'job' of Joe and
+trivial@kernel.org?
+
+
+BTW: it seems you did not redirect my mails to "/dev/null".  ;-)
+
+Thanks.
+
+> On 2013/9/3 16:29, Chen Gang wrote:
+>> For 'switch case', remove redundancy '\t' (also can let related lines
+>> within 80 columns) and remove redundancy empty lines, just like other
+>> 'switch case' which match 'kernel code style' within the file.
+>>
+>> Let blkpg_ioctl() within 80 columns. Let 2nd line of blkdev_ioctl() and
+>> __blkdev_driver_ioctl() align 1st line parameter's start position, just
+>> like blk_ioctl_discard() and blk_ioctl_zeroout() within the file.
+>>
+>> For is_unrecognized_ioctl(), can shrink the 'return' statement into one
+>> line (so can save 2 lines), it still matches 'kernel code style' and it
+>> is no conflict with others within the file.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  block/ioctl.c |  216 ++++++++++++++++++++++++++++-----------------------------
+>>  1 files changed, 105 insertions(+), 111 deletions(-)
+> 
+> 
+> 
+
 
 -- 
-Russell King
+Chen Gang
