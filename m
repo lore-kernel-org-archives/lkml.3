@@ -1,531 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab3ICP7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:59:47 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35896 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab3ICP7p (ORCPT
+	id S1757094Ab3ICQBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:01:49 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:58009 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756641Ab3ICQBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:59:45 -0400
-Message-ID: <1378224418.32763.409.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH-v5 1/6] idr: Percpu ida
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Asias He <asias@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Date: Tue, 03 Sep 2013 09:06:58 -0700
-In-Reply-To: <1377917556-11955-2-git-send-email-nab@linux-iscsi.org>
-References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
-	 <1377917556-11955-2-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 3 Sep 2013 12:01:46 -0400
+Message-ID: <522607D8.4070408@ozlabs.ru>
+Date: Wed, 04 Sep 2013 02:01:28 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru> <1377679841-3822-1-git-send-email-aik@ozlabs.ru> <20130901120609.GJ22899@redhat.com> <52240295.7050608@ozlabs.ru> <20130903105315.GY22899@redhat.com>
+In-Reply-To: <20130903105315.GY22899@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew & Co,
-
-Are there any other review comments to be addressed for this patch..?
-
-If not, please kindly give your Reviewed-by if your OK for an initial
-standalone merge.
-
-Thank you,
-
---nab
-
-On Sat, 2013-08-31 at 02:52 +0000, Nicholas A. Bellinger wrote:
-> From: Kent Overstreet <kmo@daterainc.com>
-> 
-> Percpu frontend for allocating ids. With percpu allocation (that works),
-> it's impossible to guarantee it will always be possible to allocate all
-> nr_tags - typically, some will be stuck on a remote percpu freelist
-> where the current job can't get to them.
-> 
-> We do guarantee that it will always be possible to allocate at least
-> (nr_tags / 2) tags - this is done by keeping track of which and how many
-> cpus have tags on their percpu freelists. On allocation failure if
-> enough cpus have tags that there could potentially be (nr_tags / 2) tags
-> stuck on remote percpu freelists, we then pick a remote cpu at random to
-> steal from.
-> 
-> Note that there's no cpu hotplug notifier - we don't care, because
-> steal_tags() will eventually get the down cpu's tags. We _could_ satisfy
-> more allocations if we had a notifier - but we'll still meet our
-> guarantees and it's absolutely not a correctness issue, so I don't think
-> it's worth the extra code.
-> 
-> v5 changes:
->   - Change percpu_ida->cpus_have_tags to cpumask_t (kmo + akpm)
->   - Add comment for percpu_ida_cpu->lock + ->nr_free (kmo + akpm)
->   - Convert steal_tags() to use cpumask_weight() + cpumask_next() +
->     cpumask_first() + cpumask_clear_cpu() (kmo + akpm)
->   - Add comment for alloc_global_tags() (kmo + akpm)
->   - Convert percpu_ida_alloc() to use cpumask_set_cpu() (kmo + akpm)
->   - Convert percpu_ida_free() to use cpumask_set_cpu() (kmo + akpm)
->   - Drop percpu_ida->cpus_have_tags allocation in percpu_ida_init()
->     (kmo + akpm)
->   - Drop percpu_ida->cpus_have_tags kfree in percpu_ida_destroy()
->     (kmo + akpm)
->   - Add comment for percpu_ida_alloc @ gfp (kmo + akpm)
->   - Move to percpu_ida.c + percpu_ida.h (kmo + akpm + nab)
-> 
-> v4 changes:
-> 
->   - Fix tags.c reference in percpu_ida_init (akpm)
-> 
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->  include/linux/percpu_ida.h |   59 ++++++++
->  lib/Makefile               |    5 +-
->  lib/percpu_ida.c           |  335 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 397 insertions(+), 2 deletions(-)
->  create mode 100644 include/linux/percpu_ida.h
->  create mode 100644 lib/percpu_ida.c
-> 
-> diff --git a/include/linux/percpu_ida.h b/include/linux/percpu_ida.h
-> new file mode 100644
-> index 0000000..8a39cdc
-> --- /dev/null
-> +++ b/include/linux/percpu_ida.h
-> @@ -0,0 +1,59 @@
-> +#ifndef __PERCPU_IDA_H__
-> +#define __PERCPU_IDA_H__
-> +
-> +#include <linux/types.h>
-> +#include <linux/bitops.h>
-> +#include <linux/init.h>
-> +#include <linux/spinlock_types.h>
-> +#include <linux/wait.h>
-> +
-> +struct percpu_ida_cpu;
-> +
-> +struct percpu_ida {
-> +	/*
-> +	 * number of tags available to be allocated, as passed to
-> +	 * percpu_ida_init()
-> +	 */
-> +	unsigned			nr_tags;
-> +
-> +	struct percpu_ida_cpu __percpu	*tag_cpu;
-> +
-> +	/*
-> +	 * Bitmap of cpus that (may) have tags on their percpu freelists:
-> +	 * steal_tags() uses this to decide when to steal tags, and which cpus
-> +	 * to try stealing from.
-> +	 *
-> +	 * It's ok for a freelist to be empty when its bit is set - steal_tags()
-> +	 * will just keep looking - but the bitmap _must_ be set whenever a
-> +	 * percpu freelist does have tags.
-> +	 */
-> +	cpumask_t			cpus_have_tags;
-> +
-> +	struct {
-> +		spinlock_t		lock;
-> +		/*
-> +		 * When we go to steal tags from another cpu (see steal_tags()),
-> +		 * we want to pick a cpu at random. Cycling through them every
-> +		 * time we steal is a bit easier and more or less equivalent:
-> +		 */
-> +		unsigned		cpu_last_stolen;
-> +
-> +		/* For sleeping on allocation failure */
-> +		wait_queue_head_t	wait;
-> +
-> +		/*
-> +		 * Global freelist - it's a stack where nr_free points to the
-> +		 * top
-> +		 */
-> +		unsigned		nr_free;
-> +		unsigned		*freelist;
-> +	} ____cacheline_aligned_in_smp;
-> +};
-> +
-> +int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
-> +void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
-> +
-> +void percpu_ida_destroy(struct percpu_ida *pool);
-> +int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags);
-> +
-> +#endif /* __PERCPU_IDA_H__ */
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 7baccfd..1cb8356 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
->  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-> -	 earlycpio.o percpu-refcount.o
-> +	 earlycpio.o percpu-refcount.o percpu_ida.o
->  
->  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->  lib-$(CONFIG_MMU) += ioremap.o
-> @@ -24,7 +24,8 @@ lib-y	+= kobject.o klist.o
->  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
->  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
->  	 gcd.o lcm.o list_sort.o uuid.o flex_array.o iovec.o clz_ctz.o \
-> -	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
-> +	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
-> +	 percpu_ida.o
->  obj-y += string_helpers.o
->  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
->  obj-y += kstrtox.o
-> diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-> new file mode 100644
-> index 0000000..3ef70e8
-> --- /dev/null
-> +++ b/lib/percpu_ida.c
-> @@ -0,0 +1,335 @@
-> +/*
-> + * Percpu IDA library
-> + *
-> + * Copyright (C) 2013 Datera, Inc. Kent Overstreet
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2, or (at
-> + * your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#include <linux/bitmap.h>
-> +#include <linux/bitops.h>
-> +#include <linux/bug.h>
-> +#include <linux/err.h>
-> +#include <linux/export.h>
-> +#include <linux/hardirq.h>
-> +#include <linux/idr.h>
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/percpu.h>
-> +#include <linux/sched.h>
-> +#include <linux/slab.h>
-> +#include <linux/string.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/percpu_ida.h>
-> +
-> +/*
-> + * Number of tags we move between the percpu freelist and the global freelist at
-> + * a time
-> + */
-> +#define IDA_PCPU_BATCH_MOVE	32U
-> +
-> +/* Max size of percpu freelist, */
-> +#define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
-> +
-> +struct percpu_ida_cpu {
-> +	/*
-> +	 * Even though this is percpu, we need a lock for tag stealing by remote
-> +	 * CPUs:
-> +	 */
-> +	spinlock_t			lock;
-> +
-> +	/* nr_free/freelist form a stack of free IDs */
-> +	unsigned			nr_free;
-> +	unsigned			freelist[];
-> +};
-> +
-> +static inline void move_tags(unsigned *dst, unsigned *dst_nr,
-> +			     unsigned *src, unsigned *src_nr,
-> +			     unsigned nr)
-> +{
-> +	*src_nr -= nr;
-> +	memcpy(dst + *dst_nr, src + *src_nr, sizeof(unsigned) * nr);
-> +	*dst_nr += nr;
-> +}
-> +
-> +/*
-> + * Try to steal tags from a remote cpu's percpu freelist.
-> + *
-> + * We first check how many percpu freelists have tags - we don't steal tags
-> + * unless enough percpu freelists have tags on them that it's possible more than
-> + * half the total tags could be stuck on remote percpu freelists.
-> + *
-> + * Then we iterate through the cpus until we find some tags - we don't attempt
-> + * to find the "best" cpu to steal from, to keep cacheline bouncing to a
-> + * minimum.
-> + */
-> +static inline void steal_tags(struct percpu_ida *pool,
-> +			      struct percpu_ida_cpu *tags)
-> +{
-> +	unsigned cpus_have_tags, cpu = pool->cpu_last_stolen;
-> +	struct percpu_ida_cpu *remote;
-> +
-> +	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
-> +	     cpus_have_tags * IDA_PCPU_SIZE > pool->nr_tags / 2;
-> +	     cpus_have_tags--) {
-> +		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
-> +
-> +		if (cpu >= nr_cpu_ids)
-> +			cpu = cpumask_first(&pool->cpus_have_tags);
-> +
-> +		if (cpu >= nr_cpu_ids)
-> +			BUG();
-> +
-> +		pool->cpu_last_stolen = cpu;
-> +		remote = per_cpu_ptr(pool->tag_cpu, cpu);
-> +
-> +		cpumask_clear_cpu(cpu, &pool->cpus_have_tags);
-> +
-> +		if (remote == tags)
-> +			continue;
-> +
-> +		spin_lock(&remote->lock);
-> +
-> +		if (remote->nr_free) {
-> +			memcpy(tags->freelist,
-> +			       remote->freelist,
-> +			       sizeof(unsigned) * remote->nr_free);
-> +
-> +			tags->nr_free = remote->nr_free;
-> +			remote->nr_free = 0;
-> +		}
-> +
-> +		spin_unlock(&remote->lock);
-> +
-> +		if (tags->nr_free)
-> +			break;
-> +	}
-> +}
-> +
-> +/*
-> + * Pop up to IDA_PCPU_BATCH_MOVE IDs off the global freelist, and push them onto
-> + * our percpu freelist:
-> + */
-> +static inline void alloc_global_tags(struct percpu_ida *pool,
-> +				     struct percpu_ida_cpu *tags)
-> +{
-> +	move_tags(tags->freelist, &tags->nr_free,
-> +		  pool->freelist, &pool->nr_free,
-> +		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
-> +}
-> +
-> +static inline unsigned alloc_local_tag(struct percpu_ida *pool,
-> +				       struct percpu_ida_cpu *tags)
-> +{
-> +	int tag = -ENOSPC;
-> +
-> +	spin_lock(&tags->lock);
-> +	if (tags->nr_free)
-> +		tag = tags->freelist[--tags->nr_free];
-> +	spin_unlock(&tags->lock);
-> +
-> +	return tag;
-> +}
-> +
-> +/**
-> + * percpu_ida_alloc - allocate a tag
-> + * @pool: pool to allocate from
-> + * @gfp: gfp flags
-> + *
-> + * Returns a tag - an integer in the range [0..nr_tags) (passed to
-> + * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
-> + *
-> + * Safe to be called from interrupt context (assuming it isn't passed
-> + * __GFP_WAIT, of course).
-> + *
-> + * @gfp indicates whether or not to wait until a free id is available (it's not
-> + * used for internal memory allocations); thus if passed __GFP_WAIT we may sleep
-> + * however long it takes until another thread frees an id (same semantics as a
-> + * mempool).
-> + *
-> + * Will not fail if passed __GFP_WAIT.
-> + */
-> +int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
-> +{
-> +	DEFINE_WAIT(wait);
-> +	struct percpu_ida_cpu *tags;
-> +	unsigned long flags;
-> +	int tag;
-> +
-> +	local_irq_save(flags);
-> +	tags = this_cpu_ptr(pool->tag_cpu);
-> +
-> +	/* Fastpath */
-> +	tag = alloc_local_tag(pool, tags);
-> +	if (likely(tag >= 0)) {
-> +		local_irq_restore(flags);
-> +		return tag;
-> +	}
-> +
-> +	while (1) {
-> +		spin_lock(&pool->lock);
-> +
-> +		/*
-> +		 * prepare_to_wait() must come before steal_tags(), in case
-> +		 * percpu_ida_free() on another cpu flips a bit in
-> +		 * cpus_have_tags
-> +		 *
-> +		 * global lock held and irqs disabled, don't need percpu lock
-> +		 */
-> +		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
-> +
-> +		if (!tags->nr_free)
-> +			alloc_global_tags(pool, tags);
-> +		if (!tags->nr_free)
-> +			steal_tags(pool, tags);
-> +
-> +		if (tags->nr_free) {
-> +			tag = tags->freelist[--tags->nr_free];
-> +			if (tags->nr_free)
-> +				cpumask_set_cpu(smp_processor_id(),
-> +						&pool->cpus_have_tags);
-> +		}
-> +
-> +		spin_unlock(&pool->lock);
-> +		local_irq_restore(flags);
-> +
-> +		if (tag >= 0 || !(gfp & __GFP_WAIT))
-> +			break;
-> +
-> +		schedule();
-> +
-> +		local_irq_save(flags);
-> +		tags = this_cpu_ptr(pool->tag_cpu);
-> +	}
-> +
-> +	finish_wait(&pool->wait, &wait);
-> +	return tag;
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_alloc);
-> +
-> +/**
-> + * percpu_ida_free - free a tag
-> + * @pool: pool @tag was allocated from
-> + * @tag: a tag previously allocated with percpu_ida_alloc()
-> + *
-> + * Safe to be called from interrupt context.
-> + */
-> +void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
-> +{
-> +	struct percpu_ida_cpu *tags;
-> +	unsigned long flags;
-> +	unsigned nr_free;
-> +
-> +	BUG_ON(tag >= pool->nr_tags);
-> +
-> +	local_irq_save(flags);
-> +	tags = this_cpu_ptr(pool->tag_cpu);
-> +
-> +	spin_lock(&tags->lock);
-> +	tags->freelist[tags->nr_free++] = tag;
-> +
-> +	nr_free = tags->nr_free;
-> +	spin_unlock(&tags->lock);
-> +
-> +	if (nr_free == 1) {
-> +		cpumask_set_cpu(smp_processor_id(),
-> +				&pool->cpus_have_tags);
-> +		wake_up(&pool->wait);
-> +	}
-> +
-> +	if (nr_free == IDA_PCPU_SIZE) {
-> +		spin_lock(&pool->lock);
-> +
-> +		/*
-> +		 * Global lock held and irqs disabled, don't need percpu
-> +		 * lock
-> +		 */
-> +		if (tags->nr_free == IDA_PCPU_SIZE) {
-> +			move_tags(pool->freelist, &pool->nr_free,
-> +				  tags->freelist, &tags->nr_free,
-> +				  IDA_PCPU_BATCH_MOVE);
-> +
-> +			wake_up(&pool->wait);
-> +		}
-> +		spin_unlock(&pool->lock);
-> +	}
-> +
-> +	local_irq_restore(flags);
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_free);
-> +
-> +/**
-> + * percpu_ida_destroy - release a tag pool's resources
-> + * @pool: pool to free
-> + *
-> + * Frees the resources allocated by percpu_ida_init().
-> + */
-> +void percpu_ida_destroy(struct percpu_ida *pool)
-> +{
-> +	free_percpu(pool->tag_cpu);
-> +	free_pages((unsigned long) pool->freelist,
-> +		   get_order(pool->nr_tags * sizeof(unsigned)));
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_destroy);
-> +
-> +/**
-> + * percpu_ida_init - initialize a percpu tag pool
-> + * @pool: pool to initialize
-> + * @nr_tags: number of tags that will be available for allocation
-> + *
-> + * Initializes @pool so that it can be used to allocate tags - integers in the
-> + * range [0, nr_tags). Typically, they'll be used by driver code to refer to a
-> + * preallocated array of tag structures.
-> + *
-> + * Allocation is percpu, but sharding is limited by nr_tags - for best
-> + * performance, the workload should not span more cpus than nr_tags / 128.
-> + */
-> +int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
-> +{
-> +	unsigned i, cpu, order;
-> +
-> +	memset(pool, 0, sizeof(*pool));
-> +
-> +	init_waitqueue_head(&pool->wait);
-> +	spin_lock_init(&pool->lock);
-> +	pool->nr_tags = nr_tags;
-> +
-> +	/* Guard against overflow */
-> +	if (nr_tags > (unsigned) INT_MAX + 1) {
-> +		pr_err("percpu_ida_init(): nr_tags too large\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	order = get_order(nr_tags * sizeof(unsigned));
-> +	pool->freelist = (void *) __get_free_pages(GFP_KERNEL, order);
-> +	if (!pool->freelist)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < nr_tags; i++)
-> +		pool->freelist[i] = i;
-> +
-> +	pool->nr_free = nr_tags;
-> +
-> +	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
-> +				       IDA_PCPU_SIZE * sizeof(unsigned),
-> +				       sizeof(unsigned));
-> +	if (!pool->tag_cpu)
-> +		goto err;
-> +
-> +	for_each_possible_cpu(cpu)
-> +		spin_lock_init(&per_cpu_ptr(pool->tag_cpu, cpu)->lock);
-> +
-> +	return 0;
-> +err:
-> +	percpu_ida_destroy(pool);
-> +	return -ENOMEM;
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_init);
+On 09/03/2013 08:53 PM, Gleb Natapov wrote:
+> On Mon, Sep 02, 2013 at 01:14:29PM +1000, Alexey Kardashevskiy wrote:
+>> On 09/01/2013 10:06 PM, Gleb Natapov wrote:
+>>> On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
+>>>> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
+>>>> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
+>>>> them to user space which saves time on switching to user space and back.
+>>>>
+>>>> Both real and virtual modes are supported. The kernel tries to
+>>>> handle a TCE request in the real mode, if fails it passes the request
+>>>> to the virtual mode to complete the operation. If it a virtual mode
+>>>> handler fails, the request is passed to user space.
+>>>>
+>>>> The first user of this is VFIO on POWER. Trampolines to the VFIO external
+>>>> user API functions are required for this patch.
+>>>>
+>>>> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
+>>>> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
+>>>> of map/unmap requests. The device supports a single attribute which is
+>>>> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
+>>>> establishes the connection between KVM and VFIO.
+>>>>
+>>>> Tests show that this patch increases transmission speed from 220MB/s
+>>>> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+>>>>
+>>>> Signed-off-by: Paul Mackerras <paulus@samba.org>
+>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>
+>>>> ---
+>>>>
+>>>> Changes:
+>>>> v9:
+>>>> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
+>>>> KVM device
+>>>> * release_spapr_tce_table() is not shared between different TCE types
+>>>> * reduced the patch size by moving VFIO external API
+>>>> trampolines to separate patche
+>>>> * moved documentation from Documentation/virtual/kvm/api.txt to
+>>>> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>
+>>>> v8:
+>>>> * fixed warnings from check_patch.pl
+>>>>
+>>>> 2013/07/11:
+>>>> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
+>>>> for KVM_BOOK3S_64
+>>>> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
+>>>> for this here but the next patch for hugepages support will use it more.
+>>>>
+>>>> 2013/07/06:
+>>>> * added realmode arch_spin_lock to protect TCE table from races
+>>>> in real and virtual modes
+>>>> * POWERPC IOMMU API is changed to support real mode
+>>>> * iommu_take_ownership and iommu_release_ownership are protected by
+>>>> iommu_table's locks
+>>>> * VFIO external user API use rewritten
+>>>> * multiple small fixes
+>>>>
+>>>> 2013/06/27:
+>>>> * tce_list page is referenced now in order to protect it from accident
+>>>> invalidation during H_PUT_TCE_INDIRECT execution
+>>>> * added use of the external user VFIO API
+>>>>
+>>>> 2013/06/05:
+>>>> * changed capability number
+>>>> * changed ioctl number
+>>>> * update the doc article number
+>>>>
+>>>> 2013/05/20:
+>>>> * removed get_user() from real mode handlers
+>>>> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
+>>>> translated TCEs, tries realmode_get_page() on those and if it fails, it
+>>>> passes control over the virtual mode handler which tries to finish
+>>>> the request handling
+>>>> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
+>>>> on a page
+>>>> * The only reason to pass the request to user mode now is when the user mode
+>>>> did not register TCE table in the kernel, in all other cases the virtual mode
+>>>> handler is expected to do the job
+>>>> ---
+>>>>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
+>>>>  arch/powerpc/include/asm/kvm_host.h                |   4 +
+>>>>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
+>>>>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
+>>>>  arch/powerpc/kvm/powerpc.c                         |   1 +
+>>>>  include/linux/kvm_host.h                           |   1 +
+>>>>  virt/kvm/kvm_main.c                                |   5 +
+>>>>  7 files changed, 477 insertions(+), 3 deletions(-)
+>>>>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>
+>>>> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>> new file mode 100644
+>>>> index 0000000..4bc8fc3
+>>>> --- /dev/null
+>>>> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>> @@ -0,0 +1,37 @@
+>>>> +SPAPR TCE IOMMU device
+>>>> +
+>>>> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
+>>>> +Architectures: powerpc
+>>>> +
+>>>> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
+>>>> +
+>>>> +Groups:
+>>>> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
+>>>> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
+>>>> +
+>>>> +This is completely made up device which provides API to link
+>>>> +logical bus number (LIOBN) and IOMMU group. The user space has
+>>>> +to create a new SPAPR TCE IOMMU device per a logical bus.
+>>>> +
+>>> Why not have one device that can handle multimple links?
+>>
+>>
+>> I can do that. If I make it so, it won't even look as a device at all, just
+>> some weird interface to KVM but ok. What bothers me is it is just a
+> May be I do not understand usage pattern here. Why do you feel that device
+> that can handle multiple links is worse than device per link? How many logical
+> buses is there usually? How often they created/destroyed? I am not insisting
+> on the change, just trying to understand why you do not like it.
 
 
+Is it usually one PCI host bus adapter per IOMMU group which is usually
+one PCI card or 2-3 cards if it is a legacy PCI-X, and they are created
+when QEMU-KVM starts. Not many. And they live till KVM ends.
+
+My point is why would I want to put all links to one device? It all is just
+a matter of taste and nothing more. Or I am missing something but I do not
+see what. If it is all about making thing to be kosher/halal/orthodox, then
+I have more stuff to do, like reworking the emulated TCEs. But if is it for
+(I do not know, just guessing) performance or something like that - then
+I'll fix it, I just need to know what I am fixing.
+
+
+
+>> question what I will have to do next. Because I can easily predict a
+>> suggestion to move kvmppc_spapr_tce_table's (a links list) from
+>> kvm->arch.spapr_tce_tables to that device but I cannot do that for obvious
+>> compatibility reasons caused by the fact that the list is already used for
+>> emulated devices (for the starter - they need mmap()).
+>>
+>> Or supporting all IOMMU links (and leaving emulated stuff as is) in on
+>> "device" is the last thing I have to do and then you'll ack the patch?
+>>
+> I am concerned more about API here. Internal implementation details I
+> leave to powerpc experts :)
+
+
+The Expert (Ben) wants capabilities number and API to get fixed in KVM tree :)
+
+
+> 
+>>
+>>
+>>>> +LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
+>>>> +(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
+>>>> +IOMMU group is a minimal isolated device set which can be passed to
+>>>> +the user space via VFIO.
+>>>> +
+>>>> +Right after creation the device is in uninitlized state and requires
+>>>> +a KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE attribute to be set.
+>>>> +The attribute contains liobn, IOMMU fd and flags:
+>>>> +
+>>>> +struct kvm_create_spapr_tce_iommu_linkage {
+>>>> +	__u64 liobn;
+>>>> +	__u32 fd;
+>>>> +	__u32 flags;
+>>>> +};
+>>>> +
+>>>> +The user space creates the SPAPR TCE IOMMU device, obtains
+>>>> +an IOMMU fd via VFIO ABI and sets the attribute to the SPAPR TCE IOMMU
+>>>> +device. At the moment of setting the attribute, the SPAPR TCE IOMMU
+>>>> +device links LIOBN to IOMMU group and makes necessary steps
+>>>> +to make sure that VFIO group will not disappear before KVM destroys.
+>>>> +
+>>>> +The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
+>>> [skip]
+>>
+>> Yes, I read the other comment. So roughly speaking I'll replace the
+>> KVM_CAP_SPAPR_TCE_IOMMU check with the KVM_CAP_DEVICE_CTRL capability check
+>> + try to KVM_CREATE_DEVICE with the KVM_CREATE_DEVICE_TEST flag set, and we
+>> are fine.
+> Yes, but KVM_CREATE_DEVICE_TEST does not create device, only checks if
+> device type is supported.
+
+Sure.
+
+
+
+-- 
+Alexey
