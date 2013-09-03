@@ -1,353 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab3ICI43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 04:56:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55205 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313Ab3ICI42 (ORCPT
+	id S932625Ab3ICI5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 04:57:17 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:57847 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932557Ab3ICI5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 04:56:28 -0400
+	Tue, 3 Sep 2013 04:57:15 -0400
+Message-ID: <5225A466.2080303@colorfullife.com>
+Date: Tue, 03 Sep 2013 10:57:10 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <874na2uw7t.fsf@sejong.aot.lge.com>
-References: <1377875916-5208-1-git-send-email-sedat.dilek@gmail.com>
-	<20130830164905.GA31061@rric.localhost>
-	<874na2uw7t.fsf@sejong.aot.lge.com>
-Date: Tue, 3 Sep 2013 10:56:26 +0200
-Message-ID: <CA+icZUX-a2wOFDCntwJag5203UiaiAMntO+TqG7upejZ3uiVQQ@mail.gmail.com>
-Subject: Re: [PATCH] tools: perf: Fix liblk not built when using perf_install target
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Robert Richter <rric@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=047d7b624e7e2f17fc04e576dd1e
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <dave.bueso@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>
+Subject: Re: ipc-msg broken again on 3.11-rc7?
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com> <1372202983.1888.22.camel@buesod1.americas.hpqcorp.net> <521DE5D7.4040305@synopsys.com> <CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com> <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com> <52205597.3090609@synopsys.com> <CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com> <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com> <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com> <CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com> <5224BCF6.2080401@colorfullife.com> <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: text/plain; charset=UTF-8
-
-On Tue, Sep 3, 2013 at 10:48 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi,
+On 09/03/2013 10:44 AM, Vineet Gupta wrote:
+>> b) Could you check that it is not just a performance regression?
+>>       Does ./msgctl08 1000 16 hang, too?
+> Nope that doesn't hang. The minimal configuration that hangs reliably is msgctl
+> 50000 2
 >
-> On Fri, 30 Aug 2013 18:49:05 +0200, Robert Richter wrote:
->> On 30.08.13 17:18:36, Sedat Dilek wrote:
->>> So, I tried to build perf the "official" way:
->>>
->>>    $ make -C tools/ perf_install
->>>
->>> Unfortunately, my build breaks like this:
->>> ...
->>> make[2]: Entering directory
->>> `~/src/linux-kernel/linux/tools/lib/traceevent'
->>> make[2]: Leaving directory
->>> `~/src/linux-kernel/linux/tools/lib/traceevent'
->>>     LINK perf
->>> gcc: error: ~/src/linux-kernel/linux/tools/lib/lk/liblk.a: No such file or directory
->>> make[1]: *** [perf] Error 1
->>> make[1]: Leaving directory `~/src/linux-kernel/linux/tools/perf'
->>> make: *** [perf_install] Error 2
->>>
->>> After some discussion on IRC with peterz and acme and a closer look at
->>> the targets in "tools/Makefile", I have noticed that the perf_install
->>> target misses liblk to be built beforehand.
->>
->> There are no build prerequisites on purpose for install targets.
->> Install targets are intended to be run with root permissions. We don't
->> want to create/overwrite files in the build directory as root while
->> running install rules. Thus, you always need to run:
->>
->>  $ make -C tools/ perf
->>
->> or similar first.
+> With this config there are 3 processes.
+> ...
+>    555   554 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+>    554   551 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+>    551   496 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
+> ...
 >
-> But AFAIK install target usually depends on build targets on many
-> projects.  And perf too already does the same:
+> [ARCLinux]$ cat /proc/551/stack
+> [<80aec3c6>] do_wait+0xa02/0xc94
+> [<80aecad2>] SyS_wait4+0x52/0xa4
+> [<80ae24fc>] ret_from_system_call+0x0/0x4
 >
->   [ tools/perf/Makefile ]
->   install-bin: all
->         ...
+> [ARCLinux]$ cat /proc/555/stack
+> [<80c2950e>] SyS_msgrcv+0x252/0x420
+> [<80ae24fc>] ret_from_system_call+0x0/0x4
 >
->   install: install-bin
+> [ARCLinux]$ cat /proc/554/stack
+> [<80c28c82>] do_msgsnd+0x116/0x35c
+> [<80ae24fc>] ret_from_system_call+0x0/0x4
 >
->
-> So if you really concern the permission problem, install target should
-> not build perf itself, right?  But in this case, it tried to build perf
-> but failed to do it on liblk.
->
->>
->>> On the contrary the perf_clean target invokes to clean liblk when perf
->>> is cleaned.
->>>
->>> [ tools/Makefile ]
->>> ...
->>> perf_clean: liblk_clean
->>>      $(call descend,$(@:_clean=),clean)
->>> ...
->>>
->>> Fix this by adding liblk target to perf_install target.
->>
->> So no, this is not the proper fix.
->>
->> Before installing you *need* to build. You might want to fix the
->> documenation...
->
-> Hmm.. I don't know.  What I'm curious about is why it didn't build liblk
-> during building perf.
->
+> Is this a case of lost wakeup or some such. I'm running with some more diagnostics
+> and will report soon ...
+What is the output of ipcs -q? Is the queue full or empty when it hangs?
+I.e. do we forget to wake up a receiver or forget to wake up a sender?
 
-The day I fell over that perf stuff, I created a pile of patches
-fixing that unbeloved tools stuff.
-Some tools listed in tools/Makefile are not buildable via...
-
-     $ make -C tools/ <tool>
-     $ make -C tools/ <tool>_install
-
-...because some <tool> have no "install" target.
-
-I attach the patchset here. It has no "proper" changelogs.
-The series is "incomplete"... needs some more love... eat it carefully.
-
-Regards,
-- Sedat -
-
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0001-tools-Improve-and-correct-help-text.patch"
-Content-Disposition: attachment; 
-	filename="0001-tools-Improve-and-correct-help-text.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtgje0
-
-RnJvbSBhZDIxNGNlYjM4NzZlYzhmN2Y1NWNkMTZhODM5NWYwNGNmNjg0MjQ4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAxOjE2OjM3ICswMjAwClN1YmplY3Q6IFtQQVRDSCAxLzhd
-IHRvb2xzOiBJbXByb3ZlIGFuZCBjb3JyZWN0IGhlbHAgdGV4dAoKU2lnbmVkLW9mZi1ieTogU2Vk
-YXQgRGlsZWsgPHNlZGF0LmRpbGVrQGdtYWlsLmNvbT4KLS0tCiB0b29scy9NYWtlZmlsZSB8IDkg
-KysrKystLS0tCiAxIGZpbGUgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygt
-KQoKZGlmZiAtLWdpdCBhL3Rvb2xzL01ha2VmaWxlIGIvdG9vbHMvTWFrZWZpbGUKaW5kZXggNDEw
-NjdmMy4uNjc2NGUyNCAxMDA2NDQKLS0tIGEvdG9vbHMvTWFrZWZpbGUKKysrIGIvdG9vbHMvTWFr
-ZWZpbGUKQEAgLTE3LDE0ICsxNywxNSBAQCBoZWxwOgogCUBlY2hvICcgIHg4Nl9lbmVyZ3lfcGVy
-Zl9wb2xpY3kgLSBJbnRlbCBlbmVyZ3kgcG9saWN5IHRvb2wnCiAJQGVjaG8gJycKIAlAZWNobyAn
-WW91IGNhbiBkbzonCi0JQGVjaG8gJyAkJCBtYWtlIC1DIHRvb2xzLyA8dG9vbD5faW5zdGFsbCcK
-KwlAZWNobyAnICQkIG1ha2UgLUMgdG9vbHMvIDx0b29sPicKKwlAZWNobyAnICQkIHN1ZG8gbWFr
-ZSAtQyB0b29scy8gPHRvb2w+X2luc3RhbGwnCiAJQGVjaG8gJycKIAlAZWNobyAnICBmcm9tIHRo
-ZSBrZXJuZWwgY29tbWFuZCBsaW5lIHRvIGJ1aWxkIGFuZCBpbnN0YWxsIG9uZSBvZicKLQlAZWNo
-byAnICB0aGUgdG9vbHMgYWJvdmUnCisJQGVjaG8gJyAgdGhlIGFib3ZlIGxpc3RlZCB0b29scy4n
-CiAJQGVjaG8gJycKLQlAZWNobyAnICAkJCBtYWtlIHRvb2xzL2luc3RhbGwnCisJQGVjaG8gJyAg
-JCQgc3VkbyBtYWtlIC1DIHRvb2xzLyBpbnN0YWxsJwogCUBlY2hvICcnCi0JQGVjaG8gJyAgaW5z
-dGFsbHMgYWxsIHRvb2xzLicKKwlAZWNobyAnICBidWlsZHMgYW5kIGluc3RhbGxzIGFsbCB0b29s
-cy4nCiAJQGVjaG8gJycKIAlAZWNobyAnQ2xlYW5pbmcgdGFyZ2V0czonCiAJQGVjaG8gJycKLS0g
-CjEuOC40Cgo=
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0002-tools-lguest-Fix-typo-in-Makefile-target.patch"
-Content-Disposition: attachment; 
-	filename="0002-tools-lguest-Fix-typo-in-Makefile-target.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtihd1
-
-RnJvbSAzM2JmNmI2ZDE2ZDJhZmQ1ZTMyNGJkYmY1YTQ2ZmUzMDM0NmExYTVhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAxOjE5OjIxICswMjAwClN1YmplY3Q6IFtQQVRDSCAyLzhd
-IHRvb2xzOiBsZ3Vlc3Q6IEZpeCB0eXBvIGluIE1ha2VmaWxlIHRhcmdldAoKU2lnbmVkLW9mZi1i
-eTogU2VkYXQgRGlsZWsgPHNlZGF0LmRpbGVrQGdtYWlsLmNvbT4KLS0tCiB0b29scy9NYWtlZmls
-ZSB8IDIgKy0KIDEgZmlsZSBjaGFuZ2VkLCAxIGluc2VydGlvbigrKSwgMSBkZWxldGlvbigtKQoK
-ZGlmZiAtLWdpdCBhL3Rvb2xzL01ha2VmaWxlIGIvdG9vbHMvTWFrZWZpbGUKaW5kZXggNjc2NGUy
-NC4uYWU5ODZjMSAxMDA2NDQKLS0tIGEvdG9vbHMvTWFrZWZpbGUKKysrIGIvdG9vbHMvTWFrZWZp
-bGUKQEAgLTM2LDcgKzM2LDcgQEAgaGVscDoKIGNwdXBvd2VyOiBGT1JDRQogCSQoY2FsbCBkZXNj
-ZW5kLHBvd2VyLyRAKQogCi1jZ3JvdXAgZmlyZXdpcmUgZ3Vlc3QgdXNiIHZpcnRpbyB2bSBuZXQ6
-IEZPUkNFCitjZ3JvdXAgZmlyZXdpcmUgbGd1ZXN0IHVzYiB2aXJ0aW8gdm0gbmV0OiBGT1JDRQog
-CSQoY2FsbCBkZXNjZW5kLCRAKQogCiBsaWJsazogRk9SQ0UKLS0gCjEuOC40Cgo=
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0003-tools-vm-Consider-liblk-as-a-prerequisite.patch"
-Content-Disposition: attachment; 
-	filename="0003-tools-vm-Consider-liblk-as-a-prerequisite.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtk4p2
-
-RnJvbSA1MjFmYWY2ZmM5NTNhYjE0YTE4YWMzYzIzYzJiZmM2NTAwMzhmZmEwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAxOjI0OjE2ICswMjAwClN1YmplY3Q6IFtQQVRDSCAzLzhd
-IHRvb2xzOiB2bTogQ29uc2lkZXIgbGlibGsgYXMgYSBwcmVyZXF1aXNpdGUKClNpZ25lZC1vZmYt
-Ynk6IFNlZGF0IERpbGVrIDxzZWRhdC5kaWxla0BnbWFpbC5jb20+Ci0tLQogdG9vbHMvTWFrZWZp
-bGUgICAgfCA4ICsrKystLS0tCiB0b29scy92bS9NYWtlZmlsZSB8IDIgKy0KIDIgZmlsZXMgY2hh
-bmdlZCwgNSBpbnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL3Rvb2xz
-L01ha2VmaWxlIGIvdG9vbHMvTWFrZWZpbGUKaW5kZXggYWU5ODZjMS4uZWNmMTdjMCAxMDA2NDQK
-LS0tIGEvdG9vbHMvTWFrZWZpbGUKKysrIGIvdG9vbHMvTWFrZWZpbGUKQEAgLTM2LDEzICszNiwx
-MyBAQCBoZWxwOgogY3B1cG93ZXI6IEZPUkNFCiAJJChjYWxsIGRlc2NlbmQscG93ZXIvJEApCiAK
-LWNncm91cCBmaXJld2lyZSBsZ3Vlc3QgdXNiIHZpcnRpbyB2bSBuZXQ6IEZPUkNFCitjZ3JvdXAg
-ZmlyZXdpcmUgbGd1ZXN0IHVzYiB2aXJ0aW8gbmV0OiBGT1JDRQogCSQoY2FsbCBkZXNjZW5kLCRA
-KQogCiBsaWJsazogRk9SQ0UKIAkkKGNhbGwgZGVzY2VuZCxsaWIvbGspCiAKLXBlcmY6IGxpYmxr
-IEZPUkNFCitwZXJmIHZtOiBsaWJsayBGT1JDRQogCSQoY2FsbCBkZXNjZW5kLCRAKQogCiBzZWxm
-dGVzdHM6IEZPUkNFCkBAIC03MCwxMyArNzAsMTMgQEAgaW5zdGFsbDogY2dyb3VwX2luc3RhbGwg
-Y3B1cG93ZXJfaW5zdGFsbCBmaXJld2lyZV9pbnN0YWxsIGxndWVzdF9pbnN0YWxsIFwKIGNwdXBv
-d2VyX2NsZWFuOgogCSQoY2FsbCBkZXNjZW5kLHBvd2VyL2NwdXBvd2VyLGNsZWFuKQogCi1jZ3Jv
-dXBfY2xlYW4gZmlyZXdpcmVfY2xlYW4gbGd1ZXN0X2NsZWFuIHVzYl9jbGVhbiB2aXJ0aW9fY2xl
-YW4gdm1fY2xlYW4gbmV0X2NsZWFuOgorY2dyb3VwX2NsZWFuIGZpcmV3aXJlX2NsZWFuIGxndWVz
-dF9jbGVhbiB1c2JfY2xlYW4gdmlydGlvX2NsZWFuIG5ldF9jbGVhbjoKIAkkKGNhbGwgZGVzY2Vu
-ZCwkKEA6X2NsZWFuPSksY2xlYW4pCiAKIGxpYmxrX2NsZWFuOgogCSQoY2FsbCBkZXNjZW5kLGxp
-Yi9sayxjbGVhbikKIAotcGVyZl9jbGVhbjogbGlibGtfY2xlYW4KK3BlcmZfY2xlYW4gdm1fY2xl
-YW46IGxpYmxrX2NsZWFuCiAJJChjYWxsIGRlc2NlbmQsJChAOl9jbGVhbj0pLGNsZWFuKQogCiBz
-ZWxmdGVzdHNfY2xlYW46CmRpZmYgLS1naXQgYS90b29scy92bS9NYWtlZmlsZSBiL3Rvb2xzL3Zt
-L01ha2VmaWxlCmluZGV4IDI0ZTlkZGQuLjYzZTc4NDggMTAwNjQ0Ci0tLSBhL3Rvb2xzL3ZtL01h
-a2VmaWxlCisrKyBiL3Rvb2xzL3ZtL01ha2VmaWxlCkBAIC0xOSw0ICsxOSw0IEBAIGxpYmxrOgog
-CiBjbGVhbjoKIAkkKFJNKSBwYWdlLXR5cGVzIHNsYWJpbmZvCi0JbWFrZSAtQyAuLi9saWIvbGsg
-Y2xlYW4KKwltYWtlIC1DICQoTEtfRElSKSBjbGVhbgotLSAKMS44LjQKCg==
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0004-tools-usb-Use-pthread-instead-of-lpthread.patch"
-Content-Disposition: attachment; 
-	filename="0004-tools-usb-Use-pthread-instead-of-lpthread.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtmdt3
-
-RnJvbSA0OTY5OTY2MGFjNWYxMGU0NjE4MjFhZjYyNGNiMDQ3MGY5NWJjMjJmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAxOjM3OjIxICswMjAwClN1YmplY3Q6IFtQQVRDSCA0Lzhd
-IHRvb2xzOiB1c2I6IFVzZSAtcHRocmVhZCBpbnN0ZWFkIG9mIC1scHRocmVhZAoKU2lnbmVkLW9m
-Zi1ieTogU2VkYXQgRGlsZWsgPHNlZGF0LmRpbGVrQGdtYWlsLmNvbT4KLS0tCiB0b29scy91c2Iv
-TWFrZWZpbGUgfCAyICstCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKyksIDEgZGVsZXRp
-b24oLSkKCmRpZmYgLS1naXQgYS90b29scy91c2IvTWFrZWZpbGUgYi90b29scy91c2IvTWFrZWZp
-bGUKaW5kZXggMzk2ZDZjNC4uYzE0ZjUxNCAxMDA2NDQKLS0tIGEvdG9vbHMvdXNiL01ha2VmaWxl
-CisrKyBiL3Rvb2xzL3VzYi9NYWtlZmlsZQpAQCAtMSw3ICsxLDcgQEAKICMgTWFrZWZpbGUgZm9y
-IFVTQiB0b29scwogCiBDQyA9ICQoQ1JPU1NfQ09NUElMRSlnY2MKLVBUSFJFQURfTElCUyA9IC1s
-cHRocmVhZAorUFRIUkVBRF9MSUJTID0gLXB0aHJlYWQKIFdBUk5JTkdTID0gLVdhbGwgLVdleHRy
-YQogQ0ZMQUdTID0gJChXQVJOSU5HUykgLWcgJChQVEhSRUFEX0xJQlMpIC1JLi4vaW5jbHVkZQog
-Ci0tIAoxLjguNAoK
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0005-tools-vm-Add-dummy-install-target-to-fix-make-C-tool.patch"
-Content-Disposition: attachment; 
-	filename="0005-tools-vm-Add-dummy-install-target-to-fix-make-C-tool.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtof54
-
-RnJvbSA2ZGUzNjI1ZTlmZjg0YWVhMDlmMTY2MDJmOTYwZTE0ZDc4YmI1MmM2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAyOjA5OjQ0ICswMjAwClN1YmplY3Q6IFtQQVRDSCA1Lzhd
-IHRvb2xzOiB2bTogQWRkIGR1bW15IGluc3RhbGwgdGFyZ2V0IHRvIGZpeCAnbWFrZSAtQwogdG9v
-bHMvIHZtX2luc3RhbGwnCgpTaWduZWQtb2ZmLWJ5OiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtA
-Z21haWwuY29tPgotLS0KIHRvb2xzL3ZtL01ha2VmaWxlIHwgMiArKwogMSBmaWxlIGNoYW5nZWQs
-IDIgaW5zZXJ0aW9ucygrKQoKZGlmZiAtLWdpdCBhL3Rvb2xzL3ZtL01ha2VmaWxlIGIvdG9vbHMv
-dm0vTWFrZWZpbGUKaW5kZXggNjNlNzg0OC4uY2JmMzQ2YiAxMDA2NDQKLS0tIGEvdG9vbHMvdm0v
-TWFrZWZpbGUKKysrIGIvdG9vbHMvdm0vTWFrZWZpbGUKQEAgLTE3LDYgKzE3LDggQEAgbGlibGs6
-CiAlOiAlLmMKIAkkKENDKSAkKENGTEFHUykgLW8gJEAgJDwgJChMREZMQUdTKQogCitpbnN0YWxs
-OgorCiBjbGVhbjoKIAkkKFJNKSBwYWdlLXR5cGVzIHNsYWJpbmZvCiAJbWFrZSAtQyAkKExLX0RJ
-UikgY2xlYW4KLS0gCjEuOC40Cgo=
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0006-tools-selftests-Fix-selftests_install-target.patch"
-Content-Disposition: attachment; 
-	filename="0006-tools-selftests-Fix-selftests_install-target.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtqe05
-
-RnJvbSBkZDRjNzZmMzRjNzJiZmJhZjg0MjVjNmNkZGY5MTE4NDFmODZiMzg5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAzOjE2OjE3ICswMjAwClN1YmplY3Q6IFtQQVRDSCA2Lzhd
-IHRvb2xzOiBzZWxmdGVzdHM6IEZpeCBzZWxmdGVzdHNfaW5zdGFsbCB0YXJnZXQKClNpZ25lZC1v
-ZmYtYnk6IFNlZGF0IERpbGVrIDxzZWRhdC5kaWxla0BnbWFpbC5jb20+Ci0tLQogdG9vbHMvTWFr
-ZWZpbGUgICAgICAgICAgICAgICAgICAgfCAyICstCiB0b29scy90ZXN0aW5nL3NlbGZ0ZXN0cy9N
-YWtlZmlsZSB8IDIgKysKIDIgZmlsZXMgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRlbGV0
-aW9uKC0pCgpkaWZmIC0tZ2l0IGEvdG9vbHMvTWFrZWZpbGUgYi90b29scy9NYWtlZmlsZQppbmRl
-eCBlY2YxN2MwLi5hNTUwMmUwIDEwMDY0NAotLS0gYS90b29scy9NYWtlZmlsZQorKysgYi90b29s
-cy9NYWtlZmlsZQpAQCAtNTgsNyArNTgsNyBAQCBjZ3JvdXBfaW5zdGFsbCBmaXJld2lyZV9pbnN0
-YWxsIGxndWVzdF9pbnN0YWxsIHBlcmZfaW5zdGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faQogCSQo
-Y2FsbCBkZXNjZW5kLCQoQDpfaW5zdGFsbD0pLGluc3RhbGwpCiAKIHNlbGZ0ZXN0c19pbnN0YWxs
-OgotCSQoY2FsbCBkZXNjZW5kLHRlc3RpbmcvJChAOl9jbGVhbj0pLGluc3RhbGwpCisJJChjYWxs
-IGRlc2NlbmQsdGVzdGluZy8kKEA6X2luc3RhbGw9KSxpbnN0YWxsKQogCiB0dXJib3N0YXRfaW5z
-dGFsbCB4ODZfZW5lcmd5X3BlcmZfcG9saWN5X2luc3RhbGw6CiAJJChjYWxsIGRlc2NlbmQscG93
-ZXIveDg2LyQoQDpfaW5zdGFsbD0pLGluc3RhbGwpCmRpZmYgLS1naXQgYS90b29scy90ZXN0aW5n
-L3NlbGZ0ZXN0cy9NYWtlZmlsZSBiL3Rvb2xzL3Rlc3Rpbmcvc2VsZnRlc3RzL01ha2VmaWxlCmlu
-ZGV4IDRjYjE0Y2EuLjVlMGI5NGUgMTAwNjQ0Ci0tLSBhL3Rvb2xzL3Rlc3Rpbmcvc2VsZnRlc3Rz
-L01ha2VmaWxlCisrKyBiL3Rvb2xzL3Rlc3Rpbmcvc2VsZnRlc3RzL01ha2VmaWxlCkBAIC0xOSw2
-ICsxOSw4IEBAIHJ1bl90ZXN0czogYWxsCiAJCW1ha2UgLUMgJCRUQVJHRVQgcnVuX3Rlc3RzOyBc
-CiAJZG9uZTsKIAoraW5zdGFsbDoKKwogY2xlYW46CiAJZm9yIFRBUkdFVCBpbiAkKFRBUkdFVFMp
-OyBkbyBcCiAJCW1ha2UgLUMgJCRUQVJHRVQgY2xlYW47IFwKLS0gCjEuOC40Cgo=
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0007-tools-Introduce-an-all-target-to-build-all-tools.patch"
-Content-Disposition: attachment; 
-	filename="0007-tools-Introduce-an-all-target-to-build-all-tools.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vts7e6
-
-RnJvbSA1MjdhYTBjMWJhOTA1NWE0MjkyNDdmZTA5MzJkMzZjOTY1ZDI3Yjg3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAyOjI4OjA2ICswMjAwClN1YmplY3Q6IFtQQVRDSCA3Lzhd
-IHRvb2xzOiBJbnRyb2R1Y2UgYW4gYWxsIHRhcmdldCB0byBidWlsZCBhbGwgdG9vbHMKClNpZ25l
-ZC1vZmYtYnk6IFNlZGF0IERpbGVrIDxzZWRhdC5kaWxla0BnbWFpbC5jb20+Ci0tLQogdG9vbHMv
-TWFrZWZpbGUgfCAzICsrKwogMSBmaWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKQoKZGlmZiAt
-LWdpdCBhL3Rvb2xzL01ha2VmaWxlIGIvdG9vbHMvTWFrZWZpbGUKaW5kZXggYTU1MDJlMC4uODIz
-OGU1ZiAxMDA2NDQKLS0tIGEvdG9vbHMvTWFrZWZpbGUKKysrIGIvdG9vbHMvTWFrZWZpbGUKQEAg
-LTIzLDYgKzIzLDcgQEAgaGVscDoKIAlAZWNobyAnICBmcm9tIHRoZSBrZXJuZWwgY29tbWFuZCBs
-aW5lIHRvIGJ1aWxkIGFuZCBpbnN0YWxsIG9uZSBvZicKIAlAZWNobyAnICB0aGUgYWJvdmUgbGlz
-dGVkIHRvb2xzLicKIAlAZWNobyAnJworCUBlY2hvICcgICQkIG1ha2UgLUMgdG9vbHMvIGFsbCcK
-IAlAZWNobyAnICAkJCBzdWRvIG1ha2UgLUMgdG9vbHMvIGluc3RhbGwnCiAJQGVjaG8gJycKIAlA
-ZWNobyAnICBidWlsZHMgYW5kIGluc3RhbGxzIGFsbCB0b29scy4nCkBAIC01MSw2ICs1Miw4IEBA
-IHNlbGZ0ZXN0czogRk9SQ0UKIHR1cmJvc3RhdCB4ODZfZW5lcmd5X3BlcmZfcG9saWN5OiBGT1JD
-RQogCSQoY2FsbCBkZXNjZW5kLHBvd2VyL3g4Ni8kQCkKIAorYWxsOiBjcHVwb3dlciBjZ3JvdXAg
-ZmlyZXdpcmUgbGd1ZXN0IG5ldCB1c2IgdmlydGlvIHBlcmYgdm0gc2VsZnRlc3RzIHR1cmJvc3Rh
-dCB4ODZfZW5lcmd5X3BlcmZfcG9saWN5CisKIGNwdXBvd2VyX2luc3RhbGw6CiAJJChjYWxsIGRl
-c2NlbmQscG93ZXIvJChAOl9pbnN0YWxsPSksaW5zdGFsbCkKIAotLSAKMS44LjQKCg==
---047d7b624e7e2f17fc04e576dd1e
-Content-Type: application/octet-stream; 
-	name="0008-tools-Reorder-tool-_install-install-and-clean-target.patch"
-Content-Disposition: attachment; 
-	filename="0008-tools-Reorder-tool-_install-install-and-clean-target.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl4vtu557
-
-RnJvbSA3NjJhYmFjMGUxNjE0YzBhNTlkZWUxOWMxODlkZDM3ZDQwMTk5OGMxIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBTYXQsIDMxIEF1ZyAyMDEzIDAyOjIxOjA1ICswMjAwClN1YmplY3Q6IFtQQVRDSCA4Lzhd
-IHRvb2xzOiBSZW9yZGVyIDx0b29sPl9pbnN0YWxsLCBpbnN0YWxsIGFuZCBjbGVhbiB0YXJnZXRz
-CgpTaWduZWQtb2ZmLWJ5OiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgotLS0K
-IHRvb2xzL01ha2VmaWxlIHwgMjIgKysrKysrKysrKysrKy0tLS0tLS0tLQogMSBmaWxlIGNoYW5n
-ZWQsIDEzIGluc2VydGlvbnMoKyksIDkgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvdG9vbHMv
-TWFrZWZpbGUgYi90b29scy9NYWtlZmlsZQppbmRleCA4MjM4ZTVmLi4zYWZhODMxIDEwMDY0NAot
-LS0gYS90b29scy9NYWtlZmlsZQorKysgYi90b29scy9NYWtlZmlsZQpAQCAtMzcsNyArMzcsNyBA
-QCBoZWxwOgogY3B1cG93ZXI6IEZPUkNFCiAJJChjYWxsIGRlc2NlbmQscG93ZXIvJEApCiAKLWNn
-cm91cCBmaXJld2lyZSBsZ3Vlc3QgdXNiIHZpcnRpbyBuZXQ6IEZPUkNFCitjZ3JvdXAgZmlyZXdp
-cmUgbGd1ZXN0IG5ldCB1c2IgdmlydGlvOiBGT1JDRQogCSQoY2FsbCBkZXNjZW5kLCRAKQogCiBs
-aWJsazogRk9SQ0UKQEAgLTU3LDcgKzU3LDcgQEAgYWxsOiBjcHVwb3dlciBjZ3JvdXAgZmlyZXdp
-cmUgbGd1ZXN0IG5ldCB1c2IgdmlydGlvIHBlcmYgdm0gc2VsZnRlc3RzIHR1cmJvc3RhdAogY3B1
-cG93ZXJfaW5zdGFsbDoKIAkkKGNhbGwgZGVzY2VuZCxwb3dlci8kKEA6X2luc3RhbGw9KSxpbnN0
-YWxsKQogCi1jZ3JvdXBfaW5zdGFsbCBmaXJld2lyZV9pbnN0YWxsIGxndWVzdF9pbnN0YWxsIHBl
-cmZfaW5zdGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faW5zdGFsbCB2bV9pbnN0YWxsIG5ldF9pbnN0
-YWxsOgorY2dyb3VwX2luc3RhbGwgZmlyZXdpcmVfaW5zdGFsbCBsZ3Vlc3RfaW5zdGFsbCBuZXRf
-aW5zdGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faW5zdGFsbCBwZXJmX2luc3RhbGwgdm1faW5zdGFs
-bDoKIAkkKGNhbGwgZGVzY2VuZCwkKEA6X2luc3RhbGw9KSxpbnN0YWxsKQogCiBzZWxmdGVzdHNf
-aW5zdGFsbDoKQEAgLTY2LDE0ICs2NiwxNiBAQCBzZWxmdGVzdHNfaW5zdGFsbDoKIHR1cmJvc3Rh
-dF9pbnN0YWxsIHg4Nl9lbmVyZ3lfcGVyZl9wb2xpY3lfaW5zdGFsbDoKIAkkKGNhbGwgZGVzY2Vu
-ZCxwb3dlci94ODYvJChAOl9pbnN0YWxsPSksaW5zdGFsbCkKIAotaW5zdGFsbDogY2dyb3VwX2lu
-c3RhbGwgY3B1cG93ZXJfaW5zdGFsbCBmaXJld2lyZV9pbnN0YWxsIGxndWVzdF9pbnN0YWxsIFwK
-LQkJcGVyZl9pbnN0YWxsIHNlbGZ0ZXN0c19pbnN0YWxsIHR1cmJvc3RhdF9pbnN0YWxsIHVzYl9p
-bnN0YWxsIFwKLQkJdmlydGlvX2luc3RhbGwgdm1faW5zdGFsbCBuZXRfaW5zdGFsbCB4ODZfZW5l
-cmd5X3BlcmZfcG9saWN5X2luc3RhbGwKK2luc3RhbGw6IGNwdXBvd2VyX2luc3RhbGwgXAorICAg
-ICAgICAgICAgICAgY2dyb3VwX2luc3RhbGwgZmlyZXdpcmVfaW5zdGFsbCBsZ3Vlc3RfaW5zdGFs
-bCBuZXRfaW5zdGFsbCB1c2JfaW5zdGFsbCB2aXJ0aW9faW5zdGFsbCBcCisgICAgICAgICAgICAg
-ICBwZXJmX2luc3RhbGwgdm1faW5zdGFsbCBcCisgICAgICAgICAgICAgICBzZWxmdGVzdHNfaW5z
-dGFsbCBcCisgICAgICAgICAgICAgICB0dXJib3N0YXRfaW5zdGFsbCB4ODZfZW5lcmd5X3BlcmZf
-cG9saWN5X2luc3RhbGwKIAogY3B1cG93ZXJfY2xlYW46CiAJJChjYWxsIGRlc2NlbmQscG93ZXIv
-Y3B1cG93ZXIsY2xlYW4pCiAKLWNncm91cF9jbGVhbiBmaXJld2lyZV9jbGVhbiBsZ3Vlc3RfY2xl
-YW4gdXNiX2NsZWFuIHZpcnRpb19jbGVhbiBuZXRfY2xlYW46CitjZ3JvdXBfY2xlYW4gZmlyZXdp
-cmVfY2xlYW4gbGd1ZXN0X2NsZWFuIG5ldF9jbGVhbiB1c2JfY2xlYW4gdmlydGlvX2NsZWFuOgog
-CSQoY2FsbCBkZXNjZW5kLCQoQDpfY2xlYW49KSxjbGVhbikKIAogbGlibGtfY2xlYW46CkBAIC04
-OCw4ICs5MCwxMCBAQCBzZWxmdGVzdHNfY2xlYW46CiB0dXJib3N0YXRfY2xlYW4geDg2X2VuZXJn
-eV9wZXJmX3BvbGljeV9jbGVhbjoKIAkkKGNhbGwgZGVzY2VuZCxwb3dlci94ODYvJChAOl9jbGVh
-bj0pLGNsZWFuKQogCi1jbGVhbjogY2dyb3VwX2NsZWFuIGNwdXBvd2VyX2NsZWFuIGZpcmV3aXJl
-X2NsZWFuIGxndWVzdF9jbGVhbiBwZXJmX2NsZWFuIFwKLQkJc2VsZnRlc3RzX2NsZWFuIHR1cmJv
-c3RhdF9jbGVhbiB1c2JfY2xlYW4gdmlydGlvX2NsZWFuIFwKLQkJdm1fY2xlYW4gbmV0X2NsZWFu
-IHg4Nl9lbmVyZ3lfcGVyZl9wb2xpY3lfY2xlYW4KK2NsZWFuOiBjcHVwb3dlcl9jbGVhbiBcCisg
-ICAgICAgICAgICAgICBjZ3JvdXBfY2xlYW4gZmlyZXdpcmVfY2xlYW4gbGd1ZXN0X2NsZWFuIG5l
-dF9jbGVhbiB1c2JfY2xlYW4gdmlydGlvX2NsZWFuIFwKKyAgICAgICAgICAgICAgIHBlcmZfY2xl
-YW4gdm1fY2xlYW4gXAorICAgICAgICAgICAgICAgc2VsZnRlc3RzX2NsZWFuIFwKKyAgICAgICAg
-ICAgICAgIHR1cmJvc3RhdF9jbGVhbiB4ODZfZW5lcmd5X3BlcmZfcG9saWN5X2NsZWFuCiAKIC5Q
-SE9OWTogRk9SQ0UKLS0gCjEuOC40Cgo=
---047d7b624e7e2f17fc04e576dd1e--
+--
+     Manfred
