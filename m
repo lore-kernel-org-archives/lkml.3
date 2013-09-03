@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab3ICFjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:39:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40633 "EHLO song.cn.fujitsu.com"
+	id S1759414Ab3ICFlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:41:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40136 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab3ICFji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:39:38 -0400
+	id S1753246Ab3ICFlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 01:41:02 -0400
 X-IronPort-AV: E=Sophos;i="4.89,1011,1367942400"; 
-   d="scan'208";a="8387112"
-Message-ID: <522575CC.6010001@cn.fujitsu.com>
-Date: Tue, 03 Sep 2013 13:38:20 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+   d="scan'208";a="8387128"
+Message-ID: <5225765E.8000402@cn.fujitsu.com>
+Date: Tue, 03 Sep 2013 13:40:46 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH RESEND 2/3] x86, mm: Update min_pfn_mapped in add_pfn_range_mapped().
-References: <1378117829-9095-1-git-send-email-tangchen@cn.fujitsu.com> <1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com> <CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com> <52253607.9010907@cn.fujitsu.com> <CAE9FiQXeiBZU9X7MprpBtyCQgW-u3u5m7XwvEujnvs5wHYdM4A@mail.gmail.com>
-In-Reply-To: <CAE9FiQXeiBZU9X7MprpBtyCQgW-u3u5m7XwvEujnvs5wHYdM4A@mail.gmail.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] mm/vmalloc: move VM_UNINITIALIZED just before
+ show_numa_info
+References: <1378177220-26218-1-git-send-email-liwanp@linux.vnet.ibm.com> <1378177220-26218-3-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1378177220-26218-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/03 13:37:26,
+ 2013/09/03 13:38:54,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/03 13:37:27,
-	Serialize complete at 2013/09/03 13:37:27
+ 2013/09/03 13:38:55,
+	Serialize complete at 2013/09/03 13:38:55
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 10:48 AM, Yinghai Lu wrote:
-> On Mon, Sep 2, 2013 at 6:06 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
->> Hi Yinghai,
->>
->> On 09/03/2013 02:41 AM, Yinghai Lu wrote:
->
->> How about change the "for (from low to high)" in init_range_memory_mapping()
->> to
->> "for_rev(from high to low)" ?
->> Then we can update min_pfn_mapped in add_pfn_range_mapped().
->>
->> And also, the outer loop is from high to low, we can change the inner loop
->> to be from high
->> to low too.
->
-> No. there is other reason for doing local from low to high.
->
-> kernel_physical_mapping_init() could clear some mapping near the end
-> of PUG/PMD entries but not the head.
+On 09/03/2013 11:00 AM, Wanpeng Li wrote:
+> The VM_UNINITIALIZED/VM_UNLIST flag introduced by commit f5252e00(mm: avoid
+> null pointer access in vm_struct via /proc/vmallocinfo) is used to avoid
+> accessing the pages field with unallocated page when show_numa_info() is
+> called. This patch move the check just before show_numa_info in order that
+> some messages still can be dumped via /proc/vmallocinfo.
+> 
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Thanks for your explanation. But sorry, I'd like to understand it more 
-clearly.
+Hmmm, sorry again. Please revert commit
+d157a55815ffff48caec311dfb543ce8a79e283e. That said, we could still
+do the check in show_numa_info like before.
 
-Are you talking about the following code ?
-	phys_pud_init()
-	{
-                 if (addr >= end) {
-                         if (!after_bootmem &&
-                             !e820_any_mapped(addr & PUD_MASK, next, 
-E820_RAM) &&
-                             !e820_any_mapped(addr & PUD_MASK, next, 
-E820_RESERVED_KERN))
-                                 set_pud(pud, __pud(0));
-                         continue;
-                 }
-	}
-It will clear the PUD/PMD out of range.
+> ---
+>  mm/vmalloc.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index e3ec8b4..c4720cd 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2590,11 +2590,6 @@ static int s_show(struct seq_file *m, void *p)
+>  
+>  	v = va->vm;
+>  
+> -	/* Pair with smp_wmb() in clear_vm_uninitialized_flag() */
+> -	smp_rmb();
+> -	if (v->flags & VM_UNINITIALIZED)
+> -		return 0;
+> -
+>  	seq_printf(m, "0x%pK-0x%pK %7ld",
+>  		v->addr, v->addr + v->size, v->size);
+>  
+> @@ -2622,6 +2617,11 @@ static int s_show(struct seq_file *m, void *p)
+>  	if (v->flags & VM_VPAGES)
+>  		seq_printf(m, " vpages");
+>  
+> +	/* Pair with smp_wmb() in clear_vm_uninitialized_flag() */
+> +	smp_rmb();
+> +	if (v->flags & VM_UNINITIALIZED)
+> +		return 0;
+> +
+>  	show_numa_info(m, v);
+>  	seq_putc(m, '\n');
+>  	return 0;
+> 
 
 
-But,
-init_mem_mapping()
-{
-     while (from high to low) {
-         init_range_memory_mapping()
-         {
-             for (from low to high) {						/* I'm saying changing this 
-loop */
-                 init_memory_mapping()
-                 {
-                     for () {							/* Not this one */
-                         kernel_physical_mapping_init();
-                     }
-                     add_pfn_range_mapped();
-                 }
-             }
-         }
-     }
-}
-
-I'm saying changing the outer loop in init_range_memory_mapping(), not 
-the one in init_memory_mapping().
-I think it is OK to call init_memory_mapping() with any order. The loop 
-is out of init_memory_mapping(), right ?
-
-In init_memory_mapping(), it is still from low to high. But when the 
-kernel_physical_mapping_init() finished,
-we can update min_pfn_mapped in add_pfn_range_mapped() because the outer 
-loop is from high to low.
-
-Am I missing something here ?  Please tell me.
-
->
->>
->> I think updating min_pfn_mapped in init_mem_mapping() is less readable. And
->> min_pfn_mapped
->> and max_pfn_mapped should be updated together.
->
-> min_pfn_mapped is early local variable to control allocation in alloc_low_pages.
-> put it in init_mem_mapping is more readable.
->
-
-But add_pfn_range_mapped() is in the same file with init_mem_mapping(). 
-I think
-it is OK to update min_pfn_mapped in it.
-
+-- 
 Thanks.
+Zhang Yanfei
