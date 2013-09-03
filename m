@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab3ICTLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 15:11:15 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:39698 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760711Ab3ICTLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 15:11:12 -0400
-X-Greylist: delayed 647 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 15:11:11 EDT
-Message-ID: <00000140e532655f-5b528d65-4709-41c7-8506-591afa94dbbd-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Tue, 3 Sep 2013 19:00:19 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 01/38] x86: Use this_cpu_inc/dec for debug registers
-References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 2013.09.03-54.240.9.70
+	id S933839Ab3ICTLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 15:11:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36438 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760950Ab3ICTKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 15:10:21 -0400
+Message-ID: <52263413.1050108@ti.com>
+Date: Tue, 3 Sep 2013 14:10:11 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org>
+In-Reply-To: <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this patch already exists in one form or another in some x86 tree.
+Kumar,
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+On 09/03/2013 01:50 PM, Kumar Gala wrote:
+> 
+> On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
+> 
+>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>> which are all device-tree boot only. This patch adds the
+>> base support for parsing the DT nodes, and removes the code
+>> dealing with the traditional platform device instantiation.
+>>
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> ---
+>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+>> arch/arm/mach-omap2/Makefile                       |  3 --
+>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+>> 4 files changed, 45 insertions(+), 67 deletions(-)
+>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> new file mode 100644
+>> index 0000000..adfb8ad
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>> @@ -0,0 +1,28 @@
+>> +OMAP4+ HwSpinlock Driver
+>> +
+>> +Required properties:
+>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>> +- reg:			Contains the hwspinlock register address range (base
+>> +			address and length)
+>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>> +
+>> +Optional properties:
+>> +- base_id:		Base Id for the locks for a particular hwspinlock
+>> +			device. If not mentioned, a default value of 0 is used.
+>> +			This property is mandatory ONLY if a SoC has several
+>> +			hwspinlock devices. There are currently no such OMAP
+>> +			SoCs.
+> 
+> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
 
-Index: linux/arch/x86/include/asm/debugreg.h
-===================================================================
---- linux.orig/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
-+++ linux/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
-@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
- DECLARE_PER_CPU(int, debug_stack_usage);
- static inline void debug_stack_usage_inc(void)
- {
--	__get_cpu_var(debug_stack_usage)++;
-+	__this_cpu_inc(debug_stack_usage);
- }
- static inline void debug_stack_usage_dec(void)
- {
--	__get_cpu_var(debug_stack_usage)--;
-+	__this_cpu_dec(debug_stack_usage);
- }
- int is_debug_stack(unsigned long addr);
- void debug_stack_set_zero(void);
-Index: linux/arch/x86/kernel/cpu/common.c
-===================================================================
---- linux.orig/arch/x86/kernel/cpu/common.c	2013-07-19 09:06:36.850047837 -0500
-+++ linux/arch/x86/kernel/cpu/common.c	2013-08-06 13:54:36.426384889 -0500
-@@ -1144,9 +1144,9 @@ DEFINE_PER_CPU(int, debug_stack_usage);
- 
- int is_debug_stack(unsigned long addr)
- {
--	return __get_cpu_var(debug_stack_usage) ||
--		(addr <= __get_cpu_var(debug_stack_addr) &&
--		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
-+	return __this_cpu_read(debug_stack_usage) ||
-+		(addr <= __this_cpu_read(debug_stack_addr) &&
-+		 addr > (__this_cpu_read(debug_stack_addr) - DEBUG_STKSZ));
- }
- 
- DEFINE_PER_CPU(u32, debug_idt_ctr);
+I didn't add the "ti," prefix exactly for the same reason - it is
+generic w.r.t the hwspinlock core irrespective of the SoC family, and
+there is nothing ti or OMAP specific about it. I have added it to keep
+the DT node definition in sync with the driver code. If it is too
+generic a name, it can always be renamed as hwlock_base_id. This will be
+SoC agnostic property for the hwspinlock driver. What do you think?
+
+regards
+Suman
+
+> 
+>> +
+>> +			See documentation on struct hwspinlock_pdata in
+>> +			linux/hwspinlock.h for more details.
+>> +
+>> +
+>> +Example:
+>> +
+>> +/* OMAP4 */
+>> +hwspinlock: spinlock@4a0f6000 {
+>> +	compatible = "ti,omap4-hwspinlock";
+>> +	reg = <0x4a0f6000 0x1000>;
+>> +	ti,hwmods = "spinlock";
+>> +};
+> 
+> [ snip ]
+> 
+> - k
+> 
 
