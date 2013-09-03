@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab3ICHgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:36:01 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:18768 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab3ICHf7 (ORCPT
+	id S932551Ab3ICHgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:36:08 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:38062 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932444Ab3ICHgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:35:59 -0400
+	Tue, 3 Sep 2013 03:36:01 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Gavin Shan <shangw@linux.vnet.ibm.com>,
@@ -15,12 +15,11 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "David S. Miller" <davem@davemloft.net>
 CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Naresh Kumar Inna <naresh@chelsio.com>, Jesper Juhl <jj@chaosbits.net>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, <linux-driver@qlogic.com>,
         <linux-scsi@vger.kernel.org>
-Subject: [PATCH 2/7] scsi/csiostor: use pcie_capability_xxx to simplify code
-Date: Tue, 3 Sep 2013 15:35:10 +0800
-Message-ID: <1378193715-25328-2-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 7/7] scsi/qla2xxx: use pcie_is_pcie() to simplify code
+Date: Tue, 3 Sep 2013 15:35:15 +0800
+Message-ID: <1378193715-25328-7-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
 References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
@@ -32,47 +31,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pcie_capability_xxx() interfaces were introudced to
-simplify code to access PCIe Cap config space. And
-because PCI core saves the PCIe Cap offset in
-set_pcie_port_type() when device is enumerated.
-So we can use pci_is_pcie() instead.
+Use pci_is_pcie() instead of pci_find_capability
+to simplify code.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: linux-driver@qlogic.com
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Naresh Kumar Inna <naresh@chelsio.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jesper Juhl <jj@chaosbits.net>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/scsi/csiostor/csio_hw.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/scsi/qla2xxx/qla_mr.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/csiostor/csio_hw.c b/drivers/scsi/csiostor/csio_hw.c
-index 0eb35b9..be9a6ef 100644
---- a/drivers/scsi/csiostor/csio_hw.c
-+++ b/drivers/scsi/csiostor/csio_hw.c
-@@ -856,15 +856,12 @@ static void
- csio_set_pcie_completion_timeout(struct csio_hw *hw, u8 range)
+diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
+index d799379..5f74271 100644
+--- a/drivers/scsi/qla2xxx/qla_mr.c
++++ b/drivers/scsi/qla2xxx/qla_mr.c
+@@ -507,7 +507,7 @@ qlafx00_pci_config(scsi_qla_host_t *vha)
+ 	pci_write_config_word(ha->pdev, PCI_COMMAND, w);
+ 
+ 	/* PCIe -- adjust Maximum Read Request Size (2048). */
+-	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
++	if (pci_is_pcie(ha->pdev))
+ 		pcie_set_readrq(ha->pdev, 2048);
+ 
+ 	ha->chip_revision = ha->pdev->revision;
+@@ -660,10 +660,8 @@ char *
+ qlafx00_pci_info_str(struct scsi_qla_host *vha, char *str)
  {
- 	uint16_t val;
--	int pcie_cap;
+ 	struct qla_hw_data *ha = vha->hw;
+-	int pcie_reg;
  
--	if (!csio_pci_capability(hw->pdev, PCI_CAP_ID_EXP, &pcie_cap)) {
--		pci_read_config_word(hw->pdev,
--				     pcie_cap + PCI_EXP_DEVCTL2, &val);
-+	if (pci_is_pcie(hw->pdev)) {
-+		pcie_capability_read_word(hw->pdev, PCI_EXP_DEVCTL2, &val);
- 		val &= 0xfff0;
- 		val |= range ;
--		pci_write_config_word(hw->pdev,
--				      pcie_cap + PCI_EXP_DEVCTL2, val);
-+		pcie_capability_write_word(hw->pdev, PCI_EXP_DEVCTL2, val);
+-	pcie_reg = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
+-	if (pcie_reg) {
++	if (pci_is_pcie(ha->pdev)) {
+ 		strcpy(str, "PCIe iSA");
+ 		return str;
  	}
- }
- 
 -- 
 1.7.1
 
