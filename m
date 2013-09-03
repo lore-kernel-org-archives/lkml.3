@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab3ICLVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 07:21:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49565 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759942Ab3ICLVF (ORCPT
+	id S1759993Ab3ICLVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 07:21:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36992 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759979Ab3ICLVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 07:21:05 -0400
-Date: Tue, 3 Sep 2013 12:20:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux-ALSA <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        Simon <horms@verge.net.au>, linux-kernel@vger.kernel.org
-Message-ID: <20130903112050.GG3084@sirena.org.uk>
-References: <87sixrre8r.wl%kuninori.morimoto.gx@renesas.com>
- <87mwnvsy7a.wl%kuninori.morimoto.gx@renesas.com>
- <87li3fsy69.wl%kuninori.morimoto.gx@renesas.com>
+	Tue, 3 Sep 2013 07:21:39 -0400
+Date: Tue, 3 Sep 2013 13:21:36 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: oliver+list@schinagl.nl
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        andy.shevchenko@gmail.com, tomasz.figa@gmail.com,
+        linux-sunxi@googlegroups.com, Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCHv7 1/2] ARM: sunxi: Initial support for Allwinner's
+ Security ID fuses
+Message-ID: <20130903112136.GC2630@lukather>
+References: <1378204408-1415-1-git-send-email-oliver+list@schinagl.nl>
+ <1378204408-1415-2-git-send-email-oliver+list@schinagl.nl>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gHypzss5dW8YUwgb"
+	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
 Content-Disposition: inline
-In-Reply-To: <87li3fsy69.wl%kuninori.morimoto.gx@renesas.com>
-X-Cookie: You love peace.
+In-Reply-To: <1378204408-1415-2-git-send-email-oliver+list@schinagl.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/4] regmap: add regmap_field_update_bits()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gHypzss5dW8YUwgb
+--bAmEntskrkuBymla
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Sep 01, 2013 at 08:24:50PM -0700, Kuninori Morimoto wrote:
-> Current regmap_field is supporting read/write functions.
-> This patch adds new update_bits function for it.
+On Tue, Sep 03, 2013 at 12:33:27PM +0200, oliver+list@schinagl.nl wrote:
+> From: Oliver Schinagl <oliver@schinagl.nl>
+>=20
+> Allwinner has electric fuses (efuse) on their line of chips. This driver
+> reads those fuses, seeds the kernel entropy and exports them as a sysfs
+> node.
+>=20
+> These fuses are most likely to be programmed at the factory, encoding
+> things like Chip ID, some sort of serial number, etc. and appear to be
+> reasonably unique.
+> While in theory, these should be writeable by the user, it will probably
+> be inconvenient to do so. Allwinner recommends that a certain input pin,
+> labeled 'efuse_vddq', be connected to GND. To write these fuses however,
+> a 2.5 V programming voltage needs to be applied to this pin.
+>=20
+> Even so, they can still be used to generate a board-unique mac from,
+> board unique RSA key and seed the kernel RNG.
+>=20
+> On sun7i additional storage is available, this is initially used for an
+> UEFI BOOT key, Secure JTAG key, HDMI-HDCP key and vendor specific keys.
+>=20
+> Currently supported are the following known chips:
+> Allwinner sun4i (A10)
+> Allwinner sun5i (A10s, A13)
+> Allwinner sun7i (A20)
+>=20
+> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
 
-Applied, thanks.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
---gHypzss5dW8YUwgb
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--bAmEntskrkuBymla
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSJcYPAAoJELSic+t+oim9vBkQAJeU5r+Rxwl5iRGGY5FfyQAJ
-9zto6qh5wBg7qh8ZP0cw4JGzDEvtzeQ32E8i82mmzCus2h8EsLc8KdN5VfdaIFAK
-8sdzrep37tAeNasrC5MdxlUxn9rQ3YpJF3CHyVpWrvb0fQI5YQMZUORAoDOOolJr
-V2O3YBrinl/mBHCqbBywOb4uB25FCtOsCMrrHyUYiTfrGkaz9ld9p4UJihcfXspj
-aYjMzFe7Lvk6S+27R0sG1yO7XVBINVBIooNhtLeJ8zj5OMTRxAM31GT3d+8VrMBE
-tVASx4oR8+FMXNBZ3ytNhhzI1ZllQJIk+vV+MUDn5iO4XEFaFyJH61dv5v7LaBnH
-aAQqrFw5NbbYVgZ93h3xdXm80qmzenacg5BVcK/CBC3UCRk09+qkC6t5zwnKTsRw
-9HAN/At1JlsxbQKkj8rU/BcyGuNYLP76Ltrb6cAdo+sB9GBJUOXdZ4ZzoF0rKevq
-jsZrW68vFwDxneX5dt+aezgdd3j2DG/v1Cx+Ad553aBJAsZfZEpraWhe2/2dVqlW
-zkVFBzJ+sQQCowPxS6bmGSnmP3edu2+w2Uzl5k34FJgGccoamiV1MGNZsdorm55t
-nN3DaknUbbzNqSa3Dza9t9hlfSB4TarHdggOk9839QjVL4ekwxhcxqC7rYSWOgus
-LINX9JSonn5FwsKdDjb9
-=fwY8
+iQIcBAEBAgAGBQJSJcZAAAoJEBx+YmzsjxAgfx0P/RVmmpDk2eiogvM7N6D4h9wm
+B3JJyZkTYpoMNx/Fwqu3npXAIQ1pwgkmq7il3cqDpHaa3X9b1/yXGgEWto1iKtjs
+lZRmOpDDsxnclxDHfldpJMVrOtU7O8Dg68pINqi9pn0eF91FzvR5eYmtDQSIc1X7
+O5oNjRU1o+FMbrI31sObUJYDV9X82srPx9QW5HAEq8kDzlvKNOplfojTgGbkhYxc
+AbwEbqkQIOPNg8JpwwYxtDSZV5pEotWoXWrugF0a0hjQgE5PVh1koqmFzcBA/G7Z
+qggKBiCJN4MvcJFwgcd+eSna80kBpr9DRd73eDyiR3cCIjhsZhHWLlgrDixUbIU5
+tdD4WeyeFvcgoNFxlIgljRrwX+eY1HkYVEIaYI0CJ1T8eHHFxZBreYspwSu4op5h
+yi3N/ZZ7S049n4LpV5Xlt0JtpfemBQP42nO11fRHwarOjbQkHTuLLhfvYWpbEbm1
+8UbShm+Tl7EvDrAIa/GnNy0jNJYJvOaS2LugnIXBoj8f/MBNI3IZiMKXBexGlmcO
+cM8+gRDp4vBHSv/7SAZtwZnDUEa4xP4HcDQa45evZuQ3AiJQJ2zNEcSa4NFixqQL
+pgJUYJVnBFZZKZy8WLkzF3BQGW36wKqlp/icF9Ln6r/nscIl8bramUik3gv9jGLN
+Q2Xjklq6kX9rIKzKUcU5
+=tUKu
 -----END PGP SIGNATURE-----
 
---gHypzss5dW8YUwgb--
+--bAmEntskrkuBymla--
