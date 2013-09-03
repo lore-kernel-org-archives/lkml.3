@@ -1,99 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab3ICRhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 13:37:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47038 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755173Ab3ICRhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 13:37:40 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH] drm/i915: i915.disable_pch_pwm overrides PCH_PWM_ENABLE quirk
-Date: Tue,  3 Sep 2013 10:37:28 -0700
-Message-Id: <1378229848-29113-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1759495Ab3ICRjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 13:39:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37358 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756920Ab3ICRjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 13:39:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1015,1367996400"; 
+   d="scan'208";a="372854280"
+Date: Tue, 3 Sep 2013 10:39:08 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: linux-usb@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "open list:USB ATTACHED SCSI" <linux-scsi@vger.kernel.org>,
+        "open list:USB MASS STORAGE..." 
+	<usb-storage@lists.one-eyed-alien.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] uas: add dead request list
+Message-ID: <20130903173908.GA4965@xanatos>
+References: <1378121129-32594-1-git-send-email-kraxel@redhat.com>
+ <1378121129-32594-5-git-send-email-kraxel@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378121129-32594-5-git-send-email-kraxel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+Don't you need to send an ABORT TASK message to the device to cancel the
+outstanding request for that stream ID?  I don't see that in this code.
+I see lots of URB cancellation code, but nothing to remove the request
+from the device-side queue.
 
-Some BIOS configurations of Dell XPS13 are adversely affected by e85843b
-("drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight") so provide a
-boot param to inhibit the quirk, or force it on.
+Does this code currently handle the case where a device refuses to
+respond to a SCSI request, and the upper layers attempt to cancel that
+request?  Or does it simply ensure that SCSI bus reset works?
 
-i915.disable_pch_pwm can be set to
- -1: auto (default; allows the disabling of pch_pwm by dmi quirk table match)
-  0: inhibits the disabling of pch_pwm (overrides dmi quirk table match)
-  1: forces the disabling of pch_pwm
+I'm not comfortable with removing CONFIG_BROKEN until the upper layers
+can cancel one outstanding request.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/i915_drv.c      |  4 ++++
- drivers/gpu/drm/i915/i915_drv.h      |  1 +
- drivers/gpu/drm/i915/intel_display.c | 11 ++++++++---
- 3 files changed, 13 insertions(+), 3 deletions(-)
+Plus, as Joe mentioned, this code is full of BUG_ON(), which is not
+friendly to users, and doesn't increase my confidence that the driver is
+ready to have CONFIG_BROKEN removed.
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 72e2be7..fee05df 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -154,6 +154,10 @@ module_param_named(prefault_disable, i915_prefault_disable, bool, 0600);
- MODULE_PARM_DESC(prefault_disable,
- 		"Disable page prefaulting for pread/pwrite/reloc (default:false). For developers only.");
- 
-+int i915_disable_pch_pwm __read_mostly = -1;
-+module_param_named(disable_pch_pwm, i915_disable_pch_pwm, int, 0600);
-+MODULE_PARM_DESC(disable_pch_pwm, "disable PCH_PWM (default: -1 (auto))");
-+
- static struct drm_driver driver;
- extern int intel_agp_enabled;
- 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 769c138..e6f2a34 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1726,6 +1726,7 @@ extern bool i915_fastboot __read_mostly;
- extern int i915_enable_pc8 __read_mostly;
- extern int i915_pc8_timeout __read_mostly;
- extern bool i915_prefault_disable __read_mostly;
-+extern int i915_disable_pch_pwm __read_mostly;
- 
- extern int i915_suspend(struct drm_device *dev, pm_message_t state);
- extern int i915_resume(struct drm_device *dev);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 30e5946..86fa722 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9948,9 +9948,8 @@ static void quirk_invert_brightness(struct drm_device *dev)
-  */
- static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
- {
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
--	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
-+	if (i915_disable_pch_pwm < 0)
-+		i915_disable_pch_pwm = 1;
- }
- 
- struct intel_quirk {
-@@ -10048,6 +10047,12 @@ static void intel_init_quirks(struct drm_device *dev)
- 		if (dmi_check_system(*intel_dmi_quirks[i].dmi_id_list) != 0)
- 			intel_dmi_quirks[i].hook(dev);
- 	}
-+
-+	if (i915_disable_pch_pwm == 1) {
-+		struct drm_i915_private *dev_priv = dev->dev_private;
-+		dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
-+		DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
-+	}
- }
- 
- /* Disable the VGA plane that we never use */
--- 
-1.8.1.2
+Sarah Sharp
 
+On Mon, Sep 02, 2013 at 01:25:28PM +0200, Gerd Hoffmann wrote:
+> This patch adds a new list where all requests which are canceled are
+> added to, so we don't loose them.  Then, after killing all inflight
+> urbs on bus reset (and disconnect) we'll walk over the list and clean
+> them up.
+> 
+> Without this we can end up with aborted requests lingering around in
+> case of status pipe transfer errors.
+> 
+> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+> ---
+>  drivers/usb/storage/uas.c | 69 +++++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 61 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+> index a63972a..9dfb8f9 100644
+> --- a/drivers/usb/storage/uas.c
+> +++ b/drivers/usb/storage/uas.c
+> @@ -78,6 +78,7 @@ struct uas_cmd_info {
+>  	struct urb *data_in_urb;
+>  	struct urb *data_out_urb;
+>  	struct list_head work;
+> +	struct list_head dead;
+>  };
+>  
+>  /* I hate forward declarations, but I actually have a loop */
+> @@ -87,10 +88,12 @@ static void uas_do_work(struct work_struct *work);
+>  static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller);
+>  static void uas_configure_endpoints(struct uas_dev_info *devinfo);
+>  static void uas_free_streams(struct uas_dev_info *devinfo);
+> +static void uas_log_cmd_state(struct scsi_cmnd *cmnd, const char *caller);
+>  
+>  static DECLARE_WORK(uas_work, uas_do_work);
+>  static DEFINE_SPINLOCK(uas_lists_lock);
+>  static LIST_HEAD(uas_work_list);
+> +static LIST_HEAD(uas_dead_list);
+>  
+>  static void uas_unlink_data_urbs(struct uas_dev_info *devinfo,
+>  				 struct uas_cmd_info *cmdinfo)
+> @@ -167,15 +170,13 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
+>  		struct uas_dev_info *di = (void *)cmnd->device->hostdata;
+>  
+>  		if (di == devinfo) {
+> +			uas_log_cmd_state(cmnd, __func__);
+> +			BUG_ON(cmdinfo->state & COMMAND_ABORTED);
+>  			cmdinfo->state |= COMMAND_ABORTED;
+> +			spin_lock_irq(&uas_lists_lock);
+> +			list_add_tail(&cmdinfo->dead, &uas_dead_list);
+> +			spin_unlock_irq(&uas_lists_lock);
+>  			cmdinfo->state &= ~IS_IN_WORK_LIST;
+> -			if (devinfo->resetting) {
+> -				/* uas_stat_cmplt() will not do that
+> -				 * when a device reset is in
+> -				 * progress */
+> -				cmdinfo->state &= ~COMMAND_INFLIGHT;
+> -			}
+> -			uas_try_complete(cmnd, __func__);
+>  		} else {
+>  			/* not our uas device, relink into list */
+>  			list_del(&cmdinfo->work);
+> @@ -187,6 +188,43 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
+>  	spin_unlock_irqrestore(&devinfo->lock, flags);
+>  }
+>  
+> +static void uas_zap_dead(struct uas_dev_info *devinfo)
+> +{
+> +	struct uas_cmd_info *cmdinfo;
+> +	struct uas_cmd_info *temp;
+> +	struct list_head list;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irq(&uas_lists_lock);
+> +	list_replace_init(&uas_dead_list, &list);
+> +	spin_unlock_irq(&uas_lists_lock);
+> +
+> +	spin_lock_irqsave(&devinfo->lock, flags);
+> +	list_for_each_entry_safe(cmdinfo, temp, &list, dead) {
+> +		struct scsi_pointer *scp = (void *)cmdinfo;
+> +		struct scsi_cmnd *cmnd = container_of(scp,
+> +							struct scsi_cmnd, SCp);
+> +		struct uas_dev_info *di = (void *)cmnd->device->hostdata;
+> +
+> +		if (di == devinfo) {
+> +			uas_log_cmd_state(cmnd, __func__);
+> +			BUG_ON(!(cmdinfo->state & COMMAND_ABORTED));
+> +			/* all urbs are killed, clear inflight bits */
+> +			cmdinfo->state &= ~(COMMAND_INFLIGHT |
+> +					    DATA_IN_URB_INFLIGHT |
+> +					    DATA_OUT_URB_INFLIGHT);
+> +			uas_try_complete(cmnd, __func__);
+> +		} else {
+> +			/* not our uas device, relink into list */
+> +			list_del(&cmdinfo->dead);
+> +			spin_lock_irq(&uas_lists_lock);
+> +			list_add_tail(&cmdinfo->dead, &uas_dead_list);
+> +			spin_unlock_irq(&uas_lists_lock);
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&devinfo->lock, flags);
+> +}
+> +
+>  static void uas_sense(struct urb *urb, struct scsi_cmnd *cmnd)
+>  {
+>  	struct sense_iu *sense_iu = urb->transfer_buffer;
+> @@ -274,6 +312,9 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+>  	if (cmdinfo->state & COMMAND_ABORTED) {
+>  		scmd_printk(KERN_INFO, cmnd, "abort completed\n");
+>  		cmnd->result = DID_ABORT << 16;
+> +		spin_lock_irq(&uas_lists_lock);
+> +		list_del(&cmdinfo->dead);
+> +		spin_unlock_irq(&uas_lists_lock);
+>  	}
+>  	cmnd->scsi_done(cmnd);
+>  	return 0;
+> @@ -307,7 +348,12 @@ static void uas_stat_cmplt(struct urb *urb)
+>  	u16 tag;
+>  
+>  	if (urb->status) {
+> -		dev_err(&urb->dev->dev, "URB BAD STATUS %d\n", urb->status);
+> +		if (urb->status == -ENOENT) {
+> +			dev_err(&urb->dev->dev, "stat urb: killed (stream %d\n",
+> +				urb->stream_id);
+> +		} else {
+> +			dev_err(&urb->dev->dev, "stat urb: status %d\n", urb->status);
+> +		}
+>  		usb_free_urb(urb);
+>  		return;
+>  	}
+> @@ -762,7 +808,11 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
+>  
+>  	uas_log_cmd_state(cmnd, __func__);
+>  	spin_lock_irqsave(&devinfo->lock, flags);
+> +	BUG_ON(cmdinfo->state & COMMAND_ABORTED);
+>  	cmdinfo->state |= COMMAND_ABORTED;
+> +	spin_lock_irq(&uas_lists_lock);
+> +	list_add_tail(&cmdinfo->dead, &uas_dead_list);
+> +	spin_unlock_irq(&uas_lists_lock);
+>  	if (cmdinfo->state & IS_IN_WORK_LIST) {
+>  		spin_lock(&uas_lists_lock);
+>  		list_del(&cmdinfo->work);
+> @@ -797,11 +847,13 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
+>  	struct usb_device *udev = devinfo->udev;
+>  	int err;
+>  
+> +	shost_printk(KERN_INFO, sdev->host, "%s start\n", __func__);
+>  	devinfo->resetting = 1;
+>  	uas_abort_work(devinfo);
+>  	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
+>  	usb_kill_anchored_urbs(&devinfo->sense_urbs);
+>  	usb_kill_anchored_urbs(&devinfo->data_urbs);
+> +	uas_zap_dead(devinfo);
+>  	uas_free_streams(devinfo);
+>  	err = usb_reset_device(udev);
+>  	if (!err) {
+> @@ -1055,6 +1107,7 @@ static void uas_disconnect(struct usb_interface *intf)
+>  	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
+>  	usb_kill_anchored_urbs(&devinfo->sense_urbs);
+>  	usb_kill_anchored_urbs(&devinfo->data_urbs);
+> +	uas_zap_dead(devinfo);
+>  	scsi_remove_host(shost);
+>  	uas_free_streams(devinfo);
+>  	kfree(devinfo);
+> -- 
+> 1.8.3.1
+> 
