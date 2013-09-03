@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab3ICObz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:31:55 -0400
-Received: from smtpretry2.9services.com ([84.96.93.153]:54229 "EHLO
-	smtpretry2.9services.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab3ICObx (ORCPT
+	id S1755268Ab3ICOeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:34:09 -0400
+Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:53259 "EHLO
+	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753275Ab3ICOeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:31:53 -0400
-X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 10:31:52 EDT
-X-IMPR2: ??
-X-VRSPAM-SCORE: -100.00
-Message-ID: <5225F0A9.5040100@efixo.com>
-Date: Tue, 03 Sep 2013 16:22:33 +0200
-From: Emmanuel Deloget <emmanuel.deloget@efixo.com>
-Reply-To: emmanuel.deloget@efixo.com
-Organization: Efixo
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 3 Sep 2013 10:34:07 -0400
+Date: Tue, 3 Sep 2013 14:34:04 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [gcv v3 08/35] tracing: Replace __get_cpu_var uses
+In-Reply-To: <20130829172622.3b458a80@gandalf.local.home>
+Message-ID: <00000140e43e9da0-5a024162-7eb8-4642-a801-30b8a8153138-000000@email.amazonses.com>
+References: <20130828193457.140443630@linux.com> <00000140c6781ceb-6c3e93f5-45d6-4b04-8034-e7cd4b5a77b5-000000@email.amazonses.com> <20130829172622.3b458a80@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "[ML] linux-kernel" <linux-kernel@vger.kernel.org>
-CC: Emmanuel Deloget <emmanuel.deloget@efixo.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: /proc/$PID/sched does not take PID namespace into account
-Content-Type: multipart/mixed;
- boundary="------------040602030406050808030401"
+Content-Type: MULTIPART/MIXED; BOUNDARY="376175846-1778199093-1378218876=:17065"
+X-SES-Outgoing: 2013.09.03-54.240.10.51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040602030406050808030401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hello,
+--376175846-1778199093-1378218876=:17065
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-(please CC me when answering this mail ; and sorry for my borken
-English).
+On Thu, 29 Aug 2013, Steven Rostedt wrote:
 
-I noticed that when a process is executed in a PID namespace it can
-still find his real PID by parsing /proc/$PID_IN_NS/sched.
+> On Wed, 28 Aug 2013 19:48:16 +0000
+>
+> > Index: linux/kernel/trace/trace.c
+> > ===================================================================
+> > --- linux.orig/kernel/trace/trace.c	2013-08-26 14:25:53.000000000 -0500
+> > +++ linux/kernel/trace/trace.c	2013-08-26 14:26:29.464993617 -0500
+> > @@ -1676,7 +1676,7 @@ static void __ftrace_trace_stack(struct
+> >  	 */
+> >  	barrier();
+> >  	if (use_stack == 1) {
+> > -		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
+> > +		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
+> >  		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
+> >
+> >  		if (regs)
+>
+>
+> This patch fails to build:
+>
+> kernel/trace/trace.c: In function ‘__ftrace_trace_stack’:
+> kernel/trace/trace.c:1679:20: error: cast specifies array type
 
-(in this example I created a new PID namespace and ran /bin/bash at
-PID 1)
+That is because you did not apply the first patch of this series that
+fixes a bug in the macros.
 
-  # uname -a
-  Linux my-thinkpad 3.9-1-amd64 #1 SMP Debian 3.9.6-1 x86_64 GNU/Linux
-  #
-  # pidof bash
-  1
-  # head -n 1 /proc/1/sched
-  bash (14957, #threads: 1)
-  # cat /proc/1/stat
-  1 (bash) S 0 1 0 34823 220 4202752 11359 (...)
-
-In the root PID namespace
-
-  # pidof bash
-  (...) 14957 (...)
-  # head -n 1 /proc/14957/sched
-  bash (14957, #threads: 1)
-  # cat /proc/14957/stat
-  14957 (bash) S 14956 14957 23465 34823 14957 4202752 11386 (...)
-
-The principle of least surprise tells me that if my PID is n in a
-particular PID namespace then every stat or debug info should tell
-me that my PID is n (i.e. I should not be able to get the real PID
-of my program). This is a consistency issue: if I get different
-information from different sources I may not be able to tell which
-one is the right one.
-
-The issue (if this is really an issue) lies in kernel/sched/debug.c,
-function proc_sched_show_task(). The code says [1]:
-
-    SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
-                        get_nr_threads(p));
-
-I understand that you're not supposed to use the content of a /proc
-file that has been generated by a kernel source file named "debug.c"
-in a production environment yet several distributions out there seems
-to enable this by default (at least the Debian distribution I'm using
-does it).
-
-I see a few options:
-
-* either it's a bug and it should be corrected (I'm not sure how to
-  do it; the printed PID should reflect the current PID namespace
-  and I don't how how to get this information).
-
-* or it has been decided on purpose (i.e. it's not a bug);
-  /proc/$PID/sched then offers a reliable way to get the real PID
-  of any process, including processes that run in a child PID
-  namespace.
-
-* or it's a bug but it cannot be corrected (kernel ABI ; it has been
-  here for a looooong time - possibly since the PID namespace
-  integration).
-
-(There might be other options here).
-
-In the two last cases there is no need for a patch but I'd be happy
-if someone explains the reasoning.
-
-Best regards,
-
--- Emmanuel Deloget
-
-[1]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/kernel/sched/debug.c?id=refs/tags/v3.11#n495
-[2]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/kernel/sched/debug.c?id=refs/tags/v3.11#n118
-
-
-
---------------040602030406050808030401
-Content-Type: text/x-vcard; charset=utf-8;
- name="emmanuel_deloget.vcf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="emmanuel_deloget.vcf"
-
-YmVnaW46dmNhcmQNCmZuOkVtbWFudWVsIERlbG9nZXQNCm46RGVsb2dldDtFbW1hbnVlbA0K
-b3JnOmVmaXhvIC8gU0ZSO0RBVEENCmFkcjtxdW90ZWQtcHJpbnRhYmxlOjs7NjcgbW9udD1D
-Mz1BOWUgZGUgU3QgTWVuZXQ7TUFSU0VJTExFOzsxMzAxMTtGUkFOQ0UNCmVtYWlsO2ludGVy
-bmV0OmVtbWFudWVsLmRlbG9nZXRAZWZpeG8uY29tDQp0aXRsZTpUZWFtIExlYWRlcg0KdGVs
-O3dvcms6MDQgODggMTUgNTAgNzcNCnVybDp3d3cuc2ZyLmZyDQp2ZXJzaW9uOjIuMQ0KZW5k
-OnZjYXJkDQoNCg==
---------------040602030406050808030401--
+--376175846-1778199093-1378218876=:17065--
