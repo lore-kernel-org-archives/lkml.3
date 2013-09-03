@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab3ICBHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 21:07:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6010 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756379Ab3ICBHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 21:07:33 -0400
-X-IronPort-AV: E=Sophos;i="4.89,1009,1367942400"; 
-   d="scan'208";a="8384053"
-Message-ID: <52253607.9010907@cn.fujitsu.com>
-Date: Tue, 03 Sep 2013 09:06:15 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756703Ab3ICBVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 21:21:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9603 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522Ab3ICBVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 21:21:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1010,1367996400"; 
+   d="scan'208";a="390134820"
+Date: Tue, 3 Sep 2013 09:21:00 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Shilong Wang <wangshilong1991@gmail.com>, Joe Perches <joe@perches.com>,
+        David Howells <dhowells@redhat.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+Message-ID: <20130903012100.GB6855@localhost>
+References: <9976.1378132260@warthog.procyon.org.uk>
+ <1378138205.1953.66.camel@joe-AO722>
+ <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf>
+ <20130902153945.6d7e510c@samsung.com>
+ <1378148367.1953.98.camel@joe-AO722>
+ <13834.1378155023@warthog.procyon.org.uk>
+ <1378156296.1953.117.camel@joe-AO722>
+ <CAP9B-Q=xO8Rw_wD-tER2U1g4fKfiy01eT7rMAV6V_gCCNpy09Q@mail.gmail.com>
+ <20130903003602.GB1614@leaf>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH RESEND 2/3] x86, mm: Update min_pfn_mapped in add_pfn_range_mapped().
-References: <1378117829-9095-1-git-send-email-tangchen@cn.fujitsu.com> <1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com> <CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com>
-In-Reply-To: <CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/03 09:05:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/03 09:05:23,
-	Serialize complete at 2013/09/03 09:05:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903003602.GB1614@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
+On Mon, Sep 02, 2013 at 05:36:03PM -0700, Josh Triplett wrote:
+> On Tue, Sep 03, 2013 at 08:26:21AM +0800, Shilong Wang wrote:
+> > 2013/9/3 Joe Perches <joe@perches.com>:
+> > > Wang Shilong <wangshilong1991@gmail.com>
+> > > sent me an automated checkpatch email I
+> > > thought was not useful.
+> > 
+> > I am sorry if i give you any trouble, i have disabled it(in fact, it
+> > only has run for a day!)
+> 
+> I would suggest that you leave it running, but rather than sending mails
+> directly, have it prep the mails for you to send after manual review.
+> Do some careful scrutiny for false positives and cases where the change
+> would not improve the code, and use checkpatch's options to turn off
+> the more contentious warnings (like the 80-column warning).  Over time,
+> you'll develop a set of options that produce warnings people mostly
+> *want* to get notified about.
+ 
+Good suggestions! That's exactly what I'm trying to do. And Joe kindly
+showed me the initial list of checkpatch error types suitable for auto
+notification.
 
-On 09/03/2013 02:41 AM, Yinghai Lu wrote:
-......
->
-> Nak, you can not move that.
->
-> min_pfn_mapped should not be updated before init_range_memory_mapping
-> is returned. as it need to refer old min_pfn_mapped.
-> and init_range_memory_mapping still init mapping from low to high locally.
-> min_pfn_mapped can not be updated too early.
+Coverage is good: the checkpatch robot iterates over every new commit
+in the 300+ git trees I collected over time. Some maintainer trees are
+skipped because they should already run the check.
 
-The current code is like this:
+Here is the list of reports sent in the last two weeks. They are private
+emails directly sent to the commit author and committer.  So far I've not
+received complaints on these unsolicited checkpatch reports.
 
-init_mem_mapping()
-{
-	while (from high to low) {
-		init_range_memory_mapping()
-		{
-			/* Here is from low to high */
-			for (from low to high) {
-				init_memory_mapping()
-				{
-					for () {
-						/* Need to refer min_pfn_mapped here */
-						kernel_physical_mapping_init();
-					}
-					/* So if updating min_pfn_mapped here, it is too low */
-					add_pfn_range_mapped();
-				}
-			}
-		}		
-	}
-}
+ Aug 23  [netdev-next:master 200/301] WARNING: usb_free_urb(NULL) is safe this check is probably n
+ Aug 23  [netdev-next:master 202/301] WARNING: usb_free_urb(NULL) is safe this check is probably n
+ Aug 23  [linuxtv-media:master 321/499] ERROR: Unrecognized email address: 'Kyungmin Park <kyungmi
+ Aug 23  [linuxtv-media:master 322/499] ERROR: Unrecognized email address: 'Kyungmin Park <kyungmi
+ Aug 24  [xlnx:master-next 32/53] WARNING: unnecessary cast may hide bugs, see http://c-faq.com/ma
+ Aug 28  [mmotm:master 473/483] WARNING: __func__ should be used instead of gcc specific __FUNCTIO
+ Aug 28  [kvm:queue 13/14] ERROR: Unrecognized email address: 'Gleb Natapov @gleb@redhat.com>'
+ Aug 29  [dhowells-fs:keys-devel 9/12] WARNING: labels should not be indented
+ Aug 29  [jolsa-perf:perf/plugins2 14/20] WARNING: storage class should be at the beginning of the
+ Aug 30  [nfs:testing 47/61] ERROR: Unrecognized email address: 'Trond Myklebust <Trond.Myklebust@
+ Aug 31  [josef-btrfs:master 74/135] WARNING: kfree(NULL) is safe this check is probably not requi
+ Aug 31  [jolsa-perf:perf/toggle6 6/8] WARNING: kfree(NULL) is safe this check is probably not req
+ Sep 01  [jolsa-perf:perf/core_plugins 14/24] WARNING: storage class should be at the beginning of
 
-How about change the "for (from low to high)" in 
-init_range_memory_mapping() to
-"for_rev(from high to low)" ?
-Then we can update min_pfn_mapped in add_pfn_range_mapped().
-
-And also, the outer loop is from high to low, we can change the inner 
-loop to be from high
-to low too.
-
-I think updating min_pfn_mapped in init_mem_mapping() is less readable. 
-And min_pfn_mapped
-and max_pfn_mapped should be updated together.
-
-Thanks.
+Thanks,
+Fengguang
 
