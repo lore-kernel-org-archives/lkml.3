@@ -1,217 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab3ICHhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:37:17 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50531 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab3ICHhM (ORCPT
+	id S932651Ab3ICHiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:38:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:18811 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab3ICHgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:37:12 -0400
-Subject: [PATCH 2/2] Support to perf to probe on SDT markers:
-To: linux-kernel@vger.kernel.org
-From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
-Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com
-Date: Tue, 03 Sep 2013 13:07:03 +0530
-Message-ID: <20130903073703.4793.32779.stgit@hemant-fedora>
-In-Reply-To: <20130903072944.4793.93584.stgit@hemant-fedora>
-References: <20130903072944.4793.93584.stgit@hemant-fedora>
-User-Agent: StGit/0.16
+	Tue, 3 Sep 2013 03:36:03 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH 4/7] x86/pci: use pcie_cap to simplify code
+Date: Tue, 3 Sep 2013 15:35:12 +0800
+Message-ID: <1378193715-25328-4-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090307-1396-0000-0000-0000037F3A5D
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables perf to probe on the marker name specified on the command line.
----
- tools/perf/builtin-probe.c    |    7 +++
- tools/perf/util/probe-event.c |   11 ++++
- tools/perf/util/symbol-elf.c  |  112 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h      |    5 ++
- 4 files changed, 135 insertions(+)
+PCI core saves PCIe Cap offset in pcie_cap,
+use pcie_cap to simplify code.
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 3d8dcdf..8382853 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -378,6 +378,13 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 				       " (%d)\n", ret);
- 			return ret;
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/x86/pci/fixup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index f5809fa..ee8330d 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -288,7 +288,7 @@ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
+ 		 */
+ 		list_for_each_entry(dev, &pbus->devices, bus_list) {
+ 			/* There are 0 to 8 devices attached to this bus */
+-			cap_base = pci_find_capability(dev, PCI_CAP_ID_EXP);
++			cap_base = dev->pcie_cap;
+ 			quirk_aspm_offset[GET_INDEX(pdev->device, dev->devfn)] = cap_base + 0x10;
  		}
-+		params.uprobes = true;
-+		ret = probe_marker(params.target,
-+				   params.events[0].point.function);
-+		if (ret < 0)
-+			pr_err("Could not probe at %s marker\n",
-+			       params.events[0].point.function);
-+		return ret;
- 	}
- 
- 	if (params.list_events) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 7f846f9..014d642 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2378,3 +2378,14 @@ int show_available_markers(const char *target)
- 	setup_pager();
- 	return list_markers(target);
- }
-+
-+int probe_marker(const char *name, char *mark)
-+{
-+	int fd;
-+
-+	fd = open_uprobe_events(true);
-+	if (fd == -1)
-+		return fd;
-+	else
-+		return probe__marker(name, mark, fd);
-+}
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index f3630f2..60938a5 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -1040,6 +1040,118 @@ out_ret:
- 	return ret;
- }
- 
-+static void extract_first_name(const char *target, char *fname)
-+{
-+	int i, len;
-+	char *file;
-+
-+	file = strrchr(target, DIR_SEP);
-+	file++;
-+	len = strlen(file);
-+	for (i = 0; i <= len; i++) {
-+		if (!isalpha(file[i]))
-+			break;
-+		fname[i] = file[i];
-+	}
-+	fname[i] = '\0';
-+}
-+
-+static int probe_at_note(struct sdt_note *r_note, const char *target, bool exec,
-+			 int fd)
-+{
-+	char buf[MAX_CMDLEN];
-+	int len, err = -1;
-+	Elf64_Addr offset;
-+	char *fname = NULL;
-+
-+	if (exec)
-+		offset = r_note->addr.a64[0] - TEXT_SCN;
-+	else
-+		offset = r_note->addr.a64[0];
-+
-+	fname = (char *)zalloc(sizeof(char) * strlen(target));
-+	if (fname == NULL) {
-+		pr_err("Error in allocating memory to fname\n");
-+		goto out_ret;
-+	}
-+
-+	extract_first_name(target, fname);
-+	len = snprintf(buf, MAX_CMDLEN, "%c:%s%s/%s %s:0x%x", 'p', "probe_",
-+		       fname, r_note->name, target, (unsigned)offset);
-+
-+	len = write(fd, buf, MAX_CMDLEN);
-+	if (len < 0) {
-+		pr_err("Couldn't write into uprobe_events!\n");
-+		goto out_close;
-+	} else {
-+		printf("Added new event :\n");
-+		printf("event = %s \t (on 0x%x)\n\n", r_note->name,
-+		       (unsigned)offset);
-+		printf("You can now use it on all perf tools such as :\n\n");
-+		printf("\t perf record -e %s%s:%s -aR sleep 1\n\n", "probe_", fname, r_note->name);
-+		err = 0;
-+	}
-+
-+out_close:
-+	close(fd);
-+	free(fname);
-+out_ret:
-+	return err;
-+}
-+
-+static int search_and_probe_at_note(char *key, struct sdt_note **start,
-+				    const char *target, bool exec, int fd)
-+{
-+	int ret = -1;
-+	struct sdt_note *req;
-+
-+	for (req = (*start); req != NULL; req = req->next) {
-+		if (!strcmp(key, req->name))
-+			break;
-+	}
-+	if (!req) {
-+		pr_err("Could not find marker %s\n", key);
-+		return ret;
-+	}
-+
-+	ret = probe_at_note(req, target, exec, fd);
-+	return ret;
-+}
-+
-+int probe__marker(const char *name, char *mark, int evfd)
-+{
-+	int ret = -1, fd;
-+	Elf *elf;
-+	bool exec = false;
-+	struct sdt_note *head = NULL;
-+
-+	fd = open(name, O_RDONLY);
-+	if (fd < 0) {
-+		pr_err("Failed to open the file\n");
-+		goto out_ret;
-+	}
-+
-+	symbol__elf_init();
-+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-+	if (elf == NULL) {
-+		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-+		goto out_close;
-+	}
-+
-+	head = get_elf_markers(elf, &exec, true);
-+	if (head) {
-+		ret = search_and_probe_at_note(mark, &head, name, exec, evfd);
-+		cleanup_notes(head);
-+	}
-+
-+	elf_end(elf);
-+
-+out_close:
-+	close(fd);
-+out_ret:
-+	return ret;
-+}
-+
- void cleanup_notes(struct sdt_note *start)
- {
- 	struct sdt_note *tmp;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index f2d17b7..95289fd 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -262,8 +262,13 @@ void __map_groups__fixup_end(struct map_groups *mg, enum map_type type);
- int show_available_markers(const char *module);
- int list_markers(const char *name);
- void cleanup_notes(struct sdt_note *start);
-+int probe_marker(const char *name, char *mark);
-+int probe__marker(const char *name, char *mark, int fd);
- 
- #define SDT_NOTE_TYPE 3
- #define NOTE_SCN ".note.stapsdt"
-+#define TEXT_SCN 0x400000
-+#define DIR_SEP '/'
-+#define MAX_CMDLEN 256
- 
- #endif /* __PERF_SYMBOL */
+ 		pbus->ops = &quirk_pcie_aspm_ops;
+-- 
+1.7.1
+
 
