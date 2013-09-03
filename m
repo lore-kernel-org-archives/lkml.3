@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab3ICHQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:16:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36034 "EHLO
+	id S1759611Ab3ICHVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:21:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36285 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759614Ab3ICHQM (ORCPT
+	with ESMTP id S1754341Ab3ICHVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:16:12 -0400
-Date: Tue, 3 Sep 2013 00:15:59 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-0b8c25d949e010274c6697c570b772797ebc7c27@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1375026512-45826-1-git-send-email-dsahern@gmail.com>
-References: <1375026512-45826-1-git-send-email-dsahern@gmail.com>
+	Tue, 3 Sep 2013 03:21:16 -0400
+Date: Tue, 3 Sep 2013 00:15:16 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-fa0097ee690693006ab1aea6c01ad3c851b65c77@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, peterz@infradead.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
+        acme@redhat.com, a.p.zijlstra@chello.nl, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+In-Reply-To: <1377975053-3811-2-git-send-email-adrian.hunter@intel.com>
+References: <1377975053-3811-2-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Fix symbol offset computation for some dsos
-Git-Commit-ID: 0b8c25d949e010274c6697c570b772797ebc7c27
+Subject: [tip:perf/core] perf: Add a dummy software event to keep tracking
+Git-Commit-ID: fa0097ee690693006ab1aea6c01ad3c851b65c77
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,83 +35,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 03 Sep 2013 00:16:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 03 Sep 2013 00:15:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b8c25d949e010274c6697c570b772797ebc7c27
-Gitweb:     http://git.kernel.org/tip/0b8c25d949e010274c6697c570b772797ebc7c27
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 28 Jul 2013 09:48:32 -0600
+Commit-ID:  fa0097ee690693006ab1aea6c01ad3c851b65c77
+Gitweb:     http://git.kernel.org/tip/fa0097ee690693006ab1aea6c01ad3c851b65c77
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Sat, 31 Aug 2013 21:50:51 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 2 Sep 2013 14:58:21 -0300
+CommitDate: Mon, 2 Sep 2013 14:58:19 -0300
 
-perf tools: Fix symbol offset computation for some dsos
+perf: Add a dummy software event to keep tracking
 
-For some dsos (e.g., libc, libpthread, kernel modules) the symbol offset
-is huge. e.g.,
+When an event is disabled the "tracking" events selected by the 'mmap',
+'comm' and 'task' bits of struct perf_event_attr, are also disabled.
+However, the information those events provide is necessary to resolve
+symbols for when the main event is re-enabled.
 
-qemu-kvm 17238/17242 [007] 762235.640311:
-    ffffffff816288a1 __schedule+0x451 ([kernel.kallsyms])
-    ffffffff81629609 schedule+0x29 ([kernel.kallsyms])
-    ffffffffa00a6ded kvm_vcpu_block+0xffffffffa00a106d (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffffa00bae6b kvm_arch_vcpu_ioctl_run+0xffffffffa00a118b (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffffa00a4d7a kvm_vcpu_ioctl+0xffffffffa00a141a (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffff811a7bdb do_vfs_ioctl+0x8b ([kernel.kallsyms])
-    ffffffff811a80c1 sys_ioctl+0x91 ([kernel.kallsyms])
-    ffffffff81633182 system_call+0x72 ([kernel.kallsyms])
-        7f882a97af27 __GI___ioctl+0x7f882a891007 (/lib64/libc-2.14.90.so)
-           100000002 [unknown] ([unknown])
+The "tracking" events can be kept enabled by putting them on another
+event, but that requires an event that otherwise does nothing.  A new
+software event PERF_COUNT_SW_DUMMY is added for that purpose.
 
-It seems to be maps with a non-0 start. Taking that into account the
-offsets are correct:
-
-qemu-kvm 17238/17242 [007] 762235.640311:
-    ffffffff816288a1 __schedule+0x451 ([kernel.kallsyms])
-    ffffffff81629609 schedule+0x29 ([kernel.kallsyms])
-    ffffffffa00a6ded kvm_vcpu_block+0x6d (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffffa00bae6b kvm_arch_vcpu_ioctl_run+0x18b (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffffa00a4d7a kvm_vcpu_ioctl+0x41a (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
-    ffffffff811a7bdb do_vfs_ioctl+0x8b ([kernel.kallsyms])
-    ffffffff811a80c1 sys_ioctl+0x91 ([kernel.kallsyms])
-    ffffffff81633182 system_call+0x72 ([kernel.kallsyms])
-        7f882a97af27 __GI___ioctl+0x7 (/lib64/libc-2.14.90.so)
-           100000002 [unknown] ([unknown])
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1375026512-45826-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1377975053-3811-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 1 +
- tools/perf/util/symbol.c  | 5 ++++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ include/uapi/linux/perf_event.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 07642a7..1fc0c62 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1513,6 +1513,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 				printf(" ");
- 				if (print_symoffset) {
- 					al.addr = node->ip;
-+					al.map  = node->map;
- 					symbol__fprintf_symname_offs(node->sym, &al, stdout);
- 				} else
- 					symbol__fprintf_symname(node->sym, stdout);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 77f3b95..7eb0362 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -259,7 +259,10 @@ size_t symbol__fprintf_symname_offs(const struct symbol *sym,
- 	if (sym && sym->name) {
- 		length = fprintf(fp, "%s", sym->name);
- 		if (al) {
--			offset = al->addr - sym->start;
-+			if (al->addr < sym->end)
-+				offset = al->addr - sym->start;
-+			else
-+				offset = al->addr - al->map->start - sym->start;
- 			length += fprintf(fp, "+0x%lx", offset);
- 		}
- 		return length;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 408b8c7..ca1d90b 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -109,6 +109,7 @@ enum perf_sw_ids {
+ 	PERF_COUNT_SW_PAGE_FAULTS_MAJ		= 6,
+ 	PERF_COUNT_SW_ALIGNMENT_FAULTS		= 7,
+ 	PERF_COUNT_SW_EMULATION_FAULTS		= 8,
++	PERF_COUNT_SW_DUMMY			= 9,
+ 
+ 	PERF_COUNT_SW_MAX,			/* non-ABI */
+ };
