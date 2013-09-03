@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab3ICQRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:17:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16816 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab3ICQRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:17:14 -0400
-Date: Tue, 3 Sep 2013 18:19:06 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
- <20130903141824.GD10522@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903141824.GD10522@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756789Ab3ICQYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:24:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46357 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab3ICQYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 12:24:12 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 03/58] cfg80211: fix P2P GO interface teardown
+Date: Tue,  3 Sep 2013 09:23:07 -0700
+Message-Id: <1378225442-20654-4-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
+References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 10:18:24AM -0400, Tejun Heo wrote:
-> On Mon, Sep 02, 2013 at 11:00:28AM +0200, Alexander Gordeev wrote:
-> > +	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
-> > +		goto intx;
-> > +
-> > +	rc = pci_enable_msi_block_part(pdev, n_ports, AHCI_MAX_PORTS);
+3.8.13.8 -stable review patch.  If anyone has any objections, please let me know.
 
-We start with maximum possible number of ports AHCI_MAX_PORTS
+------------------
 
-> > +	if (!rc)
-> > +		return AHCI_MAX_PORTS;
+From: Johannes Berg <johannes.berg@intel.com>
 
-If we succeeded the device is indeed supports all AHCI_MAX_PORTS
-and we report it.
+commit 74418edec915d0f446debebde08d170c7b8ba0ee upstream.
 
-> > +	if (rc < 0)
-> > +		goto intx;
+When a P2P GO interface goes down, cfg80211 doesn't properly
+tear it down, leading to warnings later. Add the GO interface
+type to the enumeration to tear it down like AP interfaces.
+Otherwise, we leave it pending and mac80211's state can get
+very confused, leading to warnings later.
 
-If pci_enable_msi_block_part() failed we should not make further
-attempts and fallback to simple IRQ.
+Reported-by: Ilan Peer <ilan.peer@intel.com>
+Tested-by: Ilan Peer <ilan.peer@intel.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/wireless/core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> > +	maxvec = rc;
-
-The device supports a lesser of AHCI_MAX_PORTS, because the previous
-pci_enable_msi_block_part() has not succeeded nor failed. Thus, rc
-contains number of supported MSIs. In case of ICH this will be 16
-rather than 32.
-
-Actually, while I was writing this I realized this could be a number
-of MSIs that could have been enabled this device, not the maximum
-number of supported MSIs - these two may differ. I think MRSM should
-be checked. But I will continue as if it always the same.
-
-> > +	rc = pci_enable_msi_block_part(pdev, n_ports, maxvec);
-
-Try pci_enable_msi_block_part() with the maximum number of supported MSIs.
-
-> > +	if (!rc)
-> > +		return maxvec;
-
-If we succeeded report the number of enabled MSIs.
-
-> > +	if (rc < 0)
-> > +		goto intx;
-
-If pci_enable_msi_block_part() failed we should not make further
-attempts and fallback to simple IRQ.
-
-> Why is the above fallback necessary?  The only other number which
-> makes sense is roundup_pow_of_two(n_ports), right?  What does the
-> above fallback logic buy us?
-
-We must enable maximum possible number of MSIs - the one reported in
-Multiple Message Capable register. Otherwise ICH device will fallback
-to MRSM. IOW, if the result of roundup_pow_of_two(n_ports) is not what
-in Multiple Message Capable register (i.e. as roundup_pow_of_two(6) vs 16)
-ICH will enforce MRSM mode.
-
-> Thanks.
-> 
-> -- 
-> tejun
-
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index ce1eff7..e4f226c 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -841,6 +841,7 @@ void cfg80211_leave(struct cfg80211_registered_device *rdev,
+ 		cfg80211_leave_mesh(rdev, dev);
+ 		break;
+ 	case NL80211_IFTYPE_AP:
++	case NL80211_IFTYPE_P2P_GO:
+ 		cfg80211_stop_ap(rdev, dev);
+ 		break;
+ 	default:
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.8.1.2
+
