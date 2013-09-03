@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab3ICQ1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46528 "EHLO
+	id S932275Ab3ICQ1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46516 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab3ICQ1Q (ORCPT
+	with ESMTP id S932160Ab3ICQ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:16 -0400
+	Tue, 3 Sep 2013 12:27:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Roland Dreier <roland@purestorage.com>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 46/58] arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
-Date: Tue,  3 Sep 2013 09:23:50 -0700
-Message-Id: <1378225442-20654-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 52/58] [SCSI] sg: Fix user memory corruption when SG_IO is interrupted by a signal
+Date: Tue,  3 Sep 2013 09:23:56 -0700
+Message-Id: <1378225442-20654-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,39 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 868f6fea8fa63f09acbfa93256d0d2abdcabff79 upstream.
+commit 35dc248383bbab0a7203fca4d722875bc81ef091 upstream.
 
-This is a port of d9f966357b14 ("ARM: 7810/1: perf: Fix array out of
-bounds access in armpmu_map_hw_event()") to arm64, which fixes an oops
-in the arm64 perf backend found as a result of Vince's fuzzing tool.
+There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
+leads to one process writing data into the address space of some other
+random unrelated process if the ioctl is interrupted by a signal.
+What happens is the following:
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+ - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
+   underlying SCSI command will transfer data from the SCSI device to
+   the buffer provided in the ioctl)
+
+ - Before the command finishes, a signal is sent to the process waiting
+   in the ioctl.  This will end up waking up the sg_ioctl() code:
+
+		result = wait_event_interruptible(sfp->read_wait,
+			(srp_done(sfp, srp) || sdp->detached));
+
+   but neither srp_done() nor sdp->detached is true, so we end up just
+   setting srp->orphan and returning to userspace:
+
+		srp->orphan = 1;
+		write_unlock_irq(&sfp->rq_list_lock);
+		return result;	/* -ERESTARTSYS because signal hit process */
+
+   At this point the original process is done with the ioctl and
+   blithely goes ahead handling the signal, reissuing the ioctl, etc.
+
+ - Eventually, the SCSI command issued by the first ioctl finishes and
+   ends up in sg_rq_end_io().  At the end of that function, we run through:
+
+	write_lock_irqsave(&sfp->rq_list_lock, iflags);
+	if (unlikely(srp->orphan)) {
+		if (sfp->keep_orphan)
+			srp->sg_io_owned = 0;
+		else
+			done = 0;
+	}
+	srp->done = done;
+	write_unlock_irqrestore(&sfp->rq_list_lock, iflags);
+
+	if (likely(done)) {
+		/* Now wake up any sg_read() that is waiting for this
+		 * packet.
+		 */
+		wake_up_interruptible(&sfp->read_wait);
+		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
+		kref_put(&sfp->f_ref, sg_remove_sfp);
+	} else {
+		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
+		schedule_work(&srp->ew.work);
+	}
+
+   Since srp->orphan *is* set, we set done to 0 (assuming the
+   userspace app has not set keep_orphan via an SG_SET_KEEP_ORPHAN
+   ioctl), and therefore we end up scheduling sg_rq_end_io_usercontext()
+   to run in a workqueue.
+
+ - In workqueue context we go through sg_rq_end_io_usercontext() ->
+   sg_finish_rem_req() -> blk_rq_unmap_user() -> ... ->
+   bio_uncopy_user() -> __bio_copy_iov() -> copy_to_user().
+
+   The key point here is that we are doing copy_to_user() on a
+   workqueue -- that is, we're on a kernel thread with current->mm
+   equal to whatever random previous user process was scheduled before
+   this kernel thread.  So we end up copying whatever data the SCSI
+   command returned to the virtual address of the buffer passed into
+   the original ioctl, but it's quite likely we do this copying into a
+   different address space!
+
+As suggested by James Bottomley <James.Bottomley@hansenpartnership.com>,
+add a check for current->mm (which is NULL if we're on a kernel thread
+without a real userspace address space) in bio_uncopy_user(), and skip
+the copy if we're on a kernel thread.
+
+There's no reason that I can think of for any caller of bio_uncopy_user()
+to want to do copying on a kernel thread with a random active userspace
+address space.
+
+Huge thanks to Costa Sapuntzakis <costa@purestorage.com> for the
+original pointer to this bug in the sg code.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/kernel/perf_event.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/bio.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index 0256b68..8a724a1 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -107,7 +107,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
- static int
- armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
+diff --git a/fs/bio.c b/fs/bio.c
+index 18e10cc..d819eb1 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -767,12 +767,22 @@ static int __bio_copy_iov(struct bio *bio, struct bio_vec *iovecs,
+ int bio_uncopy_user(struct bio *bio)
  {
--	int mapping = (*event_map)[config];
-+	int mapping;
-+
-+	if (config >= PERF_COUNT_HW_MAX)
-+		return -EINVAL;
-+
-+	mapping = (*event_map)[config];
- 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
- }
+ 	struct bio_map_data *bmd = bio->bi_private;
+-	int ret = 0;
++	struct bio_vec *bvec;
++	int ret = 0, i;
  
+-	if (!bio_flagged(bio, BIO_NULL_MAPPED))
+-		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
+-				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
+-				     0, bmd->is_our_pages);
++	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
++		/*
++		 * if we're in a workqueue, the request is orphaned, so
++		 * don't copy into a random user address space, just free.
++		 */
++		if (current->mm)
++			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
++					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
++					     0, bmd->is_our_pages);
++		else if (bmd->is_our_pages)
++			bio_for_each_segment_all(bvec, bio, i)
++				__free_page(bvec->bv_page);
++	}
+ 	bio_free_map_data(bmd);
+ 	bio_put(bio);
+ 	return ret;
 -- 
 1.8.1.2
 
