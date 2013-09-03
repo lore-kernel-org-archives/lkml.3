@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab3ICQ07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:26:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46487 "EHLO
+	id S932146Ab3ICQ1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46510 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3ICQ04 (ORCPT
+	with ESMTP id S1754571Ab3ICQ1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:26:56 -0400
+	Tue, 3 Sep 2013 12:27:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Wladislav Wiebe <wladislav.kw@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 47/58] arm64: perf: fix event validation for software group leaders
-Date: Tue,  3 Sep 2013 09:23:51 -0700
-Message-Id: <1378225442-20654-48-git-send-email-kamal@canonical.com>
+Subject: [PATCH 53/58] of: fdt: fix memory initialization for expanded DT
+Date: Tue,  3 Sep 2013 09:23:57 -0700
+Message-Id: <1378225442-20654-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,35 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Wladislav Wiebe <wladislav.kw@gmail.com>
 
-commit ee7538a008a45050c8f706d38b600f55953169f9 upstream.
+commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
 
-This is a port of c95eb3184ea1 ("ARM: 7809/1: perf: fix event validation
-for software group leaders") to arm64, which fixes a panic in the arm64
-perf backend found as a result of Vince's fuzzing tool.
+Already existing property flags are filled wrong for properties created from
+initial FDT. This could cause problems if this DYNAMIC device-tree functions
+are used later, i.e. properties are attached/detached/replaced. Simply dumping
+flags from the running system show, that some initial static (not allocated via
+kzmalloc()) nodes are marked as dynamic.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+I putted some debug extensions to property_proc_show(..) :
+..
++       if (OF_IS_DYNAMIC(pp))
++               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
++       if (OF_IS_DETACHED(pp))
++               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
+
+when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
+will see that those flags are filled wrong, basically in most cases it will dump
+a DYNAMIC or DETACHED status, which is in not true.
+(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
+make a test_bit(OF_DETACHED, &x->_flags)
+
+If nodes are dynamic kernel is allowed to kfree() them. But it will crash
+attempting to do so on the nodes from FDT -- they are not allocated via
+kzmalloc().
+
+Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/kernel/perf_event.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/of/fdt.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index 8a724a1..34e1bca 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -322,6 +322,9 @@ validate_event(struct pmu_hw_events *hw_events,
- 	struct hw_perf_event fake_event = event->hw;
- 	struct pmu *leader_pmu = event->group_leader->pmu;
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 808be06..1187737 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -392,6 +392,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+ 	mem = (unsigned long)
+ 		dt_alloc(size + 4, __alignof__(struct device_node));
  
-+	if (is_software_event(event))
-+		return 1;
++	memset((void *)mem, 0, size);
 +
- 	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
- 		return 1;
+ 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
  
+ 	pr_debug("  unflattening %lx...\n", mem);
 -- 
 1.8.1.2
 
