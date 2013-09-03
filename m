@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761386Ab3ICWvI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:51:08 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40912 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760732Ab3ICWvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:51:06 -0400
-Message-ID: <1378249100.32763.427.camel@haakon3.risingtidesystems.com>
-Subject: Re: Linux 3.11
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Sep 2013 15:58:20 -0700
-In-Reply-To: <CA+55aFxKiLv1PhZXo-tOazoQ7A6Wxyr=u3WFaFw85QvYiqn0Cw@mail.gmail.com>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
-	 <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
-	 <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
-	 <1378169449.32763.347.camel@haakon3.risingtidesystems.com>
-	 <1378244811.32763.420.camel@haakon3.risingtidesystems.com>
-	 <CA+55aFxKiLv1PhZXo-tOazoQ7A6Wxyr=u3WFaFw85QvYiqn0Cw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761442Ab3ICW4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:56:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14476 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758490Ab3ICW4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 18:56:34 -0400
+Date: Tue, 3 Sep 2013 18:55:28 -0400
+From: Dave Jones <davej@redhat.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130903225528.GA14909@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+	Ingo Molnar <mingo@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Andi Kleen <andi@firstfloor.org>,
+	"Chandramouleeswaran, Aswin" <aswin@hp.com>,
+	"Norton, Scott J" <scott.norton@hp.com>
+References: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+ <CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+ <CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+ <CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+ <CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+ <CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+ <CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+ <CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
+ <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+ <CA+icZUXi-YHK23sKnVQbfi4K2FOVZiROQ76H5Qw2NxTJT2uzDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUXi-YHK23sKnVQbfi4K2FOVZiROQ76H5Qw2NxTJT2uzDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-03 at 15:44 -0700, Linus Torvalds wrote:
-> On Tue, Sep 3, 2013 at 2:46 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> >
-> > Ok, so another PULL request was sent out last night for the missing
-> > target fixes below, after putting DKIM + SPF authentication in place for
-> > linux-iscsi.org:
-> >
-> > [GIT PULL -v3] target fixes for v3.12-rc0 (was v3.11)
-> > http://marc.info/?l=linux-kernel&m=137818849925625&w=2
-> >
-> > Watching the recent git activity, I can't tell if you've (not) reached
-> > this point in the PULL queue yet, or if this email also landed in your
-> > spam folder..?
-> >
-> > Care to give me a hint if your receiving these PULL emails now, or if I
-> > need to continue looking at why gmail is unhappy..?
-> 
-> That message came through, and has the line
-> 
->   Received-SPF: pass (google.com: domain of nab@linux-iscsi.org
-> designates 67.23.28.174 as permitted sender) client-ip=67.23.28.174;
-> 
-> which may or may not have been the thing that made a difference.
-> 
+On Wed, Sep 04, 2013 at 12:37:25AM +0200, Sedat Dilek wrote:
+ 
+ > > You're spending more time on the task stats than on the actual lookup.
+ > > Maybe you should turn off CONFIG_TASKSTATS..But why that whole
+ > > irq_return thing? Odd.
+ > >
+ > 
+ > [ init/Kconfig ]
+ > ...
+ > config TASKSTATS
+ >         bool "Export task/process statistics through netlink"
+ >         depends on NET <--- Difficult to disable it?!
 
-Excellent, thanks for confirming it made it through this time.
+More likely you're getting bitten by the fact that CONFIG_KVM has
+a 'select TASKSTATS'
 
-> I'll get to the pull request itself later..
-> 
-
-<nod>, now back to the real v3.12-rc1 items.
-
-Thanks again,
-
---nab
+	Dave
 
