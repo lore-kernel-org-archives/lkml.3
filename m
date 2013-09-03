@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab3ICDWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:22:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54340 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154Ab3ICDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:22:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1011,1367996400"; 
-   d="scan'208";a="390168738"
-Date: Tue, 3 Sep 2013 11:22:35 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
- updating Documentation/CodingStyle
-Message-ID: <20130903032235.GF17230@localhost>
-References: <20130902181856.GB29787@leaf>
- <20130902153945.6d7e510c@samsung.com>
- <1378148367.1953.98.camel@joe-AO722>
- <13834.1378155023@warthog.procyon.org.uk>
- <1378156296.1953.117.camel@joe-AO722>
- <20130903003958.GA6855@localhost>
- <20130903013408.GA3437@leaf>
- <1378173165.1953.148.camel@joe-AO722>
- <20130903024640.GA11168@localhost>
- <20130903031645.GA5104@leaf>
+	id S1759317Ab3ICD0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:26:20 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55497 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256Ab3ICD0T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 23:26:19 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522556D8.803@roeck-us.net>
+Date: Mon, 02 Sep 2013 20:26:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903031645.GA5104@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 0/8] Drop support for Renesas H8/300 architecture
+References: <1377906694-9578-1-git-send-email-linux@roeck-us.net> <52254F11.8070601@gmail.com>
+In-Reply-To: <52254F11.8070601@gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 08:16:45PM -0700, Josh Triplett wrote:
-> On Tue, Sep 03, 2013 at 10:46:40AM +0800, Fengguang Wu wrote:
-> > On Mon, Sep 02, 2013 at 06:52:45PM -0700, Joe Perches wrote:
-> > > On Mon, 2013-09-02 at 18:34 -0700, Josh Triplett wrote:
-> > > > CONFIG_EXPERIMENTAL
-> > > > CVS_KEYWORD
-> > > 
-> > > OK, but <shrug>
-> [...]
-> > Thanks for both of your suggestions! I'll add the commonly agreed ones:
-> > 
-> > +INVALID_UTF8
-> > +LINUX_VERSION_CODE
-> > +MISSING_EOF_NEWLINE
-> > +HEXADECIMAL_BOOLEAN_TEST
-> > +ALLOC_ARRAY_ARGS
-> > +CONST_STRUCT
-> > +CONSIDER_KSTRTO
-> > 
-> > And remove the duplicate one (good catch, Josh!)
-> > 
-> > -KREALLOC_ARG_REUSE
+On 09/02/2013 07:53 PM, Chen Gang F T wrote:
+> Hello Guenter Roeck:
 > 
-> You missed CONFIG_EXPERIMENTAL and CVS_KEYWORD; see above.
+> 
+> I don't care about whether I am in cc mailing list, but at least,
+> please help confirm 2 things:
+> 
+>    Is what I had done for h8300 just making wastes and noisy in kernel and related sub-system mailing list ?
+> 
+>    and is the disccusion about h8300 between us also wastes and noisy in kernel mailing list ?
+> 
 
-OK, added, thanks!
+It raised my awareness of the status of h8300 maintenance,
+so I would not see it as noise or waste. I might have suggested
+a different target for your efforts, but that is your choice to make,
+not mine.
 
-Cheers,
-Fengguang
+On the code review side, I had suggested that you should not add new
+ifdefs into code, much less unnecessary ones. Your counter-argument
+was that you wanted to follow the existing coding style in the file
+in question. To me, that argument is along the line of "the coding
+style in this file is bad, let's do more of it".
+That doesn't make much sense to me, so I did not bother to respond.
+Setting that aside, it is not up to me to approve or reject your patches.
+Whoever does that would be the one you have to convince.
+
+Guenter
+
