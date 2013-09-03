@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760880Ab3ICVcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:32:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab3ICVcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:32:19 -0400
-Date: Tue, 3 Sep 2013 17:32:05 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        john453@faraday-tech.com
-Subject: Re: usb: host: Faraday fotg210-hcd driver
-Message-ID: <20130903213205.GA7433@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	john453@faraday-tech.com
-References: <20130903185912.A59316601F4@gitolite.kernel.org>
- <20130903211544.GB2247@redhat.com>
- <20130903212355.GA12978@kroah.com>
+	id S1760728Ab3ICVel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:34:41 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:55551 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab3ICVej convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 17:34:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903212355.GA12978@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxjkzhdZqayiD9_f_tD3T9UJC2whVie-0K_bzdpogCF5Q@mail.gmail.com>
+References: <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+	<20130902070538.GA31639@gmail.com>
+	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	<20130903101522.GA22369@gmail.com>
+	<CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
+	<CA+55aFxGWKJwo1CfS3EJFagUb+JRtc+URJOu2yz2RztWWrkraA@mail.gmail.com>
+	<20130903191950.GC30757@gmail.com>
+	<CA+55aFz2PmfdaaMUNR8aMn-Hcf8FjsydM7fF28WxZDhBZADHxw@mail.gmail.com>
+	<CA+55aFxjkzhdZqayiD9_f_tD3T9UJC2whVie-0K_bzdpogCF5Q@mail.gmail.com>
+Date: Tue, 3 Sep 2013 14:34:38 -0700
+X-Google-Sender-Auth: z4-Zm2AQ6rh3IcWkpUpTK-kHuvk
+Message-ID: <CA+55aFxE0fpdrjhG82JcwgT4jrmDXJ_dPv5FkqiVHYe3DdjtWA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 02:23:55PM -0700, Greg KH wrote:
+On Tue, Sep 3, 2013 at 2:13 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> This is the one that actually compiles.  Whether it *works* is still a
+> total mystery.
 
- > >  > +config USB_FOTG210_HCD
- > >  > +	tristate "FOTG210 HCD support"
- > >  > +	depends on USB
- > >  > +	default N
- > >  > +	---help---
- > >  > +	  Faraday FOTG210 is an OTG controller which can be configured as
- > >  > +	  an USB2.0 host. It is designed to meet USB2.0 EHCI specification
- > >  > +	  with minor modification.
- > >  > +
- > >  > +	  To compile this driver as a module, choose M here: the
- > >  > +	  module will be called fotg210-hcd.
- > >  > +
- > > 
- > > Shouldn't this depend on USB_OTG ?
- > > Seems odd to have OTG related options presented to me when I have that unset.
- > 
- > It's a USB Host controller, so it should be built if you have that
- > option set.  The fact that it can do OTG isn't an issue here, from what
- > I can tell.
+It generates ok code, and it booted, so it seems to work at least for my config.
 
-Ok. It still likely needs a 'depends on $ARCH (arm?) | COMPILE_TEST' though.
+However, it seems to make no performance-difference what-so-ever, and
+lg_local_lock is still using about 7% cpu per the profiles.
 
-	Dave
+The code generation is slightly better, but the profile looks the same:
 
-PS: What happened with this driver ?
+       │    ffffffff81078e70 <lg_local_lock>:
+  0.62 │      push   %rbp
+  0.28 │      mov    %rsp,%rbp
+  0.22 │      add    %gs:0xcd48,%rdi
+  0.27 │      mov    $0x100,%eax
+ 97.22 │      lock   xadd   %ax,(%rdi)
+  0.01 │      movzbl %ah,%edx
+       │      cmp    %al,%dl
+  0.56 │    ↓ je     29
+       │      xchg   %ax,%ax
+  0.00 │20:   pause
+  0.00 │      movzbl (%rdi),%eax
+       │      cmp    %dl,%al
+       │    ↑ jne    20
+       │29:   pop    %rbp
+  0.81 │    ← retq
 
-This patch landed twice in your tree, once in 1dd3d123239179fad5de5dc00a6e0014a1918fde from Yuan-Hsin Chen <yhchen@faraday-tech.com>
-and then in 7d50195f6c5005d6ae7a789d9a7f0a94d104ee96 from Feng-Hsin Chiang <john453@faraday-tech.com>
+but it still obviously doesn't do the "lock xadd %ax,%gs:(%rdi)"
+(without the preceding 'add') that would be the optimal code.
 
-Given the former address seems to be broken, perhaps all those mentions of it
-in the faraday sources need updating ?
+I'll try to hack that up too, but it's looking like it really is just
+the "lock xadd", not the memory dependency chain..
 
------ The following addresses had permanent fatal errors -----
-<yhchen@faraday-tech.com>
-    (reason: 553 5.1.3 <yhchen@faraday-tech.com>... Check FTC account failure!<2>)
-
-   ----- Transcript of session follows -----
-... while talking to mailhost1.faraday-tech.com.:
->>> DATA
-<<< 553 5.1.3 <yhchen@faraday-tech.com>... Check FTC account failure!<2>
-550 5.1.1 <yhchen@faraday-tech.com>... User unknown
-<<< 503 5.0.0 Need RCPT (recipient)
-
+            Linus
