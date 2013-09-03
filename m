@@ -1,105 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab3ICDxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:53:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42713 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab3ICDxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:53:52 -0400
-Message-ID: <52255D4B.8070602@oracle.com>
-Date: Mon, 02 Sep 2013 20:53:47 -0700
-From: Chuck Anderson <chuck.anderson@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Dan Duval <dan.duval@oracle.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] audit: Two efficiency fixes for audit mechanism
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S932380Ab3ICDxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:53:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12839 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932296Ab3ICDxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 23:53:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1011,1367996400"; 
+   d="scan'208";a="397305442"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: rostedt@goodmis.org
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH v8 04/10] tracing: Add 'snapshot' event trigger command
+Date: Mon,  2 Sep 2013 22:52:20 -0500
+Message-Id: <03b1cfe923295a6b804569ee814b3ffbc9623397.1378176577.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <cover.1378176577.git.tom.zanussi@linux.intel.com>
+References: <cover.1378176577.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1378176577.git.tom.zanussi@linux.intel.com>
+References: <cover.1378176577.git.tom.zanussi@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-audit: Two efficiency fixes for audit mechanism
+Add 'snapshot' event_command.  snapshot event triggers are added by
+the user via this command in a similar way and using practically the
+same syntax as the analogous 'snapshot' ftrace function command, but
+instead of writing to the set_ftrace_filter file, the snapshot event
+trigger is written to the per-event 'trigger' files:
 
-author: Dan Duval <dan.duval@oracle.com>
+    echo 'snapshot' > .../somesys/someevent/trigger
 
-These and similar errors were seen on a patched 3.8 kernel when the
-audit subsystem was overrun during boot:
+The above command will turn on snapshots for someevent i.e. whenever
+someevent is hit, a snapshot will be done.
 
-   udevd[876]: worker [887] unexpectedly returned with status 0x0100
-   udevd[876]: worker [887] failed while handling 
-'/devices/pci0000:00/0000:00:03.0/0000:40:00.0'
-   udevd[876]: worker [880] unexpectedly returned with status 0x0100
-   udevd[876]: worker [880] failed while handling 
-'/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1'
+This also adds a 'count' version that limits the number of times the
+command will be invoked:
 
-   udevadm settle - timeout of 180 seconds reached, the event queue 
-contains:
-     /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1 (3995)
-     /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/INT3F0D:00 (4034)
+    echo 'snapshot:N' > .../somesys/someevent/trigger
 
-   audit: audit_backlog=258 > audit_backlog_limit=256
-   audit: audit_lost=1 audit_rate_limit=0 audit_backlog_limit=256
+Where N is the number of times the command will be invoked.
 
-The changes below increase the efficiency of the audit code and
-prevent it from being overrun:
+The above command will snapshot N times for someevent i.e. whenever
+someevent is hit N times, a snapshot will be done.
 
-1. Only issue a wake_up in kauditd if the length of the skb queue
-    is less than the backlog limit.  Otherwise, threads waiting in
-    wait_for_auditd() will simply wake up, discover that the
-    queue is still too long for them to proceed, and go back
-    to sleep.  This results in wasted context switches and
-    machine cycles.  kauditd_thread() is the only function that
-    removes buffers from audit_skb_queue so we can't race.  If we
-    did, the timeout in wait_for_auditd() would expire and the
-    waiting thread would continue.
+Also adds a new ftrace_alloc_snapshot() function - the ftrace snapshot
+command defines code that allocates a snapshot, which would be nice to
+be able to reuse, which this does.
 
-2. Use add_wait_queue_exclusive() in wait_for_auditd() to put the
-    thread on the wait queue.  When kauditd dequeues an skb, all
-    of the waiting threads are waiting for the same resource, but
-    only one is going to get it, so there's no need to wake up
-    more than one waiter.
-
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
-  kernel/audit.c |    7 +++++--
-  1 files changed, 5 insertions(+), 2 deletions(-)
+ include/linux/ftrace_event.h        |  1 +
+ kernel/trace/trace.c                |  9 +++++
+ kernel/trace/trace.h                |  1 +
+ kernel/trace/trace_events_trigger.c | 76 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 87 insertions(+)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 9a78dde..d87b4dd 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -449,8 +449,11 @@ static int kauditd_thread(void *dummy)
-  		flush_hold_queue();
-
-  		skb = skb_dequeue(&audit_skb_queue);
--		wake_up(&audit_backlog_wait);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index a14650b..40b517b 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -319,6 +319,7 @@ struct ftrace_event_file {
+ enum event_trigger_type {
+ 	ETT_NONE		= (0),
+ 	ETT_TRACE_ONOFF		= (1 << 0),
++	ETT_SNAPSHOT		= (1 << 1),
+ };
+ 
+ extern void destroy_preds(struct ftrace_event_call *call);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 496f94d..5a61dbe 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5358,6 +5358,15 @@ static const struct file_operations tracing_dyn_info_fops = {
+ };
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
++#if defined(CONFIG_TRACER_SNAPSHOT)
++int ftrace_alloc_snapshot(void)
++{
++	return alloc_snapshot(&global_trace);
++}
++#else
++int ftrace_alloc_snapshot(void) { return -ENOSYS; }
++#endif
 +
-  		if (skb) {
-+			if(skb_queue_len(&audit_skb_queue) <= audit_backlog_limi
-t)
-+				wake_up(&audit_backlog_wait);
+ #if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
+ static void
+ ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 37b8ecf..f032dd8 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1200,6 +1200,7 @@ struct event_command {
+ 
+ extern int trace_event_enable_disable(struct ftrace_event_file *file,
+ 				      int enable, int soft_disable);
++extern int ftrace_alloc_snapshot(void);
+ 
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+index 5388d55..9bdcc38 100644
+--- a/kernel/trace/trace_events_trigger.c
++++ b/kernel/trace/trace_events_trigger.c
+@@ -664,6 +664,74 @@ static struct event_command trigger_traceoff_cmd = {
+ 	.get_trigger_ops	= onoff_get_trigger_ops,
+ };
+ 
++static void
++snapshot_trigger(struct event_trigger_data *data)
++{
++	tracing_snapshot();
++}
 +
-  			if (audit_pid)
-  				kauditd_send_skb(skb);
-  			else
-@@ -1059,7 +1062,7 @@ static void wait_for_auditd(unsigned long 
-sleep_time, int
-limit)
-  {
-  	DECLARE_WAITQUEUE(wait, current);
-  	set_current_state(TASK_UNINTERRUPTIBLE);
--	add_wait_queue(&audit_backlog_wait, &wait);
-+	add_wait_queue_exclusive(&audit_backlog_wait, &wait);
-
-  	if (audit_backlog_limit &&
-  	    skb_queue_len(&audit_skb_queue) > limit)
++static void
++snapshot_count_trigger(struct event_trigger_data *data)
++{
++	if (!data->count)
++		return;
++
++	if (data->count != -1)
++		(data->count)--;
++
++	snapshot_trigger(data);
++}
++
++static int
++register_snapshot_trigger(char *glob, struct event_trigger_ops *ops,
++			  struct event_trigger_data *data,
++			  struct ftrace_event_file *file)
++{
++	int ret = register_trigger(glob, ops, data, file);
++
++	if (ret > 0)
++		ftrace_alloc_snapshot();
++
++	return ret;
++}
++
++static int
++snapshot_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
++		       struct event_trigger_data *data)
++{
++	return event_trigger_print("snapshot", m, (void *)data->count,
++				   data->filter_str);
++}
++
++static struct event_trigger_ops snapshot_trigger_ops = {
++	.func			= snapshot_trigger,
++	.print			= snapshot_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops snapshot_count_trigger_ops = {
++	.func			= snapshot_count_trigger,
++	.print			= snapshot_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops *
++snapshot_get_trigger_ops(char *cmd, char *param)
++{
++	return param ? &snapshot_count_trigger_ops : &snapshot_trigger_ops;
++}
++
++static struct event_command trigger_snapshot_cmd = {
++	.name			= "snapshot",
++	.trigger_type		= ETT_SNAPSHOT,
++	.func			= event_trigger_callback,
++	.reg			= register_snapshot_trigger,
++	.unreg			= unregister_trigger,
++	.get_trigger_ops	= snapshot_get_trigger_ops,
++};
++
+ static __init void unregister_trigger_traceon_traceoff_cmds(void)
+ {
+ 	unregister_event_command(&trigger_traceon_cmd,
+@@ -700,5 +768,13 @@ __init int register_trigger_cmds(void)
+ 		return ret;
+ 	}
+ 
++	ret = register_event_command(&trigger_snapshot_cmd,
++				     &trigger_commands,
++				     &trigger_cmd_mutex);
++	if (WARN_ON(ret < 0)) {
++		unregister_trigger_traceon_traceoff_cmds();
++		return ret;
++	}
++
+ 	return 0;
+ }
 -- 
-1.7.1
+1.7.11.4
+
