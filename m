@@ -1,47 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761288Ab3ICVNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:13:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760952Ab3ICVNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:13:35 -0400
-Date: Tue, 3 Sep 2013 17:13:23 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Restrict ST ASC driver to only build on !ARM when COMPILE_TEST is
- set.
-Message-ID: <20130903211323.GA2247@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <20130903185959.E387A661287@gitolite.kernel.org>
+	id S1761313Ab3ICVNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:13:49 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:46191 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761009Ab3ICVNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 17:13:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903185959.E387A661287@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFz2PmfdaaMUNR8aMn-Hcf8FjsydM7fF28WxZDhBZADHxw@mail.gmail.com>
+References: <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+	<20130902070538.GA31639@gmail.com>
+	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	<20130903101522.GA22369@gmail.com>
+	<CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
+	<CA+55aFxGWKJwo1CfS3EJFagUb+JRtc+URJOu2yz2RztWWrkraA@mail.gmail.com>
+	<20130903191950.GC30757@gmail.com>
+	<CA+55aFz2PmfdaaMUNR8aMn-Hcf8FjsydM7fF28WxZDhBZADHxw@mail.gmail.com>
+Date: Tue, 3 Sep 2013 14:13:45 -0700
+X-Google-Sender-Auth: lq6Oughj6M1EdN-g9dyGvXcqceU
+Message-ID: <CA+55aFxjkzhdZqayiD9_f_tD3T9UJC2whVie-0K_bzdpogCF5Q@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: multipart/mixed; boundary=047d7bd75d5c0a5cb704e5812a2b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig for this option suggests it's only relevant on STi SoCs,
-so add depends to have it not show up on archs that won't ever run it.
- 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+--047d7bd75d5c0a5cb704e5812a2b
+Content-Type: text/plain; charset=UTF-8
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index cc4c868..304a637 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1503,6 +1503,7 @@ config SERIAL_FSL_LPUART_CONSOLE
- config SERIAL_ST_ASC
- 	tristate "ST ASC serial port support"
- 	select SERIAL_CORE
-+	depends on ARM || COMPILE_TEST
- 	help
- 	  This driver is for the on-chip Asychronous Serial Controller on
- 	  STMicroelectronics STi SoCs.
+On Tue, Sep 3, 2013 at 2:05 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> TOTALLY UNTESTED PATCH ATTACHED.
+
+Actually, that was the previous (broken) version of that patch - I
+hadn't regenerated it after fixing some stupid compile errors, and it
+had the DECLARE parts wrong.
+
+This is the one that actually compiles.  Whether it *works* is still a
+total mystery.
+
+          Linus
+
+--047d7bd75d5c0a5cb704e5812a2b
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hl5m6j1p1
+
+IGZzL2ZpbGVfdGFibGUuYyAgICAgICAgfCAgMiArLQogZnMvaW50ZXJuYWwuaCAgICAgICAgICB8
+ICAyICstCiBmcy9sb2Nrcy5jICAgICAgICAgICAgIHwgIDIgKy0KIGluY2x1ZGUvbGludXgvbGds
+b2NrLmggfCAyOSArKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLQoga2VybmVsL2xnbG9jay5j
+ICAgICAgICB8IDQ2ICsrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0t
+LS0KIDUgZmlsZXMgY2hhbmdlZCwgNDEgaW5zZXJ0aW9ucygrKSwgNDAgZGVsZXRpb25zKC0pCgpk
+aWZmIC0tZ2l0IGEvZnMvZmlsZV90YWJsZS5jIGIvZnMvZmlsZV90YWJsZS5jCmluZGV4IGI0NGU0
+YzU1OTc4Ni4uZTBiZWU5ZTA1ZGI5IDEwMDY0NAotLS0gYS9mcy9maWxlX3RhYmxlLmMKKysrIGIv
+ZnMvZmlsZV90YWJsZS5jCkBAIC0zNiw3ICszNiw3IEBAIHN0cnVjdCBmaWxlc19zdGF0X3N0cnVj
+dCBmaWxlc19zdGF0ID0gewogCS5tYXhfZmlsZXMgPSBOUl9GSUxFCiB9OwogCi1ERUZJTkVfU1RB
+VElDX0xHTE9DSyhmaWxlc19sZ2xvY2spOworc3RhdGljIERFRklORV9MR0xPQ0soZmlsZXNfbGds
+b2NrKTsKIAogLyogU0xBQiBjYWNoZSBmb3IgZmlsZSBzdHJ1Y3R1cmVzICovCiBzdGF0aWMgc3Ry
+dWN0IGttZW1fY2FjaGUgKmZpbHBfY2FjaGVwIF9fcmVhZF9tb3N0bHk7CmRpZmYgLS1naXQgYS9m
+cy9pbnRlcm5hbC5oIGIvZnMvaW50ZXJuYWwuaAppbmRleCA3YzVmMDFjZjYxOWQuLjJkYjU4ODJk
+NzdiMiAxMDA2NDQKLS0tIGEvZnMvaW50ZXJuYWwuaAorKysgYi9mcy9pbnRlcm5hbC5oCkBAIC01
+OSw3ICs1OSw3IEBAIGV4dGVybiBpbnQgc2JfcHJlcGFyZV9yZW1vdW50X3JlYWRvbmx5KHN0cnVj
+dCBzdXBlcl9ibG9jayAqKTsKIAogZXh0ZXJuIHZvaWQgX19pbml0IG1udF9pbml0KHZvaWQpOwog
+Ci1leHRlcm4gc3RydWN0IGxnbG9jayB2ZnNtb3VudF9sb2NrOworREVDTEFSRV9MR0xPQ0sodmZz
+bW91bnRfbG9jayk7CiAKIGV4dGVybiBpbnQgX19tbnRfd2FudF93cml0ZShzdHJ1Y3QgdmZzbW91
+bnQgKik7CiBleHRlcm4gaW50IF9fbW50X3dhbnRfd3JpdGVfZmlsZShzdHJ1Y3QgZmlsZSAqKTsK
+ZGlmZiAtLWdpdCBhL2ZzL2xvY2tzLmMgYi9mcy9sb2Nrcy5jCmluZGV4IGIyN2EzMDA1ZDc4ZC4u
+NGI0NzA0YWVlNmM2IDEwMDY0NAotLS0gYS9mcy9sb2Nrcy5jCisrKyBiL2ZzL2xvY2tzLmMKQEAg
+LTE2Miw3ICsxNjIsNyBAQCBpbnQgbGVhc2VfYnJlYWtfdGltZSA9IDQ1OwogICogdGhlIGZpbGVf
+bG9ja19sZ2xvY2suIE5vdGUgdGhhdCBhbHRlcmF0aW9ucyB0byB0aGUgbGlzdCBhbHNvIHJlcXVp
+cmUgdGhhdAogICogdGhlIHJlbGV2YW50IGlfbG9jayBpcyBoZWxkLgogICovCi1ERUZJTkVfU1RB
+VElDX0xHTE9DSyhmaWxlX2xvY2tfbGdsb2NrKTsKK3N0YXRpYyBERUZJTkVfTEdMT0NLKGZpbGVf
+bG9ja19sZ2xvY2spOwogc3RhdGljIERFRklORV9QRVJfQ1BVKHN0cnVjdCBobGlzdF9oZWFkLCBm
+aWxlX2xvY2tfbGlzdCk7CiAKIC8qCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2xnbG9jay5o
+IGIvaW5jbHVkZS9saW51eC9sZ2xvY2suaAppbmRleCAwZDI0ZTkzMmRiMGIuLjIzMmRlMmM0NjIw
+OCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9sZ2xvY2suaAorKysgYi9pbmNsdWRlL2xpbnV4
+L2xnbG9jay5oCkBAIC00MiwyOSArNDIsMjQgQEAKICNlbmRpZgogCiBzdHJ1Y3QgbGdsb2NrIHsK
+LQlhcmNoX3NwaW5sb2NrX3QgX19wZXJjcHUgKmxvY2s7CisJYXJjaF9zcGlubG9ja190IGxvY2s7
+CiAjaWZkZWYgQ09ORklHX0RFQlVHX0xPQ0tfQUxMT0MKIAlzdHJ1Y3QgbG9ja19jbGFzc19rZXkg
+bG9ja19rZXk7CiAJc3RydWN0IGxvY2tkZXBfbWFwICAgIGxvY2tfZGVwX21hcDsKICNlbmRpZgog
+fTsKIAotI2RlZmluZSBERUZJTkVfTEdMT0NLKG5hbWUpCQkJCQkJXAotCXN0YXRpYyBERUZJTkVf
+UEVSX0NQVShhcmNoX3NwaW5sb2NrX3QsIG5hbWUgIyMgX2xvY2spCQlcCi0JPSBfX0FSQ0hfU1BJ
+Tl9MT0NLX1VOTE9DS0VEOwkJCQkJXAotCXN0cnVjdCBsZ2xvY2sgbmFtZSA9IHsgLmxvY2sgPSAm
+bmFtZSAjIyBfbG9jayB9CisjZGVmaW5lIERFQ0xBUkVfTEdMT0NLKG5hbWUpIFwKKwlERUNMQVJF
+X1BFUl9DUFUoc3RydWN0IGxnbG9jaywgbmFtZSkKKyNkZWZpbmUgREVGSU5FX0xHTE9DSyhuYW1l
+KSBcCisJREVGSU5FX1BFUl9DUFUoc3RydWN0IGxnbG9jaywgbmFtZSkgPSB7IC5sb2NrID0gX19B
+UkNIX1NQSU5fTE9DS19VTkxPQ0tFRCB9CiAKLSNkZWZpbmUgREVGSU5FX1NUQVRJQ19MR0xPQ0so
+bmFtZSkJCQkJCVwKLQlzdGF0aWMgREVGSU5FX1BFUl9DUFUoYXJjaF9zcGlubG9ja190LCBuYW1l
+ICMjIF9sb2NrKQkJXAotCT0gX19BUkNIX1NQSU5fTE9DS19VTkxPQ0tFRDsJCQkJCVwKLQlzdGF0
+aWMgc3RydWN0IGxnbG9jayBuYW1lID0geyAubG9jayA9ICZuYW1lICMjIF9sb2NrIH0KLQotdm9p
+ZCBsZ19sb2NrX2luaXQoc3RydWN0IGxnbG9jayAqbGcsIGNoYXIgKm5hbWUpOwotdm9pZCBsZ19s
+b2NhbF9sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKTsKLXZvaWQgbGdfbG9jYWxfdW5sb2NrKHN0cnVj
+dCBsZ2xvY2sgKmxnKTsKLXZvaWQgbGdfbG9jYWxfbG9ja19jcHUoc3RydWN0IGxnbG9jayAqbGcs
+IGludCBjcHUpOwotdm9pZCBsZ19sb2NhbF91bmxvY2tfY3B1KHN0cnVjdCBsZ2xvY2sgKmxnLCBp
+bnQgY3B1KTsKLXZvaWQgbGdfZ2xvYmFsX2xvY2soc3RydWN0IGxnbG9jayAqbGcpOwotdm9pZCBs
+Z19nbG9iYWxfdW5sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKTsKK3ZvaWQgbGdfbG9ja19pbml0KHN0
+cnVjdCBsZ2xvY2sgX19wZXJjcHUgKmxnLCBjaGFyICpuYW1lKTsKK3ZvaWQgbGdfbG9jYWxfbG9j
+ayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7Cit2b2lkIGxnX2xvY2FsX3VubG9jayhzdHJ1
+Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7Cit2b2lkIGxnX2xvY2FsX2xvY2tfY3B1KHN0cnVjdCBs
+Z2xvY2sgX19wZXJjcHUgKmxnLCBpbnQgY3B1KTsKK3ZvaWQgbGdfbG9jYWxfdW5sb2NrX2NwdShz
+dHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZywgaW50IGNwdSk7Cit2b2lkIGxnX2dsb2JhbF9sb2Nr
+KHN0cnVjdCBsZ2xvY2sgX19wZXJjcHUgKmxnKTsKK3ZvaWQgbGdfZ2xvYmFsX3VubG9jayhzdHJ1
+Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7CiAKICNlbmRpZgpkaWZmIC0tZ2l0IGEva2VybmVsL2xn
+bG9jay5jIGIva2VybmVsL2xnbG9jay5jCmluZGV4IDY1MzVhNjY3YTVhNy4uYTllMzI3YmE4OWU2
+IDEwMDY0NAotLS0gYS9rZXJuZWwvbGdsb2NrLmMKKysrIGIva2VybmVsL2xnbG9jay5jCkBAIC00
+LDg0ICs0LDkwIEBACiAjaW5jbHVkZSA8bGludXgvY3B1Lmg+CiAjaW5jbHVkZSA8bGludXgvc3Ry
+aW5nLmg+CiAKKy8qIFdlIG9ubHkgZmlsbCBpbiB0aGUgbmFtZSBhbmQgbG9ja19kZXBfbWFwIGZv
+ciB0aGUgZmlyc3QgQ1BVICovCisjZGVmaW5lIGxnX2xvY2tfZGVwX21hcChsZykgXAorCXBlcl9j
+cHVfcHRyKCZsZy0+bG9ja19kZXBfbWFwLDApCisjZGVmaW5lIGxnX2xvY2tfa2V5KGxnKSBcCisJ
+cGVyX2NwdV9wdHIoJmxnLT5sb2NrX2tleSwwKQorCiAvKgogICogTm90ZSB0aGVyZSBpcyBubyB1
+bmluaXQsIHNvIGxnbG9ja3MgY2Fubm90IGJlIGRlZmluZWQgaW4KICAqIG1vZHVsZXMgKGJ1dCBp
+dCdzIGZpbmUgdG8gdXNlIHRoZW0gZnJvbSB0aGVyZSkKICAqIENvdWxkIGJlIGFkZGVkIHRob3Vn
+aCwganVzdCB1bmRvIGxnX2xvY2tfaW5pdAogICovCiAKLXZvaWQgbGdfbG9ja19pbml0KHN0cnVj
+dCBsZ2xvY2sgKmxnLCBjaGFyICpuYW1lKQordm9pZCBsZ19sb2NrX2luaXQoc3RydWN0IGxnbG9j
+ayBfX3BlcmNwdSAqbGcsIGNoYXIgKm5hbWUpCiB7Ci0JTE9DS0RFUF9JTklUX01BUCgmbGctPmxv
+Y2tfZGVwX21hcCwgbmFtZSwgJmxnLT5sb2NrX2tleSwgMCk7CisJTE9DS0RFUF9JTklUX01BUChs
+Z19sb2NrX2RlcF9tYXAobGcpLCBuYW1lLCBsZ19sb2NrX2tleShsZyksIDApOwogfQogRVhQT1JU
+X1NZTUJPTChsZ19sb2NrX2luaXQpOwogCi12b2lkIGxnX2xvY2FsX2xvY2soc3RydWN0IGxnbG9j
+ayAqbGcpCit2b2lkIGxnX2xvY2FsX2xvY2soc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcpCiB7
+CiAJYXJjaF9zcGlubG9ja190ICpsb2NrOwogCiAJcHJlZW1wdF9kaXNhYmxlKCk7Ci0Jcndsb2Nr
+X2FjcXVpcmVfcmVhZCgmbGctPmxvY2tfZGVwX21hcCwgMCwgMCwgX1JFVF9JUF8pOwotCWxvY2sg
+PSB0aGlzX2NwdV9wdHIobGctPmxvY2spOworCXJ3bG9ja19hY3F1aXJlX3JlYWQobGdfbG9ja19k
+ZXBfbWFwKGxnKSwgMCwgMCwgX1JFVF9JUF8pOworCWxvY2sgPSB0aGlzX2NwdV9wdHIoJmxnLT5s
+b2NrKTsKIAlhcmNoX3NwaW5fbG9jayhsb2NrKTsKIH0KIEVYUE9SVF9TWU1CT0wobGdfbG9jYWxf
+bG9jayk7CiAKLXZvaWQgbGdfbG9jYWxfdW5sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKQordm9pZCBs
+Z19sb2NhbF91bmxvY2soc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcpCiB7CiAJYXJjaF9zcGlu
+bG9ja190ICpsb2NrOwogCi0Jcndsb2NrX3JlbGVhc2UoJmxnLT5sb2NrX2RlcF9tYXAsIDEsIF9S
+RVRfSVBfKTsKLQlsb2NrID0gdGhpc19jcHVfcHRyKGxnLT5sb2NrKTsKKwlyd2xvY2tfcmVsZWFz
+ZShsZ19sb2NrX2RlcF9tYXAobGcpLCAxLCBfUkVUX0lQXyk7CisJbG9jayA9IHRoaXNfY3B1X3B0
+cigmbGctPmxvY2spOwogCWFyY2hfc3Bpbl91bmxvY2sobG9jayk7CiAJcHJlZW1wdF9lbmFibGUo
+KTsKIH0KIEVYUE9SVF9TWU1CT0wobGdfbG9jYWxfdW5sb2NrKTsKIAotdm9pZCBsZ19sb2NhbF9s
+b2NrX2NwdShzdHJ1Y3QgbGdsb2NrICpsZywgaW50IGNwdSkKK3ZvaWQgbGdfbG9jYWxfbG9ja19j
+cHUoc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcsIGludCBjcHUpCiB7CiAJYXJjaF9zcGlubG9j
+a190ICpsb2NrOwogCiAJcHJlZW1wdF9kaXNhYmxlKCk7Ci0Jcndsb2NrX2FjcXVpcmVfcmVhZCgm
+bGctPmxvY2tfZGVwX21hcCwgMCwgMCwgX1JFVF9JUF8pOwotCWxvY2sgPSBwZXJfY3B1X3B0cihs
+Zy0+bG9jaywgY3B1KTsKKwlyd2xvY2tfYWNxdWlyZV9yZWFkKGxnX2xvY2tfZGVwX21hcChsZyks
+IDAsIDAsIF9SRVRfSVBfKTsKKwlsb2NrID0gcGVyX2NwdV9wdHIoJmxnLT5sb2NrLCBjcHUpOwog
+CWFyY2hfc3Bpbl9sb2NrKGxvY2spOwogfQogRVhQT1JUX1NZTUJPTChsZ19sb2NhbF9sb2NrX2Nw
+dSk7CiAKLXZvaWQgbGdfbG9jYWxfdW5sb2NrX2NwdShzdHJ1Y3QgbGdsb2NrICpsZywgaW50IGNw
+dSkKK3ZvaWQgbGdfbG9jYWxfdW5sb2NrX2NwdShzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZywg
+aW50IGNwdSkKIHsKIAlhcmNoX3NwaW5sb2NrX3QgKmxvY2s7CiAKLQlyd2xvY2tfcmVsZWFzZSgm
+bGctPmxvY2tfZGVwX21hcCwgMSwgX1JFVF9JUF8pOwotCWxvY2sgPSBwZXJfY3B1X3B0cihsZy0+
+bG9jaywgY3B1KTsKKwlyd2xvY2tfcmVsZWFzZShsZ19sb2NrX2RlcF9tYXAobGcpLCAxLCBfUkVU
+X0lQXyk7CisJbG9jayA9IHBlcl9jcHVfcHRyKCZsZy0+bG9jaywgY3B1KTsKIAlhcmNoX3NwaW5f
+dW5sb2NrKGxvY2spOwogCXByZWVtcHRfZW5hYmxlKCk7CiB9CiBFWFBPUlRfU1lNQk9MKGxnX2xv
+Y2FsX3VubG9ja19jcHUpOwogCi12b2lkIGxnX2dsb2JhbF9sb2NrKHN0cnVjdCBsZ2xvY2sgKmxn
+KQordm9pZCBsZ19nbG9iYWxfbG9jayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZykKIHsKIAlp
+bnQgaTsKIAogCXByZWVtcHRfZGlzYWJsZSgpOwotCXJ3bG9ja19hY3F1aXJlKCZsZy0+bG9ja19k
+ZXBfbWFwLCAwLCAwLCBfUkVUX0lQXyk7CisJcndsb2NrX2FjcXVpcmUobGdfbG9ja19kZXBfbWFw
+KGxnKSwgMCwgMCwgX1JFVF9JUF8pOwogCWZvcl9lYWNoX3Bvc3NpYmxlX2NwdShpKSB7CiAJCWFy
+Y2hfc3BpbmxvY2tfdCAqbG9jazsKLQkJbG9jayA9IHBlcl9jcHVfcHRyKGxnLT5sb2NrLCBpKTsK
+KwkJbG9jayA9IHBlcl9jcHVfcHRyKCZsZy0+bG9jaywgaSk7CiAJCWFyY2hfc3Bpbl9sb2NrKGxv
+Y2spOwogCX0KIH0KIEVYUE9SVF9TWU1CT0wobGdfZ2xvYmFsX2xvY2spOwogCi12b2lkIGxnX2ds
+b2JhbF91bmxvY2soc3RydWN0IGxnbG9jayAqbGcpCit2b2lkIGxnX2dsb2JhbF91bmxvY2soc3Ry
+dWN0IGxnbG9jayBfX3BlcmNwdSAqbGcpCiB7CiAJaW50IGk7CiAKLQlyd2xvY2tfcmVsZWFzZSgm
+bGctPmxvY2tfZGVwX21hcCwgMSwgX1JFVF9JUF8pOworCXJ3bG9ja19yZWxlYXNlKGxnX2xvY2tf
+ZGVwX21hcChsZyksIDEsIF9SRVRfSVBfKTsKIAlmb3JfZWFjaF9wb3NzaWJsZV9jcHUoaSkgewog
+CQlhcmNoX3NwaW5sb2NrX3QgKmxvY2s7Ci0JCWxvY2sgPSBwZXJfY3B1X3B0cihsZy0+bG9jaywg
+aSk7CisJCWxvY2sgPSBwZXJfY3B1X3B0cigmbGctPmxvY2ssIGkpOwogCQlhcmNoX3NwaW5fdW5s
+b2NrKGxvY2spOwogCX0KIAlwcmVlbXB0X2VuYWJsZSgpOwo=
+--047d7bd75d5c0a5cb704e5812a2b--
