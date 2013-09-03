@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760499Ab3ICQik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:38:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46403 "EHLO
+	id S1760484Ab3ICQij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:38:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46410 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab3ICQYN (ORCPT
+	with ESMTP id S1755316Ab3ICQYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 12:24:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 15/58] USB: ti_usb_3410_5052: fix big-endian firmware handling
-Date: Tue,  3 Sep 2013 09:23:19 -0700
-Message-Id: <1378225442-20654-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 13/58] USB: mos7840: fix big-endian probe
+Date: Tue,  3 Sep 2013 09:23:17 -0700
+Message-Id: <1378225442-20654-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -30,44 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit e877dd2f2581628b7119df707d4cf03d940cff49 upstream.
+commit d551ec9b690f3de65b0091a2e767f1382adc792d upstream.
 
-Fix endianess bugs in firmware handling introduced by commits cb7a7c6a
-("ti_usb_3410_5052: add Multi-Tech modem support") and 05a3d905
-("ti_usb_3410_5052: support alternate firmware") which made the driver
-use the wrong firmware for certain devices on big-endian machines.
+Fix bug in device-type detection on big-endian machines originally
+introduced by commit 0eafe4de ("USB: serial: mos7840: add support for
+MCS7810 devices") which always matched on little-endian product ids.
 
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ti_usb_3410_5052.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mos7840.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index f4a748b..a0a2064 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -1627,14 +1627,15 @@ static int ti_download_firmware(struct ti_device *tdev)
- 	char buf[32];
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index ab2f48f..85f28bf 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2325,7 +2325,7 @@ static int mos7810_check(struct usb_serial *serial)
+ static int mos7840_probe(struct usb_serial *serial,
+ 				const struct usb_device_id *id)
+ {
+-	u16 product = serial->dev->descriptor.idProduct;
++	u16 product = le16_to_cpu(serial->dev->descriptor.idProduct);
+ 	u8 *buf;
+ 	int device_type;
  
- 	/* try ID specific firmware first, then try generic firmware */
--	sprintf(buf, "ti_usb-v%04x-p%04x.fw", dev->descriptor.idVendor,
--	    dev->descriptor.idProduct);
-+	sprintf(buf, "ti_usb-v%04x-p%04x.fw",
-+			le16_to_cpu(dev->descriptor.idVendor),
-+			le16_to_cpu(dev->descriptor.idProduct));
- 	status = request_firmware(&fw_p, buf, &dev->dev);
- 
- 	if (status != 0) {
- 		buf[0] = '\0';
--		if (dev->descriptor.idVendor == MTS_VENDOR_ID) {
--			switch (dev->descriptor.idProduct) {
-+		if (le16_to_cpu(dev->descriptor.idVendor) == MTS_VENDOR_ID) {
-+			switch (le16_to_cpu(dev->descriptor.idProduct)) {
- 			case MTS_CDMA_PRODUCT_ID:
- 				strcpy(buf, "mts_cdma.fw");
- 				break;
 -- 
 1.8.1.2
 
