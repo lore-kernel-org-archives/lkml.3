@@ -1,128 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab3ICKuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 06:50:32 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:35631 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759915Ab3ICKub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 06:50:31 -0400
-Message-ID: <5225BEF4.5030901@hitachi.com>
-Date: Tue, 03 Sep 2013 19:50:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932708Ab3ICKxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 06:53:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759831Ab3ICKxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 06:53:35 -0400
+Date: Tue, 3 Sep 2013 13:53:15 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel
+ handling
+Message-ID: <20130903105315.GY22899@redhat.com>
+References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
+ <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
+ <20130901120609.GJ22899@redhat.com>
+ <52240295.7050608@ozlabs.ru>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
- ring buffer
-References: <1378187054-27401-1-git-send-email-namhyung@kernel.org> <1378187054-27401-11-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1378187054-27401-11-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52240295.7050608@ozlabs.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/03 14:44), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, Sep 02, 2013 at 01:14:29PM +1000, Alexey Kardashevskiy wrote:
+> On 09/01/2013 10:06 PM, Gleb Natapov wrote:
+> > On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
+> >> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
+> >> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
+> >> them to user space which saves time on switching to user space and back.
+> >>
+> >> Both real and virtual modes are supported. The kernel tries to
+> >> handle a TCE request in the real mode, if fails it passes the request
+> >> to the virtual mode to complete the operation. If it a virtual mode
+> >> handler fails, the request is passed to user space.
+> >>
+> >> The first user of this is VFIO on POWER. Trampolines to the VFIO external
+> >> user API functions are required for this patch.
+> >>
+> >> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
+> >> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
+> >> of map/unmap requests. The device supports a single attribute which is
+> >> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
+> >> establishes the connection between KVM and VFIO.
+> >>
+> >> Tests show that this patch increases transmission speed from 220MB/s
+> >> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+> >>
+> >> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> >> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> >>
+> >> ---
+> >>
+> >> Changes:
+> >> v9:
+> >> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
+> >> KVM device
+> >> * release_spapr_tce_table() is not shared between different TCE types
+> >> * reduced the patch size by moving VFIO external API
+> >> trampolines to separate patche
+> >> * moved documentation from Documentation/virtual/kvm/api.txt to
+> >> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> >>
+> >> v8:
+> >> * fixed warnings from check_patch.pl
+> >>
+> >> 2013/07/11:
+> >> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
+> >> for KVM_BOOK3S_64
+> >> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
+> >> for this here but the next patch for hugepages support will use it more.
+> >>
+> >> 2013/07/06:
+> >> * added realmode arch_spin_lock to protect TCE table from races
+> >> in real and virtual modes
+> >> * POWERPC IOMMU API is changed to support real mode
+> >> * iommu_take_ownership and iommu_release_ownership are protected by
+> >> iommu_table's locks
+> >> * VFIO external user API use rewritten
+> >> * multiple small fixes
+> >>
+> >> 2013/06/27:
+> >> * tce_list page is referenced now in order to protect it from accident
+> >> invalidation during H_PUT_TCE_INDIRECT execution
+> >> * added use of the external user VFIO API
+> >>
+> >> 2013/06/05:
+> >> * changed capability number
+> >> * changed ioctl number
+> >> * update the doc article number
+> >>
+> >> 2013/05/20:
+> >> * removed get_user() from real mode handlers
+> >> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
+> >> translated TCEs, tries realmode_get_page() on those and if it fails, it
+> >> passes control over the virtual mode handler which tries to finish
+> >> the request handling
+> >> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
+> >> on a page
+> >> * The only reason to pass the request to user mode now is when the user mode
+> >> did not register TCE table in the kernel, in all other cases the virtual mode
+> >> handler is expected to do the job
+> >> ---
+> >>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
+> >>  arch/powerpc/include/asm/kvm_host.h                |   4 +
+> >>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
+> >>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
+> >>  arch/powerpc/kvm/powerpc.c                         |   1 +
+> >>  include/linux/kvm_host.h                           |   1 +
+> >>  virt/kvm/kvm_main.c                                |   5 +
+> >>  7 files changed, 477 insertions(+), 3 deletions(-)
+> >>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> >>
+> >> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> >> new file mode 100644
+> >> index 0000000..4bc8fc3
+> >> --- /dev/null
+> >> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> >> @@ -0,0 +1,37 @@
+> >> +SPAPR TCE IOMMU device
+> >> +
+> >> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
+> >> +Architectures: powerpc
+> >> +
+> >> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
+> >> +
+> >> +Groups:
+> >> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
+> >> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
+> >> +
+> >> +This is completely made up device which provides API to link
+> >> +logical bus number (LIOBN) and IOMMU group. The user space has
+> >> +to create a new SPAPR TCE IOMMU device per a logical bus.
+> >> +
+> > Why not have one device that can handle multimple links?
 > 
-> Fetching from user space should be done in a non-atomic context.  So
-> use a per-cpu buffer and copy its content to the ring buffer
-> atomically.  Note that we can migrate during accessing user memory
-> thus use a per-cpu mutex to protect concurrent accesses.
 > 
-> This is needed since we'll be able to fetch args from an user memory
-> which can be swapped out.  Before that uprobes could fetch args from
-> registers only which saved in a kernel space.
+> I can do that. If I make it so, it won't even look as a device at all, just
+> some weird interface to KVM but ok. What bothers me is it is just a
+May be I do not understand usage pattern here. Why do you feel that device
+that can handle multiple links is worse than device per link? How many logical
+buses is there usually? How often they created/destroyed? I am not insisting
+on the change, just trying to understand why you do not like it.
+
+> question what I will have to do next. Because I can easily predict a
+> suggestion to move kvmppc_spapr_tce_table's (a links list) from
+> kvm->arch.spapr_tce_tables to that device but I cannot do that for obvious
+> compatibility reasons caused by the fact that the list is already used for
+> emulated devices (for the starter - they need mmap()).
 > 
-> While at it, use __get_data_size() and store_trace_args() to reduce
-> code duplication.
+> Or supporting all IOMMU links (and leaving emulated stuff as is) in on
+> "device" is the last thing I have to do and then you'll ack the patch?
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/trace/trace_uprobe.c | 97 +++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 81 insertions(+), 16 deletions(-)
+I am concerned more about API here. Internal implementation details I
+leave to powerpc experts :)
+
 > 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 9f2d12d2311d..9ede401759ab 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -530,21 +530,46 @@ static const struct file_operations uprobe_profile_ops = {
->  	.release	= seq_release,
->  };
->  
-> +static atomic_t uprobe_buffer_ref = ATOMIC_INIT(0);
-> +static void __percpu *uprobe_cpu_buffer;
-> +static DEFINE_PER_CPU(struct mutex, uprobe_cpu_mutex);
-> +
->  static void uprobe_trace_print(struct trace_uprobe *tu,
->  				unsigned long func, struct pt_regs *regs)
->  {
->  	struct uprobe_trace_entry_head *entry;
->  	struct ring_buffer_event *event;
->  	struct ring_buffer *buffer;
-> -	void *data;
-> -	int size, i;
-> +	struct mutex *mutex;
-> +	void *data, *arg_buf;
-> +	int size, dsize, esize;
-> +	int cpu;
->  	struct ftrace_event_call *call = &tu->p.call;
->  
-> -	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +	dsize = __get_data_size(&tu->p, regs);
-> +	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +
-> +	if (WARN_ON_ONCE(!uprobe_cpu_buffer || tu->p.size + dsize > PAGE_SIZE))
-> +		return;
-> +
-> +	cpu = raw_smp_processor_id();
-> +	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-> +	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-> +
-> +	/*
-> +	 * Use per-cpu buffers for fastest access, but we might migrate
-> +	 * so the mutex makes sure we have sole access to it.
-> +	 */
-> +	mutex_lock(mutex);
-> +	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
-> +
-> +	size = esize + tu->p.size + dsize;
->  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> -						  size + tu->p.size, 0, 0);
-> -	if (!event)
-> +						  size, 0, 0);
-> +	if (!event) {
-> +		mutex_unlock(mutex);
->  		return;
+> 
+> >> +LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
+> >> +(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
+> >> +IOMMU group is a minimal isolated device set which can be passed to
+> >> +the user space via VFIO.
+> >> +
+> >> +Right after creation the device is in uninitlized state and requires
+> >> +a KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE attribute to be set.
+> >> +The attribute contains liobn, IOMMU fd and flags:
+> >> +
+> >> +struct kvm_create_spapr_tce_iommu_linkage {
+> >> +	__u64 liobn;
+> >> +	__u32 fd;
+> >> +	__u32 flags;
+> >> +};
+> >> +
+> >> +The user space creates the SPAPR TCE IOMMU device, obtains
+> >> +an IOMMU fd via VFIO ABI and sets the attribute to the SPAPR TCE IOMMU
+> >> +device. At the moment of setting the attribute, the SPAPR TCE IOMMU
+> >> +device links LIOBN to IOMMU group and makes necessary steps
+> >> +to make sure that VFIO group will not disappear before KVM destroys.
+> >> +
+> >> +The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
+> > [skip]
+> 
+> Yes, I read the other comment. So roughly speaking I'll replace the
+> KVM_CAP_SPAPR_TCE_IOMMU check with the KVM_CAP_DEVICE_CTRL capability check
+> + try to KVM_CREATE_DEVICE with the KVM_CREATE_DEVICE_TEST flag set, and we
+> are fine.
+Yes, but KVM_CREATE_DEVICE_TEST does not create device, only checks if
+device type is supported.
 
-Just for a maintenance reason, I personally like to use "goto" in this case
-to fold up the mutex_unlock. :)
-
-Other parts are good for me.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--
+			Gleb.
