@@ -1,179 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761033Ab3ICWcZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:32:25 -0400
-Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:35428 "EHLO
-	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759870Ab3ICWcW (ORCPT
+	id S1761167Ab3ICWdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:33:25 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:50704 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755631Ab3ICWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:32:22 -0400
-Message-ID: <00000140e5f47e91-ca09bd1f-8531-413f-87bb-2ed839988471-000000@email.amazonses.com>
+	Tue, 3 Sep 2013 18:33:22 -0400
+Message-ID: <00000140e5f56965-daead878-020f-4dd9-b239-5547db26f274-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Tue, 3 Sep 2013 22:32:20 +0000
+Date: Tue, 3 Sep 2013 22:33:20 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 11/38] tracing: Replace __get_cpu_var uses
+Subject: [gcv v4 05/38] percpu: Add preemption checks to __this_cpu ops
 References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 2013.09.03-54.240.9.99
+X-SES-Outgoing: 2013.09.03-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+We define a check function in order to avoid trouble with the
+include files. Then the higher level __this_cpu macros are
+modified to involve the check before any operation.
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
-and less registers are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/kprobes.h
+Index: linux/include/linux/percpu.h
 ===================================================================
---- linux.orig/include/linux/kprobes.h	2013-08-26 14:25:53.000000000 -0500
-+++ linux/include/linux/kprobes.h	2013-08-26 14:26:29.460993659 -0500
-@@ -329,7 +329,7 @@ static inline void reset_current_kprobe(
+--- linux.orig/include/linux/percpu.h	2013-09-03 13:38:49.818888738 -0500
++++ linux/include/linux/percpu.h	2013-09-03 13:38:49.810888819 -0500
+@@ -172,6 +172,12 @@ extern phys_addr_t per_cpu_ptr_to_phys(v
  
- static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
- {
--	return (&__get_cpu_var(kprobe_ctlblk));
-+	return this_cpu_ptr(&kprobe_ctlblk);
+ extern void __bad_size_call_parameter(void);
+ 
++#ifdef CONFIG_PREEMPT
++extern void this_cpu_preempt_check(void);
++#else
++static inline void this_cpu_preempt_check(void) { }
++#endif
++
+ #define __pcpu_size_call_return(stem, variable)				\
+ ({	typeof(variable) pscr_ret__;					\
+ 	__verify_pcpu_ptr(&(variable));					\
+@@ -556,7 +562,7 @@ do {									\
+ # ifndef __this_cpu_write_8
+ #  define __this_cpu_write_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), =)
+ # endif
+-# define __this_cpu_write(pcp, val)	__pcpu_size_call(__this_cpu_write_, (pcp), (val))
++# define __this_cpu_write(pcp, val)	do { this_cpu_preempt_check();__pcpu_size_call(__this_cpu_write_, (pcp), (val)); } while (0)
+ #endif
+ 
+ #ifndef __this_cpu_add
+@@ -572,7 +578,7 @@ do {									\
+ # ifndef __this_cpu_add_8
+ #  define __this_cpu_add_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), +=)
+ # endif
+-# define __this_cpu_add(pcp, val)	__pcpu_size_call(__this_cpu_add_, (pcp), (val))
++# define __this_cpu_add(pcp, val)	do { this_cpu_preempt_check();__pcpu_size_call(__this_cpu_add_, (pcp), (val)); } while (0)
+ #endif
+ 
+ #ifndef __this_cpu_sub
+@@ -600,7 +606,7 @@ do {									\
+ # ifndef __this_cpu_and_8
+ #  define __this_cpu_and_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), &=)
+ # endif
+-# define __this_cpu_and(pcp, val)	__pcpu_size_call(__this_cpu_and_, (pcp), (val))
++# define __this_cpu_and(pcp, val)	do { this_cpu_preempt_check();__pcpu_size_call(__this_cpu_and_, (pcp), (val)); } while (0)
+ #endif
+ 
+ #ifndef __this_cpu_or
+@@ -616,7 +622,7 @@ do {									\
+ # ifndef __this_cpu_or_8
+ #  define __this_cpu_or_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), |=)
+ # endif
+-# define __this_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
++# define __this_cpu_or(pcp, val)	do { this_cpu_preempt_check();__pcpu_size_call(__this_cpu_or_, (pcp), (val)); } while (0)
+ #endif
+ 
+ #ifndef __this_cpu_xor
+@@ -632,7 +638,7 @@ do {									\
+ # ifndef __this_cpu_xor_8
+ #  define __this_cpu_xor_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), ^=)
+ # endif
+-# define __this_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
++# define __this_cpu_xor(pcp, val)	do { this_cpu_preempt_check();__pcpu_size_call(__this_cpu_xor_, (pcp), (val)); } while (0)
+ #endif
+ 
+ #define __this_cpu_generic_add_return(pcp, val)				\
+@@ -655,7 +661,7 @@ do {									\
+ #  define __this_cpu_add_return_8(pcp, val)	__this_cpu_generic_add_return(pcp, val)
+ # endif
+ # define __this_cpu_add_return(pcp, val)	\
+-	__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
++	(this_cpu_preempt_check(),__pcpu_size_call_return2(__this_cpu_add_return_, pcp, val))
+ #endif
+ 
+ #define __this_cpu_sub_return(pcp, val)	__this_cpu_add_return(pcp, -(val))
+@@ -683,7 +689,7 @@ do {									\
+ #  define __this_cpu_xchg_8(pcp, nval)	__this_cpu_generic_xchg(pcp, nval)
+ # endif
+ # define __this_cpu_xchg(pcp, nval)	\
+-	__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval)
++	(this_cpu_preempt_check(),__pcpu_size_call_return2(__this_cpu_xchg_, (pcp), nval))
+ #endif
+ 
+ #define __this_cpu_generic_cmpxchg(pcp, oval, nval)			\
+@@ -709,7 +715,7 @@ do {									\
+ #  define __this_cpu_cmpxchg_8(pcp, oval, nval)	__this_cpu_generic_cmpxchg(pcp, oval, nval)
+ # endif
+ # define __this_cpu_cmpxchg(pcp, oval, nval)	\
+-	__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval)
++	(this_cpu_preempt_check(),__pcpu_size_call_return2(__this_cpu_cmpxchg_, pcp, oval, nval))
+ #endif
+ 
+ #define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+@@ -742,7 +748,7 @@ do {									\
+ 	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+ # endif
+ # define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-	__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
++	(this_cpu_preempt_check(),__pcpu_double_call_return_bool(__this_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
+ #endif
+ 
+ /*
+Index: linux/kernel/sched/core.c
+===================================================================
+--- linux.orig/kernel/sched/core.c	2013-09-03 13:38:49.818888738 -0500
++++ linux/kernel/sched/core.c	2013-09-03 13:38:49.814888779 -0500
+@@ -2583,6 +2583,27 @@ asmlinkage void __sched preempt_schedule
+ 	exception_exit(prev_state);
  }
  
- int register_kprobe(struct kprobe *p);
-Index: linux/kernel/trace/ftrace.c
-===================================================================
---- linux.orig/kernel/trace/ftrace.c	2013-08-26 14:25:53.000000000 -0500
-+++ linux/kernel/trace/ftrace.c	2013-08-26 14:26:29.460993659 -0500
-@@ -870,7 +870,7 @@ function_profile_call(unsigned long ip,
++/*
++ * This function is called if the kernel is compiled with preempt
++ * support for each __this_cpu operations. It verifies that
++ * preemption has been disabled.
++ *
++ * The function cannot be a macro due to the low level nature
++ * of the per cpu header files.
++ */
++void this_cpu_preempt_check(void)
++{
++	int p;
++
++	p = preemptible();
++	if (p) {
++		printk(KERN_ERR "__this_cpu but preempt is off."
++			" Preempt count=%d Interrupts=%d\n",
++			preempt_count(), irqs_disabled());
++		dump_stack();
++	}
++
++}
+ #endif /* CONFIG_PREEMPT */
  
- 	local_irq_save(flags);
- 
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
- 
-@@ -901,7 +901,7 @@ static void profile_graph_return(struct
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
- 
-Index: linux/kernel/trace/trace.c
-===================================================================
---- linux.orig/kernel/trace/trace.c	2013-08-26 14:25:53.000000000 -0500
-+++ linux/kernel/trace/trace.c	2013-08-26 14:26:29.464993617 -0500
-@@ -1676,7 +1676,7 @@ static void __ftrace_trace_stack(struct
- 	 */
- 	barrier();
- 	if (use_stack == 1) {
--		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
-+		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
- 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
- 
- 		if (regs)
+ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
 
