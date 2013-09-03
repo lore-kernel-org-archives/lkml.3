@@ -1,96 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760820Ab3ICTjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 15:39:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53970 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab3ICTju (ORCPT
+	id S1760393Ab3ICTwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 15:52:46 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:57970 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756780Ab3ICTwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 15:39:50 -0400
-Date: Tue, 3 Sep 2013 20:39:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, netdev@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Eric Paris <eparis@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v2 0/8] Drop support for Renesas H8/300 architecture
-Message-ID: <20130903193938.GB13318@ZenIV.linux.org.uk>
-References: <1377906694-9578-1-git-send-email-linux@roeck-us.net>
- <52254F11.8070601@gmail.com>
- <522556D8.803@roeck-us.net>
- <52255CF1.6020700@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52255CF1.6020700@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 15:52:44 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: si5351: remove variant from platform_data
+Date: Tue,  3 Sep 2013 21:52:38 +0200
+Message-Id: <1378237958-755-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 11:52:17AM +0800, Chen Gang F T wrote:
+Commit 9807362bfe1748d9bb48eecb9261f1b1aaafea1c
+  "clk: si5351: declare all device IDs for module loading"
+removed the common i2c_device_id and introduced new ones for each variant
+of the clock generator. Instead of exploiting that information in the driver,
+it still depends on platform_data passing the chips .variant.
 
->   extreme sample: let 'kernel code style' and 'gcc code style' in one file, that will make the code very ugly.
+This removes the now redundant .variant from the platform_data and puts it in
+i2c_device_id's .driver_data instead.
 
-gcc style will make any code very ugly, no matter what (if anything) else is
-in the same file...
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clk/clk-si5351.c             |   28 ++++++++++++----------------
+ drivers/clk/clk-si5351.h             |   14 ++++++++++++++
+ include/linux/platform_data/si5351.h |   16 ----------------
+ 3 files changed, 26 insertions(+), 32 deletions(-)
 
-[digs out the ports history table]
-x86:		0.01			[alive]
-	i386:		0.01..2.6.24-rc1 [folded into x86]
-	x86_64:		2.5.5-pre1..2.6.24-rc1 [folded into x86]
-	x86:		2.6.24-rc1		[alive]
-alpha:		1.1.67			[alive]
-sparc:		1.1.77			[alive]
-	sparc64:	2.1.19..2.6.28 [folded into sparc]
-mips:		1.1.82			[alive]
-	mips64:		2.3.48-pre2..2.6.0-test2 [folded into mips]
-powerpc:	1.3.45			[alive]
-	ppc:    	1.3.45..2.6.26 [folded into powerpc]
-	ppc64:		2.5.5..2.6.15-rc1 [folded into powerpc]
-	powerpc:	2.6.15-rc1		[alive]
-m68k:		1.3.94			[alive]
-	m68knommu:	2.5.46..2.6.38 [folded into m68k]
-arm:		2.1.80			[alive]
-	arm26:		2.5.71..2.6.23-rc2 [gone]
-	arm64:		3.7-rc1			[alive][might eventually fold]
-sh:		2.3.16			[alive]
-	sh64:		2.6.8-rc1..2.6.24 [folded into sh, nearly dead there]
-ia64:		2.3.43-pre1		[alive]
-s390:		2.3.99pre8		[alive]
-	s390x:		2.5.0..2.5.67 [folded into s390]
-parisc:		2.4.0-test12		[alive]
-cris:		2.5.0			[alive]
-um:		2.5.35			[alive]
-v850:		2.5.46..2.6.26 [gone]
-h8300:		2.5.68			[moderately responsive]
-m32r:		2.6.9-rc3		[alive]
-frv:		2.6.11-rc1		[alive]
-xtensa:		2.6.13-rc1		[alive]
-avr32:		2.6.19-rc1		[alive]
-blackfin:	2.6.22-rc1		[alive]
-mn10300:	2.6.25-rc1		[alive]
-microblaze:	2.6.30-rc2		[alive]
-score:		2.6.32-rc1		[abandoned][cloned off mips]
-tile:		2.6.36-rc1		[alive]
-unicore32:	2.6.39-rc1		[alive][cloned off arm]
-openrisc:	3.1-rc1			[alive]
-hexagon:	3.2-rc1			[alive]
-c6x:		3.3-rc1			[alive]
-arc:		3.9-rc1			[alive]
-metag:		3.9-rc1			[alive]
+diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+index c50e837..b95aa09 100644
+--- a/drivers/clk/clk-si5351.c
++++ b/drivers/clk/clk-si5351.c
+@@ -1111,11 +1111,11 @@ static const struct of_device_id si5351_dt_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, si5351_dt_ids);
+ 
+-static int si5351_dt_parse(struct i2c_client *client)
++static int si5351_dt_parse(struct i2c_client *client,
++			   enum si5351_variant variant)
+ {
+ 	struct device_node *child, *np = client->dev.of_node;
+ 	struct si5351_platform_data *pdata;
+-	const struct of_device_id *match;
+ 	struct property *prop;
+ 	const __be32 *p;
+ 	int num = 0;
+@@ -1124,15 +1124,10 @@ static int si5351_dt_parse(struct i2c_client *client)
+ 	if (np == NULL)
+ 		return 0;
+ 
+-	match = of_match_node(si5351_dt_ids, np);
+-	if (match == NULL)
+-		return -EINVAL;
+-
+ 	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata)
+ 		return -ENOMEM;
+ 
+-	pdata->variant = (enum si5351_variant)match->data;
+ 	pdata->clk_xtal = of_clk_get(np, 0);
+ 	if (!IS_ERR(pdata->clk_xtal))
+ 		clk_put(pdata->clk_xtal);
+@@ -1163,7 +1158,7 @@ static int si5351_dt_parse(struct i2c_client *client)
+ 			pdata->pll_src[num] = SI5351_PLL_SRC_XTAL;
+ 			break;
+ 		case 1:
+-			if (pdata->variant != SI5351_VARIANT_C) {
++			if (variant != SI5351_VARIANT_C) {
+ 				dev_err(&client->dev,
+ 					"invalid parent %d for pll %d\n",
+ 					val, num);
+@@ -1187,7 +1182,7 @@ static int si5351_dt_parse(struct i2c_client *client)
+ 		}
+ 
+ 		if (num >= 8 ||
+-		    (pdata->variant == SI5351_VARIANT_A3 && num >= 3)) {
++		    (variant == SI5351_VARIANT_A3 && num >= 3)) {
+ 			dev_err(&client->dev, "invalid clkout %d\n", num);
+ 			return -EINVAL;
+ 		}
+@@ -1226,7 +1221,7 @@ static int si5351_dt_parse(struct i2c_client *client)
+ 					SI5351_CLKOUT_SRC_XTAL;
+ 				break;
+ 			case 3:
+-				if (pdata->variant != SI5351_VARIANT_C) {
++				if (variant != SI5351_VARIANT_C) {
+ 					dev_err(&client->dev,
+ 						"invalid parent %d for clkout %d\n",
+ 						val, num);
+@@ -1307,6 +1302,7 @@ static int si5351_dt_parse(struct i2c_client *client)
+ static int si5351_i2c_probe(struct i2c_client *client,
+ 			    const struct i2c_device_id *id)
+ {
++	enum si5351_variant variant = (enum si5351_variant)id->driver_data;
+ 	struct si5351_platform_data *pdata;
+ 	struct si5351_driver_data *drvdata;
+ 	struct clk_init_data init;
+@@ -1315,7 +1311,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
+ 	u8 num_parents, num_clocks;
+ 	int ret, n;
+ 
+-	ret = si5351_dt_parse(client);
++	ret = si5351_dt_parse(client, variant);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1331,7 +1327,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
+ 
+ 	i2c_set_clientdata(client, drvdata);
+ 	drvdata->client = client;
+-	drvdata->variant = pdata->variant;
++	drvdata->variant = variant;
+ 	drvdata->pxtal = pdata->clk_xtal;
+ 	drvdata->pclkin = pdata->clk_clkin;
+ 
+@@ -1568,10 +1564,10 @@ static int si5351_i2c_probe(struct i2c_client *client,
+ }
+ 
+ static const struct i2c_device_id si5351_i2c_ids[] = {
+-	{ "si5351a", 0 },
+-	{ "si5351a-msop", 0 },
+-	{ "si5351b", 0 },
+-	{ "si5351c", 0 },
++	{ "si5351a", SI5351_VARIANT_A },
++	{ "si5351a-msop", SI5351_VARIANT_A3 },
++	{ "si5351b", SI5351_VARIANT_B },
++	{ "si5351c", SI5351_VARIANT_C },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, si5351_i2c_ids);
+diff --git a/drivers/clk/clk-si5351.h b/drivers/clk/clk-si5351.h
+index c0dbf26..4d0746b 100644
+--- a/drivers/clk/clk-si5351.h
++++ b/drivers/clk/clk-si5351.h
+@@ -153,4 +153,18 @@
+ #define  SI5351_XTAL_ENABLE			(1<<6)
+ #define  SI5351_MULTISYNTH_ENABLE		(1<<4)
+ 
++/**
++ * enum si5351_variant - SiLabs Si5351 chip variant
++ * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
++ * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
++ * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
++ * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
++ */
++enum si5351_variant {
++	SI5351_VARIANT_A = 1,
++	SI5351_VARIANT_A3 = 2,
++	SI5351_VARIANT_B = 3,
++	SI5351_VARIANT_C = 4,
++};
++
+ #endif
+diff --git a/include/linux/platform_data/si5351.h b/include/linux/platform_data/si5351.h
+index 5433439..a947ab8 100644
+--- a/include/linux/platform_data/si5351.h
++++ b/include/linux/platform_data/si5351.h
+@@ -8,20 +8,6 @@
+ struct clk;
+ 
+ /**
+- * enum si5351_variant - SiLabs Si5351 chip variant
+- * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
+- * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
+- * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
+- * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
+- */
+-enum si5351_variant {
+-	SI5351_VARIANT_A = 1,
+-	SI5351_VARIANT_A3 = 2,
+-	SI5351_VARIANT_B = 3,
+-	SI5351_VARIANT_C = 4,
+-};
+-
+-/**
+  * enum si5351_pll_src - Si5351 pll clock source
+  * @SI5351_PLL_SRC_DEFAULT: default, do not change eeprom config
+  * @SI5351_PLL_SRC_XTAL: pll source clock is XTAL input
+@@ -115,14 +101,12 @@ struct si5351_clkout_config {
+ 
+ /**
+  * struct si5351_platform_data - Platform data for the Si5351 clock driver
+- * @variant: Si5351 chip variant
+  * @clk_xtal: xtal input clock
+  * @clk_clkin: clkin input clock
+  * @pll_src: array of pll source clock setting
+  * @clkout: array of clkout configuration
+  */
+ struct si5351_platform_data {
+-	enum si5351_variant variant;
+ 	struct clk *clk_xtal;
+ 	struct clk *clk_clkin;
+ 	enum si5351_pll_src pll_src[2];
+-- 
+1.7.10.4
 
-Frankly, I would've expected score and lefotvers of sh64 (aka sh5) to be
-the first against the wall - h8300 was a bit surprising...
