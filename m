@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760826Ab3ICTY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 15:24:28 -0400
-Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:46977 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753889Ab3ICTYZ (ORCPT
+	id S932877Ab3ICTY3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 15:24:29 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34147 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab3ICTYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 15:24:25 -0400
-Date: Tue, 3 Sep 2013 15:25:50 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Andi Kleen <andi@firstfloor.org>
-cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 5/5] perf, x86: Support Haswell v4 LBR format v2
-In-Reply-To: <1366484783-15613-6-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.DEB.2.02.1309031519440.12014@pianoman.cluster.toy>
-References: <1366484783-15613-1-git-send-email-andi@firstfloor.org> <1366484783-15613-6-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Date: Tue, 3 Sep 2013 12:24:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] input: allow SERIO=m even without EXPERT=y
+Message-ID: <20130903192421.GA26734@core.coreip.homeip.net>
+References: <1378147630-12471-1-git-send-email-teg@jklm.no>
+ <20130903150226.GA2392@srcf.ucam.org>
+ <CAG-2HqVK+nH4+AFrBUmr6wp1zfTeUdLArmXxZxC4TwuPSSkKZg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020204.52263768.016B,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG-2HqVK+nH4+AFrBUmr6wp1zfTeUdLArmXxZxC4TwuPSSkKZg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Apr 2013, Andi Kleen wrote:
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Tue, Sep 03, 2013 at 06:25:28PM +0200, Tom Gundersen wrote:
+> On Tue, Sep 3, 2013 at 5:02 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > On Mon, Sep 02, 2013 at 08:47:10PM +0200, Tom Gundersen wrote:
+> >> There is plenty of consumer hardware (e.g., mac books) that does not use
+> >> AT keyboards or PS/2 mice. It therefore makes sense for distro kernels
+> >> to build the related drivers as modules to avoid loading them on hardware
+> >> that does not need them. As such, these options should no longer be protected
+> >> by EXPERT.
+> >
+> > There are systems (although, with luck, only *very* old ones) where the
+> > modules won't get autoloaded. You should probably mention that in the
+> > help text.
 > 
-> Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-> as a new v4 version of the LBR format.
+> Good point, if this turns out to be a problem on current hardware
+> distros probably want to load the modules automatically at boot by
+> default.
+
+Presumably such systems would carry over their .config which would have
+these as built-in.
+
 > 
-> Handle those in and adjust the sign extension code to still correctly extend.
-> The flags are exported similarly in the LBR record to the existing misprediction
-> flag
+> Does this problem only apply to the i8042 module or also atkbd and libps2?
 
-I'm trying to update the perf_event_open() manpage for the new changes 
-that were in Linux 3.11 and am having trouble getting info on exactly
-what these new fields mean.
+Atkbd should be able to load automatically (as long as modutils support
+SERIO bus, which any recentish - 5 years? - modutils should do).
 
-> +	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
-> +	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
-> +	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+libps2 should load automatically to resolve dependencies of
+atkbd/psmouse.
 
-so if you specify these flags in branch_sample_type, what information
-appears in the branch record?  
+i8042 is old-style platform driver, so nothing will load it if it is
+compiled as a module. This one worries me most.
 
-If you get an abort, what address appears in the record?
+mousedev should load automatically if something tries to open it's
+device nodes.
 
-What does it mean in regards to a branch entry to be or not be in a 
-transaction?  
+Thanks.
 
-If you set "in transaction" does that then only record branches that are 
-in transactions?  What happens if you set both in transaction and not in?
-
-Is there some sort of document from intel you can link to that describes 
-all of this?
-
-Thanks,
-
-Vince
-
+-- 
+Dmitry
