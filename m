@@ -1,117 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab3ICFZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:25:13 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:5376 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759376Ab3ICFZL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:25:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzbb2dI98dI9371I1432I853kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Xiubo Li-B47053 <B47053@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-CC: Guo Shawn-R65073 <r65073@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Topic: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Index: AQHOnhwezjS9uM7qaEqpBdTwwEdnOZmuL2UAgAAOvACABU58cA==
-Date: Tue, 3 Sep 2013 05:25:05 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827F7CCF@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
- <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
- <5EFBF478-CFCC-4E66-A279-25F4A338B05B@kernel.crashing.org>
- <5220FC8C.90908@wwwdotorg.org>
-In-Reply-To: <5220FC8C.90908@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.56]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759365Ab3ICFdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:33:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33767 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab3ICFdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 01:33:45 -0400
+X-Spam-Score: -100.9
+Message-ID: <52257478.7070305@asianux.com>
+Date: Tue, 03 Sep 2013 13:32:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
+        riel@redhat.com, hughd@google.com, xemul@parallels.com,
+        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/shmem.c: check the return value of mpol_to_str()
+References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon> <52131F48.1030002@asianux.com> <52132011.60501@asianux.com> <52132432.3050308@asianux.com> <20130820082516.GE18673@moon> <52142422.9050209@asianux.com> <52142464.8060903@asianux.com> <521424BE.8020309@asianux.com> <20130821150337.bad5f71869cec813e2ded90c@linux-foundation.org> <521560BB.30006@asianux.com> <5215639D.1080202@asianux.com>
+In-Reply-To: <5215639D.1080202@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for
-> Freescale FTM PWM
-> 
-> On 08/30/2013 01:19 PM, Kumar Gala wrote:
-> > Should have at least something w/regards to a commit message.
-> >
-> > On Aug 20, 2013, at 10:07 PM, Xiubo Li wrote:
-> >
-> >> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> >> ---
-> >> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52
-> ++++++++++++++++++++++
-> >> 1 file changed, 52 insertions(+)
-> >> create mode 100644
-> >> Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
-> >> b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
-> >> new file mode 100644
-> >> index 0000000..698965b
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
-> >> @@ -0,0 +1,52 @@
-> >> +Freescale FTM PWM controller
-> >> +
-> >> +Required properties:
-> >> +- compatible: should be "fsl,vf610-ftm-pwm"
-> >> +- reg: physical base address and length of the controller's
-> >> +registers
-> >> +- #pwm-cells: Should be 3. Number of cells being used to specify PWM
-> property.
-> >> +  First cell specifies the per-chip channel index of the PWM to use,
-> >> +the
-> >> +  second cell is the period in nanoseconds and bit 0 in the third
-> >> +cell is
-> >> +  used to encode the polarity of PWM output. Set bit 0 of the third
-> >> +in PWM
-> >> +  specifier to 1 for inverse polarity & set to 0 for normal polarity.
-> >> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by 2^n(n = 0
-> ~ 7).
-> >> +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
-> >
-> > Should describe this in more detail, what does the value actually mean
-> for what modes there are?
-> 
-> Assuming "CPWM" is clearly explained in the HW documentation for this
-> chip (I have no idea if that's actually the case), then is it still
-> necessary to explain what this means in *detail*? Perhaps simply "see
-> section XXX in the TRM" or "see register XXX, bit YYY in the HW
-> documentation" would be enough?
->
-If to clearly explain the 'CPWM' mode, there maybe need much more words, I think just simply explain it, and then for more detail information "see section XXX in the TRM" or "see register XXX, bit YYY in HW documentation".
+Hello Maintainers:
+
+Please help check this patch, when you have time.
+
+If it need additional test, please let me know, I should try (better to
+provide some suggestions for test).
 
 
 Thanks.
 
---
-Best Regards,
-Xiubo
+On 08/22/2013 09:04 AM, Chen Gang wrote:
+> mpol_to_str() may fail, and not fill the buffer (e.g. -EINVAL), so need
+> check about it, or buffer may not be zero based, and next seq_printf()
+> will cause issue.
+> 
+> Also need let shmem_show_mpol() return value, since it may fail.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
+> ---
+>  mm/shmem.c |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index f00c1c1..b4d44db 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -883,16 +883,20 @@ redirty:
+>  
+>  #ifdef CONFIG_NUMA
+>  #ifdef CONFIG_TMPFS
+> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>  {
+>  	char buffer[64];
+> +	int ret;
+>  
+>  	if (!mpol || mpol->mode == MPOL_DEFAULT)
+> -		return;		/* show nothing */
+> +		return 0;		/* show nothing */
+>  
+> -	mpol_to_str(buffer, sizeof(buffer), mpol);
+> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
+> +	if (ret < 0)
+> +		return ret;
+>  
+>  	seq_printf(seq, ",mpol=%s", buffer);
+> +	return 0;
+>  }
+>  
+>  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+> @@ -951,8 +955,9 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+>  }
+>  #else /* !CONFIG_NUMA */
+>  #ifdef CONFIG_TMPFS
+> -static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+> +static inline int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>  {
+> +	return 0;
+>  }
+>  #endif /* CONFIG_TMPFS */
+>  
+> @@ -2555,8 +2560,7 @@ static int shmem_show_options(struct seq_file *seq, struct dentry *root)
+>  	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
+>  		seq_printf(seq, ",gid=%u",
+>  				from_kgid_munged(&init_user_ns, sbinfo->gid));
+> -	shmem_show_mpol(seq, sbinfo->mpol);
+> -	return 0;
+> +	return shmem_show_mpol(seq, sbinfo->mpol);
+>  }
+>  #endif /* CONFIG_TMPFS */
+>  
+> 
 
 
+-- 
+Chen Gang
