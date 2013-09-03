@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab3ICF6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:58:24 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:19704 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab3ICF6X (ORCPT
+	id S1754070Ab3ICGBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:01:36 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:57567 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3ICGBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:58:23 -0400
-X-Spam-Score: -100.9
-Message-ID: <52257A3E.7040001@asianux.com>
-Date: Tue, 03 Sep 2013 13:57:18 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 3 Sep 2013 02:01:34 -0400
+Date: Tue, 3 Sep 2013 08:01:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130903060130.GD16261@gmail.com>
+References: <5220F090.5050908@hp.com>
+ <20130830194059.GC13318@ZenIV.linux.org.uk>
+ <5220F811.9060902@hp.com>
+ <20130830202608.GD13318@ZenIV.linux.org.uk>
+ <52210225.60805@hp.com>
+ <20130830204852.GE13318@ZenIV.linux.org.uk>
+ <52214EBC.90100@hp.com>
+ <20130831023516.GI13318@ZenIV.linux.org.uk>
+ <20130831024233.GJ13318@ZenIV.linux.org.uk>
+ <5224E647.80303@hp.com>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>, Joe Perches <joe@perches.com>,
-        "'Jiri Kosina'" <trivial@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood> <520209FA.70409@asianux.com> <5202FEC3.4010408@asianux.com> <52145F5C.9090907@asianux.com> <521739B3.9050001@asianux.com>
-In-Reply-To: <521739B3.9050001@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5224E647.80303@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
 
-Maybe... I still miss some important mail addresses? or this patch is
-not suitable for applying?
+* Waiman Long <waiman.long@hp.com> wrote:
 
-Hmm... but I still want to try the last time: "please help check this
-patch, when you have time".
+> On 08/30/2013 10:42 PM, Al Viro wrote:
+> >On Sat, Aug 31, 2013 at 03:35:16AM +0100, Al Viro wrote:
+> >
+> >>Aha...  OK, I see what's going on.  We end up with shm_mnt *not* marked
+> >>as long-living vfsmount, even though it lives forever.  See if the
+> >>following helps; if it does (and I very much expect it to), we want to
+> >>put it in -stable.  As it is, you get slow path in mntput() each time
+> >>a file created by shmem_file_setup() gets closed.  For no reason whatsoever...
+> >We still want MS_NOUSER on shm_mnt, so we'd better make sure that
+> >shmem_fill_super() sets it on the internal instance...  Fixed variant
+> >follows:
+> >
+> >Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
+> >diff --git a/mm/shmem.c b/mm/shmem.c
+> >index e43dc55..5261498 100644
+> >--- a/mm/shmem.c
+> >+++ b/mm/shmem.c
+> >@@ -2615,13 +2615,15 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
+> >  	 * tmpfs instance, limiting inodes to one per page of lowmem;
+> >  	 * but the internal instance is left unlimited.
+> >  	 */
+> >-	if (!(sb->s_flags&  MS_NOUSER)) {
+> >+	if (!(sb->s_flags&  MS_KERNMOUNT)) {
+> >  		sbinfo->max_blocks = shmem_default_max_blocks();
+> >  		sbinfo->max_inodes = shmem_default_max_inodes();
+> >  		if (shmem_parse_options(data, sbinfo, false)) {
+> >  			err = -EINVAL;
+> >  			goto failed;
+> >  		}
+> >+	} else {
+> >+		sb->s_flags |= MS_NOUSER;
+> >  	}
+> >  	sb->s_export_op =&shmem_export_ops;
+> >  	sb->s_flags |= MS_NOSEC;
+> >@@ -2831,8 +2833,7 @@ int __init shmem_init(void)
+> >  		goto out2;
+> >  	}
+> >
+> >-	shm_mnt = vfs_kern_mount(&shmem_fs_type, MS_NOUSER,
+> >-				 shmem_fs_type.name, NULL);
+> >+	shm_mnt = kern_mount(&shmem_fs_type);
+> >  	if (IS_ERR(shm_mnt)) {
+> >  		error = PTR_ERR(shm_mnt);
+> >  		printk(KERN_ERR "Could not kern_mount tmpfs\n");
+> 
+> Yes, that patch worked. It eliminated the lglock as a bottleneck in
+> the AIM7 workload. The lg_global_lock did not show up in the perf
+> profile, whereas the lg_local_lock was only 0.07%.
 
-And next, I should not send additional tracing mail again, that will be
-really spam.
+Just curious: what's the worst bottleneck now in the optimized kernel? :-)
 
+Thanks,
 
-Thanks.
-
-On 08/23/2013 06:30 PM, Chen Gang wrote:
-> Hello Maintainers:
-> 
-> Is this patch suitable for applying ?  Does it belong to 'trivial' (or
-> 'Documentation', or others) ?
-> 
-> 
-> And sorry for my original missing some important mail addresses when I
-> sent the original patch (I got them by "./scripts/get_maintainers", and
-> not give more considerations for them).
-> 
-> So I append my original patch below, if necessary, please help check
-> when you have time, thanks.
-> 
-> 
-> ------------------------------patch begin-------------------------------
-> 
-> "include/uapi/" is the whole Linux kernel API, it is important enough
-> to get more global explanations by comments.
-> 
-> In "include/uapi/Kbuild", "Makefile..." and "non-arch..." comments are
-> meaningless for current 'Kbuild', so delete them.
-> 
-> And add more explanations for "include/uapi/" in "include/uapi/Kbuild",
-> also add more explanations for "include/uapi/linux/" in "include/uapi
-> /linux/Kbuild".
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  include/uapi/Kbuild       |    5 ++---
->  include/uapi/linux/Kbuild |    2 ++
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
-> index 81d2106..c682891 100644
-> --- a/include/uapi/Kbuild
-> +++ b/include/uapi/Kbuild
-> @@ -1,7 +1,6 @@
->  # UAPI Header export list
-> -# Top-level Makefile calls into asm-$(ARCH)
-> -# List only non-arch directories below
-> -
-> +# Except "linux/", UAPI means Universal API.
-> +# For "linux/", UAPI means User API which can be used by user mode.
-> 
->  header-y += asm-generic/
->  header-y += linux/
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index 997f9f2..0025e07 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -1,4 +1,6 @@
->  # UAPI Header export list
-> +# UAPI is User API which can be used by user mode.
-> +
->  header-y += byteorder/
->  header-y += can/
->  header-y += caif/
-> 
-
-
--- 
-Chen Gang
+	Ingo
