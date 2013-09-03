@@ -1,149 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381Ab3ICEzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 00:55:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47140 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759343Ab3ICEzD (ORCPT
+	id S1759358Ab3ICFBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:01:52 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:39346 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab3ICFBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 00:55:03 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <52256B67.50205@jp.fujitsu.com>
-Date: Tue, 3 Sep 2013 13:53:59 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <hannes@cmpxchg.org>,
-        <tony.luck@intel.com>, <matthew.garrett@nebula.com>, <dave@sr71.net>,
-        <riel@redhat.com>, <arjan@linux.intel.com>,
-        <srinivas.pandruvada@linux.intel.com>, <willy@linux.intel.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <lenb@kernel.org>, <rjw@sisk.pl>,
-        <gargankita@gmail.com>, <paulmck@linux.vnet.ibm.com>,
-        <svaidy@linux.vnet.ibm.com>, <andi@firstfloor.org>,
-        <santosh.shilimkar@ti.com>, <kosaki.motohiro@gmail.com>,
-        <linux-pm@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 04/35] mm: Initialize node memory regions during
- boot
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <20130830131504.4947.86008.stgit@srivatsabhat.in.ibm.com> <52242E1D.4020406@jp.fujitsu.com> <5224CE37.2070908@linux.vnet.ibm.com>
-In-Reply-To: <5224CE37.2070908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 3 Sep 2013 01:01:51 -0400
+Message-ID: <1378184510.3243.30.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 1/8] partitions/efi: use lba-aware partition records
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Karel Zak <kzak@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Matt Domsch <Matt_Domsch@dell.com>, Jim Hull <jim.hull@hp.com>,
+        Peter Jones <pjones@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
+Date: Mon, 02 Sep 2013 22:01:50 -0700
+In-Reply-To: <20130902101042.GB30710@x2.net.home>
+References: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
+	 <1375766476-4204-2-git-send-email-davidlohr@hp.com>
+	 <20130902101042.GB30710@x2.net.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/03 2:43), Srivatsa S. Bhat wrote:
-> On 09/02/2013 11:50 AM, Yasuaki Ishimatsu wrote:
->> (2013/08/30 22:15), Srivatsa S. Bhat wrote:
->>> Initialize the node's memory-regions structures with the information
->>> about
->>> the region-boundaries, at boot time.
->>>
->>> Based-on-patch-by: Ankita Garg <gargankita@gmail.com>
->>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>> ---
->>>
->>>    include/linux/mm.h |    4 ++++
->>>    mm/page_alloc.c    |   28 ++++++++++++++++++++++++++++
->>>    2 files changed, 32 insertions(+)
->>>
->>> diff --git a/include/linux/mm.h b/include/linux/mm.h
->>> index f022460..18fdec4 100644
->>> --- a/include/linux/mm.h
->>> +++ b/include/linux/mm.h
->>> @@ -627,6 +627,10 @@ static inline pte_t maybe_mkwrite(pte_t pte,
->>> struct vm_area_struct *vma)
->>>    #define LAST_NID_MASK        ((1UL << LAST_NID_WIDTH) - 1)
->>>    #define ZONEID_MASK        ((1UL << ZONEID_SHIFT) - 1)
->>>
->>> +/* Hard-code memory region size to be 512 MB for now. */
->>> +#define MEM_REGION_SHIFT    (29 - PAGE_SHIFT)
->>> +#define MEM_REGION_SIZE        (1UL << MEM_REGION_SHIFT)
->>> +
->>>    static inline enum zone_type page_zonenum(const struct page *page)
->>>    {
->>>        return (page->flags >> ZONES_PGSHIFT) & ZONES_MASK;
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index b86d7e3..bb2d5d4 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -4809,6 +4809,33 @@ static void __init_refok
->>> alloc_node_mem_map(struct pglist_data *pgdat)
->>>    #endif /* CONFIG_FLAT_NODE_MEM_MAP */
->>>    }
->>>
->>> +static void __meminit init_node_memory_regions(struct pglist_data
->>> *pgdat)
->>> +{
->>> +    int nid = pgdat->node_id;
->>> +    unsigned long start_pfn = pgdat->node_start_pfn;
->>> +    unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
->>> +    struct node_mem_region *region;
->>> +    unsigned long i, absent;
->>> +    int idx;
->>> +
->>> +    for (i = start_pfn, idx = 0; i < end_pfn;
->>> +                i += region->spanned_pages, idx++) {
->>> +
->>
->>> +        region = &pgdat->node_regions[idx];
->>
->> It seems that overflow easily occurs.
->> node_regions[] has 256 entries and MEM_REGION_SIZE is 512MiB. So if
->> the pgdat has more than 128 GiB, overflow will occur. Am I wrong?
->>
->
-> No, you are right. It should be made dynamic to accommodate larger
-> memory. I just used that value as a placeholder, since my focus was to
-> demonstrate what algorithms and designs could be developed on top of
-> this infrastructure, to help shape memory allocations. But certainly
-> this needs to be modified to be flexible enough to work with any memory
-> size. Thank you for your review!
+On Mon, 2013-09-02 at 12:10 +0200, Karel Zak wrote:
+> On Mon, Aug 05, 2013 at 10:21:09PM -0700, Davidlohr Bueso wrote:
+> >  
+> > +typedef struct _gpt_record {
+> > +        u8      boot_indicator; /* unused by EFI, set to 0x80 for bootable */
+> > +        u8      start_head;     /* unused by EFI, pt start in CHS */
+> > +        u8      start_sector;   /* unused by EFI, pt start in CHS */
+> > +        u8      start_track;
+> > +        u8      os_type;        /* EFI and legacy non-EFI OS types */
+> > +        u8      end_head;       /* unused by EFI, pt end in CHS */
+> > +        u8      end_sector;     /* unused by EFI, pt end in CHS */
+> > +        u8      end_track;      /* unused by EFI, pt end in CHS */
+> > +        __le32  starting_lba;   /* used by EFI - start addr of the on disk pt */
+> > +        __le32  size_in_lba;    /* used by EFI - size of pt in LBA */
+> > +} __attribute__ ((packed)) gpt_record;
+> > +
+> 
+>  Maybe it would be better to rename this struct to "gpt_mbr_record" to
+>  make it more obvious.
 
-Thank you for your explanation. I understood it.
+Yes, good idea. I've added the patch below.
 
-Thanks,
-Yasuaki Ishimatsu
+8<------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] partitions/efi: rename gpt_record structure
 
->
-> Regards,
-> Srivatsa S. Bhat
->
->>
->>> +        region->pgdat = pgdat;
->>> +        region->start_pfn = i;
->>> +        region->spanned_pages = min(MEM_REGION_SIZE, end_pfn - i);
->>> +        region->end_pfn = region->start_pfn + region->spanned_pages;
->>> +
->>> +        absent = __absent_pages_in_range(nid, region->start_pfn,
->>> +                         region->end_pfn);
->>> +
->>> +        region->present_pages = region->spanned_pages - absent;
->>> +    }
->>> +
->>> +    pgdat->nr_node_regions = idx;
->>> +}
->>> +
->>>    void __paginginit free_area_init_node(int nid, unsigned long
->>> *zones_size,
->>>            unsigned long node_start_pfn, unsigned long *zholes_size)
->>>    {
->>> @@ -4837,6 +4864,7 @@ void __paginginit free_area_init_node(int nid,
->>> unsigned long *zones_size,
->>>
->>>        free_area_init_core(pgdat, start_pfn, end_pfn,
->>>                    zones_size, zholes_size);
->>> +    init_node_memory_regions(pgdat);
->>>    }
->>>
->>>    #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
->>>
->>
->>
->
+Since the gpt_record structure is an MBR-specific
+type, rename it to gpt_mbr_record for obvious
+reading.
+
+Suggested-by: Karel Zak <kzak@redhat.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ block/partitions/efi.c | 2 +-
+ block/partitions/efi.h | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index 8e6d77e..9a4eba7 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -152,7 +152,7 @@ static u64 last_lba(struct block_device *bdev)
+ 		       bdev_logical_block_size(bdev)) - 1ULL;
+ }
+ 
+-static inline int pmbr_part_valid(gpt_record *part)
++static inline int pmbr_part_valid(gpt_mbr_record *part)
+ {
+         if (part->os_type != EFI_PMBR_OSTYPE_EFI_GPT)
+                 goto invalid;
+diff --git a/block/partitions/efi.h b/block/partitions/efi.h
+index 9ab8ee9..54b2687 100644
+--- a/block/partitions/efi.h
++++ b/block/partitions/efi.h
+@@ -104,7 +104,7 @@ typedef struct _gpt_entry {
+ 	efi_char16_t partition_name[72 / sizeof (efi_char16_t)];
+ } __attribute__ ((packed)) gpt_entry;
+ 
+-typedef struct _gpt_record {
++typedef struct _gpt_mbr_record {
+         u8      boot_indicator; /* unused by EFI, set to 0x80 for bootable */
+         u8      start_head;     /* unused by EFI, pt start in CHS */
+         u8      start_sector;   /* unused by EFI, pt start in CHS */
+@@ -115,14 +115,14 @@ typedef struct _gpt_record {
+         u8      end_track;      /* unused by EFI, pt end in CHS */
+         __le32  starting_lba;   /* used by EFI - start addr of the on disk pt */
+         __le32  size_in_lba;    /* used by EFI - size of pt in LBA */
+-} __attribute__ ((packed)) gpt_record;
++} __attribute__ ((packed)) gpt_mbr_record;
+ 
+ 
+ typedef struct _legacy_mbr {
+ 	u8 boot_code[440];
+ 	__le32 unique_mbr_signature;
+ 	__le16 unknown;
+-	gpt_record partition_record[4];
++	gpt_mbr_record partition_record[4];
+ 	__le16 signature;
+ } __attribute__ ((packed)) legacy_mbr;
+ 
+-- 
+1.7.11.7
+
 
 
