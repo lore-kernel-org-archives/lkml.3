@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760244Ab3ICSLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:11:41 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:63417 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756445Ab3ICSLi (ORCPT
+	id S1760370Ab3ICSNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:13:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57769 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760065Ab3ICSNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:11:38 -0400
-Date: Tue, 3 Sep 2013 11:11:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andrey Moiseev <o2g.org.ru@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: input: i8042 possible bug
-Message-ID: <20130903181134.GD25985@core.coreip.homeip.net>
-References: <52261EBE.5010007@gmail.com>
+	Tue, 3 Sep 2013 14:13:36 -0400
+Message-ID: <522626CC.70804@wwwdotorg.org>
+Date: Tue, 03 Sep 2013 12:13:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52261EBE.5010007@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-tegra@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Introduce table driven initializations
+References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 09:39:10PM +0400, Andrey Moiseev wrote:
-> Here is an extract from drivers/input/serio/i8042.c:
-> > 
-> > static int i8042_flush(void)
-> > {
-> > 	unsigned long flags;
-> > 	unsigned char data, str;
-> > 	int i = 0;
-> > 
-> > 	spin_lock_irqsave(&i8042_lock, flags);
-> > 
-> > 	while (((str = i8042_read_status()) & I8042_STR_OBF) && (i < I8042_BUFFER_SIZE)) {
-> > 		udelay(50);
-> > 		data = i8042_read_data();
-> > 		i++;
-> > 		dbg("%02x <- i8042 (flush, %s)\n",
-> > 		    data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
-> > 	}
-> > 
-> > 	spin_unlock_irqrestore(&i8042_lock, flags);
-> > 
-> > 	return i;
-> > }
-> > 
-> > static int i8042_controller_check(void)
-> > {
-> > 	if (i8042_flush() == I8042_BUFFER_SIZE) {
-> Doesn't it panic needlessly, while the buffer was initially full?
+On 09/03/2013 07:31 AM, Peter De Schrijver wrote:
+> This patchset introduces a table driven initialization method for the
+> audio, PMC and gate clocks. It's similar to the table we already have for
+> the periph clocks.
 
-It appears so. We probably want to change it to return -1 if we still
-see OBF after fetching I8042_BUFFER_SIZE characters.
+I assume these patches will all go through Mike's clock tree for 3.13.
 
-Thanks.
+Aside from the one issue I mentioned, the series,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
--- 
-Dmitry
+I assume this will be followed by changes to convert the Tegra20/30
+clock drivers to be table-based too?
+
+>  2 files changed, 455 insertions(+), 550 deletions(-)
+
+That didn't work out as much of a line-count-reduction as I had naively
+hoped. Are there any more large blocks of repetitive code left to be
+converted?
