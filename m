@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934171Ab3ICXuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:50:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33646 "EHLO
+	id S934119Ab3ICXuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:50:32 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33613 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934139Ab3ICXue (ORCPT
+	with ESMTP id S1761461Ab3ICXu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:50:34 -0400
+	Tue, 3 Sep 2013 19:50:28 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, keescook@chromium.org, hpa@zytor.com,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V3 09/11] uswsusp: Disable when module loading is restricted
-Date: Tue,  3 Sep 2013 19:50:16 -0400
-Message-Id: <1378252218-18798-10-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH V3 01/11] Add secure_modules() call
+Date: Tue,  3 Sep 2013 19:50:08 -0400
+Message-Id: <1378252218-18798-2-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
 References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,37 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uswsusp allows a user process to dump and then restore kernel state, which
-makes it possible to avoid module loading restrictions. Prevent this when
-any restrictions have been imposed on loading modules.
+Provide a single call to allow kernel code to determine whether the system
+has been configured to either disable module loading entirely or to load
+only modules signed with a trusted key.
 
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- kernel/power/user.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/module.h |  7 +++++++
+ kernel/module.c        | 10 ++++++++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 4ed81e7..15cb72f 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -24,6 +24,7 @@
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/freezer.h>
-+#include <linux/module.h>
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 46f1ea0..0c266b2 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -509,6 +509,8 @@ int unregister_module_notifier(struct notifier_block * nb);
  
- #include <asm/uaccess.h>
+ extern void print_modules(void);
  
-@@ -48,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 	struct snapshot_data *data;
- 	int error;
- 
-+	if (secure_modules())
-+		return -EPERM;
++extern bool secure_modules(void);
 +
- 	lock_system_sleep();
+ #else /* !CONFIG_MODULES... */
  
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+ /* Given an address, look for it in the exception tables. */
+@@ -619,6 +621,11 @@ static inline int unregister_module_notifier(struct notifier_block * nb)
+ static inline void print_modules(void)
+ {
+ }
++
++static inline bool secure_modules(void)
++{
++	return false;
++}
+ #endif /* CONFIG_MODULES */
+ 
+ #ifdef CONFIG_SYSFS
+diff --git a/kernel/module.c b/kernel/module.c
+index 2069158..0e94acf 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3852,3 +3852,13 @@ void module_layout(struct module *mod,
+ }
+ EXPORT_SYMBOL(module_layout);
+ #endif
++
++bool secure_modules(void)
++{
++#ifdef CONFIG_MODULE_SIG
++	return (sig_enforce || modules_disabled);
++#else
++	return modules_disabled;
++#endif
++}
++EXPORT_SYMBOL(secure_modules);
 -- 
 1.8.3.1
 
