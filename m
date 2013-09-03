@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760993Ab3ICWSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:18:15 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39816 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760021Ab3ICWSN (ORCPT
+	id S1760597Ab3ICWbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:31:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56253 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab3ICWbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:18:13 -0400
-Date: Tue, 3 Sep 2013 15:18:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
- functions
-Message-ID: <20130903221808.GH3871@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130831051117.884125230@goodmis.org>
- <20130831051700.601365837@goodmis.org>
- <20130903171516.16290c47@gandalf.local.home>
+	Tue, 3 Sep 2013 18:31:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903171516.16290c47@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090322-1542-0000-0000-0000011BA959
+In-Reply-To: <5224B499.4010600@infradead.org>
+References: <5224B499.4010600@infradead.org>
+Date: Tue, 3 Sep 2013 17:31:20 -0500
+Message-ID: <CAL_Jsq+82vm_vt5EpcG1zvWmL_H4KY=91tB1WH5yUhHsiM11DA@mail.gmail.com>
+Subject: Re: [PATCH] of_irq.h: fix build warnings when CONFIG_OF is not enabled
+From: Rob Herring <robherring2@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 05:15:16PM -0400, Steven Rostedt wrote:
-> On Sat, 31 Aug 2013 01:11:18 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > index a6d098c..3750360 100644
-> > --- a/kernel/trace/ftrace.c
-> > +++ b/kernel/trace/ftrace.c
-> > @@ -1356,6 +1356,23 @@ ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
-> >  static void
-> >  ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
-> >  
-> > +static int ftrace_convert_size_to_bits(int size)
-> > +{
-> > +	int bits;
-> > +
-> > +	/*
-> > +	 * Make the hash size about 1/2 the # found
-> > +	 */
-> > +	for (size /= 2; size; size >>= 1)
-> > +		bits++;
-> > +
-> > +	/* Don't allocate too much */
-> > +	if (bits > FTRACE_HASH_MAX_BITS)
-> > +		bits = FTRACE_HASH_MAX_BITS;
-> > +
-> > +	return bits;
-> > +}
-> > +
-> 
-> Just found this bug. Strange that gcc never gave me a warning :-/
+On Mon, Sep 2, 2013 at 10:54 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+>
+> Fix build warnings when CONFIG_OF is not enabled:
 
-I can't give gcc too much trouble, as I also didn't give you an
-uninitialized-variable warning.
+It would be nice to know what arch/config you see this on.
 
-							Thanx, Paul
+> include/linux/of_irq.h:82:7: warning: 'struct device_node' declared inside parameter list [enabled by default]
+> include/linux/of_irq.h:82:7: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+> include/linux/of_irq.h:87:47: warning: 'struct device_node' declared inside parameter list [enabled by default]
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc:     Grant Likely <grant.likely@linaro.org>
+> Cc:     Rob Herring <rob.herring@calxeda.com>
+> Cc:     devicetree@vger.kernel.org
+> ---
+>  include/linux/of_irq.h |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> --- linux-next-20130830.orig/include/linux/of_irq.h
+> +++ linux-next-20130830/include/linux/of_irq.h
+> @@ -78,6 +78,8 @@ extern void of_irq_init(const struct of_
+>  #endif /* CONFIG_OF_IRQ */
+>
+>  #else /* !CONFIG_OF */
+> +struct device_node;
 
+Can you move this outside of the ifdefs to minimize the amount of ifdef'ed code.
+
+Rob
