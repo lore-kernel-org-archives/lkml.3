@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761267Ab3ICVNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:13:24 -0400
-Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:51172 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760742Ab3ICVNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:13:23 -0400
-Date: Tue, 3 Sep 2013 17:14:51 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Andi Kleen <ak@linux.intel.com>
-cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] perf, x86: Support Haswell v4 LBR format v2
-In-Reply-To: <20130903202844.GK16724@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.02.1309031711001.25732@pianoman.cluster.toy>
-References: <1366484783-15613-1-git-send-email-andi@firstfloor.org> <1366484783-15613-6-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1309031519440.12014@pianoman.cluster.toy> <20130903202844.GK16724@tassilo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1761288Ab3ICVNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:13:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760952Ab3ICVNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 17:13:35 -0400
+Date: Tue, 3 Sep 2013 17:13:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Restrict ST ASC driver to only build on !ARM when COMPILE_TEST is
+ set.
+Message-ID: <20130903211323.GA2247@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <20130903185959.E387A661287@gitolite.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020204.522650F2.016A,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903185959.E387A661287@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Sep 2013, Andi Kleen wrote:
+The Kconfig for this option suggests it's only relevant on STi SoCs,
+so add depends to have it not show up on archs that won't ever run it.
+ 
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
-> > > +	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
-> > > +	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
-> > > +	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
-> > 
-> > so if you specify these flags in branch_sample_type, what information
-> > appears in the branch record?  
-> 
-> This is just a filter, so when set branches that do not satisfy
-> the filter are not reported.
-
-Is the implementation a direct mapping to the LBR documentation or has it 
-been generic so non-Intel architectures can use it?
-
-> The patches to export the new fields haven't been merged yet.
-
-What does this mean?  The above values are exported as part of 
-  include/uapi/linux/perf_event.h
-Do they not work yet?
-
-> >  What happens if you set both in transaction and not in?
-> 
-> Then you get all branches.
-
-so what happens if you set neither "PERF_SAMPLE_BRANCH_IN_TX" nor
-"PERF_SAMPLE_BRANCH_NO_TX"?  Logically you'd get no branches at all,
-but that can't be true as all code prior to 3.11 didn't set those values.
-
-Vince
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index cc4c868..304a637 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1503,6 +1503,7 @@ config SERIAL_FSL_LPUART_CONSOLE
+ config SERIAL_ST_ASC
+ 	tristate "ST ASC serial port support"
+ 	select SERIAL_CORE
++	depends on ARM || COMPILE_TEST
+ 	help
+ 	  This driver is for the on-chip Asychronous Serial Controller on
+ 	  STMicroelectronics STi SoCs.
