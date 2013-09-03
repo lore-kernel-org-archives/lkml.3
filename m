@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760586Ab3ICSnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:43:08 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49533 "EHLO
+	id S1760594Ab3ICSnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:43:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49882 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760223Ab3ICSnG (ORCPT
+	with ESMTP id S1759409Ab3ICSnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:43:06 -0400
-Message-ID: <52262DB1.9020307@oracle.com>
-Date: Tue, 03 Sep 2013 13:42:57 -0500
+	Tue, 3 Sep 2013 14:43:50 -0400
+Message-ID: <52262DE0.2020708@oracle.com>
+Date: Tue, 03 Sep 2013 13:43:44 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
 To: Chuck Anderson <chuck.anderson@oracle.com>
 CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
         Eric Paris <eparis@redhat.com>, Dan Duval <dan.duval@oracle.com>,
         Luiz Capitulino <lcapitulino@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] audit: fix soft lockups due to loop in audit_log_start()
- wh,en audit_backlog_limit exceeded
-References: <52255C5E.3090903@oracle.com>
-In-Reply-To: <52255C5E.3090903@oracle.com>
+Subject: Re: [PATCH 2/2] audit: Two efficiency fixes for audit mechanism
+References: <52255D4B.8070602@oracle.com>
+In-Reply-To: <52255D4B.8070602@oracle.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,169 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed this before seeing Luiz' patch, so this is not an endorsement
-of one approach over the other, but adding my ack.
+Adding my ack.
 
-Shaggy
-
-On 09/02/2013 10:49 PM, Chuck Anderson wrote:
-> audit: fix softlockups due to loop in audit_log_start() when
-> audit_backlog_limit exceeded
+On 09/02/2013 10:53 PM, Chuck Anderson wrote:
+> audit: Two efficiency fixes for audit mechanism
 > 
 > author: Dan Duval <dan.duval@oracle.com>
 > 
-> This patch fixes a bug in kernel/audit that can cause many soft lockups
-> and prevent the boot of a large memory 3.8 system:
+> These and similar errors were seen on a patched 3.8 kernel when the
+> audit subsystem was overrun during boot:
 > 
->   BUG: soft lockup - CPU#66 stuck for 22s! [udevd:9559]
->   RIP: 0010:[<ffffffff810d1d06>]  [<ffffffff810d1d06>]
-> audit_log_start+0xe6/0x350
->   Call Trace:
->    [<ffffffff8108ea30>] ? try_to_wake_up+0x2d0/0x2d0
->    [<ffffffff810d8d6f>] audit_log_exit+0x3f/0x590
->    [<ffffffff810d975d>] __audit_syscall_exit+0x28d/0x2c0
->    [<ffffffff815e0440>] sysret_audit+0x17/0x21
+>   udevd[876]: worker [887] unexpectedly returned with status 0x0100
+>   udevd[876]: worker [887] failed while handling
+> '/devices/pci0000:00/0000:00:03.0/0000:40:00.0'
+>   udevd[876]: worker [880] unexpectedly returned with status 0x0100
+>   udevd[876]: worker [880] failed while handling
+> '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1'
 > 
-> audit_log_start() will call wait_for_auditd() to delay returning an
-> audit_buffer if there are too many SKBs on audit_skb_queue.
-> wait_for_auditd() puts itself on the audit_backlog_wait queue and
-> sleeps for sleep_time jiffies or until it is (normally) woken when
-> kauditd takes an SKB off of audit_skb_queue.  wait_for_auditd() returns
-> to audit_log_start() which checks to see if audit_skb_queue still has
-> too many SKBs.  If there are still too many, audit_log_start() will
-> continue to call wait_for_auditd() in a loop until
-> audit_backlog_wait_time has passed.  audit_log_start() will then
-> complain ("backlog limit exceeded"); set audit_backlog_wait_time
-> to NULL so other waiters will fall out of the loop when woken up; wake
-> up any waiters in wait_for_auditd(); return NULL which tells the caller
-> that an audit_buffer could not be allocated.
+>   udevadm settle - timeout of 180 seconds reached, the event queue
+> contains:
+>     /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1 (3995)
+>     /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/INT3F0D:00 (4034)
 > 
-> A bug in audit_log_start() prevents it from breaking out of the
-> wait_for_auditd() loop when audit_backlog_wait_time has passed.
-> Instead, it will loop in the audit_skb_queue-is-too-long while-loop
-> eventually causing a soft lockup.  There can (and most likely will)
-> be multiple threads looping.  The fix is to continue in the while-loop
-> only if sleep_time was greater than 0 (audit_backlog_wait_time has not
-> passed).
+>   audit: audit_backlog=258 > audit_backlog_limit=256
+>   audit: audit_lost=1 audit_rate_limit=0 audit_backlog_limit=256
 > 
-> Another bug in audit_log_start() prevents audit_backlog_wait_time from
-> working as expected.  audit_backlog_wait_time is normally the time
-> period that audit_log_start() will wait for the number of SKBs on
-> audit_skb_queue to fall below the too-many threshold.  If
-> audit_backlog_wait_time passes, audit_log_start() will set it to
-> audit_backlog_wait_overflow, which is zero, and wake up any waiters in
-> wait_for_auditd().  audit_backlog_wait_time is now zero so the waiters
-> will fall out of the loop when they return to audit_log_start().  That
-> is expected behavior.  But audit_backlog_wait_time is not reset to its
-> initial value when audit_skb_queue's length is no longer too long.
-> Subsequent calls to audit_log_start() when audit_skb_queue is too long
-> will not wait in wait_for_auditd(), instead returning NULL.  The fix
-> is to set audit_backlog_wait_time to its initial value when
-> audit_skb_queue passes the size test, potentially resetting it.
+> The changes below increase the efficiency of the audit code and
+> prevent it from being overrun:
 > 
-> A third issue is to have both audit_log_start() and wait_for_auditd()
-> use the same limit value for the length of audit_skb_queue.  It isn't
-> necessary today but (1) assumptions may change in the future and (2)
-> is one less oddity for a reader to have to verify.
+> 1. Only issue a wake_up in kauditd if the length of the skb queue
+>    is less than the backlog limit.  Otherwise, threads waiting in
+>    wait_for_auditd() will simply wake up, discover that the
+>    queue is still too long for them to proceed, and go back
+>    to sleep.  This results in wasted context switches and
+>    machine cycles.  kauditd_thread() is the only function that
+>    removes buffers from audit_skb_queue so we can't race.  If we
+>    did, the timeout in wait_for_auditd() would expire and the
+>    waiting thread would continue.
+> 
+> 2. Use add_wait_queue_exclusive() in wait_for_auditd() to put the
+>    thread on the wait queue.  When kauditd dequeues an skb, all
+>    of the waiting threads are waiting for the same resource, but
+>    only one is going to get it, so there's no need to wake up
+>    more than one waiter.
 > 
 > Signed-off-by: Dan Duval <dan.duval@oracle.com>
 > Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
 Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 > ---
->  kernel/audit.c |   28 ++++++++++++++++------------
->  1 files changed, 16 insertions(+), 12 deletions(-)
+>  kernel/audit.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
 > 
 > diff --git a/kernel/audit.c b/kernel/audit.c
-> index 91e53d0..9a78dde 100644
+> index 9a78dde..d87b4dd 100644
 > --- a/kernel/audit.c
 > +++ b/kernel/audit.c
-> @@ -103,9 +103,11 @@ static int    audit_rate_limit;
+> @@ -449,8 +449,11 @@ static int kauditd_thread(void *dummy)
+>          flush_hold_queue();
 > 
->  /* Number of outstanding audit_buffers allowed. */
->  static int    audit_backlog_limit = 64;
-> -static int    audit_backlog_wait_time = 60 * HZ;
->  static int    audit_backlog_wait_overflow = 0;
-> 
-> +#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
-> +static int    audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+>          skb = skb_dequeue(&audit_skb_queue);
+> -        wake_up(&audit_backlog_wait);
 > +
->  /* The identity of the user shutting down the audit system. */
->  kuid_t        audit_sig_uid = INVALID_UID;
->  pid_t        audit_sig_pid = -1;
-> @@ -1053,14 +1055,14 @@ static inline void audit_get_stamp(struct
-> audit_context
-> *ctx,
->  /*
->   * Wait for auditd to drain the queue a little
->   */
-> -static void wait_for_auditd(unsigned long sleep_time)
-> +static void wait_for_auditd(unsigned long sleep_time, int limit)
+>          if (skb) {
+> +            if(skb_queue_len(&audit_skb_queue) <= audit_backlog_limi
+> t)
+> +                wake_up(&audit_backlog_wait);
+> +
+>              if (audit_pid)
+>                  kauditd_send_skb(skb);
+>              else
+> @@ -1059,7 +1062,7 @@ static void wait_for_auditd(unsigned long
+> sleep_time, int
+> limit)
 >  {
 >      DECLARE_WAITQUEUE(wait, current);
 >      set_current_state(TASK_UNINTERRUPTIBLE);
->      add_wait_queue(&audit_backlog_wait, &wait);
+> -    add_wait_queue(&audit_backlog_wait, &wait);
+> +    add_wait_queue_exclusive(&audit_backlog_wait, &wait);
 > 
 >      if (audit_backlog_limit &&
-> -        skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
-> +        skb_queue_len(&audit_skb_queue) > limit)
->          schedule_timeout(sleep_time);
-> 
->      __set_current_state(TASK_RUNNING);
-> @@ -1095,8 +1097,8 @@ struct audit_buffer *audit_log_start(struct
-> audit_context
-> *ctx, gfp_t gfp_mask,
->      struct audit_buffer    *ab    = NULL;
->      struct timespec        t;
->      unsigned int        uninitialized_var(serial);
-> -    int reserve;
->      unsigned long timeout_start = jiffies;
-> +    int limit;
-> 
->      if (audit_initialized != AUDIT_INITIALIZED)
->          return NULL;
-> @@ -1104,22 +1106,22 @@ struct audit_buffer *audit_log_start(struct
-> audit_contex
-> t *ctx, gfp_t gfp_mask,
->      if (unlikely(audit_filter_type(type)))
->          return NULL;
-> 
-> -    if (gfp_mask & __GFP_WAIT)
-> -        reserve = 0;
-> -    else
-> -        reserve = 5; /* Allow atomic callers to go up to five
-> +    limit = audit_backlog_limit;
-> +    if (!(gfp_mask & __GFP_WAIT))
-> +        limit += 5;  /* Allow atomic callers to go up to five
->                  entries over the normal backlog limit */
-> 
->      while (audit_backlog_limit
-> -           && skb_queue_len(&audit_skb_queue) > audit_backlog_limit +
-> reserv
-> e) {
-> +           && skb_queue_len(&audit_skb_queue) > limit) {
->          if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
->              unsigned long sleep_time;
-> 
->              sleep_time = timeout_start + audit_backlog_wait_time -
->                      jiffies;
-> -            if ((long)sleep_time > 0)
-> -                wait_for_auditd(sleep_time);
-> -            continue;
-> +            if ((long)sleep_time > 0) {
-> +                wait_for_auditd(sleep_time, limit);
-> +                continue;
-> +            }
->          }
->          if (audit_rate_check() && printk_ratelimit())
->              printk(KERN_WARNING
-> @@ -1133,6 +1135,8 @@ struct audit_buffer *audit_log_start(struct
-> audit_context
-> *ctx, gfp_t gfp_mask,
->          return NULL;
->      }
-> 
-> +    audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
-> +
->      ab = audit_buffer_alloc(ctx, gfp_mask, type);
->      if (!ab) {
->          audit_log_lost("out of memory in audit_log_start");
+>          skb_queue_len(&audit_skb_queue) > limit)
