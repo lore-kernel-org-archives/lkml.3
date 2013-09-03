@@ -1,72 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab3ICGH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 02:07:56 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56493 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab3ICGHy (ORCPT
+	id S1759071Ab3ICGON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:14:13 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:45593 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab3ICGOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 02:07:54 -0400
-Message-ID: <1378188908.32763.404.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL -v3] target fixes for v3.12-rc0 (was v3.11)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, nab@daterainc.com,
-        "Ted Ts'o" <tytso@thunk.org>
-Date: Mon, 02 Sep 2013 23:15:08 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 3 Sep 2013 02:14:11 -0400
+Subject: [PATCH] uprobes: Fix limiting un-nested return probes
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Cc: Mikhail.Kulemin@ru.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
+        anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com
+Date: Tue, 03 Sep 2013 11:44:00 +0530
+Message-ID: <20130903060959.1351.16587.stgit@hemant-fedora>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090306-7014-0000-0000-0000038DCEBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Here is a sample program which shows a problem in uretprobes:
+#include <stdlib.h>
 
-Now with DKIM + SPF in place on linux-iscsi.org (thanks for the help Ted
-& Co), here is another attempt at the target fixes PULL request for
-v3.11 that was missed.
+int some_work(int num)
+{
+        while (num != 0)
+                num--;
+        return 0;
+};
 
-Given that the last PULL emails hit your spam folder, if/when you get
-this please give me a quick response to confirm.
+int main(int argc, char **argv)
+{
+        if (argc != 2)
+                return EXIT_FAILURE;
 
-Please go ahead and pull from:
+        int num = atoi(argv[1]);
+        while(num != 0) {
+                some_work(100);
+                num--;
+        };
+        return EXIT_SUCCESS;
+}
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-The first patch is to address a long standing issue where INQUIRY vendor
-+ model response data was not correctly padded with ASCII spaces,
-causing MSFT and Falconstor multipath stacks to not function with our
-LUNs.
+$ gcc -o sample sample.c
 
-The second -> forth patches are additional iscsi-target regression fixes
-for the post >= v3.10 iser-target changes.  The second and third are
-failure cases that have appeared during further testing, and the forth
-is only reproducible with malformed NOP packets.
+- Add probe for returning from some_work():
+$ sudo perf probe -x ./sample -a ret=some_work%return
 
-The fifth patch is a v3.11 specific regression caused by a recent
-optimization that showed up during WRITE I/O failure testing.
+Added new event:
+     probe_sample:ret     (on 0x530%return)
 
-I'll be sending Patch #1 and Patch #5 to Greg-KH separately for stable.
+You can now use it in all perf tools, such as:
 
-Thank you,
+       perf record -e probe_sample:ret -aR sleep 1
 
---nab
+- Record events :
+$ sudo perf record -e probe_sample:ret -aR ./sample 134
 
-Nicholas Bellinger (5):
-  target: Fix trailing ASCII space usage in INQUIRY vendor+model
-  iscsi-target: Fix ImmediateData=Yes failure regression in >= v3.10
-  iscsi-target: Fix iscsit_transport reference leak during NP thread
-    reset
-  iscsi-target: Fix potential NULL pointer in solicited NOPOUT reject
-  target: Fix se_cmd->state_list leak regression during WRITE failure
+- View report :
+$ sudo perf report --stdio
 
- drivers/target/iscsi/iscsi_target.c       |   17 ++++++++++-------
- drivers/target/iscsi/iscsi_target_login.c |    9 ++++-----
- drivers/target/target_core_spc.c          |    9 ++++++---
- drivers/target/target_core_transport.c    |   11 +++++++++++
- 4 files changed, 31 insertions(+), 15 deletions(-)
+# captured on: Wed Aug 14 17:03:42 2013
+# hostname : hemant-fedora
+# os release : 3.11.0-rc3+
+# perf version : 3.9.4-200.fc18.x86_64
+# arch : x86_64
+# nrcpus online : 2
+# nrcpus avail : 2
+# cpudesc : QEMU Virtual CPU version 1.2.2
+# cpuid : GenuineIntel,6,2,3
+# total memory : 2051912 kB
+# cmdline : /usr/bin/perf record -e probe_sample:ret -aR ./sample 134
+# event : name = probe_sample:ret, type = 2, config = 0x38c, config1 =
+0x0, config2 = 0x0,
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# pmu mappings: software = 1, tracepoint = 2, breakpoint = 5
+# ========
+#
+# Samples: 64  of event 'probe_sample:ret'
+# Event count (approx.): 64
+#
+# Overhead  Command  Shared Object    Symbol
+# ........  .......  .............  ........
+#
+      100.00%   sample  sample         [.] main
+
+
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+
+
+>From report we can see that there were only 64 return events, but
+actually it should be 134. It looks like uprobes identified return
+events as recursive events and used restrictions for number of such events.
+So, here is a patch which fixes this issue.
+
+--->8---
+
+There exists a limit to the number of nested return probes. The current limit is 64.
+However this limit is getting enforced on even non nested return probes.
+Hence, registering 64 independent non nested return probes results in failure of
+return probes on the same task. The problem is utask->depth is getting incremented
+unconditionally but decremented only if chained. So, utask->depth should be 
+incremented only if chained. This should fix the issue.
+
+Signed-off-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Reported-by: Mikhail Kulemin <Mikhail.Kulemin@ru.ibm.com>
+---
+ kernel/events/uprobes.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index f356974..4fb20fe 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1442,7 +1442,8 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+ 	ri->orig_ret_vaddr = orig_ret_vaddr;
+ 	ri->chained = chained;
+ 
+-	utask->depth++;
++	if (chained)
++		utask->depth++;
+ 
+ 	/* add instance to the stack */
+ 	ri->next = utask->return_instances;
 
