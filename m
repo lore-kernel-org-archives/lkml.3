@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab3ICPpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:45:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29221 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab3ICPo6 (ORCPT
+	id S1756802Ab3ICPrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:47:14 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:56608 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393Ab3ICPrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:44:58 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=LpxhMNE_n7QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qNUMAmISgnoA:10 a=pGLkceISAAAA:8 a=NufY4J3AAAAA:8 a=x9zbOqYJgs6x7dz7IGYA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 3 Sep 2013 11:44:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
-        linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [gcv v3 06/35] scheduler: Replace __get_cpu_var uses
-Message-ID: <20130903114454.2a995f41@gandalf.local.home>
-In-Reply-To: <CAFTL4hyEuePJC4GG60DqQCfu-JiV9krRCf3FwWAy15Hyzu2AUw@mail.gmail.com>
-References: <20130828193457.140443630@linux.com>
-	<00000140c67817eb-b582280a-f059-499f-a24c-a11f3d59b86e-000000@email.amazonses.com>
-	<20130829075818.GW10002@twins.programming.kicks-ass.net>
-	<20130829100143.GA29672@gmail.com>
-	<00000140cb02576f-e106763c-d382-4b66-bb85-d7a9cb266b81-000000@email.amazonses.com>
-	<20130829173256.GB6276@home.goodmis.org>
-	<00000140cb49bdde-1279ffb0-5c49-400d-970c-a481d527e98a-000000@email.amazonses.com>
-	<20130829143053.3fc2caa8@gandalf.local.home>
-	<00000140e4373c9e-ea44cb7f-985f-4d33-86ed-cfd54ec7327b-000000@email.amazonses.com>
-	<CAFTL4hyEuePJC4GG60DqQCfu-JiV9krRCf3FwWAy15Hyzu2AUw@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 11:47:13 -0400
+X-ASG-Debug-ID: 1378223231-0421b5021f341c50001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Tue, 3 Sep 2013 11:47:10 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Michel Lespinasse <walken@google.com>
+CC: Josef Bacik <jbacik@fusionio.com>, <linux-btrfs@vger.kernel.org>,
+        <mingo@elte.hu>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rwsem: add rwsem_is_contended
+Message-ID: <20130903154710.GB15634@localhost.localdomain>
+X-ASG-Orig-Subj: Re: [PATCH] rwsem: add rwsem_is_contended
+References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
+ <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1378223231
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140229
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Sep 2013 16:45:45 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> 2013/9/3 Christoph Lameter <cl@linux.com>:
-> > On Thu, 29 Aug 2013, Steven Rostedt wrote:
-> >
-> >> How many places use the this_cpu_*() without preemption disabled? I
-> >> wouldn't think there's many. I never complained about another variant,
-> >> so you need to ask those that have. The tough question for me is what
-> >> that variant name should be ;-)
-> >
-> > Tried to add preemption checks but the basic issue is that many of the
-> > checks themselves use this_cpu_ops. percpu.h is very basic to the
-> > operation of fundamental primitives for preempt etc. Use of a BUG_ON needs
-> > a seris of includes in percpu.h that cause more trouble.
-> >
-> > If I switch __this_cpu ops to check for preemption then the logic for
-> > preemption etc must use the raw_this_cpu ops.
+On Sun, Sep 01, 2013 at 01:32:36AM -0700, Michel Lespinasse wrote:
+> Hi Josef,
 > 
-> IIUC the issue is that preempt debug checks themselves use per cpu
-> operations that can result in preempt debug checks? Hence a recursion.
-> Do you have an example of that?
+> On Fri, Aug 30, 2013 at 7:14 AM, Josef Bacik <jbacik@fusionio.com> wrote:
+> > Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
+> > read lock on this rwsem while they scan the extent tree, and if need_resched()
+> > they will drop the lock and schedule.  The transaction commit needs to take a
+> > write lock for this rwsem for a very short period to switch out the commit
+> > roots.  If there are a lot of threads doing this caching operation we can starve
+> > out the committers which slows everybody out.  To address this we want to add
+> > this functionality to see if our rwsem has anybody waiting to take a write lock
+> > so we can drop it and schedule for a bit to allow the commit to continue.
+> > Thanks,
+> >
+> > Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 > 
-> Also in this case this must be fixed anyway given the checks that
-> already exist in smp_processor_id(), __get_cpu_var(), ...
+> FYI, I once tried to introduce something like this before, but my use
+> case was pretty weak so it was not accepted at the time. I don't think
+> there were any objections to the API itself though, and I think it's
+> potentially a good idea if you use case justifies it.
+> 
+> Two comments:
+> 
+> - Note that there are two rwsem implementations - if you are going to
+> add functionality to rwsem.h you want to add the same functionality in
+> rwsem-spinlock.h as well.
+> 
 
-Right, that's why there's a raw_smp_processor_id() and
-__raw_get_cpu_var(). Those two are the ones without checks, and they
-are called by the non "raw" versions after the check is done.
+Sure thing.
 
-Really, what's so damn hard about this?
+> - I would prefer if you could avoid taking the wait_lock in your
+> rwsem.h implementation. In your use case (read lock is known to be
+> held), checking for sem->count < 0 would be sufficient to indicate a
+> writer is queued (or getting onto the queue). In the general case,
+> some architectures have the various values set up so that
+> RWSEM_WAITING_BIAS != RWSEM_ACTIVE_WRITE_BIAS - for these
+> architectures at least, you can check for waiters by looking if the
+> lowest bit of RWSEM_WAITING_BIAS is set in sem->count.
 
--- Steve
+Question about this one, I can't just do
+
+if (sem->count < 0)
+
+since each arch has their own atomic way of looking at count, so I'd have to add
+something to do just a normal read of count for each arch and call that wouldn't
+I?  If that's what you want me to do then I'm fine with that (though I'll need a
+really thorough review), just want to double check before I make a bunch of
+extra work for myself.  Thanks,
+
+Josef
