@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab3ICMuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:50:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50086 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab3ICMuL (ORCPT
+	id S932900Ab3ICMwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:52:10 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34691 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932756Ab3ICMwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:50:11 -0400
-Message-ID: <5225DAFB.1070406@gmail.com>
-Date: Tue, 03 Sep 2013 06:50:03 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: latest perf code fails to parse existing data file
-References: <5225051C.3030608@gmail.com> <5225844E.3090700@intel.com>
-In-Reply-To: <5225844E.3090700@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 08:52:08 -0400
+From: Masami Ichikawa <masami256@gmail.com>
+To: kvalo@adurom.com, IvDoorn@gmail.com, gwingerde@gmail.com,
+        helmut.schaa@googlemail.com, linville@tuxdriver.com
+Cc: Masami Ichikawa <masami256@gmail.com>, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rt2x00: Add WLI-UC-G300HP's Product ID
+Date: Tue,  3 Sep 2013 21:51:56 +0900
+Message-Id: <1378212716-13525-1-git-send-email-masami256@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/3/13 12:40 AM, Adrian Hunter wrote:
-> On 03/09/13 00:37, David Ahern wrote:
->> Arnaldo/Adrian:
->>
->> Latest acme core tree fails to parse an existing data file:
->>
->> $ perf trace -i perf.data
->> 0x16b8 [0x40]: failed to process type: 1
->> Failed to process events, error -22
->
-> I can't reproduce this.  The following works:
->
-> 	$ perf --version
-> 	perf version 3.9.10-100.fc17.x86_64
-> 	$ sudo perf record -e raw_syscalls:* ls
-> 	...
-> 	$ tools/perf/perf --version
-> 	perf version 3.11.rc4.g31cd38
-> 	$ sudo tools/perf/perf script
-> 	...
-> 	$ sudo tools/perf/perf trace -i perf.data
-> 	...
+Support Bufallo WLI-UC-G300HP.
 
-Kernel version? Is your kernel side support there?
+Signed-off-by: Masami Ichikawa <masami256@gmail.com>
+---
+ drivers/net/wireless/rt2x00/rt2800usb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-For me data was collected on 2.6.34 about a week ago. Processed fine up 
-to the point of this patch getting added.
-
-David
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index 840833b..518277d 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -977,6 +977,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
+ 	{ USB_DEVICE(0x0411, 0x016f) },
+ 	{ USB_DEVICE(0x0411, 0x01a2) },
+ 	{ USB_DEVICE(0x0411, 0x01ee) },
++	{ USB_DEVICE(0x0411, 0x01a8) },
+ 	/* Corega */
+ 	{ USB_DEVICE(0x07aa, 0x002f) },
+ 	{ USB_DEVICE(0x07aa, 0x003c) },
+-- 
+1.8.3.1
 
