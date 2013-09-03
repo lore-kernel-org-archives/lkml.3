@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760407Ab3ICScc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:32:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760215Ab3ICScb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:32:31 -0400
-Date: Tue, 3 Sep 2013 14:31:59 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+	id S1760482Ab3ICScf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:32:35 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:38214 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760215Ab3ICScd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 14:32:33 -0400
+Date: Tue, 3 Sep 2013 20:32:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
-Message-ID: <20130903183159.GA28517@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
- <20130827172155.GC29147@redhat.com>
- <20130830195646.GJ21110@madcap2.tricolour.ca>
- <52210275.8040601@canonical.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130903183229.GB30757@gmail.com>
+References: <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
+ <20130830230402.GA14760@somewhere>
+ <20130902122845.GA2457@swordfish.minsk.epam.com>
+ <20130902130744.GB2378@somewhere>
+ <20130902135033.GA1686@redhat.com>
+ <20130902140015.GB2368@swordfish.minsk.epam.com>
+ <20130903084306.GA2694@redhat.com>
+ <20130903180912.GA2340@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52210275.8040601@canonical.com>
+In-Reply-To: <20130903180912.GA2340@swordfish>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 01:37:09PM -0700, John Johansen wrote:
-> On 08/30/2013 12:56 PM, Richard Guy Briggs wrote:
-> > On Tue, Aug 27, 2013 at 07:21:55PM +0200, Oleg Nesterov wrote:
-> >> On 08/20, Richard Guy Briggs wrote:
-> > Most of the instances are current, but the one called from apparmour is
-> > stored.  I've just learned that this is bad and someone else just chimed
-> > in that they have a patch to remove it...
+
+* Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+
+> On (09/03/13 10:43), Stanislaw Gruszka wrote:
+> > Ok, I see now, utime is 0 . This seems to be problem with dynamic ticks
+> > as you told that your application is kernel compilation, so we utilize
+> > lot of cpu time in user-space.
+> > 
+> > Anyway we should handle utime == 0 situation on scaling code. We work
+> > well when rtime & stime are not big (variables and results fit in
+> > 32 bit), otherwise we have that stime bigger than rtime problem. Let's
+> > try to handle the problem by below patch. Sergey, does it work for you ?
 > 
-> the apparmor case isn't actually stored long term. The stored task will be
-> a parameter that was passed into an lsm hook and the buffer that it is
-> stored in dies before the hook is done. Its temporarily stored in the
-> struct so that it can be passed into the lsm_audit fn, and printed into an
-> allocated audit buffer. The text version in the audit buffer is what will
-> exist beyond the hook.
+> checked on -current and -next -- works fine, good job.
 > 
-> There are three patches, I'll reply them below once I have finished rebasing
-> them to apply to the current tree instead of my dev tree.
+> here are my:
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-John, thanks for this context and fix.  That helps simplify things.
+Cool and thanks for the patient reporting and testing!
 
-- RGB
+Stanislaw, mind sending a changelogged, signed off patch with Sergey's 
+tags included? It also warrants a -stable backport tag I think.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+Thanks,
+
+	Ingo
