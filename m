@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab3ICXK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:10:56 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51909 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933154Ab3ICXKy (ORCPT
+	id S933242Ab3ICXLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:11:09 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:33401 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933154Ab3ICXLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:10:54 -0400
-Date: Tue, 3 Sep 2013 17:10:50 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci.h: Fix typo, remove unnecessary !!
-Message-ID: <20130903231050.GA24733@google.com>
-References: <1378240265.7347.24.camel@joe-AO722>
+	Tue, 3 Sep 2013 19:11:05 -0400
+Date: Tue, 3 Sep 2013 19:11:01 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: ceph-devel@vger.kernel.org
+Cc: sage@inktank.com, zheng.z.yan@intel.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ceph: ceph_readpage_to_fscache didn't check if marked
+Message-ID: <919604301641ea9af638dd2fbaa88a890da7b7b0.1378249347.git.milosz@adfin.com>
+References: <cover.1378249347.git.milosz@adfin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378240265.7347.24.camel@joe-AO722>
+In-Reply-To: <cover.1378249347.git.milosz@adfin.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 01:31:05PM -0700, Joe Perches wrote:
-> Use normal kernel-doc "Returns:" instead of retruns
-> Assignment to bool is always 1 or 0 so the !! isn't necessary.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Previously ceph_readpage_to_fscache did not call if page was marked as cached
+before calling fscache_write_page resulting in a BUG inside of fscache.
 
-Applied to pci/misc, thanks.  This branch will be rebased and will
-not appear in -next until after v3.12-rc1.
+FS-Cache: Assertion failed
+------------[ cut here ]------------
+kernel BUG at fs/fscache/page.c:874!
+invalid opcode: 0000 [#1] SMP
+Call Trace:
+ [<ffffffffa02e6566>] __ceph_readpage_to_fscache+0x66/0x80 [ceph]
+ [<ffffffffa02caf84>] readpage_nounlock+0x124/0x210 [ceph]
+ [<ffffffffa02cb08d>] ceph_readpage+0x1d/0x40 [ceph]
+ [<ffffffff81126db6>] generic_file_aio_read+0x1f6/0x700
+ [<ffffffffa02c6fcc>] ceph_aio_read+0x5fc/0xab0 [ceph]
 
-> ---
->  include/linux/pci.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index da172f9..ee0f3b6 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1749,11 +1749,11 @@ static inline int pci_pcie_cap(struct pci_dev *dev)
->   * pci_is_pcie - check if the PCI device is PCI Express capable
->   * @dev: PCI device
->   *
-> - * Retrun true if the PCI device is PCI Express capable, false otherwise.
-> + * Returns: true if the PCI device is PCI Express capable, false otherwise.
->   */
->  static inline bool pci_is_pcie(struct pci_dev *dev)
->  {
-> -	return !!pci_pcie_cap(dev);
-> +	return pci_pcie_cap(dev);
->  }
->  
->  /**
-> 
-> 
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+---
+ fs/ceph/cache.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fs/ceph/cache.c b/fs/ceph/cache.c
+index 5c413ec..c737ae9 100644
+--- a/fs/ceph/cache.c
++++ b/fs/ceph/cache.c
+@@ -311,6 +311,9 @@ void ceph_readpage_to_fscache(struct inode *inode, struct page *page)
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	int ret;
+ 
++	if (!PageFsCache(page))
++		return;
++
+ 	if (!cache_valid(ci))
+ 		return;
+ 
+-- 
+1.8.1.2
+
