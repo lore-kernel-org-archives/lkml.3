@@ -1,140 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3ICHQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:16:53 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:65114 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759669Ab3ICHQu (ORCPT
+	id S932525Ab3ICHRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:17:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36114 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab3ICHRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:16:50 -0400
+	Tue, 3 Sep 2013 03:17:03 -0400
+Date: Tue, 3 Sep 2013 00:16:19 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-c7vm6klaf995qw1vqdih5t7q@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace: Add beautifier for open's flags arg
+Git-Commit-ID: be65a89a0b558cb5b6863be71861f29b36feb88e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <5224BCF6.2080401@colorfullife.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
-	<1372192414.1888.8.camel@buesod1.americas.hpqcorp.net>
-	<CA+icZUXgOd=URJBH5MGAZKdvdkMpFt+5mRxtzuDzq_vFHpoc2A@mail.gmail.com>
-	<1372202983.1888.22.camel@buesod1.americas.hpqcorp.net>
-	<521DE5D7.4040305@synopsys.com>
-	<CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
-	<CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
-	<52205597.3090609@synopsys.com>
-	<CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
-	<CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
-	<CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
-	<CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com>
-	<5224BCF6.2080401@colorfullife.com>
-Date: Tue, 3 Sep 2013 09:16:48 +0200
-Message-ID: <CA+icZUVc6fhW+TTB56x68LooS8DqhA8n3CQzgKkXQmbyH+ryUQ@mail.gmail.com>
-Subject: Re: ipc-msg broken again on 3.11-rc7?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <dave.bueso@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 03 Sep 2013 00:16:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 6:29 PM, Manfred Spraul <manfred@colorfullife.com> wrote:
-> Hi,
->
-> [forgot to cc everyone, thus I'll summarize some mails...]
->
-> On 09/02/2013 06:58 AM, Vineet Gupta wrote:
->>
->> On 08/31/2013 11:20 PM, Linus Torvalds wrote:
->>>
->>> Vineet, actual patch for what Davidlohr suggests attached. Can you try
->>> it?
->>>
->>>               Linus
->>
->> Apologies for late in getting back to this - I was away from my computer
->> for a bit.
->>
->> Unfortunately, with a quick test, this patch doesn't help.
->> FWIW, this is latest mainline (.config attached).
->>
->> Let me know what diagnostics I can add to help with this.
->
->
-> msgctl08 is a bulk message send/receive test. I had to look at it once
-> before, then it was a broken hardware:
-> https://lkml.org/lkml/2008/6/12/365
-> This can be ruled out, because it works with 3.10.
->
-> msgctl08 uses pairs of threads: one thread does msgsnd(), the other one
-> msgrcv().
-> There is no synchronization, i.e. the msgsnd() can race ahead until the
-> kernel buffer is full and then a block with msgrcv() follows or it could be
-> pairs of alternating msgsnd()/msgrcv() operations.
-> No special features are used: each pair of threads has it's own message
-> queues, all messages have type=1.
->
-> Vineet ran strace - and just before the signal from killing msgctl08, there
-> are only msgsnd()/msgrcv() calls.
-> Vineet:
-> a) could you run strace tomorrow again, with '-ttt' as an additional option?
-> I don't see where exactly it hangs.
-> b) Could you check that it is not just a performance regression?
->     Does ./msgctl08 1000 16 hang, too?
->
-> In ipc/msg.c, I haven't seen any obvious reason why it should hang.
-> The only race I spotted so far is this one:
->>
->>       for (;;) {
->>                 struct msg_sender s;
->>
->>                 err = -EACCES;
->>                 if (ipcperms(ns, &msq->q_perm, S_IWUGO))
->>                         goto out_unlock1;
->>
->>
->>                 err = security_msg_queue_msgsnd(msq, msg, msgflg);
->>                 if (err)
->>                         goto out_unlock1;
->>
->>                 if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
->>                                 1 + msq->q_qnum <= msq->q_qbytes) {
->>                         break;
->>                 }
->>
-> [snip]
->>
->>         if (!pipelined_send(msq, msg)) {
->>                 /* no one is waiting for this message, enqueue it */
->>                 list_add_tail(&msg->m_list, &msq->q_messages);
->>                 msq->q_cbytes += msgsz;
->>                 msq->q_qnum++;
->>                 atomic_add(msgsz, &ns->msg_bytes);
->
->
-> The access to msq->q_cbytes is not protected. Thus two parallel msgsnd()
-> calls could succeed, even if both together brings the queue length above the
-> limit.
-> But it can't explain why 3.11-rc7 hangs: As explained above, msgctl08 uses
-> one queue for each thread pair.
->
+Commit-ID:  be65a89a0b558cb5b6863be71861f29b36feb88e
+Gitweb:     http://git.kernel.org/tip/be65a89a0b558cb5b6863be71861f29b36feb88e
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 2 Sep 2013 16:22:31 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 2 Sep 2013 16:22:31 -0300
 
-Just FYI:
+perf trace: Add beautifier for open's flags arg
 
-Linux Testing Project (LTP) will do a new release in the 1st September week.
-Some IPC test-suites were reworked.
-Manfred can you look at them ("...msgctl08 uses one queue for each
-thread pair.").
-( Might be worth to throw some words at the LTP mailing-list (that
-test-case is not ideal, etc.)? )
+Suppressing the mode when O_CREAT not present, needs improvements on the
+arg masking mechanism to be reused in openat, open_by_handle_at,
+mq_open:
 
-- Sedat -
+[root@zoo ~]# perf trace -a -e open | grep -v 'flags: RDONLY' | head -5
+   147.541 ( 0.028 ms): 1188 open(filename: 0x33c17782fb, flags: CLOEXEC   ) = 23
+   229.898 ( 0.020 ms): 2071 open(filename: 0x3d93c80, flags: NOATIME      ) = -1 EPERM Operation not permitted
+
+[root@zoo ~]# perf trace -a -e open | grep CREAT
+  1406.697 ( 0.024 ms): 616 open(filename: 0x7fffc3a0f910, flags: CREAT|TRUNC|WRONLY, mode: 438 ) = -1 ENOENT No such file or directory
+  2032.770 ( 0.804 ms): 4354 open(filename: 0x7f33ac814368, flags: CREAT|EXCL|RDWR, mode: 384   ) = 115
+^C[root@zoo ~]#
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-c7vm6klaf995qw1vqdih5t7q@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 59 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 58 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 02aaea6..5b6b287 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -206,6 +206,62 @@ static size_t syscall_arg__scnprintf_futex_op(char *bf, size_t size, unsigned lo
+ 
+ #define SCA_FUTEX_OP  syscall_arg__scnprintf_futex_op
+ 
++static size_t syscall_arg__scnprintf_open_flags(char *bf, size_t size,
++					       unsigned long arg, u8 *arg_mask)
++{
++	int printed = 0, flags = arg;
++
++	if (!(flags & O_CREAT))
++		*arg_mask |= 1 << 2; /* Mask the mode parm */
++
++	if (flags == 0)
++		return scnprintf(bf, size, "RDONLY");
++#define	P_FLAG(n) \
++	if (flags & O_##n) { \
++		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", #n); \
++		flags &= ~O_##n; \
++	}
++
++	P_FLAG(APPEND);
++	P_FLAG(ASYNC);
++	P_FLAG(CLOEXEC);
++	P_FLAG(CREAT);
++	P_FLAG(DIRECT);
++	P_FLAG(DIRECTORY);
++	P_FLAG(EXCL);
++	P_FLAG(LARGEFILE);
++	P_FLAG(NOATIME);
++	P_FLAG(NOCTTY);
++#ifdef O_NONBLOCK
++	P_FLAG(NONBLOCK);
++#elif O_NDELAY
++	P_FLAG(NDELAY);
++#endif
++#ifdef O_PATH
++	P_FLAG(PATH);
++#endif
++	P_FLAG(RDWR);
++#ifdef O_DSYNC
++	if ((flags & O_SYNC) == O_SYNC)
++		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", "SYNC");
++	else {
++		P_FLAG(DSYNC);
++	}
++#else
++	P_FLAG(SYNC);
++#endif
++	P_FLAG(TRUNC);
++	P_FLAG(WRONLY);
++#undef P_FLAG
++
++	if (flags)
++		printed += scnprintf(bf + printed, size - printed, "%s%#x", printed ? "|" : "", flags);
++
++	return printed;
++}
++
++#define SCA_OPEN_FLAGS syscall_arg__scnprintf_open_flags
++
+ static struct syscall_fmt {
+ 	const char *name;
+ 	const char *alias;
+@@ -244,7 +300,8 @@ static struct syscall_fmt {
+ 			     [4] = SCA_HEX, /* new_addr */ }, },
+ 	{ .name	    = "munmap",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
+-	{ .name	    = "open",	    .errmsg = true, },
++	{ .name	    = "open",	    .errmsg = true,
++	  .arg_scnprintf = { [1] = SCA_OPEN_FLAGS, /* flags */ }, },
+ 	{ .name	    = "poll",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "ppoll",	    .errmsg = true, .timeout = true, },
+ 	{ .name	    = "pread",	    .errmsg = true, .alias = "pread64", },
