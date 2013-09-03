@@ -1,121 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3ICPPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:15:13 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:45822 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab3ICPPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:15:12 -0400
-Message-ID: <5225FCEE.7030901@hp.com>
-Date: Tue, 03 Sep 2013 11:14:54 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1754384Ab3ICPXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:23:21 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59217 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753844Ab3ICPXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 11:23:20 -0400
+Date: Tue, 3 Sep 2013 08:22:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-References: <5220F090.5050908@hp.com> <20130830194059.GC13318@ZenIV.linux.org.uk> <5220F811.9060902@hp.com> <20130830202608.GD13318@ZenIV.linux.org.uk> <52210225.60805@hp.com> <20130830204852.GE13318@ZenIV.linux.org.uk> <52214EBC.90100@hp.com> <20130831023516.GI13318@ZenIV.linux.org.uk> <20130831024233.GJ13318@ZenIV.linux.org.uk> <5224E647.80303@hp.com> <20130903060130.GD16261@gmail.com>
-In-Reply-To: <20130903060130.GD16261@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 11/18 v2] ftrace: Adde infrastructure to stop RCU
+ unsafe checker from checking
+Message-ID: <20130903152253.GR3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130831051117.884125230@goodmis.org>
+ <20130831051702.253028770@goodmis.org>
+ <20130831195258.GQ3871@linux.vnet.ibm.com>
+ <20130903094352.3da850eb@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903094352.3da850eb@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090315-5806-0000-0000-0000229D2B41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 02:01 AM, Ingo Molnar wrote:
-> * Waiman Long<waiman.long@hp.com>  wrote:
->
->> Yes, that patch worked. It eliminated the lglock as a bottleneck in 
->> the AIM7 workload. The lg_global_lock did not show up in the perf 
->> profile, whereas the lg_local_lock was only 0.07%. 
-> Just curious: what's the worst bottleneck now in the optimized kernel? :-)
->
-> Thanks,
->
-> 	Ingo
-With the following patches on v3.11:
-1. Linus's version of lockref patch
-2. Al's lglock patch
-3. My preliminary patch to convert prepend_path under RCU
+On Tue, Sep 03, 2013 at 09:43:52AM -0400, Steven Rostedt wrote:
+> On Sat, 31 Aug 2013 12:52:58 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Sat, Aug 31, 2013 at 01:11:28AM -0400, Steven Rostedt wrote:
+> > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > > 
+> > > This is a light weight way to keep the rcu checker from checking
+> > > RCU safety. It adds a ftrace_unsafe_rcu_checker_disable/enable()
+> > > that increments or decrements a counter respectively. When the
+> > > counter is set, the RCU unsafe checker callback does not run the
+> > > tests to see if RCU is safe or not.
+> > 
+> > Please add something saying what we do instead of testing RCU safety.
+> > Looks to me like it skips not only the tests, but also invoking the
+> > callback, but I could easily be wrong.
+> 
+> Now that I'm awake and also not on holiday, I can reply with a clear
+> mind.
+> 
+> When disabled, it forces the callback to return immediately. I may in
+> the future, have it disable the callback altogether.
+> 
+> Yes, we can miss checks, but it's better than the test live locking
+> the system :-)
+> 
+> > 
+> > > This is required by the graph tracer because the checks can cause
+> > > the graph tracer to live lock the system by its own calls.
+> 
+> I added this (I quoted the added text):
+> 
+>     This is a light weight way to keep the rcu checker from checking
+>     RCU safety. It adds a ftrace_unsafe_rcu_checker_disable/enable()
+>     that increments or decrements a counter respectively. When the
+>     counter is set, the RCU unsafe checker callback does not run the
+>     tests to see if RCU is safe or not. "But the callback still gets
+>     called. It just does not call rcu_read_(un)lock()."
+>     
+>     This is required by the graph tracer because the checks can cause
+>     the graph tracer to live lock the system by its own calls. "That is,
+>     the graph tracer will still trace rcu and the rcu debugging, and
+>     this will slow down the checker, which is still calling all other
+>     functions (in interrupts and faults), which can cause the timer
+>     interrupt to take oven a millisecond to complete, and it will then
+>     trigger once it finishes, live locking the system."
+> 
+> 
+> > > 
+> > > It's also needed by the irqsoff tracer, because it may be called
+> > > in RCU unsafe regions and if its internal functions get traced
+> > > then the RCU unsafe checker may have some false positives.
+> > > 
+> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> > With the augmented commit log as noted above:
+> 
+> Is the above OK?
 
-The perf profile of the kernel portion of the short workload in a 
-80-core system became like this:
+Works for me!
 
-     29.87%     reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-                   |--50.00%-- tty_ldisc_deref
-                   |--49.01%-- tty_ldisc_try
-                    --0.99%-- [...]
+							Thanx, Paul
 
-      7.55%   swapper  [kernel.kallsyms]  [k] intel_idle
-      1.03%     reaim  [kernel.kallsyms]  [k] copy_user_generic_string
-      0.91%     reaim  [kernel.kallsyms]  [k] _raw_spin_lock
-                   |--15.88%-- __rcu_process_callbacks
-                   |--6.55%-- load_balance
-                   |--6.02%-- sem_lock
-                   |--4.77%-- enqueue_to_backlog
-                   |--4.21%-- task_rq_lock
-                   |--3.97%-- process_backlog
-                   |--3.35%-- unix_dgram_sendmsg
-                   |--3.28%-- kmem_cache_free
-                   |--3.16%-- tcp_v4_rcv
-                   |--2.77%-- unix_stream_sendmsg
-                   |--2.36%-- rcu_accelerate_cbs
-                   |--2.02%-- do_wp_page
-                   |--2.02%-- unix_create1
-                   |--1.83%-- unix_peer_get
-                   |--1.67%-- udp_lib_get_port
-                   |--1.66%-- unix_stream_recvmsg
-                   |--1.63%-- handle_pte_fault
-                   |--1.63%-- udp_queue_rcv_skb
-                   |--1.54%-- unix_release_sock
-                   |--1.48%-- try_to_wake_up
-                   |--1.37%-- do_anonymous_page
-                   |--1.37%-- new_inode_pseudo
-                   |--1.33%-- __d_lookup
-                   |--1.20%-- free_one_page
-                   |--1.11%-- __do_fault
-                   |--1.06%-- scheduler_tick
-                   |--0.90%-- __drain_alien_cache
-                   |--0.81%-- inet_csk_get_port
-                   |--0.76%-- sock_alloc
-                   |--0.76%-- shmem_lock
-                   |--0.75%-- __d_instantiate
-                   |--0.70%-- __inet_hash_connect
-                   |--0.69%-- __inet_hash_nolisten
-                   |--0.68%-- ip_local_deliver_finish
-                   |--0.64%-- inet_hash
-                   |--0.64%-- kfree
-                   |--0.60%-- d_path
-                   |--0.58%-- __close_fd
-                   |--0.51%-- evict
-                    --11.76%-- [...]
-
-      0.51%     reaim  [ip_tables]        [k] ipt_do_table
-      0.46%     reaim  [kernel.kallsyms]  [k] __alloc_skb
-      0.38%     reaim  [kernel.kallsyms]  [k] kfree
-      0.36%     reaim  [kernel.kallsyms]  [k] kmem_cache_free
-      0.34%     reaim  [kernel.kallsyms]  [k] system_call_after_swapg
-      0.32%     reaim  [kernel.kallsyms]  [k] fsnotify
-      0.32%     reaim  [kernel.kallsyms]  [k] ip_finish_output
-      0.27%     reaim  [kernel.kallsyms]  [k] system_call
-
-Other than the global tty_ldisc_lock, there is no other major
-bottleneck. I am not that worry about the tty_ldisc_lock bottleneck
-as real world applications probably won't have that many calls to
-set the tty driver.
-
-Regards,
-Longman
+> -- Steve
+> 
+> > 
+> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > > ---
+> > >  kernel/trace/trace.h           |   12 +++++++++---
+> > >  kernel/trace/trace_functions.c |   15 +++++++++++++++
+> > >  2 files changed, 24 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> > > index e551316..58e4c37 100644
+> > > --- a/kernel/trace/trace.h
+> > > +++ b/kernel/trace/trace.h
+> > > @@ -760,9 +760,6 @@ static inline int ftrace_graph_addr(unsigned long addr)
+> > > 
+> > >  	return 0;
+> > >  }
+> > > -#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
+> > > -extern bool ftrace_rcu_unsafe(unsigned long addr);
+> > > -#endif
+> > >  #else
+> > >  static inline int ftrace_graph_addr(unsigned long addr)
+> > >  {
+> > > @@ -1061,4 +1058,13 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+> > >  #define perf_ftrace_event_register NULL
+> > >  #endif
+> > > 
+> > > +#ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
+> > > +extern bool ftrace_rcu_unsafe(unsigned long addr);
+> > > +extern void ftrace_unsafe_rcu_checker_disable(void);
+> > > +extern void ftrace_unsafe_rcu_checker_enable(void);
+> > > +#else
+> > > +static inline void ftrace_unsafe_rcu_checker_disable(void) { }
+> > > +static inline void ftrace_unsafe_rcu_checker_enable(void) { }
+> > > +#endif
+> > > +
+> > >  #endif /* _LINUX_KERNEL_TRACE_H */
+> > > diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+> > > index 9dd4627..1d5f951 100644
+> > > --- a/kernel/trace/trace_functions.c
+> > > +++ b/kernel/trace/trace_functions.c
+> > > @@ -560,12 +560,27 @@ static inline int init_func_cmd_traceon(void)
+> > >  #endif /* CONFIG_DYNAMIC_FTRACE */
+> > > 
+> > >  #ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
+> > > +static atomic_t ftrace_unsafe_rcu_disabled;
+> > > +
+> > > +void ftrace_unsafe_rcu_checker_disable(void)
+> > > +{
+> > > +	atomic_inc(&ftrace_unsafe_rcu_disabled);
+> > > +}
+> > > +
+> > > +void ftrace_unsafe_rcu_checker_enable(void)
+> > > +{
+> > > +	atomic_dec(&ftrace_unsafe_rcu_disabled);
+> > > +}
+> > > +
+> > >  static void
+> > >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+> > >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
+> > >  {
+> > >  	int bit;
+> > > 
+> > > +	if (atomic_read(&ftrace_unsafe_rcu_disabled))
+> > > +		return;
+> > > +
+> > >  	preempt_disable_notrace();
+> > > 
+> > >  	bit = trace_test_and_set_recursion(TRACE_FTRACE_START, TRACE_FTRACE_MAX);
+> > > -- 
+> > > 1.7.10.4
+> > > 
+> > > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
