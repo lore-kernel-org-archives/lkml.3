@@ -1,37 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab3ICHla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:41:30 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42836 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759308Ab3ICHl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:41:29 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-94-522592a70c7e
-Date: Tue, 3 Sep 2013 16:42:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+	id S932562Ab3ICHmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:42:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31016 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932502Ab3ICHmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 03:42:08 -0400
+X-IronPort-AV: E=Sophos;i="4.89,1012,1367942400"; 
+   d="scan'208";a="8389016"
+Message-ID: <522592BF.1090102@cn.fujitsu.com>
+Date: Tue, 03 Sep 2013 15:41:51 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
 To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v4 4/4] mm/vmalloc: don't assume vmap_area w/o VM_VM_AREA
  flag is vm_map_ram allocation
-Message-ID: <20130903074221.GA30920@lge.com>
-References: <1378191706-29696-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1378191706-29696-4-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+References: <1378191706-29696-1-git-send-email-liwanp@linux.vnet.ibm.com> <1378191706-29696-4-git-send-email-liwanp@linux.vnet.ibm.com>
 In-Reply-To: <1378191706-29696-4-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/03 15:40:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/03 15:40:00,
+	Serialize complete at 2013/09/03 15:40:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 03:01:46PM +0800, Wanpeng Li wrote:
+On 09/03/2013 03:01 PM, Wanpeng Li wrote:
 > There is a race window between vmap_area free and show vmap_area information.
 > 
 > 	A                                                B
@@ -39,6 +42,9 @@ On Tue, Sep 03, 2013 at 03:01:46PM +0800, Wanpeng Li wrote:
 > remove_vm_area
 > spin_lock(&vmap_area_lock);
 > va->flags &= ~VM_VM_AREA;
+
+Here we also do: va->vm = NULL; And see below....
+
 > spin_unlock(&vmap_area_lock);
 > 						spin_lock(&vmap_area_lock);
 > 						if (va->flags & (VM_LAZY_FREE | VM_LAZY_FREEZING))
@@ -81,19 +87,18 @@ On Tue, Sep 03, 2013 at 03:01:46PM +0800, Wanpeng Li wrote:
 > -	}
 > -
 >  	v = va->vm;
+
+If we remove the if test above, in the window you said above, va->vm is NULL,
+but below we will still try to access the members of this vm_struct, which
+will cause problems...
+
+Correct me if I am wrong, please.
+
 >  
 >  	seq_printf(m, "0x%pK-0x%pK %7ld",
+> 
 
-Hello, Wanpeng.
 
-Did you test this patch?
-
-I guess that, With this patch, if there are some vm_map areas,
-null pointer deference would occurs, since va->vm may be null for it.
-
-And with this patch, if this race really occur, null pointer deference
-would occurs too, since va->vm is set to null in remove_vm_area().
-
-I think that this is not a right fix for this possible race.
-
+-- 
 Thanks.
+Zhang Yanfei
