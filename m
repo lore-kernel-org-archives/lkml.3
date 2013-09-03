@@ -1,167 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab3ICPcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 11:32:24 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56429 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab3ICPcW (ORCPT
+	id S1756535Ab3ICPcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 11:32:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63790 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3ICPc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 11:32:22 -0400
-Date: Tue, 3 Sep 2013 08:32:18 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iprotue2 v3.11.0
-Message-ID: <20130903083218.6dcb67a7@nehalam.linuxnetplumber.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 11:32:26 -0400
+MIME-Version: 1.0
+X-Originating-IP: [121.6.72.52]
+In-Reply-To: <86vc2ib1yt.fsf@void.printf.net>
+References: <CAMVG2su7av_Aym+wh-YpkMQN__u+Niya-QXsLX_xor2rhqBuew@mail.gmail.com>
+	<CAMVG2svAvReEQFVoUmq5+vz-fp+M-8BC0JUf7A=Gq09ir7O8Pg@mail.gmail.com>
+	<86vc2ib1yt.fsf@void.printf.net>
+Date: Tue, 3 Sep 2013 23:32:25 +0800
+Message-ID: <CAMVG2svnL7jB8MA3mHNJjWpXtkVAuWJHYh8EGKV1BaD-o+NN6w@mail.gmail.com>
+Subject: Re: BCM57765: timeout waiting for hardware interrupt
+From: Daniel J Blueman <daniel@quora.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iproute2 tools for Workgroups (3.11) is not available.
-It has the usual set of fixes and support for the new features
-in 3.11. Thank for all the contributions.
+On 3 September 2013 19:04, Chris Ball <cjb@laptop.org> wrote:
+> On Tue, Sep 03 2013, Daniel J Blueman wrote:
+>> Please let me know if there's a better vector for reporting and
+>> looking into this issue, if you can.
+>
+> Do you know whether it's ever worked on this hardware?  If so, could
+> you try bisecting to find the first bad commit?
 
-I will merge in the next-3.11 branch. After that
-if you have been sitting on changes to iproute2 that are in
-net-next for 3.12 merge window, please submit them now.
+Yes; the card reader works when an ethernet cable is plugged into the
+first PCI function on the chip, the Broadcom NIC (see comment #3):
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1067222
 
-Iproute2 package is available at:
-  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.10.0.tar.gz
+Google also use this in one of their Chromebook models:
+https://groups.google.com/a/chromium.org/forum/#!msg/chromium-os-reviews/nwFj3KVQy_Y/FOckx1trSkUJ
 
-You can download the source from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+> If not, I suspect it's going to be very difficult to debug/fix
+> remotely, and we need to wait for someone who has the hardware and
+> wants to create the fix.  (Or get the hardware into the hands of
+> someone who's willing to take a look.)
 
----
+Got hardware and willing to take a look; just was wanting some tips on
+where to look with your experience of SDHCI/MMC.
 
-Adam Borowski (1):
-      ip: fix build failure if time_t is not long int
+Doing some further debugging, the card reader's parent device (the
+NIC) is in D3 [1] while the card reader is in D0. I'll add the missing
+device IDs to the tg3 driver and force it to bring the NIC into D0 and
+see what happens.
 
-Alexander Duyck (1):
-      iproute2: act_ipt fix xtables breakage on older versions.
+Daniel
 
-Amerigo Wang (1):
-      iptunnel: check SIT_ISATAP flag only for SIT tunnel
+--- [1]
 
-Andreas Henriksson (1):
-      iproute2: fix build failure on sparc due to -Wformat and tv_usec
+$ sudo lspci -s 3:0 -vv
+03:00.0 Ethernet controller: Broadcom Corporation Device 16a3 (rev 10)
+    Subsystem: Broadcom Corporation Device 16b4
+    Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+    Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+    Interrupt: pin A routed to IRQ 0
+    Region 0: Memory at c1800000 (64-bit, prefetchable) [disabled] [size=64K]
+    Region 2: Memory at c1810000 (64-bit, prefetchable) [disabled] [size=64K]
+    Expansion ROM at c1830000 [disabled] [size=2K]
+    Capabilities: [48] Power Management version 3
+        Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+        Status: D3 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+    Capabilities: [58] MSI: Enable- Count=1/8 Maskable- 64bit+
+        Address: 0000000000000000  Data: 0000
+    Capabilities: [a0] MSI-X: Enable- Count=6 Masked-
+        Vector table: BAR=2 offset=00000000
+        PBA: BAR=2 offset=00000120
+    Capabilities: [ac] Express (v2) Endpoint, MSI 00
+        DevCap:    MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 <64us
+            ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+        DevCtl:    Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+            RlxdOrd+ ExtTag- PhantFunc- AuxPwr+ NoSnoop+
+            MaxPayload 128 bytes, MaxReadReq 512 bytes
+        DevSta:    CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+        LnkCap:    Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <2us, L1 <64us
+            ClockPM+ Surprise- LLActRep- BwNot-
+        LnkCtl:    ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+            ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
+        LnkSta:    Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+
+DLActive- BWMgmt- ABWMgmt-
+        DevCap2: Completion Timeout: Range ABCD, TimeoutDis+
+        DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+        LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+             Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+             Compliance De-emphasis: -6dB
+        LnkSta2: Current De-emphasis Level: -6dB,
+EqualizationComplete-, EqualizationPhase1-
+             EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+    Capabilities: [100 v1] Advanced Error Reporting
+        UESta:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+        UEMsk:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+        UESvrt:    DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+        CESta:    RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+        CEMsk:    RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+        AERCap:    First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+    Capabilities: [13c v1] Device Serial Number 00-00-00-10-18-00-00-00
+    Capabilities: [150 v1] Power Budgeting <?>
+    Capabilities: [160 v1] Virtual Channel
+        Caps:    LPEVC=0 RefClk=100ns PATEntryBits=1
+        Arb:    Fixed- WRR32- WRR64- WRR128-
+        Ctrl:    ArbSelect=Fixed
+        Status:    InProgress-
+        VC0:    Caps:    PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+            Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+            Ctrl:    Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+            Status:    NegoPending- InProgress-
 
-Andrey Vagin (5):
-      ip: set the close-on-exec flag for descriptors
-      ss: handle socket diag request in a separate function
-      ss: create a function to print info about netlink sockets
-      ss: show destination address for netlink sockets
-      ss: Get netlink sockets info via sock-diag (v2)
-
-Atzm Watanabe (1):
-      vxlan: Allow setting destination to unicast address.
-
-Cong Wang (1):
-      add quickack option to ip route
-
-Daniel Borkmann (1):
-      ip: ipv6: add tokenized interface identifier support
-
-David L Stevens (1):
-      iproute2: support NTF_ROUTER flag in VXLAN fdb entries
-
-David Stevens (1):
-      iproute2: generalize VXLAN forwarding tables
-
-Eric Dumazet (4):
-      ss: add fastopen support
-      htb: report overhead attribute
-      get_rate: detect 32bit overflows
-      ss: add more TCP_INFO components
-
-Jesper Dangaard Brouer (1):
-      linklayer interface between kernel and tc/userspace
-
-John Fastabend (1):
-      iproute2: bridge: fix 'bridge link' setlink/getlink parsing
-
-JunweiZhang (1):
-      ipbatch: fix use of 'ip netns exec'
-
-Kamil Rytarowski (1):
-      iproute2 patch against GCC 4.8.0
-
-Lutz Jaenicke (1):
-      macvlan: fix typo in macvlan_print_opt()
-
-Martin Schwenke (1):
-      ip: Add label option to ip monitor
-
-Nicolas Dichtel (8):
-      ip: add missing help about mode argument
-      ip/xfrm: all to set flag XFRM_SA_XFLAG_DONT_ENCAP_DSCP
-      ipnetconf: by default dump all entries
-      ss: allow to retrieve AF_PACKET info via netlink
-      man: describe --bpf option of ss
-      ipadress: fix display of IPv6 peer address
-      ip: allow to specify mode for sit tunnels
-      ipnetns: fix ip batch mode when using 'netns exec'
-
-Patric McHardy (1):
-      ip: iplink_vlan: add 802.1ad support
-
-Pavel Emelyanov (1):
-      ss: Show inet and unix sockets' shutdown state
-
-Rami Rosen (1):
-      ss: replace bfp with bpf in usage().
-
-Richard Godbee (3):
-      iproute2: iproute.c: fix usage() spacing problems
-      iproute2: spelling: noptmudisc -> nopmtudisc
-      iproute2: ip-route.8.in: minor fixes
-
-Rony Efraim (1):
-      Add VF link state control
-
-Sriram Narasimhan (1):
-      iptuntap: allow creation of multi-queue tun/tap device
-
-Stefan Tomanek (1):
-      ip link: fix display of interface groups
-
-Stephen Hemminger (21):
-      Update headers to 3.10
-      Add vxlan destination port option
-      vxlan: nag user to set port value
-      add BPF header files
-      vxlan: remove dstport option
-      man: get rid of useless reference to GNU style options
-      htb: fix indentation
-      update to 3.10-net-next headers
-      netns: follow return value conventions of the rest of the code
-      ip: add batch mode to man page
-      Make tc and ip batch mode consistent
-      v3.10.0
-      Update to 3.11-rc1 kernel headers
-      Remove -Werror
-      cleanup help message
-      Fix spelling errors
-      More minor spelling fixes
-      tc: allow qdisc without options
-      add ability to filter neighbour discovery by protocol
-      Update kernel headers to 3.11
-      v3.11.0
-
-Thomas Egerer (1):
-      ip/xfrm: Fix potential SIGSEGV when printing extra flags
-
-Thomas Richter (3):
-      iproute2 vxlan documentation update for bridge command
-      iproute2 vxlan documentation update for ip command
-      iproute vxlan add support for fdb replace command
-
-esr@thyrsus.com (4):
-      First set of manpage markup fixes
-      tc-stab.8: Fix synopsis errors, an invalid escape, and incorrect English usge.
-      In tc-ematch.8, remove no-op .ti requests to prevent translation warnings
-      ip-rule.8: Fix presentational use of .SS.
-
+03:00.1 SD Host controller: Broadcom Corporation NetXtreme BCM57765
+Memory Card Reader (rev 10) (prog-if 01)
+    Subsystem: Broadcom Corporation Device 96bc
+    Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+    Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+    Latency: 0, Cache Line Size: 256 bytes
+    Interrupt: pin B routed to IRQ 17
+    Region 0: Memory at c1820000 (64-bit, prefetchable) [size=64K]
+    Capabilities: [48] Power Management version 3
+        Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+        Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+    Capabilities: [58] MSI: Enable- Count=1/1 Maskable- 64bit+
+        Address: 0000000000000000  Data: 0000
+    Capabilities: [ac] Express (v2) Endpoint, MSI 00
+        DevCap:    MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 <64us
+            ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+        DevCtl:    Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+            RlxdOrd+ ExtTag- PhantFunc- AuxPwr+ NoSnoop+
+            MaxPayload 128 bytes, MaxReadReq 4096 bytes
+        DevSta:    CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+        LnkCap:    Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <1us, L1 <2us
+            ClockPM+ Surprise- LLActRep- BwNot-
+        LnkCtl:    ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+            ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
+        LnkSta:    Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+
+DLActive- BWMgmt- ABWMgmt-
+        DevCap2: Completion Timeout: Range ABCD, TimeoutDis+
+        DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+        LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+             Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+             Compliance De-emphasis: -6dB
+        LnkSta2: Current De-emphasis Level: -6dB,
+EqualizationComplete-, EqualizationPhase1-
+             EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+    Capabilities: [100 v1] Advanced Error Reporting
+        UESta:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+        UEMsk:    DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+        UESvrt:    DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
+RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+        CESta:    RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+        CEMsk:    RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+        AERCap:    First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+    Capabilities: [150 v1] Power Budgeting <?>
+    Capabilities: [160 v1] Virtual Channel
+        Caps:    LPEVC=0 RefClk=100ns PATEntryBits=1
+        Arb:    Fixed- WRR32- WRR64- WRR128-
+        Ctrl:    ArbSelect=Fixed
+        Status:    InProgress-
+        VC0:    Caps:    PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+            Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+            Ctrl:    Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+            Status:    NegoPending- InProgress-
+    Kernel driver in use: sdhci-pci
