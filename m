@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab3ICTd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 15:33:58 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:33085 "EHLO
+	id S933321Ab3ICTeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 15:34:08 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:33090 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313Ab3ICTd4 (ORCPT
+	with ESMTP id S932248Ab3ICTeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 15:33:56 -0400
-Message-ID: <cover.1378235372.git.cmetcalf@tilera.com>
+	Tue, 3 Sep 2013 15:34:06 -0400
+Message-ID: <309272f99f3e65b9bb5c49a2901c63a1859172f3.1378235372.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 3 Sep 2013 15:09:32 -0400
-Subject: [PATCH 0/3] tile prerequisites for KVM support
+Date: Tue, 3 Sep 2013 14:13:31 -0400
+Subject: [PATCH 1/3] tile: clean up relocate_kernel_64 debug code
 To: Gleb Natapov <gleb@redhat.com>, <linux-kernel@vger.kernel.org>,
         <kvm@vger.kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         Jan Kiszka <jan.kiszka@siemens.com>
@@ -28,44 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The KVM support for tile requires additional review that is out of scope
-for 3.12, but some of the changes included with the KVM code are really
-just pre-requisite reorganization or re-parameterization of existing code.
-Gleb Natapov had previously requested finer-grained KVM patches, and with
-an eye toward simplifying eventual code review I realized there was
-more that could be split out into separate patches.
+We remove some debug code in relocate_kernel_64.S that made raw
+calls to the hv_console_putc Tilera hypervisor API, since everything
+should funnel through the early_hv_write() API.
 
-Rather than making these changes part of the eventual KVM review, I've
-split them out here into some smaller pieces that don't require review
-by the KVM team, since they are essentially internal rework within the
-tile architecture.  This will also simplify ongoing three-way merges.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/relocate_kernel_64.S | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-I will defer the pull request for linux-tile for a few days in case
-anyone has comments on this batch of changes.
-
-Chris Metcalf (3):
-  tile: clean up relocate_kernel_64 debug code
-  tile: don't assume user privilege is zero
-  tile: parameterize VA and PA space more cleanly
-
- arch/tile/include/asm/page.h          | 52 ++++++++++++++---------------------
- arch/tile/include/asm/pgtable_32.h    |  2 +-
- arch/tile/include/asm/pgtable_64.h    |  3 +-
- arch/tile/include/asm/processor.h     |  6 ++--
- arch/tile/include/asm/ptrace.h        |  2 +-
- arch/tile/kernel/head_32.S            |  4 +--
- arch/tile/kernel/head_64.S            |  6 ++--
- arch/tile/kernel/intvec_32.S          |  6 ++--
- arch/tile/kernel/intvec_64.S          | 31 +++++++++++++++------
- arch/tile/kernel/relocate_kernel_64.S |  9 ++++--
- arch/tile/kernel/setup.c              |  8 +++---
- arch/tile/kernel/stack.c              |  2 +-
- arch/tile/kernel/traps.c              |  2 +-
- arch/tile/kernel/vmlinux.lds.S        | 10 +++----
- arch/tile/mm/fault.c                  |  4 +--
- arch/tile/mm/init.c                   |  8 +++---
- 16 files changed, 81 insertions(+), 74 deletions(-)
-
+diff --git a/arch/tile/kernel/relocate_kernel_64.S b/arch/tile/kernel/relocate_kernel_64.S
+index 1c09a4f..02bc446 100644
+--- a/arch/tile/kernel/relocate_kernel_64.S
++++ b/arch/tile/kernel/relocate_kernel_64.S
+@@ -34,11 +34,11 @@ STD_ENTRY(relocate_new_kernel)
+ 	addi	sp, sp, -8
+ 	/* we now have a stack (whether we need one or not) */
+ 
++#ifdef RELOCATE_NEW_KERNEL_VERBOSE
+ 	moveli	r40, hw2_last(hv_console_putc)
+ 	shl16insli r40, r40, hw1(hv_console_putc)
+ 	shl16insli r40, r40, hw0(hv_console_putc)
+ 
+-#ifdef RELOCATE_NEW_KERNEL_VERBOSE
+ 	moveli	r0, 'r'
+ 	jalr	r40
+ 
+@@ -176,10 +176,12 @@ STD_ENTRY(relocate_new_kernel)
+ 
+ 	/* we should not get here */
+ 
++#ifdef RELOCATE_NEW_KERNEL_VERBOSE
+ 	moveli	r0, '?'
+ 	jalr	r40
+ 	moveli	r0, '\n'
+ 	jalr	r40
++#endif
+ 
+ 	j	.Lhalt
+ 
+@@ -237,7 +239,9 @@ STD_ENTRY(relocate_new_kernel)
+ 	j	.Lloop
+ 
+ 
+-.Lerr:	moveli	r0, 'e'
++.Lerr:
++#ifdef RELOCATE_NEW_KERNEL_VERBOSE
++	moveli	r0, 'e'
+ 	jalr	r40
+ 	moveli	r0, 'r'
+ 	jalr	r40
+@@ -245,6 +249,7 @@ STD_ENTRY(relocate_new_kernel)
+ 	jalr	r40
+ 	moveli	r0, '\n'
+ 	jalr	r40
++#endif
+ .Lhalt:
+ 	moveli r41, hw2_last(hv_halt)
+ 	shl16insli r41, r41, hw1(hv_halt)
 -- 
 1.8.3.1
 
