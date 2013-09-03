@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3ICSEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:04:21 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:34748 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757048Ab3ICSET (ORCPT
+	id S1758193Ab3ICSHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:07:13 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:22289 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab3ICSHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:04:19 -0400
-Date: Tue, 3 Sep 2013 11:04:16 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Correct the USB IDs for the new Macbook Air 6
-Message-ID: <20130903180416.GB25985@core.coreip.homeip.net>
-References: <1378042304-1400-1-git-send-email-rydberg@euromail.se>
- <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 14:07:11 -0400
+Message-ID: <1378231630.17792.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc/msg.c: Fix lost wakeup in msgsnd().
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <dave.bueso@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Date: Tue, 03 Sep 2013 11:07:10 -0700
+In-Reply-To: <1378216808-2564-1-git-send-email-manfred@colorfullife.com>
+References: <1378216808-2564-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 01:30:07PM +0200, Jiri Kosina wrote:
-> On Sun, 1 Sep 2013, Henrik Rydberg wrote:
+On Tue, 2013-09-03 at 16:00 +0200, Manfred Spraul wrote:
+> The check if the queue is full and adding current to the wait queue of pending
+> msgsnd() operations (ss_add()) must be atomic.
 > 
-> > A recent patch (9d9a04ee) added support for the new machine, but got
-> > the sequence of USB ids wrong. Reports from both Ian and Linus T show
-> > that the 0x0291 id is for ISO, not ANSI, which should have the missing
-> > number 0x0290. This patchs moves the three numbers accordingly, fixing
-> > the problem.
-> > 
-> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
-> > Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> > Hi Jiri, Dmitry,
-> > 
-> > it looks like this change has been sufficiently tested now, in
-> > addition to making perfect sense. Jiri, would you mind taking it, if
-> > Dmitry approves?
+> Otherwise:
+> - the thread that performs msgsnd() finds a full queue and decides to sleep.
+> - the thread that performs msgrcv() calls first reads all messages from the
+>   queue and then sleep, because the queue is empty.
+> - the msgrcv() calls do not perform any wakeups, because the msgsnd() task
+>   has not yet called ss_add().
+> - then the msgsnd()-thread first calls ss_add() and then sleeps.
+> Net result: msgsnd() and msgrcv() both sleep forever.
 > 
-> Absolutely ... waiting for Dmitry's Ack.
+> Observed with msgctl08 from ltp with a preemptible kernel.
 
-And here it is:
+Good catch, thanks for looking into this Manfred. 
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+FWIW similar changes that aim at reducing the kern_ipc_perm.lock
+contention in shm have already been in linux-next for a good while and
+should be going into 3.12. While both Sedat and I have tested them
+through LTP, I will keep an eye open for regressions so that we don't
+run into issues like this, late in the release cycle.
 
-Thanks.
+> 
+> Fix: Call ipc_lock_object() before performing the check.
+> 
+> The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
+> - msgctl(IPC_SET) explicitely mentions that it tries to expunge any pending
+>   operations that are not allowed anymore with the new permissions.
+>   If security_msg_queue_msgsnd() is called without locks, then there might be
+>   races.
 
--- 
-Dmitry
+Right.
+
+> - it makes the patch much simpler.
+> 
+> Reported-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+
+> ---
+>  ipc/msg.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/ipc/msg.c b/ipc/msg.c
+> index 9f29d9e..b65fdf1 100644
+> --- a/ipc/msg.c
+> +++ b/ipc/msg.c
+> @@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>  		goto out_unlock1;
+>  	}
+>  
+> +	ipc_lock_object(&msq->q_perm);
+> +
+>  	for (;;) {
+>  		struct msg_sender s;
+>  
+>  		err = -EACCES;
+>  		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
+> -			goto out_unlock1;
+> +			goto out_unlock0;
+>  
+>  		err = security_msg_queue_msgsnd(msq, msg, msgflg);
+>  		if (err)
+> -			goto out_unlock1;
+> +			goto out_unlock0;
+>  
+>  		if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
+>  				1 + msq->q_qnum <= msq->q_qbytes) {
+> @@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>  		/* queue full, wait: */
+>  		if (msgflg & IPC_NOWAIT) {
+>  			err = -EAGAIN;
+> -			goto out_unlock1;
+> +			goto out_unlock0;
+>  		}
+>  
+> -		ipc_lock_object(&msq->q_perm);
+>  		ss_add(msq, &s);
+>  
+>  		if (!ipc_rcu_getref(msq)) {
+> @@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>  			goto out_unlock0;
+>  		}
+>  
+> -		ipc_unlock_object(&msq->q_perm);
+>  	}
+> -
+> -	ipc_lock_object(&msq->q_perm);
+>  	msq->q_lspid = task_tgid_vnr(current);
+>  	msq->q_stime = get_seconds();
+>  
+
+
