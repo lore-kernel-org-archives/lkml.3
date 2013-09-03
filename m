@@ -1,111 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab3ICUVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 16:21:52 -0400
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:30182 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759990Ab3ICUVu (ORCPT
+	id S1760750Ab3ICUZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 16:25:57 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32915 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755932Ab3ICUZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 16:21:50 -0400
-X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 16:21:49 EDT
-Message-Id: <00000140e5745014-6a1f1168-c5ac-4b91-834a-85fe8875b3fe-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Tue, 3 Sep 2013 20:12:19 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 06/38] Coccinelle script for __get_cpu_var conversion
-References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 199.127.232.131
+	Tue, 3 Sep 2013 16:25:55 -0400
+Message-ID: <522645D0.3030503@wwwdotorg.org>
+Date: Tue, 03 Sep 2013 14:25:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] gpio: Fix crash in gpiod_set_debounce()
+References: <1378204768-18013-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1378204768-18013-1-git-send-email-treding@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Much of the work was done by this coccinelle script.
+On 09/03/2013 04:39 AM, Thierry Reding wrote:
+> Return an error if neither the ->set() nor the ->set_debounce() function
+> is implemented by the chip. Furthermore move locking further down so the
+> lock doesn't have to be unlocked on error. This is safe to do because at
+> this point the lock doesn't protect anything.
 
-Wont catch everything (since coccinelle aborts when it no longer can make
-sense out of macros, sigh) but it covers a lot of ground.
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+>  	chip = desc->chip;
+>  	if (!chip->set || !chip->set_debounce) {
+>  	  pr_warn("%s: missing set() or set_debounce() operations\n",
+>  		  __func__);
+> +		return -EIO;
+>  	}
 
-Index: linux/scripts/coccinelle/convert/__get_cpu_var.cocci
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux/scripts/coccinelle/convert/__get_cpu_var.cocci	2013-08-22 14:41:13.976518846 -0500
-@@ -0,0 +1,70 @@
-+// Convert all &__get_cpu_var to this_cpu_ptr
-+//
-+// _get_cpu_var is defined as:
-+//
-+// #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-+//
-+//&__get_cpu_var() is therefore
-+//
-+//	this_cpu_ptr(&var);
-+//
-+// The use of this_cpu_ptr() instead of __get_cpu_var clarifies
-+// that we are relocating a per cpu offset and that there are
-+// no get/put semantics involved.
-+//
-+//
-+// Convert all &__get_cpu_vars (and also related functions)
-+// to this_cpu_ptr(). Multiple transformations are provided
-+// to be able to beautify the source a bit.
-+//
-+// Christoph Lameter <cl@linux.com> August 20, 2013
-+//
-+
-+@A@ expression E; @@
-+
-+...
-+-(&__get_cpu_var(E))
-++this_cpu_ptr(&E)
-+...
-+
-+@B@ expression E; @@
-+
-+...
-+-(&__raw_get_cpu_var(E))
-++__this_cpu_ptr(&E)
-+...
-+
-+@C@ expression E; @@
-+
-+...
-+-&__get_cpu_var(E)
-++this_cpu_ptr(&E)
-+...
-+
-+@D@ expression E; @@
-+
-+...
-+-&__raw_get_cpu_var(E)
-++__this_cpu_ptr(&E)
-+...
-+
-+@A2@ expression E; @@
-+
-+-(&__get_cpu_var(E))
-++this_cpu_ptr(&E)
-+
-+@B2@ expression E; @@
-+
-+-(&__raw_get_cpu_var(E))
-++__this_cpu_ptr(&E)
-+
-+@C2@ expression E; @@
-+
-+-&__get_cpu_var(E)
-++this_cpu_ptr(&E)
-+
-+@D2@ expression E; @@
-+
-+-&__raw_get_cpu_var(E)
-++__this_cpu_ptr(&E)
-+
-
+BTW, I'm not sure that error-path should pr_warn(). For example, if this
+error-patch is taken due to a call from
+gpio_keys.c:gpio_keys_setup_key(), then a timer will be used for
+debounce instead, which is all perfectly valid, and probably not
+something that should be spewed to the kernel log.
