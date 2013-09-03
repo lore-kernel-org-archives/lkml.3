@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760482Ab3ICScf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:32:35 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:38214 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760215Ab3ICScd (ORCPT
+	id S1760531Ab3ICSeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:34:13 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:47887 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760397Ab3ICSeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:32:33 -0400
-Date: Tue, 3 Sep 2013 20:32:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130903183229.GB30757@gmail.com>
-References: <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902140015.GB2368@swordfish.minsk.epam.com>
- <20130903084306.GA2694@redhat.com>
- <20130903180912.GA2340@swordfish>
+	Tue, 3 Sep 2013 14:34:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903180912.GA2340@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
+References: <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+	<CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
+	<20130901212355.GU13318@ZenIV.linux.org.uk>
+	<CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+	<20130902070538.GA31639@gmail.com>
+	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	<20130903101522.GA22369@gmail.com>
+	<CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
+Date: Tue, 3 Sep 2013 11:34:10 -0700
+X-Google-Sender-Auth: gtV8YM9WHgFkZztgevHj8rAKtDM
+Message-ID: <CA+55aFxGWKJwo1CfS3EJFagUb+JRtc+URJOu2yz2RztWWrkraA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 3, 2013 at 8:41 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I've done that, and it matches the PEBS runs, except obviously with
+> the instruction skew (so then depending on run it's 95% the
+> instruction after the xadd). So the PEBS profiles are entirely
+> consistent with other data.
 
-* Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+So one thing that strikes me about our lg-locks is that they are
+designed to be cheap, but they force this insane 3-deep memory access
+chain to lock them.
 
-> On (09/03/13 10:43), Stanislaw Gruszka wrote:
-> > Ok, I see now, utime is 0 . This seems to be problem with dynamic ticks
-> > as you told that your application is kernel compilation, so we utilize
-> > lot of cpu time in user-space.
-> > 
-> > Anyway we should handle utime == 0 situation on scaling code. We work
-> > well when rtime & stime are not big (variables and results fit in
-> > 32 bit), otherwise we have that stime bigger than rtime problem. Let's
-> > try to handle the problem by below patch. Sergey, does it work for you ?
-> 
-> checked on -current and -next -- works fine, good job.
-> 
-> here are my:
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+That may be a large part of why lg_local_lock shows up so clearly on
+my profiles: the single "lock xadd" instruction ends up not just being
+serializing, but it is what actually consumes the previous memory
+reads.
 
-Cool and thanks for the patient reporting and testing!
+The core of the lg_local_lock sequence ends up being this
+four-instruction sequence:
 
-Stanislaw, mind sending a changelogged, signed off patch with Sergey's 
-tags included? It also warrants a -stable backport tag I think.
+    mov    (%rdi),%rdx
+    add    %gs:0xcd48,%rdx
+    mov    $0x100,%eax
+    lock   xadd   %ax,(%rdx)
 
-Thanks,
+and that's a nasty chain of dependent memory loads. First we load the
+percpu address, then we add the percpu offset to that, and then we do
+the xadd on the result.
 
-	Ingo
+It's kind of sad, because in *theory* we could get rid of that whole
+thing entirely, and just do it as one single
+
+    mov    $0x100,%eax
+    lock xadd %ax,%gs:vfsmount_lock
+
+that only has one single memory access, not three dependent ones.
+
+But the two extra memory accesses come from:
+
+ - the lglock data structure isn't a percpu data structure, it's this
+stupid global data structure that has a percpu pointer in it.  So that
+first "mov (%rdi),%rdx" is purely to load what is effectively a
+constant address (per lglock).
+
+   And that's not because it wants to be, but because we associate
+global lockdep data with it. Ugh. If it wasn't for that, we could just
+make them percpu.
+
+ - we don't have a percpu spinlock accessor, so we always need to turn
+the percpu address into a global address by adding the percpu base
+(and that's the "add %gsL...,%rdx" part).
+
+Oh well. This whole "lg_local_lock" is really noticeable on my
+test-case mainly because my test-case only stat's a pathname with a
+single path component, so the whole lookup really is dominated by all
+the "setup/teardown" code. Real loads tend to look up much longer
+pathnames, so the setup/teardown isn't so dominant, and actually
+looking up the dentries from the hash chain is where most of the time
+goes. But it's annoying to have that one big spike in the profile and
+not being able to do anything about it.
+
+           Linus
