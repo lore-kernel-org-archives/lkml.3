@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760242Ab3ICSKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:10:31 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:42325 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760208Ab3ICSKa (ORCPT
+	id S1760275Ab3ICSK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:10:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52982 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760244Ab3ICSKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:10:30 -0400
-Date: Tue, 3 Sep 2013 21:09:12 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130903180912.GA2340@swordfish>
-References: <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902140015.GB2368@swordfish.minsk.epam.com>
- <20130903084306.GA2694@redhat.com>
+	Tue, 3 Sep 2013 14:10:55 -0400
+Message-ID: <52262629.8010605@wwwdotorg.org>
+Date: Tue, 03 Sep 2013 12:10:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903084306.GA2694@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-tegra@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Joseph Lo <josephl@nvidia.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] clk: tegra: convert Tegra114 gate clocks to table
+References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com> <1378215105-12145-3-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1378215105-12145-3-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (09/03/13 10:43), Stanislaw Gruszka wrote:
-> Ok, I see now, utime is 0 . This seems to be problem with dynamic ticks
-> as you told that your application is kernel compilation, so we utilize
-> lot of cpu time in user-space.
-> 
-> Anyway we should handle utime == 0 situation on scaling code. We work
-> well when rtime & stime are not big (variables and results fit in
-> 32 bit), otherwise we have that stime bigger than rtime problem. Let's
-> try to handle the problem by below patch. Sergey, does it work for you ?
+On 09/03/2013 07:31 AM, Peter De Schrijver wrote:
+> This patch converts the Tegra114 gate clock registration to be table driven
+> like the periph clocks. The same struct tegra_periph_init_data is used for the
+> table, but some fields are unused. This makes the code easier to read and also
+> paves the way to share clock data between Tegra SoCs.
 
-checked on -current and -next -- works fine, good job.
+> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
 
-here are my:
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> +static const char *clk_32k[] = {
+> +	"clk_32k",
+> +};
 
-	-ss
 
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index a7959e0..25cc35d 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -557,7 +557,7 @@ static void cputime_adjust(struct task_cputime *curr,
->  			   struct cputime *prev,
->  			   cputime_t *ut, cputime_t *st)
->  {
-> -	cputime_t rtime, stime, utime, total;
-> +	cputime_t rtime, stime, utime;
->  
->  	if (vtime_accounting_enabled()) {
->  		*ut = curr->utime;
-> @@ -565,9 +565,6 @@ static void cputime_adjust(struct task_cputime *curr,
->  		return;
->  	}
->  
-> -	stime = curr->stime;
-> -	total = stime + curr->utime;
-> -
->  	/*
->  	 * Tick based cputime accounting depend on random scheduling
->  	 * timeslices of a task to be interrupted or not by the timer.
-> @@ -588,13 +585,19 @@ static void cputime_adjust(struct task_cputime *curr,
->  	if (prev->stime + prev->utime >= rtime)
->  		goto out;
->  
-> -	if (total) {
-> +	stime = curr->stime;
-> +	utime = curr->utime;
+I think those new arrays of strings are only used ...
+
+> @@ -2114,6 +2023,26 @@ static __init void tegra114_periph_clk_init(void __iomem *clk_base)
+
+> +	for (i = 0; i < ARRAY_SIZE(tegra_periph_gate_clk_list); i++) {
+> +		int reg_bank;
 > +
-> +	if (utime == 0) {
-> +		stime = rtime;
-> +	} else if (stime == 0) {
-> +		utime = rtime;
-> +	} else {
-> +		cputime_t total = stime + utime;
+> +		data = &tegra_periph_gate_clk_list[i];
+> +		reg_bank = get_reg_bank(data->periph.gate.clk_num);
 > +
->  		stime = scale_stime((__force u64)stime,
->  				    (__force u64)rtime, (__force u64)total);
->  		utime = rtime - stime;
-> -	} else {
-> -		stime = rtime;
-> -		utime = 0;
->  	}
->  
->  	/*
-> 
+> +		if (reg_bank >= 0) {
+> +			clk = tegra_clk_register_periph_gate(data->name,
+> +					data->parent_names[0],
+
+... here. If so, why make them arrays? Surely they could just be a const
+char * inside tegra_periph_gate_clk_list[i]?
