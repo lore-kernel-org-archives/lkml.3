@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab3ICMwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:52:10 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34691 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932756Ab3ICMwI (ORCPT
+	id S932909Ab3ICMwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:52:34 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:42859 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932710Ab3ICMwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:52:08 -0400
-From: Masami Ichikawa <masami256@gmail.com>
-To: kvalo@adurom.com, IvDoorn@gmail.com, gwingerde@gmail.com,
-        helmut.schaa@googlemail.com, linville@tuxdriver.com
-Cc: Masami Ichikawa <masami256@gmail.com>, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] rt2x00: Add WLI-UC-G300HP's Product ID
-Date: Tue,  3 Sep 2013 21:51:56 +0900
-Message-Id: <1378212716-13525-1-git-send-email-masami256@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 3 Sep 2013 08:52:32 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] clocksource: of: respect device tree node status
+Date: Tue,  3 Sep 2013 14:52:23 +0200
+Message-Id: <1378212743-27843-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support Bufallo WLI-UC-G300HP.
+Clocksource devices provided by DT can be disabled (status != "okay").
+Instead of registering clocksource drivers for disabled nodes, respect
+the device's status by skiping disabled nodes.
 
-Signed-off-by: Masami Ichikawa <masami256@gmail.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c | 1 +
- 1 file changed, 1 insertion(+)
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clocksource/clksrc-of.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 840833b..518277d 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -977,6 +977,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x0411, 0x016f) },
- 	{ USB_DEVICE(0x0411, 0x01a2) },
- 	{ USB_DEVICE(0x0411, 0x01ee) },
-+	{ USB_DEVICE(0x0411, 0x01a8) },
- 	/* Corega */
- 	{ USB_DEVICE(0x07aa, 0x002f) },
- 	{ USB_DEVICE(0x07aa, 0x003c) },
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+index 37f5325..b9ddd9e 100644
+--- a/drivers/clocksource/clksrc-of.c
++++ b/drivers/clocksource/clksrc-of.c
+@@ -30,6 +30,9 @@ void __init clocksource_of_init(void)
+ 	clocksource_of_init_fn init_func;
+ 
+ 	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
++		if (!of_device_is_available(np))
++			continue;
++
+ 		init_func = match->data;
+ 		init_func(np);
+ 	}
 -- 
-1.8.3.1
+1.7.2.5
 
