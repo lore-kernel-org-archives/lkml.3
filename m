@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064Ab3ICQ1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46557 "EHLO
+	id S932911Ab3ICQ1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46583 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760033Ab3ICQ1c (ORCPT
+	with ESMTP id S932414Ab3ICQ1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:32 -0400
+	Tue, 3 Sep 2013 12:27:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 37/58] Hostap: copying wrong data prism2_ioctl_giwaplist()
-Date: Tue,  3 Sep 2013 09:23:41 -0700
-Message-Id: <1378225442-20654-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 35/58] iwlwifi: pcie: disable L1 Active after pci_enable_device
+Date: Tue,  3 Sep 2013 09:23:39 -0700
+Message-Id: <1378225442-20654-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,36 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 909bd5926d474e275599094acad986af79671ac9 upstream.
+commit eabc4ac5d7606a57ee2b7308cb7323ea8f60183b upstream.
 
-We want the data stored in "addr" and "qual", but the extra ampersands
-mean we are copying stack data instead.
+As Arjan pointed out, we mustn't do anything related to PCI
+configuration until the device is properly enabled with
+pci_enable_device().
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/hostap/hostap_ioctl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/trans.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
-index ac07473..e509030 100644
---- a/drivers/net/wireless/hostap/hostap_ioctl.c
-+++ b/drivers/net/wireless/hostap/hostap_ioctl.c
-@@ -523,9 +523,9 @@ static int prism2_ioctl_giwaplist(struct net_device *dev,
+diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
+index 35708b9..be0f8b9 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -1262,16 +1262,16 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
+ 	spin_lock_init(&trans_pcie->irq_lock);
+ 	init_waitqueue_head(&trans_pcie->ucode_write_waitq);
  
- 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
+-	/* W/A - seems to solve weird behavior. We need to remove this if we
+-	 * don't want to stay in L1 all the time. This wastes a lot of power */
+-	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
+-			       PCIE_LINK_STATE_CLKPM);
+-
+ 	if (pci_enable_device(pdev)) {
+ 		err = -ENODEV;
+ 		goto out_no_pci;
+ 	}
  
--	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
-+	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
- 	data->flags = 1; /* has quality information */
--	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
-+	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
- 	       sizeof(struct iw_quality) * data->length);
++	/* W/A - seems to solve weird behavior. We need to remove this if we
++	 * don't want to stay in L1 all the time. This wastes a lot of power */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++			       PCIE_LINK_STATE_CLKPM);
++
+ 	pci_set_master(pdev);
  
- 	kfree(addr);
+ 	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(36));
 -- 
 1.8.1.2
 
