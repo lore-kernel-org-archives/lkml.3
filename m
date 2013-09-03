@@ -1,171 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab3ICF5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:57:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47841 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab3ICF5q (ORCPT
+	id S1759443Ab3ICF6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:58:24 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19704 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab3ICF6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:57:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <52257A1A.2040200@jp.fujitsu.com>
-Date: Tue, 3 Sep 2013 14:56:42 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 3 Sep 2013 01:58:23 -0400
+X-Spam-Score: -100.9
+Message-ID: <52257A3E.7040001@asianux.com>
+Date: Tue, 03 Sep 2013 13:57:18 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <hannes@cmpxchg.org>,
-        <tony.luck@intel.com>, <matthew.garrett@nebula.com>, <dave@sr71.net>,
-        <riel@redhat.com>, <arjan@linux.intel.com>,
-        <srinivas.pandruvada@linux.intel.com>, <willy@linux.intel.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <lenb@kernel.org>, <rjw@sisk.pl>,
-        <gargankita@gmail.com>, <paulmck@linux.vnet.ibm.com>,
-        <svaidy@linux.vnet.ibm.com>, <andi@firstfloor.org>,
-        <santosh.shilimkar@ti.com>, <kosaki.motohiro@gmail.com>,
-        <linux-pm@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 06/35] mm: Add helpers to retrieve node region
- and zone region for a given page
-References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <20130830131542.4947.76970.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130830131542.4947.76970.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Rob Landley <rob@landley.net>, Joe Perches <joe@perches.com>,
+        "'Jiri Kosina'" <trivial@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
+ and "uapi/linux/Kbuild"
+References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood> <520209FA.70409@asianux.com> <5202FEC3.4010408@asianux.com> <52145F5C.9090907@asianux.com> <521739B3.9050001@asianux.com>
+In-Reply-To: <521739B3.9050001@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/30 22:15), Srivatsa S. Bhat wrote:
-> Given a page, we would like to have an efficient mechanism to find out
-> the node memory region and the zone memory region to which it belongs.
->
-> Since the node is assumed to be divided into equal-sized node memory
-> regions, the node memory region can be obtained by simply right-shifting
-> the page's pfn by 'MEM_REGION_SHIFT'.
->
-> But finding the corresponding zone memory region's index in the zone is
-> not that straight-forward. To have a O(1) algorithm to find it out, define a
-> zone_region_idx[] array to store the zone memory region indices for every
-> node memory region.
->
-> To illustrate, consider the following example:
->
-> 	|<----------------------Node---------------------->|
-> 	 __________________________________________________
-> 	|      Node mem reg 0 	 |      Node mem reg 1     |  (Absolute region
-> 	|________________________|_________________________|   boundaries)
->
-> 	 __________________________________________________
-> 	|    ZONE_DMA   |	    ZONE_NORMAL		   |
-> 	|               |                                  |
-> 	|<--- ZMR 0 --->|<-ZMR0->|<-------- ZMR 1 -------->|
-> 	|_______________|________|_________________________|
->
->
-> In the above figure,
->
-> Node mem region 0:
-> ------------------
-> This region corresponds to the first zone mem region in ZONE_DMA and also
-> the first zone mem region in ZONE_NORMAL. Hence its index array would look
-> like this:
->      node_regions[0].zone_region_idx[ZONE_DMA]     == 0
->      node_regions[0].zone_region_idx[ZONE_NORMAL]  == 0
->
->
-> Node mem region 1:
-> ------------------
-> This region corresponds to the second zone mem region in ZONE_NORMAL. Hence
-> its index array would look like this:
->      node_regions[1].zone_region_idx[ZONE_NORMAL]  == 1
->
->
-> Using this index array, we can quickly obtain the zone memory region to
-> which a given page belongs.
->
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Hello Maintainers:
+
+Maybe... I still miss some important mail addresses? or this patch is
+not suitable for applying?
+
+Hmm... but I still want to try the last time: "please help check this
+patch, when you have time".
+
+And next, I should not send additional tracing mail again, that will be
+really spam.
+
+
+Thanks.
+
+On 08/23/2013 06:30 PM, Chen Gang wrote:
+> Hello Maintainers:
+> 
+> Is this patch suitable for applying ?  Does it belong to 'trivial' (or
+> 'Documentation', or others) ?
+> 
+> 
+> And sorry for my original missing some important mail addresses when I
+> sent the original patch (I got them by "./scripts/get_maintainers", and
+> not give more considerations for them).
+> 
+> So I append my original patch below, if necessary, please help check
+> when you have time, thanks.
+> 
+> 
+> ------------------------------patch begin-------------------------------
+> 
+> "include/uapi/" is the whole Linux kernel API, it is important enough
+> to get more global explanations by comments.
+> 
+> In "include/uapi/Kbuild", "Makefile..." and "non-arch..." comments are
+> meaningless for current 'Kbuild', so delete them.
+> 
+> And add more explanations for "include/uapi/" in "include/uapi/Kbuild",
+> also add more explanations for "include/uapi/linux/" in "include/uapi
+> /linux/Kbuild".
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
->
->   include/linux/mm.h     |   24 ++++++++++++++++++++++++
->   include/linux/mmzone.h |    7 +++++++
->   mm/page_alloc.c        |    1 +
->   3 files changed, 32 insertions(+)
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 18fdec4..52329d1 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -723,6 +723,30 @@ static inline struct zone *page_zone(const struct page *page)
->   	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
->   }
->
-> +static inline int page_node_region_id(const struct page *page,
-> +				      const pg_data_t *pgdat)
-> +{
-> +	return (page_to_pfn(page) - pgdat->node_start_pfn) >> MEM_REGION_SHIFT;
-> +}
+>  include/uapi/Kbuild       |    5 ++---
+>  include/uapi/linux/Kbuild |    2 ++
+>  2 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
+> index 81d2106..c682891 100644
+> --- a/include/uapi/Kbuild
+> +++ b/include/uapi/Kbuild
+> @@ -1,7 +1,6 @@
+>  # UAPI Header export list
+> -# Top-level Makefile calls into asm-$(ARCH)
+> -# List only non-arch directories below
+> -
+> +# Except "linux/", UAPI means Universal API.
+> +# For "linux/", UAPI means User API which can be used by user mode.
+> 
+>  header-y += asm-generic/
+>  header-y += linux/
+> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+> index 997f9f2..0025e07 100644
+> --- a/include/uapi/linux/Kbuild
+> +++ b/include/uapi/linux/Kbuild
+> @@ -1,4 +1,6 @@
+>  # UAPI Header export list
+> +# UAPI is User API which can be used by user mode.
 > +
-> +/**
-> + * Return the index of the zone memory region to which the page belongs.
-> + *
-> + * Given a page, find the absolute (node) memory region as well as the zone to
-> + * which it belongs. Then find the region within the zone that corresponds to
-> + * that node memory region, and return its index.
-> + */
-> +static inline int page_zone_region_id(const struct page *page)
-> +{
-> +	pg_data_t *pgdat = NODE_DATA(page_to_nid(page));
-> +	enum zone_type z_num = page_zonenum(page);
-> +	unsigned long node_region_idx;
-> +
-> +	node_region_idx = page_node_region_id(page, pgdat);
-> +
-> +	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
-> +}
-> +
->   #ifdef SECTION_IN_PAGE_FLAGS
->   static inline void set_page_section(struct page *page, unsigned long section)
->   {
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 010ab5b..76d9ed2 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -726,6 +726,13 @@ struct node_mem_region {
->   	unsigned long end_pfn;
->   	unsigned long present_pages;
->   	unsigned long spanned_pages;
-
-> +
-> +	/*
-> +	 * A physical (node) region could be split across multiple zones.
-> +	 * Store the indices of the corresponding regions of each such
-> +	 * zone for this physical (node) region.
-> +	 */
-> +	int zone_region_idx[MAX_NR_ZONES];
-
-You should initialize the zone_region_id[] as negative value.
-If the zone_region_id is initialized as 0, region 0 belongs to all zones.
-
-Thanks,
-Yasuaki Ishimatsu
+>  header-y += byteorder/
+>  header-y += can/
+>  header-y += caif/
+> 
 
 
->   	struct pglist_data *pgdat;
->   };
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 05cedbb..8ffd47b 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4877,6 +4877,7 @@ static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
->   			zone_region->present_pages =
->   					zone_region->spanned_pages - absent;
->
-> +			node_region->zone_region_idx[zone_idx(z)] = idx;
->   			idx++;
->   		}
->
->
-
-
+-- 
+Chen Gang
