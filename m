@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759576Ab3ICFqz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:46:55 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50313 "EHLO
+	id S932475Ab3ICFqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:46:53 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56894 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759471Ab3ICFoT (ORCPT
+	with ESMTP id S1759473Ab3ICFoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 01:44:19 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-99-52257730549f
+X-AuditID: 9c93016f-b7cf0ae00000518f-95-522577307641
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 04/13] tracing/kprobes: Add fetch{,_size} member into deref fetch method
-Date: Tue,  3 Sep 2013 14:44:05 +0900
-Message-Id: <1378187054-27401-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 02/13] tracing/probes: Fix basic print type functions
+Date: Tue,  3 Sep 2013 14:44:03 +0900
+Message-Id: <1378187054-27401-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
 References: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
@@ -28,78 +28,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hyeoncheol Lee <cheol.lee@lge.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The deref fetch methods access a memory region but it assumes that
-it's a kernel memory since uprobes does not support them.
+The print format of s32 type was "ld" and it's casted to "long".  So
+it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
+sure whether it worked well on 32-bit systems.
 
-Add ->fetch and ->fetch_size member in order to provide a proper
-access methods for supporting uprobes.
+Anyway, it'd be better if we have exact format and type cast for each
+types on both of 32- and 64-bit systems.  In fact, the only difference
+is on s64/u64 types.
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
-[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_probe.c | 22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ kernel/trace/trace_probe.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 41f654d24cd9..b7b8bda02d6e 100644
+index 412e959709b4..b571e4de0769 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -97,6 +97,8 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
- struct deref_fetch_param {
- 	struct fetch_param	orig;
- 	long			offset;
-+	fetch_func_t		fetch;
-+	fetch_func_t		fetch_size;
- };
+@@ -49,14 +49,19 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+ }									\
+ static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
  
- #define DEFINE_FETCH_deref(type)					\
-@@ -108,13 +110,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
- 	call_fetch(&dprm->orig, regs, &addr);				\
- 	if (addr) {							\
- 		addr += dprm->offset;					\
--		fetch_memory_##type(regs, (void *)addr, dest);		\
-+		dprm->fetch(regs, (void *)addr, dest);			\
- 	} else								\
- 		*(type *)dest = 0;					\
- }
- DEFINE_BASIC_FETCH_FUNCS(deref)
- DEFINE_FETCH_deref(string)
--DEFINE_FETCH_deref(string_size)
-+
-+__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
-+						   void *data, void *dest)
-+{
-+	struct deref_fetch_param *dprm = data;
-+	unsigned long addr;
-+
-+	call_fetch(&dprm->orig, regs, &addr);
-+	if (addr && dprm->fetch_size) {
-+		addr += dprm->offset;
-+		dprm->fetch_size(regs, (void *)addr, dest);
-+	} else
-+		*(string_size *)dest = 0;
-+}
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
++#if BITS_PER_LONG == 32
+ DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
++#else /* BITS_PER_LONG == 64 */
++DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
++#endif
  
- static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
+ static inline void *get_rloc_data(u32 *dl)
  {
-@@ -394,6 +409,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 				return -ENOMEM;
- 
- 			dprm->offset = offset;
-+			dprm->fetch = t->fetch[FETCH_MTD_memory];
-+			dprm->fetch_size = get_fetch_size_function(t,
-+							dprm->fetch, ttbl);
- 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
- 							is_kprobe);
- 			if (ret)
 -- 
 1.7.11.7
 
