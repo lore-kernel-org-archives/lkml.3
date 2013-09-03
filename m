@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab3ICAVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 20:21:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab3ICAVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 20:21:12 -0400
-Date: Mon, 02 Sep 2013 20:20:52 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        gong.chen@linux.intel.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1378167652-baz1wfnf-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1378165006-19435-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1378165006-19435-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1378165006-19435-2-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge page
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1378165006-19435-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1759187Ab3ICA0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 20:26:24 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:33219 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304Ab3ICA0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 20:26:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1378156296.1953.117.camel@joe-AO722>
+References: <20130902195056.GB32628@leaf>
+	<9976.1378132260@warthog.procyon.org.uk>
+	<1378138205.1953.66.camel@joe-AO722>
+	<20130902181510.GA29787@leaf>
+	<20130902181856.GB29787@leaf>
+	<20130902153945.6d7e510c@samsung.com>
+	<1378148367.1953.98.camel@joe-AO722>
+	<13834.1378155023@warthog.procyon.org.uk>
+	<1378156296.1953.117.camel@joe-AO722>
+Date: Tue, 3 Sep 2013 08:26:21 +0800
+Message-ID: <CAP9B-Q=xO8Rw_wD-tER2U1g4fKfiy01eT7rMAV6V_gCCNpy09Q@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+From: Shilong Wang <wangshilong1991@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Howells <dhowells@redhat.com>, Josh Triplett <josh@joshtriplett.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 07:36:44AM +0800, Wanpeng Li wrote:
-> Changelog:
->  *v1 -> v2: reverse PageTransHuge(page) && !PageHuge(page) check 
-> 
-> PageTransHuge() can't guarantee the page is transparent huge page since it 
-> return true for both transparent huge and hugetlbfs pages. This patch fix 
-> it by check the page is also !hugetlbfs page.
-> 
-> Before patch:
-> 
-> [  121.571128] Injecting memory failure at pfn 23a200
-> [  121.571141] MCE 0x23a200: huge page recovery: Delayed
-> [  140.355100] MCE: Memory failure is now running on 0x23a200
-> 
-> After patch:
-> 
-> [   94.290793] Injecting memory failure at pfn 23a000
-> [   94.290800] MCE 0x23a000: huge page recovery: Delayed
-> [  105.722303] MCE: Software-unpoisoned page 0x23a000
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+2013/9/3 Joe Perches <joe@perches.com>:
+> On Mon, 2013-09-02 at 21:50 +0100, David Howells wrote:
+>> Josh Triplett <josh@joshtriplett.org> wrote:
+>>
+>> > > There are many checkpatch rules (like semicolons) that
+>> > > are not in CodingStyle.
+>> >
+>> > It's a rule of thumb, not a mandate.  In *general*, checkpatch.pl should
+>> > not be enforcing style rules that aren't documented in CodingStyle.
+>>
+>> Except that it becomes a mandate when someone runs it automatically against
+>> every one of your patches and then sends you an email for each patch it finds
+>> a checkpatch niggle against...
 
-Thanks!
+Agree with this..
+But using checkpatch.pl, i found there are *so many* patches that have
+warnings or errors.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+As far as i know, patches with checkpatch.pl's errors should be
+avoided  at least unless
+there is a *bug* in checkpatch.pl!
 
-> ---
->  mm/memory-failure.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index e28ee77..b114570 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
->  	 * worked by memory_failure() and the page lock is not held yet.
->  	 * In such case, we yield to memory_failure() and make unpoison fail.
->  	 */
-> -	if (PageTransHuge(page)) {
-> +	if (!PageHuge(page) && PageTransHuge(page)) {
->  		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
->  			return 0;
->  	}
-> -- 
-> 1.8.1.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> I think that any robot sending such checkpatch-only
+> emails should be disabled.
+>
+> I know of 2 email robots.
+>
+> Fengguang Wu's very useful build robot
+> sends out emails on build failures.
+> I think that's great.
+>
+> Wang Shilong <wangshilong1991@gmail.com>
+> sent me an automated checkpatch email I
+> thought was not useful.
+
+I am sorry if i give you any trouble, i have disabled it(in fact, it
+only has run for a day!)
+
+Thanks,
+wang
+>
+> Does anyone know of other checkpatch robots?
+>
 >
