@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005Ab3ICMnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:43:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31696 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab3ICMnH (ORCPT
+	id S1760043Ab3ICMn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:43:59 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:46296 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760012Ab3ICMn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:43:07 -0400
-Date: Tue, 3 Sep 2013 08:42:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] tracing/events: Add bounce tracing to swiotbl-xen
-Message-ID: <20130903124237.GB9870@konrad-lan.dumpdata.com>
-References: <1377208048-8963-1-git-send-email-zoltan.kiss@citrix.com>
- <20130823125533.GC14306@konrad-lan.dumpdata.com>
- <5224D0D6.40908@citrix.com>
+	Tue, 3 Sep 2013 08:43:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5224D0D6.40908@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <5220F8AE.2080300@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<521D0964.2080209@wwwdotorg.org>
+	<CACRpkdaWPQTPw8u+97iV8MRB1fdeS40kd242pJd3UE9Ler4kRQ@mail.gmail.com>
+	<521FE637.3010805@collabora.co.uk>
+	<5220F8AE.2080300@wwwdotorg.org>
+Date: Tue, 3 Sep 2013 14:43:57 +0200
+Message-ID: <CACRpkdZRkNzt6eGr81tEGJpV5_+vccOPun3HXjQoGNtFWGfvYg@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 06:54:30PM +0100, Zoltan Kiss wrote:
-> On 23/08/13 13:55, Konrad Rzeszutek Wilk wrote:
-> >On Thu, Aug 22, 2013 at 10:47:28PM +0100, Zoltan Kiss wrote:
-> >>Ftrace is currently not able to detect when SWIOTLB has to do double buffering
-> >>under Xen. You can only see it indirectly in function_graph, when
-> >>xen_swiotlb_map_page() doesn't stop after range_straddles_page_boundary(), but
-> >>calls spinlock functions, memcpy() and xen_phys_to_bus() as well. This patch
-> >>introduces the swiotlb-xen:bounced event, which also prints out the following
-> >>informations to help you find out why bouncing happened:
-> >>
-> >>dev_name: 0000:08:00.0 dma_mask=ffffffffffffffff dev_addr=9149f000 size=32768
-> >>swiotlb_force=0
-> >>
-> >>If (dev_addr + size + 1) > dma_mask, the buffer is out of the device's DMA
-> >>range. If swiotlb_force == 1, you should really change the kernel parameters.
-> >>Otherwise, the buffer is not contiguous in mfn space.
-> >
-> >Could this be in the lib/swiotlb.c instead?
-> 
-> You mean instead of drivers/xen/swiotlb-xen.c ? This is a Xen
-> SWIOTLB specific thing, it will hit exactly at the point when double
-> buffering becomes sure - under Xen.
+On Fri, Aug 30, 2013 at 9:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/29/2013 06:24 PM, Javier Martinez Canillas wrote:
+> ...
+>> We have been trying to solve this issue for a few months by now and Linus'
+>> approach seems to be the most sensible solution to me.
+>>
+>> Drivers that request an IRQ and assume that platform code will request and setup
+>> the GPIO have been broken since the boards using these drivers were migrated to
+>> DT (e.g: smsc911x on OMAP2+ boards).
+>
+> That's only true if the driver for the GPIO controller is buggy.
+> Whatever request_irq() maps down to in the GPIO/IRQ controller driver
+> simply needs to set up the pin as an interrupt input, then it doesn't
+> matter which order the driver does things.
 
-Correct. The double buffering code is being run in lib/swiotlb.c not the
-xen-swiotlb.c. Hence the question of why not move the tracing in there.
+As mentioned it can't do that, because doing that creates a
+restriction on which order the driver does things...
 
-> But I can rename the tracer and call trace_bounced in
-> swiotlb_map_page as well, so it can be used for normal SWIOTLB
-> bounce tracing as well. Is it OK for you?
+But you mentioned that you wanted an API that would account
+for the case where the *same driver* requested the same resource
+(a GPIO line) to be used for both IRQ and GPIO, through two
+different calls.
 
-Yes. And please (if it adds a benefit) also for unmap/sync which can trigger
-the bounce buffer.
+I would be happy to see how we could do that, preferably in a
+generic way.
 
-Or if it makes sense just for the bounce buffer copying - then just
-leave it at that. Thanks.
-> 
-> Regards,
-> 
-> Zoli
+Since the gpio_request() does not contain the signature of the
+calling driver I don't see how we could do this without refactoring
+the whole world.
+
+In that case it would probably be easiest to
+*first* proceed to complete Alexandre's suggested refactorings for
+GPIO descriptors, which tie down GPIOs to be requested like
+clocks and regulators and thus tied to a device, so we can from
+there proceed to implement such a conditional request,
+as we will then have the required information in the GPIO
+subsystem.
+
+Yours,
+Linus Walleij
