@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759839Ab3ICJXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:23:31 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:38530 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759759Ab3ICJX3 (ORCPT
+	id S932514Ab3ICJ1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:27:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36730 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313Ab3ICJ1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:23:29 -0400
-Message-ID: <5225AA8D.6080403@colorfullife.com>
-Date: Tue, 03 Sep 2013 11:23:25 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Tue, 3 Sep 2013 05:27:06 -0400
+Date: Tue, 3 Sep 2013 10:26:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130903092659.GD3084@sirena.org.uk>
+References: <1378189056.4621.1.camel@phoenix>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <dave.bueso@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>
-Subject: Re: ipc-msg broken again on 3.11-rc7?
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com> <CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com> <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com> <52205597.3090609@synopsys.com> <CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com> <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com> <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com> <CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com> <C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com> <5224BCF6.2080401@colorfullife.com> <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com> <5225A466.2080303@colorfullife.com> <C2D7FE5348E1B147BCA15975FBA2307514165E@IN01WEMBXA.internal.synopsys.com>
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307514165E@IN01WEMBXA.internal.synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="m4E4Spob7u7JiHeu"
+Content-Disposition: inline
+In-Reply-To: <1378189056.4621.1.camel@phoenix>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/8] regulator: 88pm8607: Convert to
+ devm_regulator_register
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 11:16 AM, Vineet Gupta wrote:
-> On 09/03/2013 02:27 PM, Manfred Spraul wrote:
->> On 09/03/2013 10:44 AM, Vineet Gupta wrote:
->>>> b) Could you check that it is not just a performance regression?
->>>>        Does ./msgctl08 1000 16 hang, too?
->>> Nope that doesn't hang. The minimal configuration that hangs reliably is msgctl
->>> 50000 2
->>>
->>> With this config there are 3 processes.
->>> ...
->>>     555   554 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
->>>     554   551 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
->>>     551   496 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2
->>> ...
->>>
->>> [ARCLinux]$ cat /proc/551/stack
->>> [<80aec3c6>] do_wait+0xa02/0xc94
->>> [<80aecad2>] SyS_wait4+0x52/0xa4
->>> [<80ae24fc>] ret_from_system_call+0x0/0x4
->>>
->>> [ARCLinux]$ cat /proc/555/stack
->>> [<80c2950e>] SyS_msgrcv+0x252/0x420
->>> [<80ae24fc>] ret_from_system_call+0x0/0x4
->>>
->>> [ARCLinux]$ cat /proc/554/stack
->>> [<80c28c82>] do_msgsnd+0x116/0x35c
->>> [<80ae24fc>] ret_from_system_call+0x0/0x4
->>>
->>> Is this a case of lost wakeup or some such. I'm running with some more diagnostics
->>> and will report soon ...
->> What is the output of ipcs -q? Is the queue full or empty when it hangs?
->> I.e. do we forget to wake up a receiver or forget to wake up a sender?
-> / # ipcs -q
->
-> ------ Message Queues --------
-> key        msqid      owner      perms      used-bytes   messages
-> 0x72d83160 163841     root       600        0            0
->
->
-Ok, a sender is sleeping - even though there are no messages in the queue.
-Perhaps it is the race that I mentioned in a previous mail:
->       for (;;) {
->                 struct msg_sender s;
->
->                 err = -EACCES;
->                 if (ipcperms(ns, &msq->q_perm, S_IWUGO))
->                         goto out_unlock1;
->
->                 err = security_msg_queue_msgsnd(msq, msg, msgflg);
->                 if (err)
->                         goto out_unlock1;
->
->                 if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
->                                 1 + msq->q_qnum <= msq->q_qbytes) {
->                         break;
->                 }
->
-[snip]
->         if (!pipelined_send(msq, msg)) {
->                 /* no one is waiting for this message, enqueue it */
->                 list_add_tail(&msg->m_list, &msq->q_messages);
->                 msq->q_cbytes += msgsz;
->                 msq->q_qnum++;
->                 atomic_add(msgsz, &ns->msg_bytes);
 
-The access to msq->q_cbytes is not protected.
+--m4E4Spob7u7JiHeu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Vineet, could you try to move the test for free space after ipc_lock?
-I.e. the lock must not get dropped between testing for free space and 
-enqueueing the messages.
+On Tue, Sep 03, 2013 at 02:17:36PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
---
-     Manfred
+Applied all, thanks.
+
+--m4E4Spob7u7JiHeu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSJatgAAoJELSic+t+oim9r2QP+gJPfCxLMK90eKrFn+TeHLBO
+cAYnMG45OqwZP/vkPZLGABVfAxDZgnPo4onbQ5o0kQG006KvegMyNlJ6NE/RY9CN
+/qD4AdRcMPa2HdACkmnOxxv8ZWOCw0InpfmYrNA6mLiwo4w4rPPd9B4MQAgh0Fjt
+kjyRizhAE126RwxmGG+vwnk/YwLUKBNXBF7701O97HegNm70beALatzVxEku50U3
+atP7cII3cF2RcLXbjnGVsGMm95ftAay+fD0f8d+xEtpVY1SLk0rJaaeCPPsLgbLJ
+6hcC6MMO5kx67wtIIT6Mylj/Owz4Aj3g+Vw4dNNXmxvOViLT0jiJel14SLl83rtI
+lC2FLQABGAu1QRuIff/iuXcW3NbVOt+4CRRljt+TCCr5sqCBvdAdL1tL6+mUrCkp
+uswI/qLXyuAE5cnxx3YkTbBCD8VPuMbCRGNqa06bOK6NRky644Ijp4RYTaKO3GVz
+yZ7CbxdeUEPuF8tQJart44jUBr0wHHOr5AxEAj8yF3s9vKIpCg8+a9Hx53LOgawm
+T/5bDLt3aVV1svcORlXRM2ZgmxlICUOtxtG7UXccdOCb5e0npO6Pcs1Axy0biC08
+sOhavhreAPAWNV0xn79g4mSTtnCvd5ppmOoApkv3Q1xkxdo7pRAJfmlUHqXnmtzr
+ja+t+KQrdtOJ0NH21Rt1
+=oUQm
+-----END PGP SIGNATURE-----
+
+--m4E4Spob7u7JiHeu--
