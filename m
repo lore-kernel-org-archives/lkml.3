@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab3ICHgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:36:52 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:18814 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab3ICHgF (ORCPT
+	id S932605Ab3ICHg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:36:57 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50499 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab3ICHgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:36:05 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH 3/7] powerpc/pci: use pci_is_pcie() to simplify code
-Date: Tue, 3 Sep 2013 15:35:11 +0800
-Message-ID: <1378193715-25328-3-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-In-Reply-To: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
-References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+	Tue, 3 Sep 2013 03:36:55 -0400
+Subject: [RFC PATCH 0/2] Perf support to SDT markers
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com
+Date: Tue, 03 Sep 2013 13:06:40 +0530
+Message-ID: <20130903072944.4793.93584.stgit@hemant-fedora>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090307-1396-0000-0000-0000037F3A45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pci_is_pcie() to simplify code.
+This series adds support to perf to list and probe into the SDT markers.
+The first patch implements listing of all the SDT markers present in
+the ELFs (executables or libraries). The SDT markers are present in the
+.note.stapsdt section of the elf. That section can be traversed to list
+all the markers. Recognition of markers follows the SystemTap approach.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
+The second patch will allow perf to probe into these markers. This is
+done by writing the marker name and its offset into the
+uprobe_events file in the tracing directory.
+Then, perf tools can be used to analyze perf.data file.
+
 ---
- arch/powerpc/kernel/eeh.c     |    3 +--
- arch/powerpc/sysdev/fsl_pci.c |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kernel/eeh.c b/arch/powerpc/kernel/eeh.c
-index 39954fe..b0bd41a 100644
---- a/arch/powerpc/kernel/eeh.c
-+++ b/arch/powerpc/kernel/eeh.c
-@@ -189,8 +189,7 @@ static size_t eeh_gather_pci_data(struct eeh_dev *edev, char * buf, size_t len)
- 	}
- 
- 	/* If PCI-E capable, dump PCI-E cap 10, and the AER */
--	cap = pci_find_capability(dev, PCI_CAP_ID_EXP);
--	if (cap) {
-+	if (pci_is_pcie(dev)) {
- 		n += scnprintf(buf+n, len-n, "pci-e cap10:\n");
- 		printk(KERN_WARNING
- 		       "EEH: PCI-E capabilities and status follow:\n");
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 46ac1dd..5402a1d 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -41,7 +41,7 @@ static void quirk_fsl_pcie_header(struct pci_dev *dev)
- 	u8 hdr_type;
- 
- 	/* if we aren't a PCIe don't bother */
--	if (!pci_find_capability(dev, PCI_CAP_ID_EXP))
-+	if (!pci_is_pcie(dev))
- 		return;
- 
- 	/* if we aren't in host mode don't bother */
+Hemant Kumar (2):
+      SDT markers listing by perf
+      Support to perf to probe on SDT markers
+
+
+ tools/perf/builtin-probe.c    |   33 ++++
+ tools/perf/util/probe-event.c |   17 ++
+ tools/perf/util/symbol-elf.c  |  317 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h      |   24 +++
+ 4 files changed, 391 insertions(+)
+
 -- 
-1.7.1
-
 
