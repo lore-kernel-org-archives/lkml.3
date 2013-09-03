@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761202Ab3ICVW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:22:28 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:42582 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760742Ab3ICVWW (ORCPT
+	id S1761139Ab3ICVW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:22:27 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:34692 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760803Ab3ICVWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 17:22:22 -0400
-Message-ID: <00000140e5b466e5-ea5740f5-7689-4b8b-a18d-9e1d1f9d8cb4-000000@email.amazonses.com>
+Message-ID: <00000140e5b466e9-8fc50475-3e47-4ae2-a714-4b3e8e73e627-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
 Date: Tue, 3 Sep 2013 21:22:20 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 10/38] mm: Replace __get_cpu_var uses
+Subject: [gcv v4 16/38] kernel misc: Replace __get_cpu_var uses
 References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 2013.09.03-54.240.9.74
+X-SES-Outgoing: 2013.09.03-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -121,123 +121,77 @@ Transformations done to __get_cpu_var()
 
 	this_cpu_inc(y)
 
+
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/lib/radix-tree.c
+Index: linux/kernel/printk/printk.c
 ===================================================================
---- linux.orig/lib/radix-tree.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/lib/radix-tree.c	2013-08-26 14:25:30.709616290 -0500
-@@ -215,7 +215,7 @@ radix_tree_node_alloc(struct radix_tree_
- 		 * succeed in getting a node here (and never reach
- 		 * kmem_cache_alloc)
- 		 */
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr) {
- 			ret = rtp->nodes[rtp->nr - 1];
- 			rtp->nodes[rtp->nr - 1] = NULL;
-@@ -271,14 +271,14 @@ int radix_tree_preload(gfp_t gfp_mask)
- 	int ret = -ENOMEM;
+--- linux.orig/kernel/printk/printk.c	2013-08-26 14:30:25.846490787 -0500
++++ linux/kernel/printk/printk.c	2013-08-26 14:30:25.846490787 -0500
+@@ -2441,7 +2441,7 @@ static void wake_up_klogd_work_func(stru
+ 	int pending = __this_cpu_xchg(printk_pending, 0);
  
+ 	if (pending & PRINTK_PENDING_SCHED) {
+-		char *buf = __get_cpu_var(printk_sched_buf);
++		char *buf = this_cpu_ptr(printk_sched_buf);
+ 		printk(KERN_WARNING "[sched_delayed] %s", buf);
+ 	}
+ 
+@@ -2459,7 +2459,7 @@ void wake_up_klogd(void)
  	preempt_disable();
--	rtp = &__get_cpu_var(radix_tree_preloads);
-+	rtp = this_cpu_ptr(&radix_tree_preloads);
- 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
- 			rtp->nodes[rtp->nr++] = node;
- 		else
-Index: linux/mm/memcontrol.c
+ 	if (waitqueue_active(&log_wait)) {
+ 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
+-		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
++		irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
+ 	}
+ 	preempt_enable();
+ }
+@@ -2472,14 +2472,14 @@ int printk_sched(const char *fmt, ...)
+ 	int r;
+ 
+ 	local_irq_save(flags);
+-	buf = __get_cpu_var(printk_sched_buf);
++	buf = this_cpu_ptr(printk_sched_buf);
+ 
+ 	va_start(args, fmt);
+ 	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
+ 	va_end(args);
+ 
+ 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
+-	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
++	irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
+ 	local_irq_restore(flags);
+ 
+ 	return r;
+Index: linux/kernel/smp.c
 ===================================================================
---- linux.orig/mm/memcontrol.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memcontrol.c	2013-08-26 14:25:30.713616248 -0500
-@@ -2398,7 +2398,7 @@ static void drain_stock(struct memcg_sto
+--- linux.orig/kernel/smp.c	2013-08-26 14:30:25.846490787 -0500
++++ linux/kernel/smp.c	2013-08-26 14:30:25.846490787 -0500
+@@ -172,7 +172,7 @@ void generic_exec_single(int cpu, struct
   */
- static void drain_local_stock(struct work_struct *dummy)
+ void generic_smp_call_function_single_interrupt(void)
  {
--	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
-+	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
- 	drain_stock(stock);
- 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
- }
-Index: linux/mm/memory-failure.c
-===================================================================
---- linux.orig/mm/memory-failure.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memory-failure.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1279,7 +1279,7 @@ static void memory_failure_work_func(str
- 	unsigned long proc_flags;
- 	int gotten;
+-	struct call_single_queue *q = &__get_cpu_var(call_single_queue);
++	struct call_single_queue *q = this_cpu_ptr(&call_single_queue);
+ 	LIST_HEAD(list);
  
--	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
- 	for (;;) {
- 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
- 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-Index: linux/mm/page-writeback.c
-===================================================================
---- linux.orig/mm/page-writeback.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/page-writeback.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1487,7 +1487,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
- 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
- 	 */
--	p =  &__get_cpu_var(bdp_ratelimits);
-+	p =  this_cpu_ptr(&bdp_ratelimits);
- 	if (unlikely(current->nr_dirtied >= ratelimit))
- 		*p = 0;
- 	else if (unlikely(*p >= ratelimit_pages)) {
-@@ -1499,7 +1499,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
- 	 * the dirty throttling and livelock other long-run dirtiers.
- 	 */
--	p = &__get_cpu_var(dirty_throttle_leaks);
-+	p = this_cpu_ptr(&dirty_throttle_leaks);
- 	if (*p > 0 && current->nr_dirtied < ratelimit) {
- 		unsigned long nr_pages_dirtied;
- 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-Index: linux/mm/swap.c
-===================================================================
---- linux.orig/mm/swap.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/swap.c	2013-08-26 14:25:30.717616206 -0500
-@@ -359,7 +359,7 @@ void rotate_reclaimable_page(struct page
+ 	/*
+@@ -252,7 +252,7 @@ int smp_call_function_single(int cpu, sm
+ 			struct call_single_data *csd = &d;
  
- 		page_cache_get(page);
- 		local_irq_save(flags);
--		pvec = &__get_cpu_var(lru_rotate_pvecs);
-+		pvec = this_cpu_ptr(&lru_rotate_pvecs);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_move_tail(pvec);
- 		local_irq_restore(flags);
-Index: linux/mm/vmalloc.c
-===================================================================
---- linux.orig/mm/vmalloc.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmalloc.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1487,7 +1487,7 @@ void vfree(const void *addr)
- 	if (!addr)
+ 			if (!wait)
+-				csd = &__get_cpu_var(csd_data);
++				csd = this_cpu_ptr(&csd_data);
+ 
+ 			csd_lock(csd);
+ 
+@@ -401,7 +401,7 @@ void smp_call_function_many(const struct
  		return;
- 	if (unlikely(in_interrupt())) {
--		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
-+		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
- 		if (llist_add((struct llist_node *)addr, &p->list))
- 			schedule_work(&p->wq);
- 	} else
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmstat.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1178,7 +1178,7 @@ int sysctl_stat_interval __read_mostly =
- static void vmstat_update(struct work_struct *w)
- {
- 	refresh_cpu_vm_stats(smp_processor_id());
--	schedule_delayed_work(&__get_cpu_var(vmstat_work),
-+	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
- 		round_jiffies_relative(sysctl_stat_interval));
- }
+ 	}
  
+-	cfd = &__get_cpu_var(cfd_data);
++	cfd = this_cpu_ptr(&cfd_data);
+ 
+ 	cpumask_and(cfd->cpumask, mask, cpu_online_mask);
+ 	cpumask_clear_cpu(this_cpu, cfd->cpumask);
 
