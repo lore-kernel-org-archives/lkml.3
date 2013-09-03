@@ -1,210 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759756Ab3ICJsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:48:50 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:43121 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab3ICJss (ORCPT
+	id S1759856Ab3ICJwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:52:06 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:35956 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759749Ab3ICJwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:48:48 -0400
-Message-ID: <5225B07C.9020102@hitachi.com>
-Date: Tue, 03 Sep 2013 18:48:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
+	Tue, 3 Sep 2013 05:52:04 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <dave.bueso@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        linux-next <linux-next@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 13/13] tracing/uprobes: Add support for full argument
- access methods
-References: <1378187054-27401-1-git-send-email-namhyung@kernel.org> <1378187054-27401-14-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1378187054-27401-14-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
+        Rik van Riel <riel@redhat.com>,
+        "Jonathan Gonzalez" <jgonzalez@linets.cl>
+Subject: Re: ipc-msg broken again on 3.11-rc7?
+Thread-Topic: ipc-msg broken again on 3.11-rc7?
+Thread-Index: AQHOpZ5oa2zPW4yZMkWQwZduFtEUDA==
+Date: Tue, 3 Sep 2013 09:51:58 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514168F@IN01WEMBXA.internal.synopsys.com>
+References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
+ <CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
+ <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
+ <52205597.3090609@synopsys.com>
+ <CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
+ <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
+ <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
+ <CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com>
+ <C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com>
+ <5224BCF6.2080401@colorfullife.com>
+ <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com>
+ <5225A466.2080303@colorfullife.com>
+ <C2D7FE5348E1B147BCA15975FBA2307514165E@IN01WEMBXA.internal.synopsys.com>
+ <5225AA8D.6080403@colorfullife.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.235]
+Content-Type: multipart/mixed;
+	boundary="_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/03 14:44), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Enable to fetch other types of argument for the uprobes.  IOW, we can
-> access stack, memory, deref, bitfield and retval from uprobes now.
-> 
-> The format for the argument types are same as kprobes (but @SYMBOL
-> type is not supported for uprobes), i.e:
-> 
->   @ADDR   : Fetch memory at ADDR
->   $stackN : Fetch Nth entry of stack (N >= 0)
->   $stack  : Fetch stack address
->   $retval : Fetch return value
->   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
-> 
-> Note that the retval only can be used with uretprobes.
+--_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Look good for me :)
+On 09/03/2013 02:53 PM, Manfred Spraul wrote:=0A=
+> On 09/03/2013 11:16 AM, Vineet Gupta wrote:=0A=
+>> On 09/03/2013 02:27 PM, Manfred Spraul wrote:=0A=
+>>> On 09/03/2013 10:44 AM, Vineet Gupta wrote:=0A=
+>>>>> b) Could you check that it is not just a performance regression?=0A=
+>>>>>        Does ./msgctl08 1000 16 hang, too?=0A=
+>>>> Nope that doesn't hang. The minimal configuration that hangs reliably =
+is msgctl=0A=
+>>>> 50000 2=0A=
+>>>>=0A=
+>>>> With this config there are 3 processes.=0A=
+>>>> ...=0A=
+>>>>     555   554 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
+>>>>     554   551 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
+>>>>     551   496 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
+>>>> ...=0A=
+>>>>=0A=
+>>>> [ARCLinux]$ cat /proc/551/stack=0A=
+>>>> [<80aec3c6>] do_wait+0xa02/0xc94=0A=
+>>>> [<80aecad2>] SyS_wait4+0x52/0xa4=0A=
+>>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
+>>>>=0A=
+>>>> [ARCLinux]$ cat /proc/555/stack=0A=
+>>>> [<80c2950e>] SyS_msgrcv+0x252/0x420=0A=
+>>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
+>>>>=0A=
+>>>> [ARCLinux]$ cat /proc/554/stack=0A=
+>>>> [<80c28c82>] do_msgsnd+0x116/0x35c=0A=
+>>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
+>>>>=0A=
+>>>> Is this a case of lost wakeup or some such. I'm running with some more=
+ diagnostics=0A=
+>>>> and will report soon ...=0A=
+>>> What is the output of ipcs -q? Is the queue full or empty when it hangs=
+?=0A=
+>>> I.e. do we forget to wake up a receiver or forget to wake up a sender?=
+=0A=
+>> / # ipcs -q=0A=
+>>=0A=
+>> ------ Message Queues --------=0A=
+>> key        msqid      owner      perms      used-bytes   messages=0A=
+>> 0x72d83160 163841     root       600        0            0=0A=
+>>=0A=
+>>=0A=
+> Ok, a sender is sleeping - even though there are no messages in the queue=
+.=0A=
+> Perhaps it is the race that I mentioned in a previous mail:=0A=
+>>       for (;;) {=0A=
+>>                 struct msg_sender s;=0A=
+>>=0A=
+>>                 err =3D -EACCES;=0A=
+>>                 if (ipcperms(ns, &msq->q_perm, S_IWUGO))=0A=
+>>                         goto out_unlock1;=0A=
+>>=0A=
+>>                 err =3D security_msg_queue_msgsnd(msq, msg, msgflg);=0A=
+>>                 if (err)=0A=
+>>                         goto out_unlock1;=0A=
+>>=0A=
+>>                 if (msgsz + msq->q_cbytes <=3D msq->q_qbytes &&=0A=
+>>                                 1 + msq->q_qnum <=3D msq->q_qbytes) {=0A=
+>>                         break;=0A=
+>>                 }=0A=
+>>=0A=
+> [snip]=0A=
+>>         if (!pipelined_send(msq, msg)) {=0A=
+>>                 /* no one is waiting for this message, enqueue it */=0A=
+>>                 list_add_tail(&msg->m_list, &msq->q_messages);=0A=
+>>                 msq->q_cbytes +=3D msgsz;=0A=
+>>                 msq->q_qnum++;=0A=
+>>                 atomic_add(msgsz, &ns->msg_bytes);=0A=
+> The access to msq->q_cbytes is not protected.=0A=
+>=0A=
+> Vineet, could you try to move the test for free space after ipc_lock?=0A=
+> I.e. the lock must not get dropped between testing for free space and =0A=
+> enqueueing the messages.=0A=
+=0A=
+Hmm, the code movement is not trivial. I broke even the simplest of cases (=
+patch=0A=
+attached). This includes the additional change which Linus/Davidlohr had as=
+ked for.=0A=
+=0A=
+-Vineet=0A=
+=0A=
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+--_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_
+Content-Type: text/plain; name="patch-ipc-2"
+Content-Description: patch-ipc-2
+Content-Disposition: attachment; filename="patch-ipc-2"; size=1075;
+	creation-date="Tue, 03 Sep 2013 09:51:56 GMT";
+	modification-date="Tue, 03 Sep 2013 09:51:56 GMT"
+Content-Transfer-Encoding: base64
 
-Thank you!
+ZGlmZiAtLWdpdCBhL2lwYy9tc2cuYyBiL2lwYy9tc2cuYwppbmRleCA5ZjI5ZDllLi5hNTEyODI5
+IDEwMDY0NAotLS0gYS9pcGMvbXNnLmMKKysrIGIvaXBjL21zZy5jCkBAIC02ODcsMTQgKzY4Nyw2
+IEBAIGxvbmcgZG9fbXNnc25kKGludCBtc3FpZCwgbG9uZyBtdHlwZSwgdm9pZCBfX3VzZXIgKm10
+ZXh0LAogCQlpZiAoaXBjcGVybXMobnMsICZtc3EtPnFfcGVybSwgU19JV1VHTykpCiAJCQlnb3Rv
+IG91dF91bmxvY2sxOwogCi0JCWVyciA9IHNlY3VyaXR5X21zZ19xdWV1ZV9tc2dzbmQobXNxLCBt
+c2csIG1zZ2ZsZyk7Ci0JCWlmIChlcnIpCi0JCQlnb3RvIG91dF91bmxvY2sxOwotCi0JCWlmICht
+c2dzeiArIG1zcS0+cV9jYnl0ZXMgPD0gbXNxLT5xX3FieXRlcyAmJgotCQkJCTEgKyBtc3EtPnFf
+cW51bSA8PSBtc3EtPnFfcWJ5dGVzKSB7Ci0JCQlicmVhazsKLQkJfQogCiAJCS8qIHF1ZXVlIGZ1
+bGwsIHdhaXQ6ICovCiAJCWlmIChtc2dmbGcgJiBJUENfTk9XQUlUKSB7CkBAIC03MDMsNiArNjk1
+LDEwIEBAIGxvbmcgZG9fbXNnc25kKGludCBtc3FpZCwgbG9uZyBtdHlwZSwgdm9pZCBfX3VzZXIg
+Km10ZXh0LAogCQl9CiAKIAkJaXBjX2xvY2tfb2JqZWN0KCZtc3EtPnFfcGVybSk7CisJCWVyciA9
+IHNlY3VyaXR5X21zZ19xdWV1ZV9tc2dzbmQobXNxLCBtc2csIG1zZ2ZsZyk7CisJCWlmIChlcnIp
+CisJCQlnb3RvIG91dF91bmxvY2swOworCiAJCXNzX2FkZChtc3EsICZzKTsKIAogCQlpZiAoIWlw
+Y19yY3VfZ2V0cmVmKG1zcSkpIHsKQEAgLTczNCw2ICs3MzAsMTIgQEAgbG9uZyBkb19tc2dzbmQo
+aW50IG1zcWlkLCBsb25nIG10eXBlLCB2b2lkIF9fdXNlciAqbXRleHQsCiAJfQogCiAJaXBjX2xv
+Y2tfb2JqZWN0KCZtc3EtPnFfcGVybSk7CisKKwlpZiAoIShtc2dzeiArIG1zcS0+cV9jYnl0ZXMg
+PD0gbXNxLT5xX3FieXRlcyAmJgorCQkJMSArIG1zcS0+cV9xbnVtIDw9IG1zcS0+cV9xYnl0ZXMp
+KSB7CisJCWdvdG8gb3V0X3VubG9jazA7CisJfQorCiAJbXNxLT5xX2xzcGlkID0gdGFza190Z2lk
+X3ZucihjdXJyZW50KTsKIAltc3EtPnFfc3RpbWUgPSBnZXRfc2Vjb25kcygpOwogCg==
 
-> 
-> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  Documentation/trace/uprobetracer.txt | 25 +++++++++++++++++++++++++
->  kernel/trace/trace_probe.c           | 36 +++++++++++++++++++++++-------------
->  2 files changed, 48 insertions(+), 13 deletions(-)
-> 
-> diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-> index 8f1a8b8956fc..6e5cff263e2b 100644
-> --- a/Documentation/trace/uprobetracer.txt
-> +++ b/Documentation/trace/uprobetracer.txt
-> @@ -31,6 +31,31 @@ Synopsis of uprobe_tracer
->  
->    FETCHARGS     : Arguments. Each probe can have up to 128 args.
->     %REG         : Fetch register REG
-> +   @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
-> +   $stackN	: Fetch Nth entry of stack (N >= 0)
-> +   $stack	: Fetch stack address.
-> +   $retval	: Fetch return value.(*)
-> +   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
-> +   NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
-> +   FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
-> +		       (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
-> +		       are supported.
-> +
-> +  (*) only for return probe.
-> +  (**) this is useful for fetching a field of data structures.
-> +
-> +Types
-> +-----
-> +Several types are supported for fetch-args. Uprobe tracer will access memory
-> +by given type. Prefix 's' and 'u' means those types are signed and unsigned
-> +respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
-> +String type is a special type, which fetches a "null-terminated" string from
-> +user space.
-> +Bitfield is another special type, which takes 3 parameters, bit-width, bit-
-> +offset, and container-size (usually 32). The syntax is;
-> +
-> + b<bit-width>@<bit-offset>/<container-size>
-> +
->  
->  Event Profiling
->  ---------------
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 70cd3bfde5a6..8c77825e87e6 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -253,12 +253,18 @@ fail:
->  }
->  
->  /* Special function : only accept unsigned long */
-> -static __kprobes void fetch_stack_address(struct pt_regs *regs,
-> +static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
->  					  void *dummy, void *dest, void *priv)
->  {
->  	*(unsigned long *)dest = kernel_stack_pointer(regs);
->  }
->  
-> +static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
-> +					  void *dummy, void *dest, void *priv)
-> +{
-> +	*(unsigned long *)dest = user_stack_pointer(regs);
-> +}
-> +
->  static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
->  					    fetch_func_t orig_fn,
->  					    const struct fetch_type *ttbl)
-> @@ -303,7 +309,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
->  #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
->  
->  static int parse_probe_vars(char *arg, const struct fetch_type *t,
-> -			    struct fetch_param *f, bool is_return)
-> +			    struct fetch_param *f, bool is_return,
-> +			    bool is_kprobe)
->  {
->  	int ret = 0;
->  	unsigned long param;
-> @@ -315,13 +322,16 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
->  			ret = -EINVAL;
->  	} else if (strncmp(arg, "stack", 5) == 0) {
->  		if (arg[5] == '\0') {
-> -			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
-> -				f->fn = fetch_stack_address;
-> +			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-> +				return -EINVAL;
-> +
-> +			if (is_kprobe)
-> +				f->fn = fetch_kernel_stack_address;
->  			else
-> -				ret = -EINVAL;
-> +				f->fn = fetch_user_stack_address;
->  		} else if (isdigit(arg[5])) {
->  			ret = kstrtoul(arg + 5, 10, &param);
-> -			if (ret || param > PARAM_MAX_STACK)
-> +			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
->  				ret = -EINVAL;
->  			else {
->  				f->fn = t->fetch[FETCH_MTD_stack];
-> @@ -345,17 +355,13 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  	int ret;
->  	const struct fetch_type *ttbl;
->  
-> -	ttbl = kprobes_fetch_type_table;
-> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
->  
->  	ret = 0;
->  
-> -	/* Until uprobe_events supports only reg arguments */
-> -	if (!is_kprobe && arg[0] != '%')
-> -		return -EINVAL;
-> -
->  	switch (arg[0]) {
->  	case '$':
-> -		ret = parse_probe_vars(arg + 1, t, f, is_return);
-> +		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
->  		break;
->  
->  	case '%':	/* named register */
-> @@ -376,6 +382,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  			f->fn = t->fetch[FETCH_MTD_memory];
->  			f->data = (void *)param;
->  		} else {
-> +			/* uprobes don't support symbols */
-> +			if (!is_kprobe)
-> +				return -EINVAL;
-> +
->  			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
->  			if (ret)
->  				break;
-> @@ -482,7 +492,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
->  	int ret;
->  	const struct fetch_type *ttbl;
->  
-> -	ttbl = kprobes_fetch_type_table;
-> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
->  
->  	if (strlen(arg) > MAX_ARGSTR_LEN) {
->  		pr_info("Argument is too long.: %s\n",  arg);
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_--
