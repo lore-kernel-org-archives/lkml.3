@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab3ICDyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:54:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23290 "EHLO mga01.intel.com"
+	id S932327Ab3ICDw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:52:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9807 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932360Ab3ICDxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:53:01 -0400
+	id S1759365Ab3ICDwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 23:52:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,1011,1367996400"; 
-   d="scan'208";a="395808057"
+   d="scan'208";a="355054751"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v8 01/10] tracing: Add support for SOFT_DISABLE to syscall events
-Date: Mon,  2 Sep 2013 22:52:17 -0500
-Message-Id: <ecf9ba5f924d48eb6517c27d5e64044f827dd9d2.1378176577.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v8 05/10] tracing: Add 'stacktrace' event trigger command
+Date: Mon,  2 Sep 2013 22:52:21 -0500
+Message-Id: <d9fce1a71bc3bcfb298d6c837c7892e12147257e.1378176577.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1378176577.git.tom.zanussi@linux.intel.com>
 References: <cover.1378176577.git.tom.zanussi@linux.intel.com>
@@ -25,141 +25,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original SOFT_DISABLE patches didn't add support for soft disable
-of syscall events; this adds it and paves the way for future patches
-allowing triggers to be added to syscall events, since triggers are
-built on top of SOFT_DISABLE.
+Add 'stacktrace' event_command.  stacktrace event triggers are added
+by the user via this command in a similar way and using practically
+the same syntax as the analogous 'stacktrace' ftrace function command,
+but instead of writing to the set_ftrace_filter file, the stacktrace
+event trigger is written to the per-event 'trigger' files:
 
-Add an array of ftrace_event_file pointers indexed by syscall number
-to the trace array and remove the existing enabled bitmaps, which as a
-result are now redundant.  The ftrace_event_file structs in turn
-contain the soft disable flags we need for per-syscall soft disable
-accounting; later patches add additional 'trigger' flags and
-per-syscall triggers and filters.
+    echo 'stacktrace' > .../tracing/events/somesys/someevent/trigger
+
+The above command will turn on stacktraces for someevent i.e. whenever
+someevent is hit, a stacktrace will be logged.
+
+This also adds a 'count' version that limits the number of times the
+command will be invoked:
+
+    echo 'stacktrace:N' > .../tracing/events/somesys/someevent/trigger
+
+Where N is the number of times the command will be invoked.
+
+The above command will log N stacktraces for someevent i.e. whenever
+someevent is hit N times, a stacktrace will be logged.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- kernel/trace/trace.h          |  4 ++--
- kernel/trace/trace_syscalls.c | 36 ++++++++++++++++++++++++++++++------
- 2 files changed, 32 insertions(+), 8 deletions(-)
+ include/linux/ftrace_event.h        |  1 +
+ kernel/trace/trace_events_trigger.c | 76 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 77 insertions(+)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index fe39acd..b1227b9 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -192,8 +192,8 @@ struct trace_array {
- #ifdef CONFIG_FTRACE_SYSCALLS
- 	int			sys_refcount_enter;
- 	int			sys_refcount_exit;
--	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
--	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-+	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
-+	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
- #endif
- 	int			stop_count;
- 	int			clock_id;
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 559329d..af4b71c 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -302,6 +302,7 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
- static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- {
- 	struct trace_array *tr = data;
-+	struct ftrace_event_file *ftrace_file;
- 	struct syscall_trace_enter *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-@@ -314,7 +315,13 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
--	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 40b517b..31750df 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -320,6 +320,7 @@ enum event_trigger_type {
+ 	ETT_NONE		= (0),
+ 	ETT_TRACE_ONOFF		= (1 << 0),
+ 	ETT_SNAPSHOT		= (1 << 1),
++	ETT_STACKTRACE		= (1 << 2),
+ };
+ 
+ extern void destroy_preds(struct ftrace_event_call *call);
+diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+index 9bdcc38..36b6601 100644
+--- a/kernel/trace/trace_events_trigger.c
++++ b/kernel/trace/trace_events_trigger.c
+@@ -732,6 +732,71 @@ static struct event_command trigger_snapshot_cmd = {
+ 	.get_trigger_ops	= snapshot_get_trigger_ops,
+ };
+ 
++/*
++ * Skip 4:
++ *   ftrace_stacktrace()
++ *   function_trace_probe_call()
++ *   ftrace_ops_list_func()
++ *   ftrace_call()
++ */
++#define STACK_SKIP 4
 +
-+	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
-+	ftrace_file = rcu_dereference(tr->enter_syscall_files[syscall_nr]);
-+	if (!ftrace_file)
++static void
++stacktrace_trigger(struct event_trigger_data *data)
++{
++	trace_dump_stack(STACK_SKIP);
++}
++
++static void
++stacktrace_count_trigger(struct event_trigger_data *data)
++{
++	if (!data->count)
 +		return;
 +
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
- 		return;
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
-@@ -345,6 +352,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
++	if (data->count != -1)
++		(data->count)--;
++
++	stacktrace_trigger(data);
++}
++
++static int
++stacktrace_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
++			 struct event_trigger_data *data)
++{
++	return event_trigger_print("stacktrace", m, (void *)data->count,
++				   data->filter_str);
++}
++
++static struct event_trigger_ops stacktrace_trigger_ops = {
++	.func			= stacktrace_trigger,
++	.print			= stacktrace_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops stacktrace_count_trigger_ops = {
++	.func			= stacktrace_count_trigger,
++	.print			= stacktrace_trigger_print,
++	.init			= event_trigger_init,
++	.free			= event_trigger_free,
++};
++
++static struct event_trigger_ops *
++stacktrace_get_trigger_ops(char *cmd, char *param)
++{
++	return param ? &stacktrace_count_trigger_ops : &stacktrace_trigger_ops;
++}
++
++static struct event_command trigger_stacktrace_cmd = {
++	.name			= "stacktrace",
++	.trigger_type		= ETT_STACKTRACE,
++	.post_trigger		= true,
++	.func			= event_trigger_callback,
++	.reg			= register_trigger,
++	.unreg			= unregister_trigger,
++	.get_trigger_ops	= stacktrace_get_trigger_ops,
++};
++
+ static __init void unregister_trigger_traceon_traceoff_cmds(void)
  {
- 	struct trace_array *tr = data;
-+	struct ftrace_event_file *ftrace_file;
- 	struct syscall_trace_exit *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-@@ -356,7 +364,13 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
--	if (!test_bit(syscall_nr, tr->enabled_exit_syscalls))
-+
-+	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
-+	ftrace_file = rcu_dereference(tr->exit_syscall_files[syscall_nr]);
-+	if (!ftrace_file)
-+		return;
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
- 		return;
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
-@@ -397,7 +411,7 @@ static int reg_event_syscall_enter(struct ftrace_event_file *file,
- 	if (!tr->sys_refcount_enter)
- 		ret = register_trace_sys_enter(ftrace_syscall_enter, tr);
- 	if (!ret) {
--		set_bit(num, tr->enabled_enter_syscalls);
-+		rcu_assign_pointer(tr->enter_syscall_files[num], file);
- 		tr->sys_refcount_enter++;
+ 	unregister_event_command(&trigger_traceon_cmd,
+@@ -776,5 +841,16 @@ __init int register_trigger_cmds(void)
+ 		return ret;
  	}
- 	mutex_unlock(&syscall_trace_lock);
-@@ -415,10 +429,15 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_enter--;
--	clear_bit(num, tr->enabled_enter_syscalls);
-+	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_enter)
- 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
- 	mutex_unlock(&syscall_trace_lock);
-+	/*
-+	 * Callers expect the event to be completely disabled on
-+	 * return, so wait for current handlers to finish.
-+	 */
-+	synchronize_sched();
- }
  
- static int reg_event_syscall_exit(struct ftrace_event_file *file,
-@@ -435,7 +454,7 @@ static int reg_event_syscall_exit(struct ftrace_event_file *file,
- 	if (!tr->sys_refcount_exit)
- 		ret = register_trace_sys_exit(ftrace_syscall_exit, tr);
- 	if (!ret) {
--		set_bit(num, tr->enabled_exit_syscalls);
-+		rcu_assign_pointer(tr->exit_syscall_files[num], file);
- 		tr->sys_refcount_exit++;
- 	}
- 	mutex_unlock(&syscall_trace_lock);
-@@ -453,10 +472,15 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_exit--;
--	clear_bit(num, tr->enabled_exit_syscalls);
-+	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_exit)
- 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
- 	mutex_unlock(&syscall_trace_lock);
-+	/*
-+	 * Callers expect the event to be completely disabled on
-+	 * return, so wait for current handlers to finish.
-+	 */
-+	synchronize_sched();
++	ret = register_event_command(&trigger_stacktrace_cmd,
++				      &trigger_commands,
++				      &trigger_cmd_mutex);
++	if (WARN_ON(ret < 0)) {
++		unregister_trigger_traceon_traceoff_cmds();
++		unregister_event_command(&trigger_snapshot_cmd,
++					 &trigger_commands,
++					 &trigger_cmd_mutex);
++		return ret;
++	}
++
+ 	return 0;
  }
- 
- static int __init init_syscall_trace(struct ftrace_event_call *call)
 -- 
 1.7.11.4
 
