@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761431Ab3ICXFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:05:41 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61560 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab3ICXFj (ORCPT
+	id S933127Ab3ICXKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:10:30 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:41364 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab3ICXK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:05:39 -0400
+	Tue, 3 Sep 2013 19:10:28 -0400
+Date: Tue, 3 Sep 2013 19:10:24 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: ceph-devel@vger.kernel.org
+Cc: sage@inktank.com, zheng.z.yan@intel.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] fscache fixes for ceph
+Message-ID: <cover.1378249347.git.milosz@adfin.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130903225528.GA14909@redhat.com>
-References: <CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
-	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
-	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
-	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
-	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
-	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
-	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
-	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
-	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
-	<CA+icZUXi-YHK23sKnVQbfi4K2FOVZiROQ76H5Qw2NxTJT2uzDQ@mail.gmail.com>
-	<20130903225528.GA14909@redhat.com>
-Date: Wed, 4 Sep 2013 01:05:38 +0200
-Message-ID: <CA+icZUVpb9yrhnaaUf7=0wd4kpWuBW0VpWiK=BfVZoBiRGuJ2Q@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Jones <davej@redhat.com>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 12:55 AM, Dave Jones <davej@redhat.com> wrote:
-> On Wed, Sep 04, 2013 at 12:37:25AM +0200, Sedat Dilek wrote:
->
->  > > You're spending more time on the task stats than on the actual lookup.
->  > > Maybe you should turn off CONFIG_TASKSTATS..But why that whole
->  > > irq_return thing? Odd.
->  > >
->  >
->  > [ init/Kconfig ]
->  > ...
->  > config TASKSTATS
->  >         bool "Export task/process statistics through netlink"
->  >         depends on NET <--- Difficult to disable it?!
->
-> More likely you're getting bitten by the fact that CONFIG_KVM has
-> a 'select TASKSTATS'
->
+On the whole the current iteration of FSCache on Ceph has been quite stable for
+me. We've had it deployed on 4 clients running for a week in a row. I did run
+into two small issues.
 
-With CONFIG_KVM=n ...
+First one, I wasn't checking if the page was marked with private_2 before
+asking FSCache to write to it. I've never seen this before and I only seen this
+issue once.
 
-$ egrep 'CONFIG_NET=|CONFIG_KVM=|CONFIG_TASKSTATS' .config
-CONFIG_TASKSTATS=y
-CONFIG_NET=y
+The second issue is similar to what I was seeing before with pages marked
+private_2 when we return them to the page cache. In this case the start_read()
+in addr.c was returning the pages in the error path of the code. I have plugged
+that issue. I only seen this one a handful of times across all clients.
 
-- Sedat -
+As usual please apply the changes from repo located at:
+
+  https://bitbucket.org/adfin/linux-fs.git branch: wip-ceph-fscache
+
+Cheers,
+- Milosz
+
+Milosz Tanski (2):
+  ceph: ceph_readpage_to_fscache didn't check if marked
+  ceph: page still marked private_2
+
+ fs/ceph/addr.c  |  1 +
+ fs/ceph/cache.c |  3 +++
+ fs/ceph/cache.h | 14 +++++++++++++-
+ 3 files changed, 17 insertions(+), 1 deletion(-)
+
+-- 
+1.8.1.2
+
