@@ -1,215 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760852Ab3ICVFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:05:44 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:61277 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3ICVFj (ORCPT
+	id S1760926Ab3ICVGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:06:38 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:38423 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760742Ab3ICVGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:05:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130903191950.GC30757@gmail.com>
-References: <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
-	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
-	<20130901233005.GX13318@ZenIV.linux.org.uk>
-	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
-	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
-	<20130902070538.GA31639@gmail.com>
-	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
-	<20130903101522.GA22369@gmail.com>
-	<CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
-	<CA+55aFxGWKJwo1CfS3EJFagUb+JRtc+URJOu2yz2RztWWrkraA@mail.gmail.com>
-	<20130903191950.GC30757@gmail.com>
-Date: Tue, 3 Sep 2013 14:05:38 -0700
-X-Google-Sender-Auth: naqIuCQtsEogqAYvggh2NWiEEy4
-Message-ID: <CA+55aFz2PmfdaaMUNR8aMn-Hcf8FjsydM7fF28WxZDhBZADHxw@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Waiman Long <waiman.long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Content-Type: multipart/mixed; boundary=001a11339706ffc6df04e5810c3b
+	Tue, 3 Sep 2013 17:06:36 -0400
+Message-ID: <1378242394.3460.37.camel@j-VirtualBox>
+Subject: Re: [PATCH v4 2/3] sched: Consider max cost of idle balance per
+ sched domain
+From: Jason Low <jason.low2@hp.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        efault@gmx.de, pjt@google.com, preeti@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, mgorman@suse.de, riel@redhat.com,
+        aswin@hp.com, scott.norton@hp.com
+Date: Tue, 03 Sep 2013 14:06:34 -0700
+In-Reply-To: <20130902065446.GV1720@linux.vnet.ibm.com>
+References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+	 <1377806736-3752-3-git-send-email-jason.low2@hp.com>
+	 <20130902065446.GV1720@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11339706ffc6df04e5810c3b
-Content-Type: text/plain; charset=UTF-8
+On Mon, 2013-09-02 at 12:24 +0530, Srikar Dronamraju wrote:
+> If we face a runq lock contention, then domain_cost can go up.
+> The runq lock contention could be temporary, but we carry the domain
+> cost forever (i.e till the next reboot).  How about averaging the cost +
+> penalty for unsuccessful balance.
+> 
+> Something like 
+> 			domain_cost = sched_clock_cpu(smp_processor_id()) - t0;
+> 			if (!pulled_task)
+> 				domain_cost *= 2;
+> 		
+> 			sd->max_newidle_lb_cost += domain_cost;
+> 			sd->max_newidle_lb_cost /= 2;
+> 				
+> 				
+> Maybe the name could then change to avg_newidle_lb_cost.
+> 
+> > +
+> > +			curr_cost += domain_cost;
+> >  		}
+> > 
 
-On Tue, Sep 3, 2013 at 12:19 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
->>
->>  - the lglock data structure isn't a percpu data structure, it's this
->> stupid global data structure that has a percpu pointer in it.  So that
->> first "mov (%rdi),%rdx" is purely to load what is effectively a constant
->> address (per lglock).
->>
->>    And that's not because it wants to be, but because we associate
->> global lockdep data with it. Ugh. If it wasn't for that, we could just
->> make them percpu.
->
-> I don't think that's fundamental - the per CPU lock was percpu before:
-[...]
-> but AFAICS got converted to a pointer via this commit:
->
->  commit eea62f831b8030b0eeea8314eed73b6132d1de26
->  Author: Andi Kleen <ak@linux.intel.com>
->  Date:   Tue May 8 13:32:24 2012 +0930
->
->     brlocks/lglocks: turn into functions
+We tried keeping track of the avg in the v2 patch. It didn't really help
+reduce the contention in idle balancing and we needed to also reduce
+avg_idle by a factor of 10-20+ when comparing it to
+avg_idle_balance_cost in order to get the good performance boosts.
 
-So instead of reverting that entirely, how about making "struct
-lglock" always per entirely per-cpu, and replacing the percpu pointer
-with the lock itself.
+One potential explanation why is that avg idle balance cost can often
+have a large variation. That would make both computing the avg_idle and
+comparing avg_idle with avg idle balance cost to not really be
+consistent.
 
-Then, we say "the lockdep map is always on CPU#0".
+I think using the max allows us to keep the cost at a more constant rate
+so that we can more meaningfully compare avg_idle with respect to "idle
+balance cost". It also helps reduce the chance avg_idle overruns the
+balance cost. Patch 3 reduces the max cost so that the value isn't kept
+until the next reboot.
 
-TOTALLY UNTESTED PATCH ATTACHED. It compiles in at least a couple of
-configurations, and I checked that this removes _one_ of the
-indirections (the other one is because we don't have a native per-cpu
-spinlock helper function, so we need to do that percpu base addition),
-but I haven't dared try to actually try to boot it.
-
-Comments?
-
-I'll try booting it and seeing if it actually works (and if it makes
-any difference), but it seems to be a reasonable approach. I think it
-actually cleans things up a bit, but maybe that's just because I
-touched the code now.
-
-            Linus
-
---001a11339706ffc6df04e5810c3b
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl5lwg7v0
-
-IGZzL2ZpbGVfdGFibGUuYyAgICAgICAgfCAgMiArLQogZnMvaW50ZXJuYWwuaCAgICAgICAgICB8
-ICAyICstCiBmcy9sb2Nrcy5jICAgICAgICAgICAgIHwgIDIgKy0KIGluY2x1ZGUvbGludXgvbGds
-b2NrLmggfCAyOSArKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLQoga2VybmVsL2xnbG9jay5j
-ICAgICAgICB8IDQ2ICsrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0t
-LS0KIDUgZmlsZXMgY2hhbmdlZCwgNDEgaW5zZXJ0aW9ucygrKSwgNDAgZGVsZXRpb25zKC0pCgpk
-aWZmIC0tZ2l0IGEvZnMvZmlsZV90YWJsZS5jIGIvZnMvZmlsZV90YWJsZS5jCmluZGV4IGI0NGU0
-YzU1OTc4Ni4uZTBiZWU5ZTA1ZGI5IDEwMDY0NAotLS0gYS9mcy9maWxlX3RhYmxlLmMKKysrIGIv
-ZnMvZmlsZV90YWJsZS5jCkBAIC0zNiw3ICszNiw3IEBAIHN0cnVjdCBmaWxlc19zdGF0X3N0cnVj
-dCBmaWxlc19zdGF0ID0gewogCS5tYXhfZmlsZXMgPSBOUl9GSUxFCiB9OwogCi1ERUZJTkVfU1RB
-VElDX0xHTE9DSyhmaWxlc19sZ2xvY2spOworc3RhdGljIERFRklORV9MR0xPQ0soZmlsZXNfbGds
-b2NrKTsKIAogLyogU0xBQiBjYWNoZSBmb3IgZmlsZSBzdHJ1Y3R1cmVzICovCiBzdGF0aWMgc3Ry
-dWN0IGttZW1fY2FjaGUgKmZpbHBfY2FjaGVwIF9fcmVhZF9tb3N0bHk7CmRpZmYgLS1naXQgYS9m
-cy9pbnRlcm5hbC5oIGIvZnMvaW50ZXJuYWwuaAppbmRleCA3YzVmMDFjZjYxOWQuLjk3MTBkZjZm
-ZWY0YiAxMDA2NDQKLS0tIGEvZnMvaW50ZXJuYWwuaAorKysgYi9mcy9pbnRlcm5hbC5oCkBAIC01
-OSw3ICs1OSw3IEBAIGV4dGVybiBpbnQgc2JfcHJlcGFyZV9yZW1vdW50X3JlYWRvbmx5KHN0cnVj
-dCBzdXBlcl9ibG9jayAqKTsKIAogZXh0ZXJuIHZvaWQgX19pbml0IG1udF9pbml0KHZvaWQpOwog
-Ci1leHRlcm4gc3RydWN0IGxnbG9jayB2ZnNtb3VudF9sb2NrOworZXh0ZXJuIERFQ0xBUkVfTEdM
-T0NLKHZmc21vdW50X2xvY2spOwogCiBleHRlcm4gaW50IF9fbW50X3dhbnRfd3JpdGUoc3RydWN0
-IHZmc21vdW50ICopOwogZXh0ZXJuIGludCBfX21udF93YW50X3dyaXRlX2ZpbGUoc3RydWN0IGZp
-bGUgKik7CmRpZmYgLS1naXQgYS9mcy9sb2Nrcy5jIGIvZnMvbG9ja3MuYwppbmRleCBiMjdhMzAw
-NWQ3OGQuLjRiNDcwNGFlZTZjNiAxMDA2NDQKLS0tIGEvZnMvbG9ja3MuYworKysgYi9mcy9sb2Nr
-cy5jCkBAIC0xNjIsNyArMTYyLDcgQEAgaW50IGxlYXNlX2JyZWFrX3RpbWUgPSA0NTsKICAqIHRo
-ZSBmaWxlX2xvY2tfbGdsb2NrLiBOb3RlIHRoYXQgYWx0ZXJhdGlvbnMgdG8gdGhlIGxpc3QgYWxz
-byByZXF1aXJlIHRoYXQKICAqIHRoZSByZWxldmFudCBpX2xvY2sgaXMgaGVsZC4KICAqLwotREVG
-SU5FX1NUQVRJQ19MR0xPQ0soZmlsZV9sb2NrX2xnbG9jayk7CitzdGF0aWMgREVGSU5FX0xHTE9D
-SyhmaWxlX2xvY2tfbGdsb2NrKTsKIHN0YXRpYyBERUZJTkVfUEVSX0NQVShzdHJ1Y3QgaGxpc3Rf
-aGVhZCwgZmlsZV9sb2NrX2xpc3QpOwogCiAvKgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9s
-Z2xvY2suaCBiL2luY2x1ZGUvbGludXgvbGdsb2NrLmgKaW5kZXggMGQyNGU5MzJkYjBiLi5mOTM3
-YjI3YTBiZWUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvbGdsb2NrLmgKKysrIGIvaW5jbHVk
-ZS9saW51eC9sZ2xvY2suaApAQCAtNDIsMjkgKzQyLDI0IEBACiAjZW5kaWYKIAogc3RydWN0IGxn
-bG9jayB7Ci0JYXJjaF9zcGlubG9ja190IF9fcGVyY3B1ICpsb2NrOworCWFyY2hfc3BpbmxvY2tf
-dCBsb2NrOwogI2lmZGVmIENPTkZJR19ERUJVR19MT0NLX0FMTE9DCiAJc3RydWN0IGxvY2tfY2xh
-c3Nfa2V5IGxvY2tfa2V5OwogCXN0cnVjdCBsb2NrZGVwX21hcCAgICBsb2NrX2RlcF9tYXA7CiAj
-ZW5kaWYKIH07CiAKLSNkZWZpbmUgREVGSU5FX0xHTE9DSyhuYW1lKQkJCQkJCVwKLQlzdGF0aWMg
-REVGSU5FX1BFUl9DUFUoYXJjaF9zcGlubG9ja190LCBuYW1lICMjIF9sb2NrKQkJXAotCT0gX19B
-UkNIX1NQSU5fTE9DS19VTkxPQ0tFRDsJCQkJCVwKLQlzdHJ1Y3QgbGdsb2NrIG5hbWUgPSB7IC5s
-b2NrID0gJm5hbWUgIyMgX2xvY2sgfQorI2RlZmluZSBERUNMQVJFX0xHTE9DSyhuYW1lKSBcCisJ
-REVGSU5FX1BFUl9DUFUoc3RydWN0IGxnbG9jaywgbmFtZSkKKyNkZWZpbmUgREVGSU5FX0xHTE9D
-SyhuYW1lKSBcCisJREVGSU5FX1BFUl9DUFUoc3RydWN0IGxnbG9jaywgbmFtZSkgPSB7IC5sb2Nr
-ID0gX19BUkNIX1NQSU5fTE9DS19VTkxPQ0tFRCB9CiAKLSNkZWZpbmUgREVGSU5FX1NUQVRJQ19M
-R0xPQ0sobmFtZSkJCQkJCVwKLQlzdGF0aWMgREVGSU5FX1BFUl9DUFUoYXJjaF9zcGlubG9ja190
-LCBuYW1lICMjIF9sb2NrKQkJXAotCT0gX19BUkNIX1NQSU5fTE9DS19VTkxPQ0tFRDsJCQkJCVwK
-LQlzdGF0aWMgc3RydWN0IGxnbG9jayBuYW1lID0geyAubG9jayA9ICZuYW1lICMjIF9sb2NrIH0K
-LQotdm9pZCBsZ19sb2NrX2luaXQoc3RydWN0IGxnbG9jayAqbGcsIGNoYXIgKm5hbWUpOwotdm9p
-ZCBsZ19sb2NhbF9sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKTsKLXZvaWQgbGdfbG9jYWxfdW5sb2Nr
-KHN0cnVjdCBsZ2xvY2sgKmxnKTsKLXZvaWQgbGdfbG9jYWxfbG9ja19jcHUoc3RydWN0IGxnbG9j
-ayAqbGcsIGludCBjcHUpOwotdm9pZCBsZ19sb2NhbF91bmxvY2tfY3B1KHN0cnVjdCBsZ2xvY2sg
-KmxnLCBpbnQgY3B1KTsKLXZvaWQgbGdfZ2xvYmFsX2xvY2soc3RydWN0IGxnbG9jayAqbGcpOwot
-dm9pZCBsZ19nbG9iYWxfdW5sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKTsKK3ZvaWQgbGdfbG9ja19p
-bml0KHN0cnVjdCBsZ2xvY2sgX19wZXJjcHUgKmxnLCBjaGFyICpuYW1lKTsKK3ZvaWQgbGdfbG9j
-YWxfbG9jayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7Cit2b2lkIGxnX2xvY2FsX3VubG9j
-ayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7Cit2b2lkIGxnX2xvY2FsX2xvY2tfY3B1KHN0
-cnVjdCBsZ2xvY2sgX19wZXJjcHUgKmxnLCBpbnQgY3B1KTsKK3ZvaWQgbGdfbG9jYWxfdW5sb2Nr
-X2NwdShzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZywgaW50IGNwdSk7Cit2b2lkIGxnX2dsb2Jh
-bF9sb2NrKHN0cnVjdCBsZ2xvY2sgX19wZXJjcHUgKmxnKTsKK3ZvaWQgbGdfZ2xvYmFsX3VubG9j
-ayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZyk7CiAKICNlbmRpZgpkaWZmIC0tZ2l0IGEva2Vy
-bmVsL2xnbG9jay5jIGIva2VybmVsL2xnbG9jay5jCmluZGV4IDY1MzVhNjY3YTVhNy4uYTllMzI3
-YmE4OWU2IDEwMDY0NAotLS0gYS9rZXJuZWwvbGdsb2NrLmMKKysrIGIva2VybmVsL2xnbG9jay5j
-CkBAIC00LDg0ICs0LDkwIEBACiAjaW5jbHVkZSA8bGludXgvY3B1Lmg+CiAjaW5jbHVkZSA8bGlu
-dXgvc3RyaW5nLmg+CiAKKy8qIFdlIG9ubHkgZmlsbCBpbiB0aGUgbmFtZSBhbmQgbG9ja19kZXBf
-bWFwIGZvciB0aGUgZmlyc3QgQ1BVICovCisjZGVmaW5lIGxnX2xvY2tfZGVwX21hcChsZykgXAor
-CXBlcl9jcHVfcHRyKCZsZy0+bG9ja19kZXBfbWFwLDApCisjZGVmaW5lIGxnX2xvY2tfa2V5KGxn
-KSBcCisJcGVyX2NwdV9wdHIoJmxnLT5sb2NrX2tleSwwKQorCiAvKgogICogTm90ZSB0aGVyZSBp
-cyBubyB1bmluaXQsIHNvIGxnbG9ja3MgY2Fubm90IGJlIGRlZmluZWQgaW4KICAqIG1vZHVsZXMg
-KGJ1dCBpdCdzIGZpbmUgdG8gdXNlIHRoZW0gZnJvbSB0aGVyZSkKICAqIENvdWxkIGJlIGFkZGVk
-IHRob3VnaCwganVzdCB1bmRvIGxnX2xvY2tfaW5pdAogICovCiAKLXZvaWQgbGdfbG9ja19pbml0
-KHN0cnVjdCBsZ2xvY2sgKmxnLCBjaGFyICpuYW1lKQordm9pZCBsZ19sb2NrX2luaXQoc3RydWN0
-IGxnbG9jayBfX3BlcmNwdSAqbGcsIGNoYXIgKm5hbWUpCiB7Ci0JTE9DS0RFUF9JTklUX01BUCgm
-bGctPmxvY2tfZGVwX21hcCwgbmFtZSwgJmxnLT5sb2NrX2tleSwgMCk7CisJTE9DS0RFUF9JTklU
-X01BUChsZ19sb2NrX2RlcF9tYXAobGcpLCBuYW1lLCBsZ19sb2NrX2tleShsZyksIDApOwogfQog
-RVhQT1JUX1NZTUJPTChsZ19sb2NrX2luaXQpOwogCi12b2lkIGxnX2xvY2FsX2xvY2soc3RydWN0
-IGxnbG9jayAqbGcpCit2b2lkIGxnX2xvY2FsX2xvY2soc3RydWN0IGxnbG9jayBfX3BlcmNwdSAq
-bGcpCiB7CiAJYXJjaF9zcGlubG9ja190ICpsb2NrOwogCiAJcHJlZW1wdF9kaXNhYmxlKCk7Ci0J
-cndsb2NrX2FjcXVpcmVfcmVhZCgmbGctPmxvY2tfZGVwX21hcCwgMCwgMCwgX1JFVF9JUF8pOwot
-CWxvY2sgPSB0aGlzX2NwdV9wdHIobGctPmxvY2spOworCXJ3bG9ja19hY3F1aXJlX3JlYWQobGdf
-bG9ja19kZXBfbWFwKGxnKSwgMCwgMCwgX1JFVF9JUF8pOworCWxvY2sgPSB0aGlzX2NwdV9wdHIo
-JmxnLT5sb2NrKTsKIAlhcmNoX3NwaW5fbG9jayhsb2NrKTsKIH0KIEVYUE9SVF9TWU1CT0wobGdf
-bG9jYWxfbG9jayk7CiAKLXZvaWQgbGdfbG9jYWxfdW5sb2NrKHN0cnVjdCBsZ2xvY2sgKmxnKQor
-dm9pZCBsZ19sb2NhbF91bmxvY2soc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcpCiB7CiAJYXJj
-aF9zcGlubG9ja190ICpsb2NrOwogCi0Jcndsb2NrX3JlbGVhc2UoJmxnLT5sb2NrX2RlcF9tYXAs
-IDEsIF9SRVRfSVBfKTsKLQlsb2NrID0gdGhpc19jcHVfcHRyKGxnLT5sb2NrKTsKKwlyd2xvY2tf
-cmVsZWFzZShsZ19sb2NrX2RlcF9tYXAobGcpLCAxLCBfUkVUX0lQXyk7CisJbG9jayA9IHRoaXNf
-Y3B1X3B0cigmbGctPmxvY2spOwogCWFyY2hfc3Bpbl91bmxvY2sobG9jayk7CiAJcHJlZW1wdF9l
-bmFibGUoKTsKIH0KIEVYUE9SVF9TWU1CT0wobGdfbG9jYWxfdW5sb2NrKTsKIAotdm9pZCBsZ19s
-b2NhbF9sb2NrX2NwdShzdHJ1Y3QgbGdsb2NrICpsZywgaW50IGNwdSkKK3ZvaWQgbGdfbG9jYWxf
-bG9ja19jcHUoc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcsIGludCBjcHUpCiB7CiAJYXJjaF9z
-cGlubG9ja190ICpsb2NrOwogCiAJcHJlZW1wdF9kaXNhYmxlKCk7Ci0Jcndsb2NrX2FjcXVpcmVf
-cmVhZCgmbGctPmxvY2tfZGVwX21hcCwgMCwgMCwgX1JFVF9JUF8pOwotCWxvY2sgPSBwZXJfY3B1
-X3B0cihsZy0+bG9jaywgY3B1KTsKKwlyd2xvY2tfYWNxdWlyZV9yZWFkKGxnX2xvY2tfZGVwX21h
-cChsZyksIDAsIDAsIF9SRVRfSVBfKTsKKwlsb2NrID0gcGVyX2NwdV9wdHIoJmxnLT5sb2NrLCBj
-cHUpOwogCWFyY2hfc3Bpbl9sb2NrKGxvY2spOwogfQogRVhQT1JUX1NZTUJPTChsZ19sb2NhbF9s
-b2NrX2NwdSk7CiAKLXZvaWQgbGdfbG9jYWxfdW5sb2NrX2NwdShzdHJ1Y3QgbGdsb2NrICpsZywg
-aW50IGNwdSkKK3ZvaWQgbGdfbG9jYWxfdW5sb2NrX2NwdShzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1
-ICpsZywgaW50IGNwdSkKIHsKIAlhcmNoX3NwaW5sb2NrX3QgKmxvY2s7CiAKLQlyd2xvY2tfcmVs
-ZWFzZSgmbGctPmxvY2tfZGVwX21hcCwgMSwgX1JFVF9JUF8pOwotCWxvY2sgPSBwZXJfY3B1X3B0
-cihsZy0+bG9jaywgY3B1KTsKKwlyd2xvY2tfcmVsZWFzZShsZ19sb2NrX2RlcF9tYXAobGcpLCAx
-LCBfUkVUX0lQXyk7CisJbG9jayA9IHBlcl9jcHVfcHRyKCZsZy0+bG9jaywgY3B1KTsKIAlhcmNo
-X3NwaW5fdW5sb2NrKGxvY2spOwogCXByZWVtcHRfZW5hYmxlKCk7CiB9CiBFWFBPUlRfU1lNQk9M
-KGxnX2xvY2FsX3VubG9ja19jcHUpOwogCi12b2lkIGxnX2dsb2JhbF9sb2NrKHN0cnVjdCBsZ2xv
-Y2sgKmxnKQordm9pZCBsZ19nbG9iYWxfbG9jayhzdHJ1Y3QgbGdsb2NrIF9fcGVyY3B1ICpsZykK
-IHsKIAlpbnQgaTsKIAogCXByZWVtcHRfZGlzYWJsZSgpOwotCXJ3bG9ja19hY3F1aXJlKCZsZy0+
-bG9ja19kZXBfbWFwLCAwLCAwLCBfUkVUX0lQXyk7CisJcndsb2NrX2FjcXVpcmUobGdfbG9ja19k
-ZXBfbWFwKGxnKSwgMCwgMCwgX1JFVF9JUF8pOwogCWZvcl9lYWNoX3Bvc3NpYmxlX2NwdShpKSB7
-CiAJCWFyY2hfc3BpbmxvY2tfdCAqbG9jazsKLQkJbG9jayA9IHBlcl9jcHVfcHRyKGxnLT5sb2Nr
-LCBpKTsKKwkJbG9jayA9IHBlcl9jcHVfcHRyKCZsZy0+bG9jaywgaSk7CiAJCWFyY2hfc3Bpbl9s
-b2NrKGxvY2spOwogCX0KIH0KIEVYUE9SVF9TWU1CT0wobGdfZ2xvYmFsX2xvY2spOwogCi12b2lk
-IGxnX2dsb2JhbF91bmxvY2soc3RydWN0IGxnbG9jayAqbGcpCit2b2lkIGxnX2dsb2JhbF91bmxv
-Y2soc3RydWN0IGxnbG9jayBfX3BlcmNwdSAqbGcpCiB7CiAJaW50IGk7CiAKLQlyd2xvY2tfcmVs
-ZWFzZSgmbGctPmxvY2tfZGVwX21hcCwgMSwgX1JFVF9JUF8pOworCXJ3bG9ja19yZWxlYXNlKGxn
-X2xvY2tfZGVwX21hcChsZyksIDEsIF9SRVRfSVBfKTsKIAlmb3JfZWFjaF9wb3NzaWJsZV9jcHUo
-aSkgewogCQlhcmNoX3NwaW5sb2NrX3QgKmxvY2s7Ci0JCWxvY2sgPSBwZXJfY3B1X3B0cihsZy0+
-bG9jaywgaSk7CisJCWxvY2sgPSBwZXJfY3B1X3B0cigmbGctPmxvY2ssIGkpOwogCQlhcmNoX3Nw
-aW5fdW5sb2NrKGxvY2spOwogCX0KIAlwcmVlbXB0X2VuYWJsZSgpOwo=
---001a11339706ffc6df04e5810c3b--
