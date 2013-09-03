@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760201Ab3ICRuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 13:50:03 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:53123 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760168Ab3ICRuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 13:50:01 -0400
+	id S1760234Ab3ICRxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 13:53:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35101 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760009Ab3ICRxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 13:53:06 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Kumar Gala <galak@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCH 0/2] omap hwspinlock dt support
+Date: Tue, 3 Sep 2013 12:52:42 -0500
+Message-ID: <1378230762-54895-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.3.3
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <1378229848-29113-1-git-send-email-kamal@canonical.com>
-References: <1378229848-29113-1-git-send-email-kamal@canonical.com>
-Date: Tue, 3 Sep 2013 19:50:00 +0200
-Message-ID: <CAKMK7uHUr-qw491-kPjX=qHE+wtcYHC-bMyGehHDuF7w0Jkp7w@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: i915.disable_pch_pwm overrides PCH_PWM_ENABLE quirk
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 7:37 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
->
-> Some BIOS configurations of Dell XPS13 are adversely affected by e85843b
-> ("drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight") so provide a
-> boot param to inhibit the quirk, or force it on.
->
-> i915.disable_pch_pwm can be set to
->  -1: auto (default; allows the disabling of pch_pwm by dmi quirk table match)
->   0: inhibits the disabling of pch_pwm (overrides dmi quirk table match)
->   1: forces the disabling of pch_pwm
->
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Hi,
 
-Nack. Piling quirk over quirk isn't the right approach and I think I
-should just revert the pch_pwm enable quirk again.
--Daniel
+This series adds the device tree support to the OMAP hwspinlock
+driver. The series is based on 3.11 kernel, and currently adds
+the DT node for OMAP4. Since all the OMAP SoCs on which hwspinlock
+is supported are currently DT-boot only, I have combined the dt
+parsing support and removing the mach-omap2/hwspinlock.c cleanup
+into the first patch. This mandates that a DT node be defined
+to use a hwspinlock on an OMAP SoC, even though the 3.11 kernel
+could instantiate the devices normally even in a DT-boot mode.
+
+The DT binding documentation is added using the folder name 
+hwlock (same name from the MSM HW Mutex driver support series
+in [1]).
+
+[1] https://lkml.org/lkml/2013/8/14/528
+
+Suman Anna (2):
+  hwspinlock/omap: add support for dt nodes
+  ARM: dts: OMAP4: Add hwspinlock node
+
+ .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+ arch/arm/boot/dts/omap4.dtsi                       |  6 +++
+ arch/arm/mach-omap2/Makefile                       |  3 --
+ arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+ drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+ 5 files changed, 51 insertions(+), 67 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+ delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.3.3
+
