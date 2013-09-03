@@ -1,114 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3ICFtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:49:13 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:43972 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab3ICFtJ (ORCPT
+	id S1759424Ab3ICF5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:57:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47841 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab3ICF5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:49:09 -0400
-Date: Tue, 3 Sep 2013 07:49:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
-Message-ID: <20130903054905.GB16261@gmail.com>
-References: <1378155393-7993-1-git-send-email-acme@infradead.org>
+	Tue, 3 Sep 2013 01:57:46 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52257A1A.2040200@jp.fujitsu.com>
+Date: Tue, 3 Sep 2013 14:56:42 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378155393-7993-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <hannes@cmpxchg.org>,
+        <tony.luck@intel.com>, <matthew.garrett@nebula.com>, <dave@sr71.net>,
+        <riel@redhat.com>, <arjan@linux.intel.com>,
+        <srinivas.pandruvada@linux.intel.com>, <willy@linux.intel.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <lenb@kernel.org>, <rjw@sisk.pl>,
+        <gargankita@gmail.com>, <paulmck@linux.vnet.ibm.com>,
+        <svaidy@linux.vnet.ibm.com>, <andi@firstfloor.org>,
+        <santosh.shilimkar@ti.com>, <kosaki.motohiro@gmail.com>,
+        <linux-pm@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 06/35] mm: Add helpers to retrieve node region
+ and zone region for a given page
+References: <20130830131221.4947.99764.stgit@srivatsabhat.in.ibm.com> <20130830131542.4947.76970.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130830131542.4947.76970.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/08/30 22:15), Srivatsa S. Bhat wrote:
+> Given a page, we would like to have an efficient mechanism to find out
+> the node memory region and the zone memory region to which it belongs.
+>
+> Since the node is assumed to be divided into equal-sized node memory
+> regions, the node memory region can be obtained by simply right-shifting
+> the page's pfn by 'MEM_REGION_SHIFT'.
+>
+> But finding the corresponding zone memory region's index in the zone is
+> not that straight-forward. To have a O(1) algorithm to find it out, define a
+> zone_region_idx[] array to store the zone memory region indices for every
+> node memory region.
+>
+> To illustrate, consider the following example:
+>
+> 	|<----------------------Node---------------------->|
+> 	 __________________________________________________
+> 	|      Node mem reg 0 	 |      Node mem reg 1     |  (Absolute region
+> 	|________________________|_________________________|   boundaries)
+>
+> 	 __________________________________________________
+> 	|    ZONE_DMA   |	    ZONE_NORMAL		   |
+> 	|               |                                  |
+> 	|<--- ZMR 0 --->|<-ZMR0->|<-------- ZMR 1 -------->|
+> 	|_______________|________|_________________________|
+>
+>
+> In the above figure,
+>
+> Node mem region 0:
+> ------------------
+> This region corresponds to the first zone mem region in ZONE_DMA and also
+> the first zone mem region in ZONE_NORMAL. Hence its index array would look
+> like this:
+>      node_regions[0].zone_region_idx[ZONE_DMA]     == 0
+>      node_regions[0].zone_region_idx[ZONE_NORMAL]  == 0
+>
+>
+> Node mem region 1:
+> ------------------
+> This region corresponds to the second zone mem region in ZONE_NORMAL. Hence
+> its index array would look like this:
+>      node_regions[1].zone_region_idx[ZONE_NORMAL]  == 1
+>
+>
+> Using this index array, we can quickly obtain the zone memory region to
+> which a given page belongs.
+>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>
+>   include/linux/mm.h     |   24 ++++++++++++++++++++++++
+>   include/linux/mmzone.h |    7 +++++++
+>   mm/page_alloc.c        |    1 +
+>   3 files changed, 32 insertions(+)
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 18fdec4..52329d1 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -723,6 +723,30 @@ static inline struct zone *page_zone(const struct page *page)
+>   	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+>   }
+>
+> +static inline int page_node_region_id(const struct page *page,
+> +				      const pg_data_t *pgdat)
+> +{
+> +	return (page_to_pfn(page) - pgdat->node_start_pfn) >> MEM_REGION_SHIFT;
+> +}
+> +
+> +/**
+> + * Return the index of the zone memory region to which the page belongs.
+> + *
+> + * Given a page, find the absolute (node) memory region as well as the zone to
+> + * which it belongs. Then find the region within the zone that corresponds to
+> + * that node memory region, and return its index.
+> + */
+> +static inline int page_zone_region_id(const struct page *page)
+> +{
+> +	pg_data_t *pgdat = NODE_DATA(page_to_nid(page));
+> +	enum zone_type z_num = page_zonenum(page);
+> +	unsigned long node_region_idx;
+> +
+> +	node_region_idx = page_node_region_id(page, pgdat);
+> +
+> +	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
+> +}
+> +
+>   #ifdef SECTION_IN_PAGE_FLAGS
+>   static inline void set_page_section(struct page *page, unsigned long section)
+>   {
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 010ab5b..76d9ed2 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -726,6 +726,13 @@ struct node_mem_region {
+>   	unsigned long end_pfn;
+>   	unsigned long present_pages;
+>   	unsigned long spanned_pages;
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> +
+> +	/*
+> +	 * A physical (node) region could be split across multiple zones.
+> +	 * Store the indices of the corresponding regions of each such
+> +	 * zone for this physical (node) region.
+> +	 */
+> +	int zone_region_idx[MAX_NR_ZONES];
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 7bfb7e6bdd906f11ee9e751b3fec4f4fc728e818:
-> 
->   perf: Convert kmalloc_node(...GFP_ZERO...) to kzalloc_node() (2013-09-02 08:42:49 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 31cd3855c98119cae287b761d8d2e75018714c5d:
-> 
->   perf trace: Tell arg formatters the arg index (2013-09-02 16:40:40 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . 'perf trace' arg formatting improvements to allow masking arguments
->   in syscalls such as futex and open, where the some arguments are
->   ignored and thus should not be printed depending on other args.
-> 
-> . Beautify futex open, openat, open_by_handle_at, lseek and futex syscalls.
-> 
-> . Add dummy software event to use when wanting just to keep receiving
->   PERF_RECORD_{MMAP,COMM,etc}, add test for it, from Adrian Hunter.
-> 
-> . Fix symbol offset computation for some dsos in 'perf script', from David Ahern.
-> 
-> . Skip unsupported hardware events in 'perf list', from Namhyung Kim.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (3):
->       perf: Add a dummy software event to keep tracking
->       perf tools: Add support for PERF_COUNT_SW_DUMMY
->       perf tests: Add 'keep tracking' test
-> 
-> Arnaldo Carvalho de Melo (5):
->       perf trace: Allow syscall arg formatters to mask args
->       perf trace: Add beautifier for futex 'operation' parm
->       perf trace: Add beautifier for lseek's whence arg
->       perf trace: Add beautifier for open's flags arg
->       perf trace: Tell arg formatters the arg index
-> 
-> David Ahern (1):
->       perf tools: Fix symbol offset computation for some dsos
-> 
-> Namhyung Kim (1):
->       perf list: Skip unsupported events
-> 
->  include/uapi/linux/perf_event.h  |   1 +
->  tools/perf/Makefile              |   1 +
->  tools/perf/builtin-trace.c       | 180 ++++++++++++++++++++++++++++++++++++---
->  tools/perf/tests/builtin-test.c  |   4 +
->  tools/perf/tests/keep-tracking.c | 154 +++++++++++++++++++++++++++++++++
->  tools/perf/tests/tests.h         |   1 +
->  tools/perf/util/evlist.c         |  42 ++++++++-
->  tools/perf/util/evlist.h         |   5 ++
->  tools/perf/util/evsel.c          |   1 +
->  tools/perf/util/parse-events.c   |  45 +++++++++-
->  tools/perf/util/parse-events.l   |   1 +
->  tools/perf/util/python.c         |   1 +
->  tools/perf/util/session.c        |   1 +
->  tools/perf/util/symbol.c         |   5 +-
->  14 files changed, 424 insertions(+), 18 deletions(-)
->  create mode 100644 tools/perf/tests/keep-tracking.c
+You should initialize the zone_region_id[] as negative value.
+If the zone_region_id is initialized as 0, region 0 belongs to all zones.
 
-Pulled, thanks Arnaldo!
+Thanks,
+Yasuaki Ishimatsu
 
-	Ingo
+
+>   	struct pglist_data *pgdat;
+>   };
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 05cedbb..8ffd47b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4877,6 +4877,7 @@ static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
+>   			zone_region->present_pages =
+>   					zone_region->spanned_pages - absent;
+>
+> +			node_region->zone_region_idx[zone_idx(z)] = idx;
+>   			idx++;
+>   		}
+>
+>
+
+
