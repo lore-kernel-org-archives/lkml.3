@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab3ICIpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 04:45:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10892 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932473Ab3ICIpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 04:45:21 -0400
-Date: Tue, 3 Sep 2013 10:43:06 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130903084306.GA2694@redhat.com>
-References: <20130820111426.GA27828@swordfish.datadirectnet.com>
- <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902140015.GB2368@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130902140015.GB2368@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932659Ab3ICIrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 04:47:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60257 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932313Ab3ICIrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 04:47:01 -0400
+X-IronPort-AV: E=Sophos;i="4.89,1012,1367942400"; 
+   d="scan'208";a="8390258"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
+        rjw@sisk.pl, liwanp@linux.vnet.ibm.com, tj@kernel.org,
+        akpm@linux-foundation.org, joe@perches.com, toshi.kani@hp.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 3/4] acpi: Check if @id is NULL in acpi_table_parse()
+Date: Tue, 3 Sep 2013 16:45:40 +0800
+Message-Id: <1378197941-26479-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/03 16:44:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/03 16:44:52,
+	Serialize complete at 2013/09/03 16:44:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 05:00:15PM +0300, Sergey Senozhatsky wrote:
-> > > Thanks a lot Sergey for testing this further!
-> > > 
-> > > Interesting results, so rtime is always one or two units off stime after scaling.
-> > > Stanislaw made the scaling code with Linus and he has a better idea on the math guts
-> > > here.
-> > 
-> > I don't think this is scale issue, but rather at scale_stime() input
-> > stime is already bigger then rtime. Sergey, could you verify that
-> > by adding check before scale_stime() ?
-> > 
-> 
-> usually stime < rtime.
-> this is what scale_stime() gets as input:
-> 
-> [ 1291.409566] stime:3790580815 rtime:4344293130 total:3790580815
+strncmp() does not check if the params are NULL. In acpi_table_parse(),
+if @id is NULL, the kernel will panic.
 
-Ok, I see now, utime is 0 . This seems to be problem with dynamic ticks
-as you told that your application is kernel compilation, so we utilize
-lot of cpu time in user-space.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/tables.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Anyway we should handle utime == 0 situation on scaling code. We work
-well when rtime & stime are not big (variables and results fit in
-32 bit), otherwise we have that stime bigger than rtime problem. Let's
-try to handle the problem by below patch. Sergey, does it work for you ?
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..5a5263b 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -293,7 +293,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
+-	if (!handler)
++	if (!id || !handler)
+ 		return -EINVAL;
+ 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-- 
+1.7.1
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index a7959e0..25cc35d 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -557,7 +557,7 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, utime, total;
-+	cputime_t rtime, stime, utime;
- 
- 	if (vtime_accounting_enabled()) {
- 		*ut = curr->utime;
-@@ -565,9 +565,6 @@ static void cputime_adjust(struct task_cputime *curr,
- 		return;
- 	}
- 
--	stime = curr->stime;
--	total = stime + curr->utime;
--
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
- 	 * timeslices of a task to be interrupted or not by the timer.
-@@ -588,13 +585,19 @@ static void cputime_adjust(struct task_cputime *curr,
- 	if (prev->stime + prev->utime >= rtime)
- 		goto out;
- 
--	if (total) {
-+	stime = curr->stime;
-+	utime = curr->utime;
-+
-+	if (utime == 0) {
-+		stime = rtime;
-+	} else if (stime == 0) {
-+		utime = rtime;
-+	} else {
-+		cputime_t total = stime + utime;
-+
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
- 		utime = rtime - stime;
--	} else {
--		stime = rtime;
--		utime = 0;
- 	}
- 
- 	/*
