@@ -1,35 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab3ICA3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 20:29:25 -0400
-Received: from riotingpacifist.net ([50.56.217.244]:58883 "EHLO
-	riotingpacifist.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3ICA3Y (ORCPT
+	id S1759283Ab3ICAc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 20:32:28 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:57436 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759143Ab3ICAc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 20:29:24 -0400
-From: Juan Barry Manuel Canham <Linux@riotingpacifist.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: linux 3.11
-Date: Tue, 03 Sep 2013 01:29:21 +0100
-Message-ID: <2051964.HH5T0WZGqy@jcanhamlaptop>
-User-Agent: KMail/4.11 (Linux/3.5.0-30-generic; KDE/4.11.0; x86_64; ; )
+	Mon, 2 Sep 2013 20:32:27 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 2 Sep 2013 17:32:15 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Joe Perches <joe@perches.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: [PATCH] checkpatch: Report missing spaces around trigraphs with
+ --strict
+Message-ID: <20130903003215.GA1614@leaf>
+References: <1378138205.1953.66.camel@joe-AO722>
+ <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf>
+ <20130902153945.6d7e510c@samsung.com>
+ <1378148367.1953.98.camel@joe-AO722>
+ <20130902195056.GB32628@leaf>
+ <5224EF32.5060104@roeck-us.net>
+ <1378160086.1953.129.camel@joe-AO722>
+ <20130902231514.GA1163@leaf>
+ <1378166065.1953.134.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378166065.1953.134.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that linux-iscsi.org isn't doing much to protect itself from being 
-used as a spam source. If you setup the following you should be less likely to 
-be marked as spam:
+On Mon, Sep 02, 2013 at 04:54:25PM -0700, Joe Perches wrote:
+> > would you mind looking at why
+> > it gives a false positive for spaces around '*' on my recent patch at
+> > http://mid.gmane.org/20130901234251.GB25057@leaf ?  It appears to
+> > mistake the '*' of a pointer for a multiply.
+> 
+> Looks like checkpatch thinks this should be a multiplication.
+> 
+> Try this:
+> ---
+>  scripts/checkpatch.pl | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 9bb056c..e421b5e 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3005,7 +3005,7 @@ sub process {
+>  					 $op eq '*' or $op eq '/' or
+>  					 $op eq '%')
+>  				{
+> -					if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
+> +					if ($ctx =~ /Wx[^WCEB]|[^WCE]xW/) {
+>  						if (ERROR("SPACING",
+>  							  "need consistent spacing around '$op' $at\n" . $hereptr)) {
+>  							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
+> 
+> 
 
-* SPF record (setup both spf and a txt spf record for compatibility) 
-* DMARC record to enforce SPF and allow servers to contact you when linux-
-iscsi.org is used as a spam source
-* DKIM - more work and probably not needed, but I suspect having valid dkim 
-signatures will help with some mail servers spam rankings 
+That patch does indeed fix the problem, thanks!
 
-Apologies as this isn't really Linux kernel related stuff but it might help 
-other developers avoid being spammed by gmail too.
+Tested-by: Josh Triplett <josh@joshtriplett.org>
