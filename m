@@ -1,140 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab3ICWlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:41:46 -0400
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:65116 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761228Ab3ICWln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:41:43 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 18:41:43 EDT
-Message-Id: <00000140e5f47e59-1544fd5d-23d2-4757-ac4e-649678086cf0-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Tue, 3 Sep 2013 22:32:20 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Subject: [gcv v4 14/38] percpu: Replace __get_cpu_var uses
-References: <20130903190014.794420260@linux.com>
-X-SES-Outgoing: 199.127.232.131
+	id S1761369Ab3ICWnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:43:05 -0400
+Received: from [204.155.152.216] ([204.155.152.216]:45419 "EHLO shutemov.name"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760272Ab3ICWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 18:43:01 -0400
+Date: Wed, 4 Sep 2013 00:45:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix multiple large threshold notifications
+Message-ID: <20130903214511.GA7529@shutemov.name>
+References: <1377994002-1857-1-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377994002-1857-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+On Sat, Aug 31, 2013 at 05:06:42PM -0700, Greg Thelen wrote:
+> A memory cgroup with (1) multiple threshold notifications and (2) at
+> least one threshold >=2G was not reliable.  Specifically the
+> notifications would either not fire or would not fire in the proper
+> order.
+> 
+> The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+> thresholds in sorted order.  mem_cgroup_usage_register_event() sorts
+> them with compare_thresholds(), which returns the difference of two 64
+> bit thresholds as an int.  If the difference is positive but has
+> bit[31] set, then sort() treats the difference as negative and breaks
+> sort order.
+> 
+> This fix compares the two arbitrary 64 bit thresholds returning the
+> classic -1, 0, 1 result.
+> 
+> The test below sets two notifications (at 0x1000 and 0x81001000):
+>   cd /sys/fs/cgroup/memory
+>   mkdir x
+>   for x in 4096 2164264960; do
+>     cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+>   done
+>   echo $$ > x/cgroup.procs
+>   anon_leaker 500M
+> 
+> v3.11-rc7 fails to signal the 4096 event listener:
+>   Leaking...
+>   Done leaking pages.
+> 
+> Patched v3.11-rc7 properly notifies:
+>   Leaking...
+>   4096 listener:2013:8:31:14:13:36
+>   Done leaking pages.
+> 
+> The fixed bug is old.  It appears to date back to the introduction of
+> memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+> implement memory thresholds"
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-Other use cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
-and less registers are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/include/linux/percpu.h
-===================================================================
---- linux.orig/include/linux/percpu.h	2013-08-26 14:29:49.000000000 -0500
-+++ linux/include/linux/percpu.h	2013-08-26 14:30:18.302570608 -0500
-@@ -28,7 +28,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
- 
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
-
+-- 
+ Kirill A. Shutemov
