@@ -1,114 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab3ICFYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:24:25 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:27154 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab3ICFYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:24:24 -0400
-X-Spam-Score: -100.9
-Message-ID: <52257248.9080508@asianux.com>
-Date: Tue, 03 Sep 2013 13:23:20 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1759410Ab3ICFZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:25:13 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:5376 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759376Ab3ICFZL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 01:25:11 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzbb2dI98dI9371I1432I853kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Xiubo Li-B47053 <B47053@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+CC: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM
+Thread-Topic: [PATCH 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM
+Thread-Index: AQHOnhwezjS9uM7qaEqpBdTwwEdnOZmuL2UAgAAOvACABU58cA==
+Date: Tue, 3 Sep 2013 05:25:05 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827F7CCF@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
+ <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
+ <5EFBF478-CFCC-4E66-A279-25F4A338B05B@kernel.crashing.org>
+ <5220FC8C.90908@wwwdotorg.org>
+In-Reply-To: <5220FC8C.90908@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.56]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] kernel/groups.c: consider about NULL for 'group_info'
- in all related extern functions
-References: <5212DBFA.8030805@asianux.com> <5212DC65.9080702@asianux.com>
-In-Reply-To: <5212DC65.9080702@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
-
-Please help check this patch, when you have time.
-
-If need a related test, please let me know, I should try (better to
-provide some suggestions for test).
+> Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for
+> Freescale FTM PWM
+> 
+> On 08/30/2013 01:19 PM, Kumar Gala wrote:
+> > Should have at least something w/regards to a commit message.
+> >
+> > On Aug 20, 2013, at 10:07 PM, Xiubo Li wrote:
+> >
+> >> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> >> ---
+> >> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52
+> ++++++++++++++++++++++
+> >> 1 file changed, 52 insertions(+)
+> >> create mode 100644
+> >> Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> >> b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> >> new file mode 100644
+> >> index 0000000..698965b
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> >> @@ -0,0 +1,52 @@
+> >> +Freescale FTM PWM controller
+> >> +
+> >> +Required properties:
+> >> +- compatible: should be "fsl,vf610-ftm-pwm"
+> >> +- reg: physical base address and length of the controller's
+> >> +registers
+> >> +- #pwm-cells: Should be 3. Number of cells being used to specify PWM
+> property.
+> >> +  First cell specifies the per-chip channel index of the PWM to use,
+> >> +the
+> >> +  second cell is the period in nanoseconds and bit 0 in the third
+> >> +cell is
+> >> +  used to encode the polarity of PWM output. Set bit 0 of the third
+> >> +in PWM
+> >> +  specifier to 1 for inverse polarity & set to 0 for normal polarity.
+> >> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by 2^n(n = 0
+> ~ 7).
+> >> +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
+> >
+> > Should describe this in more detail, what does the value actually mean
+> for what modes there are?
+> 
+> Assuming "CPWM" is clearly explained in the HW documentation for this
+> chip (I have no idea if that's actually the case), then is it still
+> necessary to explain what this means in *detail*? Perhaps simply "see
+> section XXX in the TRM" or "see register XXX, bit YYY in the HW
+> documentation" would be enough?
+>
+If to clearly explain the 'CPWM' mode, there maybe need much more words, I think just simply explain it, and then for more detail information "see section XXX in the TRM" or "see register XXX, bit YYY in HW documentation".
 
 
 Thanks.
 
-On 08/20/2013 11:03 AM, Chen Gang wrote:
-> 
-> If this patch is correct, also need modify the man page for the return
-> value of getgroups().
-> 
-> Thanks.
-> 
-> On 08/20/2013 11:01 AM, Chen Gang wrote:
->> groups_alloc() can return NULL for 'group_info', also group_search()
->> already considers about NULL for 'group_info', so can assume the caller
->> has right to use all related extern functions when 'group_info' is NULL.
->>
->> For groups_free(), need check NULL to match groups_alloc(), just like
->> kmalloc/free().
->>
->> For set_groups(), can allow the caller to set NULL parameter to new
->> 'cred'.
->>
->> For system call getgroups(), if 'cred->group_info' is NULL, need return
->> the related error code (no related data), also need change the related
->> man page ("man 2 getgroups") to complete the return value.
->>
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  kernel/groups.c |   14 +++++++++++---
->>  1 files changed, 11 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/groups.c b/kernel/groups.c
->> index 6b2588d..a21a4ce 100644
->> --- a/kernel/groups.c
->> +++ b/kernel/groups.c
->> @@ -52,6 +52,9 @@ EXPORT_SYMBOL(groups_alloc);
->>
->>  void groups_free(struct group_info *group_info)
->>  {
->> +	if (!group_info)
->> +		return;
->> +
->>  	if (group_info->blocks[0] != group_info->small_block) {
->>  		int i;
->>  		for (i = 0; i < group_info->nblocks; i++)
->> @@ -163,9 +166,12 @@ int groups_search(const struct group_info
->> *group_info, kgid_t grp)
->>   */
->>  int set_groups(struct cred *new, struct group_info *group_info)
->>  {
->> -	put_group_info(new->group_info);
->> -	groups_sort(group_info);
->> -	get_group_info(group_info);
->> +	if (new->group_info)
->> +		put_group_info(new->group_info);
->> +	if (group_info) {
->> +		groups_sort(group_info);
->> +		get_group_info(group_info);
->> +	}
->>  	new->group_info = group_info;
->>  	return 0;
->>  }
->> @@ -206,6 +212,8 @@ SYSCALL_DEFINE2(getgroups, int, gidsetsize, gid_t
->> __user *, grouplist)
->>
->>  	if (gidsetsize < 0)
->>  		return -EINVAL;
->> +	if (!cred->group_info)
->> +		return -ENODATA;
->>
->>  	/* no need to grab task_lock here; it cannot change */
->>  	i = cred->group_info->ngroups;
->>
-> 
-> 
+--
+Best Regards,
+Xiubo
 
 
--- 
-Chen Gang
