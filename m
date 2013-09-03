@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab3ICQYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:24:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46445 "EHLO
+	id S1757051Ab3ICQYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:24:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46446 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756704Ab3ICQYP (ORCPT
+	with ESMTP id S1756708Ab3ICQYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Sep 2013 12:24:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 16/58] ARM: 7809/1: perf: fix event validation for software group leaders
-Date: Tue,  3 Sep 2013 09:23:20 -0700
-Message-Id: <1378225442-20654-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 04/58] iwl4965: set power mode early
+Date: Tue,  3 Sep 2013 09:23:08 -0700
+Message-Id: <1378225442-20654-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,50 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c95eb3184ea1a3a2551df57190c81da695e2144b upstream.
+commit eca396d7a5bdcc1fd67b1b12f737c213ac78a6f4 upstream.
 
-It is possible to construct an event group with a software event as a
-group leader and then subsequently add a hardware event to the group.
-This results in the event group being validated by adding all members
-of the group to a fake PMU and attempting to allocate each event on
-their respective PMU.
+If device was put into a sleep and system was restarted or module
+reloaded, we have to wake device up before sending other commands.
+Otherwise it will fail to start with Microcode error.
 
-Unfortunately, for software events wthout a corresponding arm_pmu, this
-results in a kernel crash attempting to dereference the ->get_event_idx
-function pointer.
-
-This patch fixes the problem by checking explicitly for software events
-and ignoring those in event validation (since they can always be
-scheduled). We will probably want to revisit this for 3.12, since the
-validation checks don't appear to work correctly when dealing with
-multiple hardware PMUs anyway.
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/iwlegacy/4965-mac.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 0a29456..41faea8 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -266,6 +266,9 @@ validate_event(struct pmu_hw_events *hw_events,
- 	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
- 	struct pmu *leader_pmu = event->group_leader->pmu;
+diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
+index c3fbf67..c640f69 100644
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -5287,6 +5287,9 @@ il4965_alive_start(struct il_priv *il)
  
-+	if (is_software_event(event))
-+		return 1;
+ 	il->active_rate = RATES_MASK;
+ 
++	il_power_update_mode(il, true);
++	D_INFO("Updated power mode\n");
 +
- 	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
- 		return 1;
+ 	if (il_is_associated(il)) {
+ 		struct il_rxon_cmd *active_rxon =
+ 		    (struct il_rxon_cmd *)&il->active;
+@@ -5317,9 +5320,6 @@ il4965_alive_start(struct il_priv *il)
+ 	D_INFO("ALIVE processing complete.\n");
+ 	wake_up(&il->wait_command_queue);
  
+-	il_power_update_mode(il, true);
+-	D_INFO("Updated power mode\n");
+-
+ 	return;
+ 
+ restart:
 -- 
 1.8.1.2
 
