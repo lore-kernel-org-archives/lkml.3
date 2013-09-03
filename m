@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759868Ab3ICJ7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:59:24 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:59100 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab3ICJ7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:59:23 -0400
-X-Spam-Score: -100.9
-Message-ID: <5225B2BA.5080001@asianux.com>
-Date: Tue, 03 Sep 2013 17:58:18 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1759653Ab3ICKBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 06:01:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55626 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753421Ab3ICKBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 06:01:20 -0400
+Date: Tue, 3 Sep 2013 12:01:17 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix multiple large threshold notifications
+Message-ID: <20130903100117.GA14914@dhcp22.suse.cz>
+References: <1377994002-1857-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>, Joe Perches <joe@perches.com>,
-        Jens Axboe <axboe@kernel.dk>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] block/ioctl.c: let code match 'kernel code style'
-References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <5220254E.3050704@roeck-us.net> <52203CF0.5040600@asianux.com> <52207F74.6000702@roeck-us.net> <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com> <52208DFD.20105@roeck-us.net> <52240566.3040201@asianux.com> <52259DDE.6070401@asianux.com> <5225A3F8.5070008@huawei.com> <5225A685.5040507@asianux.com> <alpine.LNX.2.00.1309031126250.20551@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1309031126250.20551@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377994002-1857-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 05:27 PM, Jiri Kosina wrote:
-> On Tue, 3 Sep 2013, Chen Gang wrote:
+On Sat 31-08-13 17:06:42, Greg Thelen wrote:
+> A memory cgroup with (1) multiple threshold notifications and (2) at
+> least one threshold >=2G was not reliable.  Specifically the
+> notifications would either not fire or would not fire in the proper
+> order.
 > 
->> Do you mean "coding style", not "colding style"? (or it is my
->> misunderstanding?).
->>
->>
->>> You're not going to run checkpatch.pl on the whole kernel tree and fix
->>> all the complaints, are you?
->>>
->>
->> I am not going to, it seems that may be the 'job' of Joe and
->> trivial@kernel.org?
+> The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+> thresholds in sorted order.  mem_cgroup_usage_register_event() sorts
+> them with compare_thresholds(), which returns the difference of two 64
+> bit thresholds as an int.  If the difference is positive but has
+> bit[31] set, then sort() treats the difference as negative and breaks
+> sort order.
 > 
-> FWIW, I am not generally accepting pure code reformatting patches.
+> This fix compares the two arbitrary 64 bit thresholds returning the
+> classic -1, 0, 1 result.
+> 
+> The test below sets two notifications (at 0x1000 and 0x81001000):
+>   cd /sys/fs/cgroup/memory
+>   mkdir x
+>   for x in 4096 2164264960; do
+>     cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+>   done
+>   echo $$ > x/cgroup.procs
+>   anon_leaker 500M
+> 
+> v3.11-rc7 fails to signal the 4096 event listener:
+>   Leaking...
+>   Done leaking pages.
+> 
+> Patched v3.11-rc7 properly notifies:
+>   Leaking...
+>   4096 listener:2013:8:31:14:13:36
+>   Done leaking pages.
+> 
+> The fixed bug is old.  It appears to date back to the introduction of
+> memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+> implement memory thresholds"
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+I guess this qualifies to the stable tree.
+
+Thanks!
+
+> ---
+>  mm/memcontrol.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0878ff7..aa44621 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5616,7 +5616,13 @@ static int compare_thresholds(const void *a, const void *b)
+>  	const struct mem_cgroup_threshold *_a = a;
+>  	const struct mem_cgroup_threshold *_b = b;
+>  
+> -	return _a->threshold - _b->threshold;
+> +	if (_a->threshold > _b->threshold)
+> +		return 1;
+> +
+> +	if (_a->threshold < _b->threshold)
+> +		return -1;
+> +
+> +	return 0;
+>  }
+>  
+>  static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
+> -- 
+> 1.8.4
 > 
 
-Yes, it is really not quite efficient to only accept pure code
-reformatting patches (it must contain another 'things').
-;-)
-
-
-Thanks.
 -- 
-Chen Gang
+Michal Hocko
+SUSE Labs
