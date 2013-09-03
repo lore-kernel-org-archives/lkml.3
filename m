@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3ICO3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:29:35 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:56139 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3ICO3e (ORCPT
+	id S1755156Ab3ICObp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:31:45 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55806 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752604Ab3ICObo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:29:34 -0400
-Date: Tue, 3 Sep 2013 10:29:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
-Subject: [GIT PULL] percpu changes for v3.12-rc1
-Message-ID: <20130903142930.GF10522@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 10:31:44 -0400
+Message-ID: <1378218699.1279.7.camel@x61.thuisdomein>
+Subject: Re: [PATCH] x86, tsc: downgrade fast calibration failure message
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Date: Tue, 03 Sep 2013 16:31:39 +0200
+In-Reply-To: <1378217395-1241-1-git-send-email-jerome.oufella@savoirfairelinux.com>
+References: <1378217395-1241-1-git-send-email-jerome.oufella@savoirfairelinux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Sep 2013 14:31:39.0841 (UTC) FILETIME=[4D832B10:01CEA8B2]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, 2013-09-03 at 10:09 -0400, Jerome Oufella wrote:
+> As pointed out by Paul Bolle in https://lkml.org/lkml/2012/9/24/221, the
+> fast TSC calibration method may fail on some machines and result in an
+> error level message that does not reflect the severity of the case.
+> 
+> Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+> ---
+> This patch lost momentum and wordsmithing the message was evoked in
+> subsequent posts but imho reducing the level does the job just fine.
 
-Just a single patch to update type verification macro for percpu
-accessors.  Christoph is trying to replace __get_cpu_var() with
-this_cpu accessors which needs this update.  There are still some
-issues to be resolved but eventually the conversion patches are likely
-to be routed through different trees, so I think it'd be convenient to
-merge this commit early.
+I've carried an identical patch locally ever since I submitted the patch
+referenced by Jerome. Ie, I'm now running v3.11 with that patch applied.
+Jerome's commit explanation is a bit terse when compared to my
+verbosity, but otherwise I'm fine with this. So:
 
-Thanks.
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
 
-The following changes since commit a4244454df1296e90cc961c1b636b1176ef0d9a0:
 
-  percpu-refcount: use RCU-sched insted of normal RCU (2013-06-16 16:12:26 -0700)
+Paul Bolle
+> ---
+>  arch/x86/kernel/tsc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 6ff4924..e518724 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -380,7 +380,7 @@ static unsigned long quick_pit_calibrate(void)
+>  			goto success;
+>  		}
+>  	}
+> -	pr_err("Fast TSC calibration failed\n");
+> +	pr_info("Fast TSC calibration failed\n");
+>  	return 0;
+>  
+>  success:
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.12
-
-for you to fetch changes up to abec1a806e0c3cf168999667d5fb6218398ef12a:
-
-  percpu: Make __verify_pcu_ptr handle per cpu pointers to arrays (2013-08-23 16:08:27 -0400)
-
-----------------------------------------------------------------
-Christoph Lameter (1):
-      percpu: Make __verify_pcu_ptr handle per cpu pointers to arrays
-
- include/linux/percpu-defs.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index 27ef6b1..57e890a 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -22,9 +22,12 @@
-  * Macro which verifies @ptr is a percpu pointer without evaluating
-  * @ptr.  This is to be used in percpu accessors to verify that the
-  * input parameter is a percpu pointer.
-+ *
-+ * + 0 is required in order to convert the pointer type from a
-+ * potential array type to a pointer to a single item of the array.
-  */
- #define __verify_pcpu_ptr(ptr)	do {					\
--	const void __percpu *__vpp_verify = (typeof(ptr))NULL;		\
-+	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
- 	(void)__vpp_verify;						\
- } while (0)
- 
---
-tejun
