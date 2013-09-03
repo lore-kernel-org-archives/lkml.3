@@ -1,115 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab3ICNc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:32:56 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:17702 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932870Ab3ICNcy (ORCPT
+	id S932918Ab3ICNdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:33:04 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:37467 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932870Ab3ICNdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:32:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 03 Sep 2013 06:32:53 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] clk: tegra114: table driven PMC clock init
-Date: Tue, 3 Sep 2013 16:31:34 +0300
-Message-ID: <1378215105-12145-5-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 3 Sep 2013 09:33:00 -0400
+Message-ID: <5225E508.2060407@linaro.org>
+Date: Tue, 03 Sep 2013 15:32:56 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Suresh.Srinivasan@arm.com, Amit Kucheria <amit.kucheria@linaro.org>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: Re: [Query-CPUIdle]: Not much activity in C0 state
+References: <CAKohpo=OuYK7vhoG6a4REd-XuGMP63NTKhd8TWJmKo1R6rDp7g@mail.gmail.com>
+In-Reply-To: <CAKohpo=OuYK7vhoG6a4REd-XuGMP63NTKhd8TWJmKo1R6rDp7g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the Tegra114 audio clock registration to be table driven
-like the periph clocks.
+On 08/27/2013 12:23 PM, Viresh Kumar wrote:
+> Hi Guys,
+> 
+> I was trying to run following on my thinkpad:
+> 
+> watch -n1 cat /sys/devices/system/cpu/cpu*/cpuidle/state*/usage
+> 
+> I can see lots of activities on State 1-4, but not much on state 0..
+> I thought we should enter this state as soon as we come out to
+> non-idle state.. And so this count must be changing quite rapidly.
+> 
+> Is this a bug?
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-tegra114.c |   58 +++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 35 deletions(-)
+Hi Viresh,
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 9f8d534..052e6ab 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -1583,45 +1583,33 @@ static void __init tegra114_audio_clk_init(void __iomem *clk_base)
- 	}
- }
- 
-+static struct pmc_clk_init_data tegra_pmc_clk_init_data[] = {
-+	TEGRA_INIT_PMC_CLK("clk_out_1", "extern1", clk_out1_parents, 6, 2, TEGRA114_CLK_CLK_OUT_1),
-+	TEGRA_INIT_PMC_CLK("clk_out_2", "extern2", clk_out2_parents, 14, 10, TEGRA114_CLK_CLK_OUT_2),
-+	TEGRA_INIT_PMC_CLK("clk_out_3", "extern3", clk_out3_parents, 22, 18, TEGRA114_CLK_CLK_OUT_3),
-+};
-+
- static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
- {
- 	struct clk *clk;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_pmc_clk_init_data); i++) {
-+		struct pmc_clk_init_data *data;
- 
--	/* clk_out_1 */
--	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_1_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern1", "clk_out_1");
--	clks[TEGRA114_CLK_CLK_OUT_1] = clk;
--
--	/* clk_out_2 */
--	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
--			       ARRAY_SIZE(clk_out2_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_2_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern2", "clk_out_2");
--	clks[TEGRA114_CLK_CLK_OUT_2] = clk;
--
--	/* clk_out_3 */
--	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
--			       ARRAY_SIZE(clk_out3_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_3_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern3", "clk_out_3");
--	clks[TEGRA114_CLK_CLK_OUT_3] = clk;
-+		data = &tegra_pmc_clk_init_data[i];
-+
-+		clk = clk_register_mux(NULL, data->mux_name, data->parents,
-+				data->num_parents, 0,
-+				pmc_base + PMC_CLK_OUT_CNTRL, data->mux_shift,
-+				3, 0, &clk_out_lock);
-+		clks[data->mux_id] = clk;
-+		clk = clk_register_gate(NULL, data->gate_name, data->mux_name,
-+					0, pmc_base + PMC_CLK_OUT_CNTRL,
-+					data->gate_shift, 0, &clk_out_lock);
-+		clks[data->gate_id] = clk;
-+		clk_register_clkdev(clk, data->dev_name, data->gate_name);
-+	}
- 
- 	/* blink */
- 	/* clear the blink timer register to directly output clk_32k */
+the menu governor tries always to stick to C1 (state1) as default state,
+look at the menu_select function. The state0 (not C0 but 'poll') will
+happen when the next timer event is less than 5us, this occurs rarely.
+You can easily spot it by doing while $(true); usleep 2; done
+
+The poll state is x86 specific where the cpu detects the 'rep nop'
+instructions to do some power saving.
+
+Hope that helps
+
+  -- Daniel
+
+
+
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
