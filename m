@@ -1,253 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab3ICDxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:53:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12839 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932339Ab3ICDxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:53:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1011,1367996400"; 
-   d="scan'208";a="372504139"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v8 09/10] tracing: Add documentation for trace event triggers
-Date: Mon,  2 Sep 2013 22:52:25 -0500
-Message-Id: <23b6cd25580c8ea37afc76a07c32753c9599e87c.1378176577.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1378176577.git.tom.zanussi@linux.intel.com>
-References: <cover.1378176577.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1378176577.git.tom.zanussi@linux.intel.com>
-References: <cover.1378176577.git.tom.zanussi@linux.intel.com>
+	id S932436Ab3ICDxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:53:32 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:49633 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab3ICDx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 23:53:28 -0400
+Message-ID: <52255CF1.6020700@gmail.com>
+Date: Tue, 03 Sep 2013 11:52:17 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        netdev@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 0/8] Drop support for Renesas H8/300 architecture
+References: <1377906694-9578-1-git-send-email-linux@roeck-us.net> <52254F11.8070601@gmail.com> <522556D8.803@roeck-us.net>
+In-Reply-To: <522556D8.803@roeck-us.net>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a basic overview of trace event triggers and document the
-available trigger commands, along with a few simple examples.
+On 09/03/2013 11:26 AM, Guenter Roeck wrote:
+> On 09/02/2013 07:53 PM, Chen Gang F T wrote:
+>> Hello Guenter Roeck:
+>>
+>>
+>> I don't care about whether I am in cc mailing list, but at least,
+>> please help confirm 2 things:
+>>
+>>    Is what I had done for h8300 just making wastes and noisy in kernel and related sub-system mailing list ?
+>>
+>>    and is the disccusion about h8300 between us also wastes and noisy in kernel mailing list ?
+>>
+> 
+> It raised my awareness of the status of h8300 maintenance,
+> so I would not see it as noise or waste. I might have suggested
+> a different target for your efforts, but that is your choice to make,
+> not mine.
+> 
 
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- Documentation/trace/events.txt | 207 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 207 insertions(+)
+OK, thank you for your confirmation, I plan to scan all architectures
+one by one with allmodconfig.
 
-diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
-index 37732a2..c94435d 100644
---- a/Documentation/trace/events.txt
-+++ b/Documentation/trace/events.txt
-@@ -287,3 +287,210 @@ their old filters):
- prev_pid == 0
- # cat sched_wakeup/filter
- common_pid == 0
-+
-+6. Event triggers
-+=================
-+
-+Trace events can be made to conditionally invoke trigger 'commands'
-+which can take various forms and are described in detail below;
-+examples would be enabling or disabling other trace events or invoking
-+a stack trace whenever the trace event is hit.  Whenever a trace event
-+with attached triggers is invoked, the set of trigger commands
-+associated with that event is invoked.  Any given trigger can
-+additionally have an event filter of the same form as described in
-+section 5 (Event filtering) associated with it - the command will only
-+be invoked if the event being invoked passes the associated filter.
-+If no filter is associated with the trigger, it always passes.
-+
-+Triggers are added to and removed from a particular event by writing
-+trigger expressions to the 'trigger' file for the given event.
-+
-+A given event can have any number of triggers associated with it,
-+subject to any restrictions that individual commands may have in that
-+regard.
-+
-+Event triggers are implemented on top of "soft" mode, which means that
-+whenever a trace event has one or more triggers associated with it,
-+the event is activated even if it isn't actually enabled, but is
-+disabled in a "soft" mode.  That is, the tracepoint will be called,
-+but just will not be traced, unless of course it's actually enabled.
-+This scheme allows triggers to be invoked even for events that aren't
-+enabled, and also allows the current event filter implementation to be
-+used for conditionally invoking triggers.
-+
-+The syntax for event triggers is roughly based on the syntax for
-+set_ftrace_filter 'ftrace filter commands' (see the 'Filter commands'
-+section of Documentation/trace/ftrace.txt), but there are major
-+differences and the implementation isn't currently tied to it in any
-+way, so beware about making generalizations between the two.
-+
-+6.1 Expression syntax
-+---------------------
-+
-+Triggers are added by echoing the command to the 'trigger' file:
-+
-+  # echo 'command[:count] [if filter]' > trigger
-+
-+Triggers are removed by echoing the same command but starting with '!'
-+to the 'trigger' file:
-+
-+  # echo '!command[:count] [if filter]' > trigger
-+
-+The [if filter] part isn't used in matching commands when removing, so
-+leaving that off in a '!' command will accomplish the same thing as
-+having it in.
-+
-+The filter syntax is the same as that described in the 'Event
-+filtering' section above.
-+
-+For ease of use, writing to the trigger file using '>' currently just
-+adds or removes a single trigger and there's no explicit '>>' support
-+('>' actually behaves like '>>') or truncation support to remove all
-+triggers (you have to use '!' for each one added.)
-+
-+6.2 Supported trigger commands
-+------------------------------
-+
-+The following commands are supported:
-+
-+- enable_event/disable_event
-+
-+  These commands can enable or disable another trace event whenever
-+  the triggering event is hit.  When these commands are registered,
-+  the other trace event is activated, but disabled in a "soft" mode.
-+  That is, the tracepoint will be called, but just will not be traced.
-+  The event tracepoint stays in this mode as long as there's a trigger
-+  in effect that can trigger it.
-+
-+  For example, the following trigger causes kmalloc events to be
-+  traced when a read system call is entered, and the :1 at the end
-+  specifies that this enablement happens only once:
-+
-+  # echo 'enable_event:kmem:kmalloc:1' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-+
-+  The following trigger causes kmalloc events to stop being traced
-+  when a read system call exits.  This disablement happens on every
-+  read system call exit:
-+
-+  # echo 'disable_event:kmem:kmalloc' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-+
-+  The format is:
-+
-+      enable_event:<system>:<event>[:count]
-+      disable_event:<system>:<event>[:count]
-+
-+  To remove the above commands:
-+
-+  # echo '!enable_event:kmem:kmalloc:1' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-+
-+  # echo '!disable_event:kmem:kmalloc' > \
-+      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-+
-+  Note that there can be any number of enable/disable_event triggers
-+  per triggering event, but there can only be one trigger per
-+  triggered event. e.g. sys_enter_read can have triggers enabling both
-+  kmem:kmalloc and sched:sched_switch, but can't have two kmem:kmalloc
-+  versions such as kmem:kmalloc and kmem:kmalloc:1 or 'kmem:kmalloc if
-+  bytes_req == 256' and 'kmem:kmalloc if bytes_alloc == 256' (they
-+  could be combined into a single filter on kmem:kmalloc though).
-+
-+- stacktrace
-+
-+  This command dumps a stacktrace in the trace buffer whenever the
-+  triggering event occurs.
-+
-+  For example, the following trigger dumps a stacktrace every time the
-+  kmalloc tracepoint is hit:
-+
-+  # echo 'stacktrace' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The following trigger dumps a stacktrace the first 5 times a kmalloc
-+  request happens with a size >= 64K
-+
-+  # echo 'stacktrace:5 if bytes_req >= 65536' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The format is:
-+
-+      stacktrace[:count]
-+
-+  To remove the above commands:
-+
-+  # echo '!stacktrace' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  # echo '!stacktrace:5 if bytes_req >= 65536' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  The latter can also be removed more simply by the following (without
-+  the filter):
-+
-+  # echo '!stacktrace:5' > \
-+        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-+
-+  Note that there can be only one stacktrace trigger per triggering
-+  event.
-+
-+- snapshot
-+
-+  This command causes a snapshot to be triggered whenever the
-+  triggering event occurs.
-+
-+  The following command creates a snapshot every time a block request
-+  queue is unplugged with a depth > 1.  If you were tracing a set of
-+  events or functions at the time, the snapshot trace buffer would
-+  capture those events when the trigger event occured:
-+
-+  # echo 'snapshot if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To only snapshot once:
-+
-+  # echo 'snapshot:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To remove the above commands:
-+
-+  # echo '!snapshot if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  # echo '!snapshot:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  Note that there can be only one snapshot trigger per triggering
-+  event.
-+
-+- traceon/traceoff
-+
-+  These commands turn tracing on and off when the specified events are
-+  hit. The parameter determines how many times the tracing system is
-+  turned on and off. If unspecified, there is no limit.
-+
-+  The following command turns tracing off the first time a block
-+  request queue is unplugged with a depth > 1.  If you were tracing a
-+  set of events or functions at the time, you could then examine the
-+  trace buffer to see the sequence of events that led up to the
-+  trigger event:
-+
-+  # echo 'traceoff:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To always disable tracing when nr_rq  > 1 :
-+
-+  # echo 'traceoff if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  To remove the above commands:
-+
-+  # echo '!traceoff:1 if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  # echo '!traceoff if nr_rq > 1' > \
-+        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-+
-+  Note that there can be only one traceon or traceoff trigger per
-+  triggering event.
+Hmm... if suitable, next, when I focus one of architectures, I also cc
+to you, if it can be removed, please let me know in time, so can avoid
+sending waste mails to mailing list.
+
+I plan to try one of architectures within arc, hexagon, and metag. I
+will begin at 2013-09-20 (or later), if some (or all) of them can be
+removed, please let me know, thanks.
+
+
+> On the code review side, I had suggested that you should not add new
+> ifdefs into code, much less unnecessary ones. Your counter-argument
+> was that you wanted to follow the existing coding style in the file
+> in question. To me, that argument is along the line of "the coding
+> style in this file is bad, let's do more of it".
+
+Hmm... in fact, I will not say whether the code style is good or bad. I
+mainly focus on to try to avoid multiple code styles within one file.
+
+  extreme sample: let 'kernel code style' and 'gcc code style' in one file, that will make the code very ugly.
+
+> That doesn't make much sense to me, so I did not bother to respond.
+> Setting that aside, it is not up to me to approve or reject your patches.
+> Whoever does that would be the one you have to convince.
+> 
+
+OK, I can understand, and now it seems it can be canceled, since h8300
+has been removed.
+
+> Guenter
+> 
+
+
+Thanks.
 -- 
-1.7.11.4
-
+Chen Gang
