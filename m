@@ -1,166 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760911Ab3ICV40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:56:26 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51787 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758246Ab3ICV4Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:56:24 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <52260F45.6040702@colorfullife.com>
-References: <1378216808-2564-1-git-send-email-manfred@colorfullife.com>
-	<CA+icZUUdnK3Kc9OFNjcEsZYigbyytsFk90_HaqqUWh9cvq5+0w@mail.gmail.com>
-	<52260F45.6040702@colorfullife.com>
-Date: Tue, 3 Sep 2013 23:56:23 +0200
-Message-ID: <CA+icZUUThSZTRTfyLUfutoAHCmkMr1p0MQh7013JY8cto1schA@mail.gmail.com>
-Subject: Re: [PATCH] ipc/msg.c: Fix lost wakeup in msgsnd().
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Greg KH <greg@kroah.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <dave.bueso@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1760955Ab3ICWBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:01:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4258 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755839Ab3ICWBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 18:01:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1016,1367996400"; 
+   d="scan'208";a="290438463"
+From: "Luck, Tony" <tony.luck@intel.com>
+Date: Tue, 3 Sep 2013 14:49:49 -0700
+Subject: [PATCH] lockref: Relax in cmpxchg loop
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-Id: <0129530@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 6:33 PM, Manfred Spraul <manfred@colorfullife.com> wrote:
-> Hi Sedat,
->
->
-> On 09/03/2013 06:13 PM, Sedat Dilek wrote:
->>
->> On Tue, Sep 3, 2013 at 4:00 PM, Manfred Spraul <manfred@colorfullife.com>
->> wrote:
->>>
->>> The check if the queue is full and adding current to the wait queue of
->>> pending
->>> msgsnd() operations (ss_add()) must be atomic.
->>>
->>> Otherwise:
->>> - the thread that performs msgsnd() finds a full queue and decides to
->>> sleep.
->>> - the thread that performs msgrcv() calls first reads all messages from
->>> the
->>>    queue and then sleep, because the queue is empty.
->>
->> reads -> sleeps
->
-> Correct.
->
->>> - the msgrcv() calls do not perform any wakeups, because the msgsnd()
->>> task
->>>    has not yet called ss_add().
->>> - then the msgsnd()-thread first calls ss_add() and then sleeps.
->>> Net result: msgsnd() and msgrcv() both sleep forever.
->>>
->> I don't know what and why "net result" - net in sense of networking?
->
-> http://en.wiktionary.org/wiki/net#Adjective
-> I.e.: Ignore/remove the "Net".
->
->
->>> Observed with msgctl08 from ltp with a preemptible kernel.
->>>
->> ...on ARC arch (that sounds funny somehow).
->>
->>> Fix: Call ipc_lock_object() before performing the check.
->>>
->>> The patch also moves security_msg_queue_msgsnd() under ipc_lock_object:
->>> - msgctl(IPC_SET) explicitely mentions that it tries to expunge any
->>> pending
->>>    operations that are not allowed anymore with the new permissions.
->>>    If security_msg_queue_msgsnd() is called without locks, then there
->>> might be
->>>    races.
->>> - it makes the patch much simpler.
->>>
->>> Reported-by: Vineet Gupta <Vineet.Gupta1@synopsys.com>
->>> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
->>
->> I guess this is missing a "CC: stable" as Vineet reported against
->> Linux v3.11-rc7 (and should enter v3.11.1)?
->
-> Yes. I didn't notice that Linus already released 3.11.
->
+While we are likley to succeed and break out of this loop, it isn't
+guaranteed.  We should be power and thread friendly if we do have to
+go around for a second (or third, or more) attempt.
 
-Linus pushed your patch upstream... with typos fixed and "CC: stable #3.11".
-Thanks to all involved people!
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-- Sedat -
+---
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=bebcb928c820d0ee83aca4b192adc195e43e66a2
+diff --git a/lib/lockref.c b/lib/lockref.c
+index 7819c2d..9d76f40 100644
+--- a/lib/lockref.c
++++ b/lib/lockref.c
+@@ -19,6 +19,7 @@
+ 		if (likely(old.lock_count == prev.lock_count)) {		\
+ 			SUCCESS;						\
+ 		}								\
++		cpu_relax();							\
+ 	}									\
+ } while (0)
+ 
+-- 
+1.8.1.4
 
-> --
->     Manfred
->
->> - Sedat -
->>
->>> ---
->>>   ipc/msg.c | 12 +++++-------
->>>   1 file changed, 5 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/ipc/msg.c b/ipc/msg.c
->>> index 9f29d9e..b65fdf1 100644
->>> --- a/ipc/msg.c
->>> +++ b/ipc/msg.c
->>> @@ -680,16 +680,18 @@ long do_msgsnd(int msqid, long mtype, void __user
->>> *mtext,
->>>                  goto out_unlock1;
->>>          }
->>>
->>> +       ipc_lock_object(&msq->q_perm);
->>> +
->>>          for (;;) {
->>>                  struct msg_sender s;
->>>
->>>                  err = -EACCES;
->>>                  if (ipcperms(ns, &msq->q_perm, S_IWUGO))
->>> -                       goto out_unlock1;
->>> +                       goto out_unlock0;
->>>
->>>                  err = security_msg_queue_msgsnd(msq, msg, msgflg);
->>>                  if (err)
->>> -                       goto out_unlock1;
->>> +                       goto out_unlock0;
->>>
->>>                  if (msgsz + msq->q_cbytes <= msq->q_qbytes &&
->>>                                  1 + msq->q_qnum <= msq->q_qbytes) {
->>> @@ -699,10 +701,9 @@ long do_msgsnd(int msqid, long mtype, void __user
->>> *mtext,
->>>                  /* queue full, wait: */
->>>                  if (msgflg & IPC_NOWAIT) {
->>>                          err = -EAGAIN;
->>> -                       goto out_unlock1;
->>> +                       goto out_unlock0;
->>>                  }
->>>
->>> -               ipc_lock_object(&msq->q_perm);
->>>                  ss_add(msq, &s);
->>>
->>>                  if (!ipc_rcu_getref(msq)) {
->>> @@ -730,10 +731,7 @@ long do_msgsnd(int msqid, long mtype, void __user
->>> *mtext,
->>>                          goto out_unlock0;
->>>                  }
->>>
->>> -               ipc_unlock_object(&msq->q_perm);
->>>          }
->>> -
->>> -       ipc_lock_object(&msq->q_perm);
->>>          msq->q_lspid = task_tgid_vnr(current);
->>>          msq->q_stime = get_seconds();
->>>
->>> --
->>> 1.8.3.1
->>>
->
