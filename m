@@ -1,129 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab3ICQDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:03:03 -0400
-Received: from relay.parallels.com ([195.214.232.42]:58475 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3ICQDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:03:01 -0400
-Message-ID: <5226082A.1050104@parallels.com>
-Date: Tue, 3 Sep 2013 20:02:50 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1757279Ab3ICQDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757167Ab3ICQDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 12:03:12 -0400
+Date: Tue, 3 Sep 2013 19:04:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Asias He <asias@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>
+Subject: Re: [PATCH-v5 0/6] target/vhost/iscsi: Add per-cpu ida tag
+ pre-allocation for v3.12
+Message-ID: <20130903160448.GA23632@redhat.com>
+References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <riel@redhat.com>, Kirill Korotaev <dev@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>, <linux-mm@kvack.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <devel@openvz.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu> <51FBD2DF.50506@parallels.com> <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com> <52050474.8040608@parallels.com> <20130830101207.GD19636@tucsk.piliscsaba.szeredi.hu> <5220B12A.1060008@parallels.com> <20130903103132.GA7191@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130903103132.GA7191@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09/03/2013 02:31 PM, Miklos Szeredi пишет:
-> On Fri, Aug 30, 2013 at 06:50:18PM +0400, Maxim Patlasov wrote:
->> Hi Miklos,
->>
->> 08/30/2013 02:12 PM, Miklos Szeredi пишет:
->>> On Fri, Aug 09, 2013 at 07:02:12PM +0400, Maxim Patlasov wrote:
->>>> 08/06/2013 08:25 PM, Miklos Szeredi пишет:
->>>>> Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
->>>>> do the necessary page fault magic and ->page_mkwrite() will be called.
->>>>> At least AFAICS.
->>>> Yes, I agree.
->>>>
->>>>> The page cannot become dirty through a memory mapping without first
->>>>> switching the pte from read-only to read-write first.  Page accounting
->>>>> logic relies on this too.  The other way the page can become dirty is
->>>>> through write(2) on the fs.  But we do get notified about that too.
->>>> Yes, that's correct, but I don't understand why you disregard two
->>>> other cases of marking page dirty (both related to direct AIO read
->>> >from a file to a memory region mmap-ed to a fuse file):
->>>> 1. dio_bio_submit() -->
->>>>        bio_set_pages_dirty() -->
->>>>          set_page_dirty_lock()
->>>>
->>>> 2. dio_bio_complete() -->
->>>>        bio_check_pages_dirty() -->
->>>>           bio_dirty_fn() -->
->>>>              bio_set_pages_dirty() -->
->>>>                 set_page_dirty_lock()
->>>>
->>>> As soon as a page became dirty through a memory mapping (exactly as
->>>> you explained), nothing would prevent it to be written-back. And
->>>> fuse will call end_page_writeback almost immediately after copying
->>>> the real page to a temporary one. Then dio_bio_submit may re-dirty
->>>> page speculatively w/o notifying fuse. And again, since then nothing
->>>> would prevent it to be written-back once more. Hence we can end up
->>>> in more then one temporary page in fuse write-back. And similar
->>>> concern for dio_bio_complete() re-dirty.
->>>>
->>>> This make me think that we do need fuse_page_is_writeback() in
->>>> fuse_writepages_fill(). But it shouldn't be harmful because it will
->>>> no-op practically always due to waiting for fuse writeback in
->>>> ->page_mkwrite() and in course of handling write(2).
->>> The problem is: if we need it in ->writepages, we need it in ->writepage too.
->>> And that's where we can't have it because it would deadlock in reclaim.
->> I thought we're protected from the deadlock by the following chunk
->> (in the very beginning of fuse_writepage):
->>
->>> +	if (fuse_page_is_writeback(inode, page->index)) {
->>> +		if (wbc->sync_mode != WB_SYNC_ALL) {
->>> +			redirty_page_for_writepage(wbc, page);
->>> +			return 0;
->>> +		}
->>> +		fuse_wait_on_page_writeback(inode, page->index);
->>> +	}
->> Because reclaimer will never call us with WB_SYNC_ALL. Did I miss
->> something?
-> Yeah, we could have that in ->writepage() too.  And apparently that would work,
-> reclaim would just leave us alone.
->
-> Then there's sync(2) which does do WB_SYNC_ALL. Yet for an unprivileged fuse
-> mount we don't want ->writepages() to block because that's a quite clear DoS
-> issue.
+On Sat, Aug 31, 2013 at 02:52:30AM +0000, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> Hi folks,
+> 
+> This is an updated -v5 series for adding tag pre-allocation support of
+> target fabric descriptor memory, utilizing Kent's latest per-cpu ida
+> bits and incorporates akpm's last round of feedback.  The full -v5
+> changelog is included below.
+> 
+> The first patch is a standalone version of per-cpu-ida, seperate from
+> the full idr rewrite from Kent that is still being discussed.  Jens has
+> also expressed interest in a blk-mq conversion to use these per-cpu-ida
+> primatives, so getting this piece merged for v3.12 would make life easier
+> for both of us.  ;)
+> 
+> The second patch includes target-core setup of se_sess->sess_cmd_map +
+> se_sess->sess_tag_pool resources at session creation time, using
+> fabric independent code in transport_init_session_tags().
+> 
+> The third patch is the initial conversion of vhost-scsi fabric code
+> to use per-cpu ida logic for obtaining a new tcm_vhost_cmd descriptor
+> via vhost_scsi_get_tag() during vhost_work_fn_t->handle_kick() ->
+> vhost_scsi_handle_vq() callback execution.
+> 
+> The forth patch is a vhost-scsi change that adds pre-allocation of
+> per tcm_vhost_cmd descriptor scatterlist + user-space page pointer
+> memory, that allows the last two fast-path allocations to be dropped
+> from tcm_vhost_submission_work() -> vhost_scsi_map_to_sgl() fast-path
+> execution.
+> 
+> The fifth patch converts iscsi/iser-target to use allocations based on
+> iscsit_transport->priv_size within iscsit_allocate_cmd(), instead of
+> using an embedded isert_cmd->iscsi_cmd.  This makes the conversion to
+> percpu-ida pre-allocation easier.
+> 
+> And the sixth patch enables iscsi-target to use pre-allocation logic for
+> per-cpu session tag pooling with internal ida_alloc() + ida_free() calls
+> based upon the saved iscsi_cmd->se_cmd.map_tag id.
 
-Yes, I agree, but those cases (when sync(2) coincides with a page under 
-fuse writeback originated by flusher coinciding with those direct AIO 
-read redirty) should be very rare. I'd suggest to go on and put up with 
-it for now: unprivileged users won't be able to use writeback_cache 
-option until sysad enables allow_wbcache in fusermount.
+For the vhost changes:
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
->
-> So we are left with this:
 
-Yes. May we implement it as a separate fix after inclusion of this 
-patch-set?
 
->
->>> There's a way to work around this:
->>>
->>>     - if the request is still in queue, just update it with the contents of
->>>       the new page
->>>
->>>     - if the request already in userspace, create a new reqest, but only let
->>>       userspace have it once the previous request for the same page
->>>       completes, so the ordering is not messed up
->>>
->>> But that's a lot of hairy code.
->> Is it exactly how NFS solves similar problem?
-> NFS will apparently just block if there's a request outstanding and we are in
-> WB_SYNC_ALL mode.  Which is somewhat simpler.
-
-Yes, indeed.
-
-Thanks,
-Maxim
+> v5 changes:
+> 
+>   - Change percpu_ida->cpus_have_tags to cpumask_t (kmo + akpm)
+>   - Add comment for percpu_ida_cpu->lock + ->nr_free (kmo + akpm)
+>   - Convert steal_tags() to use cpumask_weight() + cpumask_next() +
+>     cpumask_first() + cpumask_clear_cpu() (kmo + akpm)
+>   - Add comment for alloc_global_tags() (kmo + akpm)
+>   - Convert percpu_ida_alloc() to use cpumask_set_cpu() (kmo + akpm)
+>   - Convert percpu_ida_free() to use cpumask_set_cpu() (kmo + akpm)
+>   - Drop percpu_ida->cpus_have_tags allocation in percpu_ida_init()
+>     (kmo + akpm)
+>   - Drop percpu_ida->cpus_have_tags kfree in percpu_ida_destroy()
+>     (kmo + akpm)
+>   - Add comment for percpu_ida_alloc @ gfp (kmo + akpm)
+>   - Move to percpu_ida.c + percpu_ida.h (kmo + akpm + nab)
+>   - Convert target/vhost/iscsi-target to use percpu_ida.h (nab)
+> 
+> Please review as v3.12 material.
+> 
+> Thank you,
+> 
+> --nab
+> 
+> Kent Overstreet (1):
+>   idr: Percpu ida
+> 
+> Nicholas Bellinger (5):
+>   target: Add transport_init_session_tags using per-cpu ida
+>   vhost/scsi: Convert to per-cpu ida_alloc + ida_free command map
+>   vhost/scsi: Add pre-allocation for tv_cmd SGL + upages memory
+>   iscsi/iser-target: Convert to command priv_size usage
+>   iscsi-target: Convert to per-cpu ida_alloc + ida_free command map
+> 
+>  drivers/infiniband/ulp/isert/ib_isert.c      |  114 +++------
+>  drivers/infiniband/ulp/isert/ib_isert.h      |    2 +-
+>  drivers/target/iscsi/iscsi_target.c          |   16 +--
+>  drivers/target/iscsi/iscsi_target.h          |    1 -
+>  drivers/target/iscsi/iscsi_target_configfs.c |    2 +-
+>  drivers/target/iscsi/iscsi_target_core.h     |    3 +-
+>  drivers/target/iscsi/iscsi_target_nego.c     |   28 ++-
+>  drivers/target/iscsi/iscsi_target_util.c     |   41 ++--
+>  drivers/target/target_core_transport.c       |   48 ++++
+>  drivers/vhost/scsi.c                         |  132 ++++++++---
+>  include/linux/percpu_ida.h                   |   59 +++++
+>  include/target/iscsi/iscsi_transport.h       |    8 +-
+>  include/target/target_core_base.h            |    5 +
+>  include/target/target_core_fabric.h          |    3 +
+>  lib/Makefile                                 |    5 +-
+>  lib/percpu_ida.c                             |  335 ++++++++++++++++++++++++++
+>  16 files changed, 652 insertions(+), 150 deletions(-)
+>  create mode 100644 include/linux/percpu_ida.h
+>  create mode 100644 lib/percpu_ida.c
+> 
+> -- 
+> 1.7.2.5
