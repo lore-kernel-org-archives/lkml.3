@@ -1,92 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab3ICGdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 02:33:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49251 "EHLO mga02.intel.com"
+	id S1759546Ab3ICGeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:34:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57062 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab3ICGdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 02:33:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1012,1367996400"; 
-   d="scan'208";a="397349203"
-Message-ID: <5225844E.3090700@intel.com>
-Date: Tue, 03 Sep 2013 09:40:14 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753749Ab3ICGee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 02:34:34 -0400
+Message-ID: <522582D6.4020800@ti.com>
+Date: Tue, 3 Sep 2013 12:03:58 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: latest perf code fails to parse existing data file
-References: <5225051C.3030608@gmail.com>
-In-Reply-To: <5225051C.3030608@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <bcousson@baylibre.com>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <pawel.moll@arm.com>, <devicetree@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
+        <nm@ti.com>, <balajitk@ti.com>
+Subject: Re: [PATCH] ARM: DTS: DRA7: Add TPS659038 PMIC nodes
+References: <1377495411-21984-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1377495411-21984-1-git-send-email-j-keerthy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/13 00:37, David Ahern wrote:
-> Arnaldo/Adrian:
-> 
-> Latest acme core tree fails to parse an existing data file:
-> 
-> $ perf trace -i perf.data
-> 0x16b8 [0x40]: failed to process type: 1
-> Failed to process events, error -22
+Benoit,
 
-I can't reproduce this.  The following works:
 
-	$ perf --version
-	perf version 3.9.10-100.fc17.x86_64
-	$ sudo perf record -e raw_syscalls:* ls
-	...
-	$ tools/perf/perf --version
-	perf version 3.11.rc4.g31cd38
-	$ sudo tools/perf/perf script
-	...
-	$ sudo tools/perf/perf trace -i perf.data
-	...
+On Monday 26 August 2013 11:06 AM, Keerthy wrote:
+> The Patch adds nodes for TPS659038 PMIC for DRA7 boards.
+>
+> It is based on top of:
+> http://comments.gmane.org/gmane.linux.ports.arm.omap/102459.
+>
+> Documentation:	Documentation/devicetree/bindings/mfd/palmas.txt
+> 		Documentation/devicetree/bindings/regulator/palmas-pmic.txt		
+>
+> Boot Tested on DRA7 d1 Board.
 
-> 
-> git bisect traced it to:
-> $ git bisect bad
-> 75562573bab35b129cfd342fc2bcf89da84a6644 is the first bad commit
-> commit 75562573bab35b129cfd342fc2bcf89da84a6644
-> Author: Adrian Hunter <adrian.hunter@intel.com>
-> Date:   Tue Aug 27 11:23:09 2013 +0300
-> 
->     perf tools: Add support for PERF_SAMPLE_IDENTIFIER
-> 
->     Enable parsing of samples with sample format bit PERF_SAMPLE_IDENTIFIER.
->     In addition, if the kernel supports it, prefer it to selecting
->     PERF_SAMPLE_ID thereby allowing non-matching sample types.
-> 
->     Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->     Cc: David Ahern <dsahern@gmail.com>
->     Cc: Frederic Weisbecker <fweisbec@gmail.com>
->     Cc: Ingo Molnar <mingo@kernel.org>
->     Cc: Jiri Olsa <jolsa@redhat.com>
->     Cc: Mike Galbraith <efault@gmx.de>
->     Cc: Namhyung Kim <namhyung@gmail.com>
->     Cc: Paul Mackerras <paulus@samba.org>
->     Cc: Peter Zijlstra <peterz@infradead.org>
->     Cc: Stephane Eranian <eranian@google.com>
->     Link:
-> http://lkml.kernel.org/r/1377591794-30553-8-git-send-email-adrian.hunter@intel.com
-> 
->     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> :040000 040000 7df758341904d77c391b90ab6b6bac97324d144a
-> 93839bad8ab2e6d88d3037f3dc8fd721be5e8870 M    tools
-> 
-> 
-> If I revert the patch (and handle the missing __perf_evsel__sample_size in
-> the tests code to get it to compile) it works -- file is parsed correctly.
-> 
-> David
-> 
-> 
+Any comments on this patch?
 
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
+> ---
+>   arch/arm/boot/dts/dra7-evm.dts |  118 ++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 118 insertions(+)
+>
+> Index: linux/arch/arm/boot/dts/dra7-evm.dts
+> ===================================================================
+> --- linux.orig/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 09:57:52.496173554 +0530
+> +++ linux/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 10:38:44.995414695 +0530
+> @@ -93,6 +93,119 @@
+>   	pinctrl-names = "default";
+>   	pinctrl-0 = <&i2c1_pins>;
+>   	clock-frequency = <400000>;
+> +
+> +	tps659038: tps659038@58 {
+> +		compatible = "ti,tps659038";
+> +		reg = <0x58>;
+> +
+> +		tps659038_pmic {
+> +			compatible = "ti,tps659038-pmic";
+> +
+> +			regulators {
+> +				smps123_reg: smps123 {
+> +					/* VDD_MPU */
+> +						regulator-name = "smps123";
+> +						regulator-min-microvolt = < 850000>;
+> +						regulator-max-microvolt = <1250000>;
+> +						regulator-always-on;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				smps45_reg: smps45 {
+> +						/* VDD_DSPEVE */
+> +						regulator-name = "smps45";
+> +						regulator-min-microvolt = < 850000>;
+> +						regulator-max-microvolt = <1150000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				smps6_reg: smps6 {
+> +						/* VDD_GPU - over VDD_SMPS6 */
+> +						regulator-name = "smps6";
+> +						regulator-min-microvolt = <850000>;
+> +						regulator-max-microvolt = <12500000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				smps7_reg: smps7 {
+> +						/* CORE_VDD */
+> +						regulator-name = "smps7";
+> +						regulator-min-microvolt = <850000>;
+> +						regulator-max-microvolt = <1030000>;
+> +						regulator-always-on;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				smps8_reg: smps8 {
+> +						/* VDD_IVAHD */
+> +						regulator-name = "smps8";
+> +						regulator-min-microvolt = < 850000>;
+> +						regulator-max-microvolt = <1250000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				smps9_reg: smps9 {
+> +						/* VDDS1V8 */
+> +						regulator-name = "smps9";
+> +						regulator-min-microvolt = <1800000>;
+> +						regulator-max-microvolt = <1800000>;
+> +						regulator-always-on;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldo1_reg: ldo1 {
+> +						/* LDO1_OUT --> SDIO  */
+> +						regulator-name = "ldo1";
+> +						regulator-min-microvolt = <1800000>;
+> +						regulator-max-microvolt = <3300000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldo2_reg: ldo2 {
+> +						/* VDD_RTCIO */
+> +						/* LDO2 -> VDDSHV5, LDO2 also goes to CAN_PHY_3V3 */
+> +						regulator-name = "ldo2";
+> +						regulator-min-microvolt = <3300000>;
+> +						regulator-max-microvolt = <3300000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldo3_reg: ldo3 {
+> +						/* VDDA_1V8_PHY */
+> +						regulator-name = "ldo3";
+> +						regulator-min-microvolt = <1800000>;
+> +						regulator-max-microvolt = <1800000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldo9_reg: ldo9 {
+> +						/* VDD_RTC */
+> +						regulator-name = "ldo9";
+> +						regulator-min-microvolt = <1050000>;
+> +						regulator-max-microvolt = <1050000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldoln_reg: ldoln {
+> +						/* VDDA_1V8_PLL */
+> +						regulator-name = "ldoln";
+> +						regulator-min-microvolt = <1800000>;
+> +						regulator-max-microvolt = <1800000>;
+> +						regulator-always-on;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				ldousb_reg: ldousb {
+> +						/* VDDA_3V_USB: VDDA_USBHS33 */
+> +						regulator-name = "ldousb";
+> +						regulator-min-microvolt = <3300000>;
+> +						regulator-max-microvolt = <3300000>;
+> +						regulator-boot-on;
+> +					};
+> +
+> +				};
+> +			};
+> +		};
+>   };
+>   
+>   &i2c2 {
+
+Regards,
+Keerthy
