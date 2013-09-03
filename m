@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab3ICOKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:10:19 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:54673 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3ICOKQ (ORCPT
+	id S1760143Ab3ICOMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:12:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57317 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3ICOMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:10:16 -0400
-From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: <x86@kernel.org>, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, kernel@savoirfairelinux.com,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Subject: [PATCH] x86, tsc: downgrade fast calibration failure message
-Date: Tue,  3 Sep 2013 10:09:55 -0400
-Message-Id: <1378217395-1241-1-git-send-email-jerome.oufella@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.1.4
+	Tue, 3 Sep 2013 10:12:20 -0400
+Date: Tue, 3 Sep 2013 07:14:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: oliver+list@schinagl.nl
+Cc: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
+        tomasz.figa@gmail.com, maxime.ripard@free-electrons.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCHv7 0/2] ARM: sunxi: Driver for Allwinner sunxi Security ID
+Message-ID: <20130903141456.GA28888@kroah.com>
+References: <1378204408-1415-1-git-send-email-oliver+list@schinagl.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378204408-1415-1-git-send-email-oliver+list@schinagl.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As pointed out by Paul Bolle in https://lkml.org/lkml/2012/9/24/221, the
-fast TSC calibration method may fail on some machines and result in an
-error level message that does not reflect the severity of the case.
+On Tue, Sep 03, 2013 at 12:33:26PM +0200, oliver+list@schinagl.nl wrote:
+> From: Oliver Schinagl <oliver+list@schinagl.nl>
+> 
+> I don't know if I know how to polish it anymore without rubbing off the varnish.
 
-Signed-off-by: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
----
-This patch lost momentum and wordsmithing the message was evoked in
-subsequent posts but imho reducing the level does the job just fine.
----
- arch/x86/kernel/tsc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Heh, looks good :)
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 6ff4924..e518724 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -380,7 +380,7 @@ static unsigned long quick_pit_calibrate(void)
- 			goto success;
- 		}
- 	}
--	pr_err("Fast TSC calibration failed\n");
-+	pr_info("Fast TSC calibration failed\n");
- 	return 0;
- 
- success:
--- 
-1.8.1.4
+I'll queue it up once 3.12-rc1 is released.  As it's a new driver, it
+should be ok to add to 3.12.
 
+thanks,
+
+greg k-h
