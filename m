@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab3ICXud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:50:33 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33615 "EHLO
+	id S934154Ab3ICXug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:50:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33638 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761484Ab3ICXu3 (ORCPT
+	with ESMTP id S934132Ab3ICXud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:50:29 -0400
+	Tue, 3 Sep 2013 19:50:33 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, keescook@chromium.org, hpa@zytor.com,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V3 02/11] PCI: Lock down BAR access when module security is enabled
-Date: Tue,  3 Sep 2013 19:50:09 -0400
-Message-Id: <1378252218-18798-3-git-send-email-matthew.garrett@nebula.com>
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [PATCH V3 07/11] acpi: Ignore acpi_rsdp kernel parameter when module loading is restricted
+Date: Tue,  3 Sep 2013 19:50:14 -0400
+Message-Id: <1378252218-18798-8-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
 References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,115 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any hardware that can potentially generate DMA has to be locked down from
-userspace in order to avoid it being possible for an attacker to modify
-kernel code, allowing them to circumvent disabled module loading or module
-signing. Default to paranoid - in future we can potentially relax this for
-sufficiently IOMMU-isolated devices.
+From: Josh Boyer <jwboyer@redhat.com>
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+This option allows userspace to pass the RSDP address to the kernel, which
+makes it possible for a user to circumvent any restrictions imposed on
+loading modules. Disable it in that case.
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 ---
- drivers/pci/pci-sysfs.c | 10 ++++++++++
- drivers/pci/proc.c      |  8 +++++++-
- drivers/pci/syscall.c   |  3 ++-
- 3 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/acpi/osl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index c0dbe1f..cd4e35f 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -29,6 +29,7 @@
- #include <linux/slab.h>
- #include <linux/vgaarb.h>
- #include <linux/pm_runtime.h>
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 6ab2c35..e4c4410 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -45,6 +45,7 @@
+ #include <linux/list.h>
+ #include <linux/jiffies.h>
+ #include <linux/semaphore.h>
 +#include <linux/module.h>
- #include "pci.h"
  
- static int sysfs_initialized;	/* = 0 */
-@@ -624,6 +625,9 @@ pci_write_config(struct file* filp, struct kobject *kobj,
- 	loff_t init_off = off;
- 	u8 *data = (u8*) buf;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	if (off > dev->cfg_size)
- 		return 0;
- 	if (off + count > dev->cfg_size) {
-@@ -930,6 +934,9 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
- 	resource_size_t start, end;
- 	int i;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
- 		if (res == &pdev->resource[i])
- 			break;
-@@ -1037,6 +1044,9 @@ pci_write_resource_io(struct file *filp, struct kobject *kobj,
- 		      struct bin_attribute *attr, char *buf,
- 		      loff_t off, size_t count)
- {
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
- }
- 
-diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
-index cdc7836..e3d498b 100644
---- a/drivers/pci/proc.c
-+++ b/drivers/pci/proc.c
-@@ -117,6 +117,9 @@ proc_bus_pci_write(struct file *file, const char __user *buf, size_t nbytes, lof
- 	int size = dev->cfg_size;
- 	int cnt;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	if (pos >= size)
- 		return 0;
- 	if (nbytes >= size)
-@@ -196,6 +199,9 @@ static long proc_bus_pci_ioctl(struct file *file, unsigned int cmd,
- #endif /* HAVE_PCI_MMAP */
- 	int ret = 0;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	switch (cmd) {
- 	case PCIIOC_CONTROLLER:
- 		ret = pci_domain_nr(dev->bus);
-@@ -234,7 +240,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
- 	struct pci_filp_private *fpriv = file->private_data;
- 	int i, ret;
- 
--	if (!capable(CAP_SYS_RAWIO))
-+	if (!capable(CAP_SYS_RAWIO) || secure_modules())
- 		return -EPERM;
- 
- 	/* Make sure the caller is mapping a real resource for this device */
-diff --git a/drivers/pci/syscall.c b/drivers/pci/syscall.c
-index e1c1ec5..bffbf71 100644
---- a/drivers/pci/syscall.c
-+++ b/drivers/pci/syscall.c
-@@ -10,6 +10,7 @@
- #include <linux/errno.h>
- #include <linux/pci.h>
- #include <linux/syscalls.h>
-+#include <linux/module.h>
+ #include <asm/io.h>
  #include <asm/uaccess.h>
- #include "pci.h"
+@@ -245,7 +246,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
+ acpi_physical_address __init acpi_os_get_root_pointer(void)
+ {
+ #ifdef CONFIG_KEXEC
+-	if (acpi_rsdp)
++	if (acpi_rsdp && !secure_modules())
+ 		return acpi_rsdp;
+ #endif
  
-@@ -92,7 +93,7 @@ SYSCALL_DEFINE5(pciconfig_write, unsigned long, bus, unsigned long, dfn,
- 	u32 dword;
- 	int err = 0;
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_ADMIN) || secure_modules())
- 		return -EPERM;
- 
- 	dev = pci_get_bus_and_slot(bus, dfn);
 -- 
 1.8.3.1
 
