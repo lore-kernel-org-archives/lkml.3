@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761295Ab3ICWfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:35:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47488 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760527Ab3ICWe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:34:59 -0400
-Message-ID: <52266409.90908@ti.com>
-Date: Tue, 3 Sep 2013 17:34:49 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1761316Ab3ICWfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:35:31 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54289 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab3ICWf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 18:35:29 -0400
+Date: Tue, 3 Sep 2013 18:35:16 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix multiple large threshold notifications
+Message-ID: <20130903223516.GB1412@cmpxchg.org>
+References: <1377994002-1857-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org>
-In-Reply-To: <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377994002-1857-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kumar,
-
->>
->> On 09/03/2013 01:50 PM, Kumar Gala wrote:
->>>
->>> On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
->>>
->>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->>>> which are all device-tree boot only. This patch adds the
->>>> base support for parsing the DT nodes, and removes the code
->>>> dealing with the traditional platform device instantiation.
->>>>
->>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>> ---
->>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
->>>> arch/arm/mach-omap2/Makefile                       |  3 --
->>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
->>>> 4 files changed, 45 insertions(+), 67 deletions(-)
->>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>> new file mode 100644
->>>> index 0000000..adfb8ad
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>> @@ -0,0 +1,28 @@
->>>> +OMAP4+ HwSpinlock Driver
->>>> +
->>>> +Required properties:
->>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->>>> +- reg:			Contains the hwspinlock register address range (base
->>>> +			address and length)
->>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->>>> +
->>>> +Optional properties:
->>>> +- base_id:		Base Id for the locks for a particular hwspinlock
->>>> +			device. If not mentioned, a default value of 0 is used.
->>>> +			This property is mandatory ONLY if a SoC has several
->>>> +			hwspinlock devices. There are currently no such OMAP
->>>> +			SoCs.
->>>
->>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
->>
->> I didn't add the "ti," prefix exactly for the same reason - it is
->> generic w.r.t the hwspinlock core irrespective of the SoC family, and
->> there is nothing ti or OMAP specific about it. I have added it to keep
->> the DT node definition in sync with the driver code. If it is too
->> generic a name, it can always be renamed as hwlock_base_id. This will be
->> SoC agnostic property for the hwspinlock driver. What do you think?
+On Sat, Aug 31, 2013 at 05:06:42PM -0700, Greg Thelen wrote:
+> A memory cgroup with (1) multiple threshold notifications and (2) at
+> least one threshold >=2G was not reliable.  Specifically the
+> notifications would either not fire or would not fire in the proper
+> order.
 > 
-> I'm wondering if we should use cell-index for this purpose.
-
-I didn't get you completely. Do you intend to compute the base_id using
-cell-index and number of locks (which may be a separate field altogether
-if this information cannot be read from the h/w)? My understanding is
-that cell-index is primarily used for identifying the h/w instance number.
-
-regards
-Suman
-
->>
->>>
->>>> +
->>>> +			See documentation on struct hwspinlock_pdata in
->>>> +			linux/hwspinlock.h for more details.
->>>> +
->>>> +
->>>> +Example:
->>>> +
->>>> +/* OMAP4 */
->>>> +hwspinlock: spinlock@4a0f6000 {
->>>> +	compatible = "ti,omap4-hwspinlock";
->>>> +	reg = <0x4a0f6000 0x1000>;
->>>> +	ti,hwmods = "spinlock";
->>>> +};
->>>
->>> [ snip ]
->>>
->>> - k
->>>
->>
+> The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
+> thresholds in sorted order.  mem_cgroup_usage_register_event() sorts
+> them with compare_thresholds(), which returns the difference of two 64
+> bit thresholds as an int.  If the difference is positive but has
+> bit[31] set, then sort() treats the difference as negative and breaks
+> sort order.
 > 
+> This fix compares the two arbitrary 64 bit thresholds returning the
+> classic -1, 0, 1 result.
+> 
+> The test below sets two notifications (at 0x1000 and 0x81001000):
+>   cd /sys/fs/cgroup/memory
+>   mkdir x
+>   for x in 4096 2164264960; do
+>     cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
+>   done
+>   echo $$ > x/cgroup.procs
+>   anon_leaker 500M
+> 
+> v3.11-rc7 fails to signal the 4096 event listener:
+>   Leaking...
+>   Done leaking pages.
+> 
+> Patched v3.11-rc7 properly notifies:
+>   Leaking...
+>   4096 listener:2013:8:31:14:13:36
+>   Done leaking pages.
+> 
+> The fixed bug is old.  It appears to date back to the introduction of
+> memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
+> implement memory thresholds"
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
