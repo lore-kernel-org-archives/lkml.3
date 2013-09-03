@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab3ICQ2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:28:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46622 "EHLO
+	id S933114Ab3ICQ3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:29:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46655 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452Ab3ICQ2r (ORCPT
+	with ESMTP id S933097Ab3ICQ3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:28:47 -0400
+	Tue, 3 Sep 2013 12:29:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Terry Suereth <terry.suereth@gmail.com>, Tejun Heo <tj@kernel.org>,
+Cc: Sujith Manoharan <sujith@msujith.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 42/58] libata: apply behavioral quirks to sil3826 PMP
-Date: Tue,  3 Sep 2013 09:23:46 -0700
-Message-Id: <1378225442-20654-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 31/58] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
+Date: Tue,  3 Sep 2013 09:23:35 -0700
+Message-Id: <1378225442-20654-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -27,68 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Suereth <terry.suereth@gmail.com>
+From: Sujith Manoharan <sujith@msujith.org>
 
-commit 8ffff94d20b7eb446e848e0046107d51b17a20a8 upstream.
+commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
 
-Fixing support for the Silicon Image 3826 port multiplier, by applying
-to it the same quirks applied to the Silicon Image 3726.  Specifically
-fixes the repeated timeout/reset process which previously afflicted
-the 3726, as described from line 290.  Slightly based on notes from:
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=13d3 ProdID=3402 Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-https://bugzilla.redhat.com/show_bug.cgi?id=890237
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
 
-Signed-off-by: Terry Suereth <terry.suereth@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-pmp.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
-index 1c41722..20fd337 100644
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -289,24 +289,24 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 287827e..5783561 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056) },
+ 	{ USB_DEVICE(0x0489, 0xe04d) },
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
++	{ USB_DEVICE(0x13d3, 0x3402) },
  
- 	/* Disable sending Early R_OK.
- 	 * With "cached read" HDD testing and multiple ports busy on a SATA
--	 * host controller, 3726 PMP will very rarely drop a deferred
-+	 * host controller, 3x26 PMP will very rarely drop a deferred
- 	 * R_OK that was intended for the host. Symptom will be all
- 	 * 5 drives under test will timeout, get reset, and recover.
- 	 */
--	if (vendor == 0x1095 && devid == 0x3726) {
-+	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
- 		u32 reg;
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -130,6 +131,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
  
- 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
- 		if (err_mask) {
- 			rc = -EIO;
--			reason = "failed to read Sil3726 Private Register";
-+			reason = "failed to read Sil3x26 Private Register";
- 			goto fail;
- 		}
- 		reg &= ~0x1;
- 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
- 		if (err_mask) {
- 			rc = -EIO;
--			reason = "failed to write Sil3726 Private Register";
-+			reason = "failed to write Sil3x26 Private Register";
- 			goto fail;
- 		}
- 	}
-@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_port *ap)
- 	u16 devid = sata_pmp_gscr_devid(gscr);
- 	struct ata_link *link;
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index a823386..767d3c3 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -150,6 +150,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
  
--	if (vendor == 0x1095 && devid == 0x3726) {
--		/* sil3726 quirks */
-+	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
-+		/* sil3x26 quirks */
- 		ata_for_each_link(link, ap, EDGE) {
- 			/* link reports offline after LPM */
- 			link->flags |= ATA_LFLAG_NO_LPM;
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 -- 
 1.8.1.2
 
