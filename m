@@ -1,139 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760907Ab3ICUuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 16:50:20 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39529 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760722Ab3ICUuT (ORCPT
+	id S1760937Ab3ICUwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 16:52:05 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:45021 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760799Ab3ICUwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 16:50:19 -0400
+	Tue, 3 Sep 2013 16:52:00 -0400
+Date: Tue, 3 Sep 2013 16:51:54 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/9] cgroup: fix css leaks on online_css() failure
+Message-ID: <20130903205154.GF27092@mtj.dyndns.org>
+References: <1377723829-22814-1-git-send-email-tj@kernel.org>
+ <1377723829-22814-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130903202755.GA26033@gmail.com>
-References: <CACT4Y+ZLN+22hSKSQBbAc14cDi69gm9A+DK54K9hMa5VVi=mUw@mail.gmail.com>
- <CACT4Y+artcxiies1q3XP3+yCh+QzPZQ96dDttpdYXoQ+w2xosQ@mail.gmail.com>
- <CACT4Y+YobKoy9Yp5b6eM21oQrt+bj74qW6uM_DYPkeL-TVA3dQ@mail.gmail.com> <20130903202755.GA26033@gmail.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Wed, 4 Sep 2013 00:49:58 +0400
-Message-ID: <CACT4Y+YjAHgN2fvUsDZ2VZyBVmYacKZdwHJSCJXoHh_P=3dOaQ@mail.gmail.com>
-Subject: Re: Potential use-after-free in ____call_usermodehelper
-To: Dan Aloni <alonid@stratoscale.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Kostya Serebryany <kcc@google.com>,
-        Alexander Potapenko <glider@google.com>,
-        Evgeniy Stepanov <eugenis@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377723829-22814-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 12:27 AM, Dan Aloni <alonid@stratoscale.com> wrote:
-> On Tue, Sep 03, 2013 at 05:49:03PM +0400, Dmitry Vyukov wrote:
->> Is anybody reading this? Is it a correct place to post such things?
->> Maybe there is a more appropriate place?
->
-> This is the correct place, and people are reading this. However, the
-> bug is not an obvious one, and you mentioned that this bug reproduces
-> on a tree with significant deviation from vanilla in core kernel code
-> (i.e. memory allocations) with potential bugs, and it also relies on a
-> gcc feature not used by the kernel yet.
->
-> Because of that it went down in priority compared to other kernel bugs
-> that are currently being investigated.
+Okay, re-sequencing the for_each_css patch turns out to be a lot more
+headache than expected.  Let's just fix it up in this patch proper.
+It's a standalone bug fix anyway.  The change only affects the
+for_each_css() patch later.  Will post an updated version of that
+patch too soon.
 
-Thanks Dan!
+Thanks.
+----- 8< -----
+ae7f164a09 ("cgroup: move cgroup->subsys[] assignment to
+online_css()") moved cgroup->subsys[] assignements later in
+cgroup_create() but didn't update error handling path accordingly
+leaking later css's after an online_css() failure.
 
-I am new here, so I was thinking maybe I am doing something wrong.
+This patch moves reference bumping inside online_css() loop, clears
+css_ar[] as css's are brought online successfully, and updates
+err_destroy path so that either a css is fully online and destroyed by
+cgroup_destroy_locked() or the error path frees it.  This creates a
+duplicate css free logic in the error path but it will be cleaned up
+soon.
 
+v2: Li pointed out that cgroup_destroy_locked() would do NULL-deref if
+    invoked with a cgroup which doesn't have all css's populated.
+    Update cgroup_destroy_locked() so that it skips NULL css's.
 
-> Your work and contribution is appreciated nonetheless, but your bug
-> report needs to pertain closer to the work the core kernel hackers
-> are doing.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
-What exactly do you mean?
-
-
-> Despite that, I did look into your report, and I'll address your analysis:
->
->> >> I've looked at the sources, but I can't say that I fully understand
->> >> them. The report looks valid, though. I see several potential issues
->> >> in the code.
->> >>
->> >> 1. When wait=UMH_WAIT_EXEC and do_execve() fails,
->> >> ____call_usermodehelper() writes sub_info->retval=retval to freed
->> >> memory. This is the use-after-free reported by the tool.
->
-> The 'pid = kernel_thread(call_helper, sub_info, CLONE_VFORK | SIGCHLD);'
-> call is designed to block until either do_execve() succeeds or the kernel
-> thread exits - that happens after the store that triggers the issue,
-> so the use-after-free cannot occur in that case.
->
-> This is thanks to the CLONE_VFORK flag, and I doubt it is broken.
-
-Aha! I've missed VFORK. It's all like in userspace, right? I will redo
-my analysis.
-
-
->> >> 2. When wait=UMH_NO_WAIT, __call_usermodehelper() starts child thread
->> >> and instantly frees subprocess_info. The child thread reads
->> >> subprocess_info. Looks like another use-after-free.
->
-> Same, kernel_thread() would be blocking because of CLONE_VFORK.
->
->> >> 3. UMH_WAIT_EXEC does not actually wait for exec, it only waits for
->> >> starting the child thread that will do exec. I don't know whether it's
->> >> a problem with the code or with the name.
->
-> Same.
->
->> >>
->> >> The kernel version is 3.11-rc4 (last commit:
->> >> b7bc9e7d808ba55729bd263b0210cda36965be32).
->> >>
->> >> Please help to confirm these issues, and advice what to do next with them.
->
-> Theory aside, I tried in practice to confirm the suggested issues and was
-> unsuccessful, CLONE_VFORK seems to work as expected. Note that
-> /sys/kernel/uevent_helper is empty in recent distros, so I had to put a
-> non-existing executable path in there, for the relevant code path to run.
->
-> Concerning the original reporting, my suggestion is that you take the
-> patch below or a similar idea and try to reproduce the assert it adds
-> with the *vanilla* kernel. i.e, take the unmodified b7bc9e7d808ba5 version
-> (or better - v3.11), and apply it. Also, you must remove the standard
-> memory debugging options from the config of the kernel you that build, so
-> that kfree would not zero out the memory (I think this is the default
-> behavior in non-debug kernel, for performance).
->
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 8241906..d10eab6 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -244,6 +244,7 @@ static int ____call_usermodehelper(void *data)
->
->         /* Exec failed? */
->  fail:
-> +       BUG_ON(sub_info->retval == 0x12345678);
->         sub_info->retval = retval;
->         do_exit(0);
->  }
-> @@ -259,6 +260,7 @@ static void call_usermodehelper_freeinfo(struct subprocess_info *info)
->  {
->         if (info->cleanup)
->                 (*info->cleanup)(info);
-> +       info->retval = 0x12345678;
->         kfree(info);
->  }
->
-> This should help to prove it or not, and if it does prove it would be
-> appealing to more eyes. Please try the same approach with similar future
-> issues.
-
-
-OK, I will try to do it. It may be possible for this "bug", because
-it's triggered quite often. It may not be possible for all similar
-issues, because I've seen some of them only once.
-
-Btw, is it better to report such things here or file on bugzilla.kernel.org?
-
-Thanks again!
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4489,14 +4489,6 @@ static long cgroup_create(struct cgroup
+ 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+ 	root->number_of_cgroups++;
+ 
+-	/* each css holds a ref to the cgroup's dentry and the parent css */
+-	for_each_root_subsys(root, ss) {
+-		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+-
+-		dget(dentry);
+-		css_get(css->parent);
+-	}
+-
+ 	/* hold a ref to the parent's dentry */
+ 	dget(parent->dentry);
+ 
+@@ -4508,6 +4500,13 @@ static long cgroup_create(struct cgroup
+ 		if (err)
+ 			goto err_destroy;
+ 
++		/* each css holds a ref to the cgroup's dentry and parent css */
++		dget(dentry);
++		css_get(css->parent);
++
++		/* mark it consumed for error path */
++		css_ar[ss->subsys_id] = NULL;
++
+ 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+ 		    parent->parent) {
+ 			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
+@@ -4554,6 +4553,14 @@ err_free_cgrp:
+ 	return err;
+ 
+ err_destroy:
++	for_each_root_subsys(root, ss) {
++		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
++
++		if (css) {
++			percpu_ref_cancel_init(&css->refcnt);
++			ss->css_free(css);
++		}
++	}
+ 	cgroup_destroy_locked(cgrp);
+ 	mutex_unlock(&cgroup_mutex);
+ 	mutex_unlock(&dentry->d_inode->i_mutex);
+@@ -4698,8 +4705,12 @@ static int cgroup_destroy_locked(struct
+ 	 * will be invoked to perform the rest of destruction once the
+ 	 * percpu refs of all css's are confirmed to be killed.
+ 	 */
+-	for_each_root_subsys(cgrp->root, ss)
+-		kill_css(cgroup_css(cgrp, ss));
++	for_each_root_subsys(cgrp->root, ss) {
++		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
++
++		if (css)
++			kill_css(css);
++	}
+ 
+ 	/*
+ 	 * Mark @cgrp dead.  This prevents further task migration and child
