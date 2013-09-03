@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab3ICVkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:40:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760892Ab3ICVkK (ORCPT
+	id S1760038Ab3ICVpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:45:38 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:53271 "HELO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755324Ab3ICVph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:40:10 -0400
-Date: Tue, 3 Sep 2013 14:40:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        john453@faraday-tech.com
-Subject: Re: usb: host: Faraday fotg210-hcd driver
-Message-ID: <20130903214009.GA16463@kroah.com>
-References: <20130903185912.A59316601F4@gitolite.kernel.org>
- <20130903211544.GB2247@redhat.com>
- <20130903212355.GA12978@kroah.com>
- <20130903213205.GA7433@redhat.com>
+	Tue, 3 Sep 2013 17:45:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903213205.GA7433@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdU3M9uUFKd3EQ0HbcAvf5e62PA4NJG_mQHhpvZwFJnUWQ@mail.gmail.com>
+References: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
+ <CAEP_g=-XvRiHPzSAp2rgC9Hxdd+pGEHvSTEJ1A1SkWnk1-6xZA@mail.gmail.com>
+ <20130829.181001.145658561677052552.davem@davemloft.net> <CAEP_g=-XxgK9HVxvcaW3RS2zfa+77pB4cqfLFC0rcV7QJc+2BQ@mail.gmail.com>
+ <CAMuHMdU3M9uUFKd3EQ0HbcAvf5e62PA4NJG_mQHhpvZwFJnUWQ@mail.gmail.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Tue, 3 Sep 2013 14:44:32 -0700
+Message-ID: <CAEP_g=-BWdWJ5WtNy0=Eq8GJp84i88QbGq-gQcANBhCKajcJsQ@mail.gmail.com>
+Subject: Re: [-next] openvswitch BUILD_BUG_ON failed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Miller <davem@davemloft.net>, Andy Zhou <azhou@nicira.com>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 05:32:05PM -0400, Dave Jones wrote:
-> On Tue, Sep 03, 2013 at 02:23:55PM -0700, Greg KH wrote:
-> 
->  > >  > +config USB_FOTG210_HCD
->  > >  > +	tristate "FOTG210 HCD support"
->  > >  > +	depends on USB
->  > >  > +	default N
->  > >  > +	---help---
->  > >  > +	  Faraday FOTG210 is an OTG controller which can be configured as
->  > >  > +	  an USB2.0 host. It is designed to meet USB2.0 EHCI specification
->  > >  > +	  with minor modification.
->  > >  > +
->  > >  > +	  To compile this driver as a module, choose M here: the
->  > >  > +	  module will be called fotg210-hcd.
->  > >  > +
->  > > 
->  > > Shouldn't this depend on USB_OTG ?
->  > > Seems odd to have OTG related options presented to me when I have that unset.
->  > 
->  > It's a USB Host controller, so it should be built if you have that
->  > option set.  The fact that it can do OTG isn't an issue here, from what
->  > I can tell.
-> 
-> Ok. It still likely needs a 'depends on $ARCH (arm?) | COMPILE_TEST' though.
+On Sat, Aug 31, 2013 at 5:11 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Fri, Aug 30, 2013 at 3:11 AM, Jesse Gross <jesse@nicira.com> wrote:
+>> On Thu, Aug 29, 2013 at 3:10 PM, David Miller <davem@davemloft.net> wrote:
+>>> From: Jesse Gross <jesse@nicira.com>
+>>> Date: Thu, 29 Aug 2013 14:42:22 -0700
+>>>
+>>>> On Thu, Aug 29, 2013 at 2:21 PM, Geert Uytterhoeven
+>>>> <geert@linux-m68k.org> wrote:
+>>>>> However, I have some doubts about other alignment "enforcements":
+>>>>>
+>>>>> "__aligned(__alignof__(long))" makes the whole struct aligned to the
+>>>>> alignment rule for "long":
+>>>>>    1. This is only 2 bytes on m68k, i.e. != sizeof(long).
+>>>>>    2. This is 4 bytes on many 32-bit platforms, which may be less than the
+>>>>>       default alignment for "__be64" (cfr. some members of struct
+>>>>>       ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
+>>>>
+>>>> Do any of those 32-bit architectures actually care about alignment of
+>>>> 64 bit values? On 32-bit x86, a long is 32 bits but the alignment
+>>>> requirement of __be64 is also 32 bit.
+>>>
+>>> All except x86-32 do, it is in fact the odd man out with respect to this
+>>> issue.
+>>
+>> Thanks, good to know.
+>>
+>> Andy, do you want to modify your patch to just drop the alignment
+>> specification as Geert suggested (but definitely keep the new build
+>> assert that you added)? It's probably better to just send the patch to
+>> netdev (against net-next) as well since you'll likely get better
+>> comments there and we can fix this faster if you cut out the
+>> middleman.
+>
+> Why do you want to keep the build asserts?
+> Is this in-memory structure also transfered as-is over the network?
+> If yes, you definitely want the padding.
 
-Probably, yes.
+Well they caught this bug and really don't cost anything.
 
-> PS: What happened with this driver ?
-> 
-> This patch landed twice in your tree, once in 1dd3d123239179fad5de5dc00a6e0014a1918fde from Yuan-Hsin Chen <yhchen@faraday-tech.com>
-> and then in 7d50195f6c5005d6ae7a789d9a7f0a94d104ee96 from Feng-Hsin Chiang <john453@faraday-tech.com>
-> 
-> Given the former address seems to be broken, perhaps all those mentions of it
-> in the faraday sources need updating ?
+> Nevertheless, as the struct contains u32 and even __be64 members, the
+> size of the struct will always be a multiple of the alignment unit for
+> 64-bit quantities (and thus also for long), as per the C standard.
+> Hence the check
+>
+>     BUILD_BUG_ON(sizeof(struct sw_flow_key) % __alignof__(long));
+>
+> will only catch bad compiler bugs or people adding __packed to the struct.
 
-I thought they had all been fixed up.  The first version was dropped
-because the maintainer no longer worked for the company (as you found
-out), so I needed a new developer to step up and support it.
-
-thanks,
-
-greg k-h
+It's possible that we might want to pack the structure in the future.
+More generally though, the contents of the struct is really
+independent of the alignment requirements here because we're accessing
+it as an array of bytes in long-sized chunks so implicitly depending
+on the size of the members is not that great.
