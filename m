@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761316Ab3ICWfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 18:35:31 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54289 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab3ICWf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 18:35:29 -0400
-Date: Tue, 3 Sep 2013 18:35:16 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix multiple large threshold notifications
-Message-ID: <20130903223516.GB1412@cmpxchg.org>
-References: <1377994002-1857-1-git-send-email-gthelen@google.com>
+	id S1760920Ab3ICWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 18:37:29 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:42811 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab3ICWh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 18:37:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377994002-1857-1-git-send-email-gthelen@google.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<52200DAE.2020303@hp.com>
+	<CA+55aFyhTR15GBS4VNoRkcFyubEJU7a+Pzd-6VZeKoU8qB0q5Q@mail.gmail.com>
+	<CA+icZUX3zQEWDoaXk0RMKmbQhDRo0Z7jGZ=9tJu1gZWvGodMkg@mail.gmail.com>
+	<CA+icZUUDKExRW3iNXj6jTs8A4DwQNaWvPuUfV5_ExXNPzq=+rA@mail.gmail.com>
+	<CA+55aFxvEjdEFK0dXn783eVN0PEXVhb5k8OnrbxSWDpXgyTwWw@mail.gmail.com>
+	<CA+icZUXcn6-A+AW5bu_pfRdOcScsNyn3-OZe6n93S5NUEzHtcg@mail.gmail.com>
+	<CA+55aFwHx=tCzdo50jJB0ey7-CTVSo6RRQHe6R9fAya7nPn00A@mail.gmail.com>
+	<CA+icZUWmQHWHMr1symL7j0iYqUMJBiOuRJ=EJz4F-xkQtdnJLg@mail.gmail.com>
+	<CA+55aFxwjx30pC=kcfvOzgJvt2KK9DLm2i6JKYYz+mtOOJEnMA@mail.gmail.com>
+	<CA+icZUUwy=sbt6BOirH6N4mSrQOykb=Z3GSdCb7vy_eVfG2RYw@mail.gmail.com>
+	<CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
+Date: Wed, 4 Sep 2013 00:37:25 +0200
+Message-ID: <CA+icZUXi-YHK23sKnVQbfi4K2FOVZiROQ76H5Qw2NxTJT2uzDQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 05:06:42PM -0700, Greg Thelen wrote:
-> A memory cgroup with (1) multiple threshold notifications and (2) at
-> least one threshold >=2G was not reliable.  Specifically the
-> notifications would either not fire or would not fire in the proper
-> order.
-> 
-> The __mem_cgroup_threshold() signaling logic depends on keeping 64 bit
-> thresholds in sorted order.  mem_cgroup_usage_register_event() sorts
-> them with compare_thresholds(), which returns the difference of two 64
-> bit thresholds as an int.  If the difference is positive but has
-> bit[31] set, then sort() treats the difference as negative and breaks
-> sort order.
-> 
-> This fix compares the two arbitrary 64 bit thresholds returning the
-> classic -1, 0, 1 result.
-> 
-> The test below sets two notifications (at 0x1000 and 0x81001000):
->   cd /sys/fs/cgroup/memory
->   mkdir x
->   for x in 4096 2164264960; do
->     cgroup_event_listener x/memory.usage_in_bytes $x | sed "s/^/$x listener:/" &
->   done
->   echo $$ > x/cgroup.procs
->   anon_leaker 500M
-> 
-> v3.11-rc7 fails to signal the 4096 event listener:
->   Leaking...
->   Done leaking pages.
-> 
-> Patched v3.11-rc7 properly notifies:
->   Leaking...
->   4096 listener:2013:8:31:14:13:36
->   Done leaking pages.
-> 
-> The fixed bug is old.  It appears to date back to the introduction of
-> memcg threshold notifications in v2.6.34-rc1-116-g2e72b6347c94 "memcg:
-> implement memory thresholds"
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+On Sun, Sep 1, 2013 at 5:32 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Sep 1, 2013 at 3:01 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> Looks like this is now 10x faster: ~2.66Mloops (debug) VS.
+>> ~26.60Mloops (no-debug).
+>
+> Ok, that's getting to be in the right ballpark.
+>
+> But your profile is still odd.
+>
+>> Samples: 159K of event 'cycles:pp', Event count (approx.): 76968896763
+>>  12,79%  t_lockref_from-  [kernel.kallsyms]     [k] irq_return
+>>   4,36%  t_lockref_from-  [kernel.kallsyms]     [k] __ticket_spin_lock
+>
+> If you do the profile with "-g", what are the top callers of this? You
+> shouldn't see any spinlock load from the path lookup, but you have all
+> these other things going on..
+>
+>>   4,36%  t_lockref_from-  [kernel.kallsyms]     [k] __acct_update_integrals
+>>   4,07%  t_lockref_from-  [kernel.kallsyms]     [k] user_exit
+>>   3,12%  t_lockref_from-  [kernel.kallsyms]     [k] local_clock
+>>   2,83%  t_lockref_from-  [kernel.kallsyms]     [k] lockref_get_or_lock
+>>   2,73%  t_lockref_from-  [kernel.kallsyms]     [k] kmem_cache_alloc
+>>   2,62%  t_lockref_from-  [kernel.kallsyms]     [k] __d_lookup_rcu
+>
+> You're spending more time on the task stats than on the actual lookup.
+> Maybe you should turn off CONFIG_TASKSTATS..But why that whole
+> irq_return thing? Odd.
+>
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+[ init/Kconfig ]
+...
+config TASKSTATS
+        bool "Export task/process statistics through netlink"
+        depends on NET <--- Difficult to disable it?!
+        default n
+        help
+          Export selected statistics for tasks/processes through the
+          generic netlink interface. Unlike BSD process accounting, the
+          statistics are available during the lifetime of tasks/processes as
+          responses to commands. Like BSD accounting, they are sent to user
+          space on task exit.
+
+          Say N if unsure.
+...
+
+- Sedat -
