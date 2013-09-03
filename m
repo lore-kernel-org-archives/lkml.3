@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759437Ab3ICQ1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46497 "EHLO
+	id S932359Ab3ICQ1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46528 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3ICQ1C (ORCPT
+	with ESMTP id S932160Ab3ICQ1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:02 -0400
+	Tue, 3 Sep 2013 12:27:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 50/58] xen/events: mask events when changing their VCPU binding
-Date: Tue,  3 Sep 2013 09:23:54 -0700
-Message-Id: <1378225442-20654-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 46/58] arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
+Date: Tue,  3 Sep 2013 09:23:50 -0700
+Message-Id: <1378225442-20654-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,68 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
+commit 868f6fea8fa63f09acbfa93256d0d2abdcabff79 upstream.
 
-When a event is being bound to a VCPU there is a window between the
-EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
-where an event may be lost.  The hypervisor upcalls the new VCPU but
-the kernel thinks that event is still bound to the old VCPU and
-ignores it.
+This is a port of d9f966357b14 ("ARM: 7810/1: perf: Fix array out of
+bounds access in armpmu_map_hw_event()") to arm64, which fixes an oops
+in the arm64 perf backend found as a result of Vince's fuzzing tool.
 
-There is even a problem when the event is being bound to the same VCPU
-as there is a small window beween the clear_bit() and set_bit() calls
-in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
-may read the bit when it is momentarily clear and ignore the event.
-
-Avoid this by masking the event during the whole bind operation.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Jan Beulich <jbeulich@suse.com>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/xen/events.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/arm64/kernel/perf_event.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 6f788a8..4be58b3 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1464,8 +1464,10 @@ void rebind_evtchn_irq(int evtchn, int irq)
- /* Rebind an evtchn so that it gets delivered to a specific cpu */
- static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index 0256b68..8a724a1 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -107,7 +107,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
+ static int
+ armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
  {
-+	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct evtchn_bind_vcpu bind_vcpu;
- 	int evtchn = evtchn_from_irq(irq);
-+	int masked;
- 
- 	if (!VALID_EVTCHN(evtchn))
- 		return -1;
-@@ -1482,6 +1484,12 @@ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
- 	bind_vcpu.vcpu = tcpu;
- 
- 	/*
-+	 * Mask the event while changing the VCPU binding to prevent
-+	 * it being delivered on an unexpected VCPU.
-+	 */
-+	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
+-	int mapping = (*event_map)[config];
++	int mapping;
 +
-+	/*
- 	 * If this fails, it usually just indicates that we're dealing with a
- 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
- 	 * it, but don't do the xenlinux-level rebind in that case.
-@@ -1489,6 +1497,9 @@ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
- 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
- 		bind_evtchn_to_cpu(evtchn, tcpu);
- 
-+	if (!masked)
-+		unmask_evtchn(evtchn);
++	if (config >= PERF_COUNT_HW_MAX)
++		return -EINVAL;
 +
- 	return 0;
++	mapping = (*event_map)[config];
+ 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
  }
  
 -- 
