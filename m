@@ -1,62 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab3ICOIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:08:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33819 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab3ICOIK (ORCPT
+	id S1760078Ab3ICOJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:09:41 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18890 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab3ICOJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:08:10 -0400
-Date: Tue, 3 Sep 2013 16:08:08 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Waiman Long <waiman.long@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130903140808.GA14734@amd.pavel.ucw.cz>
-References: <CA+55aFwU054C+zC+G+JrF4ngWvVmvD9WPGWaT_2=nF2j7bpHxA@mail.gmail.com>
- <CA+55aFyc17miqwhncAKsanPQ9fHX_czQx+g-a9At_S1-XNpyKA@mail.gmail.com>
- <20130901212355.GU13318@ZenIV.linux.org.uk>
- <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
- <CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
- <20130901233005.GX13318@ZenIV.linux.org.uk>
- <CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
- <CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
- <20130902070538.GA31639@gmail.com>
- <CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	Tue, 3 Sep 2013 10:09:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 03 Sep 2013 07:09:39 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>
+CC: <swarren@nvidia.com>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] gpio: palmas: add support for TPS80036
+Date: Tue, 3 Sep 2013 19:58:03 +0530
+Message-ID: <1378218483-19532-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+TI Palmas series device TPS80036 supports 16 GPIOs.
+Register its all 16 gpios when this device is selected.
 
-> It is entirely possible that it is just a "cycles:pp" oddity - because
-> the "lock xadd" is serializing, it can't retire until everything
-> around it has been sorted out, and maybe it just shows up in profiles
-> more than is really "fair" to the instruction itself, because it ends
-> up being that stable point for potentially hundreds of instructions
-> around it.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/gpio/gpio-palmas.c |  104 +++++++++++++++++++++++++++++---------------
+ 1 files changed, 69 insertions(+), 35 deletions(-)
 
-Hmm, turn "lock xadd" into plain add, and see if it improves loops per
-second? Preferably on scratch filesystem, because you may corrupt it...
-									Pavel
+diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
+index 8588af0..11801e9 100644
+--- a/drivers/gpio/gpio-palmas.c
++++ b/drivers/gpio/gpio-palmas.c
+@@ -31,6 +31,10 @@ struct palmas_gpio {
+ 	struct palmas *palmas;
+ };
+ 
++struct palmas_device_data {
++	int ngpio;
++};
++
+ static inline struct palmas_gpio *to_palmas_gpio(struct gpio_chip *chip)
+ {
+ 	return container_of(chip, struct palmas_gpio, gpio_chip);
+@@ -42,23 +46,26 @@ static int palmas_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 	struct palmas *palmas = pg->palmas;
+ 	unsigned int val;
+ 	int ret;
++	unsigned int reg;
++	int gpio16 = (offset/8);
++
++	offset %= 8;
++	reg = (gpio16) ? PALMAS_GPIO_DATA_DIR2 : PALMAS_GPIO_DATA_DIR;
+ 
+-	ret = palmas_read(palmas, PALMAS_GPIO_BASE, PALMAS_GPIO_DATA_DIR, &val);
++	ret = palmas_read(palmas, PALMAS_GPIO_BASE, reg, &val);
+ 	if (ret < 0) {
+-		dev_err(gc->dev, "GPIO_DATA_DIR read failed, err = %d\n", ret);
++		dev_err(gc->dev, "Reg 0x%02x read failed, %d\n", reg, ret);
+ 		return ret;
+ 	}
+ 
+-	if (val & (1 << offset)) {
+-		ret = palmas_read(palmas, PALMAS_GPIO_BASE,
+-				  PALMAS_GPIO_DATA_OUT, &val);
+-	} else {
+-		ret = palmas_read(palmas, PALMAS_GPIO_BASE,
+-				  PALMAS_GPIO_DATA_IN, &val);
+-	}
++	if (val & BIT(offset))
++		reg = (gpio16) ? PALMAS_GPIO_DATA_OUT2 : PALMAS_GPIO_DATA_OUT;
++	else
++		reg = (gpio16) ? PALMAS_GPIO_DATA_IN2 : PALMAS_GPIO_DATA_IN;
++
++	ret = palmas_read(palmas, PALMAS_GPIO_BASE, reg, &val);
+ 	if (ret < 0) {
+-		dev_err(gc->dev, "GPIO_DATA_IN/OUT read failed, err = %d\n",
+-			ret);
++		dev_err(gc->dev, "Reg 0x%02x read failed, %d\n", reg, ret);
+ 		return ret;
+ 	}
+ 	return !!(val & BIT(offset));
+@@ -70,17 +77,20 @@ static void palmas_gpio_set(struct gpio_chip *gc, unsigned offset,
+ 	struct palmas_gpio *pg = to_palmas_gpio(gc);
+ 	struct palmas *palmas = pg->palmas;
+ 	int ret;
++	unsigned int reg;
++	int gpio16 = (offset/8);
+ 
+-	if (value)
+-		ret = palmas_write(palmas, PALMAS_GPIO_BASE,
+-				PALMAS_GPIO_SET_DATA_OUT, BIT(offset));
++	offset %= 8;
++	if (gpio16)
++		reg = (value) ?
++			PALMAS_GPIO_SET_DATA_OUT2 : PALMAS_GPIO_CLEAR_DATA_OUT2;
+ 	else
+-		ret = palmas_write(palmas, PALMAS_GPIO_BASE,
+-				PALMAS_GPIO_CLEAR_DATA_OUT, BIT(offset));
++		reg = (value) ?
++			PALMAS_GPIO_SET_DATA_OUT : PALMAS_GPIO_CLEAR_DATA_OUT;
++
++	ret = palmas_write(palmas, PALMAS_GPIO_BASE, reg, BIT(offset));
+ 	if (ret < 0)
+-		dev_err(gc->dev, "%s write failed, err = %d\n",
+-			(value) ? "GPIO_SET_DATA_OUT" : "GPIO_CLEAR_DATA_OUT",
+-			ret);
++		dev_err(gc->dev, "Reg 0x%02x write failed, %d\n", reg, ret);
+ }
+ 
+ static int palmas_gpio_output(struct gpio_chip *gc, unsigned offset,
+@@ -89,14 +99,19 @@ static int palmas_gpio_output(struct gpio_chip *gc, unsigned offset,
+ 	struct palmas_gpio *pg = to_palmas_gpio(gc);
+ 	struct palmas *palmas = pg->palmas;
+ 	int ret;
++	unsigned int reg;
++	int gpio16 = (offset/8);
++
++	offset %= 8;
++	reg = (gpio16) ? PALMAS_GPIO_DATA_DIR2 : PALMAS_GPIO_DATA_DIR;
+ 
+ 	/* Set the initial value */
+ 	palmas_gpio_set(gc, offset, value);
+ 
+-	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE,
+-		PALMAS_GPIO_DATA_DIR, BIT(offset), BIT(offset));
++	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg,
++				BIT(offset), BIT(offset));
+ 	if (ret < 0)
+-		dev_err(gc->dev, "GPIO_DATA_DIR write failed, err = %d\n", ret);
++		dev_err(gc->dev, "Reg 0x%02x update failed, %d\n", reg, ret);
+ 	return ret;
+ }
+ 
+@@ -105,11 +120,15 @@ static int palmas_gpio_input(struct gpio_chip *gc, unsigned offset)
+ 	struct palmas_gpio *pg = to_palmas_gpio(gc);
+ 	struct palmas *palmas = pg->palmas;
+ 	int ret;
++	unsigned int reg;
++	int gpio16 = (offset/8);
++
++	offset %= 8;
++	reg = (gpio16) ? PALMAS_GPIO_DATA_DIR2 : PALMAS_GPIO_DATA_DIR;
+ 
+-	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE,
+-		PALMAS_GPIO_DATA_DIR, BIT(offset), 0);
++	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg, BIT(offset), 0);
+ 	if (ret < 0)
+-		dev_err(gc->dev, "GPIO_DATA_DIR write failed, err = %d\n", ret);
++		dev_err(gc->dev, "Reg 0x%02x update failed, %d\n", reg, ret);
+ 	return ret;
+ }
+ 
+@@ -121,12 +140,36 @@ static int palmas_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+ 	return palmas_irq_get_virq(palmas, PALMAS_GPIO_0_IRQ + offset);
+ }
+ 
++static const struct palmas_device_data palmas_dev_data = {
++	.ngpio = 8,
++};
++
++static const struct palmas_device_data tps80036_dev_data = {
++	.ngpio = 16,
++};
++
++static struct of_device_id of_palmas_gpio_match[] = {
++	{ .compatible = "ti,palmas-gpio", .data = &palmas_dev_data,},
++	{ .compatible = "ti,tps65913-gpio", .data = &palmas_dev_data,},
++	{ .compatible = "ti,tps65914-gpio", .data = &palmas_dev_data,},
++	{ .compatible = "ti,tps80036-gpio", .data = &tps80036_dev_data,},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
++
+ static int palmas_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
+ 	struct palmas_platform_data *palmas_pdata;
+ 	struct palmas_gpio *palmas_gpio;
+ 	int ret;
++	const struct of_device_id *match;
++	const struct palmas_device_data *dev_data;
++
++	match = of_match_device(of_palmas_gpio_match, &pdev->dev);
++	dev_data = match->data;
++	if (!dev_data)
++		dev_data = &palmas_dev_data;
+ 
+ 	palmas_gpio = devm_kzalloc(&pdev->dev,
+ 				sizeof(*palmas_gpio), GFP_KERNEL);
+@@ -138,7 +181,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
+ 	palmas_gpio->palmas = palmas;
+ 	palmas_gpio->gpio_chip.owner = THIS_MODULE;
+ 	palmas_gpio->gpio_chip.label = dev_name(&pdev->dev);
+-	palmas_gpio->gpio_chip.ngpio = 8;
++	palmas_gpio->gpio_chip.ngpio = dev_data->ngpio;
+ 	palmas_gpio->gpio_chip.can_sleep = 1;
+ 	palmas_gpio->gpio_chip.direction_input = palmas_gpio_input;
+ 	palmas_gpio->gpio_chip.direction_output = palmas_gpio_output;
+@@ -172,15 +215,6 @@ static int palmas_gpio_remove(struct platform_device *pdev)
+ 	return gpiochip_remove(&palmas_gpio->gpio_chip);
+ }
+ 
+-static struct of_device_id of_palmas_gpio_match[] = {
+-	{ .compatible = "ti,palmas-gpio"},
+-	{ .compatible = "ti,tps65913-gpio"},
+-	{ .compatible = "ti,tps65914-gpio"},
+-	{ .compatible = "ti,tps80036-gpio"},
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
+-
+ static struct platform_driver palmas_gpio_driver = {
+ 	.driver.name	= "palmas-gpio",
+ 	.driver.owner	= THIS_MODULE,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.1.1
+
