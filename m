@@ -1,180 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab3ICIQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 04:16:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10535 "EHLO mx1.redhat.com"
+	id S932573Ab3ICIRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 04:17:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51958 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759429Ab3ICIQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 04:16:17 -0400
-Date: Tue, 3 Sep 2013 16:16:08 +0800
-From: Asias He <asias@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>
-Subject: Re: [PATCH-v5 2/6] target: Add transport_init_session_tags using
- per-cpu ida
-Message-ID: <20130903081608.GA7655@hj.localdomain>
-References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
- <1377917556-11955-3-git-send-email-nab@linux-iscsi.org>
+	id S932510Ab3ICIRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 04:17:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1012,1367996400"; 
+   d="asc'?scan'208";a="290113868"
+Date: Tue, 3 Sep 2013 04:04:25 -0400
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge page
+Message-ID: <20130903080425.GA32295@gchen.bj.intel.com>
+Mail-Followup-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andi Kleen <andi@firstfloor.org>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org
+References: <1378165006-19435-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1378165006-19435-2-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130903031519.GA31018@gchen.bj.intel.com>
+ <52256342.4ad52a0a.2e24.ffff8c60SMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
 Content-Disposition: inline
-In-Reply-To: <1377917556-11955-3-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <52256342.4ad52a0a.2e24.ffff8c60SMTPIN_ADDED_BROKEN@mx.google.com>
+X-PGP-Key-ID: A43922C7
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 31, 2013 at 02:52:32AM +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch adds lib/idr.c based transport_init_session_tags() logic
-> that allows fabric drivers to setup a per-cpu se_sess->sess_tag_pool
-> and associated se_sess->sess_cmd_map for basic tagged pre-allocation
-> of fabric descriptor sized memory.
-> 
-> v5 changes:
->   - Convert to percpu_ida.h include
-> 
-> v4 changes:
->   - Add transport_alloc_session_tags() for fabrics that need early
->     transport_init_session()
-> 
-> v3 changes:
->   - Update to percpu-ida usage
-> 
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Asias He <asias@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Reviewed-by: Asias He <asias@redhat.com>
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  drivers/target/target_core_transport.c |   48 ++++++++++++++++++++++++++++++++
->  include/target/target_core_base.h      |    5 +++
->  include/target/target_core_fabric.h    |    3 ++
->  3 files changed, 56 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 7172d00..98ec711 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -232,6 +232,50 @@ struct se_session *transport_init_session(void)
->  }
->  EXPORT_SYMBOL(transport_init_session);
->  
-> +int transport_alloc_session_tags(struct se_session *se_sess,
-> +			         unsigned int tag_num, unsigned int tag_size)
-> +{
-> +	int rc;
-> +
-> +	se_sess->sess_cmd_map = kzalloc(tag_num * tag_size, GFP_KERNEL);
-> +	if (!se_sess->sess_cmd_map) {
-> +		pr_err("Unable to allocate se_sess->sess_cmd_map\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	rc = percpu_ida_init(&se_sess->sess_tag_pool, tag_num);
-> +	if (rc < 0) {
-> +		pr_err("Unable to init se_sess->sess_tag_pool,"
-> +			" tag_num: %u\n", tag_num);
-> +		kfree(se_sess->sess_cmd_map);
-> +		se_sess->sess_cmd_map = NULL;
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(transport_alloc_session_tags);
-> +
-> +struct se_session *transport_init_session_tags(unsigned int tag_num,
-> +					       unsigned int tag_size)
-> +{
-> +	struct se_session *se_sess;
-> +	int rc;
-> +
-> +	se_sess = transport_init_session();
-> +	if (IS_ERR(se_sess))
-> +		return se_sess;
-> +
-> +	rc = transport_alloc_session_tags(se_sess, tag_num, tag_size);
-> +	if (rc < 0) {
-> +		transport_free_session(se_sess);
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	return se_sess;
-> +}
-> +EXPORT_SYMBOL(transport_init_session_tags);
-> +
->  /*
->   * Called with spin_lock_irqsave(&struct se_portal_group->session_lock called.
->   */
-> @@ -367,6 +411,10 @@ EXPORT_SYMBOL(transport_deregister_session_configfs);
->  
->  void transport_free_session(struct se_session *se_sess)
->  {
-> +	if (se_sess->sess_cmd_map) {
-> +		percpu_ida_destroy(&se_sess->sess_tag_pool);
-> +		kfree(se_sess->sess_cmd_map);
-> +	}
->  	kmem_cache_free(se_sess_cache, se_sess);
->  }
->  EXPORT_SYMBOL(transport_free_session);
-> diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-> index e34fc90..bd55acd 100644
-> --- a/include/target/target_core_base.h
-> +++ b/include/target/target_core_base.h
-> @@ -5,6 +5,7 @@
->  #include <linux/configfs.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/blkdev.h>
-> +#include <linux/percpu_ida.h>
->  #include <scsi/scsi_cmnd.h>
->  #include <net/sock.h>
->  #include <net/tcp.h>
-> @@ -415,6 +416,8 @@ struct se_cmd {
->  	enum dma_data_direction	data_direction;
->  	/* For SAM Task Attribute */
->  	int			sam_task_attr;
-> +	/* Used for se_sess->sess_tag_pool */
-> +	unsigned int		map_tag;
->  	/* Transport protocol dependent state, see transport_state_table */
->  	enum transport_state_table t_state;
->  	unsigned		cmd_wait_set:1;
-> @@ -536,6 +539,8 @@ struct se_session {
->  	struct list_head	sess_wait_list;
->  	spinlock_t		sess_cmd_lock;
->  	struct kref		sess_kref;
-> +	void			*sess_cmd_map;
-> +	struct percpu_ida	sess_tag_pool;
->  };
->  
->  struct se_device;
-> diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
-> index 7a16178..d559c36 100644
-> --- a/include/target/target_core_fabric.h
-> +++ b/include/target/target_core_fabric.h
-> @@ -84,6 +84,9 @@ struct target_core_fabric_ops {
->  };
->  
->  struct se_session *transport_init_session(void);
-> +int transport_alloc_session_tags(struct se_session *, unsigned int,
-> +		unsigned int);
-> +struct se_session *transport_init_session_tags(unsigned int, unsigned int);
->  void	__transport_register_session(struct se_portal_group *,
->  		struct se_node_acl *, struct se_session *, void *);
->  void	transport_register_session(struct se_portal_group *,
-> -- 
-> 1.7.2.5
-> 
+On Tue, Sep 03, 2013 at 12:18:58PM +0800, Wanpeng Li wrote:
+> Date: Tue, 3 Sep 2013 12:18:58 +0800
+> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> To: Chen Gong <gong.chen@linux.intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen
+>  <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>, Naoya
+>  Horiguchi <n-horiguchi@ah.jp.nec.com>, Tony Luck <tony.luck@intel.com>,
+>  linux-mm@kvack.org, linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge
+>  page
+> User-Agent: Mutt/1.5.21 (2010-09-15)
+>=20
+> On Mon, Sep 02, 2013 at 11:15:19PM -0400, Chen Gong wrote:
+> >On Tue, Sep 03, 2013 at 07:36:44AM +0800, Wanpeng Li wrote:
+> >> Date: Tue,  3 Sep 2013 07:36:44 +0800
+> >> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> To: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu
+> >>  <fengguang.wu@intel.com>, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+> >>  Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
+> >>  linux-mm@kvack.org, linux-kernel@vger.kernel.org, Wanpeng Li
+> >>  <liwanp@linux.vnet.ibm.com>
+> >> Subject: [PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge p=
+age=20
+> >> X-Mailer: git-send-email 1.7.5.4
+> >>=20
+> >> Changelog:
+> >>  *v1 -> v2: reverse PageTransHuge(page) && !PageHuge(page) check=20
+> >>=20
+> >> PageTransHuge() can't guarantee the page is transparent huge page sinc=
+e it=20
+> >> return true for both transparent huge and hugetlbfs pages. This patch =
+fix=20
+> >> it by check the page is also !hugetlbfs page.
+> >>=20
+> >> Before patch:
+> >>=20
+> >> [  121.571128] Injecting memory failure at pfn 23a200
+> >> [  121.571141] MCE 0x23a200: huge page recovery: Delayed
+> >> [  140.355100] MCE: Memory failure is now running on 0x23a200
+> >>=20
+> >> After patch:
+> >>=20
+> >> [   94.290793] Injecting memory failure at pfn 23a000
+> >> [   94.290800] MCE 0x23a000: huge page recovery: Delayed
+> >> [  105.722303] MCE: Software-unpoisoned page 0x23a000
+> >>=20
+> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >> ---
+> >>  mm/memory-failure.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>=20
+> >> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> >> index e28ee77..b114570 100644
+> >> --- a/mm/memory-failure.c
+> >> +++ b/mm/memory-failure.c
+> >> @@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
+> >>  	 * worked by memory_failure() and the page lock is not held yet.
+> >>  	 * In such case, we yield to memory_failure() and make unpoison fail.
+> >>  	 */
+> >> -	if (PageTransHuge(page)) {
+> >> +	if (!PageHuge(page) && PageTransHuge(page)) {
+> >>  		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
+> >>  			return 0;
+> >>  	}
+> >
+> >Not sure which git tree should be used to apply this patch series? I ass=
+ume
+> >this patch series follows this link: https://lkml.org/lkml/2013/8/26/76.
+> >
+>=20
+> mmotm tree or linux-next. ;-)
+>=20
+> >In unpoison_memory we already have
+> >        if (PageHuge(page)) {
+> >                ...
+> >                return 0;
+> >        }
+> >so it looks like this patch is redundant.
+>=20
+> - Do you aware there is condition before go to this check?
+> - Do you also analysis why the check can't catch the hugetlbfs page
+>   through the dump information?
+>=20
 
--- 
-Asias
+Looks like we use different trees. After checking your working tree,
+your patch is right. So just ignore my words above. FWIW, please be
+polite and give a positive response.
+
+> Regards,
+> Wanpeng Li=20
+>=20
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=3Dmailto:"dont@kvack.org"> email@kvack.org </a>
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSJZgJAAoJEI01n1+kOSLHakkP/1Uy6gLGTSAHWV65Dp9hl60e
+KEs2qtDf7c1acLQTXB9ItT95Pj4oEZybpezhyBIksextO6az5u+9eSi9SxbsCtQd
+AwWPUb02sOqD3DUKk0MZTaAC5F4t6GWq4Ub/ZTtD4bvqYRXem+pyfJbjpGVtz7Vv
+ZwK3tC1q5amf2RZWKYI01zFbqaiiXSiqGuIJUUBriFnCubwZQ3BFMA/eMCkVLROk
+FT2Ohu7VmW/bvjaDb9Vw7k7qZbEJb+SHzlSLItB424DOP4ZpBTuifs7p5A6qiEcT
+1X9lZ11bSV5gSmoBTue91rX5IxVgKBgNYjERFXN+xh43chXQxAWg7BiBOJin4SxQ
+E74ZGEicVaBjJLjmVEcH5ZvYeFvQ2QxixeJrysYOaEVZDwv2iRTYz3DmBSw89JQ5
+2XZq8f3mi3xJ40zqbgqogFMym06L19XbGDCcFYdA2/O/u2J0M3P+rTXXzxm4nFwm
+S7mHvJ7ELNF/yfLP8m/KqOX9Q4HZaLOgJNxw97/NRHfW/Slaqj1LMKpiarFZq3SA
+h3gwzXGknWuEyWvyFB5DswefOjR2SXiM/xt3K6Sl6ccYGwCvkcEoZ1pkhR39Ce6X
+xok4ub2LfDlikDa3ZViSHL24dQoHr3/guSn6KRzZyaPutHALVmRJ7MNO/xuWmARA
+fVGevW1UqXA4249EDuHK
+=W5CL
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
