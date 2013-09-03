@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760187Ab3ICQbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:31:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46647 "EHLO
+	id S1760210Ab3ICQb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:31:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933081Ab3ICQ27 (ORCPT
+	with ESMTP id S1757058Ab3ICQ2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:28:59 -0400
+	Tue, 3 Sep 2013 12:28:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Ben Widawsky <ben@bwidawsk.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 26/58] Fix TLB gather virtual address range invalidation corner cases
-Date: Tue,  3 Sep 2013 09:23:30 -0700
-Message-Id: <1378225442-20654-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 39/58] drm/i915: Move num_pipes to intel info
+Date: Tue,  3 Sep 2013 09:23:43 -0700
+Message-Id: <1378225442-20654-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -27,395 +27,373 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ben Widawsky <ben@bwidawsk.net>
 
-commit 2b047252d087be7f2ba088b4933cd904f92e6fce upstream.
+commit 7eb552aeae058a88eece91b902dd51fde45b1f41 upstream.
 
-Ben Tebulin reported:
+Requested by Daniel.
 
- "Since v3.7.2 on two independent machines a very specific Git
-  repository fails in 9/10 cases on git-fsck due to an SHA1/memory
-  failures.  This only occurs on a very specific repository and can be
-  reproduced stably on two independent laptops.  Git mailing list ran
-  out of ideas and for me this looks like some very exotic kernel issue"
+v2: Fix incorrect num_pipe settings. (Chris)
 
-and bisected the failure to the backport of commit 53a59fc67f97 ("mm:
-limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT").
-
-That commit itself is not actually buggy, but what it does is to make it
-much more likely to hit the partial TLB invalidation case, since it
-introduces a new case in tlb_next_batch() that previously only ever
-happened when running out of memory.
-
-The real bug is that the TLB gather virtual memory range setup is subtly
-buggered.  It was introduced in commit 597e1c3580b7 ("mm/mmu_gather:
-enable tlb flush range in generic mmu_gather"), and the range handling
-was already fixed at least once in commit e6c495a96ce0 ("mm: fix the TLB
-range flushed when __tlb_remove_page() runs out of slots"), but that fix
-was not complete.
-
-The problem with the TLB gather virtual address range is that it isn't
-set up by the initial tlb_gather_mmu() initialization (which didn't get
-the TLB range information), but it is set up ad-hoc later by the
-functions that actually flush the TLB.  And so any such case that forgot
-to update the TLB range entries would potentially miss TLB invalidates.
-
-Rather than try to figure out exactly which particular ad-hoc range
-setup was missing (I personally suspect it's the hugetlb case in
-zap_huge_pmd(), which didn't have the same logic as zap_pte_range()
-did), this patch just gets rid of the problem at the source: make the
-TLB range information available to tlb_gather_mmu(), and initialize it
-when initializing all the other tlb gather fields.
-
-This makes the patch larger, but conceptually much simpler.  And the end
-result is much more understandable; even if you want to play games with
-partial ranges when invalidating the TLB contents in chunks, now the
-range information is always there, and anybody who doesn't want to
-bother with it won't introduce subtle bugs.
-
-Ben verified that this fixes his problem.
-
-Reported-bisected-and-tested-by: Ben Tebulin <tebulin@googlemail.com>
-Build-testing-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Build-testing-by: Richard Weinberger <richard.weinberger@gmail.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ kamal: backport to 3.8 (context); 3.8.y-stable prereq for:
+  63b66e5 drm/i915: Don't deref pipe->cpu_transcoder in the hangcheck code ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/include/asm/tlb.h   |  7 +++++--
- arch/arm64/include/asm/tlb.h |  7 +++++--
- arch/ia64/include/asm/tlb.h  |  9 ++++++---
- arch/s390/include/asm/tlb.h  |  8 ++++++--
- arch/sh/include/asm/tlb.h    |  6 ++++--
- arch/um/include/asm/tlb.h    |  6 ++++--
- fs/exec.c                    |  4 ++--
- include/asm-generic/tlb.h    |  2 +-
- mm/hugetlb.c                 |  2 +-
- mm/memory.c                  | 36 +++++++++++++++++++++---------------
- mm/mmap.c                    |  4 ++--
- 11 files changed, 57 insertions(+), 34 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c      |  9 +------
+ drivers/gpu/drm/i915/i915_drv.c      | 48 ++++++++++++++++++------------------
+ drivers/gpu/drm/i915/i915_drv.h      |  4 +--
+ drivers/gpu/drm/i915/i915_irq.c      |  3 +--
+ drivers/gpu/drm/i915/intel_display.c | 19 +++++++-------
+ drivers/gpu/drm/i915/intel_fb.c      |  2 +-
+ drivers/gpu/drm/i915/intel_panel.c   |  2 +-
+ 7 files changed, 40 insertions(+), 47 deletions(-)
 
-diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
-index bdf2b84..aa9b4ac 100644
---- a/arch/arm/include/asm/tlb.h
-+++ b/arch/arm/include/asm/tlb.h
-@@ -43,6 +43,7 @@ struct mmu_gather {
- 	struct mm_struct	*mm;
- 	unsigned int		fullmm;
- 	struct vm_area_struct	*vma;
-+	unsigned long		start, end;
- 	unsigned long		range_start;
- 	unsigned long		range_end;
- 	unsigned int		nr;
-@@ -107,10 +108,12 @@ static inline void tlb_flush_mmu(struct mmu_gather *tlb)
- }
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 7e5f232..ef781e7 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1588,14 +1588,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+ 	if (!IS_I945G(dev) && !IS_I945GM(dev))
+ 		pci_enable_msi(dev->pdev);
  
- static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int fullmm)
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
--	tlb->fullmm = fullmm;
-+	tlb->fullmm = !(start | (end+1));
-+	tlb->start = start;
-+	tlb->end = end;
- 	tlb->vma = NULL;
- 	tlb->max = ARRAY_SIZE(tlb->local);
- 	tlb->pages = tlb->local;
-diff --git a/arch/arm64/include/asm/tlb.h b/arch/arm64/include/asm/tlb.h
-index 654f096..5546653 100644
---- a/arch/arm64/include/asm/tlb.h
-+++ b/arch/arm64/include/asm/tlb.h
-@@ -35,6 +35,7 @@ struct mmu_gather {
- 	struct mm_struct	*mm;
- 	unsigned int		fullmm;
- 	struct vm_area_struct	*vma;
-+	unsigned long		start, end;
- 	unsigned long		range_start;
- 	unsigned long		range_end;
- 	unsigned int		nr;
-@@ -97,10 +98,12 @@ static inline void tlb_flush_mmu(struct mmu_gather *tlb)
- }
+-	if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
+-		dev_priv->num_pipe = 3;
+-	else if (IS_MOBILE(dev) || !IS_GEN2(dev))
+-		dev_priv->num_pipe = 2;
+-	else
+-		dev_priv->num_pipe = 1;
+-
+-	ret = drm_vblank_init(dev, dev_priv->num_pipe);
++	ret = drm_vblank_init(dev, INTEL_INFO(dev)->num_pipes);
+ 	if (ret)
+ 		goto out_gem_unload;
  
- static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int fullmm)
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
--	tlb->fullmm = fullmm;
-+	tlb->fullmm = !(start | (end+1));
-+	tlb->start = start;
-+	tlb->end = end;
- 	tlb->vma = NULL;
- 	tlb->max = ARRAY_SIZE(tlb->local);
- 	tlb->pages = tlb->local;
-diff --git a/arch/ia64/include/asm/tlb.h b/arch/ia64/include/asm/tlb.h
-index ef3a9de..bc5efc7 100644
---- a/arch/ia64/include/asm/tlb.h
-+++ b/arch/ia64/include/asm/tlb.h
-@@ -22,7 +22,7 @@
-  * unmapping a portion of the virtual address space, these hooks are called according to
-  * the following template:
-  *
-- *	tlb <- tlb_gather_mmu(mm, full_mm_flush);	// start unmap for address space MM
-+ *	tlb <- tlb_gather_mmu(mm, start, end);		// start unmap for address space MM
-  *	{
-  *	  for each vma that needs a shootdown do {
-  *	    tlb_start_vma(tlb, vma);
-@@ -58,6 +58,7 @@ struct mmu_gather {
- 	unsigned int		max;
- 	unsigned char		fullmm;		/* non-zero means full mm flush */
- 	unsigned char		need_flush;	/* really unmapped some PTEs? */
-+	unsigned long		start, end;
- 	unsigned long		start_addr;
- 	unsigned long		end_addr;
- 	struct page		**pages;
-@@ -155,13 +156,15 @@ static inline void __tlb_alloc_page(struct mmu_gather *tlb)
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index be9ddec..a749aca 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -138,74 +138,74 @@ extern int intel_agp_enabled;
+ 	.driver_data = (unsigned long) info }
  
- 
- static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
- 	tlb->max = ARRAY_SIZE(tlb->local);
- 	tlb->pages = tlb->local;
- 	tlb->nr = 0;
--	tlb->fullmm = full_mm_flush;
-+	tlb->fullmm = !(start | (end+1));
-+	tlb->start = start;
-+	tlb->end = end;
- 	tlb->start_addr = ~0UL;
- }
- 
-diff --git a/arch/s390/include/asm/tlb.h b/arch/s390/include/asm/tlb.h
-index b75d7d6..23a64d2 100644
---- a/arch/s390/include/asm/tlb.h
-+++ b/arch/s390/include/asm/tlb.h
-@@ -32,6 +32,7 @@ struct mmu_gather {
- 	struct mm_struct *mm;
- 	struct mmu_table_batch *batch;
- 	unsigned int fullmm;
-+	unsigned long start, unsigned long end;
+ static const struct intel_device_info intel_i830_info = {
+-	.gen = 2, .is_mobile = 1, .cursor_needs_physical = 1,
++	.gen = 2, .is_mobile = 1, .cursor_needs_physical = 1, .num_pipes = 2,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
  };
  
- struct mmu_table_batch {
-@@ -48,10 +49,13 @@ extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
+ static const struct intel_device_info intel_845g_info = {
+-	.gen = 2,
++	.gen = 2, .num_pipes = 1,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ };
  
- static inline void tlb_gather_mmu(struct mmu_gather *tlb,
- 				  struct mm_struct *mm,
--				  unsigned int full_mm_flush)
-+				  unsigned long start,
-+				  unsigned long end)
+ static const struct intel_device_info intel_i85x_info = {
+-	.gen = 2, .is_i85x = 1, .is_mobile = 1,
++	.gen = 2, .is_i85x = 1, .is_mobile = 1, .num_pipes = 2,
+ 	.cursor_needs_physical = 1,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ };
+ 
+ static const struct intel_device_info intel_i865g_info = {
+-	.gen = 2,
++	.gen = 2, .num_pipes = 1,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ };
+ 
+ static const struct intel_device_info intel_i915g_info = {
+-	.gen = 3, .is_i915g = 1, .cursor_needs_physical = 1,
++	.gen = 3, .is_i915g = 1, .cursor_needs_physical = 1, .num_pipes = 2,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ };
+ static const struct intel_device_info intel_i915gm_info = {
+-	.gen = 3, .is_mobile = 1,
++	.gen = 3, .is_mobile = 1, .num_pipes = 2,
+ 	.cursor_needs_physical = 1,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ 	.supports_tv = 1,
+ };
+ static const struct intel_device_info intel_i945g_info = {
+-	.gen = 3, .has_hotplug = 1, .cursor_needs_physical = 1,
++	.gen = 3, .has_hotplug = 1, .cursor_needs_physical = 1, .num_pipes = 2,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ };
+ static const struct intel_device_info intel_i945gm_info = {
+-	.gen = 3, .is_i945gm = 1, .is_mobile = 1,
++	.gen = 3, .is_i945gm = 1, .is_mobile = 1, .num_pipes = 2,
+ 	.has_hotplug = 1, .cursor_needs_physical = 1,
+ 	.has_overlay = 1, .overlay_needs_physical = 1,
+ 	.supports_tv = 1,
+ };
+ 
+ static const struct intel_device_info intel_i965g_info = {
+-	.gen = 4, .is_broadwater = 1,
++	.gen = 4, .is_broadwater = 1, .num_pipes = 2,
+ 	.has_hotplug = 1,
+ 	.has_overlay = 1,
+ };
+ 
+ static const struct intel_device_info intel_i965gm_info = {
+-	.gen = 4, .is_crestline = 1,
++	.gen = 4, .is_crestline = 1, .num_pipes = 2,
+ 	.is_mobile = 1, .has_fbc = 1, .has_hotplug = 1,
+ 	.has_overlay = 1,
+ 	.supports_tv = 1,
+ };
+ 
+ static const struct intel_device_info intel_g33_info = {
+-	.gen = 3, .is_g33 = 1,
++	.gen = 3, .is_g33 = 1, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_overlay = 1,
+ };
+ 
+ static const struct intel_device_info intel_g45_info = {
+-	.gen = 4, .is_g4x = 1, .need_gfx_hws = 1,
++	.gen = 4, .is_g4x = 1, .need_gfx_hws = 1, .num_pipes = 2,
+ 	.has_pipe_cxsr = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ };
+ 
+ static const struct intel_device_info intel_gm45_info = {
+-	.gen = 4, .is_g4x = 1,
++	.gen = 4, .is_g4x = 1, .num_pipes = 2,
+ 	.is_mobile = 1, .need_gfx_hws = 1, .has_fbc = 1,
+ 	.has_pipe_cxsr = 1, .has_hotplug = 1,
+ 	.supports_tv = 1,
+@@ -213,26 +213,26 @@ static const struct intel_device_info intel_gm45_info = {
+ };
+ 
+ static const struct intel_device_info intel_pineview_info = {
+-	.gen = 3, .is_g33 = 1, .is_pineview = 1, .is_mobile = 1,
++	.gen = 3, .is_g33 = 1, .is_pineview = 1, .is_mobile = 1, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_overlay = 1,
+ };
+ 
+ static const struct intel_device_info intel_ironlake_d_info = {
+-	.gen = 5,
++	.gen = 5, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ };
+ 
+ static const struct intel_device_info intel_ironlake_m_info = {
+-	.gen = 5, .is_mobile = 1,
++	.gen = 5, .is_mobile = 1, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_fbc = 1,
+ 	.has_bsd_ring = 1,
+ };
+ 
+ static const struct intel_device_info intel_sandybridge_d_info = {
+-	.gen = 6,
++	.gen = 6, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ 	.has_blt_ring = 1,
+@@ -241,7 +241,7 @@ static const struct intel_device_info intel_sandybridge_d_info = {
+ };
+ 
+ static const struct intel_device_info intel_sandybridge_m_info = {
+-	.gen = 6, .is_mobile = 1,
++	.gen = 6, .is_mobile = 1, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_fbc = 1,
+ 	.has_bsd_ring = 1,
+@@ -251,7 +251,7 @@ static const struct intel_device_info intel_sandybridge_m_info = {
+ };
+ 
+ static const struct intel_device_info intel_ivybridge_d_info = {
+-	.is_ivybridge = 1, .gen = 7,
++	.is_ivybridge = 1, .gen = 7, .num_pipes = 3,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ 	.has_blt_ring = 1,
+@@ -260,7 +260,7 @@ static const struct intel_device_info intel_ivybridge_d_info = {
+ };
+ 
+ static const struct intel_device_info intel_ivybridge_m_info = {
+-	.is_ivybridge = 1, .gen = 7, .is_mobile = 1,
++	.is_ivybridge = 1, .gen = 7, .is_mobile = 1, .num_pipes = 3,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_fbc = 0,	/* FBC is not enabled on Ivybridge mobile yet */
+ 	.has_bsd_ring = 1,
+@@ -270,7 +270,7 @@ static const struct intel_device_info intel_ivybridge_m_info = {
+ };
+ 
+ static const struct intel_device_info intel_valleyview_m_info = {
+-	.gen = 7, .is_mobile = 1,
++	.gen = 7, .is_mobile = 1, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_fbc = 0,
+ 	.has_bsd_ring = 1,
+@@ -279,7 +279,7 @@ static const struct intel_device_info intel_valleyview_m_info = {
+ };
+ 
+ static const struct intel_device_info intel_valleyview_d_info = {
+-	.gen = 7,
++	.gen = 7, .num_pipes = 2,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_fbc = 0,
+ 	.has_bsd_ring = 1,
+@@ -288,7 +288,7 @@ static const struct intel_device_info intel_valleyview_d_info = {
+ };
+ 
+ static const struct intel_device_info intel_haswell_d_info = {
+-	.is_haswell = 1, .gen = 7,
++	.is_haswell = 1, .gen = 7, .num_pipes = 3,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ 	.has_blt_ring = 1,
+@@ -297,7 +297,7 @@ static const struct intel_device_info intel_haswell_d_info = {
+ };
+ 
+ static const struct intel_device_info intel_haswell_m_info = {
+-	.is_haswell = 1, .gen = 7, .is_mobile = 1,
++	.is_haswell = 1, .gen = 7, .is_mobile = 1, .num_pipes = 3,
+ 	.need_gfx_hws = 1, .has_hotplug = 1,
+ 	.has_bsd_ring = 1,
+ 	.has_blt_ring = 1,
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index d47283d..8b8c4cf 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -85,7 +85,7 @@ enum port {
+ 
+ #define I915_GEM_GPU_DOMAINS	(~(I915_GEM_DOMAIN_CPU | I915_GEM_DOMAIN_GTT))
+ 
+-#define for_each_pipe(p) for ((p) = 0; (p) < dev_priv->num_pipe; (p)++)
++#define for_each_pipe(p) for ((p) = 0; (p) < INTEL_INFO(dev)->num_pipes; (p)++)
+ 
+ #define for_each_encoder_on_crtc(dev, __crtc, intel_encoder) \
+ 	list_for_each_entry((intel_encoder), &(dev)->mode_config.encoder_list, base.head) \
+@@ -318,6 +318,7 @@ struct drm_i915_gt_funcs {
+ 	DEV_INFO_FLAG(has_llc)
+ 
+ struct intel_device_info {
++	u8 num_pipes:3;
+ 	u8 gen;
+ 	u8 is_mobile:1;
+ 	u8 is_i85x:1;
+@@ -674,7 +675,6 @@ typedef struct drm_i915_private {
+ 	u32 hotplug_supported_mask;
+ 	struct work_struct hotplug_work;
+ 
+-	int num_pipe;
+ 	int num_pch_pll;
+ 
+ 	/* For hangcheck timer */
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index fe84338..7edcb6c 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -250,10 +250,9 @@ static int i915_get_vblank_timestamp(struct drm_device *dev, int pipe,
+ 			      struct timeval *vblank_time,
+ 			      unsigned flags)
  {
- 	tlb->mm = mm;
--	tlb->fullmm = full_mm_flush;
-+	tlb->start = start;
-+	tlb->end = end;
-+	tlb->fullmm = !(start | (end+1));
- 	tlb->batch = NULL;
- 	if (tlb->fullmm)
- 		__tlb_flush_mm(mm);
-diff --git a/arch/sh/include/asm/tlb.h b/arch/sh/include/asm/tlb.h
-index e61d43d..362192e 100644
---- a/arch/sh/include/asm/tlb.h
-+++ b/arch/sh/include/asm/tlb.h
-@@ -36,10 +36,12 @@ static inline void init_tlb_gather(struct mmu_gather *tlb)
- }
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_crtc *crtc;
  
- static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
--	tlb->fullmm = full_mm_flush;
-+	tlb->start = start;
-+	tlb->end = end;
-+	tlb->fullmm = !(start | (end+1));
- 
- 	init_tlb_gather(tlb);
- }
-diff --git a/arch/um/include/asm/tlb.h b/arch/um/include/asm/tlb.h
-index 4febacd..29b0301 100644
---- a/arch/um/include/asm/tlb.h
-+++ b/arch/um/include/asm/tlb.h
-@@ -45,10 +45,12 @@ static inline void init_tlb_gather(struct mmu_gather *tlb)
- }
- 
- static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
--	tlb->fullmm = full_mm_flush;
-+	tlb->start = start;
-+	tlb->end = end;
-+	tlb->fullmm = !(start | (end+1));
- 
- 	init_tlb_gather(tlb);
- }
-diff --git a/fs/exec.c b/fs/exec.c
-index ea5dc8d..0b5038a 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -607,7 +607,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
- 		return -ENOMEM;
- 
- 	lru_add_drain();
--	tlb_gather_mmu(&tlb, mm, 0);
-+	tlb_gather_mmu(&tlb, mm, old_start, old_end);
- 	if (new_end > old_start) {
- 		/*
- 		 * when the old and new regions overlap clear from new_end.
-@@ -624,7 +624,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
- 		free_pgd_range(&tlb, old_start, old_end, new_end,
- 			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
+-	if (pipe < 0 || pipe >= dev_priv->num_pipe) {
++	if (pipe < 0 || pipe >= INTEL_INFO(dev)->num_pipes) {
+ 		DRM_ERROR("Invalid crtc %d\n", pipe);
+ 		return -EINVAL;
  	}
--	tlb_finish_mmu(&tlb, new_end, old_end);
-+	tlb_finish_mmu(&tlb, old_start, old_end);
- 
- 	/*
- 	 * Shrink the vma to just the new range.  Always succeeds.
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index 13821c3..5672d7e 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -112,7 +112,7 @@ struct mmu_gather {
- 
- #define HAVE_GENERIC_MMU_GATHER
- 
--void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm);
-+void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end);
- void tlb_flush_mmu(struct mmu_gather *tlb);
- void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start,
- 							unsigned long end);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 430dca0..0f5e584 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2477,7 +2477,7 @@ void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 
- 	mm = vma->vm_mm;
- 
--	tlb_gather_mmu(&tlb, mm, 0);
-+	tlb_gather_mmu(&tlb, mm, start, end);
- 	__unmap_hugepage_range(&tlb, vma, start, end, ref_page);
- 	tlb_finish_mmu(&tlb, start, end);
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index e4595bd..35b6109 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -207,14 +207,15 @@ static int tlb_next_batch(struct mmu_gather *tlb)
-  *	tear-down from @mm. The @fullmm argument is used when @mm is without
-  *	users and we're going to destroy the full address space (exit/execve).
-  */
--void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
-+void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
- {
- 	tlb->mm = mm;
- 
--	tlb->fullmm     = fullmm;
-+	/* Is it from 0 to ~0? */
-+	tlb->fullmm     = !(start | (end+1));
- 	tlb->need_flush_all = 0;
--	tlb->start	= -1UL;
--	tlb->end	= 0;
-+	tlb->start	= start;
-+	tlb->end	= end;
- 	tlb->need_flush = 0;
- 	tlb->local.next = NULL;
- 	tlb->local.nr   = 0;
-@@ -254,8 +255,6 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
- {
- 	struct mmu_gather_batch *batch, *next;
- 
--	tlb->start = start;
--	tlb->end   = end;
- 	tlb_flush_mmu(tlb);
- 
- 	/* keep the page table cache within bounds */
-@@ -1097,7 +1096,6 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
- 	spinlock_t *ptl;
- 	pte_t *start_pte;
- 	pte_t *pte;
--	unsigned long range_start = addr;
- 
- again:
- 	init_rss_vec(rss);
-@@ -1200,17 +1198,25 @@ again:
- 	 * and page-free while holding it.
- 	 */
- 	if (force_flush) {
-+		unsigned long old_end;
-+
- 		force_flush = 0;
- 
--#ifdef HAVE_GENERIC_MMU_GATHER
--		tlb->start = range_start;
-+		/*
-+		 * Flush the TLB just for the previous segment,
-+		 * then update the range to be the remaining
-+		 * TLB range.
-+		 */
-+		old_end = tlb->end;
- 		tlb->end = addr;
--#endif
-+
- 		tlb_flush_mmu(tlb);
--		if (addr != end) {
--			range_start = addr;
-+
-+		tlb->start = addr;
-+		tlb->end = old_end;
-+
-+		if (addr != end)
- 			goto again;
--		}
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 1f20ac5..b101a02 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2315,10 +2315,10 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
+ 		return 0;
  	}
  
- 	return addr;
-@@ -1395,7 +1401,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long start,
- 	unsigned long end = start + size;
+-	if(intel_crtc->plane > dev_priv->num_pipe) {
++	if (intel_crtc->plane > INTEL_INFO(dev)->num_pipes) {
+ 		DRM_ERROR("no plane for crtc: plane %d, num_pipes %d\n",
+ 				intel_crtc->plane,
+-				dev_priv->num_pipe);
++				INTEL_INFO(dev)->num_pipes);
+ 		return -EINVAL;
+ 	}
  
- 	lru_add_drain();
--	tlb_gather_mmu(&tlb, mm, 0);
-+	tlb_gather_mmu(&tlb, mm, start, end);
- 	update_hiwater_rss(mm);
- 	mmu_notifier_invalidate_range_start(mm, start, end);
- 	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
-@@ -1421,7 +1427,7 @@ static void zap_page_range_single(struct vm_area_struct *vma, unsigned long addr
- 	unsigned long end = address + size;
+@@ -5360,7 +5360,7 @@ static bool ironlake_check_fdi_lanes(struct intel_crtc *intel_crtc)
+ 		return false;
+ 	}
  
- 	lru_add_drain();
--	tlb_gather_mmu(&tlb, mm, 0);
-+	tlb_gather_mmu(&tlb, mm, address, end);
- 	update_hiwater_rss(mm);
- 	mmu_notifier_invalidate_range_start(mm, address, end);
- 	unmap_single_vma(&tlb, vma, address, end, details);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 6efac36..82fbbab 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2294,7 +2294,7 @@ static void unmap_region(struct mm_struct *mm,
- 	struct mmu_gather tlb;
+-	if (dev_priv->num_pipe == 2)
++	if (INTEL_INFO(dev)->num_pipes == 2)
+ 		return true;
  
- 	lru_add_drain();
--	tlb_gather_mmu(&tlb, mm, 0);
-+	tlb_gather_mmu(&tlb, mm, start, end);
- 	update_hiwater_rss(mm);
- 	unmap_vmas(&tlb, vma, start, end);
- 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
-@@ -2671,7 +2671,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	switch (intel_crtc->pipe) {
+@@ -9034,9 +9034,10 @@ void intel_modeset_init(struct drm_device *dev)
+ 	dev->mode_config.fb_base = dev_priv->mm.gtt_base_addr;
  
- 	lru_add_drain();
- 	flush_cache_mm(mm);
--	tlb_gather_mmu(&tlb, mm, 1);
-+	tlb_gather_mmu(&tlb, mm, 0, -1);
- 	/* update_hiwater_rss(mm) here? but nobody should be looking */
- 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
- 	unmap_vmas(&tlb, vma, 0, -1);
+ 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
+-		      dev_priv->num_pipe, dev_priv->num_pipe > 1 ? "s" : "");
++		      INTEL_INFO(dev)->num_pipes,
++		      INTEL_INFO(dev)->num_pipes > 1 ? "s" : "");
+ 
+-	for (i = 0; i < dev_priv->num_pipe; i++) {
++	for (i = 0; i < INTEL_INFO(dev)->num_pipes; i++) {
+ 		intel_crtc_init(dev, i);
+ 		ret = intel_plane_init(dev, i);
+ 		if (ret)
+@@ -9090,10 +9091,11 @@ static void intel_enable_pipe_a(struct drm_device *dev)
+ static bool
+ intel_check_plane_mapping(struct intel_crtc *crtc)
+ {
+-	struct drm_i915_private *dev_priv = crtc->base.dev->dev_private;
++	struct drm_device *dev = crtc->base.dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 reg, val;
+ 
+-	if (dev_priv->num_pipe == 1)
++	if (INTEL_INFO(dev)->num_pipes == 1)
+ 		return true;
+ 
+ 	reg = DSPCNTR(!crtc->plane);
+@@ -9536,10 +9538,9 @@ intel_display_print_error_state(struct seq_file *m,
+ 				struct drm_device *dev,
+ 				struct intel_display_error_state *error)
+ {
+-	drm_i915_private_t *dev_priv = dev->dev_private;
+ 	int i;
+ 
+-	seq_printf(m, "Num Pipes: %d\n", dev_priv->num_pipe);
++	seq_printf(m, "Num Pipes: %d\n", INTEL_INFO(dev)->num_pipes);
+ 	for_each_pipe(i) {
+ 		seq_printf(m, "Pipe [%d]:\n", i);
+ 		seq_printf(m, "  CONF: %08x\n", error->pipe[i].conf);
+diff --git a/drivers/gpu/drm/i915/intel_fb.c b/drivers/gpu/drm/i915/intel_fb.c
+index 7b30b5c..c692458 100644
+--- a/drivers/gpu/drm/i915/intel_fb.c
++++ b/drivers/gpu/drm/i915/intel_fb.c
+@@ -233,7 +233,7 @@ int intel_fbdev_init(struct drm_device *dev)
+ 	ifbdev->helper.funcs = &intel_fb_helper_funcs;
+ 
+ 	ret = drm_fb_helper_init(dev, &ifbdev->helper,
+-				 dev_priv->num_pipe,
++				 INTEL_INFO(dev)->num_pipes,
+ 				 INTELFB_CONN_LIMIT);
+ 	if (ret) {
+ 		kfree(ifbdev);
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 8df501a..56abfc1 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -346,7 +346,7 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 		if (tmp & BLM_PWM_ENABLE)
+ 			goto set_level;
+ 
+-		if (dev_priv->num_pipe == 3)
++		if (INTEL_INFO(dev)->num_pipes == 3)
+ 			tmp &= ~BLM_PIPE_SELECT_IVB;
+ 		else
+ 			tmp &= ~BLM_PIPE_SELECT;
 -- 
 1.8.1.2
 
