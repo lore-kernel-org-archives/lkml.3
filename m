@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab3ICDAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:00:44 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42977 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759202Ab3ICDAl (ORCPT
+	id S1759248Ab3ICDPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:15:53 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44573 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab3ICDPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:00:41 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/3] mm/vmalloc: move VM_UNINITIALIZED just before show_numa_info
-Date: Tue,  3 Sep 2013 11:00:20 +0800
-Message-Id: <1378177220-26218-3-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1378177220-26218-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1378177220-26218-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	Mon, 2 Sep 2013 23:15:52 -0400
+Date: Tue, 3 Sep 2013 11:15:44 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, aik@ozlabs.ru, paulus@au1.ibm.com,
+        benh@au1.ibm.com, iommu <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH] iommu: WARN_ON when removing a device with no
+ iommu_group associated
+Message-ID: <20130903031544.GA16232@weiyang.vnet.ibm.com>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1377222911-12144-1-git-send-email-weiyang@linux.vnet.ibm.com>
+ <1377228807.25163.33.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377228807.25163.33.camel@ul30vt.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090302-8256-0000-0000-0000090E9696
+x-cbid: 13090302-9264-0000-0000-000004738870
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VM_UNINITIALIZED/VM_UNLIST flag introduced by commit f5252e00(mm: avoid
-null pointer access in vm_struct via /proc/vmallocinfo) is used to avoid
-accessing the pages field with unallocated page when show_numa_info() is
-called. This patch move the check just before show_numa_info in order that
-some messages still can be dumped via /proc/vmallocinfo.
+Any more comments? Or this one is not proper?
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/vmalloc.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+On Thu, Aug 22, 2013 at 09:33:27PM -0600, Alex Williamson wrote:
+>[+cc iommu]
+>
+>On Fri, 2013-08-23 at 09:55 +0800, Wei Yang wrote:
+>> When removing a device from the system, iommu_group driver will try to
+>> disconnect it from its group. While in some cases, one device may not
+>> associated with any iommu_group. For example, not enough DMA address space.
+>> 
+>> In the generic bus notification, it will check dev->iommu_group before calling
+>> iommu_group_remove_device(). While in some cases, developers may call
+>> iommu_group_remove_device() in a different code path and without check. For
+>> those devices with dev->iommu_group set to NULL, kernel will crash.
+>> 
+>> This patch gives a warning and return when trying to remove a device from an
+>> iommu_group with dev->iommu_group set to NULL. This helps to indicate some bad
+>> behavior and also guard the kernel.
+>> 
+>> Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+>
+>Acked-by: Alex Williamson <alex.williamson@redhat.com>
+>
+>> ---
+>>  drivers/iommu/iommu.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+>> index fbe9ca7..43396f0 100644
+>> --- a/drivers/iommu/iommu.c
+>> +++ b/drivers/iommu/iommu.c
+>> @@ -379,6 +379,9 @@ void iommu_group_remove_device(struct device *dev)
+>>  	struct iommu_group *group = dev->iommu_group;
+>>  	struct iommu_device *tmp_device, *device = NULL;
+>>  
+>> +	if (WARN_ON(!group))
+>> +		return;
+>> +
+>>  	/* Pre-notify listeners that a device is being removed. */
+>>  	blocking_notifier_call_chain(&group->notifier,
+>>  				     IOMMU_GROUP_NOTIFY_DEL_DEVICE, dev);
+>
+>
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index e3ec8b4..c4720cd 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2590,11 +2590,6 @@ static int s_show(struct seq_file *m, void *p)
- 
- 	v = va->vm;
- 
--	/* Pair with smp_wmb() in clear_vm_uninitialized_flag() */
--	smp_rmb();
--	if (v->flags & VM_UNINITIALIZED)
--		return 0;
--
- 	seq_printf(m, "0x%pK-0x%pK %7ld",
- 		v->addr, v->addr + v->size, v->size);
- 
-@@ -2622,6 +2617,11 @@ static int s_show(struct seq_file *m, void *p)
- 	if (v->flags & VM_VPAGES)
- 		seq_printf(m, " vpages");
- 
-+	/* Pair with smp_wmb() in clear_vm_uninitialized_flag() */
-+	smp_rmb();
-+	if (v->flags & VM_UNINITIALIZED)
-+		return 0;
-+
- 	show_numa_info(m, v);
- 	seq_putc(m, '\n');
- 	return 0;
 -- 
-1.7.5.4
+Richard Yang
+Help you, Help me
 
