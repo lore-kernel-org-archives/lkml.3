@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232Ab3ICXwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:52:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33619 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934092Ab3ICXu3 (ORCPT
+	id S934148Ab3ICXza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:55:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46314 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934077Ab3ICXz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:50:29 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, keescook@chromium.org, hpa@zytor.com,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V3 03/11] x86: Lock down IO port access when module security is enabled
-Date: Tue,  3 Sep 2013 19:50:10 -0400
-Message-Id: <1378252218-18798-4-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 3 Sep 2013 19:55:28 -0400
+Date: Wed, 4 Sep 2013 09:55:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the pci tree
+Message-Id: <20130904095527.d5e694435fd03a5252de0d42@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Sep_2013_09_55_27_+1000_10x=.VvTrFK5l0WB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IO port access would permit users to gain access to PCI configuration
-registers, which in turn (on a lot of hardware) give access to MMIO register
-space. This would potentially permit root to trigger arbitrary DMA, so lock
-it down by default.
+--Signature=_Wed__4_Sep_2013_09_55_27_+1000_10x=.VvTrFK5l0WB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- arch/x86/kernel/ioport.c | 5 +++--
- drivers/char/mem.c       | 4 ++++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+Hi Bjorn,
 
-diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
-index 4ddaf66..00b4403 100644
---- a/arch/x86/kernel/ioport.c
-+++ b/arch/x86/kernel/ioport.c
-@@ -15,6 +15,7 @@
- #include <linux/thread_info.h>
- #include <linux/syscalls.h>
- #include <linux/bitmap.h>
-+#include <linux/module.h>
- #include <asm/syscalls.h>
- 
- /*
-@@ -28,7 +29,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
- 
- 	if ((from + num <= from) || (from + num > IO_BITMAP_BITS))
- 		return -EINVAL;
--	if (turn_on && !capable(CAP_SYS_RAWIO))
-+	if (turn_on && (!capable(CAP_SYS_RAWIO) || secure_modules()))
- 		return -EPERM;
- 
- 	/*
-@@ -103,7 +104,7 @@ SYSCALL_DEFINE1(iopl, unsigned int, level)
- 		return -EINVAL;
- 	/* Trying to gain more privileges? */
- 	if (level > old) {
--		if (!capable(CAP_SYS_RAWIO))
-+		if (!capable(CAP_SYS_RAWIO) || secure_modules())
- 			return -EPERM;
- 	}
- 	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index f895a8c..1af8664 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -28,6 +28,7 @@
- #include <linux/export.h>
- #include <linux/io.h>
- #include <linux/aio.h>
-+#include <linux/module.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -563,6 +564,9 @@ static ssize_t write_port(struct file *file, const char __user *buf,
- 	unsigned long i = *ppos;
- 	const char __user *tmp = buf;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	if (!access_ok(VERIFY_READ, buf, count))
- 		return -EFAULT;
- 	while (count-- > 0 && i < 65536) {
--- 
-1.8.3.1
+You have sent a pull request to Linus for the pci tree, but at the same
+time you have reset the branch I pull into linux-next to be v3.11.  So
+you have effectively removed all that code from linux-next until Linus'
+merges it :-(
 
+Ordering is important.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__4_Sep_2013_09_55_27_+1000_10x=.VvTrFK5l0WB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJnbvAAoJEECxmPOUX5FELGAP/j2Tw8oQ7qTylghowuPZiQKG
+clk4hcLa7dUsFgaEYoIfGscy0Ws7GuN3Yw1HXqE01x/tjy0smTZXX06BOuYU8p3F
+efc3aHQdD2fGDtkRWv1xVE++sXH8tGyIn0WSP9xydyTRhYSl3BJdLsAf471PSNq5
+7a2ueHMHRqSPngxvF4G5FM/06ntnl7gQdZUQE6NSGjAf1O4lJpEvMSM6DcJmGsT5
+EZzdS5n+m9B3V++Azj80nCLOgiA2EbNYnakeB3VE4t1OfOZPu8TxUOLjx5lCRUmo
+5AYkwRNlL55qZXjN8ibrZVZ6CAaRSyj46VyRLLwOqO62EnoSDGqwJSsqVUtxB9Op
+JS2EQTP/4vVOHsNw77k4fYxH0xUiqthU1SMRg1juB4EtkFt2ZoLmoLwwFUp5akrh
+uuWmoW/EkTsh0FvjL1IkIHo/I79bPH6fsUXS60N1+r3uYwLLDR4FWZLoeHhEFUcN
+1Jy86LdoYSK5rDWf9T6Zj9y6l2rm3B2qvBfeFnP4jxZhLx4g8WxHXNVI7QWk+d5u
+UsJ2pRcy6wm6i0vfays97ZKNMBN3tig87WFDPRKMs7gr/46h6LYjTqgAuLGwMJOC
++JfM3DsmdEq6kOLTNo/NTBLVPirhCY0xuoLBb4T0B+kqIaOA0rPAztqJbqBsp4XT
+FV3kt3cpX1hIMl1NsXep
+=EqjB
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Sep_2013_09_55_27_+1000_10x=.VvTrFK5l0WB--
