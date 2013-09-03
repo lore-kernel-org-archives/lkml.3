@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760300Ab3ICQdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:33:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46564 "EHLO
+	id S1760314Ab3ICQeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:34:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46545 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759978Ab3ICQ1f (ORCPT
+	with ESMTP id S1756394Ab3ICQ10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:35 -0400
+	Tue, 3 Sep 2013 12:27:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Anthony Foiani <anthony.foiani@gmail.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 41/58] drm/i915: Invalidate TLBs for the rings after a reset
-Date: Tue,  3 Sep 2013 09:23:45 -0700
-Message-Id: <1378225442-20654-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 48/58] sata_fsl: save irqs while coalescing
+Date: Tue,  3 Sep 2013 09:23:52 -0700
+Message-Id: <1378225442-20654-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,69 +27,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Anthony Foiani <anthony.foiani@gmail.com>
 
-commit 884020bf3d2a3787a1cc6df902e98e0eec60330b upstream.
+commit 99bbdfa6bdcb4bdf5be914a48e9b46941bf30819 upstream.
 
-After any "soft gfx reset" we must manually invalidate the TLBs
-associated with each ring. Empirically, it seems that a
-suspend/resume or D3-D0 cycle count as a "soft reset". The symptom is
-that the hardware would fail to note the new address for its status
-page, and so it would continue to write the shadow registers and
-breadcrumbs into the old physical address (now used by something
-completely different, scary). Whereas the driver would read the new
-status page and never see any progress, it would appear that the GPU
-hung immediately upon resume.
+Before this patch, I was seeing the following lockdep splat on my
+MPC8315 (PPC32) target:
 
-Based on a patch by naresh kumar kachhi <naresh.kumar.kacchi@intel.com>
+  [    9.086051] =================================
+  [    9.090393] [ INFO: inconsistent lock state ]
+  [    9.094744] 3.9.7-ajf-gc39503d #1 Not tainted
+  [    9.099087] ---------------------------------
+  [    9.103432] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+  [    9.109431] scsi_eh_1/39 [HC1[1]:SC0[0]:HE0:SE1] takes:
+  [    9.114642]  (&(&host->lock)->rlock){?.+...}, at: [<c02f4168>] sata_fsl_interrupt+0x50/0x250
+  [    9.123137] {HARDIRQ-ON-W} state was registered at:
+  [    9.128004]   [<c006cdb8>] lock_acquire+0x90/0xf4
+  [    9.132737]   [<c043ef04>] _raw_spin_lock+0x34/0x4c
+  [    9.137645]   [<c02f3560>] fsl_sata_set_irq_coalescing+0x68/0x100
+  [    9.143750]   [<c02f36a0>] sata_fsl_init_controller+0xa8/0xc0
+  [    9.149505]   [<c02f3f10>] sata_fsl_probe+0x17c/0x2e8
+  [    9.154568]   [<c02acc90>] driver_probe_device+0x90/0x248
+  [    9.159987]   [<c02acf0c>] __driver_attach+0xc4/0xc8
+  [    9.164964]   [<c02aae74>] bus_for_each_dev+0x5c/0xa8
+  [    9.170028]   [<c02ac218>] bus_add_driver+0x100/0x26c
+  [    9.175091]   [<c02ad638>] driver_register+0x88/0x198
+  [    9.180155]   [<c0003a24>] do_one_initcall+0x58/0x1b4
+  [    9.185226]   [<c05aeeac>] kernel_init_freeable+0x118/0x1c0
+  [    9.190823]   [<c0004110>] kernel_init+0x18/0x108
+  [    9.195542]   [<c000f6b8>] ret_from_kernel_thread+0x64/0x6c
+  [    9.201142] irq event stamp: 160
+  [    9.204366] hardirqs last  enabled at (159): [<c043f778>] _raw_spin_unlock_irq+0x30/0x50
+  [    9.212469] hardirqs last disabled at (160): [<c000f414>] reenable_mmu+0x30/0x88
+  [    9.219867] softirqs last  enabled at (144): [<c002ae5c>] __do_softirq+0x168/0x218
+  [    9.227435] softirqs last disabled at (137): [<c002b0d4>] irq_exit+0xa8/0xb4
+  [    9.234481]
+  [    9.234481] other info that might help us debug this:
+  [    9.240995]  Possible unsafe locking scenario:
+  [    9.240995]
+  [    9.246898]        CPU0
+  [    9.249337]        ----
+  [    9.251776]   lock(&(&host->lock)->rlock);
+  [    9.255878]   <Interrupt>
+  [    9.258492]     lock(&(&host->lock)->rlock);
+  [    9.262765]
+  [    9.262765]  *** DEADLOCK ***
+  [    9.262765]
+  [    9.268684] no locks held by scsi_eh_1/39.
+  [    9.272767]
+  [    9.272767] stack backtrace:
+  [    9.277117] Call Trace:
+  [    9.279589] [cfff9da0] [c0008504] show_stack+0x48/0x150 (unreliable)
+  [    9.285972] [cfff9de0] [c0447d5c] print_usage_bug.part.35+0x268/0x27c
+  [    9.292425] [cfff9e10] [c006ace4] mark_lock+0x2ac/0x658
+  [    9.297660] [cfff9e40] [c006b7e4] __lock_acquire+0x754/0x1840
+  [    9.303414] [cfff9ee0] [c006cdb8] lock_acquire+0x90/0xf4
+  [    9.308745] [cfff9f20] [c043ef04] _raw_spin_lock+0x34/0x4c
+  [    9.314250] [cfff9f30] [c02f4168] sata_fsl_interrupt+0x50/0x250
+  [    9.320187] [cfff9f70] [c0079ff0] handle_irq_event_percpu+0x90/0x254
+  [    9.326547] [cfff9fc0] [c007a1fc] handle_irq_event+0x48/0x78
+  [    9.332220] [cfff9fe0] [c007c95c] handle_level_irq+0x9c/0x104
+  [    9.337981] [cfff9ff0] [c000d978] call_handle_irq+0x18/0x28
+  [    9.343568] [cc7139f0] [c000608c] do_IRQ+0xf0/0x1a8
+  [    9.348464] [cc713a20] [c000fc8c] ret_from_except+0x0/0x14
+  [    9.353983] --- Exception: 501 at _raw_spin_unlock_irq+0x40/0x50
+  [    9.353983]     LR = _raw_spin_unlock_irq+0x30/0x50
+  [    9.364839] [cc713af0] [c043db10] wait_for_common+0xac/0x188
+  [    9.370513] [cc713b30] [c02ddee4] ata_exec_internal_sg+0x2b0/0x4f0
+  [    9.376699] [cc713be0] [c02de18c] ata_exec_internal+0x68/0xa8
+  [    9.382454] [cc713c20] [c02de4b8] ata_dev_read_id+0x158/0x594
+  [    9.388205] [cc713ca0] [c02ec244] ata_eh_recover+0xd88/0x13d0
+  [    9.393962] [cc713d20] [c02f2520] sata_pmp_error_handler+0xc0/0x8ac
+  [    9.400234] [cc713dd0] [c02ecdc8] ata_scsi_port_error_handler+0x464/0x5e8
+  [    9.407023] [cc713e10] [c02ecfd0] ata_scsi_error+0x84/0xb8
+  [    9.412528] [cc713e40] [c02c4974] scsi_error_handler+0xd8/0x47c
+  [    9.418457] [cc713eb0] [c004737c] kthread+0xa8/0xac
+  [    9.423355] [cc713f40] [c000f6b8] ret_from_kernel_thread+0x64/0x6c
 
-Reported-by: Thiago Macieira <thiago@kde.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64725
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Thiago Macieira <thiago@kde.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This fix was suggested by Bhushan Bharat <R65777@freescale.com>, and
+was discussed in email at:
+
+  http://linuxppc.10917.n7.nabble.com/MPC8315-reboot-failure-lockdep-splat-possibly-related-tp75162.html
+
+Same patch successfully tested with 3.9.7.  linux-next compiled but
+not tested on hardware.
+
+This patch is based off linux-next tag next-20130819
+(which is commit 66a01bae29d11916c09f9f5a937cafe7d402e4a5 )
+
+Signed-off-by: Anthony Foiani <anthony.foiani@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h         |  2 ++
- drivers/gpu/drm/i915/intel_ringbuffer.c | 12 ++++++++++++
- 2 files changed, 14 insertions(+)
+ drivers/ata/sata_fsl.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 24f0368..8028dcf 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -596,6 +596,8 @@
- 					will not assert AGPBUSY# and will only
- 					be delivered when out of C3. */
- #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
-+#define   INSTPM_TLB_INVALIDATE	(1<<9)
-+#define   INSTPM_SYNC_FLUSH	(1<<5)
- #define ACTHD	        0x020c8
- #define FW_BLC		0x020d8
- #define FW_BLC2		0x020dc
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 27f810f..cd0ba21 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -874,6 +874,18 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index 124b2c1..34fa7c6 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -292,6 +292,7 @@ static void fsl_sata_set_irq_coalescing(struct ata_host *host,
+ {
+ 	struct sata_fsl_host_priv *host_priv = host->private_data;
+ 	void __iomem *hcr_base = host_priv->hcr_base;
++	unsigned long flags;
  
- 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
- 	POSTING_READ(mmio);
-+
-+	/* Flush the TLB for this page */
-+	if (INTEL_INFO(dev)->gen >= 6) {
-+		u32 reg = RING_INSTPM(ring->mmio_base);
-+		I915_WRITE(reg,
-+			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
-+					      INSTPM_SYNC_FLUSH));
-+		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
-+			     1000))
-+			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
-+				  ring->name);
-+	}
- }
+ 	if (count > ICC_MAX_INT_COUNT_THRESHOLD)
+ 		count = ICC_MAX_INT_COUNT_THRESHOLD;
+@@ -304,12 +305,12 @@ static void fsl_sata_set_irq_coalescing(struct ata_host *host,
+ 			(count > ICC_MIN_INT_COUNT_THRESHOLD))
+ 		ticks = ICC_SAFE_INT_TICKS;
  
- static int
+-	spin_lock(&host->lock);
++	spin_lock_irqsave(&host->lock, flags);
+ 	iowrite32((count << 24 | ticks), hcr_base + ICC);
+ 
+ 	intr_coalescing_count = count;
+ 	intr_coalescing_ticks = ticks;
+-	spin_unlock(&host->lock);
++	spin_unlock_irqrestore(&host->lock, flags);
+ 
+ 	DPRINTK("intrrupt coalescing, count = 0x%x, ticks = %x\n",
+ 			intr_coalescing_count, intr_coalescing_ticks);
 -- 
 1.8.1.2
 
