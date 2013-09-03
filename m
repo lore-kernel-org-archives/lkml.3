@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab3ICQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46568 "EHLO
+	id S932825Ab3ICQ1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab3ICQ1h (ORCPT
+	with ESMTP id S932414Ab3ICQ1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:37 -0400
+	Tue, 3 Sep 2013 12:27:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: AceLan Kao <acelan.kao@canonical.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 44/58] ARM: allow kuser helpers to be removed from the vector page
-Date: Tue,  3 Sep 2013 09:23:48 -0700
-Message-Id: <1378225442-20654-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 33/58] Bluetooth: Add support for Atheros [0cf3:e003]
+Date: Tue,  3 Sep 2013 09:23:37 -0700
+Message-Id: <1378225442-20654-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -27,184 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit f6f91b0d9fd971c630cef908dde8fe8795aefbf8 upstream.
+commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
 
-Provide a kernel configuration option to allow the kernel user helpers
-to be removed from the vector page, thereby preventing their use with
-ROP (return orientated programming) attacks.  This option is only
-visible for CPU architectures which natively support all the operations
-which kernel user helpers would normally provide, and must be enabled
-with caution.
+Add support for the AR9462 chip
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=e003 Rev=00.02
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/entry-armv.S |  3 +++
- arch/arm/kernel/traps.c      | 23 ++++++++++++++---------
- arch/arm/mm/Kconfig          | 34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 51 insertions(+), 9 deletions(-)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index c19779f..f7488fd 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -795,6 +795,7 @@ ENDPROC(__switch_to)
- 	.endr
- 	.endm
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index a9e5be4..5a757be 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -94,6 +94,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
+ 	{ USB_DEVICE(0x13d3, 0x3402) },
+ 	{ USB_DEVICE(0x0cf3, 0x3121) },
++	{ USB_DEVICE(0x0cf3, 0xe003) },
  
-+#ifdef CONFIG_KUSER_HELPERS
- 	.align	5
- 	.globl	__kuser_helper_start
- __kuser_helper_start:
-@@ -981,6 +982,8 @@ __kuser_helper_version:				@ 0xffff0ffc
- 	.globl	__kuser_helper_end
- __kuser_helper_end:
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -134,6 +135,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
  
-+#endif
-+
-  THUMB(	.thumb	)
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index e075dd2..b70c146 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -152,6 +152,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
  
- /*
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 366aa93..1392beb 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -807,23 +807,32 @@ void __init trap_init(void)
- 	return;
- }
- 
--static void __init kuser_get_tls_init(unsigned long vectors)
-+#ifdef CONFIG_KUSER_HELPERS
-+static void __init kuser_init(void *vectors)
- {
-+	extern char __kuser_helper_start[], __kuser_helper_end[];
-+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
-+
-+	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
-+
- 	/*
- 	 * vectors + 0xfe0 = __kuser_get_tls
- 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
- 	 */
- 	if (tls_emu || has_tls_reg)
--		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
-+		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
-+}
-+#else
-+static void __init kuser_init(void *vectors)
-+{
- }
-+#endif
- 
- void __init early_trap_init(void *vectors_base)
- {
- 	unsigned long vectors = (unsigned long)vectors_base;
- 	extern char __stubs_start[], __stubs_end[];
- 	extern char __vectors_start[], __vectors_end[];
--	extern char __kuser_helper_start[], __kuser_helper_end[];
--	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
- 	unsigned i;
- 
- 	vectors_page = vectors_base;
-@@ -844,12 +853,8 @@ void __init early_trap_init(void *vectors_base)
- 	 */
- 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
- 	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
--	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
- 
--	/*
--	 * Do processor specific fixups for the kuser helpers
--	 */
--	kuser_get_tls_init(vectors);
-+	kuser_init(vectors_base);
- 
- 	/*
- 	 * Copy signal return handlers into the vector page, and
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 3fd629d..1d5ee0a 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -404,24 +404,28 @@ config CPU_32v3
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v4
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v4T
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v5
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v6
- 	bool
-@@ -756,6 +760,7 @@ config CPU_BPREDICT_DISABLE
- 
- config TLS_REG_EMUL
- 	bool
-+	select NEED_KUSER_HELPERS
- 	help
- 	  An SMP system using a pre-ARMv6 processor (there are apparently
- 	  a few prototypes like that in existence) and therefore access to
-@@ -763,11 +768,40 @@ config TLS_REG_EMUL
- 
- config NEEDS_SYSCALL_FOR_CMPXCHG
- 	bool
-+	select NEED_KUSER_HELPERS
- 	help
- 	  SMP on a pre-ARMv6 processor?  Well OK then.
- 	  Forget about fast user space cmpxchg support.
- 	  It is just not possible.
- 
-+config NEED_KUSER_HELPERS
-+	bool
-+
-+config KUSER_HELPERS
-+	bool "Enable kuser helpers in vector page" if !NEED_KUSER_HELPERS
-+	default y
-+	help
-+	  Warning: disabling this option may break user programs.
-+
-+	  Provide kuser helpers in the vector page.  The kernel provides
-+	  helper code to userspace in read only form at a fixed location
-+	  in the high vector page to allow userspace to be independent of
-+	  the CPU type fitted to the system.  This permits binaries to be
-+	  run on ARMv4 through to ARMv7 without modification.
-+
-+	  However, the fixed address nature of these helpers can be used
-+	  by ROP (return orientated programming) authors when creating
-+	  exploits.
-+
-+	  If all of the binaries and libraries which run on your platform
-+	  are built specifically for your platform, and make no use of
-+	  these helpers, then you can turn this option off.  However,
-+	  when such an binary or library is run, it will receive a SIGILL
-+	  signal, which will terminate the program.
-+
-+	  Say N here only if you are absolutely certain that you do not
-+	  need these helpers; otherwise, the safe option is to say Y.
-+
- config DMA_CACHE_RWFO
- 	bool "Enable read/write for ownership DMA cache maintenance"
- 	depends on CPU_V6K && SMP
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 -- 
 1.8.1.2
 
