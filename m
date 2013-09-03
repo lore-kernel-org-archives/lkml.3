@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab3ICMq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 08:46:56 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:61255 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932710Ab3ICMqy (ORCPT
+	id S932883Ab3ICMrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 08:47:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55687 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752353Ab3ICMrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 08:46:54 -0400
-Message-ID: <5225DA21.3000102@gmail.com>
-Date: Tue, 03 Sep 2013 07:46:25 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Russell King <rmk@arm.linux.org.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (arm
- tree related)
-References: <20130903181824.796e74465274b23387d3e715@canb.auug.org.au> <20130903090414.GA25658@flint.arm.linux.org.uk>
-In-Reply-To: <20130903090414.GA25658@flint.arm.linux.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Sep 2013 08:47:20 -0400
+X-Sasl-enc: /RH9cvIg++fCip+xv0nOvWe4fpQxb/GDiQ2olkA82HoF 1378212436
+Message-ID: <1378212433.2310.3.camel@perseus.fritz.box>
+Subject: Re: [PATCH 00/10] autofs4 - rename autofs4 to autofs
+From: Ian Kent <raven@themaw.net>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: linux-next@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Sep 2013 20:47:13 +0800
+In-Reply-To: <5225C7F0.10103@msgid.tls.msk.ru>
+References: <20130831114133.11807.35953.stgit@perseus.themaw.net>
+	 <5225C7F0.10103@msgid.tls.msk.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 04:04 AM, Russell King wrote:
-> On Tue, Sep 03, 2013 at 06:18:24PM +1000, Stephen Rothwell wrote:
->> Hi all,
->>
->> After merging the final tree, today's linux-next build (arm defconfig)
->> failed like this:
->>
->> arch/arm/kernel/built-in.o: In function `setup_arch':
->> io.c:(.init.text+0x594): undefined reference to `erratum_a15_798181_init'
->>
->> Presumably caused by commit 34905a33184a ("ARM: 7804/2: Add check for
->> Cortex-A15 errata 798181 ECO").  This build does not have CONFIG_SMP set.
->>
->> I have reverted that commit for today.
+On Tue, 2013-09-03 at 15:28 +0400, Michael Tokarev wrote:
+> 31.08.2013 15:42, Ian Kent wrote:
+> [...]
+> > By leaving a Kconfig and Makefile in fs/autofs4 (to build autofs4.ko)
+> > with a deprication message sub-system maintainers and other users will
+> > make any needed changes before these are removed after two kernel versions.
+> > IMHO the presence of the warning is reason enough to leave a build stub
+> > rather than do a straight out rename.
 > 
-> Yep, and I think I'm going to do the same, rather than try and fix it.
+> Why do you want to continue building autofs4.ko? (or allowing to)
+> What's actually wrong with a stright rename?
+> If the new module can be auto-loaded by both name (by providing an
+> alias), there's no need to keep ability to build autofs4.ko, I think.
+
+The hope is that within two subsequent kernel versions, when it is
+removed, people that need to change will have noticed this and made the
+needed changes. That's scripts that may have looked for autofs4.ko to
+work around the auto-load problem, aliases that won't work now, kernel
+configurations, etc...
+
+The configuration message for autofs4 now says these things and says the
+module is going to be removed.
+
 > 
+> Well, maybe except of the case when autofs is needed in initramfs (like
+> for systemd).  For this, indeed, you can keep autofs4.ko which is a
+> dummy depending on autofs.ko...
+> 
+> > Ian Kent (10):
+> >       autofs4 - coding style fixes
+> >       autofs4 - fix string.h include in auto_dev-ioctl.h
+> >       autofs4 - move linux/auto_dev-ioctl.h to uapi/linux
+> >       autofs - merge auto_fs.h and auto_fs4.h
+> >       autofs - use autofs instead of autofs4 everywhere
+> >       autofs - copy autofs4 to autofs
+> >       autofs - create autofs Kconfig and Makefile
+> >       autofs - update fs/autofs4/Kconfig
+> >       autofs - update fs/autofs4/Makefile
+> >       autofs - delete fs/autofs4
+> 
+> By doing it this way, you're losing all git history.
+> If you perform stright rename and git detects it, you
+> can use, eg, git log --follow to see whole hostory
+> across rename.  This way you create new files without
+> history.
+> 
+> So I strongly shuggest actually renaming the subdirectory
+> (together with appropriate kconfig/makefile changes so
+> things are bisectable), and creating the stubs after this.
+> 
+> Thanks,
+> 
+> /mjt
+> --
+> To unsubscribe from this list: send the line "unsubscribe autofs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Ah crap, I guess I should have left the ifdefs instead of trying to use
-IS_ENABLED.
-
-Here's a fix if you want it. Otherwise I can fold this in and resubmit it
-rebased on top of Will's barriers series.
-
-Rob
-
-8<--------------------------------------------
-From: Rob Herring <rob.herring@calxeda.com>
-Date: Tue, 3 Sep 2013 07:35:41 -0500
-Subject: [PATCH] ARM: fix undefined reference to erratum_a15_798181_init on
- !SMP
-
-Fix build error on !SMP builds introduced by commit 34905a33184a ("ARM:
-804/2: Add check for Cortex-A15 errata 798181 ECO"):
-
-arch/arm/kernel/built-in.o: In function `setup_arch':
-io.c:(.init.text+0x594): undefined reference to `erratum_a15_798181_init'
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- arch/arm/include/asm/tlbflush.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/include/asm/tlbflush.h b/arch/arm/include/asm/tlbflush.h
-index decff8d..e6217a1 100644
---- a/arch/arm/include/asm/tlbflush.h
-+++ b/arch/arm/include/asm/tlbflush.h
-@@ -443,7 +443,11 @@ static inline void local_flush_bp_all(void)
- 		isb();
- }
- 
-+#ifdef CONFIG_ARM_ERRATA_798181
- extern void erratum_a15_798181_init(void);
-+#else
-+static inline void erratum_a15_798181_init(void) {}
-+#endif
- extern bool (*erratum_a15_798181_handler)(void);
- 
- static inline bool erratum_a15_798181(void)
--- 
-1.8.1.2
 
