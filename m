@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab3ICHfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:35:36 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:62668 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab3ICHfe (ORCPT
+	id S932471Ab3ICHgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:36:01 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:18768 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab3ICHf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:35:34 -0400
-Message-ID: <5225914D.5050305@googlemail.com>
-Date: Tue, 03 Sep 2013 08:35:41 +0100
-From: Chris Clayton <chris2553@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Tue, 3 Sep 2013 03:35:59 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Naresh Kumar Inna <naresh@chelsio.com>, Jesper Juhl <jj@chaosbits.net>,
+        <linux-scsi@vger.kernel.org>
+Subject: [PATCH 2/7] scsi/csiostor: use pcie_capability_xxx to simplify code
+Date: Tue, 3 Sep 2013 15:35:10 +0800
+Message-ID: <1378193715-25328-2-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Chris Clayton <chris2553@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: Networking problem with 3.11-rc6+
-References: <5213CB17.5050308@googlemail.com> <20130820215419.GA29560@electric-eye.fr.zoreil.com>
-In-Reply-To: <20130820215419.GA29560@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pcie_capability_xxx() interfaces were introudced to
+simplify code to access PCIe Cap config space. And
+because PCI core saves the PCIe Cap offset in
+set_pcie_port_type() when device is enumerated.
+So we can use pci_is_pcie() instead.
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Naresh Kumar Inna <naresh@chelsio.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/csiostor/csio_hw.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/csiostor/csio_hw.c b/drivers/scsi/csiostor/csio_hw.c
+index 0eb35b9..be9a6ef 100644
+--- a/drivers/scsi/csiostor/csio_hw.c
++++ b/drivers/scsi/csiostor/csio_hw.c
+@@ -856,15 +856,12 @@ static void
+ csio_set_pcie_completion_timeout(struct csio_hw *hw, u8 range)
+ {
+ 	uint16_t val;
+-	int pcie_cap;
+ 
+-	if (!csio_pci_capability(hw->pdev, PCI_CAP_ID_EXP, &pcie_cap)) {
+-		pci_read_config_word(hw->pdev,
+-				     pcie_cap + PCI_EXP_DEVCTL2, &val);
++	if (pci_is_pcie(hw->pdev)) {
++		pcie_capability_read_word(hw->pdev, PCI_EXP_DEVCTL2, &val);
+ 		val &= 0xfff0;
+ 		val |= range ;
+-		pci_write_config_word(hw->pdev,
+-				      pcie_cap + PCI_EXP_DEVCTL2, val);
++		pcie_capability_write_word(hw->pdev, PCI_EXP_DEVCTL2, val);
+ 	}
+ }
+ 
+-- 
+1.7.1
 
 
-On 08/20/13 22:54, Francois Romieu wrote:
-> Chris Clayton <chris2553@gmail.com> :
-> [...]
->> [    0.207094] acpi PNP0A08:00: ACPI _OSC support notification failed, disabling PCIe ASPM
->> [    0.207155] acpi PNP0A08:00: Unable to request _OSC control (_OSC support mask: 0x08)
-> [...]
->> [    5.311191] r8169 0000:07:00.0: can't disable ASPM; OS doesn't have ASPM control
-> [...]
->> [   65.181715] [<f8e38000>] rtl8169_interrupt [r8169]
->> [   65.181717] Disabling IRQ #17
->>
->> Let me know if I can provide any additional information, although to
->> be honest, the boot completed and the KDE desktop started up OK, so
->> there may not be much else I can provide unless I find that the
->> problem is repeatable.
->
-> Please don't hesitate if it happens again, even if it can't be reproduced
-> on demand.
->
-
-I've booted the kernel numerous times since the incident reported above, 
-but haven't encountered the problem again. If it does happen again, are 
-there any files from /sys or /proc that might help diagnostics?
-
-Chris
