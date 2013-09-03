@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab3ICAkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 20:40:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32057 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871Ab3ICAkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 20:40:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1010,1367996400"; 
-   d="scan'208";a="390124910"
-Date: Tue, 3 Sep 2013 08:39:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: David Howells <dhowells@redhat.com>, Josh Triplett <josh@joshtriplett.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
- updating Documentation/CodingStyle
-Message-ID: <20130903003958.GA6855@localhost>
-References: <20130902195056.GB32628@leaf>
- <9976.1378132260@warthog.procyon.org.uk>
- <1378138205.1953.66.camel@joe-AO722>
- <20130902181510.GA29787@leaf>
- <20130902181856.GB29787@leaf>
- <20130902153945.6d7e510c@samsung.com>
- <1378148367.1953.98.camel@joe-AO722>
- <13834.1378155023@warthog.procyon.org.uk>
- <1378156296.1953.117.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378156296.1953.117.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759233Ab3ICAni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 20:43:38 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46756 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab3ICAnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 20:43:37 -0400
+Message-ID: <1378169449.32763.347.camel@haakon3.risingtidesystems.com>
+Subject: Re: Linux 3.11
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Sep 2013 17:50:49 -0700
+In-Reply-To: <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
+References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
+	 <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
+	 <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 02:11:36PM -0700, Joe Perches wrote:
-> On Mon, 2013-09-02 at 21:50 +0100, David Howells wrote:
-> > Josh Triplett <josh@joshtriplett.org> wrote:
-> > 
-> > > > There are many checkpatch rules (like semicolons) that
-> > > > are not in CodingStyle.
-> > > 
-> > > It's a rule of thumb, not a mandate.  In *general*, checkpatch.pl should
-> > > not be enforcing style rules that aren't documented in CodingStyle.
-> > 
-> > Except that it becomes a mandate when someone runs it automatically against
-> > every one of your patches and then sends you an email for each patch it finds
-> > a checkpatch niggle against...
+On Mon, 2013-09-02 at 15:50 -0700, Linus Torvalds wrote:
+> On Mon, Sep 2, 2013 at 3:30 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> >
+> > Unfortunately, this doesn't include the remaining target fixes for
+> > v3.11:
+> >
+> > Re: [GIT PULL -v2] target fixes for v3.11
+> > http://marc.info/?l=linux-kernel&m=137799048226191&w=2
+> >
+> > Is there a reason why these did not get PULLed..?
 > 
-> I think that any robot sending such checkpatch-only
-> emails should be disabled.
+> Very simple: I have no such email in my mailbox. I see the "target
+> updates for v3.11-rc1" email (and I pulled that), and there is nothing
+> since.
 > 
-> I know of 2 email robots.
+> I don't even have that mail in my lkml archives, much less as a private email.
 > 
-> Fengguang Wu's very useful build robot
-> sends out emails on build failures.
-> I think that's great.
+> I see neither youe "-v2 PULL request" nor the "One more late v3.11
+> specific regression" one. In fact, I see no emails from you at all
+> from Aug 31.
+> 
+> It may be that gmail hates you for some reason...
+> 
+> [ time passes ]
+> 
+> Yup. It's in my spam-box, with gmail helpfully telling me:
+> 
+>    Why is this message in Spam? We've found that lots of messages from
+> linux-iscsi.org are spam.  Learn more
+> 
+> so something is rotten in the state of linux-iscsi.org.
+> 
+> Recent messages from you were similarly tagged:
+> 
+>  "[GIT PULL -v2] target fixes for 3.11"
+>  "Re: LIO FC Target"
+>  "Re: [GIT PULL] target fixes for v3.11-rc7"
+> 
+> there might have been more. You might want to try to figure out why
+> gmail thinks that linux-iscsi.org is spammy.
 
-Thanks! Yes I'm now running checkpatch these days because some people
-suggested to me that some of the checkpatch warnings do help catch
-real bugs.
+Mmmm, that is what I was afraid of, looking into that now..
 
-However I do try to avoid upsetting people with maybe-subjective
-warnings. A checkpatch report will only be sent when a small fraction
-of error types are detected. Comments are very welcome on how to
-improve this list:
-
-MEMSET
-IN_ATOMIC
-UAPI_INCLUDE
-MALFORMED_INCLUDE       
-SIZEOF_ADDRESS  
-KREALLOC_ARG_REUSE      
-EXECUTE_PERMISSIONS     
-ERROR:BAD_SIGN_OFF      
-LO_MACRO
-HI_MACRO
-CSYNC
-SSYNC
-HOTPLUG_SECTION
-INDENTED_LABEL
-INLINE_LOCATION
-STORAGE_CLASS
-USLEEP_RANGE
-UNNECESSARY_CASTS
-ALLOC_SIZEOF_STRUCT
-KREALLOC_ARG_REUSE
-USE_FUNC
-LOCKDEP
-EXPORTED_WORLD_WRITABLE
-WHITESPACE_AFTER_LINE_CONTINUATION
-MISSING_VMLINUX_SYMBOL
-NEEDLESS_IF
-PRINTF_L
-
-Once the decision is made to send a checkpatch error/warning, the
-report email will use the triggering error (the one that matters) as
-the email subject, with the complete output of checkpatch.pl included
-in email body.
+So if you would, please go ahead and pull target-pending/master ASAP for
+the fixes, and I'll send the parts that need to goto Greg-KH separately.
 
 Thanks,
-Fengguang
+
+--nab
+
