@@ -1,175 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab3ICGeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 02:34:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57062 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab3ICGee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 02:34:34 -0400
-Message-ID: <522582D6.4020800@ti.com>
-Date: Tue, 3 Sep 2013 12:03:58 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1759582Ab3ICGez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:34:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46025 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab3ICGew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 02:34:52 -0400
 MIME-Version: 1.0
-To: <bcousson@baylibre.com>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <pawel.moll@arm.com>, <devicetree@vger.kernel.org>,
-        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
-        <nm@ti.com>, <balajitk@ti.com>
-Subject: Re: [PATCH] ARM: DTS: DRA7: Add TPS659038 PMIC nodes
-References: <1377495411-21984-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1377495411-21984-1-git-send-email-j-keerthy@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <522575CC.6010001@cn.fujitsu.com>
+References: <1378117829-9095-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com>
+	<CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com>
+	<52253607.9010907@cn.fujitsu.com>
+	<CAE9FiQXeiBZU9X7MprpBtyCQgW-u3u5m7XwvEujnvs5wHYdM4A@mail.gmail.com>
+	<522575CC.6010001@cn.fujitsu.com>
+Date: Mon, 2 Sep 2013 23:34:52 -0700
+X-Google-Sender-Auth: 8Q-bYpGbGZfVwTGp1eBNbql1_Z4
+Message-ID: <CAE9FiQXnXgD=qx-PyByXQSRCyq=NgVo7YQXENPnM00mvGQ7_tg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 2/3] x86, mm: Update min_pfn_mapped in add_pfn_range_mapped().
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit,
-
-
-On Monday 26 August 2013 11:06 AM, Keerthy wrote:
-> The Patch adds nodes for TPS659038 PMIC for DRA7 boards.
+On Mon, Sep 2, 2013 at 10:38 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 09/03/2013 10:48 AM, Yinghai Lu wrote:
+>>
+>> On Mon, Sep 2, 2013 at 6:06 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>>>
+>>> Hi Yinghai,
+>>>
+>>> On 09/03/2013 02:41 AM, Yinghai Lu wrote:
+>>
+>>
+>>> How about change the "for (from low to high)" in
+>>> init_range_memory_mapping()
+>>> to
+>>> "for_rev(from high to low)" ?
+>>> Then we can update min_pfn_mapped in add_pfn_range_mapped().
+>>>
+>>> And also, the outer loop is from high to low, we can change the inner
+>>> loop
+>>> to be from high
+>>> to low too.
+>>
+>>
+>> No. there is other reason for doing local from low to high.
+>>
+>> kernel_physical_mapping_init() could clear some mapping near the end
+>> of PUG/PMD entries but not the head.
 >
-> It is based on top of:
-> http://comments.gmane.org/gmane.linux.ports.arm.omap/102459.
 >
-> Documentation:	Documentation/devicetree/bindings/mfd/palmas.txt
-> 		Documentation/devicetree/bindings/regulator/palmas-pmic.txt		
+> Thanks for your explanation. But sorry, I'd like to understand it more
+> clearly.
 >
-> Boot Tested on DRA7 d1 Board.
-
-Any comments on this patch?
-
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->   arch/arm/boot/dts/dra7-evm.dts |  118 ++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 118 insertions(+)
+> Are you talking about the following code ?
+>         phys_pud_init()
+>         {
+>                 if (addr >= end) {
+>                         if (!after_bootmem &&
+>                             !e820_any_mapped(addr & PUD_MASK, next,
+> E820_RAM) &&
+>                             !e820_any_mapped(addr & PUD_MASK, next,
+> E820_RESERVED_KERN))
+>                                 set_pud(pud, __pud(0));
+>                         continue;
+>                 }
+>         }
+> It will clear the PUD/PMD out of range.
 >
-> Index: linux/arch/arm/boot/dts/dra7-evm.dts
-> ===================================================================
-> --- linux.orig/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 09:57:52.496173554 +0530
-> +++ linux/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 10:38:44.995414695 +0530
-> @@ -93,6 +93,119 @@
->   	pinctrl-names = "default";
->   	pinctrl-0 = <&i2c1_pins>;
->   	clock-frequency = <400000>;
-> +
-> +	tps659038: tps659038@58 {
-> +		compatible = "ti,tps659038";
-> +		reg = <0x58>;
-> +
-> +		tps659038_pmic {
-> +			compatible = "ti,tps659038-pmic";
-> +
-> +			regulators {
-> +				smps123_reg: smps123 {
-> +					/* VDD_MPU */
-> +						regulator-name = "smps123";
-> +						regulator-min-microvolt = < 850000>;
-> +						regulator-max-microvolt = <1250000>;
-> +						regulator-always-on;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				smps45_reg: smps45 {
-> +						/* VDD_DSPEVE */
-> +						regulator-name = "smps45";
-> +						regulator-min-microvolt = < 850000>;
-> +						regulator-max-microvolt = <1150000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				smps6_reg: smps6 {
-> +						/* VDD_GPU - over VDD_SMPS6 */
-> +						regulator-name = "smps6";
-> +						regulator-min-microvolt = <850000>;
-> +						regulator-max-microvolt = <12500000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				smps7_reg: smps7 {
-> +						/* CORE_VDD */
-> +						regulator-name = "smps7";
-> +						regulator-min-microvolt = <850000>;
-> +						regulator-max-microvolt = <1030000>;
-> +						regulator-always-on;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				smps8_reg: smps8 {
-> +						/* VDD_IVAHD */
-> +						regulator-name = "smps8";
-> +						regulator-min-microvolt = < 850000>;
-> +						regulator-max-microvolt = <1250000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				smps9_reg: smps9 {
-> +						/* VDDS1V8 */
-> +						regulator-name = "smps9";
-> +						regulator-min-microvolt = <1800000>;
-> +						regulator-max-microvolt = <1800000>;
-> +						regulator-always-on;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldo1_reg: ldo1 {
-> +						/* LDO1_OUT --> SDIO  */
-> +						regulator-name = "ldo1";
-> +						regulator-min-microvolt = <1800000>;
-> +						regulator-max-microvolt = <3300000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldo2_reg: ldo2 {
-> +						/* VDD_RTCIO */
-> +						/* LDO2 -> VDDSHV5, LDO2 also goes to CAN_PHY_3V3 */
-> +						regulator-name = "ldo2";
-> +						regulator-min-microvolt = <3300000>;
-> +						regulator-max-microvolt = <3300000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldo3_reg: ldo3 {
-> +						/* VDDA_1V8_PHY */
-> +						regulator-name = "ldo3";
-> +						regulator-min-microvolt = <1800000>;
-> +						regulator-max-microvolt = <1800000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldo9_reg: ldo9 {
-> +						/* VDD_RTC */
-> +						regulator-name = "ldo9";
-> +						regulator-min-microvolt = <1050000>;
-> +						regulator-max-microvolt = <1050000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldoln_reg: ldoln {
-> +						/* VDDA_1V8_PLL */
-> +						regulator-name = "ldoln";
-> +						regulator-min-microvolt = <1800000>;
-> +						regulator-max-microvolt = <1800000>;
-> +						regulator-always-on;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				ldousb_reg: ldousb {
-> +						/* VDDA_3V_USB: VDDA_USBHS33 */
-> +						regulator-name = "ldousb";
-> +						regulator-min-microvolt = <3300000>;
-> +						regulator-max-microvolt = <3300000>;
-> +						regulator-boot-on;
-> +					};
-> +
-> +				};
-> +			};
-> +		};
->   };
->   
->   &i2c2 {
+>
+> But,
+>
+> init_mem_mapping()
+> {
+>     while (from high to low) {
+>         init_range_memory_mapping()
+>         {
+>             for (from low to high) {
+> /* I'm saying changing this loop */
+>                 init_memory_mapping()
+>                 {
+>                     for () {
+> /* Not this one */
+>                         kernel_physical_mapping_init();
+>                     }
+>                     add_pfn_range_mapped();
+>                 }
+>             }
+>         }
+>     }
+> }
+>
+> I'm saying changing the outer loop in init_range_memory_mapping(), not the
+> one in init_memory_mapping().
+> I think it is OK to call init_memory_mapping() with any order. The loop is
+> out of init_memory_mapping(), right ?
+>
+> In init_memory_mapping(), it is still from low to high. But when the
+> kernel_physical_mapping_init() finished,
+> we can update min_pfn_mapped in add_pfn_range_mapped() because the outer
+> loop is from high to low.
+>
+> Am I missing something here ?  Please tell me.
 
-Regards,
-Keerthy
+Yes, that looks ok,
+
+but will make the code more hard to understand, aka more dependency.
+
+the only purpose for min_pfn_mapped is for control allocation for
+alloc_low_pages.
+
+so put it's updating in init_mem_mapping is clear and less twisting.
+
+also in my patchset that put page table in local node, min_pfn_mapped
+is replaced by
+local_min_pfn_mapped per node.
+
+Yinghai
