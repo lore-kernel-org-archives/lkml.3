@@ -1,103 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760734Ab3ICV10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:27:26 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:38743 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab3ICV1Z (ORCPT
+	id S1760841Ab3ICV3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:29:09 -0400
+Received: from nm26.bullet.mail.bf1.yahoo.com ([98.139.212.185]:24391 "EHLO
+	nm26.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759989Ab3ICV3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:27:25 -0400
+	Tue, 3 Sep 2013 17:29:07 -0400
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 17:29:06 EDT
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 643865.12989.bm@omp1056.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=CVTgPXic9U97w1wqD3GmHvyRfde0THYHkEvtreUVx81EC4SmG8nC7NDYuSr8gJX1NT8fPvCsnn9jH3M0wYe70rCV1otvog52FgniWSYbQOrpznN3p3bJY7AvI59cqWvrboYhqOkERvJRxw5632ecpSwC6s4mYmNNSOEUQqZ2Lyk=;
+X-YMail-OSG: CvWfOYUVM1nnUU0KKlHbAWObh571mGAHvqTQqBsyhNEy1CQ
+ HLm2vGqHMMw_D0JKPJtJu
+X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQsDQoNCkkgYW0gY29udGFjdGluZyB5b3UgdG8gYXNzaXN0IG1lIGluIGEgZnVuZCB0cmFuc2ZlciBvZiAkNiwyMDAsMDAwLjAwIGludG8geW91ciBwZXJzb25hbCBiYW5rIGFjY291bnQgZm9yIG91ciBiZW5lZml0LCB0aGlzIHRyYW5zYWN0aW9uIGlzIGNvbmZpZGVudGlhbCBhbmQgd2UgTVVTVCByZW1haW4gZmlkdWNpYWxseSBpbiBhbGwgb3VyIGRlYWxpbmdzIHNpbmNlIEkgY2Fubm90IGV4ZWN1dGUgdGhpcyBvcHBvcnR1bml0eSBhbG9uZSB3aXRob3V0IHRoZSBzdXBwb3J0IG9mIGEgZm8BMAEBAQE-
+X-RocketYMMF: pnkwachi
+X-Mailer: YahooMailClassic/317 YahooMailWebService/0.8.156.576
+Message-ID: <1378243381.96869.YahooMailBasic@web162803.mail.bf1.yahoo.com>
+Date: Tue, 3 Sep 2013 14:23:01 -0700 (PDT)
+From: Helen Forson <h_forson0@voila.fr>
+Reply-To: h_forson01@voila.fr
+Subject: Urgent Response To This Proposal
+To: undisclosed recipients:;
 MIME-Version: 1.0
-In-Reply-To: <CACT4Y+YjAHgN2fvUsDZ2VZyBVmYacKZdwHJSCJXoHh_P=3dOaQ@mail.gmail.com>
-References: <CACT4Y+ZLN+22hSKSQBbAc14cDi69gm9A+DK54K9hMa5VVi=mUw@mail.gmail.com>
- <CACT4Y+artcxiies1q3XP3+yCh+QzPZQ96dDttpdYXoQ+w2xosQ@mail.gmail.com>
- <CACT4Y+YobKoy9Yp5b6eM21oQrt+bj74qW6uM_DYPkeL-TVA3dQ@mail.gmail.com>
- <20130903202755.GA26033@gmail.com> <CACT4Y+YjAHgN2fvUsDZ2VZyBVmYacKZdwHJSCJXoHh_P=3dOaQ@mail.gmail.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Tue, 3 Sep 2013 18:27:04 -0300
-Message-ID: <CAKi4VAKGqpTSdVB0xZbPbKdnYCXAuYt63U5W0EVkX48X6knDKg@mail.gmail.com>
-Subject: Re: Potential use-after-free in ____call_usermodehelper
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: Dan Aloni <alonid@stratoscale.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Kostya Serebryany <kcc@google.com>,
-        Alexander Potapenko <glider@google.com>,
-        Evgeniy Stepanov <eugenis@google.com>, oleg <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 5:49 PM, Dmitry Vyukov <dvyukov@google.com> wrote:
-> On Wed, Sep 4, 2013 at 12:27 AM, Dan Aloni <alonid@stratoscale.com> wrote:
->> On Tue, Sep 03, 2013 at 05:49:03PM +0400, Dmitry Vyukov wrote:
->>> Is anybody reading this? Is it a correct place to post such things?
->>> Maybe there is a more appropriate place?
->>
->> This is the correct place, and people are reading this. However, the
->> bug is not an obvious one, and you mentioned that this bug reproduces
->> on a tree with significant deviation from vanilla in core kernel code
->> (i.e. memory allocations) with potential bugs, and it also relies on a
->> gcc feature not used by the kernel yet.
->>
->> Because of that it went down in priority compared to other kernel bugs
->> that are currently being investigated.
->
-> Thanks Dan!
->
-> I am new here, so I was thinking maybe I am doing something wrong.
+Dear Friend,
 
-Another thing is.... try to put in CC who touched this function
-lately. I remember touching it some time ago and also Oleg (adding
-him).
+I am contacting you to assist me in a fund transfer of $6,200,000.00 into your personal bank account for our benefit, this transaction is confidential and we MUST remain fiducially in all our dealings since I cannot execute this opportunity alone without the support of a foreigner. This is in line with the Laws governing my Bank and that is why I have contacted you in this manner.
 
+For your role in assisting me actualize this opportunity, you will be entitled to 30% of the total sum while 70% will be for me. However, what I need is your maximum cooperation and to provide a valid bank account where my bank will transfer this fund for our benefit. By indicating your interest on assurance of trust I will send you the full details and how this business will be executed and your urgent response to this proposal will be highly appreciated.
 
->
->
->> Your work and contribution is appreciated nonetheless, but your bug
->> report needs to pertain closer to the work the core kernel hackers
->> are doing.
->
-> What exactly do you mean?
->
->
->> Despite that, I did look into your report, and I'll address your analysis:
->>
->>> >> I've looked at the sources, but I can't say that I fully understand
->>> >> them. The report looks valid, though. I see several potential issues
->>> >> in the code.
->>> >>
->>> >> 1. When wait=UMH_WAIT_EXEC and do_execve() fails,
->>> >> ____call_usermodehelper() writes sub_info->retval=retval to freed
->>> >> memory. This is the use-after-free reported by the tool.
->>
->> The 'pid = kernel_thread(call_helper, sub_info, CLONE_VFORK | SIGCHLD);'
->> call is designed to block until either do_execve() succeeds or the kernel
->> thread exits - that happens after the store that triggers the issue,
->> so the use-after-free cannot occur in that case.
->>
->> This is thanks to the CLONE_VFORK flag, and I doubt it is broken.
->
-> Aha! I've missed VFORK. It's all like in userspace, right? I will redo
-> my analysis.
+Best regards,
+Mrs. Helen Forson.
 
-yes... the VFORK here is what you were missing.
-
-
->
->
->>> >> 2. When wait=UMH_NO_WAIT, __call_usermodehelper() starts child thread
->>> >> and instantly frees subprocess_info. The child thread reads
->>> >> subprocess_info. Looks like another use-after-free.
->>
->> Same, kernel_thread() would be blocking because of CLONE_VFORK.
->>
->>> >> 3. UMH_WAIT_EXEC does not actually wait for exec, it only waits for
->>> >> starting the child thread that will do exec. I don't know whether it's
->>> >> a problem with the code or with the name.
->>
->> Same.
-
-Agreed
-
-Lucas De Marchi
