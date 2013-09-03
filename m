@@ -1,147 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab3ICR0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 13:26:24 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47630 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab3ICR0X (ORCPT
+	id S1759343Ab3ICR1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 13:27:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59603 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab3ICR1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 13:26:23 -0400
-Message-ID: <52261BBB.60904@linaro.org>
-Date: Tue, 03 Sep 2013 10:26:19 -0700
-From: John Stultz <john.stultz@linaro.org>
+	Tue, 3 Sep 2013 13:27:18 -0400
+Message-ID: <52261BF0.4090106@wwwdotorg.org>
+Date: Tue, 03 Sep 2013 11:27:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: kernel deadlock
-References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com> <5221264F.4070402@linaro.org> <5225F8EF.3040701@keymile.com>
-In-Reply-To: <5225F8EF.3040701@keymile.com>
-X-Enigmail-Version: 1.5.2
+To: Lars Poeschel <poeschel@lemonage.de>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <521FE637.3010805@collabora.co.uk> <5220F8AE.2080300@wwwdotorg.org> <1521079.WSLhhfqBXl@lem-wkst-02>
+In-Reply-To: <1521079.WSLhhfqBXl@lem-wkst-02>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 07:57 AM, Gerlando Falauto wrote:
-> Hi,
->
-> I tried again from scratch, so let me recap the whole situation, so we
-> can all view it from the same standpoint. This should make the problem
-> easier to see and reproduce.
->
-> I can confirm that running a stock 3.10 kernel with HRTICK enabled:
-[snip]
-> makes the following program (and the whole board, as a matter of fact)
-> hang with no further notice:
->
-[snip]
-> If I then revert everything up to (and including) the offending commit
-> (mind the '~'):
->
-> $ git log --oneline ...06c017f~ -- kernel/time/timekeeping.c
-> kernel/time/ntp.c | cut -f1 -d' ' | xargs git revert
->
-> The problem disappears.
->
-> If I then cherry-pick again the offending commit:
->
-> $ git cherry-pick 06c017f; git log -1
->
-> commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
-> Author: John Stultz <john.stultz@linaro.org>
-> Date:   Fri Mar 22 11:37:28 2013 -0700
->
->      timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
->
-[snip]
-> And as soon as I also cherry-pick (notice there is another commit in
-> between, which seems not to be relevant on this matter):
->
-> $ git cherry-pick a076b2146fabb0894cae5e0189a8ba3f1502d737; git show
->
-> commit a076b2146fabb0894cae5e0189a8ba3f1502d737
-> Author: John Stultz <john.stultz@linaro.org>
-> Date:   Fri Mar 22 11:52:03 2013 -0700
->
->     ntp: Remove ntp_lock, using the timekeeping locks to protect ntp
-> state
->
-[snip]
->
-> I end up in the situation where the system hangs completely and NO
-> deadlock report whatsoever is output.
->
-> So it looks like 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40 introduces
-> the deadlock, while a076b2146fabb0894cae5e0189a8ba3f1502d737 cares to
-> hide the report.
->
-> Notice how I tested the above on an ARM board; on PowerPC I get
-> similar results, although I am not able to see the deadlock report
-> under any circumstances (enabling CONFIG_PROVE_LOCKING, which is the
-> flag that triggers the deadlock report, causes the kernel to hang at
-> startup even on a vanilla 3.10 kernel).
->
-> John, could you please confirm whether you're at least able to
-> reproduce it somehow?
+On 09/02/2013 03:25 AM, Lars Poeschel wrote:
+> Am Freitag, 30. August 2013, 13:55:26 schrieb Stephen Warren:
+>> On 08/29/2013 06:24 PM, Javier Martinez Canillas wrote:
+>> ...
+>>
+>>> We have been trying to solve this issue for a few months by now and Linus'
+>>> approach seems to be the most sensible solution to me.
+>>>
+>>> Drivers that request an IRQ and assume that platform code will request and
+>>> setup the GPIO have been broken since the boards using these drivers were
+>>> migrated to DT (e.g: smsc911x on OMAP2+ boards).
+>>
+>> That's only true if the driver for the GPIO controller is buggy.
+>> Whatever request_irq() maps down to in the GPIO/IRQ controller driver
+>> simply needs to set up the pin as an interrupt input, then it doesn't
+>> matter which order the driver does things.
+> 
+> Is it really that easy?
 
-Thanks again for the detailed notes. I've so far been unable to
-reproduce this, but I'm still looking at it.
+Yes.
 
-Enabling the SCHED_FEAT(HRTICK, true) bit tends to cause lots of issues
-on the various hardware I have, tripping the lockdep warnings on various
-other issues:
+> request_irq() should request the gpio and set it to input that it needs to 
+> fulfill the irq request. That would then be the way to go for new drivers and 
+> in the DT case.
 
-[    4.224487] ======================================================
-[    4.230987] [ INFO: possible circular locking dependency detected ]
-[    4.237579] 3.9.0-rc2-00148-g06c017f-dirty #8 Not tainted
-[    4.243255] -------------------------------------------------------
-[    4.249847] kworker/0:1H/1329 is trying to acquire lock:
-[    4.255432]  (&p->pi_lock){-.-.-.}, at: [<c006d184>]
-try_to_wake_up+0x30/0x3c
-[    4.263092]
-[    4.263092] but task is already holding lock:
-[    4.269226]  (&rq->lock){-.-.-.}, at: [<c0721f18>] __schedule+0xb8/0x7d0
-[    4.276306]
-[    4.276306] which lock already depends on the new lock.
+Either explicitly request the GPIO, or simply directly program the HW in
+whatever way is required for the pin to operate as an IRQ.
 
-and
+> Some leagcy drivers currently do this:
+> 
+> request_gpio(gpio);
+> gpio_direction_input(gpio);
+> request_irq(gpio_to_irq(gpio));
+> 
+> In that case request_irq should not fail because the driver is already the 
+> correct owner of this gpio. But if some other entity owns this gpio it should 
+> fail.
 
-[    2.360591] =============================================
-[    2.363072] [ INFO: possible recursive locking detected ]
-[    2.364882] 3.9.0-rc2+ #9 Not tainted
-[    2.365486] ---------------------------------------------
-[    2.366345] blkid/999 is trying to acquire lock:
-[    2.367092]  (&p->pi_lock){-.-.-.}, at: [<ffffffff810c763c>]
-try_to_wake_up+0x2c/0x300
-[    2.367275]
-[    2.367275] but task is already holding lock:
-[    2.367275]  (&p->pi_lock){-.-.-.}, at: [<ffffffff810c763c>]
-try_to_wake_up+0x2c/0x300
-[    2.367275]
-[    2.367275] other info that might help us debug this:
-[    2.367275]  Possible unsafe locking scenario:
-[    2.367275]
+Yes.
 
-These warnings disable lockdep, so it may just be I'm not getting a
-chance to see the warning you describe.
+> Also if I understand you correct the other way round should also possible:
+> 
+> request_irq(gpio_to_irq(gpio));
+> request_gpio(gpio);
+> gpio_direction_input(gpio);
+> 
+> request_irq() also requests the gpio then but the following request_gpio() 
+> should also not fail.
 
+I don't believe that code sequence is currently banned. If we want to
+ban it, we should document that. Until this is documented as being
+banned, I think we must fully support that code sequence.
 
-That said, the one system that doesn't throw those lockdep warnings,
-doesn't seem to hit your lockdep warning either, and I've not been able
-to trigger any hang using the test code you provided.
+> To have it work that way we have to track the owners of all requested gpios 
+> somewhere. Or am I wrong here?
+> Where and how to record these owners? Can gpio system achieve this? gpios are 
+> requested without an owning device.
 
-Just in case there's something else here at play, could you send me your
-.config that you're using?
-
-thanks
--john
-
+Yes. But, I believe we need to fully track every GPIO/IRQ owner already
+right now; if a driver (not the GPIO/IRQ chip driver, but a driver that
+uses the GPIOs/IRQs) calls gpio_request()/request_irq(), and this patch
+has already requested them, then we already need to fully track GPIO/IRQ
+ownership to make sure that the driver's own requests aren't failed
+because the DT/GPIO core has already requested them on its behalf.
