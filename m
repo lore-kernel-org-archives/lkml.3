@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab3ICQYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:24:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46357 "EHLO
+	id S1757000Ab3ICQYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:24:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab3ICQYM (ORCPT
+	with ESMTP id S1756794Ab3ICQYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:24:12 -0400
+	Tue, 3 Sep 2013 12:24:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 03/58] cfg80211: fix P2P GO interface teardown
-Date: Tue,  3 Sep 2013 09:23:07 -0700
-Message-Id: <1378225442-20654-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 05/58] iwl4965: reset firmware after rfkill off
+Date: Tue,  3 Sep 2013 09:23:09 -0700
+Message-Id: <1378225442-20654-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -27,37 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 74418edec915d0f446debebde08d170c7b8ba0ee upstream.
+commit 788f7a56fce1bcb2067b62b851a086fca48a0056 upstream.
 
-When a P2P GO interface goes down, cfg80211 doesn't properly
-tear it down, leading to warnings later. Add the GO interface
-type to the enumeration to tear it down like AP interfaces.
-Otherwise, we leave it pending and mac80211's state can get
-very confused, leading to warnings later.
+Using rfkill switch can make firmware unstable, what cause various
+Microcode errors and kernel warnings. Reseting firmware just after
+rfkill off (radio on) helped with that.
 
-Reported-by: Ilan Peer <ilan.peer@intel.com>
-Tested-by: Ilan Peer <ilan.peer@intel.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=977053
+
+Reported-and-tested-by: Justin Pearce <whitefox@guardianfox.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/wireless/core.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlegacy/4965-mac.c | 10 +++++-----
+ drivers/net/wireless/iwlegacy/common.c   |  1 +
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/net/wireless/core.c b/net/wireless/core.c
-index ce1eff7..e4f226c 100644
---- a/net/wireless/core.c
-+++ b/net/wireless/core.c
-@@ -841,6 +841,7 @@ void cfg80211_leave(struct cfg80211_registered_device *rdev,
- 		cfg80211_leave_mesh(rdev, dev);
- 		break;
- 	case NL80211_IFTYPE_AP:
-+	case NL80211_IFTYPE_P2P_GO:
- 		cfg80211_stop_ap(rdev, dev);
- 		break;
- 	default:
+diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
+index c640f69..fdab4fc 100644
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4413,12 +4413,12 @@ il4965_irq_tasklet(struct il_priv *il)
+ 		 * is killed. Hence update the killswitch state here. The
+ 		 * rfkill handler will care about restarting if needed.
+ 		 */
+-		if (!test_bit(S_ALIVE, &il->status)) {
+-			if (hw_rf_kill)
+-				set_bit(S_RFKILL, &il->status);
+-			else
+-				clear_bit(S_RFKILL, &il->status);
++		if (hw_rf_kill) {
++			set_bit(S_RFKILL, &il->status);
++		} else {
++			clear_bit(S_RFKILL, &il->status);
+ 			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
++			il_force_reset(il, true);
+ 		}
+ 
+ 		handled |= CSR_INT_BIT_RF_KILL;
+diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
+index 90b8970..8138d78 100644
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4659,6 +4659,7 @@ il_force_reset(struct il_priv *il, bool external)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(il_force_reset);
+ 
+ int
+ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 -- 
 1.8.1.2
 
