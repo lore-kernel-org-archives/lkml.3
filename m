@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760293Ab3ICR5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 13:57:38 -0400
-Received: from mx2.radiant.net ([216.21.138.129]:52117 "EHLO mx2.radiant.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755878Ab3ICR5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 13:57:36 -0400
-X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 13:57:36 EDT
-From: undp_chevronpetroleum1@rediffmail.com
-Subject: =?ISO-8859-1?Q?Ofici=E1ln=ED?=
- =?ISO-8859-1?Q?_vyhl=E1=3Fen=ED_OZN=C1MEN=CD?=
-X-Mailer: CommuniGate Pro WebUser Interface v.4.1.8
-Date: Tue, 03 Sep 2013 09:57:36 -0700
-Message-ID: <web-361745303@mx2.radiant.net>
+	id S932219Ab3ICR7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 13:59:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58728 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab3ICR7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 13:59:34 -0400
+Date: Tue, 3 Sep 2013 10:59:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>
+Subject: Re: RESEND: Generating interrupts from a USB device driver?
+Message-ID: <20130903175933.GA8463@kroah.com>
+References: <52251562.5000208@att.net>
+ <20130902230738.GA22494@kroah.com>
+ <52253E1F.6000101@att.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52253E1F.6000101@att.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-&#268;íslo ?ar?e: (UK-209-634, E-931-51)
-Oficiální vyhlá?ení OZNÁMENÍ
+On Mon, Sep 02, 2013 at 08:40:47PM -0500, Daniel Santos wrote:
+> On 09/02/2013 06:07 PM, Greg KH wrote:
+> >On Mon, Sep 02, 2013 at 05:46:58PM -0500, Daniel Santos wrote:
+> >>Hello guys.  I didn't get a response the last time so hopefully with
+> >>3.11 out I'll get one this time.
+> >>
+> >>I need to be able to generate interrupts from a USB device driver while
+> >>servicing the complete() function of an interrupt URB.
+> >No you don't :)
+> >
+> >>While I realize that this may seem strange, the purpose is for a USB
+> >>to SPI/GPIO bridge chip (the MCP2210). When something happens on the
+> >>remote device where a chip is expecting it's interrupt out pin to
+> >>trigger an interrupt on some local (to the board) microcontroller, the
+> >>MCP2210 instead receives that signal and communicates it to the host
+> >>the next time it's queried. This is the interrupt that I need to, in
+> >>effect propagate locally. Since my spi_master and gpio_chip are all
+> >>functioning now, this is the last step to get one of my spi protocol
+> >>drivers working correctly.
+> >Just pass the data up the spi stack in your interrupt endpoint handler.
+> >No need to try to create a "real" interrupt.  There are other USB SPI
+> >drivers that should give you the idea of how to do it.
+> Thanks for your response! I haven't been able to find these drivers,
+> can you please point me to one? I guess I don't know the "spi stack"
+> well enough to know how to propagate that notification up to the
+> driver for the spi device (let alone that it was called a "stack" :)
 
-To je Vám oznámit, ?e jste byl vybrán pro pen&#283;?ní cenu
-1,600,000.00 GB kilo mezinárodních program&#367; uskute&#269;&#328;ovaných na 2rd zá&#345;í
-2013 ve Spojeném království Chevron ropy / OSN o rozvoj
-Program (UNDP) Chcete-li zahájit zpracování va?í cenu jste kontaktovat
-va?e nároky d&#367;stojník prost&#345;ednictvím na?ich akreditovaných agent&#367; Prize P&#345;enos jak je uvedeno
-ní?e:
+Hm, I thought we used to have some of them, I guess people have been
+saying they would write a driver for this type of hardware for a long
+time now :(
 
-Mr.D. Matt
-Organizace spojených národ&#367; Komplexní
-PE9 2YP, Londýn
-Spojené království
-E-mail: derickmatt@googlemail.com
+Anyway, look at the spi core, I think you want to tie into the
+spi_new_device() call in your usb driver, and start sending/receiving
+data through the SPI interfaces the spi core provides.
 
-Kontaktujte jej, a poskytne mu na tajnou PIN kódu x5pukg2013 a
-Va?e referen&#269;ní &#269;íslo pro UNDP: 62082013EA-UK/21.You se také doporu&#269;uje
-aby mu na základ&#283; uvedených informací, co nejd&#345;íve:
+The Linux SPI mailing list should be able to help you out a lot more
+here than I can.
 
-NÁROK PO?ADAVEK:
-1.Name v plné vý?i:, 2.Address:, 3.Phone/Fax:,
-
-
-S pozdravem,
-
-Mrs.Tulise hn&#283;dá
-Program Coordinator
+greg k-h
