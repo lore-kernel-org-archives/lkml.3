@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3ICSgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:36:12 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33745 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757352Ab3ICSgK (ORCPT
+	id S1760297Ab3ICSid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:38:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39756 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab3ICSic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:36:10 -0400
-Message-ID: <52262C16.3020406@wwwdotorg.org>
-Date: Tue, 03 Sep 2013 12:36:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	Tue, 3 Sep 2013 14:38:32 -0400
+Message-ID: <52262CA4.2030902@kernel.dk>
+Date: Tue, 03 Sep 2013 12:38:28 -0600
+From: Jens Axboe <axboe@kernel.dk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Tomasz Figa <tomasz.figa@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/5] ARM: add basic Trusted Foundations support
-References: <1377770268-14014-1-git-send-email-acourbot@nvidia.com> <1377770268-14014-2-git-send-email-acourbot@nvidia.com> <2081838.eZHRxlDf7s@flatron> <CAAVeFuJ=z-29gp9=caQaxRGCiOQSnPLfafia3eCgWAUuny3GBg@mail.gmail.com>
-In-Reply-To: <CAAVeFuJ=z-29gp9=caQaxRGCiOQSnPLfafia3eCgWAUuny3GBg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+To: David Milburn <dmilburn@redhat.com>
+CC: Asai Thambi S P <asamymuthupa@micron.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH] mtip32xx: Add SRSI support
+References: <518BE87F.3080201@micron.com> <52262C8F.30107@redhat.com>
+In-Reply-To: <52262C8F.30107@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 01:28 AM, Alexandre Courbot wrote:
-> Hi Tomasz!
-> 
-> On Fri, Aug 30, 2013 at 5:20 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->>> +Required properties:
->>> +- compatible : "tl,trusted-foundations"
->>> +- version-major : major version number of Trusted Foundations firmware
->>> +- version-minor: minor version number of Trusted Foundations firmware
+On 09/03/2013 12:38 PM, David Milburn wrote:
+> Asai Thambi S P wrote:
+>> This patch add support for SRSI(Surprise Removal Surprise Insertion).
 >>
->> Hmm, maybe you could simply define a single version property that could
->> have multiple cells? Like:
+>> Approach:
+>> ---------
+>> Surprise Removal:
+>> -----------------
+>> On surprise removal of the device, gendisk, request queue, device
+>> index, sysfs
+>> entries, etc are retained as long as device is in use - mounted
+>> filesystem,
+>> device opened by an application, etc. The service thread breaks out of
+>> the main
+>> while loop, waits for pci remove to exit, and then waits for device to
+>> become
+>> free. When there no holders of the device, service thread cleans up
+>> the block
+>> and device related stuff and returns.
 >>
->>         firmware {
->>                 compatible = "tl,trusted-foundations";
->>                 version = <2 8>;
->>         };
-> 
-> I'm fine this way too, but do we have other bindings that use the same
-> scheme? What is the general convention for version number bindings?
-
-I don't know if there are enough cases of this for there to be a
-convention. A 2-cell property seems fine to me.
-
->>> +       This option allows the kernel to invoke the secure monitor whenever
->>> +       required on devices using Trusted Foundations.
->>> +
->>> +       Devices using Trusted Foundations should pass a device tree
->>> containing +    a node compatible with "tl,trusted-foundations" to
->>> signal the presence +   of the secure monitor.
+>> Surprise Insertion:
+>> -------------------
+>> No change, this scenario follows the normal pci probe() function flow.
 >>
->> What about pointing to the documentation file instead?
+>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+>> ---
+>>  drivers/block/mtip32xx/mtip32xx.c |  453
+>> ++++++++++++++++++++++---------------
+>>  drivers/block/mtip32xx/mtip32xx.h |   18 +-
+>>  2 files changed, 289 insertions(+), 182 deletions(-)
+>>
 > 
-> Yes, that would make more sense.
+> Hi Jens,
+> 
+> Will you be considering this patch for 3.12?
 
-Possibly. What about when the binding document is no longer part of the
-kernel though? Perhaps we could reference the documentation in some way
-other than by the pathname within the kernel source tree though, e.g.
-'see the device tree binding documentation for
-compatible="tl,trusted-foundations"'?
+Yep, it will go in this merge window.
+
+-- 
+Jens Axboe
+
