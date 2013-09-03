@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab3ICON2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 10:13:28 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:50939 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab3ICON1 (ORCPT
+	id S1760098Ab3ICOPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 10:15:45 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:55813 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752558Ab3ICOPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 10:13:27 -0400
-Date: Tue, 3 Sep 2013 16:13:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timers/nohz changes for v3.12
-Message-ID: <20130903141322.GA27504@gmail.com>
+	Tue, 3 Sep 2013 10:15:44 -0400
+Date: Tue, 3 Sep 2013 14:15:42 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
+ of a slab
+In-Reply-To: <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com> <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.03-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 2 Sep 2013, Joonsoo Kim wrote:
 
-Please pull the latest timers-nohz-for-linus git tree from:
+> This patchset implements byte sized indexes for the freelist of a slab.
+>
+> Currently, the freelist of a slab consist of unsigned int sized indexes.
+> Most of slabs have less number of objects than 256, so much space is wasted.
+> To reduce this overhead, this patchset implements byte sized indexes for
+> the freelist of a slab. With it, we can save 3 bytes for each objects.
+>
+> This introduce one likely branch to functions used for setting/getting
+> objects to/from the freelist, but we may get more benefits from
+> this change.
+>
+> Below is some numbers of 'cat /proc/slabinfo' related to my previous posting
+> and this patchset.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-nohz-for-linus
-
-   HEAD: c2e7fcf53c3cb02b4ada1c66a9bc8a4d97d58aba nohz: Include local CPU in full dynticks global kick
-
-It mostly contains fixes and full dynticks off-case optimizations,
-by Frederic Weisbecker.
-
-NOTE: for some reason my pull request scripts failed to generate a proper 
-diffstat so I've generated the shortlog and diffstat manually. All 
-resulting mistakes are mine.
-
- Thanks,
-
-	Ingo
-
------------------->
-Frederic Weisbecker (24):
-      sched: Consolidate open coded preemptible() checks
-      context_tracing: Fix guest accounting with native vtime
-      vtime: Update a few comments
-      context_tracking: Fix runtime CPU off-case
-      nohz: Only enable context tracking on full dynticks CPUs
-      context_tracking: Remove full dynticks' hacky dependency on wide context tracking
-      context_tracking: Ground setup for static key use
-      context_tracking: Optimize main APIs off case with static key
-      context_tracking: Optimize guest APIs off case with static key
-      context_tracking: Optimize context switch off case with static keys
-      context_tracking: User/kernel broundary cross trace events
-      vtime: Remove a few unneeded generic vtime state checks
-      vtime: Fix racy cputime delta update
-      context_tracking: Split low level state headers
-      hardirq: Split preempt count mask definitions
-      m68k: hardirq_count() only need preempt_mask.h
-      vtime: Describe overriden functions in dedicated arch headers
-      vtime: Optimize full dynticks accounting off case with static keys
-      vtime: Always scale generic vtime accounting results
-      vtime: Always debug check snapshot source _before_ updating it
-      nohz: Rename a few state variables
-      nohz: Optimize full dynticks state checks with static keys
-      nohz: Optimize full dynticks's sched hooks with static keys
-      nohz: Include local CPU in full dynticks global kick
-
-Ingo Molnar (1):
-      Merge branch 'timers/nohz-v3' of git://git.kernel.org/.../frederic/linux-dynticks into timers/nohz
-
-Merge made by the 'recursive' strategy.
-
- arch/ia64/include/asm/Kbuild            |   1 +
- arch/m68k/include/asm/irqflags.h        |   2 +-
- arch/powerpc/include/asm/Kbuild         |   1 +
- arch/s390/include/asm/cputime.h         |   3 --
- arch/s390/include/asm/vtime.h           |   7 ++++
- arch/s390/kernel/vtime.c                |   1 +
- include/linux/context_tracking.h        | 128 ++++++++++++++++++++++++++++++++++++++---------------------------------
- include/linux/context_tracking_state.h  |  39 ++++++++++++++++++++++
- include/linux/hardirq.h                 | 117 +---------------------------------------------------------------
- include/linux/preempt_mask.h            | 122 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/tick.h                    |  45 +++++++++++++++++++++----
- include/linux/vtime.h                   |  74 ++++++++++++++++++++++++++++++++++++-----
- include/trace/events/context_tracking.h |  58 ++++++++++++++++++++++++++++++++
- init/Kconfig                            |  28 ++++++++++++----
- init/main.c                             |   2 ++
- kernel/context_tracking.c               | 125 +++++++++++++++++++++++++++++++++++++++------------------------------
- kernel/sched/core.c                     |   4 +--
- kernel/sched/cputime.c                  |  53 +++++++++--------------------
- kernel/time/Kconfig                     |   1 -
- kernel/time/tick-sched.c                |  61 ++++++++++++++++------------------
- 20 files changed, 545 insertions(+), 327 deletions(-)
- create mode 100644 arch/s390/include/asm/vtime.h
- create mode 100644 include/asm-generic/vtime.h
- create mode 100644 include/linux/context_tracking_state.h
- create mode 100644 include/linux/preempt_mask.h
- create mode 100644 include/trace/events/context_tracking.h
+You  may also want to run some performance tests. The cache footprint
+should also be reduced with this patchset and therefore performance should
+be better.
 
