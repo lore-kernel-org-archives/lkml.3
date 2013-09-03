@@ -1,124 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab3ICFnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:43:39 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:40506 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab3ICFnh (ORCPT
+	id S932378Ab3ICFoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:44:21 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50313 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759374Ab3ICFoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:43:37 -0400
-Date: Tue, 3 Sep 2013 07:43:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: arnd@arndb.de, bjorn@mork.no, bob@cozybit.com, bp@suse.de,
-        davem@davemloft.net, davidlohr.bueso@hp.com, dipankar@in.ibm.com,
-        eric.dumazet@gmail.com, fengguang.wu@intel.com, fweisbec@gmail.com,
-        james.hogan@imgtec.com, johannes@sipsolutions.net,
-        john.stultz@linaro.org, josh@joshtriplett.org, kaber@trash.net,
-        kevin@guarana.org, laijs@cn.fujitsu.com, lizefan@huawei.com,
-        mathieu.desnoyers@efficios.com, riel@surriel.com, rostedt@goodmis.org,
-        sedat.dilek@gmail.com, symingz@gmail.com, tglx@linutronix.de,
-        tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.12
-Message-ID: <20130903054333.GA16261@gmail.com>
-References: <20130902182959.GA32334@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130902182959.GA32334@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 01:44:18 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-92-52257730ac5b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v5)
+Date: Tue,  3 Sep 2013 14:44:01 +0900
+Message-Id: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+This patchset implements memory (address), stack[N], deference,
+bitfield and retval (it needs uretprobe tho) fetch methods for
+uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
 
-> Hello, Ingo,
-> 
-> The major changes for this series are:
-> 
-> 1.	Update RCU documentation.  These were posted to LKML at
-> 	https://lkml.org/lkml/2013/8/19/611.
-> 
-> 2.	Miscellaneous fixes.  These were posted to LKML at
-> 	https://lkml.org/lkml/2013/8/19/619.
-> 
-> 3.	Full-system idle detection.  This is for use by Frederic
-> 	Weisbecker's adaptive-ticks mechanism.	Its purpose is
-> 	to allow the timekeeping CPU to shut off its tick when
-> 	all other CPUs are idle.  These were posted to LKML at
-> 	https://lkml.org/lkml/2013/8/19/648.
-> 
-> 4.	Improve rcutorture test coverage.  These were posted to LKML at
-> 	https://lkml.org/lkml/2013/8/19/675.
-> 
-> All of these commits have been subjected to -next testing and are
-> available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> for you to fetch changes up to 25f27ce4a6a4995c8bdd69b4b2180465ed5ad2b8:
-> 
->   Merge branches 'doc.2013.08.19a', 'fixes.2013.08.20a', 'sysidle.2013.08.31a' and 'torture.2013.08.20a' into HEAD (2013-08-31 14:44:45 -0700)
-> 
-> ----------------------------------------------------------------
-> 
-> Borislav Petkov (1):
->       rcu: Expedite grace periods during suspend/resume
-> 
-> James Hogan (1):
->       rcu: Select IRQ_WORK from TREE_PREEMPT_RCU
-> 
-> Paul E. McKenney (24):
->       rcu: Fix rcu_barrier() documentation
->       rcu: Simplify debug-objects fixups
->       debugobjects: Make debug_object_activate() return status
->       rcu: Make call_rcu() leak callbacks for debug-object errors
->       rcu: Avoid redundant grace-period kthread wakeups
->       rcu: Eliminate unused APIs intended for adaptive ticks
->       nohz_full: Add testing information to documentation
->       nohz_full: Add Kconfig parameter for scalable detection of all-idle state
->       nohz_full: Add rcu_dyntick data for scalable detection of all-idle state
->       nohz_full: Add per-CPU idle-state tracking
->       nohz_full: Add full-system idle states and variables
->       nohz_full: Add full-system-idle arguments to API
->       rcu: Update RTFP documentation
->       doc: Fix memory-barrier control-dependency example
->       rcu: Add duplicate-callback tests to rcutorture
->       rcu: Increase rcutorture test coverage
->       rcu: Sort rcutorture module parameters
->       rcu: Remove unused variable from rcu_torture_writer()
->       rcu: Make rcutorture emit online failures if verbose
->       rcu: Simplify _rcu_barrier() processing
->       jiffies: Avoid undefined behavior from signed overflow
->       nohz_full: Add full-system-idle state machine
->       nohz_full: Force RCU's grace-period kthreads onto timekeeping CPU
->       Merge branches 'doc.2013.08.19a', 'fixes.2013.08.20a', 'sysidle.2013.08.31a' and 'torture.2013.08.20a' into HEAD
-> 
-> Tejun Heo (1):
->       rculist: list_first_or_null_rcu() should use list_entry_rcu()
-> 
->  Documentation/RCU/RTFP.txt        | 858 ++++++++++++++++++++++++--------------
->  Documentation/RCU/rcubarrier.txt  |  12 +-
->  Documentation/RCU/torture.txt     |  10 +
->  Documentation/memory-barriers.txt |  10 +-
->  Documentation/timers/NO_HZ.txt    |  44 +-
->  include/linux/debugobjects.h      |   6 +-
->  include/linux/jiffies.h           |   8 +-
->  include/linux/rculist.h           |   5 +-
->  include/linux/rcupdate.h          |  22 +-
->  init/Kconfig                      |   1 +
->  kernel/rcu.h                      |  10 +-
->  kernel/rcupdate.c                 | 100 -----
->  kernel/rcutorture.c               | 388 ++++++++---------
->  kernel/rcutree.c                  | 150 ++++---
->  kernel/rcutree.h                  |  17 +
->  kernel/rcutree_plugin.h           | 424 ++++++++++++++++++-
->  kernel/time/Kconfig               |  50 +++
->  lib/debugobjects.c                |  20 +-
->  18 files changed, 1418 insertions(+), 717 deletions(-)
+Now kprobes and uprobes have their own fetch_type_tables and, in turn,
+memory and stack access methods.  Other fetch methods are shared.
 
-Pulled, thanks a lot Paul!
+For the dereference method, I added a new argument to fetch functions.
+It's because for uprobes it needs to know whether the given address is
+a file offset or a virtual address in an user process.  For instance,
+in case of fetching from a memory directly (like @offset) it should
+convert the address (offset) to a virtual address of the process, but
+if it's a dereferencing, the given address already has the virtual
+address.
 
-	Ingo
+To determine this in a fetch function, I passed a pointer to
+trace_uprobe for direct fetch, and passed NULL for dereference.
+
+The patch 1-2 are bug fixes and can be applied independently.
+
+Please look at patch 10 that uses per-cpu buffer for accessing user
+memory as suggested by Steven.  While I tried hard not to mess things
+up there might be a chance I did something horrible.  It'd be great if
+you guys take a look and give comments.
+
+
+ * v5 changes:
+  - use user_stack_pointer() instead of GET_USP()
+  - fix a bug in 'stack' fetch method of uprobes
+
+ * v4 changes:
+  - add Ack's from Masami
+  - rearrange patches to make it easy for simple fixes to be applied
+  - update documentation
+  - use per-cpu buffer for storing args (thanks to Steve!)
+
+
+[1] https://lkml.org/lkml/2012/11/14/84
+
+A simple example:
+
+  # cat foo.c
+  int glob = -1;
+  char str[] = "hello uprobe.";
+
+  struct foo {
+    unsigned int unused: 2;
+    unsigned int foo: 20;
+    unsigned int bar: 10;
+  } foo = {
+    .foo = 5,
+  };
+
+  int main(int argc, char *argv[])
+  {
+    long local = 0x1234;
+
+    return 127;
+  }
+
+  # gcc -o foo -g foo.c
+
+  # objdump -d foo | grep -A9 -F '<main>'
+  00000000004004b0 <main>:
+    4004b0:	55                   	push   %rbp
+    4004b1:	48 89 e5             	mov    %rsp,%rbp
+    4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
+    4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+    4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
+    4004c2:	00 
+    4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
+    4004c8:	5d                   	pop    %rbp
+    4004c9:	c3                   	retq   
+
+  # nm foo | grep -e glob$ -e str -e foo
+  00000000006008bc D foo
+  00000000006008a8 D glob
+  00000000006008ac D str
+
+  # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x8a8:s32 \
+  > str=@0x8ac:string bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp)'
+  Added new event:
+    probe_foo:foo      (on 0x4c3 with glob=@0x8a8:s32 str=@0x8ac:string 
+                                 bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp))
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe_foo:foo -aR sleep 1
+
+  # perf record -e probe_foo:foo ./foo
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
+
+  # perf script | grep -v ^#
+               foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
+                   glob=-1 str="hello uprobe." bit=5 argc=1 local=1234
+
+
+This patchset is based on the current for-next branch of the Steven
+Rostedt's linux-trace tree.  I also put this on my 'uprobe/fetch-v5'
+branch in my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+
+
+Hyeoncheol Lee (2):
+  tracing/kprobes: Move fetch functions to trace_kprobe.c
+  tracing/kprobes: Add fetch{,_size} member into deref fetch method
+
+Namhyung Kim (11):
+  tracing/uprobes: Fix documentation of uprobe registration syntax
+  tracing/probes: Fix basic print type functions
+  tracing/kprobes: Staticize stack and memory fetch functions
+  tracing/kprobes: Factor out struct trace_probe
+  tracing/uprobes: Convert to struct trace_probe
+  tracing/kprobes: Move common functions to trace_probe.h
+  tracing/kprobes: Integrate duplicate set_print_fmt()
+  tracing/uprobes: Fetch args before reserving a ring buffer
+  tracing/kprobes: Add priv argument to fetch functions
+  tracing/uprobes: Add more fetch functions
+  tracing/uprobes: Add support for full argument access methods
+
+ Documentation/trace/uprobetracer.txt |  35 +-
+ kernel/trace/trace_kprobe.c          | 642 +++++++++++++++++++----------------
+ kernel/trace/trace_probe.c           | 453 +++++++++---------------
+ kernel/trace/trace_probe.h           | 202 ++++++++++-
+ kernel/trace/trace_uprobe.c          | 457 +++++++++++++++++--------
+ 5 files changed, 1062 insertions(+), 727 deletions(-)
+
+-- 
+1.7.11.7
+
