@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771Ab3ICTJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 15:09:34 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:49041 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933561Ab3ICTJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 15:09:28 -0400
+	id S933811Ab3ICTK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 15:10:26 -0400
+Received: from nm18-vm10.access.bullet.mail.bf1.yahoo.com ([216.109.115.89]:39669
+	"EHLO nm18-vm10.access.bullet.mail.bf1.yahoo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933794Ab3ICTKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 15:10:23 -0400
+X-Yahoo-Newman-Id: 838146.86671.bm@smtp106.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: j0mfhHQVM1n5rQhfcjpmuucAeJkF8TLgLrVabZJIsFKZOmo
+ Gn3q.slTxEto4od00UG1EuKtvyVQkTkgJuoZxJatpcvWgCBSXGPB9fwDTMjn
+ 9Wk.1wH9XTlAcw3GJq1MIBpYVyotaJ2m3lwilOUXmJWvphCvUfjRU3pNp0MG
+ .1yHMvtZsI4oN8.Bqp2s5ywTFwFSlNlZZTXpd.0WuWhKtuQ2uzPMjL75jiUJ
+ E.ViJrieDSIgkQyRzduc0I5p8fP8vPefQIwQwfG0hNhicr65TO0bHk6Txlg0
+ nFg0ZYPNoUeAGOYBnRgs_LuYwGn1Qxi5Piw.ldpIkT8.qw0W4KWJBii81Uil
+ aE4_FNk0R8cJog2x7yA660Pqv5UKeLA3oimWvWstlWTQ8257aFjnAvNugpXO
+ OZC0dK947NG54I0n8cxVWowtheo3vzDaicp7B6gHAkJNwWIthZYq7bxh91qC
+ 5Gjewx0OnMLLTeVFaHsRUIc6z5VBIALNev1fp8jFrabg9RUxb_d0SSsdzZs_
+ rend_IwqkkTKNkrug6iTFGV0xhQyShbL91J3IE0m7K1T6oAqAotYHrrgjwCt
+ 7iJKxfx3e6vch8JkdPWmxaSg-
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with plain)
+        by smtp106.sbc.mail.bf1.yahoo.com with SMTP; 03 Sep 2013 12:10:21 -0700 PDT
+Message-ID: <5226342E.70804@att.net>
+Date: Tue, 03 Sep 2013 14:10:38 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com>
-References: <5220F090.5050908@hp.com>
-	<20130830194059.GC13318@ZenIV.linux.org.uk>
-	<5220F811.9060902@hp.com>
-	<20130830202608.GD13318@ZenIV.linux.org.uk>
-	<52210225.60805@hp.com>
-	<20130830204852.GE13318@ZenIV.linux.org.uk>
-	<52214EBC.90100@hp.com>
-	<20130831023516.GI13318@ZenIV.linux.org.uk>
-	<20130831024233.GJ13318@ZenIV.linux.org.uk>
-	<5224E647.80303@hp.com>
-	<20130903060130.GD16261@gmail.com>
-	<5225FCEE.7030901@hp.com>
-	<CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com>
-Date: Tue, 3 Sep 2013 12:09:27 -0700
-X-Google-Sender-Auth: 5pju3LOpmd63E50GLYHKKUBN4WM
-Message-ID: <CA+55aFw0jme+qK5b_VJVqoVD6cZuSjVsm-Sgjf_YkPXgMToqUA@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>
+Subject: Re: RESEND: Generating interrupts from a USB device driver?
+References: <52251562.5000208@att.net> <20130902230738.GA22494@kroah.com> <52253E1F.6000101@att.net> <20130903175933.GA8463@kroah.com>
+In-Reply-To: <20130903175933.GA8463@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 8:34 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+
+On 09/03/2013 12:59 PM, Greg KH wrote:
+> Hm, I thought we used to have some of them, I guess people have been
+> saying they would write a driver for this type of hardware for a long
+> time now :(
+
+Well, on the bright side, we have one now, albeit in a "this is my first 
+driver that nobody has reviewed yet" state. :)  It works (even on RPi -- 
+well, mostly).  As-is, it has a fair TODO & fix list, which I'm sure 
+will grow rapidly with some review. I hope that as I learn the kernel 
+better, I can generalize parts of this into some re-usable lib for other 
+USB-to-SPI/I2C/GPIO drivers.
+
+https://github.com/daniel-santos/mcp2210-linux/
+
+> Anyway, look at the spi core, I think you want to tie into the
+> spi_new_device() call in your usb driver, and start sending/receiving
+> data through the SPI interfaces the spi core provides.
+
+I'm actually using the alternative to that call, which is the 
+spi_alloc_device() / spi_add_device() pair as I'm not using struct 
+spi_board_info at all since it doesn't (currently) have even half of the 
+fields I need for each device. However, struct spi_device does have the 
+two void * fields controller_data and controller_state -- I suppose I 
+can use those to pass a pointer to a add_notify() type of function.  I 
+was just trying to seek a more generic, re-usable mechanism, but this 
+should at least work for now.
+
+> The Linux SPI mailing list should be able to help you out a lot more
+> here than I can.
 >
-> I suspect the tty_ldisc_lock() could be made to go away if we care.
+> greg k-h
 
-Heh. I just pulled the tty patches from Greg, and the locking has
-changed completely.
-
-It may actually fix your AIM7 test-case, because while the global
-spinlock remains (it got renamed to "tty_ldiscs_lock" - there's an
-added "s"), the common operations now take the per-tty lock to get the
-ldisc for that tty, rather than that global spinlock (which just
-protects the actual ldisk array now).
-
-That said, I don't know what AIM7 really ends up doing, but your
-profile seems to have every access through tty_ldisc_[de]ref() that
-now uses only the per-tty lock. Of course, how much that helps ends up
-depending on whether AIM7 uses lots of tty's or just one shared one.
-
-Anyway, it might be worth testing my current -git tree.
-
-                  Linus
+Thanks again for your help!
