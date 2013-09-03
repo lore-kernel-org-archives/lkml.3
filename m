@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab3ICNiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:38:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33718 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab3ICNiE (ORCPT
+	id S932964Ab3ICNkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:40:11 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56277 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932888Ab3ICNkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:38:04 -0400
-Date: Tue, 3 Sep 2013 10:37:48 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [GIT PULL] perf changes for v3.12
-Message-ID: <20130903133748.GE9064@ghostprotocols.net>
-References: <20130903132933.GA24955@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903132933.GA24955@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 3 Sep 2013 09:40:09 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 1/2] input: allow SERIO=m even without EXPERT=y
+Date: Tue,  3 Sep 2013 15:40:55 +0200
+Message-Id: <1378215656-11827-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 03, 2013 at 03:29:33PM +0200, Ingo Molnar escreveu:
-> Linus,
-> 
-> Please pull the latest perf-core-for-linus git tree from:
+There is plenty of consumer hardware (e.g., mac books) that does not use
+AT keyboards or PS/2 mice. It therefore makes sense for distro kernels
+to build the related drivers as modules to avoid loading them on hardware
+that does not need them. As such, these options should no longer be protected
+by EXPERT.
 
-There were some misatributions I found, from memory, here, clarifying
-FWIW:
+Moreover, building these drivers as modules gets rid of the following ugly
+error during boot:
+
+[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
+[    3.439537] i8042: No controller found
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/keyboard/Kconfig | 4 ++--
+ drivers/input/serio/Kconfig    | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 269d4c3..2d31cec 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ menuconfig INPUT_KEYBOARD
+-	bool "Keyboards" if EXPERT || !X86
++	bool "Keyboards"
+ 	default y
+ 	help
+ 	  Say Y here, and a list of supported keyboards will be displayed.
+@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
+ 	  module will be called atakbd.
  
->    * 'perf test' enhancements:
-> 
->         . Add various improvements and fixes to the "vmlinux matches 
->           kallsyms" 'perf test' entry, related to the /proc/kcore 
->           annotation feature. By Arnaldo Carvalho de Melo.
-
-by Adrian Hunter
-     
->    * 'perf sched' enhancements:
->     
->         . Various improvements, including removing reliance on some 
->           scheduler tracepoints that provide the same information as the 
->           PERF_RECORD_{FORK,EXIT} events. By Arnaldo Carvalho de Melo.
-
-By David Ahern.
+ config KEYBOARD_ATKBD
+-	tristate "AT keyboard" if EXPERT || !X86
++	tristate "AT keyboard"
+ 	default y
+ 	select SERIO
+ 	select SERIO_LIBPS2
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 1e691a3..39c869d 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ config SERIO
+-	tristate "Serial I/O support" if EXPERT || !X86
++	tristate "Serial I/O support"
+ 	default y
+ 	help
+ 	  Say Yes here if you have any input device that uses serial I/O to
+@@ -19,7 +19,7 @@ config SERIO
+ if SERIO
  
-:-)
+ config SERIO_I8042
+-	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
++	tristate "i8042 PC Keyboard controller"
+ 	default y
+ 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
+ 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
+@@ -170,7 +170,7 @@ config SERIO_MACEPS2
+ 	  module will be called maceps2.
+ 
+ config SERIO_LIBPS2
+-	tristate "PS/2 driver library" if EXPERT
++	tristate "PS/2 driver library"
+ 	depends on SERIO_I8042 || SERIO_I8042=n
+ 	help
+ 	  Say Y here if you are using a driver for device connected
+-- 
+1.8.4
 
-- Arnaldo
