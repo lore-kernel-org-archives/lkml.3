@@ -1,228 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759912Ab3ICLMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 07:12:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:5085 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3ICLMP (ORCPT
+	id S1759931Ab3ICLUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 07:20:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36974 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756396Ab3ICLT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 07:12:15 -0400
-Message-ID: <5225C38C.2090305@huawei.com>
-Date: Tue, 3 Sep 2013 19:10:04 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 3 Sep 2013 07:19:58 -0400
+Date: Tue, 3 Sep 2013 13:19:54 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: oliver+list@schinagl.nl, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        andy.shevchenko@gmail.com, tomasz.figa@gmail.com,
+        Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCHv6 1/2] ARM: sunxi: Initial support for Allwinner's
+ Security ID fuses
+Message-ID: <20130903111954.GB2630@lukather>
+References: <1378035019-9649-1-git-send-email-oliver+list@schinagl.nl>
+ <1378035019-9649-2-git-send-email-oliver+list@schinagl.nl>
+ <20130902080812.GA2630@lukather>
+ <20130902161232.GA23912@kroah.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
- ring buffer
-References: <1378187054-27401-1-git-send-email-namhyung@kernel.org> <1378187054-27401-11-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1378187054-27401-11-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
+Content-Disposition: inline
+In-Reply-To: <20130902161232.GA23912@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/3 13:44, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Fetching from user space should be done in a non-atomic context.  So
-> use a per-cpu buffer and copy its content to the ring buffer
-> atomically.  Note that we can migrate during accessing user memory
-> thus use a per-cpu mutex to protect concurrent accesses.
-> 
-> This is needed since we'll be able to fetch args from an user memory
-> which can be swapped out.  Before that uprobes could fetch args from
-> registers only which saved in a kernel space.
-> 
-> While at it, use __get_data_size() and store_trace_args() to reduce
-> code duplication.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/trace/trace_uprobe.c | 97 +++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 81 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 9f2d12d2311d..9ede401759ab 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -530,21 +530,46 @@ static const struct file_operations uprobe_profile_ops = {
->  	.release	= seq_release,
->  };
->  
-> +static atomic_t uprobe_buffer_ref = ATOMIC_INIT(0);
-> +static void __percpu *uprobe_cpu_buffer;
-> +static DEFINE_PER_CPU(struct mutex, uprobe_cpu_mutex);
-> +
->  static void uprobe_trace_print(struct trace_uprobe *tu,
->  				unsigned long func, struct pt_regs *regs)
->  {
->  	struct uprobe_trace_entry_head *entry;
->  	struct ring_buffer_event *event;
->  	struct ring_buffer *buffer;
-> -	void *data;
-> -	int size, i;
-> +	struct mutex *mutex;
-> +	void *data, *arg_buf;
-> +	int size, dsize, esize;
-> +	int cpu;
->  	struct ftrace_event_call *call = &tu->p.call;
->  
-> -	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +	dsize = __get_data_size(&tu->p, regs);
-> +	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +
-> +	if (WARN_ON_ONCE(!uprobe_cpu_buffer || tu->p.size + dsize > PAGE_SIZE))
-> +		return;
-> +
-> +	cpu = raw_smp_processor_id();
-> +	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-> +	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-> +
-> +	/*
-> +	 * Use per-cpu buffers for fastest access, but we might migrate
-> +	 * so the mutex makes sure we have sole access to it.
-> +	 */
-> +	mutex_lock(mutex);
-> +	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
-> +
-> +	size = esize + tu->p.size + dsize;
->  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> -						  size + tu->p.size, 0, 0);
-> -	if (!event)
-> +						  size, 0, 0);
-> +	if (!event) {
-> +		mutex_unlock(mutex);
->  		return;
-> +	}
->  
->  	entry = ring_buffer_event_data(event);
->  	if (is_ret_probe(tu)) {
-> @@ -556,13 +581,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->p.nr_args; i++) {
-> -		call_fetch(&tu->p.args[i].fetch, regs,
-> -			   data + tu->p.args[i].offset);
-> -	}
-> +	memcpy(data, arg_buf, tu->p.size + dsize);
->  
->  	if (!filter_current_check_discard(buffer, call, entry, event))
->  		trace_buffer_unlock_commit(buffer, event, 0, 0);
-> +
-> +	mutex_unlock(mutex);
->  }
->  
->  /* uprobe handler */
-> @@ -630,6 +654,17 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
->  	if (trace_probe_is_enabled(&tu->p))
->  		return -EINTR;
->  
-> +	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
-> +		int cpu;
-> +
-> +		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
-> +		if (uprobe_cpu_buffer == NULL)
-> +			return -ENOMEM;
-> +
 
-Do we need add atomic_dec if allocate percpu buffer failed?
+--jho1yZJdad60DJr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +		for_each_possible_cpu(cpu)
-> +			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
-> +	}
-> +
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->  
->  	tu->p.flags |= flag;
-> @@ -646,6 +681,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
->  	if (!trace_probe_is_enabled(&tu->p))
->  		return;
->  
-> +	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
-> +		free_percpu(uprobe_cpu_buffer);
-> +		uprobe_cpu_buffer = NULL;
-> +	}
-> +
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->  
->  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> @@ -776,11 +816,33 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
->  	struct ftrace_event_call *call = &tu->p.call;
->  	struct uprobe_trace_entry_head *entry;
->  	struct hlist_head *head;
-> -	void *data;
-> -	int size, rctx, i;
-> +	struct mutex *mutex;
-> +	void *data, *arg_buf;
-> +	int size, dsize, esize;
-> +	int cpu;
-> +	int rctx;
->  
-> -	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> -	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-> +	dsize = __get_data_size(&tu->p, regs);
-> +	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +
-> +	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
-> +		return;
-> +
-> +	size = esize + tu->p.size + dsize;
-> +	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-> +	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
-> +		return;
-> +
-> +	cpu = raw_smp_processor_id();
-> +	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-> +	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-> +
-> +	/*
-> +	 * Use per-cpu buffers for fastest access, but we might migrate
-> +	 * so the mutex makes sure we have sole access to it.
-> +	 */
-> +	mutex_lock(mutex);
-> +	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
->  
->  	preempt_disable();
->  	head = this_cpu_ptr(call->perf_events);
-> @@ -800,15 +862,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->p.nr_args; i++) {
-> -		struct probe_arg *parg = &tu->p.args[i];
-> +	memcpy(data, arg_buf, tu->p.size + dsize);
-> +
-> +	if (size - esize > tu->p.size + dsize) {
-> +		int len = tu->p.size + dsize;
->  
-> -		call_fetch(&parg->fetch, regs, data + parg->offset);
-> +		memset(data + len, 0, size - esize - len);
->  	}
->  
->  	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
->   out:
->  	preempt_enable();
-> +	mutex_unlock(mutex);
->  }
->  
->  /* uprobe profile handler */
-> 
+Hi Greg,
 
+On Mon, Sep 02, 2013 at 09:12:32AM -0700, Greg KH wrote:
+> > What I wanted was a (pretty long, I agree) summing up the whole
+> > discussion we had.
+> >=20
+> > Something like:
+> >=20
+> > /*
+> >  * Be aware that this will generate a race with userspace. By the time
+> >  * it gets called, udev has already been notified of the device
+> >  * addition, and will never be notified that this file has been added.
+> >  *
+> >  * It should be properly fixed by having some way to attach a sysfs
+> >  * attribute group to the device structure before the probe.
+> >  * Unfortunately, this is both not possible for platform devices at the
+> >  * moment and not trivial to do, so this will need a proper fix later
+> >  * on.
+> >  */
+> >=20
+> > And just like the comment quoted above, you can remove the useless fixme
+> > comments you added everywhere.
+>=20
+> There's no need for any of this, including the "FIXME" comments.  I know
+> what the problem is here, and until the driver core changes get merged
+> upstream in order to fix it, there's no need to worry about "broken"
+> drivers, as everything is "broken".
+>=20
+> I'll just take this as-is and remove the "fixme" comments, ok?
 
+It's your call :)
+
+We had a few other comments, that will probably be fixed in the v7
+oliver just sent, so you'd probably want to merge the v7 instead.
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--jho1yZJdad60DJr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSJcXaAAoJEBx+YmzsjxAgfv8P/1dl5SjWjCsVWP0POeyY6a/e
+e73wRzFNsc9L+aX/l6kLQi2P2IZlCoNE2IthFdnN4Oz8lJ2FtLoFOL8yYprK7mOY
+r2zkC57JZDW0Uya/pHps2G2+wFdJaFgmyIv9PVX8Sr69BEmLW+RgufOLcsN+/Nrw
+E3zttGPmt5Sz/qVngAaoc/lBhvj3G8n17cpX3dnmx4a71wUYSz5qoIsKWbHQ0DDp
+jdowedxcl1MToBsnnpzIl/BAO3jBcypgFHE5HRMrmjYQfrYBx71MTQHXX6HhGWUm
+lkj9e0pehGkV1mDG2V+khsjvEqcOWd4ywSWJaQtwvZ/qVWNhrL2VN6McO9XVdh74
+JAgTNvunPzsRk15CNvDFZGy+GSwlnl3UElxz/KAEd5A24M4PulreSCJpnmmXVpTQ
+KS4xaFs3QJnBDJYKP556G3RtXnH6Bo0Xi6PLDEZwjAt+boqjneVkB4IfafO9X6Vd
+NpKYLUcv4JXf/QitNUOE8ZcFpJHLew7c3oDmKliTkbcU66RPXHs8b9IeAcIMhPwF
+to6Y4jK1R4dCnCuzQDEbY6vb3FaQxkIZuNpXb2m22y7hlwaxpfzBRFK+6tr/qpuP
+qkeDGPyh6y1g/w7ymZuK610NX8YhrxKM5Pe3QNIokYcAYZQtV5F+kpKxh812vzTG
+PtcTQc6RcESUWxnKrV7C
+=EI0+
+-----END PGP SIGNATURE-----
+
+--jho1yZJdad60DJr+--
