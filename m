@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933242Ab3ICXLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:11:09 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:33401 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933154Ab3ICXLF (ORCPT
+	id S933270Ab3ICXLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:11:25 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:43654 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933244Ab3ICXLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:11:05 -0400
-Date: Tue, 3 Sep 2013 19:11:01 -0400
+	Tue, 3 Sep 2013 19:11:21 -0400
+Date: Tue, 3 Sep 2013 19:11:17 -0400
 From: Milosz Tanski <milosz@adfin.com>
 To: ceph-devel@vger.kernel.org
 Cc: sage@inktank.com, zheng.z.yan@intel.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ceph: ceph_readpage_to_fscache didn't check if marked
-Message-ID: <919604301641ea9af638dd2fbaa88a890da7b7b0.1378249347.git.milosz@adfin.com>
+Subject: [PATCH 2/2] ceph: page still marked private_2
+Message-ID: <7f6fc6d08d2e2610646d7c99c4afeb917eb41916.1378249347.git.milosz@adfin.com>
 References: <cover.1378249347.git.milosz@adfin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,39 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously ceph_readpage_to_fscache did not call if page was marked as cached
-before calling fscache_write_page resulting in a BUG inside of fscache.
+Previous patch that allowed us to cleanup most of the issues with pages marked
+as private_2 when calling ceph_readpages. However, there seams to be a case in
+the error case clean up in start read that still trigers this from time to
+time. I've only seen this one a couple times.
 
-FS-Cache: Assertion failed
-------------[ cut here ]------------
-kernel BUG at fs/fscache/page.c:874!
-invalid opcode: 0000 [#1] SMP
+BUG: Bad page state in process petabucket  pfn:335b82
+page:ffffea000cd6e080 count:0 mapcount:0 mapping:          (null) index:0x0
+page flags: 0x200000000001000(private_2)
 Call Trace:
- [<ffffffffa02e6566>] __ceph_readpage_to_fscache+0x66/0x80 [ceph]
- [<ffffffffa02caf84>] readpage_nounlock+0x124/0x210 [ceph]
- [<ffffffffa02cb08d>] ceph_readpage+0x1d/0x40 [ceph]
- [<ffffffff81126db6>] generic_file_aio_read+0x1f6/0x700
- [<ffffffffa02c6fcc>] ceph_aio_read+0x5fc/0xab0 [ceph]
+ [<ffffffff81563442>] dump_stack+0x46/0x58
+ [<ffffffff8112c7f7>] bad_page+0xc7/0x120
+ [<ffffffff8112cd9e>] free_pages_prepare+0x10e/0x120
+ [<ffffffff8112e580>] free_hot_cold_page+0x40/0x160
+ [<ffffffff81132427>] __put_single_page+0x27/0x30
+ [<ffffffff81132d95>] put_page+0x25/0x40
+ [<ffffffffa02cb409>] ceph_readpages+0x2e9/0x6f0 [ceph]
+ [<ffffffff811313cf>] __do_page_cache_readahead+0x1af/0x260
 
 Signed-off-by: Milosz Tanski <milosz@adfin.com>
 ---
- fs/ceph/cache.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/ceph/addr.c  |  1 +
+ fs/ceph/cache.h | 14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ceph/cache.c b/fs/ceph/cache.c
-index 5c413ec..c737ae9 100644
---- a/fs/ceph/cache.c
-+++ b/fs/ceph/cache.c
-@@ -311,6 +311,9 @@ void ceph_readpage_to_fscache(struct inode *inode, struct page *page)
- 	struct ceph_inode_info *ci = ceph_inode(inode);
- 	int ret;
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 1fda9cf..6df8bd4 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -336,6 +336,7 @@ static int start_read(struct inode *inode, struct list_head *page_list, int max)
+ 		     page->index);
+ 		if (add_to_page_cache_lru(page, &inode->i_data, page->index,
+ 					  GFP_NOFS)) {
++			ceph_fscache_uncache_page(inode, page);
+ 			page_cache_release(page);
+ 			dout("start_read %p add_to_page_cache failed %p\n",
+ 			     inode, page);
+diff --git a/fs/ceph/cache.h b/fs/ceph/cache.h
+index fb326fd..bf48695 100644
+--- a/fs/ceph/cache.h
++++ b/fs/ceph/cache.h
+@@ -51,6 +51,13 @@ static inline void ceph_fscache_invalidate(struct inode *inode)
+ 	fscache_invalidate(ceph_inode(inode)->fscache);
+ }
  
-+	if (!PageFsCache(page))
-+		return;
++static inline void ceph_fscache_uncache_page(struct inode *inode,
++					     struct page *page)
++{
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	return fscache_uncache_page(ci->fscache, page);
++}
 +
- 	if (!cache_valid(ci))
- 		return;
+ static inline int ceph_release_fscache_page(struct page *page, gfp_t gfp)
+ {
+ 	struct inode* inode = page->mapping->host;
+@@ -94,7 +101,8 @@ static inline void ceph_fscache_register_inode_cookie(struct ceph_fs_client* par
+ {
+ }
  
+-static inline void ceph_fscache_unregister_inode_cookie(struct ceph_inode_info* ci)
++static inline void ceph_fscache_uncache_page(struct inode *inode,
++					     struct page *pages)
+ {
+ }
+ 
+@@ -126,6 +134,10 @@ static inline void ceph_invalidate_fscache_page(struct inode *inode,
+ {
+ }
+ 
++static inline void ceph_fscache_unregister_inode_cookie(struct ceph_inode_info* ci)
++{
++}
++
+ static inline int ceph_release_fscache_page(struct page *page, gfp_t gfp)
+ {
+ 	return 1;
 -- 
 1.8.1.2
 
