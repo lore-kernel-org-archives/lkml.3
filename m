@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab3ICQ0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:26:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46450 "EHLO
+	id S1758903Ab3ICQ0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46477 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756798Ab3ICQYQ (ORCPT
+	with ESMTP id S1754571Ab3ICQ0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:24:16 -0400
+	Tue, 3 Sep 2013 12:26:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 02/58] cfg80211/mac80211: disconnect on suspend
-Date: Tue,  3 Sep 2013 09:23:06 -0700
-Message-Id: <1378225442-20654-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 54/58] [SCSI] zfcp: fix lock imbalance by reworking request queue locking
+Date: Tue,  3 Sep 2013 09:23:58 -0700
+Message-Id: <1378225442-20654-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,230 +29,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-commit 8125696991194aacb1173b6e8196d19098b44e17 upstream.
+commit d79ff142624e1be080ad8d09101f7004d79c36e1 upstream.
 
-If possible that after suspend, cfg80211 will receive request to
-disconnect what require action on interface that was removed during
-suspend.
+This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
+straight-forward descendant of wait_event_interruptible_timeout() and
+wait_event_interruptible_lock_irq().
 
-Problem can manifest itself by various warnings similar to below one:
+The zfcp driver used to call wait_event_interruptible_timeout()
+in combination with some intricate and error-prone locking. Using
+wait_event_interruptible_lock_irq_timeout() as a replacement
+nicely cleans up that locking.
 
-WARNING: at net/mac80211/driver-ops.h:12 ieee80211_bss_info_change_notify+0x2f9/0x300 [mac80211]()
-wlan0:  Failed check-sdata-in-driver check, flags: 0x4
-Call Trace:
- [<c043e0b3>] warn_slowpath_fmt+0x33/0x40
- [<f83707c9>] ieee80211_bss_info_change_notify+0x2f9/0x300 [mac80211]
- [<f83a660a>] ieee80211_recalc_ps_vif+0x2a/0x30 [mac80211]
- [<f83a6706>] ieee80211_set_disassoc+0xf6/0x500 [mac80211]
- [<f83a9441>] ieee80211_mgd_deauth+0x1f1/0x280 [mac80211]
- [<f8381b36>] ieee80211_deauth+0x16/0x20 [mac80211]
- [<f8261e70>] cfg80211_mlme_down+0x70/0xc0 [cfg80211]
- [<f8264de1>] __cfg80211_disconnect+0x1b1/0x1d0 [cfg80211]
+This rework removes a situation that resulted in a locking imbalance
+in zfcp_qdio_sbal_get():
 
-To fix the problem disconnect from any associated network before
-suspend. User space is responsible to establish connection again
-after resume. This basically need to be done by user space anyway,
-because associated stations can go away during suspend (for example
-NetworkManager disconnects on suspend and connect on resume by default).
+BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
+    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
 
-Patch also handle situation when driver refuse to suspend with wowlan
-configured and try to suspend again without it.
+It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
+"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
+code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
+without a required lock being held. The problem occured when a
+special, non-SCSI I/O request was being submitted in process context,
+when the adapter's queues had been torn down. In this case the bug
+surfaced when the Fibre Channel port connection for a well-known address
+was closed during a concurrent adapter shut-down procedure, which is a
+rare constellation.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This patch also fixes these warnings from the sparse tool (make C=1):
+
+drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
+ 'zfcp_qdio_sbal_check' - wrong count at exit
+drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
+ 'zfcp_qdio_sbal_get' - unexpected unlock
+
+Last but not least, we get rid of that crappy lock-unlock-lock
+sequence at the beginning of the critical section.
+
+It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/pm.c       |  2 +-
- net/wireless/core.c     | 73 +++++++++++++++++++++++++++----------------------
- net/wireless/core.h     |  3 ++
- net/wireless/rdev-ops.h |  7 +++--
- net/wireless/sysfs.c    | 25 +++++++++++++----
- 5 files changed, 69 insertions(+), 41 deletions(-)
+ drivers/s390/scsi/zfcp_qdio.c |  8 ++----
+ include/linux/wait.h          | 57 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 6 deletions(-)
 
-diff --git a/net/mac80211/pm.c b/net/mac80211/pm.c
-index 64619f4..8661d1e 100644
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -92,7 +92,7 @@ int __ieee80211_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
- 			return err;
- 		} else if (err > 0) {
- 			WARN_ON(err != 1);
--			local->wowlan = false;
-+			return err;
- 		} else {
- 			list_for_each_entry(sdata, &local->interfaces, list) {
- 				cancel_work_sync(&sdata->work);
-diff --git a/net/wireless/core.c b/net/wireless/core.c
-index 2dca5e3..ce1eff7 100644
---- a/net/wireless/core.c
-+++ b/net/wireless/core.c
-@@ -810,6 +810,46 @@ void cfg80211_update_iface_num(struct cfg80211_registered_device *rdev,
- 		rdev->num_running_monitor_ifaces += num;
- }
+diff --git a/drivers/s390/scsi/zfcp_qdio.c b/drivers/s390/scsi/zfcp_qdio.c
+index 50b5615..925fb1f 100644
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_qdio *qdio, struct zfcp_qdio_req *q_req,
  
-+void cfg80211_leave(struct cfg80211_registered_device *rdev,
-+		   struct wireless_dev *wdev)
-+{
-+	struct net_device *dev = wdev->netdev;
-+
-+	switch (wdev->iftype) {
-+	case NL80211_IFTYPE_ADHOC:
-+		cfg80211_leave_ibss(rdev, dev, true);
-+		break;
-+	case NL80211_IFTYPE_P2P_CLIENT:
-+	case NL80211_IFTYPE_STATION:
-+		mutex_lock(&rdev->sched_scan_mtx);
-+		__cfg80211_stop_sched_scan(rdev, false);
-+		mutex_unlock(&rdev->sched_scan_mtx);
-+
-+		wdev_lock(wdev);
-+#ifdef CONFIG_CFG80211_WEXT
-+		kfree(wdev->wext.ie);
-+		wdev->wext.ie = NULL;
-+		wdev->wext.ie_len = 0;
-+		wdev->wext.connect.auth_type = NL80211_AUTHTYPE_AUTOMATIC;
-+#endif
-+		__cfg80211_disconnect(rdev, dev,
-+				      WLAN_REASON_DEAUTH_LEAVING, true);
-+		cfg80211_mlme_down(rdev, dev);
-+		wdev_unlock(wdev);
-+		break;
-+	case NL80211_IFTYPE_MESH_POINT:
-+		cfg80211_leave_mesh(rdev, dev);
-+		break;
-+	case NL80211_IFTYPE_AP:
-+		cfg80211_stop_ap(rdev, dev);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	wdev->beacon_interval = 0;
-+}
-+
- static int cfg80211_netdev_notifier_call(struct notifier_block *nb,
- 					 unsigned long state,
- 					 void *ndev)
-@@ -878,38 +918,7 @@ static int cfg80211_netdev_notifier_call(struct notifier_block *nb,
- 			dev->priv_flags |= IFF_DONT_BRIDGE;
- 		break;
- 	case NETDEV_GOING_DOWN:
--		switch (wdev->iftype) {
--		case NL80211_IFTYPE_ADHOC:
--			cfg80211_leave_ibss(rdev, dev, true);
--			break;
--		case NL80211_IFTYPE_P2P_CLIENT:
--		case NL80211_IFTYPE_STATION:
--			mutex_lock(&rdev->sched_scan_mtx);
--			__cfg80211_stop_sched_scan(rdev, false);
--			mutex_unlock(&rdev->sched_scan_mtx);
--
--			wdev_lock(wdev);
--#ifdef CONFIG_CFG80211_WEXT
--			kfree(wdev->wext.ie);
--			wdev->wext.ie = NULL;
--			wdev->wext.ie_len = 0;
--			wdev->wext.connect.auth_type = NL80211_AUTHTYPE_AUTOMATIC;
--#endif
--			__cfg80211_disconnect(rdev, dev,
--					      WLAN_REASON_DEAUTH_LEAVING, true);
--			cfg80211_mlme_down(rdev, dev);
--			wdev_unlock(wdev);
--			break;
--		case NL80211_IFTYPE_MESH_POINT:
--			cfg80211_leave_mesh(rdev, dev);
--			break;
--		case NL80211_IFTYPE_AP:
--			cfg80211_stop_ap(rdev, dev);
--			break;
--		default:
--			break;
--		}
--		wdev->beacon_interval = 0;
-+		cfg80211_leave(rdev, wdev);
- 		break;
- 	case NETDEV_DOWN:
- 		cfg80211_update_iface_num(rdev, wdev->iftype, -1);
-diff --git a/net/wireless/core.h b/net/wireless/core.h
-index 3563097..49d79d9 100644
---- a/net/wireless/core.h
-+++ b/net/wireless/core.h
-@@ -481,6 +481,9 @@ int cfg80211_validate_beacon_int(struct cfg80211_registered_device *rdev,
- void cfg80211_update_iface_num(struct cfg80211_registered_device *rdev,
- 			       enum nl80211_iftype iftype, int num);
- 
-+void cfg80211_leave(struct cfg80211_registered_device *rdev,
-+		    struct wireless_dev *wdev);
-+
- #define CFG80211_MAX_NUM_DIFFERENT_CHANNELS 10
- 
- #ifdef CONFIG_CFG80211_DEVELOPER_WARNINGS
-diff --git a/net/wireless/rdev-ops.h b/net/wireless/rdev-ops.h
-index 6c0c819..08e4145 100644
---- a/net/wireless/rdev-ops.h
-+++ b/net/wireless/rdev-ops.h
-@@ -6,11 +6,12 @@
- #include "core.h"
- #include "trace.h"
- 
--static inline int rdev_suspend(struct cfg80211_registered_device *rdev)
-+static inline int rdev_suspend(struct cfg80211_registered_device *rdev,
-+			       struct cfg80211_wowlan *wowlan)
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
  {
- 	int ret;
--	trace_rdev_suspend(&rdev->wiphy, rdev->wowlan);
--	ret = rdev->ops->suspend(&rdev->wiphy, rdev->wowlan);
-+	trace_rdev_suspend(&rdev->wiphy, wowlan);
-+	ret = rdev->ops->suspend(&rdev->wiphy, wowlan);
- 	trace_rdev_return_int(&rdev->wiphy, ret);
- 	return ret;
- }
-diff --git a/net/wireless/sysfs.c b/net/wireless/sysfs.c
-index 1f6f01e..a6a108b 100644
---- a/net/wireless/sysfs.c
-+++ b/net/wireless/sysfs.c
-@@ -83,6 +83,14 @@ static int wiphy_uevent(struct device *dev, struct kobj_uevent_env *env)
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
  	return 0;
  }
  
-+static void cfg80211_leave_all(struct cfg80211_registered_device *rdev)
-+{
-+	struct wireless_dev *wdev;
-+
-+	list_for_each_entry(wdev, &rdev->wdev_list, list)
-+		cfg80211_leave(rdev, wdev);
-+}
-+
- static int wiphy_suspend(struct device *dev, pm_message_t state)
+@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
  {
- 	struct cfg80211_registered_device *rdev = dev_to_rdev(dev);
-@@ -90,12 +98,19 @@ static int wiphy_suspend(struct device *dev, pm_message_t state)
+ 	long ret;
  
- 	rdev->suspend_at = get_seconds();
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
  
--	if (rdev->ops->suspend) {
--		rtnl_lock();
--		if (rdev->wiphy.registered)
--			ret = rdev_suspend(rdev);
--		rtnl_unlock();
-+	rtnl_lock();
-+	if (rdev->wiphy.registered) {
-+		if (!rdev->wowlan)
-+			cfg80211_leave_all(rdev);
-+		if (rdev->ops->suspend)
-+			ret = rdev_suspend(rdev, rdev->wowlan);
-+		if (ret == 1) {
-+			/* Driver refuse to configure wowlan */
-+			cfg80211_leave_all(rdev);
-+			ret = rdev_suspend(rdev, NULL);
-+		}
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
  	}
-+	rtnl_unlock();
  
- 	return ret;
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
  }
+ 
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 30194a6..7c7eead 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -719,6 +719,63 @@ do {									\
+ 	__ret;								\
+ })
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ /*
+  * These are the old interfaces to sleep waiting for an event.
 -- 
 1.8.1.2
 
