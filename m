@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab3ICLmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 07:42:33 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54107 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab3ICLmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 07:42:32 -0400
-From: Dan Aloni <alonid@postram.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Subject: [PATCH bluetooth-next] Bluetooth: Add support for BCM20702A0 [0a5c, 21e6]
-Date: Tue,  3 Sep 2013 14:42:22 +0300
-Message-Id: <1378208542-30729-1-git-send-email-alonid@postram.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S932769Ab3ICLsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 07:48:31 -0400
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:26082
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932597Ab3ICLsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 07:48:30 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+CC: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 3/3] ipc: Add support for default interrupt mode
+Thread-Topic: [PATCH v1 3/3] ipc: Add support for default interrupt mode
+Thread-Index: AQHOh03uuA9Kh1W8qkyDIU0IZ4zxipm0KGEA
+Date: Tue, 3 Sep 2013 11:48:25 +0000
+Message-ID: <1378208904.11730.2.camel@x230>
+References: <cover.1374547036.git.sathyanarayanan.kuppuswamy@linux.intel.com>
+	 <871d1b965914d6c90e698aa67827854e748f18e1.1374547036.git.sathyanarayanan.kuppuswamy@linux.intel.com>
+In-Reply-To: <871d1b965914d6c90e698aa67827854e748f18e1.1374547036.git.sathyanarayanan.kuppuswamy@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [209.6.207.143]
+x-forefront-prvs: 09583628E0
+x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(51704005)(199002)(189002)(24454002)(83072001)(51856001)(46102001)(74366001)(4396001)(81542001)(19580395003)(47976001)(50986001)(81342001)(47736001)(49866001)(83322001)(19580405001)(80976001)(63696002)(76482001)(54316002)(56776001)(53806001)(81816001)(54356001)(79102001)(59766001)(77982001)(81686001)(33646001)(47446002)(74502001)(33716001)(76796001)(76786001)(74662001)(31966008)(69226001)(65816001)(74706001)(56816003)(77096001)(74876001)(66066001)(80022001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:209.6.207.143;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <DF3B0281D1937B40BA8E72CC3EF2E03D@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r83BmdX5013885
 
-Tested with this patch and a Bluetooth mouse on 3.10.10, on ThinkPad W530.
+On Mon, 2013-07-22 at 19:48 -0700, Kuppuswamy Sathyanarayanan wrote:
+> Added intel scu ipc access mode config option.
+> 
+> Also, This patch adds support to enable ipc command interrupt
+> mode by default. This functionality is enabled by following
+> config option.
+> 
+> CONFIG_INTEL_SCU_IPC_INTR_MODE=y
 
-Bus 001 Device 004: ID 0a5c:21e6 Broadcom Corp. BCM20702 Bluetooth 4.0 [ThinkPad]
-
-T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0a5c ProdID=21e6 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=F4B7E2F6E438
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-Signed-off-by: Dan Aloni <alonid@postram.com>
----
- drivers/bluetooth/btusb.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index de4cf4d..e6313f8 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -104,6 +104,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0b05, 0x17b5) },
- 	{ USB_DEVICE(0x04ca, 0x2003) },
- 	{ USB_DEVICE(0x0489, 0xe042) },
-+	{ USB_DEVICE(0x0a5c, 0x21e6) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
- 	/* Foxconn - Hon Hai */
+Can you document this in the help text? It's unclear whether people
+should enable this option or not.
 -- 
-1.8.1.4
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
