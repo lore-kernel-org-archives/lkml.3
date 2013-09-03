@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825Ab3ICQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46578 "EHLO
+	id S932944Ab3ICQ2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:28:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46573 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab3ICQ1m (ORCPT
+	with ESMTP id S932452Ab3ICQ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:42 -0400
+	Tue, 3 Sep 2013 12:27:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: AceLan Kao <acelan.kao@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 33/58] Bluetooth: Add support for Atheros [0cf3:e003]
-Date: Tue,  3 Sep 2013 09:23:37 -0700
-Message-Id: <1378225442-20654-34-git-send-email-kamal@canonical.com>
+Subject: [PATCH 34/58] iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
+Date: Tue,  3 Sep 2013 09:23:38 -0700
+Message-Id: <1378225442-20654-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,59 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
+commit 9186a1fd9ed190739423db84bc344d258ef3e3d7 upstream.
 
-Add support for the AR9462 chip
+If channel switch is pending and we remove interface we can
+crash like showed below due to passing NULL vif to mac80211:
 
-T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e003 Rev=00.02
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+BUG: unable to handle kernel paging request at fffffffffffff8cc
+IP: [<ffffffff8130924d>] strnlen+0xd/0x40
+Call Trace:
+ [<ffffffff8130ad2e>] string.isra.3+0x3e/0xd0
+ [<ffffffff8130bf99>] vsnprintf+0x219/0x640
+ [<ffffffff8130c481>] vscnprintf+0x11/0x30
+ [<ffffffff81061585>] vprintk_emit+0x115/0x4f0
+ [<ffffffff81657bd5>] printk+0x61/0x63
+ [<ffffffffa048987f>] ieee80211_chswitch_done+0xaf/0xd0 [mac80211]
+ [<ffffffffa04e7b34>] iwl_chswitch_done+0x34/0x40 [iwldvm]
+ [<ffffffffa04f83c3>] iwlagn_commit_rxon+0x2a3/0xdc0 [iwldvm]
+ [<ffffffffa04ebc50>] ? iwlagn_set_rxon_chain+0x180/0x2c0 [iwldvm]
+ [<ffffffffa04e5e76>] iwl_set_mode+0x36/0x40 [iwldvm]
+ [<ffffffffa04e5f0d>] iwlagn_mac_remove_interface+0x8d/0x1b0 [iwldvm]
+ [<ffffffffa0459b3d>] ieee80211_do_stop+0x29d/0x7f0 [mac80211]
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+This is because we nulify ctx->vif in iwlagn_mac_remove_interface()
+before calling some other functions that teardown interface. To fix
+just check ctx->vif on iwl_chswitch_done(). We should not call
+ieee80211_chswitch_done() as channel switch works were already canceled
+by mac80211 in ieee80211_do_stop() -> ieee80211_mgd_stop().
+
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=979581
+
+Reported-by: Lukasz Jagiello <jagiello.lukasz@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index a9e5be4..5a757be 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -94,6 +94,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x04c5, 0x1330) },
- 	{ USB_DEVICE(0x13d3, 0x3402) },
- 	{ USB_DEVICE(0x0cf3, 0x3121) },
-+	{ USB_DEVICE(0x0cf3, 0xe003) },
+diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+index c784f69..70c32db 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -961,7 +961,10 @@ void iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 		return;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -134,6 +135,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+-	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
++	if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
++		return;
++
++	if (ctx->vif)
+ 		ieee80211_chswitch_done(ctx->vif, is_success);
+ }
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index e075dd2..b70c146 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -152,6 +152,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 -- 
 1.8.1.2
 
