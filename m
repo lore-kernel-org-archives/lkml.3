@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934119Ab3ICXuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 19:50:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33613 "EHLO
+	id S934193Ab3ICXvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 19:51:32 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33633 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761461Ab3ICXu2 (ORCPT
+	with ESMTP id S934121Ab3ICXuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 19:50:28 -0400
+	Tue, 3 Sep 2013 19:50:32 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, keescook@chromium.org, hpa@zytor.com,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V3 01/11] Add secure_modules() call
-Date: Tue,  3 Sep 2013 19:50:08 -0400
-Message-Id: <1378252218-18798-2-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH V3 06/11] Restrict /dev/mem and /dev/kmem when module loading is restricted
+Date: Tue,  3 Sep 2013 19:50:13 -0400
+Message-Id: <1378252218-18798-7-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
 References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,59 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a single call to allow kernel code to determine whether the system
-has been configured to either disable module loading entirely or to load
-only modules signed with a trusted key.
+Allowing users to write to address space makes it possible for the kernel
+to be subverted, avoiding module loading restrictions. Prevent this when
+any restrictions have been imposed on loading modules.
 
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- include/linux/module.h |  7 +++++++
- kernel/module.c        | 10 ++++++++++
- 2 files changed, 17 insertions(+)
+ drivers/char/mem.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 46f1ea0..0c266b2 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -509,6 +509,8 @@ int unregister_module_notifier(struct notifier_block * nb);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 1af8664..61406c8 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -159,6 +159,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	unsigned long copied;
+ 	void *ptr;
  
- extern void print_modules(void);
- 
-+extern bool secure_modules(void);
++	if (secure_modules())
++		return -EPERM;
 +
- #else /* !CONFIG_MODULES... */
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
  
- /* Given an address, look for it in the exception tables. */
-@@ -619,6 +621,11 @@ static inline int unregister_module_notifier(struct notifier_block * nb)
- static inline void print_modules(void)
- {
- }
-+
-+static inline bool secure_modules(void)
-+{
-+	return false;
-+}
- #endif /* CONFIG_MODULES */
+@@ -497,6 +500,9 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+ 	char *kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
+ 	int err = 0;
  
- #ifdef CONFIG_SYSFS
-diff --git a/kernel/module.c b/kernel/module.c
-index 2069158..0e94acf 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3852,3 +3852,13 @@ void module_layout(struct module *mod,
- }
- EXPORT_SYMBOL(module_layout);
- #endif
++	if (secure_modules())
++		return -EPERM;
 +
-+bool secure_modules(void)
-+{
-+#ifdef CONFIG_MODULE_SIG
-+	return (sig_enforce || modules_disabled);
-+#else
-+	return modules_disabled;
-+#endif
-+}
-+EXPORT_SYMBOL(secure_modules);
+ 	if (p < (unsigned long) high_memory) {
+ 		unsigned long to_write = min_t(unsigned long, count,
+ 					       (unsigned long)high_memory - p);
 -- 
 1.8.3.1
 
