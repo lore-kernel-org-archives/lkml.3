@@ -1,173 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856Ab3ICJwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 05:52:06 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:35956 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759749Ab3ICJwE (ORCPT
+	id S1759853Ab3ICJ4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 05:56:04 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:21928 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab3ICJ4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 05:52:04 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <dave.bueso@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Rik van Riel <riel@redhat.com>,
-        "Jonathan Gonzalez" <jgonzalez@linets.cl>
-Subject: Re: ipc-msg broken again on 3.11-rc7?
-Thread-Topic: ipc-msg broken again on 3.11-rc7?
-Thread-Index: AQHOpZ5oa2zPW4yZMkWQwZduFtEUDA==
-Date: Tue, 3 Sep 2013 09:51:58 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514168F@IN01WEMBXA.internal.synopsys.com>
-References: <CA+icZUXuw7QBn4CPLLuiVUjHin0m6GRdbczGw=bZY+Z60sXNow@mail.gmail.com>
- <CA+icZUUrZG8pYqKcHY3DcYAuuw=vbdUvs6ZXDq5meBMjj6suFg@mail.gmail.com>
- <C2D7FE5348E1B147BCA15975FBA23075140FA3@IN01WEMBXA.internal.synopsys.com>
- <CA+icZUUn-r8iq6TVMAKmgJpQm4FhOE4b4QN_Yy=1L=0Up=rkBA@mail.gmail.com>
- <52205597.3090609@synopsys.com>
- <CA+icZUW=YXMC_2Qt=cYYz6w_fVW8TS4=Pvbx7BGtzjGt+31rLQ@mail.gmail.com>
- <C2D7FE5348E1B147BCA15975FBA230751411CB@IN01WEMBXA.internal.synopsys.com>
- <CALE5RAvaa4bb-9xAnBe07Yp2n+Nn4uGEgqpLrKMuOE8hhZv00Q@mail.gmail.com>
- <CAMJEocr1SgxQw0bEzB3Ti9bvRY74TE5y9e+PLUsAL1mJbK=-ew@mail.gmail.com>
- <CA+55aFy8tbBpac57fU4CN3jMDz46kCKT7+7GCpb18CscXuOnGA@mail.gmail.com>
- <C2D7FE5348E1B147BCA15975FBA230751413F4@IN01WEMBXA.internal.synopsys.com>
- <5224BCF6.2080401@colorfullife.com>
- <C2D7FE5348E1B147BCA15975FBA23075141642@IN01WEMBXA.internal.synopsys.com>
- <5225A466.2080303@colorfullife.com>
- <C2D7FE5348E1B147BCA15975FBA2307514165E@IN01WEMBXA.internal.synopsys.com>
- <5225AA8D.6080403@colorfullife.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.235]
-Content-Type: multipart/mixed;
-	boundary="_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_"
+	Tue, 3 Sep 2013 05:56:02 -0400
+X-Spam-Score: -100.9
+Message-ID: <5225B1F0.90803@asianux.com>
+Date: Tue, 03 Sep 2013 17:54:56 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Li Zefan <lizefan@huawei.com>
+CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] block/ioctl.c: let code match 'kernel code style'
+References: <521B2E75.1040802@asianux.com> <5220177E.709@asianux.com> <52201896.9040309@asianux.com> <5220254E.3050704@roeck-us.net> <52203CF0.5040600@asianux.com> <52207F74.6000702@roeck-us.net> <CAFLxGvyExTMSWOppheCwDA8RorSu_mLqW9a3f3GKFrsA2xbkfA@mail.gmail.com> <52208DFD.20105@roeck-us.net> <52240566.3040201@asianux.com> <52259DDE.6070401@asianux.com> <5225A3F8.5070008@huawei.com> <5225A685.5040507@asianux.com>
+In-Reply-To: <5225A685.5040507@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
 
-On 09/03/2013 02:53 PM, Manfred Spraul wrote:=0A=
-> On 09/03/2013 11:16 AM, Vineet Gupta wrote:=0A=
->> On 09/03/2013 02:27 PM, Manfred Spraul wrote:=0A=
->>> On 09/03/2013 10:44 AM, Vineet Gupta wrote:=0A=
->>>>> b) Could you check that it is not just a performance regression?=0A=
->>>>>        Does ./msgctl08 1000 16 hang, too?=0A=
->>>> Nope that doesn't hang. The minimal configuration that hangs reliably =
-is msgctl=0A=
->>>> 50000 2=0A=
->>>>=0A=
->>>> With this config there are 3 processes.=0A=
->>>> ...=0A=
->>>>     555   554 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
->>>>     554   551 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
->>>>     551   496 root     S     1208  0.4   0  0.0 ./msgctl08 50000 2=0A=
->>>> ...=0A=
->>>>=0A=
->>>> [ARCLinux]$ cat /proc/551/stack=0A=
->>>> [<80aec3c6>] do_wait+0xa02/0xc94=0A=
->>>> [<80aecad2>] SyS_wait4+0x52/0xa4=0A=
->>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
->>>>=0A=
->>>> [ARCLinux]$ cat /proc/555/stack=0A=
->>>> [<80c2950e>] SyS_msgrcv+0x252/0x420=0A=
->>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
->>>>=0A=
->>>> [ARCLinux]$ cat /proc/554/stack=0A=
->>>> [<80c28c82>] do_msgsnd+0x116/0x35c=0A=
->>>> [<80ae24fc>] ret_from_system_call+0x0/0x4=0A=
->>>>=0A=
->>>> Is this a case of lost wakeup or some such. I'm running with some more=
- diagnostics=0A=
->>>> and will report soon ...=0A=
->>> What is the output of ipcs -q? Is the queue full or empty when it hangs=
-?=0A=
->>> I.e. do we forget to wake up a receiver or forget to wake up a sender?=
-=0A=
->> / # ipcs -q=0A=
->>=0A=
->> ------ Message Queues --------=0A=
->> key        msqid      owner      perms      used-bytes   messages=0A=
->> 0x72d83160 163841     root       600        0            0=0A=
->>=0A=
->>=0A=
-> Ok, a sender is sleeping - even though there are no messages in the queue=
-.=0A=
-> Perhaps it is the race that I mentioned in a previous mail:=0A=
->>       for (;;) {=0A=
->>                 struct msg_sender s;=0A=
->>=0A=
->>                 err =3D -EACCES;=0A=
->>                 if (ipcperms(ns, &msq->q_perm, S_IWUGO))=0A=
->>                         goto out_unlock1;=0A=
->>=0A=
->>                 err =3D security_msg_queue_msgsnd(msq, msg, msgflg);=0A=
->>                 if (err)=0A=
->>                         goto out_unlock1;=0A=
->>=0A=
->>                 if (msgsz + msq->q_cbytes <=3D msq->q_qbytes &&=0A=
->>                                 1 + msq->q_qnum <=3D msq->q_qbytes) {=0A=
->>                         break;=0A=
->>                 }=0A=
->>=0A=
-> [snip]=0A=
->>         if (!pipelined_send(msq, msg)) {=0A=
->>                 /* no one is waiting for this message, enqueue it */=0A=
->>                 list_add_tail(&msg->m_list, &msq->q_messages);=0A=
->>                 msq->q_cbytes +=3D msgsz;=0A=
->>                 msq->q_qnum++;=0A=
->>                 atomic_add(msgsz, &ns->msg_bytes);=0A=
-> The access to msq->q_cbytes is not protected.=0A=
->=0A=
-> Vineet, could you try to move the test for free space after ipc_lock?=0A=
-> I.e. the lock must not get dropped between testing for free space and =0A=
-> enqueueing the messages.=0A=
-=0A=
-Hmm, the code movement is not trivial. I broke even the simplest of cases (=
-patch=0A=
-attached). This includes the additional change which Linus/Davidlohr had as=
-ked for.=0A=
-=0A=
--Vineet=0A=
-=0A=
+It seems necessary to explain my goal (why I intended to send this patch).
 
---_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_
-Content-Type: text/plain; name="patch-ipc-2"
-Content-Description: patch-ipc-2
-Content-Disposition: attachment; filename="patch-ipc-2"; size=1075;
-	creation-date="Tue, 03 Sep 2013 09:51:56 GMT";
-	modification-date="Tue, 03 Sep 2013 09:51:56 GMT"
-Content-Transfer-Encoding: base64
+1. support the 'work' of Joe and trivial@kernel.org.
 
-ZGlmZiAtLWdpdCBhL2lwYy9tc2cuYyBiL2lwYy9tc2cuYwppbmRleCA5ZjI5ZDllLi5hNTEyODI5
-IDEwMDY0NAotLS0gYS9pcGMvbXNnLmMKKysrIGIvaXBjL21zZy5jCkBAIC02ODcsMTQgKzY4Nyw2
-IEBAIGxvbmcgZG9fbXNnc25kKGludCBtc3FpZCwgbG9uZyBtdHlwZSwgdm9pZCBfX3VzZXIgKm10
-ZXh0LAogCQlpZiAoaXBjcGVybXMobnMsICZtc3EtPnFfcGVybSwgU19JV1VHTykpCiAJCQlnb3Rv
-IG91dF91bmxvY2sxOwogCi0JCWVyciA9IHNlY3VyaXR5X21zZ19xdWV1ZV9tc2dzbmQobXNxLCBt
-c2csIG1zZ2ZsZyk7Ci0JCWlmIChlcnIpCi0JCQlnb3RvIG91dF91bmxvY2sxOwotCi0JCWlmICht
-c2dzeiArIG1zcS0+cV9jYnl0ZXMgPD0gbXNxLT5xX3FieXRlcyAmJgotCQkJCTEgKyBtc3EtPnFf
-cW51bSA8PSBtc3EtPnFfcWJ5dGVzKSB7Ci0JCQlicmVhazsKLQkJfQogCiAJCS8qIHF1ZXVlIGZ1
-bGwsIHdhaXQ6ICovCiAJCWlmIChtc2dmbGcgJiBJUENfTk9XQUlUKSB7CkBAIC03MDMsNiArNjk1
-LDEwIEBAIGxvbmcgZG9fbXNnc25kKGludCBtc3FpZCwgbG9uZyBtdHlwZSwgdm9pZCBfX3VzZXIg
-Km10ZXh0LAogCQl9CiAKIAkJaXBjX2xvY2tfb2JqZWN0KCZtc3EtPnFfcGVybSk7CisJCWVyciA9
-IHNlY3VyaXR5X21zZ19xdWV1ZV9tc2dzbmQobXNxLCBtc2csIG1zZ2ZsZyk7CisJCWlmIChlcnIp
-CisJCQlnb3RvIG91dF91bmxvY2swOworCiAJCXNzX2FkZChtc3EsICZzKTsKIAogCQlpZiAoIWlw
-Y19yY3VfZ2V0cmVmKG1zcSkpIHsKQEAgLTczNCw2ICs3MzAsMTIgQEAgbG9uZyBkb19tc2dzbmQo
-aW50IG1zcWlkLCBsb25nIG10eXBlLCB2b2lkIF9fdXNlciAqbXRleHQsCiAJfQogCiAJaXBjX2xv
-Y2tfb2JqZWN0KCZtc3EtPnFfcGVybSk7CisKKwlpZiAoIShtc2dzeiArIG1zcS0+cV9jYnl0ZXMg
-PD0gbXNxLT5xX3FieXRlcyAmJgorCQkJMSArIG1zcS0+cV9xbnVtIDw9IG1zcS0+cV9xYnl0ZXMp
-KSB7CisJCWdvdG8gb3V0X3VubG9jazA7CisJfQorCiAJbXNxLT5xX2xzcGlkID0gdGFza190Z2lk
-X3ZucihjdXJyZW50KTsKIAltc3EtPnFfc3RpbWUgPSBnZXRfc2Vjb25kcygpOwogCg==
+   in my opinion, 'trivial'  means none-urgent, but it also means important.
+     (if both none-urgent and none-important, why need it?)
 
---_002_C2D7FE5348E1B147BCA15975FBA2307514168FIN01WEMBXAinterna_--
+   so I intend to send 1 or 2 trivial patches per month to express my opinion and support their 'work'.
+
+2. I have planned to provide some contributes to block sub-system in 2nd half of 2013.
+
+   I have mentioned about it in my some original discussions (if necessary, I will provide the proof).
+   but at least now, I have done nothing for block sub system.
+   it is time to do something for it.
+
+3. avoid the misunderstanding of the other related discussion in kernel mailing list.
+
+   the discussion is about whether need "#ifdef" for a patch.
+   maybe some members (e.g. Guenter) misunderstand me: "I do not care about the code style".
+     (it is only my 'guess', may he does not misunderstand, and this patch wants to make it clear).
+
+
+BTW:
+
+  at least for me, I don't think "more patches is more contributions".
+  but it is true that I am trying to send more patches and get more discussions in kernel mailing list.
+  and I am (should be) also trying to avoid send waste mails to kernel mailing list.
+
+
+Welcome any additional suggestions or completions.
+
+Thanks.
+
+On 09/03/2013 05:06 PM, Chen Gang wrote:
+> On 09/03/2013 04:55 PM, Li Zefan wrote:
+>> Please don't. Pure colding style cleanup is discouraged.
+>>
+> 
+> Pardon?
+> 
+> Do you mean "coding style", not "colding style"? (or it is my
+> misunderstanding?).
+> 
+> 
+>> You're not going to run checkpatch.pl on the whole kernel tree and fix
+>> all the complaints, are you?
+>>
+> 
+> I am not going to, it seems that may be the 'job' of Joe and
+> trivial@kernel.org?
+> 
+> 
+> BTW: it seems you did not redirect my mails to "/dev/null".  ;-)
+> 
+> Thanks.
+> 
+>> On 2013/9/3 16:29, Chen Gang wrote:
+>>> For 'switch case', remove redundancy '\t' (also can let related lines
+>>> within 80 columns) and remove redundancy empty lines, just like other
+>>> 'switch case' which match 'kernel code style' within the file.
+>>>
+>>> Let blkpg_ioctl() within 80 columns. Let 2nd line of blkdev_ioctl() and
+>>> __blkdev_driver_ioctl() align 1st line parameter's start position, just
+>>> like blk_ioctl_discard() and blk_ioctl_zeroout() within the file.
+>>>
+>>> For is_unrecognized_ioctl(), can shrink the 'return' statement into one
+>>> line (so can save 2 lines), it still matches 'kernel code style' and it
+>>> is no conflict with others within the file.
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> ---
+>>>  block/ioctl.c |  216 ++++++++++++++++++++++++++++-----------------------------
+>>>  1 files changed, 105 insertions(+), 111 deletions(-)
+>>
+>>
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
