@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543Ab3ICFqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 01:46:13 -0400
+	id S1759565Ab3ICFqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 01:46:37 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50313 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759489Ab3ICFoX (ORCPT
+	with ESMTP id S1753749Ab3ICFoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 01:44:23 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-b2-5225773326ff
+	Tue, 3 Sep 2013 01:44:20 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-9c-522577309e34
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
-Date: Tue,  3 Sep 2013 14:44:11 +0900
-Message-Id: <1378187054-27401-11-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/13] tracing/kprobes: Staticize stack and memory fetch functions
+Date: Tue,  3 Sep 2013 14:44:06 +0900
+Message-Id: <1378187054-27401-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
 References: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
@@ -30,191 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Fetching from user space should be done in a non-atomic context.  So
-use a per-cpu buffer and copy its content to the ring buffer
-atomically.  Note that we can migrate during accessing user memory
-thus use a per-cpu mutex to protect concurrent accesses.
+Those fetch functions need to be implemented differently for kprobes
+and uprobes.  Since the deref fetch functions don't call those
+directly anymore, we can make them static and implement them
+separately.
 
-This is needed since we'll be able to fetch args from an user memory
-which can be swapped out.  Before that uprobes could fetch args from
-registers only which saved in a kernel space.
-
-While at it, use __get_data_size() and store_trace_args() to reduce
-code duplication.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_uprobe.c | 97 +++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 81 insertions(+), 16 deletions(-)
+ kernel/trace/trace_kprobe.c | 8 ++++----
+ kernel/trace/trace_probe.h  | 8 --------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 9f2d12d2311d..9ede401759ab 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -530,21 +530,46 @@ static const struct file_operations uprobe_profile_ops = {
- 	.release	= seq_release,
- };
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 1eff166990c2..fdb6dec11592 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -758,7 +758,7 @@ static const struct file_operations kprobe_profile_ops = {
+  * kprobes-specific fetch functions
+  */
+ #define DEFINE_FETCH_stack(type)					\
+-__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
++static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+ 					  void *offset, void *dest)	\
+ {									\
+ 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+@@ -770,7 +770,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string_size	NULL
  
-+static atomic_t uprobe_buffer_ref = ATOMIC_INIT(0);
-+static void __percpu *uprobe_cpu_buffer;
-+static DEFINE_PER_CPU(struct mutex, uprobe_cpu_mutex);
-+
- static void uprobe_trace_print(struct trace_uprobe *tu,
- 				unsigned long func, struct pt_regs *regs)
+ #define DEFINE_FETCH_memory(type)					\
+-__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
++static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
+ 					  void *addr, void *dest)	\
+ {									\
+ 	type retval;							\
+@@ -784,7 +784,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
+  * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+  * length and relative data location.
+  */
+-__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
++static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+ 					       void *addr, void *dest)
  {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
--	void *data;
--	int size, i;
-+	struct mutex *mutex;
-+	void *data, *arg_buf;
-+	int size, dsize, esize;
-+	int cpu;
- 	struct ftrace_event_call *call = &tu->p.call;
- 
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	if (WARN_ON_ONCE(!uprobe_cpu_buffer || tu->p.size + dsize > PAGE_SIZE))
-+		return;
-+
-+	cpu = raw_smp_processor_id();
-+	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-+	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-+
-+	/*
-+	 * Use per-cpu buffers for fastest access, but we might migrate
-+	 * so the mutex makes sure we have sole access to it.
-+	 */
-+	mutex_lock(mutex);
-+	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
-+
-+	size = esize + tu->p.size + dsize;
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->p.size, 0, 0);
--	if (!event)
-+						  size, 0, 0);
-+	if (!event) {
-+		mutex_unlock(mutex);
- 		return;
-+	}
- 
- 	entry = ring_buffer_event_data(event);
- 	if (is_ret_probe(tu)) {
-@@ -556,13 +581,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		call_fetch(&tu->p.args[i].fetch, regs,
--			   data + tu->p.args[i].offset);
--	}
-+	memcpy(data, arg_buf, tu->p.size + dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit(buffer, event, 0, 0);
-+
-+	mutex_unlock(mutex);
+ 	long ret;
+@@ -821,7 +821,7 @@ __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
  }
  
- /* uprobe handler */
-@@ -630,6 +654,17 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
- 	if (trace_probe_is_enabled(&tu->p))
- 		return -EINTR;
+ /* Return the length of string -- including null terminal byte */
+-__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
++static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+ 						    void *addr, void *dest)
+ {
+ 	mm_segment_t old_fs;
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 8c62746e5419..9ac7bdf607cc 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -177,18 +177,10 @@ DECLARE_BASIC_FETCH_FUNCS(reg);
+ #define fetch_reg_string		NULL
+ #define fetch_reg_string_size		NULL
  
-+	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
-+		int cpu;
-+
-+		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
-+		if (uprobe_cpu_buffer == NULL)
-+			return -ENOMEM;
-+
-+		for_each_possible_cpu(cpu)
-+			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+-DECLARE_BASIC_FETCH_FUNCS(stack);
+-#define fetch_stack_string		NULL
+-#define fetch_stack_string_size		NULL
+-
+ DECLARE_BASIC_FETCH_FUNCS(retval);
+ #define fetch_retval_string		NULL
+ #define fetch_retval_string_size	NULL
  
- 	tu->p.flags |= flag;
-@@ -646,6 +681,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
- 	if (!trace_probe_is_enabled(&tu->p))
- 		return;
- 
-+	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
-+		free_percpu(uprobe_cpu_buffer);
-+		uprobe_cpu_buffer = NULL;
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
- 
- 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-@@ -776,11 +816,33 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	struct ftrace_event_call *call = &tu->p.call;
- 	struct uprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
--	void *data;
--	int size, rctx, i;
-+	struct mutex *mutex;
-+	void *data, *arg_buf;
-+	int size, dsize, esize;
-+	int cpu;
-+	int rctx;
- 
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
-+		return;
-+
-+	size = esize + tu->p.size + dsize;
-+	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
-+		return;
-+
-+	cpu = raw_smp_processor_id();
-+	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-+	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-+
-+	/*
-+	 * Use per-cpu buffers for fastest access, but we might migrate
-+	 * so the mutex makes sure we have sole access to it.
-+	 */
-+	mutex_lock(mutex);
-+	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
- 
- 	preempt_disable();
- 	head = this_cpu_ptr(call->perf_events);
-@@ -800,15 +862,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		struct probe_arg *parg = &tu->p.args[i];
-+	memcpy(data, arg_buf, tu->p.size + dsize);
-+
-+	if (size - esize > tu->p.size + dsize) {
-+		int len = tu->p.size + dsize;
- 
--		call_fetch(&parg->fetch, regs, data + parg->offset);
-+		memset(data + len, 0, size - esize - len);
- 	}
- 
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
-+	mutex_unlock(mutex);
- }
- 
- /* uprobe profile handler */
+-DECLARE_BASIC_FETCH_FUNCS(memory);
+-DECLARE_FETCH_FUNC(memory, string);
+-DECLARE_FETCH_FUNC(memory, string_size);
+-
+ DECLARE_BASIC_FETCH_FUNCS(symbol);
+ DECLARE_FETCH_FUNC(symbol, string);
+ DECLARE_FETCH_FUNC(symbol, string_size);
 -- 
 1.7.11.7
 
