@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab3ICQ1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46510 "EHLO
+	id S1759437Ab3ICQ1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46497 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3ICQ1G (ORCPT
+	with ESMTP id S1754571Ab3ICQ1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:06 -0400
+	Tue, 3 Sep 2013 12:27:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wladislav Wiebe <wladislav.kw@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 53/58] of: fdt: fix memory initialization for expanded DT
-Date: Tue,  3 Sep 2013 09:23:57 -0700
-Message-Id: <1378225442-20654-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 50/58] xen/events: mask events when changing their VCPU binding
+Date: Tue,  3 Sep 2013 09:23:54 -0700
+Message-Id: <1378225442-20654-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,54 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wladislav Wiebe <wladislav.kw@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
+commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
 
-Already existing property flags are filled wrong for properties created from
-initial FDT. This could cause problems if this DYNAMIC device-tree functions
-are used later, i.e. properties are attached/detached/replaced. Simply dumping
-flags from the running system show, that some initial static (not allocated via
-kzmalloc()) nodes are marked as dynamic.
+When a event is being bound to a VCPU there is a window between the
+EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
+where an event may be lost.  The hypervisor upcalls the new VCPU but
+the kernel thinks that event is still bound to the old VCPU and
+ignores it.
 
-I putted some debug extensions to property_proc_show(..) :
-..
-+       if (OF_IS_DYNAMIC(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
-+       if (OF_IS_DETACHED(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
+There is even a problem when the event is being bound to the same VCPU
+as there is a small window beween the clear_bit() and set_bit() calls
+in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
+may read the bit when it is momentarily clear and ignore the event.
 
-when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
-will see that those flags are filled wrong, basically in most cases it will dump
-a DYNAMIC or DETACHED status, which is in not true.
-(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
-make a test_bit(OF_DETACHED, &x->_flags)
+Avoid this by masking the event during the whole bind operation.
 
-If nodes are dynamic kernel is allowed to kfree() them. But it will crash
-attempting to do so on the nodes from FDT -- they are not allocated via
-kzmalloc().
-
-Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/of/fdt.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/xen/events.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 808be06..1187737 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -392,6 +392,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
- 	mem = (unsigned long)
- 		dt_alloc(size + 4, __alignof__(struct device_node));
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 6f788a8..4be58b3 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1464,8 +1464,10 @@ void rebind_evtchn_irq(int evtchn, int irq)
+ /* Rebind an evtchn so that it gets delivered to a specific cpu */
+ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+ {
++	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct evtchn_bind_vcpu bind_vcpu;
+ 	int evtchn = evtchn_from_irq(irq);
++	int masked;
  
-+	memset((void *)mem, 0, size);
+ 	if (!VALID_EVTCHN(evtchn))
+ 		return -1;
+@@ -1482,6 +1484,12 @@ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+ 	bind_vcpu.vcpu = tcpu;
+ 
+ 	/*
++	 * Mask the event while changing the VCPU binding to prevent
++	 * it being delivered on an unexpected VCPU.
++	 */
++	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
 +
- 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
++	/*
+ 	 * If this fails, it usually just indicates that we're dealing with a
+ 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
+ 	 * it, but don't do the xenlinux-level rebind in that case.
+@@ -1489,6 +1497,9 @@ static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+ 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
+ 		bind_evtchn_to_cpu(evtchn, tcpu);
  
- 	pr_debug("  unflattening %lx...\n", mem);
++	if (!masked)
++		unmask_evtchn(evtchn);
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.1.2
 
