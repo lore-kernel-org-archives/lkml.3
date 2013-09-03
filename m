@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761335Ab3ICVP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:15:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4259 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760699Ab3ICVPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:15:24 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6vL9NhcTi7YA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Lu4-lkDicUYA:10 a=to-NsOc-1iq-6Jp2KtQA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 3 Sep 2013 17:15:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
- functions
-Message-ID: <20130903171516.16290c47@gandalf.local.home>
-In-Reply-To: <20130831051700.601365837@goodmis.org>
-References: <20130831051117.884125230@goodmis.org>
-	<20130831051700.601365837@goodmis.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1761349Ab3ICVP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:15:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759990Ab3ICVP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 17:15:57 -0400
+Date: Tue, 3 Sep 2013 17:15:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: yhchen@faraday-tech.com, gregkh@linuxfoundation.org
+Subject: Re: usb: host: Faraday fotg210-hcd driver
+Message-ID: <20130903211544.GB2247@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	yhchen@faraday-tech.com, gregkh@linuxfoundation.org
+References: <20130903185912.A59316601F4@gitolite.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903185912.A59316601F4@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Aug 2013 01:11:18 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, Sep 03, 2013 at 06:59:12PM +0000, Linux Kernel wrote:
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=1dd3d123239179fad5de5dc00a6e0014a1918fde
+ > Commit:     1dd3d123239179fad5de5dc00a6e0014a1918fde
+ > Parent:     10e232c597ac757e7f8600649f7e872e86de190f
+ > Author:     Yuan-Hsin Chen <yhchen@faraday-tech.com>
+ > AuthorDate: Wed Jun 19 19:53:04 2013 +0000
+ > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ > CommitDate: Wed Jul 24 16:04:53 2013 -0700
+ > 
+ >     usb: host: Faraday fotg210-hcd driver
+ >     
+ >     FOTG210 is an OTG controller which can be configured as an
+ >     USB2.0 host. FOTG210 host is an ehci-like controller with
+ >     some differences. First, register layout of FOTG210 is
+ >     incompatible with EHCI. Furthermore, FOTG210 is lack of
+ >     siTDs which means iTDs are used for both HS and FS ISO
+ >     transfer.
+ >     
+ >     Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+ >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+ > +config USB_FOTG210_HCD
+ > +	tristate "FOTG210 HCD support"
+ > +	depends on USB
+ > +	default N
+ > +	---help---
+ > +	  Faraday FOTG210 is an OTG controller which can be configured as
+ > +	  an USB2.0 host. It is designed to meet USB2.0 EHCI specification
+ > +	  with minor modification.
+ > +
+ > +	  To compile this driver as a module, choose M here: the
+ > +	  module will be called fotg210-hcd.
+ > +
 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index a6d098c..3750360 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1356,6 +1356,23 @@ ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
->  static void
->  ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
->  
-> +static int ftrace_convert_size_to_bits(int size)
-> +{
-> +	int bits;
-> +
-> +	/*
-> +	 * Make the hash size about 1/2 the # found
-> +	 */
-> +	for (size /= 2; size; size >>= 1)
-> +		bits++;
-> +
-> +	/* Don't allocate too much */
-> +	if (bits > FTRACE_HASH_MAX_BITS)
-> +		bits = FTRACE_HASH_MAX_BITS;
-> +
-> +	return bits;
-> +}
-> +
+Shouldn't this depend on USB_OTG ?
+Seems odd to have OTG related options presented to me when I have that unset.
 
+	Dave
 
-Just found this bug. Strange that gcc never gave me a warning :-/
-
--- Steve
