@@ -1,168 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab3ICNYE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:24:04 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48112 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760038Ab3ICNYB (ORCPT
+	id S1760107Ab3ICN0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:26:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3313 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759933Ab3ICN0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:24:01 -0400
-Message-ID: <5225E205.7080008@linux.vnet.ibm.com>
-Date: Tue, 03 Sep 2013 18:50:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, sboyd@codeaurora.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org>
-In-Reply-To: <80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Sep 2013 09:26:17 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=NO13L3veMrYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=hcrmJ-Ldf6sA:10 a=VnNF1IyMAAAA:8 a=SYfl2ZiqAAAA:8 a=Jjh85GMx7G4daeu3Zc8A:9 a=CjuIK1q_8ugA:10 a=bo4z3Be4H8AA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 3 Sep 2013 09:26:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 05/18 v2] ftrace: Do not display non safe RCU
+ functions in available_filter_functions
+Message-ID: <20130903092615.6310f13d@gandalf.local.home>
+In-Reply-To: <20130831205430.GB3871@linux.vnet.ibm.com>
+References: <20130831051117.884125230@goodmis.org>
+	<20130831051701.256486055@goodmis.org>
+	<20130831194602.GM3871@linux.vnet.ibm.com>
+	<1377981303.26624.2.camel@pippen.local.home>
+	<20130831205430.GB3871@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090313-5816-0000-0000-000009B722AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2013 10:56 AM, Viresh Kumar wrote:
-> We can't take a big lock around __cpufreq_governor() as this causes recursive
-> locking for some cases. But calls to this routine must be serialized for every
-> policy.
+On Sat, 31 Aug 2013 13:54:30 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Sat, Aug 31, 2013 at 04:35:03PM -0400, Steven Rostedt wrote:
+> > On Sat, 2013-08-31 at 12:46 -0700, Paul E. McKenney wrote:
+> > 
+> > > >  void arch_ftrace_update_code(int command);
+> > > > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> > > > index 06504b2..be87ac9 100644
+> > > > --- a/kernel/trace/ftrace.c
+> > > > +++ b/kernel/trace/ftrace.c
+> > > > @@ -2645,7 +2645,10 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+> > > >  		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
+> > > > 
+> > > >  		    ((iter->flags & FTRACE_ITER_ENABLED) &&
+> > > > -		     !(rec->flags & FTRACE_FL_ENABLED))) {
+> > > > +		     !(rec->flags & FTRACE_FL_ENABLED)) ||
+> > > > +
+> > > 
+> > > OK, I'll bite...  Why the blank line?
+> > 
+> > For readability. Here's the full if statement:
+> > 
+> >                 if (((iter->flags & FTRACE_ITER_FILTER) &&
+> >                      !(ftrace_lookup_ip(ops->filter_hash, rec->ip))) ||
+> > 
+> >                     ((iter->flags & FTRACE_ITER_NOTRACE) &&
+> >                      !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
+> > 
+> >                     ((iter->flags & FTRACE_ITER_ENABLED) &&
+> >                      !(rec->flags & FTRACE_FL_ENABLED)) ||
+> > 
+> >                     ((iter->flags & FTRACE_ITER_UNSAFE_ONLY) &&
+> >                      !ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip)) ||
+> > 
+> >                     ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
+> >                      ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
+> > 
+> > 
+> > They are grouped in pairs.
 > 
-> Lets introduce another variable which would guarantee serialization here.
+> Fair enough!
+
+Can I take this as an Acked-by?
+
+-- Steve
+
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 7 ++++++-
->  include/linux/cpufreq.h   | 1 +
->  2 files changed, 7 insertions(+), 1 deletion(-)
+> 							Thanx, Paul
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f320a20..4d5723db 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1692,13 +1692,15 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->  						policy->cpu, event);
-> 
->  	mutex_lock(&cpufreq_governor_lock);
-> -	if ((policy->governor_enabled && (event == CPUFREQ_GOV_START)) ||
-> +	if (policy->governor_busy ||
-> +		(policy->governor_enabled && (event == CPUFREQ_GOV_START)) ||
->  		(!policy->governor_enabled && ((event == CPUFREQ_GOV_LIMITS) ||
->  					       (event == CPUFREQ_GOV_STOP)))) {
->  		mutex_unlock(&cpufreq_governor_lock);
->  		return -EBUSY;
->  	}
-> 
-> +	policy->governor_busy = true;
->  	if (event == CPUFREQ_GOV_STOP)
->  		policy->governor_enabled = false;
->  	else if (event == CPUFREQ_GOV_START)
-> @@ -1727,6 +1729,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->  			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
->  		module_put(policy->governor->owner);
-> 
-> +	mutex_lock(&cpufreq_governor_lock);
-> +	policy->governor_busy = false;
-> +	mutex_unlock(&cpufreq_governor_lock);
->  	return ret;
->  }
-> 
-
-This doesn't solve the problem completely: it prevents the store_*() task
-from continuing *only* when it concurrently executes the __cpufreq_governor()
-function along with the CPU offline task. But if the two calls don't overlap,
-we will still have the possibility where the store_*() task tries to acquire
-the timer mutex after the CPU offline task has just finished destroying it.
-
-So, IMHO, the right fix is to synchronize with CPU hotplug. That way, the
-store_*() thread will wait until the entire CPU offline operation is completed.
-After that, if it continues, it will get -EBUSY, due to patch [1], since
-policy->governor_enabled will be set to false.
-
-[1]. https://patchwork.kernel.org/patch/2852463/
-
-So here is the (completely untested) fix that I propose, as a replacement to
-this patch [2/2]:
-
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 5c75e31..71c4fb2 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -440,17 +440,24 @@ static ssize_t store_##file_name					\
- 	unsigned int ret;						\
- 	struct cpufreq_policy new_policy;				\
- 									\
-+	get_online_cpus();						\
- 	ret = cpufreq_get_policy(&new_policy, policy->cpu);		\
--	if (ret)							\
--		return -EINVAL;						\
-+	if (ret) {							\
-+		ret = -EINVAL;						\
-+		goto out;						\
-+	}								\
- 									\
- 	ret = sscanf(buf, "%u", &new_policy.object);			\
--	if (ret != 1)							\
--		return -EINVAL;						\
-+	if (ret != 1) {							\
-+		ret = -EINVAL;						\
-+		goto out;						\
-+	}								\
- 									\
- 	ret = __cpufreq_set_policy(policy, &new_policy);		\
- 	policy->user_policy.object = policy->object;			\
- 									\
-+out:									\
-+	put_online_cpus();						\
- 	return ret ? ret : count;					\
- }
- 
-@@ -494,17 +501,22 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
- 	char	str_governor[16];
- 	struct cpufreq_policy new_policy;
- 
-+	get_online_cpus();
- 	ret = cpufreq_get_policy(&new_policy, policy->cpu);
- 	if (ret)
--		return ret;
-+		goto out;
- 
- 	ret = sscanf(buf, "%15s", str_governor);
--	if (ret != 1)
--		return -EINVAL;
-+	if (ret != 1) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	if (cpufreq_parse_governor(str_governor, &new_policy.policy,
--						&new_policy.governor))
--		return -EINVAL;
-+						&new_policy.governor)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/*
- 	 * Do not use cpufreq_set_policy here or the user_policy.max
-@@ -515,6 +527,9 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
- 	policy->user_policy.policy = policy->policy;
- 	policy->user_policy.governor = policy->governor;
- 
-+out:
-+	put_online_cpus();
-+
- 	if (ret)
- 		return ret;
- 	else
-
-
-Regards,
-Srivatsa S. Bhat
+> > -- Steve
+> > 
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > > > +		    ((iter->flags & FTRACE_ITER_NO_UNSAFE) &&
+> > > > +		     ftrace_lookup_ip(ftrace_unsafe_rcu, rec->ip))) {
+> > > > 
+> > > >  			rec = NULL;
+> > > >  			goto retry;
+> > > > @@ -2773,6 +2776,7 @@ ftrace_avail_open(struct inode *inode, struct file *file)
+> > > >  	iter = __seq_open_private(file, &show_ftrace_seq_ops, sizeof(*iter));
+> > > >  	if (iter) {
+> > > >  		iter->pg = ftrace_pages_start;
+> > > > +		iter->flags = FTRACE_ITER_NO_UNSAFE;
+> > > >  		iter->ops = &global_ops;
+> > > >  	}
+> > > > 
+> > > > -- 
+> > > > 1.7.10.4
+> > > > 
+> > > > 
+> > 
+> > 
 
