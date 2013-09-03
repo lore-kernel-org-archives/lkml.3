@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab3ICCSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 22:18:00 -0400
-Received: from imap.thunk.org ([74.207.234.97]:53552 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753277Ab3ICCR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 22:17:59 -0400
-Date: Mon, 2 Sep 2013 22:17:53 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11
-Message-ID: <20130903021753.GA15457@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
- <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
- <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
- <5225234A.50407@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5225234A.50407@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1759268Ab3ICCVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 22:21:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55512 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759207Ab3ICCV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Sep 2013 22:21:29 -0400
+Message-ID: <1378174887.1953.152.camel@joe-AO722>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, David Howells <dhowells@redhat.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Wang Shilong <wangshilong1991@gmail.com>
+Date: Mon, 02 Sep 2013 19:21:27 -0700
+In-Reply-To: <20130903021207.GA4045@leaf>
+References: <1378138205.1953.66.camel@joe-AO722>
+	 <20130902181510.GA29787@leaf> <20130902181856.GB29787@leaf>
+	 <20130902153945.6d7e510c@samsung.com> <1378148367.1953.98.camel@joe-AO722>
+	 <13834.1378155023@warthog.procyon.org.uk>
+	 <1378156296.1953.117.camel@joe-AO722> <20130903003958.GA6855@localhost>
+	 <20130903013408.GA3437@leaf> <1378173165.1953.148.camel@joe-AO722>
+	 <20130903021207.GA4045@leaf>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 04:46:18PM -0700, Guenter Roeck wrote:
-> I don't think it has anything to do with linux-iscsi.org.
-> Possibly Nicholas' e-mail provider is not hosted in the US, meaning e-mail
-> sent through it can not be logged and examined by a certain US government agency.
+On Mon, 2013-09-02 at 19:12 -0700, Josh Triplett wrote:
+> On Mon, Sep 02, 2013 at 06:52:45PM -0700, Joe Perches wrote:
+> > On Mon, 2013-09-02 at 18:34 -0700, Josh Triplett wrote:
+> > > I'd suggest a couple more, which
+> > > *should* always make sense, and to the best of my knowledge don't tend
+> > > to generate false positives:
 
-Hardly.  mail.linux-iscsi.org is hosted by Rackspace, which is most
-certainly in the US.  There may be spammers using some of Rackspace
-subnets, which is much more likely to have something to be the issue.
+Hey Josh.
 
-I had a similar issue with thunk.org, which is hosted by Linode.  In
-my case, part of the problem was that I was that I moved my host to a
-different Linode datacenter (from Dallas to Atlanta), and I forgot to
-update my SPF record, so e-mails with an SMTP envelope address of
-tytso@thunk.org were getting a soft-fail.  (And e-mails with an SMTP
-return address of tytso@mit.edu but sent from imap.thunk.org were
-always getting a soft-fail, which would tend to increase the
-likelihood that if the e-mail tripped other hueristics, would cause it
-to be considered spam.)
+I don't want to enable too many types of messages
+because the "barrier to entry" to submit patches
+shouldn't be so high that it discourages people.
 
-Fixing my SPF record, and enabling DKIM (with a DKIM key published for
-thunk.org in DNS, and making sure that I always used an SMTP envelope
-return address of tytso@thunk.org, even if the RFC 822 from address
-stated tytso@mit.edu) fixed the spam false positive issues for me.
+I feel mostly that many types of checkpatch messages
+are OK to emit, but aren't necessary to fix and
+people should feel that checkpatch isn't a necessary
+thing to silence before patches are accepted.
 
-(Hint: installing and configuring OpenDKIM really isn't all that hard.
-I did it in less than an hour.)
+cheers, Joe
 
-> I had the same experience; Google blocks all e-mail from my private provider
-> (located in Singapore). When asked by the provider, they claimed to know
-> nothing about it. No, my provider doesn't forward more spam than other providers,
-> and definitely less than, say, Yahoo.
-
-One of the things that might be happening is that your private
-provider may be hosting mailing lists used by companies to send
-marketing "newsletters".  Unfortunately, sometimes it's a pain to
-subscribe from such newsletters, and some users will just simply hit
-the "it's spam" button to make such newsletters go away.  For a small
-provider, it's easier for a percentage of e-mails being emitted from a
-mailer to be considered spam to exceed some magic threshold, thus
-increasing the "spam score" for e-mails originating from that
-provider.
-
-I'll also note that Yahoo uses DKIM (heck, it invented DKIM) and using
-DKIM is useful because if someone tries to fake spam using your
-domain, if your e-mails are getting signed using DKIM, and the spam is
-getting sent without being DKIM signed, many of the anti-spam
-filtering services defintiely do take this into account.  Some may
-even automatically decrease your spam score slightly just because you
-are using DKIM, just because spammers tend not to do this, and using
-DKIM to sign your e-mail headers makes it easier for spam filtering
-systems to hold senders accountable for spam that they send.
-
-	  	   	      	      - Ted
-
-P.S.  Although I work for Google, I don't know anything about the
-low-level details of how Google's anti-SPAM systems work.  However,
-for almost a decade, I was a member of MIT Network Operations, and was
-one of the postmasters for mit.edu, back when aol.com was in its prime
-(and we had a larger number of SMTP deliveries per day than AOL did).
-So I know a thing or two about e-mail.... and I'd be really surprised
-if anyone, particular a major mail provider such as Google, Yahoo,
-Hotmail, etc, was filtering e-mail just because it came from a non-US
-mail server.
-
-The reality is that e-mail is international, and it's only the admins
-of smaller mail services (perhaps desperate to filter out vast
-quantities of Russian or Chinese Spam, and figuring that they weren't
-expecting any valid e-mails from those countries), that would do
-something as silly has filtering based on geographic source locations.
