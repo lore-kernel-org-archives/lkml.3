@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877Ab3ICUsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 16:48:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61793 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760726Ab3ICUsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 16:48:06 -0400
-Date: Tue, 3 Sep 2013 13:48:09 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Subject: [GIT PULL] Bcache fixes
-Message-ID: <20130903204809.GC11778@moria.home.lan>
+	id S1760894Ab3ICUtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 16:49:07 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54278 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760726Ab3ICUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 16:49:04 -0400
+Date: Tue, 3 Sep 2013 16:48:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130903204850.GA1412@cmpxchg.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <20130803170831.GB23319@cmpxchg.org>
+ <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130902123802.5B8E8CB1@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens, here's the latest bcache fixes.
+Hello azur,
 
-The last one of these fixes a (really difficult to trigger) data
-corruption bug - I was waiting until the user who was able to reproduce
-it had tested it to send this pull out, that's the most serious fix in
-this pull.
+On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+> >>Hi azur,
+> >>
+> >>here is the x86-only rollup of the series for 3.2.
+> >>
+> >>Thanks!
+> >>Johannes
+> >>---
+> >
+> >
+> >Johannes,
+> >
+> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
 
-The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
+Did the OOM killer go off in this group?
 
-  bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
+Was there a warning in the syslog ("Fixing unhandled memcg OOM
+context")?
 
-are available in the git repository at:
+If it happens again, could you check if there are tasks left in the
+cgroup?  And provide /proc/<pid>/stack of the hung task trying to
+delete the cgroup?
 
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
+> Now i can definitely confirm that problem is NOT fixed :( it happened again but i don't have any data because i already disabled all debug output.
 
-for you to fetch changes up to bef0ef06a9fe34b08177b67d3213dceab29d3abe:
+Which debug output?
 
-  bcache: Fix for handling overlapping extents when reading in a btree node (2013-09-03 13:42:35 -0700)
+Do you still have access to the syslog?
 
-----------------------------------------------------------------
-Gabriel de Perthuis (1):
-      bcache: Strip endline when writing the label through sysfs
+It's possible that, as your system does not deadlock on the OOMing
+cgroup anymore, you hit a separate bug...
 
-Geert Uytterhoeven (1):
-      bcache: Correct printf()-style format length modifier
-
-Kent Overstreet (7):
-      bcache: Fix a dumb journal discard bug
-      bcache: Fix for when no journal entries are found
-      bcache: Fix a writeback performance regression
-      bcache: Fix a flush/fua performance bug
-      bcache: Fix a dumb CPU spinning bug in writeback
-      bcache: Fix a shrinker deadlock
-      bcache: Fix for handling overlapping extents when reading in a btree node
-
- drivers/md/bcache/bcache.h    |  7 +++----
- drivers/md/bcache/bset.c      | 39 ++++++++++++++++++++++++++++-----------
- drivers/md/bcache/btree.c     |  4 ++--
- drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
- drivers/md/bcache/sysfs.c     |  9 +++++++--
- drivers/md/bcache/util.c      | 11 ++++++++++-
- drivers/md/bcache/util.h      | 12 +++++++++---
- drivers/md/bcache/writeback.c | 42 ++++++++++++++++++++----------------------
- 8 files changed, 99 insertions(+), 58 deletions(-)
+Thanks!
