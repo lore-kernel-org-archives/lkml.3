@@ -1,85 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3ICUSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 16:18:48 -0400
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:8339 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754324Ab3ICUSq (ORCPT
+	id S1760767Ab3ICUTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 16:19:44 -0400
+Received: from a9-54.smtp-out.amazonses.com ([54.240.9.54]:39305 "EHLO
+	a9-54.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755657Ab3ICUTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 16:18:46 -0400
-Date: Tue, 3 Sep 2013 16:18:28 -0400
-From: Chad Dupuis <chad.dupuis@qlogic.com>
-To: Yijing Wang <wangyijing@huawei.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 7/7] scsi/qla2xxx: use pcie_is_pcie() to simplify code
-In-Reply-To: <1378193715-25328-7-git-send-email-wangyijing@huawei.com>
-Message-ID: <alpine.WNT.2.00.1309031617550.7184@N5102REMCQXM4BS.qlogic.org>
-References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com> <1378193715-25328-7-git-send-email-wangyijing@huawei.com>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-X-X-Sender: cdupuis@qlm.qlogic.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"; format=flowed
-X-Originating-IP: [10.1.4.10]
-X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=7186 signatures=668647
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1305240000 definitions=main-1309030065
+	Tue, 3 Sep 2013 16:19:42 -0400
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Sep 2013 16:19:41 EDT
+Message-ID: <00000140e5745041-26a1ab6c-ed21-4fc4-8c76-256783ca81fa-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Tue, 3 Sep 2013 20:12:20 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Subject: [gcv v4 13/38] rcu: Replace __get_cpu_var uses
+References: <20130903190014.794420260@linux.com>
+X-SES-Outgoing: 2013.09.03-54.240.9.54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good.
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Other use cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
 
-On Tue, 3 Sep 2013, Yijing Wang wrote:
+__get_cpu_var() is defined as :
 
-> Use pci_is_pcie() instead of pci_find_capability
-> to simplify code.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
-> Cc: linux-driver@qlogic.com
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> drivers/scsi/qla2xxx/qla_mr.c |    6 ++----
-> 1 files changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
-> index d799379..5f74271 100644
-> --- a/drivers/scsi/qla2xxx/qla_mr.c
-> +++ b/drivers/scsi/qla2xxx/qla_mr.c
-> @@ -507,7 +507,7 @@ qlafx00_pci_config(scsi_qla_host_t *vha)
-> 	pci_write_config_word(ha->pdev, PCI_COMMAND, w);
->
-> 	/* PCIe -- adjust Maximum Read Request Size (2048). */
-> -	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
-> +	if (pci_is_pcie(ha->pdev))
-> 		pcie_set_readrq(ha->pdev, 2048);
->
-> 	ha->chip_revision = ha->pdev->revision;
-> @@ -660,10 +660,8 @@ char *
-> qlafx00_pci_info_str(struct scsi_qla_host *vha, char *str)
-> {
-> 	struct qla_hw_data *ha = vha->hw;
-> -	int pcie_reg;
->
-> -	pcie_reg = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
-> -	if (pcie_reg) {
-> +	if (pci_is_pcie(ha->pdev)) {
-> 		strcpy(str, "PCIe iSA");
-> 		return str;
-> 	}
->
+
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+
+
+
+__get_cpu_var() always only does an address determination. However, store and retrieve operations
+could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+
+this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
+optimized assembly code to read and write per cpu variables.
+
+
+This patch converts __get_cpu_var into either an explicit address calculation using this_cpu_ptr()
+or into a use of this_cpu operations that use the offset. Thereby address calculations are avoided
+and less registers are used when code is generated.
+
+At the end of the patch set all uses of __get_cpu_var have been removed so the macro is removed too.
+
+The patch set includes passes over all arches as well. Once these operations are used throughout then
+specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+f.e. using a global register that may be set to the per cpu base.
+
+
+
+
+Transformations done to __get_cpu_var()
+
+
+1. Determine the address of the percpu instance of the current processor.
+
+	DEFINE_PER_CPU(int, y);
+	int *x = &__get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(&y);
+
+
+2. Same as #1 but this time an array structure is involved.
+
+	DEFINE_PER_CPU(int, y[20]);
+	int *x = __get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(y);
+
+
+3. Retrieve the content of the current processors instance of a per cpu variable.
+
+	DEFINE_PER_CPU(int, y);
+	int x = __get_cpu_var(y)
+
+   Converts to
+
+	int x = __this_cpu_read(y);
+
+
+4. Retrieve the content of a percpu struct
+
+	DEFINE_PER_CPU(struct mystruct, y);
+	struct mystruct x = __get_cpu_var(y);
+
+   Converts to
+
+	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
+
+
+5. Assignment to a per cpu variable
+
+	DEFINE_PER_CPU(int, y)
+	__get_cpu_var(y) = x;
+
+   Converts to
+
+	this_cpu_write(y, x);
+
+
+6. Increment/Decrement etc of a per cpu variable
+
+	DEFINE_PER_CPU(int, y);
+	__get_cpu_var(y)++
+
+   Converts to
+
+	this_cpu_inc(y)
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/kernel/rcutree.c
+===================================================================
+--- linux.orig/kernel/rcutree.c	2013-08-26 14:27:35.000000000 -0500
++++ linux/kernel/rcutree.c	2013-08-26 14:28:13.959886770 -0500
+@@ -383,7 +383,7 @@ static void rcu_eqs_enter(bool user)
+ 	long long oldval;
+ 	struct rcu_dynticks *rdtp;
+ 
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
+ 	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
+@@ -443,7 +443,7 @@ void rcu_user_enter_after_irq(void)
+ 	struct rcu_dynticks *rdtp;
+ 
+ 	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	/* Ensure this irq is interrupting a non-idle RCU state.  */
+ 	WARN_ON_ONCE(!(rdtp->dynticks_nesting & DYNTICK_TASK_MASK));
+ 	rdtp->dynticks_nesting = 1;
+@@ -474,7 +474,7 @@ void rcu_irq_exit(void)
+ 	struct rcu_dynticks *rdtp;
+ 
+ 	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	rdtp->dynticks_nesting--;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
+@@ -523,7 +523,7 @@ static void rcu_eqs_exit(bool user)
+ 	struct rcu_dynticks *rdtp;
+ 	long long oldval;
+ 
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	WARN_ON_ONCE(oldval < 0);
+ 	if (oldval & DYNTICK_TASK_NEST_MASK)
+@@ -581,7 +581,7 @@ void rcu_user_exit_after_irq(void)
+ 	struct rcu_dynticks *rdtp;
+ 
+ 	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	/* Ensure we are interrupting an RCU idle mode. */
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting & DYNTICK_TASK_NEST_MASK);
+ 	rdtp->dynticks_nesting += DYNTICK_TASK_EXIT_IDLE;
+@@ -615,7 +615,7 @@ void rcu_irq_enter(void)
+ 	long long oldval;
+ 
+ 	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
++	rdtp = this_cpu_ptr(&rcu_dynticks);
+ 	oldval = rdtp->dynticks_nesting;
+ 	rdtp->dynticks_nesting++;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
+@@ -635,7 +635,7 @@ void rcu_irq_enter(void)
+  */
+ void rcu_nmi_enter(void)
+ {
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
++	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+ 
+ 	if (rdtp->dynticks_nmi_nesting == 0 &&
+ 	    (atomic_read(&rdtp->dynticks) & 0x1))
+@@ -657,7 +657,7 @@ void rcu_nmi_enter(void)
+  */
+ void rcu_nmi_exit(void)
+ {
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
++	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+ 
+ 	if (rdtp->dynticks_nmi_nesting == 0 ||
+ 	    --rdtp->dynticks_nmi_nesting != 0)
+@@ -680,7 +680,7 @@ int rcu_is_cpu_idle(void)
+ 	int ret;
+ 
+ 	preempt_disable();
+-	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
++	ret = (atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1) == 0;
+ 	preempt_enable();
+ 	return ret;
+ }
+@@ -718,7 +718,7 @@ bool rcu_lockdep_current_cpu_online(void
+ 	if (in_nmi())
+ 		return 1;
+ 	preempt_disable();
+-	rdp = &__get_cpu_var(rcu_sched_data);
++	rdp = this_cpu_ptr(&rcu_sched_data);
+ 	rnp = rdp->mynode;
+ 	ret = (rdp->grpmask & rnp->qsmaskinit) ||
+ 	      !rcu_scheduler_fully_active;
+@@ -738,7 +738,7 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cp
+  */
+ static int rcu_is_cpu_rrupt_from_idle(void)
+ {
+-	return __get_cpu_var(rcu_dynticks).dynticks_nesting <= 1;
++	return __this_cpu_read(rcu_dynticks.dynticks_nesting) <= 1;
+ }
+ 
+ /*
+Index: linux/kernel/rcutree_plugin.h
+===================================================================
+--- linux.orig/kernel/rcutree_plugin.h	2013-08-26 14:27:35.000000000 -0500
++++ linux/kernel/rcutree_plugin.h	2013-08-26 14:28:13.963886728 -0500
+@@ -662,7 +662,7 @@ static void rcu_preempt_check_callbacks(
+ 
+ static void rcu_preempt_do_callbacks(void)
+ {
+-	rcu_do_batch(&rcu_preempt_state, &__get_cpu_var(rcu_preempt_data));
++	rcu_do_batch(&rcu_preempt_state, this_cpu_ptr(&rcu_preempt_data));
+ }
+ 
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+@@ -1334,7 +1334,7 @@ static void invoke_rcu_callbacks_kthread
+  */
+ static bool rcu_is_callbacks_kthread(void)
+ {
+-	return __get_cpu_var(rcu_cpu_kthread_task) == current;
++	return __this_cpu_read(rcu_cpu_kthread_task) == current;
+ }
+ 
+ #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
+@@ -1384,8 +1384,8 @@ static int rcu_spawn_one_boost_kthread(s
+ 
+ static void rcu_kthread_do_work(void)
+ {
+-	rcu_do_batch(&rcu_sched_state, &__get_cpu_var(rcu_sched_data));
+-	rcu_do_batch(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
++	rcu_do_batch(&rcu_sched_state, this_cpu_ptr(&rcu_sched_data));
++	rcu_do_batch(&rcu_bh_state, this_cpu_ptr(&rcu_bh_data));
+ 	rcu_preempt_do_callbacks();
+ }
+ 
+@@ -1404,7 +1404,7 @@ static void rcu_cpu_kthread_park(unsigne
+ 
+ static int rcu_cpu_kthread_should_run(unsigned int cpu)
+ {
+-	return __get_cpu_var(rcu_cpu_has_work);
++	return __this_cpu_read(rcu_cpu_has_work);
+ }
+ 
+ /*
+@@ -1414,8 +1414,8 @@ static int rcu_cpu_kthread_should_run(un
+  */
+ static void rcu_cpu_kthread(unsigned int cpu)
+ {
+-	unsigned int *statusp = &__get_cpu_var(rcu_cpu_kthread_status);
+-	char work, *workp = &__get_cpu_var(rcu_cpu_has_work);
++	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
++	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
+ 	int spincnt;
+ 
+ 	for (spincnt = 0; spincnt < 10; spincnt++) {
+
