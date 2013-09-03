@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3ICDPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 23:15:53 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44573 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab3ICDPw (ORCPT
+	id S1759287Ab3ICDQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 23:16:57 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:36860 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256Ab3ICDQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 23:15:52 -0400
-Date: Tue, 3 Sep 2013 11:15:44 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, aik@ozlabs.ru, paulus@au1.ibm.com,
-        benh@au1.ibm.com, iommu <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH] iommu: WARN_ON when removing a device with no
- iommu_group associated
-Message-ID: <20130903031544.GA16232@weiyang.vnet.ibm.com>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1377222911-12144-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <1377228807.25163.33.camel@ul30vt.home>
+	Mon, 2 Sep 2013 23:16:56 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 2 Sep 2013 20:16:45 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Joe Perches <joe@perches.com>, David Howells <dhowells@redhat.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Wang Shilong <wangshilong1991@gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [PATCH] checkpatch: Add comment about
+ updating Documentation/CodingStyle
+Message-ID: <20130903031645.GA5104@leaf>
+References: <20130902181510.GA29787@leaf>
+ <20130902181856.GB29787@leaf>
+ <20130902153945.6d7e510c@samsung.com>
+ <1378148367.1953.98.camel@joe-AO722>
+ <13834.1378155023@warthog.procyon.org.uk>
+ <1378156296.1953.117.camel@joe-AO722>
+ <20130903003958.GA6855@localhost>
+ <20130903013408.GA3437@leaf>
+ <1378173165.1953.148.camel@joe-AO722>
+ <20130903024640.GA11168@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377228807.25163.33.camel@ul30vt.home>
+In-Reply-To: <20130903024640.GA11168@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090302-9264-0000-0000-000004738870
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any more comments? Or this one is not proper?
+On Tue, Sep 03, 2013 at 10:46:40AM +0800, Fengguang Wu wrote:
+> On Mon, Sep 02, 2013 at 06:52:45PM -0700, Joe Perches wrote:
+> > On Mon, 2013-09-02 at 18:34 -0700, Josh Triplett wrote:
+> > > CONFIG_EXPERIMENTAL
+> > > CVS_KEYWORD
+> > 
+> > OK, but <shrug>
+[...]
+> Thanks for both of your suggestions! I'll add the commonly agreed ones:
+> 
+> +INVALID_UTF8
+> +LINUX_VERSION_CODE
+> +MISSING_EOF_NEWLINE
+> +HEXADECIMAL_BOOLEAN_TEST
+> +ALLOC_ARRAY_ARGS
+> +CONST_STRUCT
+> +CONSIDER_KSTRTO
+> 
+> And remove the duplicate one (good catch, Josh!)
+> 
+> -KREALLOC_ARG_REUSE
 
-On Thu, Aug 22, 2013 at 09:33:27PM -0600, Alex Williamson wrote:
->[+cc iommu]
->
->On Fri, 2013-08-23 at 09:55 +0800, Wei Yang wrote:
->> When removing a device from the system, iommu_group driver will try to
->> disconnect it from its group. While in some cases, one device may not
->> associated with any iommu_group. For example, not enough DMA address space.
->> 
->> In the generic bus notification, it will check dev->iommu_group before calling
->> iommu_group_remove_device(). While in some cases, developers may call
->> iommu_group_remove_device() in a different code path and without check. For
->> those devices with dev->iommu_group set to NULL, kernel will crash.
->> 
->> This patch gives a warning and return when trying to remove a device from an
->> iommu_group with dev->iommu_group set to NULL. This helps to indicate some bad
->> behavior and also guard the kernel.
->> 
->> Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
->
->Acked-by: Alex Williamson <alex.williamson@redhat.com>
->
->> ---
->>  drivers/iommu/iommu.c |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
->> 
->> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
->> index fbe9ca7..43396f0 100644
->> --- a/drivers/iommu/iommu.c
->> +++ b/drivers/iommu/iommu.c
->> @@ -379,6 +379,9 @@ void iommu_group_remove_device(struct device *dev)
->>  	struct iommu_group *group = dev->iommu_group;
->>  	struct iommu_device *tmp_device, *device = NULL;
->>  
->> +	if (WARN_ON(!group))
->> +		return;
->> +
->>  	/* Pre-notify listeners that a device is being removed. */
->>  	blocking_notifier_call_chain(&group->notifier,
->>  				     IOMMU_GROUP_NOTIFY_DEL_DEVICE, dev);
->
->
+You missed CONFIG_EXPERIMENTAL and CVS_KEYWORD; see above.
 
--- 
-Richard Yang
-Help you, Help me
-
+- Josh Triplett
