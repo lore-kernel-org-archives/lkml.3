@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab3ICGXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 02:23:20 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:62820 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759441Ab3ICGXT (ORCPT
+	id S1759512Ab3ICGYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 02:24:53 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:51264 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab3ICGYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 02:23:19 -0400
-Message-ID: <1378189394.4621.9.camel@phoenix>
-Subject: [PATCH 5/8] regulator: da903x: Convert to devm_regulator_register
+	Tue, 3 Sep 2013 02:24:51 -0400
+Message-ID: <1378189486.4621.11.camel@phoenix>
+Subject: [PATCH 6/8] regulator: da9052: Convert to devm_regulator_register
 From: Axel Lin <axel.lin@ingics.com>
 To: Mark Brown <broonie@kernel.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 03 Sep 2013 14:23:14 +0800
+Cc: David Dajun Chen <dchen@diasemi.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 03 Sep 2013 14:24:46 +0800
 In-Reply-To: <1378189056.4621.1.camel@phoenix>
 References: <1378189056.4621.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -26,44 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/regulator/da903x.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/regulator/da9052-regulator.c | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
-index 2afa573..6de6885 100644
---- a/drivers/regulator/da903x.c
-+++ b/drivers/regulator/da903x.c
-@@ -488,7 +488,7 @@ static int da903x_regulator_probe(struct platform_device *pdev)
- 	config.init_data = pdev->dev.platform_data;
- 	config.driver_data = ri;
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index 96b569a..25d3e47 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -389,8 +389,9 @@ static int da9052_regulator_probe(struct platform_device *pdev)
+ #endif
+ 	}
  
--	rdev = regulator_register(&ri->desc, &config);
-+	rdev = devm_regulator_register(&pdev->dev, &ri->desc, &config);
- 	if (IS_ERR(rdev)) {
+-	regulator->rdev = regulator_register(&regulator->info->reg_desc,
+-					     &config);
++	regulator->rdev = devm_regulator_register(&pdev->dev,
++						  &regulator->info->reg_desc,
++						  &config);
+ 	if (IS_ERR(regulator->rdev)) {
  		dev_err(&pdev->dev, "failed to register regulator %s\n",
- 				ri->desc.name);
-@@ -499,21 +499,12 @@ static int da903x_regulator_probe(struct platform_device *pdev)
+ 			regulator->info->reg_desc.name);
+@@ -402,17 +403,8 @@ static int da9052_regulator_probe(struct platform_device *pdev)
  	return 0;
  }
  
--static int da903x_regulator_remove(struct platform_device *pdev)
+-static int da9052_regulator_remove(struct platform_device *pdev)
 -{
--	struct regulator_dev *rdev = platform_get_drvdata(pdev);
+-	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
 -
--	regulator_unregister(rdev);
+-	regulator_unregister(regulator->rdev);
 -	return 0;
 -}
 -
- static struct platform_driver da903x_regulator_driver = {
- 	.driver	= {
- 		.name	= "da903x-regulator",
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= da903x_regulator_probe,
--	.remove		= da903x_regulator_remove,
- };
- 
- static int __init da903x_regulator_init(void)
+ static struct platform_driver da9052_regulator_driver = {
+ 	.probe = da9052_regulator_probe,
+-	.remove = da9052_regulator_remove,
+ 	.driver = {
+ 		.name = "da9052-regulator",
+ 		.owner = THIS_MODULE,
 -- 
 1.8.1.2
 
