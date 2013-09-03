@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759615Ab3ICQ12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46539 "EHLO
+	id S1760064Ab3ICQ1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab3ICQ1X (ORCPT
+	with ESMTP id S1760033Ab3ICQ1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:23 -0400
+	Tue, 3 Sep 2013 12:27:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 58/58] nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
-Date: Tue,  3 Sep 2013 09:24:02 -0700
-Message-Id: <1378225442-20654-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 37/58] Hostap: copying wrong data prism2_ioctl_giwaplist()
+Date: Tue,  3 Sep 2013 09:23:41 -0700
+Message-Id: <1378225442-20654-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -30,55 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4bf93b50fd04118ac7f33a3c2b8a0a1f9fa80bc9 upstream.
+commit 909bd5926d474e275599094acad986af79671ac9 upstream.
 
-Fix the issue with improper counting number of flying bio requests for
-BIO_EOPNOTSUPP error detection case.
+We want the data stored in "addr" and "qual", but the extra ampersands
+mean we are copying stack data instead.
 
-The sb_nbio must be incremented exactly the same number of times as
-complete() function was called (or will be called) because
-nilfs_segbuf_wait() will call wail_for_completion() for the number of
-times set to sb_nbio:
-
-  do {
-      wait_for_completion(&segbuf->sb_bio_event);
-  } while (--segbuf->sb_nbio > 0);
-
-Two functions complete() and wait_for_completion() must be called the
-same number of times for the same sb_bio_event.  Otherwise,
-wait_for_completion() will hang or leak.
-
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nilfs2/segbuf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/hostap/hostap_ioctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nilfs2/segbuf.c b/fs/nilfs2/segbuf.c
-index 5bacf46..2d8be51 100644
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -376,12 +376,12 @@ static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
- 	bio->bi_private = segbuf;
- 	bio_get(bio);
- 	submit_bio(mode, bio);
-+	segbuf->sb_nbio++;
- 	if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
- 		bio_put(bio);
- 		err = -EOPNOTSUPP;
- 		goto failed;
- 	}
--	segbuf->sb_nbio++;
- 	bio_put(bio);
+diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
+index ac07473..e509030 100644
+--- a/drivers/net/wireless/hostap/hostap_ioctl.c
++++ b/drivers/net/wireless/hostap/hostap_ioctl.c
+@@ -523,9 +523,9 @@ static int prism2_ioctl_giwaplist(struct net_device *dev,
  
- 	wi->bio = NULL;
+ 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
+ 
+-	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
++	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
+ 	data->flags = 1; /* has quality information */
+-	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
++	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
+ 	       sizeof(struct iw_quality) * data->length);
+ 
+ 	kfree(addr);
 -- 
 1.8.1.2
 
