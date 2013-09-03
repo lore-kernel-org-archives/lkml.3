@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759294Ab3ICCsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Sep 2013 22:48:15 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:46423 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759262Ab3ICCsN (ORCPT
+	id S1759310Ab3ICCtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Sep 2013 22:49:04 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42733 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759296Ab3ICCtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Sep 2013 22:48:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <52253607.9010907@cn.fujitsu.com>
-References: <1378117829-9095-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1378117829-9095-3-git-send-email-tangchen@cn.fujitsu.com>
-	<CAE9FiQXtWc6ud6BpsvUa5F4KKEX7cT5Phj4wvZfEr6zeWZVpZA@mail.gmail.com>
-	<52253607.9010907@cn.fujitsu.com>
-Date: Mon, 2 Sep 2013 19:48:12 -0700
-X-Google-Sender-Auth: NjkLrTrQD8Lf5-ZHASrsL4Q57CY
-Message-ID: <CAE9FiQXeiBZU9X7MprpBtyCQgW-u3u5m7XwvEujnvs5wHYdM4A@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/3] x86, mm: Update min_pfn_mapped in add_pfn_range_mapped().
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Sep 2013 22:49:02 -0400
+Message-ID: <1378176973.32763.355.camel@haakon3.risingtidesystems.com>
+Subject: Re: Linux 3.11
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Sep 2013 19:56:13 -0700
+In-Reply-To: <20130903021753.GA15457@thunk.org>
+References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
+	 <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
+	 <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
+	 <5225234A.50407@roeck-us.net> <20130903021753.GA15457@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 2, 2013 at 6:06 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> Hi Yinghai,
->
-> On 09/03/2013 02:41 AM, Yinghai Lu wrote:
+Hi Ted,
 
-> How about change the "for (from low to high)" in init_range_memory_mapping()
-> to
-> "for_rev(from high to low)" ?
-> Then we can update min_pfn_mapped in add_pfn_range_mapped().
->
-> And also, the outer loop is from high to low, we can change the inner loop
-> to be from high
-> to low too.
+On Mon, 2013-09-02 at 22:17 -0400, Theodore Ts'o wrote:
+> On Mon, Sep 02, 2013 at 04:46:18PM -0700, Guenter Roeck wrote:
+> > I don't think it has anything to do with linux-iscsi.org.
+> > Possibly Nicholas' e-mail provider is not hosted in the US, meaning e-mail
+> > sent through it can not be logged and examined by a certain US government agency.
+> 
+> Hardly.  mail.linux-iscsi.org is hosted by Rackspace, which is most
+> certainly in the US.  There may be spammers using some of Rackspace
+> subnets, which is much more likely to have something to be the issue.
+> 
+> I had a similar issue with thunk.org, which is hosted by Linode.  In
+> my case, part of the problem was that I was that I moved my host to a
+> different Linode datacenter (from Dallas to Atlanta), and I forgot to
+> update my SPF record, so e-mails with an SMTP envelope address of
+> tytso@thunk.org were getting a soft-fail.  (And e-mails with an SMTP
+> return address of tytso@mit.edu but sent from imap.thunk.org were
+> always getting a soft-fail, which would tend to increase the
+> likelihood that if the e-mail tripped other hueristics, would cause it
+> to be considered spam.)
+> 
+> Fixing my SPF record, and enabling DKIM (with a DKIM key published for
+> thunk.org in DNS, and making sure that I always used an SMTP envelope
+> return address of tytso@thunk.org, even if the RFC 822 from address
+> stated tytso@mit.edu) fixed the spam false positive issues for me.
+> 
+> (Hint: installing and configuring OpenDKIM really isn't all that hard.
+> I did it in less than an hour.)
 
-No. there is other reason for doing local from low to high.
+<nod>, thanks for the additional information.
 
-kernel_physical_mapping_init() could clear some mapping near the end
-of PUG/PMD entries but not the head.
+Enabling DKIM now, and just waiting for the TXT records to update to
+verify.
 
->
-> I think updating min_pfn_mapped in init_mem_mapping() is less readable. And
-> min_pfn_mapped
-> and max_pfn_mapped should be updated together.
+--nab
 
-min_pfn_mapped is early local variable to control allocation in alloc_low_pages.
-put it in init_mem_mapping is more readable.
-
-Yinghai
