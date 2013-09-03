@@ -1,110 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760594Ab3ICSnv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 14:43:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49882 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759409Ab3ICSnu (ORCPT
+	id S1760365Ab3ICSu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 14:50:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34447 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756709Ab3ICSu5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 14:43:50 -0400
-Message-ID: <52262DE0.2020708@oracle.com>
-Date: Tue, 03 Sep 2013 13:43:44 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Chuck Anderson <chuck.anderson@oracle.com>
-CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>, Dan Duval <dan.duval@oracle.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] audit: Two efficiency fixes for audit mechanism
-References: <52255D4B.8070602@oracle.com>
-In-Reply-To: <52255D4B.8070602@oracle.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 3 Sep 2013 14:50:57 -0400
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1378230767-54931-1-git-send-email-s-anna@ti.com>
+Date: Tue, 3 Sep 2013 13:50:53 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org>
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding my ack.
 
-On 09/02/2013 10:53 PM, Chuck Anderson wrote:
-> audit: Two efficiency fixes for audit mechanism
+On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
+
+> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+> which are all device-tree boot only. This patch adds the
+> base support for parsing the DT nodes, and removes the code
+> dealing with the traditional platform device instantiation.
 > 
-> author: Dan Duval <dan.duval@oracle.com>
-> 
-> These and similar errors were seen on a patched 3.8 kernel when the
-> audit subsystem was overrun during boot:
-> 
->   udevd[876]: worker [887] unexpectedly returned with status 0x0100
->   udevd[876]: worker [887] failed while handling
-> '/devices/pci0000:00/0000:00:03.0/0000:40:00.0'
->   udevd[876]: worker [880] unexpectedly returned with status 0x0100
->   udevd[876]: worker [880] failed while handling
-> '/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1'
-> 
->   udevadm settle - timeout of 180 seconds reached, the event queue
-> contains:
->     /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input1/event1 (3995)
->     /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/INT3F0D:00 (4034)
-> 
->   audit: audit_backlog=258 > audit_backlog_limit=256
->   audit: audit_lost=1 audit_rate_limit=0 audit_backlog_limit=256
-> 
-> The changes below increase the efficiency of the audit code and
-> prevent it from being overrun:
-> 
-> 1. Only issue a wake_up in kauditd if the length of the skb queue
->    is less than the backlog limit.  Otherwise, threads waiting in
->    wait_for_auditd() will simply wake up, discover that the
->    queue is still too long for them to proceed, and go back
->    to sleep.  This results in wasted context switches and
->    machine cycles.  kauditd_thread() is the only function that
->    removes buffers from audit_skb_queue so we can't race.  If we
->    did, the timeout in wait_for_auditd() would expire and the
->    waiting thread would continue.
-> 
-> 2. Use add_wait_queue_exclusive() in wait_for_auditd() to put the
->    thread on the wait queue.  When kauditd dequeues an skb, all
->    of the waiting threads are waiting for the same resource, but
->    only one is going to get it, so there's no need to wake up
->    more than one waiter.
-> 
-> Signed-off-by: Dan Duval <dan.duval@oracle.com>
-> Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> Signed-off-by: Suman Anna <s-anna@ti.com>
 > ---
->  kernel/audit.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+> arch/arm/mach-omap2/Makefile                       |  3 --
+> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+> 4 files changed, 45 insertions(+), 67 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
 > 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 9a78dde..d87b4dd 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -449,8 +449,11 @@ static int kauditd_thread(void *dummy)
->          flush_hold_queue();
-> 
->          skb = skb_dequeue(&audit_skb_queue);
-> -        wake_up(&audit_backlog_wait);
+> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> new file mode 100644
+> index 0000000..adfb8ad
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+> @@ -0,0 +1,28 @@
+> +OMAP4+ HwSpinlock Driver
 > +
->          if (skb) {
-> +            if(skb_queue_len(&audit_skb_queue) <= audit_backlog_limi
-> t)
-> +                wake_up(&audit_backlog_wait);
+> +Required properties:
+> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+> +- reg:			Contains the hwspinlock register address range (base
+> +			address and length)
+> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
 > +
->              if (audit_pid)
->                  kauditd_send_skb(skb);
->              else
-> @@ -1059,7 +1062,7 @@ static void wait_for_auditd(unsigned long
-> sleep_time, int
-> limit)
->  {
->      DECLARE_WAITQUEUE(wait, current);
->      set_current_state(TASK_UNINTERRUPTIBLE);
-> -    add_wait_queue(&audit_backlog_wait, &wait);
-> +    add_wait_queue_exclusive(&audit_backlog_wait, &wait);
-> 
->      if (audit_backlog_limit &&
->          skb_queue_len(&audit_skb_queue) > limit)
+> +Optional properties:
+> +- base_id:		Base Id for the locks for a particular hwspinlock
+> +			device. If not mentioned, a default value of 0 is used.
+> +			This property is mandatory ONLY if a SoC has several
+> +			hwspinlock devices. There are currently no such OMAP
+> +			SoCs.
+
+Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+
+> +
+> +			See documentation on struct hwspinlock_pdata in
+> +			linux/hwspinlock.h for more details.
+> +
+> +
+> +Example:
+> +
+> +/* OMAP4 */
+> +hwspinlock: spinlock@4a0f6000 {
+> +	compatible = "ti,omap4-hwspinlock";
+> +	reg = <0x4a0f6000 0x1000>;
+> +	ti,hwmods = "spinlock";
+> +};
+
+[ snip ]
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
