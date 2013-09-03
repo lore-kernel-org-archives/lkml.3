@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab3ICNfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 09:35:05 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4460 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932941Ab3ICNfD (ORCPT
+	id S932848Ab3ICNh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 09:37:57 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:65211 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609Ab3ICNh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 09:35:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 03 Sep 2013 06:35:02 -0700
-Date: Tue, 3 Sep 2013 16:34:59 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Mike Turquette" <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Introduce table driven initializations
-Message-ID: <20130903133459.GP9594@tbergstrom-lnx.Nvidia.com>
-References: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
+	Tue, 3 Sep 2013 09:37:56 -0400
+Date: Tue, 3 Sep 2013 15:37:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fix
+Message-ID: <20130903133752.GA27030@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378215105-12145-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 03:31:30PM +0200, Peter De Schrijver wrote:
-> This patchset introduces a table driven initialization method for the
-> audio, PMC and gate clocks. It's similar to the table we already have for
-> the periph clocks.
+Linus,
 
-Forgot to mention this series depends on:
+Please pull the latest perf-urgent-for-linus git tree from:
 
-[PATCH] clk: tegra: replace enum tegra114_clk by binding header
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
+   HEAD: ae23bff1d71f8b416ed740bc458df67355c77c92 perf: Prevent race in unthrottling code
+
+This is a leftover fix from the v3.11 cycle.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Jiri Olsa (1):
+      perf: Prevent race in unthrottling code
+
+
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f86599e..258eaaf 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2712,7 +2712,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+ 
+ 		hwc = &event->hw;
+ 
+-		if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
++		if (hwc->interrupts == MAX_INTERRUPTS) {
+ 			hwc->interrupts = 0;
+ 			perf_log_throttle(event, 1);
+ 			event->pmu->start(event, 0);
