@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3ICHhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:37:10 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47620 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab3ICHhD (ORCPT
+	id S932635Ab3ICHhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:37:17 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50531 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab3ICHhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:37:03 -0400
-Subject: [PATCH 1/2] SDT markers listing by perf
+	Tue, 3 Sep 2013 03:37:12 -0400
+Subject: [PATCH 2/2] Support to perf to probe on SDT markers:
 To: linux-kernel@vger.kernel.org
 From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
 Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
         mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
         masami.hiramatsu.pt@hitachi.com
-Date: Tue, 03 Sep 2013 13:06:55 +0530
-Message-ID: <20130903073655.4793.20013.stgit@hemant-fedora>
+Date: Tue, 03 Sep 2013 13:07:03 +0530
+Message-ID: <20130903073703.4793.32779.stgit@hemant-fedora>
 In-Reply-To: <20130903072944.4793.93584.stgit@hemant-fedora>
 References: <20130903072944.4793.93584.stgit@hemant-fedora>
 User-Agent: StGit/0.16
@@ -23,307 +23,168 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090318-3568-0000-0000-0000042EA6B8
+x-cbid: 13090307-1396-0000-0000-0000037F3A5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will enable perf to list all the sdt markers present
-in an elf file. The markers are present in the .note.stapsdt section
-of the elf. We can traverse through this section and collect the
-required info about the markers.
-This hasn't been thoroughly tested with the other
-options of perf.
-----
-Usage :
-./perf probe --list -x /lib64/libc.so.6
-
-Output :
-setjmp
-longjmp
-longjmp_target
-lll_futex_wake
-lll_lock_wait_private
-longjmp
-longjmp_target
-lll_futex_wake
-
-Total markers = 8
-----
-Signed-off-by: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+This patch enables perf to probe on the marker name specified on the command line.
 ---
- tools/perf/builtin-probe.c    |   26 +++++
- tools/perf/util/probe-event.c |    6 +
- tools/perf/util/symbol-elf.c  |  205 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h      |   19 ++++
- 4 files changed, 256 insertions(+)
+ tools/perf/builtin-probe.c    |    7 +++
+ tools/perf/util/probe-event.c |   11 ++++
+ tools/perf/util/symbol-elf.c  |  112 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h      |    5 ++
+ 4 files changed, 135 insertions(+)
 
 diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index e8a66f9..3d8dcdf 100644
+index 3d8dcdf..8382853 100644
 --- a/tools/perf/builtin-probe.c
 +++ b/tools/perf/builtin-probe.c
-@@ -55,6 +55,7 @@ static struct {
- 	bool show_funcs;
- 	bool mod_events;
- 	bool uprobes;
-+	bool sdt;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
-@@ -325,6 +326,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     opt_set_filter),
- 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
- 			"target executable name or path", opt_set_target),
-+	OPT_BOOLEAN('S', "sdt", &params.sdt,
-+		    "Show and probe on the SDT markers"),
- 	OPT_END()
- 	};
- 	int ret;
-@@ -355,6 +358,28 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	 */
- 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
- 
-+	if (params.sdt) {
-+		if (params.show_lines) {
-+			pr_err("  Error: Don't use --sdt with --line.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_vars) {
-+			pr_err(" Error: Don't use --sdt with --vars.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_funcs) {
-+			pr_err("  Error: Don't use --sdt with --funcs.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.list_events) {
-+			ret = show_available_markers(params.target);
-+			if (ret < 0)
-+				pr_err("  Error: Failed to show markers."
-+				       " (%d)\n", ret);
-+			return ret;
-+		}
-+	}
-+
- 	if (params.list_events) {
- 		if (params.mod_events) {
- 			pr_err("  Error: Don't use --list with --add/--del.\n");
-@@ -382,6 +407,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 			       ret);
- 		return ret;
+@@ -378,6 +378,13 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				       " (%d)\n", ret);
+ 			return ret;
+ 		}
++		params.uprobes = true;
++		ret = probe_marker(params.target,
++				   params.events[0].point.function);
++		if (ret < 0)
++			pr_err("Could not probe at %s marker\n",
++			       params.events[0].point.function);
++		return ret;
  	}
-+
- 	if (params.show_funcs) {
- 		if (params.nevents != 0 || params.dellist) {
- 			pr_err("  Error: Don't use --funcs with"
+ 
+ 	if (params.list_events) {
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index aa04bf9..7f846f9 100644
+index 7f846f9..014d642 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -2372,3 +2372,9 @@ out:
- 		free(name);
- 	return ret;
+@@ -2378,3 +2378,14 @@ int show_available_markers(const char *target)
+ 	setup_pager();
+ 	return list_markers(target);
  }
 +
-+int show_available_markers(const char *target)
++int probe_marker(const char *name, char *mark)
 +{
-+	setup_pager();
-+	return list_markers(target);
++	int fd;
++
++	fd = open_uprobe_events(true);
++	if (fd == -1)
++		return fd;
++	else
++		return probe__marker(name, mark, fd);
 +}
 diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..f3630f2 100644
+index f3630f2..60938a5 100644
 --- a/tools/perf/util/symbol-elf.c
 +++ b/tools/perf/util/symbol-elf.c
-@@ -846,6 +846,211 @@ out_elf_end:
- 	return err;
+@@ -1040,6 +1040,118 @@ out_ret:
+ 	return ret;
  }
  
-+/* Populate the name, type, offset and argument fields in the note structure */
-+static struct sdt_note *populate_note(Elf **elf, const char *data, size_t len,
-+				      int type)
++static void extract_first_name(const char *target, char *fname)
 +{
-+	const char *provider, *name, *args;
-+	struct sdt_note *note;
++	int i, len;
++	char *file;
 +
-+	/*
-+	 * There are 3 address values to be obtained: marker offset, base address
-+	 * and semaphore
-+	 */
-+	union {
-+		Elf64_Addr a64[3];
-+		Elf32_Addr a32[3];
-+	} buf;
++	file = strrchr(target, DIR_SEP);
++	file++;
++	len = strlen(file);
++	for (i = 0; i <= len; i++) {
++		if (!isalpha(file[i]))
++			break;
++		fname[i] = file[i];
++	}
++	fname[i] = '\0';
++}
 +
-+	/*
-+	 * dst and src (of Elf_Data) are required for translation from file
-+	 * to memory representation
-+	 */
-+	Elf_Data dst = {
-+		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
-+		.d_size = gelf_fsize((*elf), ELF_T_ADDR, 3, EV_CURRENT),
-+		.d_off = 0, .d_align = 0
-+	};
++static int probe_at_note(struct sdt_note *r_note, const char *target, bool exec,
++			 int fd)
++{
++	char buf[MAX_CMDLEN];
++	int len, err = -1;
++	Elf64_Addr offset;
++	char *fname = NULL;
 +
-+	Elf_Data src = {
-+		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
-+		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
-+		.d_align = 0
-+	};
++	if (exec)
++		offset = r_note->addr.a64[0] - TEXT_SCN;
++	else
++		offset = r_note->addr.a64[0];
 +
-+	if (type != SDT_NOTE_TYPE)
-+		goto out_ret;
-+
-+	note = zalloc(sizeof(struct sdt_note));
-+	if (note == NULL) {
-+		pr_err("memory allocation error\n");
++	fname = (char *)zalloc(sizeof(char) * strlen(target));
++	if (fname == NULL) {
++		pr_err("Error in allocating memory to fname\n");
 +		goto out_ret;
 +	}
-+	note->next = NULL;
 +
-+	if (len < dst.d_size + 3)
-+		goto out_free;
-+	/*
-+	 * Translating from file representation to memory representation
-+	 * Data now points to the address (offset)
-+	 */
-+	if (gelf_xlatetom((*elf), &dst, &src,
-+			  elf_getident((*elf), NULL)[EI_DATA]) == NULL)
-+		pr_debug("gelf_xlatetom : %s", elf_errmsg(-1));
++	extract_first_name(target, fname);
++	len = snprintf(buf, MAX_CMDLEN, "%c:%s%s/%s %s:0x%x", 'p', "probe_",
++		       fname, r_note->name, target, (unsigned)offset);
 +
-+	/* Populate the fields of sdt_note */
-+	provider = data + dst.d_size;
++	len = write(fd, buf, MAX_CMDLEN);
++	if (len < 0) {
++		pr_err("Couldn't write into uprobe_events!\n");
++		goto out_close;
++	} else {
++		printf("Added new event :\n");
++		printf("event = %s \t (on 0x%x)\n\n", r_note->name,
++		       (unsigned)offset);
++		printf("You can now use it on all perf tools such as :\n\n");
++		printf("\t perf record -e %s%s:%s -aR sleep 1\n\n", "probe_", fname, r_note->name);
++		err = 0;
++	}
 +
-+	name = (const char *)memchr(provider, '\0', data + len - provider);
-+	if (name++ == NULL)
-+		goto out_ret;
-+
-+	args = (const char *)memchr(name, '\0', data + len - name);
-+	if (args++ == NULL ||
-+	    memchr(args, '\0', data + len - name) != data + len - 1)
-+		goto out_ret;
-+	note->provider = provider;
-+	note->name = name;
-+
-+	/* Three addr's for location, base and semaphore addresses */
-+	note->addr.a64[0] = (buf.a64[0]);
-+	note->addr.a64[1] = (buf.a64[1]);
-+	note->addr.a64[2] = (buf.a64[2]);
-+	return note;
-+
-+out_free:
-+	free(note);
++out_close:
++	close(fd);
++	free(fname);
 +out_ret:
-+	return NULL;
++	return err;
 +}
 +
-+/*
-+ * Traverse the elf of the object, find out the .note.stapsdt section
-+ * and accordingly initialize the notes' list head
-+ */
-+static struct sdt_note *get_elf_markers(Elf *elf, bool *exe, bool probe)
++static int search_and_probe_at_note(char *key, struct sdt_note **start,
++				    const char *target, bool exec, int fd)
 +{
-+	Elf_Scn *scn = NULL;
-+	Elf_Data *data;
-+	GElf_Shdr shdr;
-+	GElf_Ehdr ehdr;
-+	size_t  shstrndx;
-+	size_t next;
-+	GElf_Nhdr nhdr;
-+	size_t name_off, desc_off, offset;
-+	struct sdt_note *note = NULL, *tmp, *head = NULL;
++	int ret = -1;
++	struct sdt_note *req;
 +
-+	if (gelf_getehdr(elf, &ehdr) == NULL) {
-+		pr_debug("%s: cannot get elf header.\n", __func__);
-+		goto out_end;
++	for (req = (*start); req != NULL; req = req->next) {
++		if (!strcmp(key, req->name))
++			break;
++	}
++	if (!req) {
++		pr_err("Could not find marker %s\n", key);
++		return ret;
 +	}
 +
-+	if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
-+		pr_debug("getshdrstrndx failed\n");
-+		goto out_end;
-+	}
-+
-+	/* library or exec */
-+	if (probe) {
-+		if (ehdr.e_type == ET_EXEC)
-+			*exe = true;
-+	}
-+
-+	/*
-+	 * Look for Section type = SHT_NOTE, flags = no SHF_ALLOC
-+	 * and name = .note.stapsdt
-+	 */
-+	scn = elf_section_by_name(elf, &ehdr, &shdr, NOTE_SCN, NULL);
-+	if (scn == NULL) {
-+		pr_err("%s section not found!\n", NOTE_SCN);
-+		goto out_end;
-+	}
-+
-+	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC))
-+		goto out_end;
-+
-+	data = elf_getdata(scn, NULL);
-+
-+	/* Get the notes */
-+	for (offset = 0; (next = gelf_getnote(data, offset, &nhdr, &name_off,
-+					      &desc_off)) > 0; offset = next) {
-+		tmp = populate_note(&elf, (const char *)((long)(data->d_buf) +
-+							 (long)desc_off),
-+				    nhdr.n_descsz, nhdr.n_type);
-+		/* For first note */
-+		if (!head) {
-+			note = tmp;
-+			head = note;
-+			continue;
-+		}
-+		note->next = tmp;
-+		note = note->next;
-+	}
-+
-+	if (!head)
-+		pr_err("No markers found\n");
-+
-+out_end:
-+	return head;
++	ret = probe_at_note(req, target, exec, fd);
++	return ret;
 +}
 +
-+static void print_notes(struct sdt_note *start)
++int probe__marker(const char *name, char *mark, int evfd)
 +{
-+	struct sdt_note *temp;
-+	int c;
-+
-+	for (temp = start, c = 0; temp != NULL; temp = temp->next, c++)
-+		printf("%s:%s\n", temp->provider, temp->name);
-+
-+	printf("\nTotal markers = %d\n", c);
-+}
-+
-+int list_markers(const char *name)
-+{
-+	int fd, ret = -1;
++	int ret = -1, fd;
 +	Elf *elf;
++	bool exec = false;
 +	struct sdt_note *head = NULL;
 +
 +	fd = open(name, O_RDONLY);
 +	if (fd < 0) {
-+		pr_err("Failed to open %s\n", name);
++		pr_err("Failed to open the file\n");
 +		goto out_ret;
 +	}
 +
 +	symbol__elf_init();
 +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
 +	if (elf == NULL) {
-+		pr_err("%s: cannot read %s ELF file.\n", __func__, name);
++		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
 +		goto out_close;
 +	}
 +
-+	head = get_elf_markers(elf, NULL, false);
++	head = get_elf_markers(elf, &exec, true);
 +	if (head) {
-+		print_notes(head);
++		ret = search_and_probe_at_note(mark, &head, name, exec, evfd);
 +		cleanup_notes(head);
-+		ret = 0;
-+	} else {
-+		pr_err("No SDT markers found in %s\n", name);
 +	}
++
 +	elf_end(elf);
 +
 +out_close:
@@ -332,53 +193,25 @@ index 4b12bf8..f3630f2 100644
 +	return ret;
 +}
 +
-+void cleanup_notes(struct sdt_note *start)
-+{
-+	struct sdt_note *tmp;
-+
-+	while (start) {
-+		tmp = start->next;
-+		free(start);
-+		start = tmp;
-+	}
-+}
-+
- void symbol__elf_init(void)
+ void cleanup_notes(struct sdt_note *start)
  {
- 	elf_version(EV_CURRENT);
+ 	struct sdt_note *tmp;
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5f720dc..f2d17b7 100644
+index f2d17b7..95289fd 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -197,6 +197,17 @@ struct symsrc {
- #endif
- };
+@@ -262,8 +262,13 @@ void __map_groups__fixup_end(struct map_groups *mg, enum map_type type);
+ int show_available_markers(const char *module);
+ int list_markers(const char *name);
+ void cleanup_notes(struct sdt_note *start);
++int probe_marker(const char *name, char *mark);
++int probe__marker(const char *name, char *mark, int fd);
  
-+/* Note structure */
-+struct sdt_note {
-+	const char *name;
-+	const char *provider;
-+	union {
-+		Elf64_Addr a64[3];
-+		Elf32_Addr a32[3];
-+	} addr;
-+	struct sdt_note *next;
-+};
-+
- void symsrc__destroy(struct symsrc *ss);
- int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 		 enum dso_binary_type type);
-@@ -247,4 +258,12 @@ void symbols__fixup_duplicate(struct rb_root *symbols);
- void symbols__fixup_end(struct rb_root *symbols);
- void __map_groups__fixup_end(struct map_groups *mg, enum map_type type);
+ #define SDT_NOTE_TYPE 3
+ #define NOTE_SCN ".note.stapsdt"
++#define TEXT_SCN 0x400000
++#define DIR_SEP '/'
++#define MAX_CMDLEN 256
  
-+/* For SDT markers */
-+int show_available_markers(const char *module);
-+int list_markers(const char *name);
-+void cleanup_notes(struct sdt_note *start);
-+
-+#define SDT_NOTE_TYPE 3
-+#define NOTE_SCN ".note.stapsdt"
-+
  #endif /* __PERF_SYMBOL */
 
