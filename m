@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab3ICQ3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:29:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46655 "EHLO
+	id S933133Ab3ICQ3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:29:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46674 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933097Ab3ICQ3D (ORCPT
+	with ESMTP id S1757015Ab3ICQ33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:29:03 -0400
+	Tue, 3 Sep 2013 12:29:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <sujith@msujith.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 31/58] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
-Date: Tue,  3 Sep 2013 09:23:35 -0700
-Message-Id: <1378225442-20654-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 20/58] USB: mos7720: fix broken control requests
+Date: Tue,  3 Sep 2013 09:23:24 -0700
+Message-Id: <1378225442-20654-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -28,61 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <sujith@msujith.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
+commit ef6c8c1d733e244f0499035be0dabe1f4ed98c6f upstream.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=13d3 ProdID=3402 Rev= 0.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+The parallel-port code of the drivers used a stack allocated
+control-request buffer for asynchronous (and possibly deferred) control
+requests. This not only violates the no-DMA-from-stack requirement but
+could also lead to corrupt control requests being submitted.
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
-
-Signed-off-by: Sujith Manoharan <sujith@msujith.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/usb/serial/mos7720.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index 287827e..5783561 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0489, 0xe056) },
- 	{ USB_DEVICE(0x0489, 0xe04d) },
- 	{ USB_DEVICE(0x04c5, 0x1330) },
-+	{ USB_DEVICE(0x13d3, 0x3402) },
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index d166d3a..397e028 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -91,6 +91,7 @@ struct urbtracker {
+ 	struct list_head        urblist_entry;
+ 	struct kref             ref_count;
+ 	struct urb              *urb;
++	struct usb_ctrlrequest	*setup;
+ };
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -130,6 +131,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ enum mos7715_pp_modes {
+@@ -272,6 +273,7 @@ static void destroy_urbtracker(struct kref *kref)
+ 	struct mos7715_parport *mos_parport = urbtrack->mos_parport;
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index a823386..767d3c3 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -150,6 +150,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	usb_free_urb(urbtrack->urb);
++	kfree(urbtrack->setup);
+ 	kfree(urbtrack);
+ 	kref_put(&mos_parport->ref_count, destroy_mos_parport);
+ }
+@@ -356,7 +358,6 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 	struct urbtracker *urbtrack;
+ 	int ret_val;
+ 	unsigned long flags;
+-	struct usb_ctrlrequest setup;
+ 	struct usb_serial *serial = mos_parport->serial;
+ 	struct usb_device *usbdev = serial->dev;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+@@ -374,14 +375,20 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 		kfree(urbtrack);
+ 		return -ENOMEM;
+ 	}
+-	setup.bRequestType = (__u8)0x40;
+-	setup.bRequest = (__u8)0x0e;
+-	setup.wValue = get_reg_value(reg, dummy);
+-	setup.wIndex = get_reg_index(reg);
+-	setup.wLength = 0;
++	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
++	if (!urbtrack->setup) {
++		usb_free_urb(urbtrack->urb);
++		kfree(urbtrack);
++		return -ENOMEM;
++	}
++	urbtrack->setup->bRequestType = (__u8)0x40;
++	urbtrack->setup->bRequest = (__u8)0x0e;
++	urbtrack->setup->wValue = get_reg_value(reg, dummy);
++	urbtrack->setup->wIndex = get_reg_index(reg);
++	urbtrack->setup->wLength = 0;
+ 	usb_fill_control_urb(urbtrack->urb, usbdev,
+ 			     usb_sndctrlpipe(usbdev, 0),
+-			     (unsigned char *)&setup,
++			     (unsigned char *)urbtrack->setup,
+ 			     NULL, 0, async_complete, urbtrack);
+ 	kref_init(&urbtrack->ref_count);
+ 	INIT_LIST_HEAD(&urbtrack->urblist_entry);
 -- 
 1.8.1.2
 
