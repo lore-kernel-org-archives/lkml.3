@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760839Ab3ICVjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 17:39:44 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34640 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759917Ab3ICVjm (ORCPT
+	id S933094Ab3ICVj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 17:39:57 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:63878 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759989Ab3ICVjn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 17:39:42 -0400
-Message-ID: <1378244811.32763.420.camel@haakon3.risingtidesystems.com>
-Subject: Re: Linux 3.11
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Sep 2013 14:46:51 -0700
-In-Reply-To: <1378169449.32763.347.camel@haakon3.risingtidesystems.com>
-References: <CA+55aFyqCJakY1+RwKXTPiGJsUcXM1W2B5gyryuq65_RKkGs0w@mail.gmail.com>
-	 <1378161032.32763.341.camel@haakon3.risingtidesystems.com>
-	 <CA+55aFwKowLGVGKrYh=ejPi1nj4ZqG+9F-kyOxHX0C+r=5=LWA@mail.gmail.com>
-	 <1378169449.32763.347.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 17:39:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxE0fpdrjhG82JcwgT4jrmDXJ_dPv5FkqiVHYe3DdjtWA@mail.gmail.com>
+References: <CA+55aFzkZi6Q1bwSZUJxyfqUgLS05icjrObdCxC+4S-3Tup9Ew@mail.gmail.com>
+	<CA+55aFzsXwFkYsWY45ZNTaVFC+-1Yh9nxx=NLhv+NxGmQAKHTg@mail.gmail.com>
+	<20130901233005.GX13318@ZenIV.linux.org.uk>
+	<CA+55aFyzas75yYP+AiwOxsAg5sG3KU+KEmO+ny=dn0-jxqUt5Q@mail.gmail.com>
+	<CA+55aFyodR650Y8yXXenH1XHo-__5avng1WSK=AiSJx4mYy25g@mail.gmail.com>
+	<20130902070538.GA31639@gmail.com>
+	<CA+55aFyCBoeqceQcxA3JZ-k8a4uLbHf3N4rNmTZ4oh9XA7akEA@mail.gmail.com>
+	<20130903101522.GA22369@gmail.com>
+	<CA+55aFzhbhYK27n9C7WOgf=0NcmewpE+J6giKQhjAgare52gFg@mail.gmail.com>
+	<CA+55aFxGWKJwo1CfS3EJFagUb+JRtc+URJOu2yz2RztWWrkraA@mail.gmail.com>
+	<20130903191950.GC30757@gmail.com>
+	<CA+55aFz2PmfdaaMUNR8aMn-Hcf8FjsydM7fF28WxZDhBZADHxw@mail.gmail.com>
+	<CA+55aFxjkzhdZqayiD9_f_tD3T9UJC2whVie-0K_bzdpogCF5Q@mail.gmail.com>
+	<CA+55aFxE0fpdrjhG82JcwgT4jrmDXJ_dPv5FkqiVHYe3DdjtWA@mail.gmail.com>
+Date: Tue, 3 Sep 2013 14:39:42 -0700
+X-Google-Sender-Auth: DuMlU5M0fLtGiQCfweZ0aSG8Dhg
+Message-ID: <CA+55aFxLdUbRReRwWUTkDKCUPaV+O5eDGh0T-aghV+WuqKvUSA@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again Linus,
+On Tue, Sep 3, 2013 at 2:34 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I'll try to hack that up too, but it's looking like it really is just
+> the "lock xadd", not the memory dependency chain..
 
-On Mon, 2013-09-02 at 17:50 -0700, Nicholas A. Bellinger wrote:
-> On Mon, 2013-09-02 at 15:50 -0700, Linus Torvalds wrote:
-> > On Mon, Sep 2, 2013 at 3:30 PM, Nicholas A. Bellinger
-> > <nab@linux-iscsi.org> wrote:
-> > >
-> > > Unfortunately, this doesn't include the remaining target fixes for
-> > > v3.11:
-> > >
-> > > Re: [GIT PULL -v2] target fixes for v3.11
-> > > http://marc.info/?l=linux-kernel&m=137799048226191&w=2
-> > >
-> > > Is there a reason why these did not get PULLed..?
-> > 
-> > Very simple: I have no such email in my mailbox. I see the "target
-> > updates for v3.11-rc1" email (and I pulled that), and there is nothing
-> > since.
-> > 
-> > I don't even have that mail in my lkml archives, much less as a private email.
-> > 
-> > I see neither youe "-v2 PULL request" nor the "One more late v3.11
-> > specific regression" one. In fact, I see no emails from you at all
-> > from Aug 31.
-> > 
-> > It may be that gmail hates you for some reason...
-> > 
-> > [ time passes ]
-> > 
-> > Yup. It's in my spam-box, with gmail helpfully telling me:
-> > 
-> >    Why is this message in Spam? We've found that lots of messages from
-> > linux-iscsi.org are spam.  Learn more
-> > 
-> > so something is rotten in the state of linux-iscsi.org.
-> > 
-> > Recent messages from you were similarly tagged:
-> > 
-> >  "[GIT PULL -v2] target fixes for 3.11"
-> >  "Re: LIO FC Target"
-> >  "Re: [GIT PULL] target fixes for v3.11-rc7"
-> > 
-> > there might have been more. You might want to try to figure out why
-> > gmail thinks that linux-iscsi.org is spammy.
-> 
-> Mmmm, that is what I was afraid of, looking into that now..
-> 
-> So if you would, please go ahead and pull target-pending/master ASAP for
-> the fixes, and I'll send the parts that need to goto Greg-KH separately.
-> 
+Yeah, no difference: Better code generation with my quick hack for a
+percpu spinlock:
 
-Ok, so another PULL request was sent out last night for the missing
-target fixes below, after putting DKIM + SPF authentication in place for
-linux-iscsi.org:
+       │    ffffffff81078e70 <lg_local_lock>:
+  0.59 │      push   %rbp
+  0.25 │      mov    %rsp,%rbp
+  0.07 │      mov    $0x100,%eax
+ 97.55 │      lock   xadd   %ax,%gs:(%rdi)
+  0.01 │      movzbl %ah,%edx
+       │      cmp    %al,%dl
+  0.68 │    ↓ je     29
+       │      nop
+       │20:   pause
+       │      mov    %gs:(%rdi),%al
+       │      cmp    %dl,%al
+       │    ↑ jne    20
+       │29:   pop    %rbp
+  0.84 │    ← retq
 
-[GIT PULL -v3] target fixes for v3.12-rc0 (was v3.11)
-http://marc.info/?l=linux-kernel&m=137818849925625&w=2
+but the actual cost is pretty much the same:
 
-Watching the recent git activity, I can't tell if you've (not) reached
-this point in the PULL queue yet, or if this email also landed in your
-spam folder..?
+   6.81%   lg_local_lock
 
-Care to give me a hint if your receiving these PULL emails now, or if I
-need to continue looking at why gmail is unhappy..?
+so it doesn't seem to be some odd weakness of the microarchitecture.
 
-Thank you,
-
---nab 
-
+            Linus
