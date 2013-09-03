@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab3ICHib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 03:38:31 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:38061 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab3ICHgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 03:36:00 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, <linux-scsi@vger.kernel.org>
-Subject: [PATCH 1/7] scsi/bfa: use pcie_capability_xxx to simplify code
-Date: Tue, 3 Sep 2013 15:35:09 +0800
-Message-ID: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	id S1759620Ab3ICHkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 03:40:14 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:4668
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759308Ab3ICHkL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 03:40:11 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z551biz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Xiubo Li-B47053 <B47053@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Lu Jingchang-B35083 <B35083@freescale.com>
+Subject: RE: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Topic: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Index: AQHOpWawpFOEIhAI/kueoxNTb0lp2ZmuB6eAgAO48QCAAGk9gIABGdUAgABXiQCAAAhzcA==
+Date: Tue, 3 Sep 2013 07:40:06 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827F8D57@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1377856132-11290-1-git-send-email-Li.Xiubo@freescale.com>
+ <1377856132-11290-2-git-send-email-Li.Xiubo@freescale.com>
+ <20130830174909.GF30088@pengutronix.de>
+ <1DD289F6464F0949A2FCA5AA6DC23F827F785F@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130902085630.GS30088@pengutronix.de>
+ <1DD289F6464F0949A2FCA5AA6DC23F827F7C59@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130903065832.GB30088@pengutronix.de>
+In-Reply-To: <20130903065832.GB30088@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.56]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pcie_capability_xxx() interfaces were introudced to
-simplify code to access PCIe Cap config space. And
-because PCI core saves the PCIe Cap offset in
-set_pcie_port_type() when device is enumerated.
-So we can use pci_is_pcie() instead.
+> Subject: Re: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+> 
+> On Tue, Sep 03, 2013 at 04:17:09AM +0000, Xiubo Li-B47053 wrote:
+> > > Subject: Re: [PATCHv2 1/4] pwm: Add Freescale FTM PWM driver support
+> > >
+> > > You simply don't need the available field. You don't need to track
+> > > whether they are available. If a user enables a pwm which is not
+> > > routed out of the SoC (disabled in the iomux) simply nothing will
+> > > happen except for a slightly increased power consumption.
+> > >
+> > If the there is not need to explicitly specify the channels are
+> > available or not, so there is no doubt that the 'available' field will
+> > be dropt.  Why I added this here is because that the 4th and 5th
+> > channels' pinctrls are used as UART TX and RX as I have mentioned
+> > before, so here if you configure these two pinctrls, the UART TX and
+> > RX will be polluted, there maybe some other cases like this.
+> 
+> If you misconfigure your iomux then usually unexptected things happen.
+> That is not the problem of the PWM driver, but the problem of the one
+> writing the devicetree. The kernel will print a message for conflicting
+> iomux settings. That should be hint enough to fix it.
+> 
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: Anil Gurumurthy <agurumur@brocade.com>
-Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/bfa/bfad.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+That sounds good.
+Actully there isn't any conflicting messages will be printed.
 
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index 9611195..d726b81 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -767,7 +767,6 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
- 
- 	/* Adjust PCIe Maximum Read Request Size */
- 	if (pcie_max_read_reqsz > 0) {
--		int pcie_cap_reg;
- 		u16 pcie_dev_ctl;
- 		u16 mask = 0xffff;
- 
-@@ -794,10 +793,8 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
- 			break;
- 		}
- 
--		pcie_cap_reg = pci_find_capability(pdev, PCI_CAP_ID_EXP);
--		if (mask != 0xffff && pcie_cap_reg) {
--			pcie_cap_reg += 0x08;
--			pci_read_config_word(pdev, pcie_cap_reg, &pcie_dev_ctl);
-+		if (mask != 0xffff && pci_is_pcie(pdev)) {
-+			pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &pcie_dev_ctl);
- 			if ((pcie_dev_ctl & 0x7000) != mask) {
- 				printk(KERN_WARNING "BFA[%s]: "
- 				"pcie_max_read_request_size is %d, "
-@@ -806,7 +803,7 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
- 				pcie_max_read_reqsz);
- 
- 				pcie_dev_ctl &= ~0x7000;
--				pci_write_config_word(pdev, pcie_cap_reg,
-+				pcie_capability_write_word(pdev, PCI_EXP_DEVCTL,
- 						pcie_dev_ctl | mask);
- 			}
- 		}
--- 
-1.7.1
+I will think it over.
 
+
+--
+Best Regards,
+Xiubo 
 
