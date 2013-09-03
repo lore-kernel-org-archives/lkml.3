@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab3ICQ1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 12:27:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46552 "EHLO
+	id S932540Ab3ICQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 12:27:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46568 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759978Ab3ICQ1a (ORCPT
+	with ESMTP id S932414Ab3ICQ1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 12:27:30 -0400
+	Tue, 3 Sep 2013 12:27:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Drake <dsd@laptop.org>, Andres Salomon <dilinger@queued.net>,
-        Paul Fox <pgf@laptop.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 56/58] drivers/platform/olpc/olpc-ec.c: initialise earlier
-Date: Tue,  3 Sep 2013 09:24:00 -0700
-Message-Id: <1378225442-20654-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 44/58] ARM: allow kuser helpers to be removed from the vector page
+Date: Tue,  3 Sep 2013 09:23:48 -0700
+Message-Id: <1378225442-20654-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378225442-20654-1-git-send-email-kamal@canonical.com>
 References: <1378225442-20654-1-git-send-email-kamal@canonical.com>
@@ -30,50 +27,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 93dbc1b3b506e16c1f6d5b5dcfe756a85cb1dc58 upstream.
+commit f6f91b0d9fd971c630cef908dde8fe8795aefbf8 upstream.
 
-Being a low-level component, various drivers (e.g.  olpc-battery) assume
-that it is ok to communicate with the OLPC Embedded Controller during
-probe.  Therefore the OLPC EC driver must be initialised before other
-drivers try to use it.  This was the case until it was recently moved
-out of arch/x86 and restructured around commits ac2504151f5a ("Platform:
-OLPC: turn EC driver into a platform_driver") and 85f90cf6ca56 ("x86:
-OLPC: switch over to using new EC driver on x86").
+Provide a kernel configuration option to allow the kernel user helpers
+to be removed from the vector page, thereby preventing their use with
+ROP (return orientated programming) attacks.  This option is only
+visible for CPU architectures which natively support all the operations
+which kernel user helpers would normally provide, and must be enabled
+with caution.
 
-Use arch_initcall so that olpc-ec is readied earlier, matching the
-previous behaviour.
-
-Fixes a regression introduced in Linux-3.6 where various drivers such as
-olpc-battery and olpc-xo1-sci failed to load due to an inability to
-communicate with the EC.  The user-visible effect was a lack of battery
-monitoring, missing ebook/lid switch input devices, etc.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: Andres Salomon <dilinger@queued.net>
-Cc: Paul Fox <pgf@laptop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/platform/olpc/olpc-ec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/entry-armv.S |  3 +++
+ arch/arm/kernel/traps.c      | 23 ++++++++++++++---------
+ arch/arm/mm/Kconfig          | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/platform/olpc/olpc-ec.c b/drivers/platform/olpc/olpc-ec.c
-index 0f9f859..f911952 100644
---- a/drivers/platform/olpc/olpc-ec.c
-+++ b/drivers/platform/olpc/olpc-ec.c
-@@ -330,7 +330,7 @@ static int __init olpc_ec_init_module(void)
- 	return platform_driver_register(&olpc_ec_plat_driver);
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index c19779f..f7488fd 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -795,6 +795,7 @@ ENDPROC(__switch_to)
+ 	.endr
+ 	.endm
+ 
++#ifdef CONFIG_KUSER_HELPERS
+ 	.align	5
+ 	.globl	__kuser_helper_start
+ __kuser_helper_start:
+@@ -981,6 +982,8 @@ __kuser_helper_version:				@ 0xffff0ffc
+ 	.globl	__kuser_helper_end
+ __kuser_helper_end:
+ 
++#endif
++
+  THUMB(	.thumb	)
+ 
+ /*
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 366aa93..1392beb 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -807,23 +807,32 @@ void __init trap_init(void)
+ 	return;
  }
  
--module_init(olpc_ec_init_module);
-+arch_initcall(olpc_ec_init_module);
+-static void __init kuser_get_tls_init(unsigned long vectors)
++#ifdef CONFIG_KUSER_HELPERS
++static void __init kuser_init(void *vectors)
+ {
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++
++	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
++
+ 	/*
+ 	 * vectors + 0xfe0 = __kuser_get_tls
+ 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
+ 	 */
+ 	if (tls_emu || has_tls_reg)
+-		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
++		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
++}
++#else
++static void __init kuser_init(void *vectors)
++{
+ }
++#endif
  
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_LICENSE("GPL");
+ void __init early_trap_init(void *vectors_base)
+ {
+ 	unsigned long vectors = (unsigned long)vectors_base;
+ 	extern char __stubs_start[], __stubs_end[];
+ 	extern char __vectors_start[], __vectors_end[];
+-	extern char __kuser_helper_start[], __kuser_helper_end[];
+-	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
+ 	unsigned i;
+ 
+ 	vectors_page = vectors_base;
+@@ -844,12 +853,8 @@ void __init early_trap_init(void *vectors_base)
+ 	 */
+ 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
+ 	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
+-	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+ 
+-	/*
+-	 * Do processor specific fixups for the kuser helpers
+-	 */
+-	kuser_get_tls_init(vectors);
++	kuser_init(vectors_base);
+ 
+ 	/*
+ 	 * Copy signal return handlers into the vector page, and
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 3fd629d..1d5ee0a 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -404,24 +404,28 @@ config CPU_32v3
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4T
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v5
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v6
+ 	bool
+@@ -756,6 +760,7 @@ config CPU_BPREDICT_DISABLE
+ 
+ config TLS_REG_EMUL
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  An SMP system using a pre-ARMv6 processor (there are apparently
+ 	  a few prototypes like that in existence) and therefore access to
+@@ -763,11 +768,40 @@ config TLS_REG_EMUL
+ 
+ config NEEDS_SYSCALL_FOR_CMPXCHG
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  SMP on a pre-ARMv6 processor?  Well OK then.
+ 	  Forget about fast user space cmpxchg support.
+ 	  It is just not possible.
+ 
++config NEED_KUSER_HELPERS
++	bool
++
++config KUSER_HELPERS
++	bool "Enable kuser helpers in vector page" if !NEED_KUSER_HELPERS
++	default y
++	help
++	  Warning: disabling this option may break user programs.
++
++	  Provide kuser helpers in the vector page.  The kernel provides
++	  helper code to userspace in read only form at a fixed location
++	  in the high vector page to allow userspace to be independent of
++	  the CPU type fitted to the system.  This permits binaries to be
++	  run on ARMv4 through to ARMv7 without modification.
++
++	  However, the fixed address nature of these helpers can be used
++	  by ROP (return orientated programming) authors when creating
++	  exploits.
++
++	  If all of the binaries and libraries which run on your platform
++	  are built specifically for your platform, and make no use of
++	  these helpers, then you can turn this option off.  However,
++	  when such an binary or library is run, it will receive a SIGILL
++	  signal, which will terminate the program.
++
++	  Say N here only if you are absolutely certain that you do not
++	  need these helpers; otherwise, the safe option is to say Y.
++
+ config DMA_CACHE_RWFO
+ 	bool "Enable read/write for ownership DMA cache maintenance"
+ 	depends on CPU_V6K && SMP
 -- 
 1.8.1.2
 
