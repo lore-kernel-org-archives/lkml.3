@@ -1,123 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935210Ab3IDPnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:43:24 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:13920 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934868Ab3IDPnX (ORCPT
+	id S964855Ab3IDPnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:43:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32941 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934868Ab3IDPnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:43:23 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-22-52275518bbea
-Message-id: <52275517.2090906@samsung.com>
-Date: Wed, 04 Sep 2013 17:43:19 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        t.figa@samsung.com, g.liakhovetski@gmx.de,
-        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v6 5/5] clk: Implement clk_unregister
-References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
- <1377874402-2944-6-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1377874402-2944-6-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7qSoepBBu02Fu83zmOy6PlTaXG2
-	6Q27RefEJewWmx5fY7W4vGsOm8WEqZPYLeb8mcJscfsyr8XTCRfZLG43rmCzWD/jNYsDj0dL
-	cw+bx4ePcR6zO2ayety5tofN4+jKtUwem5fUe+z+2sTo0bdlFaPH501yAZxRXDYpqTmZZalF
-	+nYJXBmvdt1gLLgsXDFj1Sb2BsbD/F2MnBwSAiYSF/vns0LYYhIX7q1n62Lk4hASWMoo0fb0
-	IZTziVFi6ryn7CBVvAJaErd3NDKB2CwCqhITnu1gA7HZBAwleo/2MYLYogIBEouXnIOqF5T4
-	MfkeC4gtIqAhMaXrMTvIUGaBZUwSVz8dAWsWFrCUeLfhKdS2RkaJ9yueMoMkOAXcJE5ebgLb
-	xiygI7G/dRobhC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1
-	kvNzNzFCYufrDsalx6wOMQpwMCrx8GoYqgcJsSaWFVfmHmKU4GBWEuGV8wYK8aYkVlalFuXH
-	F5XmpBYfYmTi4JRqYJQVvL57z8Q8oYyJSVeyCo+oy8+tXNd/hi3X1Gj/g5ytbz4ffbF7Q2Sd
-	1i7DXhfrDKf3ARcSK/ep/AzkOP1SfIF1/x821ds31TR+HWOTXFAyw3nmzmud7VfM3rboVy1/
-	qrnqSMNtdZ/bxy490TDrV9tx9OiavL8JyasNfKpCzZl+L9i5wO3RRkYlluKMREMt5qLiRADW
-	ZwQOewIAAA==
+	Wed, 4 Sep 2013 11:43:52 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=f7rjvp014JQA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0_tXc69lpkgA:10 a=r_1tXGB3AAAA:8 a=FQotgy6LNao3A2EdKDEA:9 a=CjuIK1q_8ugA:10 a=EDSpbFuiShEA:10 a=CEQgAvWhMlUA:10 a=ysHM2seXnQYA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 4 Sep 2013 11:43:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 13/25] mips: Use Kbuild infrastructure to handle
+ asm-generic headers
+Message-ID: <20130904114350.07a40c95@gandalf.local.home>
+In-Reply-To: <5224529D.10009@imgtec.com>
+References: <20121013022632.024527228@goodmis.org>
+	<20121013022954.289710602@goodmis.org>
+	<5224529D.10009@imgtec.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 04:53 PM, Sylwester Nawrocki wrote:
-> clk_unregister() is currently not implemented and it is required when
-> a clock provider module needs to be unloaded.
+On Mon, 2 Sep 2013 09:55:57 +0100
+James Hogan <james.hogan@imgtec.com> wrote:
+
+> On 13/10/12 03:26, Steven Rostedt wrote:
+
+> Also note, as I said in the commit message:
+> >     We can't do the same for uapi/asm/kvm_para.h because it's presence is
+> >     explicitly checked in include/uapi/linux/Kbuild to decide whether to add
+> >     kvm_para.h to header-y.
 > 
-> Normally the clock supplier module is prevented to be unloaded by
-> taking reference on the module in clk_get().
+> so I guess that may need fixing first before half of these patches can
+> be accepted.
 > 
-> For cases when the clock supplier module deinitializes despite the
-> consumers of its clocks holding a reference on the module, e.g. when
-> the driver is unbound through "unbind" sysfs attribute, there are
-> empty clock ops added. These ops are assigned temporarily to struct
-> clk and used until all consumers release the clock, to avoid invoking
-> callbacks from the module which just got removed.
-> 
-> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-[...]
->  /**
->   * clk_unregister - unregister a currently registered clock
->   * @clk: clock to unregister
-> - *
-> - * Currently unimplemented.
->   */
-> -void clk_unregister(struct clk *clk) {}
-> +void clk_unregister(struct clk *clk)
-> +{
-> +	unsigned long flags;
-> +
-> +	clk_prepare_lock();
-> +
-> +	if (!clk || IS_ERR(clk)) {
-> +		pr_err("%s: invalid clock: %p\n", __func__, clk);
-> +		goto out;
-> +	}
 
-Actually this check could be done before taking the mutex. And to handle
-NULL clocks properly it should be something like:
+Sure.
 
-       if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
-               return;
+Thanks,
 
-I will hold on with posting a corrected version until there are any
-further comments.
-
-> +	if (clk->ops == &clk_nodrv_ops) {
-> +		pr_err("%s: unregistered clock: %s\n", __func__, clk->name);
-> +		goto out;
-> +	}
-> +	/*
-> +	 * Assign empty clock ops for consumers that might still hold
-> +	 * a reference to this clock.
-> +	 */
-> +	flags = clk_enable_lock();
-> +	clk->ops = &clk_nodrv_ops;
-> +	clk_enable_unlock(flags);
-> +
-> +	if (!hlist_empty(&clk->children)) {
-> +		struct clk *child;
-> +
-> +		/* Reparent all children to the orphan list. */
-> +		hlist_for_each_entry(child, &clk->children, child_node)
-> +			clk_set_parent(child, NULL);
-> +	}
-> +
-> +	clk_debug_unregister(clk);
-> +
-> +	hlist_del_init(&clk->child_node);
-> +
-> +	if (clk->prepare_count)
-> +		pr_warn("%s: unregistering prepared clock: %s\n",
-> +					__func__, clk->name);
-> +
-> +	kref_put(&clk->ref, __clk_release);
-> +out:
-> +	clk_prepare_unlock();
-> +}
->  EXPORT_SYMBOL_GPL(clk_unregister);
-
+-- Steve
