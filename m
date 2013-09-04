@@ -1,24 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760780Ab3IDVbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 17:31:53 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:61225 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3IDVbv (ORCPT
+	id S932713Ab3IDVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 17:34:09 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:49755 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab3IDVeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 17:31:51 -0400
+	Wed, 4 Sep 2013 17:34:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com>
-References: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com>
-Date: Wed, 4 Sep 2013 14:31:49 -0700
-X-Google-Sender-Auth: 52ZhmyYVu1R31xsoEDkmfUYsjLQ
-Message-ID: <CA+55aFzbzz4_YNaM+9jAP2Znkjzar42iTM2wFfRX6ySDwBAUeQ@mail.gmail.com>
-Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking rename_lock
+In-Reply-To: <5227892B.7030906@hp.com>
+References: <5220F090.5050908@hp.com>
+	<20130830194059.GC13318@ZenIV.linux.org.uk>
+	<5220F811.9060902@hp.com>
+	<20130830202608.GD13318@ZenIV.linux.org.uk>
+	<52210225.60805@hp.com>
+	<20130830204852.GE13318@ZenIV.linux.org.uk>
+	<52214EBC.90100@hp.com>
+	<20130831023516.GI13318@ZenIV.linux.org.uk>
+	<20130831024233.GJ13318@ZenIV.linux.org.uk>
+	<5224E647.80303@hp.com>
+	<20130903060130.GD16261@gmail.com>
+	<5225FCEE.7030901@hp.com>
+	<CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com>
+	<CA+55aFw0jme+qK5b_VJVqoVD6cZuSjVsm-Sgjf_YkPXgMToqUA@mail.gmail.com>
+	<52274943.1040005@hp.com>
+	<CA+55aFyY-KEvqYze56Vw4wiznEBaxjRqHFT6aVxbu_U3k66BdQ@mail.gmail.com>
+	<5227892B.7030906@hp.com>
+Date: Wed, 4 Sep 2013 14:34:05 -0700
+X-Google-Sender-Auth: VIdpz7nlJhYG3gBUakXbwuc3pps
+Message-ID: <CA+55aFy9hywXPhAu8JVSW=a4=2ctFTvQttf+x06mo3f6_4-g3w@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
 Content-Type: text/plain; charset=UTF-8
@@ -26,26 +48,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 12:05 PM, Waiman Long <Waiman.Long@hp.com> wrote:
-> +       rcu_read_unlock();
-> +       if (read_seqretry(&rename_lock, seq))
-> +               goto restart;
+On Wed, Sep 4, 2013 at 12:25 PM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> Yes, the perf profile was taking from an 80-core machine. There isn't any
+> scalability issue hiding for the short workload on an 80-core machine.
+>
+> However, I am certain that more may pop up when running in an even larger
+> machine like the prototype 240-core machine that our team has been testing
+> on.
 
-Btw, you have this pattern twice, and while it's not necessarily
-incorrect, it's a bit worrisome for performance.
+Sure. Please let us know, I think it's going to be interesting to see
+what that shows.
 
-The rcu_read_unlock() is very possibly going to trigger an immediate
-scheduling event, so checking the sequence lock after dropping the
-read-lock sounds like it would make it much easier to hit the race
-with some rename.
+SGI certainly did much larger machines, but their primary target
+tended to be all user space, so they had things like "tons of
+concurrent page faults in the same process" rather than filename
+lookup or the tty layer.
 
-I'm also a tiny bit worried about livelocking on the sequence lock in
-the presence of lots of renames, so I'm wondering if the locking
-should try to approximate what we do for the RCU lookup path: start
-off optimistically using just the RCU lock and a sequence point, but
-if that fails, fall back to taking the real lock. Maybe using a
-counter ("try twice, then get the rename lock for writing")
-
-Hmm?
-
-             Linus
+                Linus
