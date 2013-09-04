@@ -1,35 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760486Ab3IDS7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:59:35 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:48989 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758450Ab3IDS7V (ORCPT
+	id S1760718Ab3IDS7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:59:46 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52829 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760520Ab3IDS7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:59:21 -0400
-Date: Wed, 4 Sep 2013 11:59:38 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-bcache@vger.kernel.org
-Subject: Re: [PATCH -next] bcache: fix btree printk format warning
-Message-ID: <20130904185938.GB27467@kmo-pixel>
-References: <20130904181300.06fbf0698863cfaacf9fad9a@canb.auug.org.au>
- <52277576.5020805@infradead.org>
+	Wed, 4 Sep 2013 14:59:44 -0400
+Date: Wed, 4 Sep 2013 13:59:35 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH v3 2/2] rsxx: Moving pci_map_page to prevent overflow.
+Message-ID: <20130904185935.GF24898@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52277576.5020805@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090418-8236-0000-0000-0000016CE5F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 11:01:26AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix printk format warning on i386:
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-I've sent out the fix for this, Jens just hasn't pulled it yet.
+The pci_map_page function has been moved into our
+issued workqueue to prevent an us running out of
+mappable addresses on non-HWWD PCIe x8 slots. The
+maximum amount that can possible be mapped at one
+time now is: 255 dmas X 4 dma channels X 4096 Bytes.
+
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
+
+
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-09-04 11:15:04.553215667 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-09-04 11:18:46.710034661 -0500
+@@ -749,10 +749,6 @@ static pci_ers_result_t rsxx_slot_reset(
+ 
+ 	card->eeh_state = 0;
+ 
+-	st = rsxx_eeh_remap_dmas(card);
+-	if (st)
+-		goto failed_remap_dmas;
+-
+ 	spin_lock_irqsave(&card->irq_lock, flags);
+ 	if (card->n_targets & RSXX_MAX_TARGETS)
+ 		rsxx_enable_ier_and_isr(card, CR_INTR_ALL_G);
+@@ -779,7 +775,6 @@ static pci_ers_result_t rsxx_slot_reset(
+ 	return PCI_ERS_RESULT_RECOVERED;
+ 
+ failed_hw_buffers_init:
+-failed_remap_dmas:
+ 	for (i = 0; i < card->n_targets; i++) {
+ 		if (card->ctrl[i].status.buf)
+ 			pci_free_consistent(card->dev,
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-09-04 11:15:04.562991087 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-09-04 11:20:21.119990932 -0500
+@@ -397,6 +397,7 @@ static void rsxx_issue_dmas(struct rsxx_
+ 	int tag;
+ 	int cmds_pending = 0;
+ 	struct hw_cmd *hw_cmd_buf;
++	int dir;
+ 
+ 	hw_cmd_buf = ctrl->cmd.buf;
+ 
+@@ -433,6 +434,28 @@ static void rsxx_issue_dmas(struct rsxx_
+ 			continue;
+ 		}
+ 
++		if (dma->cmd == HW_CMD_BLK_WRITE)
++			dir = PCI_DMA_TODEVICE;
++		else
++			dir = PCI_DMA_FROMDEVICE;
++
++		/*
++		 * The function pci_map_page is placed here because we can
++		 * only, by design, issue up to 255 commands to the hardware
++		 * at one time per DMA channel. So the maximum amount of mapped
++		 * memory would be 255 * 4 channels * 4096 Bytes which is less
++		 * than 2GB, the limit of a x8 Non-HWWD PCIe slot. This way the
++		 * pci_map_page function should never fail because of a
++		 * lack of mappable memory.
++		 */
++		dma->dma_addr = pci_map_page(ctrl->card->dev, dma->page,
++				     dma->pg_off, dma->sub_page.cnt << 9, dir);
++		if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
++			push_tracker(ctrl->trackers, tag);
++			rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
++			continue;
++		}
++
+ 		set_tracker_dma(ctrl->trackers, tag, dma);
+ 		hw_cmd_buf[ctrl->cmd.idx].command  = dma->cmd;
+ 		hw_cmd_buf[ctrl->cmd.idx].tag      = tag;
+@@ -629,14 +652,6 @@ static int rsxx_queue_dma(struct rsxx_ca
+ 	if (!dma)
+ 		return -ENOMEM;
+ 
+-	dma->dma_addr = pci_map_page(card->dev, page, pg_off, dma_len,
+-				     dir ? PCI_DMA_TODEVICE :
+-				     PCI_DMA_FROMDEVICE);
+-	if (pci_dma_mapping_error(card->dev, dma->dma_addr)) {
+-		kmem_cache_free(rsxx_dma_pool, dma);
+-		return -ENOMEM;
+-	}
+-
+ 	dma->cmd          = dir ? HW_CMD_BLK_WRITE : HW_CMD_BLK_READ;
+ 	dma->laddr        = laddr;
+ 	dma->sub_page.off = (dma_off >> 9);
+@@ -1039,6 +1054,11 @@ int rsxx_eeh_save_issued_dmas(struct rsx
+ 			else
+ 				card->ctrl[i].stats.reads_issued--;
+ 
++			pci_unmap_page(card->dev, dma->dma_addr,
++				       get_dma_size(dma),
++				       dma->cmd == HW_CMD_BLK_WRITE ?
++				       PCI_DMA_TODEVICE :
++				       PCI_DMA_FROMDEVICE);
+ 			list_add_tail(&dma->list, &issued_dmas[i]);
+ 			push_tracker(card->ctrl[i].trackers, j);
+ 			cnt++;
+@@ -1050,15 +1070,6 @@ int rsxx_eeh_save_issued_dmas(struct rsx
+ 		atomic_sub(cnt, &card->ctrl[i].stats.hw_q_depth);
+ 		card->ctrl[i].stats.sw_q_depth += cnt;
+ 		card->ctrl[i].e_cnt = 0;
+-
+-		list_for_each_entry(dma, &card->ctrl[i].queue, list) {
+-			if (!pci_dma_mapping_error(card->dev, dma->dma_addr))
+-				pci_unmap_page(card->dev, dma->dma_addr,
+-					       get_dma_size(dma),
+-					       dma->cmd == HW_CMD_BLK_WRITE ?
+-					       PCI_DMA_TODEVICE :
+-					       PCI_DMA_FROMDEVICE);
+-		}
+ 		spin_unlock_bh(&card->ctrl[i].queue_lock);
+ 	}
+ 
+@@ -1067,31 +1078,6 @@ int rsxx_eeh_save_issued_dmas(struct rsx
+ 	return 0;
+ }
+ 
+-int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card)
+-{
+-	struct rsxx_dma *dma;
+-	int i;
+-
+-	for (i = 0; i < card->n_targets; i++) {
+-		spin_lock_bh(&card->ctrl[i].queue_lock);
+-		list_for_each_entry(dma, &card->ctrl[i].queue, list) {
+-			dma->dma_addr = pci_map_page(card->dev, dma->page,
+-					dma->pg_off, get_dma_size(dma),
+-					dma->cmd == HW_CMD_BLK_WRITE ?
+-					PCI_DMA_TODEVICE :
+-					PCI_DMA_FROMDEVICE);
+-			if (pci_dma_mapping_error(card->dev, dma->dma_addr)) {
+-				spin_unlock_bh(&card->ctrl[i].queue_lock);
+-				kmem_cache_free(rsxx_dma_pool, dma);
+-				return -ENOMEM;
+-			}
+-		}
+-		spin_unlock_bh(&card->ctrl[i].queue_lock);
+-	}
+-
+-	return 0;
+-}
+-
+ int rsxx_dma_init(void)
+ {
+ 	rsxx_dma_pool = KMEM_CACHE(rsxx_dma, SLAB_HWCACHE_ALIGN);
+
