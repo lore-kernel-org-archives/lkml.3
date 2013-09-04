@@ -1,218 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762252Ab3IDJHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:07:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756031Ab3IDJHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:07:36 -0400
-Message-ID: <5226F839.4010704@redhat.com>
-Date: Wed, 04 Sep 2013 11:07:05 +0200
-From: =?windows-1252?Q?Jan_Kalu=9Ea?= <jkaluza@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1762256Ab3IDJOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:14:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:49466 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab3IDJOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:14:42 -0400
+X-Spam-Score: -100.9
+Message-ID: <5226F9BF.8040304@asianux.com>
+Date: Wed, 04 Sep 2013 17:13:35 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
-        tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v3 1/3] Send loginuid and sessionid in SCM_AUDIT
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com> <1378275261-4553-1-git-send-email-jkaluza@redhat.com> <1378275261-4553-2-git-send-email-jkaluza@redhat.com> <87bo49gifv.fsf@xmission.com>
-In-Reply-To: <87bo49gifv.fsf@xmission.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jiri Kosina <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
+ and "uapi/linux/Kbuild"
+References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com> <52268800.2010200@asianux.com> <CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com> <5226EAAE.6090500@asianux.com> <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
+In-Reply-To: <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 09:22 AM, Eric W. Biederman wrote:
-> Jan Kaluza <jkaluza@redhat.com> writes:
->
->> Server-like processes in many cases need credentials and other
->> metadata of the peer, to decide if the calling process is allowed to
->> request a specific action, or the server just wants to log away this
->> type of information for auditing tasks.
+On 09/04/2013 05:02 PM, Geert Uytterhoeven wrote:
+> On Wed, Sep 4, 2013 at 10:09 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> On 09/04/2013 03:02 PM, Geert Uytterhoeven wrote:
+>>> On Wed, Sep 4, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>> On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
+>>>>> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>>> --- a/include/uapi/Kbuild
+>>>>>> +++ b/include/uapi/Kbuild
+>>>>>> @@ -1,7 +1,6 @@
+>>>>>>  # UAPI Header export list
+>>>>>> -# Top-level Makefile calls into asm-$(ARCH)
+>>>>>> -# List only non-arch directories below
+>>>>>> -
+>>>>>> +# Except "linux/", UAPI means Universal API.
+>>>>>
+>>>>> Sorry for my silly question, but what's the purpose of this "Universal
+>>>>> API" comment?
+>>>>>
+>>>>
+>>>> Firstly, at least for me, I don't think it is a silly question (maybe
+>>>> it means I should give additional explanations).  :-)
+>>>>
+>>>> I 'guess' the "Universal API" means:
+>>>>
+>>>>   "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
+>>>>
+>>>> It is just my 'guess', welcome additional suggestions or completions by
+>>>> any members.
+>>>>
+>>>> When we get this correct additional explanation after discussing, if
+>>>> suitable, I should add the final explanation to current patch.
+>>>
+>>> Thanks. As this is not related at all to Linux, I don't see a reason
+>>> to add this comment.
+>>>
+>>> Here, "UAPI" means "userspace API" only.
 >>
->> The current practice to retrieve such process metadata is to look that
->> information up in procfs with the $PID received over SCM_CREDENTIALS.
->> This is sufficient for long-running tasks, but introduces a race which
->> cannot be worked around for short-living processes; the calling
->> process and all the information in /proc/$PID/ is gone before the
->> receiver of the socket message can look it up.
->>
->> This introduces a new SCM type called SCM_AUDIT to allow the direct
->> attaching of "loginuid" and "sessionid" to SCM, which is significantly more
->> efficient and will reliably avoid the race with the round-trip over
->> procfs.
->
-> Unless I am misreading something this patch will break the build if
-> CONFIG_AUDITSYSCALL is not defined.
+>> Hmm... why we need "uapi/linux/" ?  (I can not find some related
+>> documents, so I have to 'guess').
+> 
+> The "uapi" subdirectories are there to distinguish userspace headers from
+> kernelspace headers, and allow both to live in the kernel source tree.
+> 
+> When running "make headers_install", the (processed) headers in the
+> various "uapi" subdirectories are copied to /usr/include.
+> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
+> In userspace there are no "uapi" subdirectories anymore.
+> 
 
-It does build. In this case, audit_get_loginuid returns INVALID_UID and 
-audit_get_sessionid returns -1.
+Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
 
-Jan Kaluza
+Are they also truly still "Userspace API" but which need not distinguish
+? (at least, it seems that idea is not quite good).
 
-> Eric
->
->
->> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
->> ---
->>   include/linux/socket.h |  6 ++++++
->>   include/net/af_unix.h  |  2 ++
->>   include/net/scm.h      | 28 ++++++++++++++++++++++++++--
->>   net/unix/af_unix.c     |  7 +++++++
->>   4 files changed, 41 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/socket.h b/include/linux/socket.h
->> index 445ef75..505047a 100644
->> --- a/include/linux/socket.h
->> +++ b/include/linux/socket.h
->> @@ -130,6 +130,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
->>   #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
->>   #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
->>   #define SCM_SECURITY	0x03		/* rw: security label		*/
->> +#define SCM_AUDIT	0x04		/* rw: struct uaudit		*/
->>
->>   struct ucred {
->>   	__u32	pid;
->> @@ -137,6 +138,11 @@ struct ucred {
->>   	__u32	gid;
->>   };
->>
->> +struct uaudit {
->> +	__u32	loginuid;
->> +	__u32	sessionid;
->> +};
->> +
->>   /* Supported address families. */
->>   #define AF_UNSPEC	0
->>   #define AF_UNIX		1	/* Unix domain sockets 		*/
->> diff --git a/include/net/af_unix.h b/include/net/af_unix.h
->> index a175ba4..3b9d22a 100644
->> --- a/include/net/af_unix.h
->> +++ b/include/net/af_unix.h
->> @@ -36,6 +36,8 @@ struct unix_skb_parms {
->>   	u32			secid;		/* Security ID		*/
->>   #endif
->>   	u32			consumed;
->> +	kuid_t			loginuid;
->> +	unsigned int		sessionid;
->>   };
->>
->>   #define UNIXCB(skb) 	(*(struct unix_skb_parms *)&((skb)->cb))
->> diff --git a/include/net/scm.h b/include/net/scm.h
->> index 8de2d37..e349a25 100644
->> --- a/include/net/scm.h
->> +++ b/include/net/scm.h
->> @@ -6,6 +6,7 @@
->>   #include <linux/security.h>
->>   #include <linux/pid.h>
->>   #include <linux/nsproxy.h>
->> +#include <linux/audit.h>
->>
->>   /* Well, we should have at least one descriptor open
->>    * to accept passed FDs 8)
->> @@ -18,6 +19,11 @@ struct scm_creds {
->>   	kgid_t	gid;
->>   };
->>
->> +struct scm_audit {
->> +	kuid_t loginuid;
->> +	unsigned int sessionid;
->> +};
->> +
->>   struct scm_fp_list {
->>   	short			count;
->>   	short			max;
->> @@ -28,6 +34,7 @@ struct scm_cookie {
->>   	struct pid		*pid;		/* Skb credentials */
->>   	struct scm_fp_list	*fp;		/* Passed files		*/
->>   	struct scm_creds	creds;		/* Skb credentials	*/
->> +	struct scm_audit	audit;		/* Skb audit	*/
->>   #ifdef CONFIG_SECURITY_NETWORK
->>   	u32			secid;		/* Passed security ID 	*/
->>   #endif
->> @@ -58,6 +65,13 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
->>   	scm->creds.gid = gid;
->>   }
->>
->> +static inline void scm_set_audit(struct scm_cookie *scm,
->> +				    kuid_t loginuid, unsigned int sessionid)
->> +{
->> +	scm->audit.loginuid = loginuid;
->> +	scm->audit.sessionid = sessionid;
->> +}
->> +
->>   static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
->>   {
->>   	put_pid(scm->pid);
->> @@ -77,8 +91,12 @@ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
->>   	memset(scm, 0, sizeof(*scm));
->>   	scm->creds.uid = INVALID_UID;
->>   	scm->creds.gid = INVALID_GID;
->> -	if (forcecreds)
->> -		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
->> +	if (forcecreds) {
->> +		scm_set_cred(scm, task_tgid(current), current_uid(),
->> +			     current_gid());
->> +		scm_set_audit(scm, audit_get_loginuid(current),
->> +			      audit_get_sessionid(current));
->> +	}
->>   	unix_get_peersec_dgram(sock, scm);
->>   	if (msg->msg_controllen <= 0)
->>   		return 0;
->> @@ -123,7 +141,13 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
->>   			.uid = from_kuid_munged(current_ns, scm->creds.uid),
->>   			.gid = from_kgid_munged(current_ns, scm->creds.gid),
->>   		};
->> +		struct uaudit uaudits = {
->> +			.loginuid = from_kuid_munged(current_ns,
->> +						     scm->audit.loginuid),
->> +			.sessionid = scm->audit.sessionid,
->> +		};
->>   		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(ucreds), &ucreds);
->> +		put_cmsg(msg, SOL_SOCKET, SCM_AUDIT, sizeof(uaudits), &uaudits);
->>   	}
->>
->>   	scm_destroy_cred(scm);
->> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
->> index 86de99a..c410f76 100644
->> --- a/net/unix/af_unix.c
->> +++ b/net/unix/af_unix.c
->> @@ -1393,6 +1393,8 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
->>   	UNIXCB(skb).pid  = get_pid(scm->pid);
->>   	UNIXCB(skb).uid = scm->creds.uid;
->>   	UNIXCB(skb).gid = scm->creds.gid;
->> +	UNIXCB(skb).loginuid = scm->audit.loginuid;
->> +	UNIXCB(skb).sessionid = scm->audit.sessionid;
->>   	UNIXCB(skb).fp = NULL;
->>   	if (scm->fp && send_fds)
->>   		err = unix_attach_fds(scm, skb);
->> @@ -1416,6 +1418,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
->>   	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
->>   		UNIXCB(skb).pid  = get_pid(task_tgid(current));
->>   		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
->> +		UNIXCB(skb).loginuid = audit_get_loginuid(current);
->> +		UNIXCB(skb).sessionid = audit_get_sessionid(current);
->>   	}
->>   }
->>
->> @@ -1812,6 +1816,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
->>   		memset(&tmp_scm, 0, sizeof(tmp_scm));
->>   	}
->>   	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
->> +	scm_set_audit(siocb->scm, UNIXCB(skb).loginuid, UNIXCB(skb).sessionid);
->>   	unix_set_secdata(siocb->scm, skb);
->>
->>   	if (!(flags & MSG_PEEK)) {
->> @@ -1993,6 +1998,8 @@ again:
->>   		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
->>   			/* Copy credentials */
->>   			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
->> +			scm_set_audit(siocb->scm, UNIXCB(skb).loginuid,
->> +				      UNIXCB(skb).sessionid);
->>   			check_creds = 1;
->>   		}
+Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
+for compatible (originally they are here, and now we have to follow, it
+is no reason to change if not find related critical issues)?
 
+
+Thanks.
+
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
+> 
+
+
+-- 
+Chen Gang
