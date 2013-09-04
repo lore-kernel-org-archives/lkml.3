@@ -1,102 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761228Ab3IDEe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 00:34:56 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39439 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab3IDEez (ORCPT
+	id S1760360Ab3IDElS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 00:41:18 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:57245 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab3IDElQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 00:34:55 -0400
-Message-ID: <1378269728.32763.438.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH-v5 1/6] idr: Percpu ida
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@gentwo.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Date: Tue, 03 Sep 2013 21:42:08 -0700
-In-Reply-To: <20130903182749.21052ab6.akpm@linux-foundation.org>
-References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
-	 <1377917556-11955-2-git-send-email-nab@linux-iscsi.org>
-	 <1378224418.32763.409.camel@haakon3.risingtidesystems.com>
-	 <20130903182749.21052ab6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Sep 2013 00:41:16 -0400
+Date: Wed, 4 Sep 2013 00:41:08 -0400
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-mips@linux-mips.org, Al Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v2] MIPS: Reduce _NSIG from 128 to 127 to avoid BUG_ON
+Message-ID: <20130904044108.GP20515@brightrain.aerifal.cx>
+References: <1371225825-8225-1-git-send-email-james.hogan@imgtec.com>
+ <51BEE6A8.2050307@imgtec.com>
+ <201306282128.27266.vda.linux@googlemail.com>
+ <CAAG0J9-d4BfEhbQovFqUAJ3QoOuXScrpsY1y95PrEPxA5DWedQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAG0J9-d4BfEhbQovFqUAJ3QoOuXScrpsY1y95PrEPxA5DWedQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Rich Felker <dalias@aerifal.cx>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-03 at 18:27 -0700, Andrew Morton wrote:
-> On Tue, 03 Sep 2013 09:06:58 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+On Fri, Jun 28, 2013 at 11:03:33PM +0100, James Hogan wrote:
+> On 28 June 2013 20:28, Denys Vlasenko <vda.linux@googlemail.com> wrote:
+> > On Monday 17 June 2013 12:36, James Hogan wrote:
+> >> On 14/06/13 17:03, James Hogan wrote:
+> >> > MIPS has 128 signals, the highest of which has the number 128 (they
+> >> > start from 1). The following command causes get_signal_to_deliver() to
+> >> > pass this signal number straight through to do_group_exit() as the exit
+> >> > code:
+> >> >
+> >> >   strace sleep 10 & sleep 1 && kill -128 `pidof sleep`
+> >> >
+> >> > However do_group_exit() checks for the core dump bit (0x80) in the exit
+> >> > code which matches in this particular case and the kernel panics:
+> >> >
+> >> >   BUG_ON(exit_code & 0x80); /* core dumps don't get here */
+> >> >
+> >> > Lets avoid this by changing the ABI by reducing the number of signals to
+> >> > 127 (so that the maximum signal number is 127). Glibc incorrectly sets
+> >> > [__]SIGRTMAX to 127 already. uClibc sets it to 128 so it's conceivable
+> >> > that programs built against uClibc which intentionally uses RT signals
+> >> > from the top (SIGRTMAX-n, n>=0) would need an updated uClibc (and a
+> >> > rebuild if it's crazy enough to use __SIGRTMAX).
+> >>
+> >> Hmm, although this works around the BUG_ON, this doesn't actually seem
+> >> to be sufficient to behave correctly.
+> >>
+> >> So it appears the exit status is constructed like this:
+> >> bits  purpose
+> >> 0x007f        signal number (0-127)
+> >> 0x0080        core dump
+> >> 0xff00        exit status
+> >>
+> >> but the macros in waitstatus.h and wait.h in libc
+> >> (see also "man 2 wait"):
+> >> WIFEXITED:   status & 0x7f == 0
+> >> WIFSIGNALED: status & 0x7f in [1..126] (i.e. not 0 or 127)
+> >> WIFSTOPPED:  status & 0xff == 127
+> >>
+> >> So termination due to SIG127 looks like it's been stopped instead of
+> >> terminated via a signal, unless a core dump occurs in which case none of
+> >> the above match.
+> >>
+> >> (And termination due to SIG128 hits BUG_ON, otherwise would appear to
+> >> have exited normally with core dump).
+> >>
+> >>
+> >> Reducing number of signals to 126 to avoid this will change the glibc
+> >> ABI too, in which case we may as well reduce to 64 to match other
+> >> arches, which is more likely to break something (I'm not really
+> >> comfortable making that change).
+> >>
+> >> Reducing to 127 (this patch) still leaves incorrect exit status codes
+> >> for SIG127 ...
+> >>
+> >> Any further thoughts/opinions?
+> >
+> > Strictly speaking, exit status of 0x007f isn't ambiguous.
+> >
+> > Currently userspace uses the following rules
+> > (assuming that status is 16-bit (IOW, dropping PTRACE_EVENT bits)):
+> >
+> > WIFEXITED(status)    = (status & 0x7f) == 0
+> > WIFSIGNALED(status)  = (status & 0x7f) != 0 && (status & 0x7f) < 0x7f
+> > WIFSTOPPED(status)   = (status & 0xff) == 0x7f
+> > WIFCONTINUED(status) = (status == 0xffff)
+> >
+> > WEXITSTATUS(status)  = status >> 8
+> > WSTOPSIG(status)     = status >> 8
+> > WCOREDUMP(status)    = status & 0x80
+> > WTERMSIG(status)     = status & 0x7f
+> >
+> > When process dies from signal 127, status is 0x007f and it is not a valid
+> > "stopped by signal" indicator, since WSTOPSIG == 0 is an impossibility.
+> >
+> > Status 0x007f get misinterpreted by the rules above, namely,
+> > WIFSTOPPED is true, WIFSIGNALED is false.
+> >
+> > But an alternative definition exists which works correctly with
+> > all previous status codes, treats 0x007f as "killed by signal 127"
+> > and isn't more convoluted.
+> > In fact, while WIFSTOPPED needs one additional check,
+> > WIFSIGNALED gets simpler (loses one AND'ing operation):
+> >
+> > WIFSTOPPED(status)   = (status & 0xff) == 0x7f && (status >> 8) != 0
+> > WIFSIGNALED(status)  = status != 0 && status <= 0xff
+> >
+> > All other rules need no change.
+> >
+> > I think it's feasible to ask {g,uc}libc to change their defines
+> > (on MIPS as a minimum), and live with 127 signals.
 > 
-> > Are there any other review comments to be addressed for this patch..?
-> > 
-> > If not, please kindly give your Reviewed-by if your OK for an initial
-> > standalone merge.
-> 
-> Sorry, I'm largely offline for the next week...
-> 
-> It looks OK to me (that's as close as I get to an ack :))
-> 
+> Thanks for the explanation. This makes a lot of sense and if I
+> understand correctly it already describes the current behaviour of the
+> kernel up to SIG127 (I hadn't twigged WIFSTOPPED should imply
+> WSTOPSIG!=0 for some reason). I like it.
 
-Thanks.  That quote is going in the commit log btw.  ;)
+One other note on this issue: SIG128 also aliases CLONE_VM, and it
+would be very bad if a program requesting SIG128 as its exit signal
+when calling clone instead ended up with the effects of CLONE_VM...
 
-> Nit:
-> 
-> > +		if (cpu >= nr_cpu_ids)
-> > +			cpu = cpumask_first(&pool->cpus_have_tags);
-> > +
-> > +		if (cpu >= nr_cpu_ids)
-> > +			BUG();
-> 
-> The second `if' can be moved inside the first, but hopefully the
-> compiler already did that.
+Also, I have some improved macros for WIFSTOPPED and WIFSIGNALED which
+avoid multiple evaluation of their arguments:
 
-Fixed.
+#define WIFSTOPPED(s) ((short)((((s)&0xffff)*0x10001)>>8) > 0x7f00)
+#define WIFSIGNALED(s) (((s)&0xffff)-1 < 0xffu)
 
-> 
-> I have dim memories that doing
-> 
-> 	local_irq_save()
-> 	spin_lock()
-> 
-> is not equivalent to
-> 
-> 	spin_lock_irqsave()
-> 
-> in some circumstances.  Perhaps a lockdep thing.  Or perhaps this was fixed in
-> the intervening years and this is no longer the case.
+These are what we are using in musl libc now.
 
-Mmmm, I had wondered the same thing on the release side with
-kref_put_spinlock_irqsave() here before:
-
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/include/linux/kref.h?id=ccf5ae83a6cf3d9cfe9a7038bfe7cd38ab03d5e1
-
-but at some point was convinced it was not a issue anymore..
- 
-> 
-> Such things probably won't be detected during 3.12-rcX because few
-> people will test iscsi, I expect.  So please be sure that you've
-> runtime tested it with all the lockdeppy things enabled. 
-> Documentation/SubmitChecklist section 12 has a list, but it might be
-> dated.
-
-<nod>
-
-FYI, my v3.11-rc5 kernel has been running with CONFIG_LOCKDEP_SUPPORT=y
-using vhost/iscsi/iser fabrics on the -v5 patch, and not generated any
-warnings (yet).
-
-I'll double check against the other debug options in Section 12.
-
-Thank you,
-
---nab
-
+Rich
