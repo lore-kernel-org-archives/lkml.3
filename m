@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514Ab3IDIvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:51:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44798 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934352Ab3IDIvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:51:21 -0400
-Date: Wed, 4 Sep 2013 10:51:18 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Correct the USB IDs for the new Macbook Air 6
-In-Reply-To: <20130903180416.GB25985@core.coreip.homeip.net>
-Message-ID: <alpine.LNX.2.00.1309041051060.3684@pobox.suse.cz>
-References: <1378042304-1400-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1309021329510.3796@pobox.suse.cz> <20130903180416.GB25985@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934536Ab3IDIxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:53:30 -0400
+Received: from briaree.onecert.fr ([134.212.190.4]:56014 "EHLO
+	briaree.onecert.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934485Ab3IDIx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 04:53:28 -0400
+X-Greylist: delayed 1581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 04:53:27 EDT
+From: Paul Chavent <Paul.Chavent@onera.fr>
+To: giometti@enneenne.com, linux-kernel@vger.kernel.org
+Cc: Paul Chavent <Paul.Chavent@onera.fr>
+Subject: [PATCH] pps : add non blocking option to PPS_FETCH ioctl.
+Date: Wed,  4 Sep 2013 10:20:38 +0200
+Message-Id: <1378282838-2292-1-git-send-email-paul.chavent@onera.fr>
+X-Mailer: git-send-email 1.7.12.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (briaree.onecert.fr [134.212.190.4]); Wed, 04 Sep 2013 10:26:58 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Sep 2013, Dmitry Torokhov wrote:
+Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
+---
+ drivers/pps/pps.c | 57 +++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 30 insertions(+), 27 deletions(-)
 
-> > > A recent patch (9d9a04ee) added support for the new machine, but got
-> > > the sequence of USB ids wrong. Reports from both Ian and Linus T show
-> > > that the 0x0291 id is for ISO, not ANSI, which should have the missing
-> > > number 0x0290. This patchs moves the three numbers accordingly, fixing
-> > > the problem.
-> > > 
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Reported-and-tested-by: Ian Munsie <darkstarsword@gmail.com>
-> > > Tested-by: Linus G Thiel <linus@hanssonlarsson.se>
-> > > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > > ---
-> > > Hi Jiri, Dmitry,
-> > > 
-> > > it looks like this change has been sufficiently tested now, in
-> > > addition to making perfect sense. Jiri, would you mind taking it, if
-> > > Dmitry approves?
-> > 
-> > Absolutely ... waiting for Dmitry's Ack.
-> 
-> And here it is:
-> 
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Perfect, thanks. Will push it to Linus this merge window.
-
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index 7173e3a..86ff57e 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -152,35 +152,38 @@ static long pps_cdev_ioctl(struct file *file,
+ 		if (err)
+ 			return -EFAULT;
+ 
+-		ev = pps->last_ev;
+-
+-		/* Manage the timeout */
+-		if (fdata.timeout.flags & PPS_TIME_INVALID)
+-			err = wait_event_interruptible(pps->queue,
+-					ev != pps->last_ev);
+-		else {
+-			unsigned long ticks;
+-
+-			dev_dbg(pps->dev, "timeout %lld.%09d\n",
+-					(long long) fdata.timeout.sec,
+-					fdata.timeout.nsec);
+-			ticks = fdata.timeout.sec * HZ;
+-			ticks += fdata.timeout.nsec / (NSEC_PER_SEC / HZ);
+-
+-			if (ticks != 0) {
+-				err = wait_event_interruptible_timeout(
+-						pps->queue,
+-						ev != pps->last_ev,
+-						ticks);
+-				if (err == 0)
+-					return -ETIMEDOUT;
++		if (!(file->f_flags & O_NONBLOCK)) {
++			ev = pps->last_ev;
++
++			/* Manage the timeout */
++			if (fdata.timeout.flags & PPS_TIME_INVALID)
++				err = wait_event_interruptible(pps->queue,
++						ev != pps->last_ev);
++			else {
++				unsigned long ticks;
++
++				dev_dbg(pps->dev, "timeout %lld.%09d\n",
++						(long long) fdata.timeout.sec,
++						fdata.timeout.nsec);
++				ticks = fdata.timeout.sec * HZ;
++				ticks += fdata.timeout.nsec /
++					(NSEC_PER_SEC / HZ);
++
++				if (ticks != 0) {
++					err = wait_event_interruptible_timeout(
++							pps->queue,
++							ev != pps->last_ev,
++							ticks);
++					if (err == 0)
++						return -ETIMEDOUT;
++				}
+ 			}
+-		}
+ 
+-		/* Check for pending signals */
+-		if (err == -ERESTARTSYS) {
+-			dev_dbg(pps->dev, "pending signal caught\n");
+-			return -EINTR;
++			/* Check for pending signals */
++			if (err == -ERESTARTSYS) {
++				dev_dbg(pps->dev, "pending signal caught\n");
++				return -EINTR;
++			}
+ 		}
+ 
+ 		/* Return the fetched timestamp */
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.12.1
+
