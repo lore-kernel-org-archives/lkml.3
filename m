@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762144Ab3IDHmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:42:42 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55546 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269Ab3IDHmk (ORCPT
+	id S1762207Ab3IDHoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:44:19 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:47075 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762036Ab3IDHoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:42:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jan Kaluza <jkaluza@redhat.com>
-Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
-        tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
-	<1378275261-4553-1-git-send-email-jkaluza@redhat.com>
-Date: Wed, 04 Sep 2013 00:42:26 -0700
-In-Reply-To: <1378275261-4553-1-git-send-email-jkaluza@redhat.com> (Jan
-	Kaluza's message of "Wed, 4 Sep 2013 08:14:18 +0200")
-Message-ID: <878uzdf2xp.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 4 Sep 2013 03:44:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX182oms2+74UezCBRJRzdbBxaIMtTI0zNns=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4997]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jan Kaluza <jkaluza@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level control message
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20130828111638.GO10002@twins.programming.kicks-ass.net>
+References: <20130819160058.539049611@infradead.org>
+	<20130828111638.GO10002@twins.programming.kicks-ass.net>
+Date: Wed, 4 Sep 2013 09:44:17 +0200
+Message-ID: <CAKfTPtDJ_9jPhx00W3DhYqXNLxhKqVEVe0HyFeb6JVp8yEYd4w@mail.gmail.com>
+Subject: Re: [RFC][PATCH 14/10] sched, fair: Fix the group_capacity computation
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Joonsoo Kim <js1304@gmail.com>, Rik van Riel <riel@surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kaluza <jkaluza@redhat.com> writes:
-
-> Hi,
+On 28 August 2013 13:16, Peter Zijlstra <peterz@infradead.org> wrote:
 >
-> this patchset against net-next (applies also to linux-next) adds 3 new types
-> of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
+> Subject: sched, fair: Fix the group_capacity computation
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed Aug 28 12:40:38 CEST 2013
 >
-> Server-like processes in many cases need credentials and other
-> metadata of the peer, to decide if the calling process is allowed to
-> request a specific action, or the server just wants to log away this
-> type of information for auditing tasks.
+> Do away with 'phantom' cores due to N*frac(smt_power) >= 1 by limiting
+> the capacity to the actual number of cores.
 >
-> The current practice to retrieve such process metadata is to look that
-> information up in procfs with the $PID received over SCM_CREDENTIALS.
-> This is sufficient for long-running tasks, but introduces a race which
-> cannot be worked around for short-living processes; the calling
-> process and all the information in /proc/$PID/ is gone before the
-> receiver of the socket message can look it up.
 
-> Changes introduced in this patchset can also increase performance
-> of such server-like processes, because current way of opening and
-> parsing /proc/$PID/* files is much more expensive than receiving these
-> metadata using SCM.
+Peter,
 
-Can I just say ick, blech, barf, gag.
+your patch also solves the 'phantom' big cores that can appear on HMP
+system because big cores have a cpu_power >=  SCHED_POWER_SCALE in
+order to express a higher capacity than LITTLE cores.
 
-You don't require this information to be passed.  You are asking people
-to suport a lot of new code for the forseeable future.  The only advantage
-appears to be for short lived racy processes that don't even bother to
-make certain their message was acknowleged before exiting.
+Acked-by Vincent Guittot <vincent.guitto@linaro.org>
 
-You sent this during the merge window which is the time for code
-integration and testing not new code.
+Vincent
 
-By my count you have overflowed cb in struct sk_buff and are stomping on
-_skb_refdest.
-
-If you are going to go crazy and pass things is there a reason you do
-not add a patch to pass the bsd SCM_CREDS?  That information seems more
-relevant in a security context and for making security decisions than
-about half the information you are passing.
-
-Eric
+> The assumption of 1 < smt_power < 2 is an actual requirement because
+> of what SMT is so this should work regardless of the SMT
+> implementation.
+>
+> It can still be defeated by creative use of cpu hotplug, but if you're
+> one of those freaks, you get to live with it.
+>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/fair.c |   20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
+>
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4554,18 +4554,24 @@ static inline int sg_imbalanced(struct s
+>  /*
+>   * Compute the group capacity.
+>   *
+> - * For now the capacity is simply the number of power units in the group_power.
+> - * A power unit represents a full core.
+> - *
+> - * This has an issue where N*frac(smt_power) >= 1, in that case we'll see extra
+> - * 'cores' that aren't actually there.
+> + * Avoid the issue where N*frac(smt_power) >= 1 creates 'phantom' cores by
+> + * first dividing out the smt factor and computing the actual number of cores
+> + * and limit power unit capacity with that.
+>   */
+>  static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
+>  {
+> +       unsigned int capacity, smt, cpus;
+> +       unsigned int power, power_orig;
+> +
+> +       power = group->sgp->power;
+> +       power_orig = group->sgp->power_orig;
+> +       cpus = group->group_weight;
+>
+> -       unsigned int power = group->sgp->power;
+> -       unsigned int capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
+> +       /* smt := ceil(cpus / power), assumes: 1 < smt_power < 2 */
+> +       smt = DIV_ROUND_UP(SCHED_POWER_SCALE * cpus, power_orig);
+> +       capacity = cpus / smt; /* cores */
+>
+> +       capacity = min_t(capacity, DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE));
+>         if (!capacity)
+>                 capacity = fix_small_capacity(env->sd, group);
+>
