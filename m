@@ -1,69 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934609Ab3IDJky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:40:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55806 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934402Ab3IDJkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:40:51 -0400
-Date: Wed, 4 Sep 2013 10:40:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, axel.lin@ingics.com,
-        kishon@ti.com, gg@slimlogic.co.uk
-Message-ID: <20130904094023.GN3084@sirena.org.uk>
-References: <1378288206-20741-1-git-send-email-ldewangan@nvidia.com>
+	id S934672Ab3IDJlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:41:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934563Ab3IDJkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:40:52 -0400
+Date: Wed, 4 Sep 2013 12:40:14 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        JBeulich@suse.com, bp@alien8.de
+Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Message-ID: <20130904094014.GB7402@redhat.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v1TsIsr/WJoL6YzS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378288206-20741-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: palmas: fix the n_voltages for smps to 122
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1378233023-4512-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 03, 2013 at 11:30:23AM -0700, K. Y. Srinivasan wrote:
+> Hyper-V supports a mechanism for retrieving the local APIC frequency.Use this and bypass
+> the calibration code in the kernel. This would allow us to boot the Linux kernel as a
+> "modern VM" on Hyper-V where many of the legacy devices (such as PIT) are not emulated.
+> 
+> I would like to thank Olaf Hering <olaf@aepfle.de>, Jan Beulich <JBeulich@suse.com> and
+> H. Peter Anvin <h.peter.anvin@intel.com> for their help in this effort.
+> 
+> In this version of the patch, I have addressed Jan's comments.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  arch/x86/include/uapi/asm/hyperv.h |   19 +++++++++++++++++++
+>  arch/x86/kernel/cpu/mshyperv.c     |   24 ++++++++++++++++++++++++
+>  2 files changed, 43 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/uapi/asm/hyperv.h b/arch/x86/include/uapi/asm/hyperv.h
+> index b80420b..b8f1c01 100644
+> --- a/arch/x86/include/uapi/asm/hyperv.h
+> +++ b/arch/x86/include/uapi/asm/hyperv.h
+> @@ -27,6 +27,19 @@
+>  #define HV_X64_MSR_VP_RUNTIME_AVAILABLE		(1 << 0)
+>  /* Partition Reference Counter (HV_X64_MSR_TIME_REF_COUNT) available*/
+>  #define HV_X64_MSR_TIME_REF_COUNT_AVAILABLE	(1 << 1)
+> +
+> +/*
+> + * There is a single feature flag that signifies the presence of the MSR
+> + * that can be used to retrieve both the local APIC Timer frequency as
+> + * well as the TSC frequency.
+> + */
+> +
+> +/* Local APIC timer frequency MSR (HV_X64_MSR_APIC_FREQUENCY) is available */
+> +#define HV_X64_MSR_APIC_FREQUENCY_AVAILABLE (1 << 11)
+> +
+> +/* TSC frequency MSR (HV_X64_MSR_TSC_FREQUENCY) is available */
+> +#define HV_X64_MSR_TSC_FREQUENCY_AVAILABLE (1 << 11)
+> +
+>  /*
+>   * Basic SynIC MSRs (HV_X64_MSR_SCONTROL through HV_X64_MSR_EOM
+>   * and HV_X64_MSR_SINT0 through HV_X64_MSR_SINT15) available
+> @@ -136,6 +149,12 @@
+>  /* MSR used to read the per-partition time reference counter */
+>  #define HV_X64_MSR_TIME_REF_COUNT		0x40000020
+>  
+> +/* MSR used to retrieve the TSC frequency */
+> +#define HV_X64_MSR_TSC_FREQUENCY		0x40000022
+> +
+You do not use this MSR in the patch, but in general how it suppose to
+work during migration if host TSC frequency changes?
 
---v1TsIsr/WJoL6YzS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> +/* MSR used to retrieve the local APIC timer frequency */
+> +#define HV_X64_MSR_APIC_FREQUENCY		0x40000023
+> +
+>  /* Define the virtual APIC registers */
+>  #define HV_X64_MSR_EOI				0x40000070
+>  #define HV_X64_MSR_ICR				0x40000071
+> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+> index 71a39f3..b3dc639 100644
+> --- a/arch/x86/kernel/cpu/mshyperv.c
+> +++ b/arch/x86/kernel/cpu/mshyperv.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/clocksource.h>
+>  #include <linux/module.h>
+>  #include <linux/hardirq.h>
+> +#include <linux/efi.h>
+>  #include <linux/interrupt.h>
+>  #include <asm/processor.h>
+>  #include <asm/hypervisor.h>
+> @@ -23,6 +24,7 @@
+>  #include <asm/desc.h>
+>  #include <asm/idle.h>
+>  #include <asm/irq_regs.h>
+> +#include <asm/i8259.h>
+>  
+>  struct ms_hyperv_info ms_hyperv;
+>  EXPORT_SYMBOL_GPL(ms_hyperv);
+> @@ -67,6 +69,8 @@ static struct clocksource hyperv_cs = {
+>  
+>  static void __init ms_hyperv_init_platform(void)
+>  {
+> +	u64	hv_lapic_frequency;
+> +
+>  	/*
+>  	 * Extract the features and hints
+>  	 */
+> @@ -76,6 +80,26 @@ static void __init ms_hyperv_init_platform(void)
+>  	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+>  	       ms_hyperv.features, ms_hyperv.hints);
+>  
+> +	if (ms_hyperv.features & HV_X64_MSR_APIC_FREQUENCY_AVAILABLE) {
+> +		/*
+> +		 * Get the APIC frequency.
+> +		 */
+> +		rdmsrl(HV_X64_MSR_APIC_FREQUENCY, hv_lapic_frequency);
+> +		hv_lapic_frequency /= HZ;
+> +		lapic_timer_frequency = hv_lapic_frequency;
+> +		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
+> +				lapic_timer_frequency);
+> +
+> +		/*
+> +		 * On Hyper-V, when we are booting off an EFI firmware stack,
+> +		 * we do not have many legacy devices including PIC, PIT etc.
+> +		 */
+> +		if (efi_enabled(EFI_BOOT)) {
+> +			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
+> +			legacy_pic = &null_legacy_pic;
+> +		}
+> +	}
+> +
+>  	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
+>  		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+>  }
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-On Wed, Sep 04, 2013 at 03:20:06PM +0530, Laxman Dewangan wrote:
-> With the following change
-> ---------
-> commit ad02e846878ca35e9d3fa584be8ee770e9e14fce
-> Author: Axel Lin <axel.lin@ingics.com>
-
-Applied, thanks.  There is no need to include the entire commit message,
-just the summary will do.
-
---v1TsIsr/WJoL6YzS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJwADAAoJELSic+t+oim9sqUP/jlXBD+gCYGkB2RdEaxoVmdo
-RtTB9n4r2r3OjXAn2AO8/gm92qxcTxa9aKEzY3kfPLBSo3c0DhRcIYP/qfSTpW3u
-Z0rbbfC6GvuKC45q0incehQfRDb28pZOX2VXTFksdjiNVRrS8KqC0xpe35k83uRt
-BSMqZYWN3JAIW1mqgOm+DcAVVPJECOVU0eXLqogsYDjegIKr7WyVzV1v4OnTyUio
-X+PnqxmlQblHhqoBQ7TRaSx9ZXKlPJ4frGU6Ri0DpUnBWx1z/Yr7mgeurtxuNQnU
-SBD+BzBw4s4hFkm1cxcqhZTStgmbGgSzHLQZUMAkYBdqHc2kB30ZkQsULIlrnuQU
-crjadu4AmKvT2CfXdcUjmu/6tnks9/pHsQSf9H6tFAw1uySHjUMWFaa/nsef3ulW
-udCKb8uBPh9DB6X97mZc4ufwRSr9fKr4ZbRjO9yyMp8NCm5DoJKBoHk3yg0p5psd
-AfOgHKU4B07go83sbrzOWrVOLNvqlx6DU8EWL4yZd93c7w1Q5JxwKO8DoSRUAeiX
-5vXXVpTuKnV+Crv0PmHTIed5xkKRDezamPnPZbPF6tmtZqlg5Bq/DVybcYCK2cOA
-hMWnH8yQB7YWV+c40iS1+SMygCdUPefum2J6KrBl7E5cmm9qTufi26GK9lxvBWaw
-B9aKZ9UzyyYLSA1t9hL0
-=syr/
------END PGP SIGNATURE-----
-
---v1TsIsr/WJoL6YzS--
+--
+			Gleb.
