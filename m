@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934660Ab3IDJcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:32:12 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:53785 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934612Ab3IDJcG (ORCPT
+	id S934669Ab3IDJcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:32:20 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:37698 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934651Ab3IDJcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:32:06 -0400
+	Wed, 4 Sep 2013 05:32:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         jic23@cam.ac.uk
 Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
         linux-iio@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 08/11] iio: pressure-core: st: Allow for number of channels to vary
-Date: Wed,  4 Sep 2013 10:31:40 +0100
-Message-Id: <1378287103-21765-9-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator support
+Date: Wed,  4 Sep 2013 10:31:43 +0100
+Message-Id: <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
 References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
@@ -22,51 +22,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment the number of channels specified is dictated by the first
-sensor supported by the driver. As we add support for more sensors this
-is likely to vary. Instead of using the ARRAY_SIZE() of the LPS331AP's
-channel specifier we'll use a new adaptable 'struct st_sensors' element
-instead.
+The power to some of the sensors are controlled by regulators. In most
+cases these are 'always on', but if not they will fail to work until
+the regulator is enabled using the relevant APIs.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/iio/pressure/st_pressure_core.c | 3 ++-
- include/linux/iio/common/st_sensors.h   | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/iio/pressure/st_pressure_core.c | 13 +++++++++++++
+ include/linux/iio/common/st_sensors.h   |  3 +++
+ 2 files changed, 16 insertions(+)
 
 diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-index 423ed6a..3cf54ed 100644
+index f452417..7beed89 100644
 --- a/drivers/iio/pressure/st_pressure_core.c
 +++ b/drivers/iio/pressure/st_pressure_core.c
-@@ -101,6 +101,7 @@ static const struct st_sensors st_press_sensors[] = {
- 			[0] = LPS331AP_PRESS_DEV_NAME,
- 		},
- 		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
-+		.num_ch = ARRAY_SIZE(st_press_lsp331ap_channels),
- 		.odr = {
- 			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
- 			.mask = ST_PRESS_LPS331AP_ODR_MASK,
-@@ -237,7 +238,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
- 	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
- 	pdata->multiread_bit = pdata->sensor->multi_read_bit;
- 	indio_dev->channels = pdata->sensor->ch;
--	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
-+	indio_dev->num_channels = pdata->sensor->num_ch;
+@@ -23,6 +23,7 @@
+ #include <linux/iio/sysfs.h>
+ #include <linux/iio/trigger.h>
+ #include <linux/iio/buffer.h>
++#include <linux/regulator/consumer.h>
+ #include <asm/unaligned.h>
  
- 	if (pdata->sensor->fs.addr != 0)
- 		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+ #include <linux/iio/common/st_sensors.h>
+@@ -315,6 +316,15 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->info = &press_info;
+ 
++	/* Regulator not mandatory, but if requested we should enable it. */
++	pdata->regulator = regulator_get(&indio_dev->dev, "vdd");
++	if (!IS_ERR_OR_NULL(pdata->regulator)) {
++		err = regulator_enable(pdata->regulator);
++		if (err != 0)
++			dev_warn(&indio_dev->dev,
++				 "Failed to enable specified vdd regulator\n");
++	}
++
+ 	err = st_sensors_check_device_support(indio_dev,
+ 					      ARRAY_SIZE(st_press_sensors),
+ 					      st_press_sensors);
+@@ -363,6 +373,9 @@ void st_press_common_remove(struct iio_dev *indio_dev)
+ {
+ 	struct st_sensor_data *pdata = iio_priv(indio_dev);
+ 
++	if (!IS_ERR_OR_NULL(pdata->regulator))
++		regulator_disable(pdata->regulator);
++
+ 	iio_device_unregister(indio_dev);
+ 	if (pdata->get_irq_data_ready(indio_dev) > 0) {
+ 		st_sensors_deallocate_trigger(indio_dev);
 diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
-index 72b2694..4aef925 100644
+index 4aef925..eb6ef3f 100644
 --- a/include/linux/iio/common/st_sensors.h
 +++ b/include/linux/iio/common/st_sensors.h
-@@ -180,6 +180,7 @@ struct st_sensors {
- 	u8 wai;
- 	char sensors_supported[ST_SENSORS_MAX_4WAI][ST_SENSORS_MAX_NAME];
- 	struct iio_chan_spec *ch;
-+	int num_ch;
- 	struct st_sensor_odr odr;
- 	struct st_sensor_power pw;
- 	struct st_sensor_axis enable_axis;
+@@ -16,6 +16,7 @@
+ #include <linux/irqreturn.h>
+ #include <linux/iio/trigger.h>
+ #include <linux/bitops.h>
++#include <linux/regulator/consumer.h>
+ 
+ #define ST_SENSORS_TX_MAX_LENGTH		2
+ #define ST_SENSORS_RX_MAX_LENGTH		6
+@@ -197,6 +198,7 @@ struct st_sensors {
+  * @trig: The trigger in use by the core driver.
+  * @sensor: Pointer to the current sensor struct in use.
+  * @current_fullscale: Maximum range of measure by the sensor.
++ * @regulator: Pointer to sensor's power supply
+  * @enabled: Status of the sensor (false->off, true->on).
+  * @multiread_bit: Use or not particular bit for [I2C/SPI] multiread.
+  * @buffer_data: Data used by buffer part.
+@@ -211,6 +213,7 @@ struct st_sensor_data {
+ 	struct iio_trigger *trig;
+ 	struct st_sensors *sensor;
+ 	struct st_sensor_fullscale_avl *current_fullscale;
++	struct regulator *regulator;
+ 
+ 	bool enabled;
+ 	bool multiread_bit;
 -- 
 1.8.1.2
 
