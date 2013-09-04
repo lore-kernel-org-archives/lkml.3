@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762430Ab3IDLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:52:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53289 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757322Ab3IDLw4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:52:56 -0400
-Date: Wed, 4 Sep 2013 04:52:34 -0700
-From: tip-bot for Alok Kataria <tipbot@zytor.com>
-Message-ID: <tip-db14e78a61691888ded5896da5f171d662a4d2bd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        akataria@vmware.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, akataria@vmware.com, hpa@linux.intel.com
-In-Reply-To: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
-References: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, doc: Add an entry in MAINTAINERS for arch/
- x86/kernel/cpu/vmware.c
-Git-Commit-ID: db14e78a61691888ded5896da5f171d662a4d2bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S934586Ab3IDL5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:57:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16870 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932357Ab3IDL5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 07:57:32 -0400
+Date: Wed, 4 Sep 2013 14:59:29 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use
+ zerocopy at one time
+Message-ID: <20130904115929.GA9393@redhat.com>
+References: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
+ <1378111261-14826-5-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 04 Sep 2013 04:52:41 -0700 (PDT)
+In-Reply-To: <1378111261-14826-5-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db14e78a61691888ded5896da5f171d662a4d2bd
-Gitweb:     http://git.kernel.org/tip/db14e78a61691888ded5896da5f171d662a4d2bd
-Author:     Alok Kataria <akataria@vmware.com>
-AuthorDate: Wed, 4 Sep 2013 14:23:41 +0530
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 4 Sep 2013 04:49:07 -0700
+On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
+> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
+> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
+> later. This could be avoided by determining zerocopy once by checking all
+> conditions at one time before.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
+>  1 files changed, 20 insertions(+), 27 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 8a6dd0d..3f89dea 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
+>  			       iov_length(nvq->hdr, s), hdr_size);
+>  			break;
+>  		}
+> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
+> -				       nvq->upend_idx != nvq->done_idx);
+> +
+> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+> +				      nvq->done_idx
 
-x86, doc: Add an entry in MAINTAINERS for arch/x86/kernel/cpu/vmware.c
+Thinking about this, this looks strange.
+The original idea was that once we start doing zcopy, we keep
+using the heads ring even for short packets until no zcopy is outstanding.
 
-Add an entry in MAINTAINERS file to reflect the maintainers of this
-file.
+What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
+here?
 
-Signed-off-by: Alok Kataria <akataria@vmware.com>
-Link: http://lkml.kernel.org/r/1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- MAINTAINERS | 6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b140c81..3d48faa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9026,6 +9026,12 @@ F:	drivers/staging/vme/
- F:	drivers/vme/
- F:	include/linux/vme*
- 
-+VMWARE HYPERVISOR INTERFACE
-+M: Alok Kataria <akataria@vmware.com>
-+L: virtualization@lists.linux-foundation.org
-+S: Supported
-+F: arch/x86/kernel/cpu/vmware.c
-+
- VMWARE VMXNET3 ETHERNET DRIVER
- M:	Shreyas Bhatewara <sbhatewara@vmware.com>
- M:	"VMware, Inc." <pv-drivers@vmware.com>
+
+> +				   && vhost_net_tx_select_zcopy(net);
+>  
+>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+>  		if (zcopy_used) {
+> +			struct ubuf_info *ubuf;
+> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
+> +
+>  			vq->heads[nvq->upend_idx].id = head;
+> -			if (!vhost_net_tx_select_zcopy(net) ||
+> -			    len < VHOST_GOODCOPY_LEN) {
+> -				/* copy don't need to wait for DMA done */
+> -				vq->heads[nvq->upend_idx].len =
+> -							VHOST_DMA_DONE_LEN;
+> -				msg.msg_control = NULL;
+> -				msg.msg_controllen = 0;
+> -				ubufs = NULL;
+> -			} else {
+> -				struct ubuf_info *ubuf;
+> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
+> -
+> -				vq->heads[nvq->upend_idx].len =
+> -					VHOST_DMA_IN_PROGRESS;
+> -				ubuf->callback = vhost_zerocopy_callback;
+> -				ubuf->ctx = nvq->ubufs;
+> -				ubuf->desc = nvq->upend_idx;
+> -				msg.msg_control = ubuf;
+> -				msg.msg_controllen = sizeof(ubuf);
+> -				ubufs = nvq->ubufs;
+> -				kref_get(&ubufs->kref);
+> -			}
+> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
+> +			ubuf->callback = vhost_zerocopy_callback;
+> +			ubuf->ctx = nvq->ubufs;
+> +			ubuf->desc = nvq->upend_idx;
+> +			msg.msg_control = ubuf;
+> +			msg.msg_controllen = sizeof(ubuf);
+> +			ubufs = nvq->ubufs;
+> +			kref_get(&ubufs->kref);
+>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+> -		} else
+> +		} else {
+>  			msg.msg_control = NULL;
+> +			ubufs = NULL;
+> +		}
+>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+>  		if (unlikely(err < 0)) {
+>  			if (zcopy_used) {
+> -				if (ubufs)
+> -					vhost_net_ubuf_put(ubufs);
+> +				vhost_net_ubuf_put(ubufs);
+>  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
+>  					% UIO_MAXIOV;
+>  			}
+> -- 
+> 1.7.1
