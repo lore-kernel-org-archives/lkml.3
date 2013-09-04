@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761740Ab3IDBmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:42:19 -0400
-Received: from mail-bn1lp0149.outbound.protection.outlook.com ([207.46.163.149]:16072
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761645Ab3IDBmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:42:17 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: James Morris <jmorris@namei.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+	id S1761779Ab3IDBpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:45:16 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:59887 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761538Ab3IDBpO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 21:45:14 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "keescook@chromium.org" <keescook@chromium.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH V3 11/11] Add option to automatically enforce module
- signatures when in Secure Boot mode
-Thread-Topic: [PATCH V3 11/11] Add option to automatically enforce module
- signatures when in Secure Boot mode
-Thread-Index: AQHOqQOEKX11AlwUCUWI4DFZZ3VWp5m0zgeA////5IA=
-Date: Wed, 4 Sep 2013 01:42:12 +0000
-Message-ID: <1378258931.11730.49.camel@x230>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-12-git-send-email-matthew.garrett@nebula.com>
-	 <alpine.LRH.2.02.1309041142080.20116@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.02.1309041142080.20116@tundra.namei.org>
-Accept-Language: en-US
+        "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>,
+        "ccross@android.com" <ccross@android.com>
+Subject: RE: [RFC PATCH v2 04/11] pstore: Add compression support to pstore
+Thread-Topic: [RFC PATCH v2 04/11] pstore: Add compression support to pstore
+Thread-Index: AQHOmoMcsKHK3fNXLUCcb5sKdMjJG5mhyInAgABg8gCABq6lAIAMBsAQ
+Date: Wed, 4 Sep 2013 01:44:57 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443E9E24D@USINDEM103.corp.hds.com>
+References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
+ <20130816131805.3338.68767.stgit@aruna-ThinkPad-T420>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D443E8F0D7@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F31CC7AC0@ORSMSX106.amr.corp.intel.com>
+ <521C36F4.8030607@linux.vnet.ibm.com>
+In-Reply-To: <521C36F4.8030607@linux.vnet.ibm.com>
+Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 095972DF2F
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(189002)(199002)(51704005)(80022001)(81686001)(79102001)(59766001)(77982001)(33716001)(65816001)(63696002)(80976001)(54316002)(56776001)(69226001)(77096001)(76482001)(54356001)(53806001)(76786001)(33646001)(76796001)(81816001)(56816003)(81342001)(47736001)(4396001)(74706001)(31966008)(81542001)(49866001)(74876001)(74662001)(50986001)(47976001)(74502001)(47446002)(83072001)(74366001)(46102001)(19580405001)(83322001)(51856001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6F2D0CE854AD39468701B7DD872215B4@namprd05.prod.outlook.com>
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-09-04_01:2013-09-04,2013-09-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1309030092
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r841gPSE018748
 
-On Wed, 2013-09-04 at 11:42 +1000, James Morris wrote:
-> On Tue, 3 Sep 2013, Matthew Garrett wrote:
-> 
-> > +	status = efi_call_phys5(sys_table->runtime->get_variable,
-> > +				L"SecureBoot", &var_guid, NULL, &datasize, &sb);
-> > +
-> 
-> 
-> What's 'L' ?
+Aruna,
 
-Wide-character string constant. UEFI variable names are 16-bits per
-character.
+Sorry for the late response.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Seiji,
+> 
+> Could you let us know the efivars buffer size with which the pstore is
+> registered when
+> the failure occurred.
+
+I looked into the issue today.
+
+I added some debug message just before pstore_compress().
+As you can see below, the buffer size is a fixed value(1024).
+Therefore, the size doesn't seem to be related to the failure directly.
+
+Also, in the failure case, zlib_deflate() returns Z_OK and stream.avail_out is zero.
+So, I thought big_oops_buf_sz is too big in my environment.
+And then, I tuned  big_oops_buf_sz to (psinfo->bufsize * 100) / 53.
+
+At the same time, while looking into this issue, I had two concerns about current cording.
+
+1) In pstore_decompress(), why not use zlib_inflateInit2() instead of zlib_inflateInit()?
+     If you use zlib_deflateInit2()  for specifying window_bit at compressing time, 
+     zlib_inflateInit2() seems to be appropriate for decompressing.
+     (Please see a comment about inflateInit2() in include/linux/zlib.h and source code of crypto/deflate.c)
+
+2) As looking at crypto/deflate.c, stream->workspace is kzalloced at the beginning of 
+   compressing/decompressing time.
+    So, in pstore case,  stream.workspace must be initialized to 0 with memset() in pstore_compress()/decompress().
+
+I did three things above, tuning big_oops_buf_sz, using zlib_inflateInit2() and initializing stream.workspace , in my environment.
+As a result, compressions/decmpressions of all entries succeeded with efivars driver.
+
+<snip>
+Panic#2 Part1
+<4>[   75.665020]  [<ffffffff811af59c>] SyS_write+0x4c/0xa0
+<4>[   75.665020]  [<ffffffff8168be82>] system_call_fastpath+0x16/0x1b
+<4>[   75.665020] Code: ef e8 ff f7 ff ff eb d8 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 00 0f 1f 44 00 00 55 c7 05 cc f3 c9 00 01 00 00 00 48 89 e5 0f ae f8 <c6> 04 25 00 00 00 00 01 5d c3 0f 1f 44 00 00 55 31 c0 c7 05 5e 
+<1>[   75.665020] RIP  [<ffffffff813d3946>] sysrq_handle_crash+0x16/0x20
+<4>[   75.665020]  RSP <ffff88007852de80>
+<4>[   75.665020] CR2: 0000000000000000
+<4>[   75.665020] ---[ end trace 97bb4a1f8d3fe7b2 ]---
+<3>[   75.665020] pstore_dump hsize=13 len=2155 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2246 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore: compression failed for Part 2 returned -5
+<3>[   75.665020] pstore: Capture uncompressed oops/panic report of Part 2
+<3>[   75.665020] pstore_dump hsize=13 len=2239 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2231 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2185 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore: compression failed for Part 5 returned -5
+<3>[   75.665020] pstore: Capture uncompressed oops/panic report of Part 5
+<3>[   75.665020] pstore_dump hsize=13 len=2234 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2208 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2218 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=13 len=2222 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore: compression failed for Part 9 returned -5
+<3>[   75.665020] pstore: Capture uncompressed oops/panic report of Part 9
+<3>[   75.665020] pstore_dump hsize=14 len=2256 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=14 len=2219 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<3>[   75.665020] pstore_dump hsize=14 len=2226 big_oops_buf_sz=2275 psinfo->bufsize=1024
+<0>[   75.665020] Kernel panic - not syncing: Fatal exception
+<3>[   75.665020] drm_kms_helper: panic occurred, switching back to text console
+<snip>
+
+Seiji
