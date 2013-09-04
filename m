@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934586Ab3IDL5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:57:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16870 "EHLO mx1.redhat.com"
+	id S1762521Ab3IDL5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:57:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52026 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932357Ab3IDL5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:57:32 -0400
-Date: Wed, 4 Sep 2013 14:59:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use
- zerocopy at one time
-Message-ID: <20130904115929.GA9393@redhat.com>
-References: <1378111261-14826-1-git-send-email-jasowang@redhat.com>
- <1378111261-14826-5-git-send-email-jasowang@redhat.com>
+	id S1756563Ab3IDL5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 07:57:44 -0400
+Date: Wed, 4 Sep 2013 13:57:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130904115741.GA28285@dhcp22.suse.cz>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <20130803170831.GB23319@cmpxchg.org>
+ <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
+ <20130903204850.GA1412@cmpxchg.org>
+ <20130904114523.A9F0173C@pobox.sk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378111261-14826-5-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20130904114523.A9F0173C@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
-> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
-> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
-> later. This could be avoided by determining zerocopy once by checking all
-> conditions at one time before.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
->  1 files changed, 20 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 8a6dd0d..3f89dea 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
->  			       iov_length(nvq->hdr, s), hdr_size);
->  			break;
->  		}
-> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
-> -				       nvq->upend_idx != nvq->done_idx);
-> +
-> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
-> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
-> +				      nvq->done_idx
+On Wed 04-09-13 11:45:23, azurIt wrote:
+[...]
+> My script has just detected (and killed) another freezed cgroup. I
+> must say that i'm not 100% sure that cgroup was really freezed but it
+> has 99% or more memory usage for at least 30 seconds (well, or it has
+> 99% memory usage in both two cases the script was checking it). Here
+> are stacks of processes inside it before they were killed:
+[...]
+> pid: 26536
+> stack:
+> [<ffffffff81080a45>] refrigerator+0x95/0x160
+> [<ffffffff8106ac2b>] get_signal_to_deliver+0x1cb/0x540
+> [<ffffffff8100188b>] do_signal+0x6b/0x750
+> [<ffffffff81001fc5>] do_notify_resume+0x55/0x80
+> [<ffffffff815cb662>] retint_signal+0x3d/0x7b
+> [<ffffffffffffffff>] 0xffffffffffffffff
 
-Thinking about this, this looks strange.
-The original idea was that once we start doing zcopy, we keep
-using the heads ring even for short packets until no zcopy is outstanding.
+[...]
 
-What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
-here?
-
-
-
-> +				   && vhost_net_tx_select_zcopy(net);
->  
->  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
->  		if (zcopy_used) {
-> +			struct ubuf_info *ubuf;
-> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
-> +
->  			vq->heads[nvq->upend_idx].id = head;
-> -			if (!vhost_net_tx_select_zcopy(net) ||
-> -			    len < VHOST_GOODCOPY_LEN) {
-> -				/* copy don't need to wait for DMA done */
-> -				vq->heads[nvq->upend_idx].len =
-> -							VHOST_DMA_DONE_LEN;
-> -				msg.msg_control = NULL;
-> -				msg.msg_controllen = 0;
-> -				ubufs = NULL;
-> -			} else {
-> -				struct ubuf_info *ubuf;
-> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
-> -
-> -				vq->heads[nvq->upend_idx].len =
-> -					VHOST_DMA_IN_PROGRESS;
-> -				ubuf->callback = vhost_zerocopy_callback;
-> -				ubuf->ctx = nvq->ubufs;
-> -				ubuf->desc = nvq->upend_idx;
-> -				msg.msg_control = ubuf;
-> -				msg.msg_controllen = sizeof(ubuf);
-> -				ubufs = nvq->ubufs;
-> -				kref_get(&ubufs->kref);
-> -			}
-> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
-> +			ubuf->callback = vhost_zerocopy_callback;
-> +			ubuf->ctx = nvq->ubufs;
-> +			ubuf->desc = nvq->upend_idx;
-> +			msg.msg_control = ubuf;
-> +			msg.msg_controllen = sizeof(ubuf);
-> +			ubufs = nvq->ubufs;
-> +			kref_get(&ubufs->kref);
->  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
-> -		} else
-> +		} else {
->  			msg.msg_control = NULL;
-> +			ubufs = NULL;
-> +		}
->  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
->  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
->  		if (unlikely(err < 0)) {
->  			if (zcopy_used) {
-> -				if (ubufs)
-> -					vhost_net_ubuf_put(ubufs);
-> +				vhost_net_ubuf_put(ubufs);
->  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
->  					% UIO_MAXIOV;
->  			}
-> -- 
-> 1.7.1
+This task is sitting in the refigerator which means it has been frozen
+by the freezer cgroup most probably. I am not familiar with the
+implementation but my recollection is that you have to thaw that group
+in order the killed process can pass away.
+-- 
+Michal Hocko
+SUSE Labs
