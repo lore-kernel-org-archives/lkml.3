@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762341Ab3IDKua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 06:50:30 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:60363 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760233Ab3IDKu2 (ORCPT
+	id S1757283Ab3IDKyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 06:54:53 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43548 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab3IDKyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 06:50:28 -0400
-Subject: Re: [PATCH V2 10/10] Add option to automatically enforce module
- signatures when in Secure Boot mode
-From: joeyli <jlee@suse.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        keescook@chromium.org
-In-Reply-To: <20130830234133.GR20828@hansolo.jdub.homelinux.org>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
-	 <1376933171-9854-11-git-send-email-matthew.garrett@nebula.com>
-	 <20130829183713.GT20828@hansolo.jdub.homelinux.org>
-	 <522104A6.5000700@zytor.com>
-	 <20130830234133.GR20828@hansolo.jdub.homelinux.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Sep 2013 18:51:17 +0800
-Message-ID: <1378291877.6380.74.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 4 Sep 2013 06:54:51 -0400
+Message-ID: <5227110D.8030100@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 16:23:01 +0530
+From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Amerigo Wang <amwang@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>, avagin@openvz.org, gorcunov@openvz.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "Randy.Dunlap" <rdunlap@xenotime.net>, Eric Paris <eparis@redhat.com>,
+        ananth@in.ibm.com, suzuki@in.ibm.com, aravinda@linux.vnet.ibm.com,
+        tarundeep.singh@in.ibm.com
+Subject: Re: RFD: Non-Disruptive Core Dump Infrastructure
+References: <522472DA.4000702@linux.vnet.ibm.com> <5225A02B.6080901@linux.vnet.ibm.com> <5225BA91.6080904@parallels.com> <5225BE3A.3090602@linux.vnet.ibm.com> <5225C001.2010208@parallels.com>
+In-Reply-To: <5225C001.2010208@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090410-9574-0000-0000-0000097957EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2013-08-30 於 19:41 -0400，Josh Boyer 提到：
-> On Fri, Aug 30, 2013 at 01:46:30PM -0700, H. Peter Anvin wrote:
-> > On 08/29/2013 11:37 AM, Josh Boyer wrote:
-> > >>  	setup_efi_pci(boot_params);
-> > >> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-> > >> index c15ddaf..d35da96 100644
-> > >> --- a/arch/x86/include/uapi/asm/bootparam.h
-> > >> +++ b/arch/x86/include/uapi/asm/bootparam.h
-> > >> @@ -131,7 +131,8 @@ struct boot_params {
-> > >>  	__u8  eddbuf_entries;				/* 0x1e9 */
-> > >>  	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
-> > >>  	__u8  kbd_status;				/* 0x1eb */
-> > >> -	__u8  _pad5[3];					/* 0x1ec */
-> > >> +	__u8  secure_boot;				/* 0x1ec */
-> > >> +	__u8  _pad5[2];					/* 0x1ec */
-> > >>  	/*
-> > >>  	 * The sentinel is set to a nonzero value (0xff) in header.S.
-> > >>  	 *
-> > > 
-> > > You need to include the following chunk of code with this, otherwise the
-> > > secure_boot variable gets cleared.
-> > > 
-> > 
-> > Not really.
-> > 
-> > There are three cases:
-> > 
-> > 1. Boot stub only.  Here we do the right thing with the bootparams.
-> > 2. Boot loader bypasses the boot stub completely.  Here we MUST NOT do
-> >    what you suggest above.
-> > 3. Boot stub with a boot_params structure passed in.  Here we should
-> >    run sanitize_boot_params() (an inline for a reason) in the boot
-> >    stub, before we set the secure_boot field.  Once that is done, we
-> >    again don't need that modification.
-> 
-> OK.  If 3 works, then great.  All I know is that Fedora has been
-> carrying the above hunk for months and it was missing in this patch set.
-> So when I went to test it, the patches didn't do anything because the
-> secure_boot field was getting cleared.
-> 
-> I'm more than happy to try option 3, and I'll poke at it next week
-> unless someone beats me to it.
-> 
-> josh
+On 09/03/2013 04:24 PM, Pavel Emelyanov wrote:
+> On 09/03/2013 02:47 PM, Janani Venkataraman wrote:
+>> On 09/03/2013 04:01 PM, Pavel Emelyanov wrote:
+>>> On 09/03/2013 12:39 PM, Janani Venkataraman wrote:
+>>>> Hello,
+>>>>
+>>>> We are working on an infrastructure to create a system core file of a specific
+>>>> process at run-time, non-disruptively. It can also be extended to a case where
+>>>> a process is able to take a self-core dump.
+>>>
+>>> This is very close to what we're trying to do in CRIU. And although image files
+>>> containing info about processes are not ELF files, an ability to generate ELF-cores
+>>> out of existing CRIU images is one of the features that we were asked for.
+>>>
+>>>> 2) CRIU Approach :
+>>>>
+>>>> This makes use of the CRIU tool and checkpoints when a dump is called, collects
+>>>> the required details and continues the running process.
+>>>> * A self dump cannot be initiated using the command line CRIU which is similar
+>>>> to the limitation of gcore.
+>>>
+>>> This is something we're trying to fix at the moment, as people ask for 'self-dump'
+>>> ability as well. We plan to have this implemented in v0.8 (the v0.7 is coming out
+>>> today/tomorrow) in about a month.
+>>>
+>>> I can shed more light on this, if required.
+>>>
+>>>> * A system call to do the same is being implemented which would help us create
+>>>> a self dump.The system call is not upstream yet. We could explore that option as
+>>>> well.
+>>>
+>>> Thanks,
+>>> Pavel
+>>>
+>> Hi,
+>>
+>> I would like to know more about the "self-dump" ability of CRIU. This is
+>> the implementation using system calls if I am not wrong.
+>
+> Not exactly.
+>
+> In CRIU project since it's earliest days, we had to heavily patch the kernel
+> to make it provide additional APIs for getting more info about running tasks
+> and kernel objects. You can find all the patches we've created on the page
+> http://criu.org/Commits
+>
+> For almost all the new APIs we proposed the community asked us to restrict them
+> with CAP_SYS_ADMIN checks, so CRIU even for very basic stuff should be run from
+> root. The intention was to create the proof-of-concept with maximal and most
+> strict protection, and then think harder about less strict checks.
+>
+> With this the self-dump functionality cannot be implemented as just "CRIU in a
+> .so file", since this would only be usable by root processes. So, instead of
+> just wrapping the whole CRIU stuff into a library, we use a trickier approach.
+> It's described here -- http://criu.org/Self_dump
+>
+> Briefly -- we will implement the CRIU service, which is a daemon running from
+> root and listening on a unix socket. When a task wants to dump himself, it sends
+> to the service a "dump me" message. The service then goes and dumps the process.
+>
+> Thanks,
+> Pavel
+>
 
-The secure_boot field cleaned by sanitize_boot_params() when using grub2
-linuxefi to load efi stub kernel.
-I printed the boot_params->sentinel value, confirm this value is NOT 0
-when running grub2 linuxefi path, the entry point is efi_stub_entry. 
+Hi,
 
-On the other hand,
-the sentinel value is 0 when direct run efi stub kernel in UEFI shell,
-the secure_boot field can keep.
+What we require for our infrastructure is just a register snapshot and a
+memory dump.Do we require CAP_SYS privileges,if we want to dump the only
+regset and memory ?
 
-Does that mean grub2 should clean the sentinel value? or we move the get
-secure_boot value to efi_init()?
+Is it possible to librarize the dump generation routine so that it is
+transparent to the user. Also, ideally a single API for dump generation
+is preferred for generating the dump, irrespective of whether it is a
+self dump or not.
 
+One another aspect we might want to look at is the DoS attacks. Are
+there any cases where it is prone to such attacks.
 
-Thanks a lot!
-Joey Lee
+We also looked into the Self-dump page you had mentioned and we would 
+like to know more. Is there any additional information/prototype which 
+you share with us .Also would it be possible for us to test a few 
+patches for the self dump case ?
+
+If converting the dump,to ELF-core format from the existing CRIU Image 
+format has not yet been done,we would be happy to contribute towards it.
+
+Thanks,
+Janani
 
