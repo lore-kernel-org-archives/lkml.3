@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934377Ab3IDF4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:56:15 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:40898 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934288Ab3IDF4M (ORCPT
+	id S934356Ab3IDF4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:56:09 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:34972 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934288Ab3IDF4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:56:12 -0400
+	Wed, 4 Sep 2013 01:56:06 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, sachin.kamat@linaro.org, kyungmin.park@samsung.com,
         myungjoo.ham@samsung.com, ldewangan@nvidia.com, jack.yoo@maxim-ic.com,
         haojian.zhuang@marvell.com, jonghwa3.lee@samsung.com
-Subject: [PATCH 5/9] regulator: max8660: Use devm_regulator_register
-Date: Wed,  4 Sep 2013 11:07:58 +0530
-Message-Id: <1378273082-28305-5-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 3/9] regulator: max77693: Use devm_regulator_register
+Date: Wed,  4 Sep 2013 11:07:56 +0530
+Message-Id: <1378273082-28305-3-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1378273082-28305-1-git-send-email-sachin.kamat@linaro.org>
 References: <1378273082-28305-1-git-send-email-sachin.kamat@linaro.org>
@@ -26,85 +26,70 @@ devm_* simplifies the code.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/regulator/max8660.c |   29 ++++++-----------------------
- 1 file changed, 6 insertions(+), 23 deletions(-)
+ drivers/regulator/max77693.c |   28 ++++------------------------
+ 1 file changed, 4 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index d428ef9..a057342 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -352,7 +352,7 @@ static int max8660_probe(struct i2c_client *client,
- 	for (i = 0; i < pdata->num_subdevs; i++) {
+diff --git a/drivers/regulator/max77693.c b/drivers/regulator/max77693.c
+index ce4b96c..2054ae1 100644
+--- a/drivers/regulator/max77693.c
++++ b/drivers/regulator/max77693.c
+@@ -230,7 +230,7 @@ static int max77693_pmic_probe(struct platform_device *pdev)
+ 	struct max77693_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+ 	struct max77693_pmic_dev *max77693_pmic;
+ 	struct max77693_regulator_data *rdata = NULL;
+-	int num_rdata, i, ret;
++	int num_rdata, i;
+ 	struct regulator_config config;
  
- 		if (!pdata->subdevs[i].platform_data)
--			goto err_out;
-+			return ret;
+ 	num_rdata = max77693_pmic_init_rdata(&pdev->dev, &rdata);
+@@ -266,36 +266,17 @@ static int max77693_pmic_probe(struct platform_device *pdev)
+ 		config.init_data = rdata[i].initdata;
+ 		config.of_node = rdata[i].of_node;
  
- 		boot_on = pdata->subdevs[i].platform_data->constraints.boot_on;
- 
-@@ -378,7 +378,7 @@ static int max8660_probe(struct i2c_client *client,
- 		case MAX8660_V7:
- 			if (!strcmp(i2c_id->name, "max8661")) {
- 				dev_err(&client->dev, "Regulator not on this chip!\n");
--				goto err_out;
-+				return ret;
- 			}
- 
- 			if (boot_on)
-@@ -388,7 +388,7 @@ static int max8660_probe(struct i2c_client *client,
- 		default:
- 			dev_err(&client->dev, "invalid regulator %s\n",
- 				 pdata->subdevs[i].name);
--			goto err_out;
-+			return ret;
+-		max77693_pmic->rdev[i] = regulator_register(&regulators[id],
+-							    &config);
++		max77693_pmic->rdev[i] = devm_regulator_register(&pdev->dev,
++						&regulators[id], &config);
+ 		if (IS_ERR(max77693_pmic->rdev[i])) {
+-			ret = PTR_ERR(max77693_pmic->rdev[i]);
+ 			dev_err(max77693_pmic->dev,
+ 				"Failed to initialize regulator-%d\n", id);
+ 			max77693_pmic->rdev[i] = NULL;
+-			goto err;
++			return PTR_ERR(max77693_pmic->rdev[i]);
  		}
  	}
  
-@@ -401,33 +401,17 @@ static int max8660_probe(struct i2c_client *client,
- 		config.init_data = pdata->subdevs[i].platform_data;
- 		config.driver_data = max8660;
- 
--		rdev[i] = regulator_register(&max8660_reg[id], &config);
-+		rdev[i] = devm_regulator_register(&client->dev,
-+						  &max8660_reg[id], &config);
- 		if (IS_ERR(rdev[i])) {
--			ret = PTR_ERR(rdev[i]);
- 			dev_err(&client->dev, "failed to register %s\n",
- 				max8660_reg[id].name);
--			goto err_unregister;
-+			return PTR_ERR(rdev[i]);
- 		}
- 	}
- 
- 	i2c_set_clientdata(client, max8660);
  	return 0;
--
--err_unregister:
+- err:
 -	while (--i >= 0)
--		regulator_unregister(rdev[i]);
--err_out:
+-		regulator_unregister(max77693_pmic->rdev[i]);
+-
 -	return ret;
 -}
 -
--static int max8660_remove(struct i2c_client *client)
+-static int max77693_pmic_remove(struct platform_device *pdev)
 -{
--	struct max8660 *max8660 = i2c_get_clientdata(client);
+-	struct max77693_pmic_dev *max77693_pmic = platform_get_drvdata(pdev);
+-	struct regulator_dev **rdev = max77693_pmic->rdev;
 -	int i;
 -
--	for (i = 0; i < MAX8660_V_END; i++)
--		regulator_unregister(max8660->rdev[i]);
+-	for (i = 0; i < max77693_pmic->num_regulators; i++)
+-		if (rdev[i])
+-			regulator_unregister(rdev[i]);
+-
 -	return 0;
  }
  
- static const struct i2c_device_id max8660_id[] = {
-@@ -439,7 +423,6 @@ MODULE_DEVICE_TABLE(i2c, max8660_id);
+ static const struct platform_device_id max77693_pmic_id[] = {
+@@ -311,7 +292,6 @@ static struct platform_driver max77693_pmic_driver = {
+ 		   .owner = THIS_MODULE,
+ 		   },
+ 	.probe = max77693_pmic_probe,
+-	.remove = max77693_pmic_remove,
+ 	.id_table = max77693_pmic_id,
+ };
  
- static struct i2c_driver max8660_driver = {
- 	.probe = max8660_probe,
--	.remove = max8660_remove,
- 	.driver		= {
- 		.name	= "max8660",
- 		.owner	= THIS_MODULE,
 -- 
 1.7.9.5
 
