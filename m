@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760308Ab3IDLEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:04:24 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:51192 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab3IDLEX (ORCPT
+	id S1762333Ab3IDLU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:20:28 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:23216 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3IDLU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:04:23 -0400
-X-Nat-Received: from [202.181.97.72]:60692 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1378292644.22327
-To: ak@linux.intel.com, viro@ZenIV.linux.org.uk, geert@linux-m68k.org,
-        akpm@linux-foundation.org
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130903] module: broken module versions?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201308262306.DHB48401.OHFSVQJOtLFOMF@I-love.SAKURA.ne.jp>
-	<201308271923.FCG13057.QLVHOFFSMtJOFO@I-love.SAKURA.ne.jp>
-	<201309032031.BEH95862.VFSFMQLtOJFHOO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201309032031.BEH95862.VFSFMQLtOJFHOO@I-love.SAKURA.ne.jp>
-Message-Id: <201309042004.BIG69713.QLOFOFOVSMtFHJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 4 Sep 2013 20:04:03 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 04092013 #10991169, status: clean
+	Wed, 4 Sep 2013 07:20:27 -0400
+X-Spam-Score: -100.9
+Message-ID: <52271737.5040002@asianux.com>
+Date: Wed, 04 Sep 2013 19:19:19 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jiri Kosina <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
+ and "uapi/linux/Kbuild"
+References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com> <52268800.2010200@asianux.com> <CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com> <5226EAAE.6090500@asianux.com> <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com> <5226F9BF.8040304@asianux.com> <CAMuHMdWc3mtva92qDy4j6iUhQc5grHA1-5=vC4iXZoSyFxB4cw@mail.gmail.com> <5226FF86.6030504@asianux.com>
+In-Reply-To: <5226FF86.6030504@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 09/04/2013 05:38 PM, Chen Gang wrote:
+> On 09/04/2013 05:27 PM, Geert Uytterhoeven wrote:
+>> On Wed, Sep 4, 2013 at 11:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>> Hmm... why we need "uapi/linux/" ?  (I can not find some related
+>>>>> documents, so I have to 'guess').
+>>>>
+>>>> The "uapi" subdirectories are there to distinguish userspace headers from
+>>>> kernelspace headers, and allow both to live in the kernel source tree.
+>>>>
+>>>> When running "make headers_install", the (processed) headers in the
+>>>> various "uapi" subdirectories are copied to /usr/include.
+>>>> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
+>>>> In userspace there are no "uapi" subdirectories anymore.
+>>>>
+>>>
+>>> Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
+>>>
+>>> Are they also truly still "Userspace API" but which need not distinguish
+>>> ? (at least, it seems that idea is not quite good).
+>>>
+>>> Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
+>>> for compatible (originally they are here, and now we have to follow, it
+>>> is no reason to change if not find related critical issues)?
+>>
+>> All uapi files are installed, a.o. /usr/include/scsi/, /usr/include/video/, ...
+>>
+> 
+> Oh, sorry, I misunderstand your original mail contents.
+> 
+>> Historically, everything under "include" in the kernel source tree was
+>> installed in /usr/include/, after (semi)manual cleanup.
+>> Since the uapi split, everything is handled automatically.
+>> Because of compatibility reasons (do not break userspace), paths had to
+>> stay the same.
+>>
+> 
+> At least for me, that sounds reasonable.
+> 
+> Hmm... when some members need add a new Userspace API. I guess:
+> 
+>   if it is related with one of existent "uapi/*" sub-directory (except "uapi/linux"), they need put the file(or directory) under the related "uapi/*",
+> 
+>   if can not find existent "uapi/*" sub-directory, they need put the file(or directory) under "uapi/linux/*".
+> 
 
-Tetsuo Handa wrote:
-> I tried further debugging but not yet successful.
+Hmm... if "uapi/*" are really only for compatible, better to keep them
+no touch, that means: should always add new file(or directory) under
+"uapi/linux/" sub-directory (even if they are related with "uapi/*").
 
-I found what was wrong.
 
-Bad kernel config contained
+Thanks.
 
-  CONFIG_PHYSICAL_START=0x1000000
-  CONFIG_PHYSICAL_ALIGN=0x100000
+> Does it sound reasonable ?
+> 
+> 
+> Thanks.
+> 
+>> Gr{oetje,eeting}s,
+>>
+>>                         Geert
+>>
+>> --
+>> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>
+>> In personal conversations with technical people, I call myself a hacker. But
+>> when I'm talking to journalists I just say "programmer" or something like that.
+>>                                 -- Linus Torvalds
+>>
+>>
+> 
+> 
 
-whereas good kernel config contained
 
-  CONFIG_PHYSICAL_START=0x1000000
-  CONFIG_PHYSICAL_ALIGN=0x1000000
-
-. I think that there is no constraint checking for these values and resulted in
-overlaying something on the kcrctab table.
-
-Now linux-next-20130903 works fine. Thank you.
+-- 
+Chen Gang
