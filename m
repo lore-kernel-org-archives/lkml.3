@@ -1,107 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761672Ab3IDBbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:31:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34605 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756460Ab3IDBbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:31:00 -0400
-Message-ID: <1378258258.7347.48.camel@joe-AO722>
-Subject: Re: [E1000-devel] [PATCH 0/4] i40e: Neatening and object size
- reductions
-From: Joe Perches <joe@perches.com>
-To: "Nelson, Shannon" <shannon.nelson@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+	id S934161Ab3IDBis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:38:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4677 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755007Ab3IDBiq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 21:38:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1017,1367996400"; 
+   d="scan'208";a="290510330"
+From: "Nelson, Shannon" <shannon.nelson@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
         "e1000-devel@lists.sourceforge.net" 
 	<e1000-devel@lists.sourceforge.net>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Sep 2013 18:30:58 -0700
-In-Reply-To: <FC41C24E35F18A40888AACA1A36F3E416C61C0E5@FMSMSX102.amr.corp.intel.com>
+Subject: RE: [E1000-devel] [PATCH 0/4] i40e: Neatening and object size
+ reductions
+Thread-Topic: [E1000-devel] [PATCH 0/4] i40e: Neatening and object size
+ reductions
+Thread-Index: AQHOpdX1NRXzP6/TyEu240MAQhoiJZm0lXnQgACxAwD//4tJ8A==
+Date: Wed, 4 Sep 2013 01:38:43 +0000
+Message-ID: <FC41C24E35F18A40888AACA1A36F3E416C61C11C@FMSMSX102.amr.corp.intel.com>
 References: <cover.1377903831.git.joe@perches.com>
 	 <FC41C24E35F18A40888AACA1A36F3E416C61C0E5@FMSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1378258258.7347.48.camel@joe-AO722>
+In-Reply-To: <1378258258.7347.48.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 01:00 +0000, Nelson, Shannon wrote:
-
-Hi Shannon.
-
-> > -----Original Message----- > From: Joe Perches
-> [mailto:joe@perches.com] > Sent: Friday, August 30, 2013 4:06 PM > >
-> Just some potential cleanings...
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, September 03, 2013 6:31 PM
 > 
-> >   i40e: Whitespace cleaning
+> On Wed, 2013-09-04 at 01:00 +0000, Nelson, Shannon wrote:
 > 
-> Hmmm, we hadn't noticed the new experimental "--fix" option before. 
-> There are a lot of good suggestions there, but obviously it needs a lot
-> of reading and tweaking before it can be used.  There are cases here
-> where function call parameters are adjusted to line up with the opening
-> '(' but that pushes the parameter(s) beyond 80 columns - we're trying
-> to stay within the 80 column line and checkpatch clean.  Also, there
-> are several where the first continued parameter line indent is changed
-> but the next line or two are not.
->
-> We'll spend time going through these and try to take care of what makes
-> sense.
-
-Swell.  All these are your choice to fix as you want.
-
-Exceeding 80 columns doesn't bother me much.
-Keeping alignment appropriate for multi-line statements
-needs work inside checkpatch.  I played with it a bit
-but it's unfortunately complicated by intermixed
-insertions and deletions.
-
-> >   i40e: Add and use pf_<level>
+> Hi Shannon.
 > 
-> We had considered this kind of macro awhile ago, but nixed it for a few
-> different reasons, but primarily because it seems like
-> yet-another-print-macro and not necessarily worth the effort.
+> > > -----Original Message----- > From: Joe Perches
+> > [mailto:joe@perches.com] > Sent: Friday, August 30, 2013 4:06 PM > >
+> > Just some potential cleanings...
+> >
+> > >   i40e: Whitespace cleaning
+> >
+> > Hmmm, we hadn't noticed the new experimental "--fix" option before.
+> > There are a lot of good suggestions there, but obviously it needs a
+> lot
+> > of reading and tweaking before it can be used.  There are cases here
+> > where function call parameters are adjusted to line up with the
+> opening
+> > '(' but that pushes the parameter(s) beyond 80 columns - we're trying
+> > to stay within the 80 column line and checkpatch clean.  Also, there
+> > are several where the first continued parameter line indent is changed
+> > but the next line or two are not.
+> >
+> > We'll spend time going through these and try to take care of what
+> makes
+> > sense.
 > 
-> >   i40e: pf_<level> remove "%s: " ... __func__
+> Swell.  All these are your choice to fix as you want.
 > 
-> We're beginning to remove many of the __func__ uses, so these prints
-> are no longer all doing the __func__ thing.  We originally had them
-> there for early development and debugging and are currently removing
-> them from the normal path messages.
+> Exceeding 80 columns doesn't bother me much.
 
-Fine by me.  I think __func__ is nearly always pretty
-useless myself.
+We should perhaps become a little more flexible ourselves, but we've finally got a good process going internally, including this as a check.  I don't dare disturb the machine now that it is working :-).
 
-> >   i40e: Convert pf_<level> macros to functions
+> Keeping alignment appropriate for multi-line statements
+> needs work inside checkpatch.  I played with it a bit
+> but it's unfortunately complicated by intermixed
+> insertions and deletions.
+
+Yeah, it all gets a little funky after a while.
+
 > 
-> Doesn't this create a problem with polluting the kernel namespace? 
-> These don't apply to any other driver.  I suppose we could lessen the
-> namespace problem with i40e_ prefix, but I'm still not sold on it.  I
-> suspect we can still get much of the text savings replacing the
-> __func__ with __builtin_return_address(0) where needed, and remove them
-> where no longer needed.  Does that work for you? 
-
-I think you could just as soon whatever combinations of the
-other standard logging mechanisms without using pf_<level>
-
-	wiphy_<level>
-	netif_<level>
-	netdev_<level>
-	dev_<level>
-	pr_<level>
-
-as appropriate.  I did that only because there was ~10K
-of what I think of as not too useful function names out
-of a defconfig size of 140k.
-
-> >   i40e: Fix 32 bit shift compilation warnings
+> > >   i40e: Add and use pf_<level>
+> >
+> > We had considered this kind of macro awhile ago, but nixed it for a
+> few
+> > different reasons, but primarily because it seems like
+> > yet-another-print-macro and not necessarily worth the effort.
+> >
+> > >   i40e: pf_<level> remove "%s: " ... __func__
+> >
+> > We're beginning to remove many of the __func__ uses, so these prints
+> > are no longer all doing the __func__ thing.  We originally had them
+> > there for early development and debugging and are currently removing
+> > them from the normal path messages.
 > 
-> Sure.
+> Fine by me.  I think __func__ is nearly always pretty
+> useless myself.
 
-I think you should use the kernel.h standard macros
-for lower_32_bits and upper_32_bits instead.
+It was useful for a while, but it is time to be pulling it out.
 
-cheers, Joe
+> 
+> > >   i40e: Convert pf_<level> macros to functions
+> >
+> > Doesn't this create a problem with polluting the kernel namespace?
+> > These don't apply to any other driver.  I suppose we could lessen the
+> > namespace problem with i40e_ prefix, but I'm still not sold on it.  I
+> > suspect we can still get much of the text savings replacing the
+> > __func__ with __builtin_return_address(0) where needed, and remove
+> them
+> > where no longer needed.  Does that work for you?
+> 
+> I think you could just as soon whatever combinations of the
+> other standard logging mechanisms without using pf_<level>
+> 
+> 	wiphy_<level>
+> 	netif_<level>
+> 	netdev_<level>
+> 	dev_<level>
+> 	pr_<level>
+> 
+> as appropriate.  I did that only because there was ~10K
+> of what I think of as not too useful function names out
+> of a defconfig size of 140k.
+
+Yes, and I think removing much of the __func__ or using __builtin_return_address(0) will help.
+
+> 
+> > >   i40e: Fix 32 bit shift compilation warnings
+> >
+> > Sure.
+> 
+> I think you should use the kernel.h standard macros
+> for lower_32_bits and upper_32_bits instead.
+
+Yep.
+
+> 
+> cheers, Joe
 
