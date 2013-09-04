@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762151Ab3IDGta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 02:49:30 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43262 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762139Ab3IDGt0 (ORCPT
+	id S1762163Ab3IDGuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 02:50:35 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64946 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762068Ab3IDGtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 02:49:26 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-56-5226d7f47110
-From: Namhyung Kim <namhyung@kernel.org>
-To: Hemant <hkshaw@linux.vnet.ibm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
-Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
-References: <20130903072944.4793.93584.stgit@hemant-fedora>
-	<20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com>
-	<5225E2C5.3080001@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 15:49:24 +0900
-In-Reply-To: <5225E2C5.3080001@linux.vnet.ibm.com> (Hemant's message of "Tue,
-	03 Sep 2013 18:53:17 +0530")
-Message-ID: <87a9jtt72j.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 4 Sep 2013 02:49:09 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, sachin.kamat@linaro.org, nm@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
+        s.hauer@pengutronix.de, marek.vasut@gmail.com,
+        Nancy.Chen@freescale.com
+Subject: [PATCH 3/7] regulator: mc13783: Use devm_regulator_register
+Date: Wed,  4 Sep 2013 12:00:59 +0530
+Message-Id: <1378276263-10735-3-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
-> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
->> (2013/09/03 17:25), Ingo Molnar wrote:
->>> * Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com> wrote:
->>>
->>>> This series adds support to perf to list and probe into the SDT markers.
->>>> The first patch implements listing of all the SDT markers present in
->>>> the ELFs (executables or libraries). The SDT markers are present in the
->>>> .note.stapsdt section of the elf. That section can be traversed to list
->>>> all the markers. Recognition of markers follows the SystemTap approach.
->>>>
->>>> The second patch will allow perf to probe into these markers. This is
->>>> done by writing the marker name and its offset into the
->>>> uprobe_events file in the tracing directory.
->>>> Then, perf tools can be used to analyze perf.data file.
->>> Please provide a better high level description that explains the history
->>> and scope of SDT markers, how SDT markers get into binaries, how they can
->>> be used for probing, a real-life usage example that shows something
->>> interesting not possible via other ways, etc.
->> Indeed, and also I'd like to know what versions of SDT this support,
->> and where we can see the technical document of that. As far as I know,
->> the previous(?) SDT implementation also involves ugly semaphores.
->> Have that already gone?
+devm_* simplifies the code.
 
-It seems it's not. I see the SDT v3 document still mentions semaphores.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/regulator/mc13783-regulator.c |   25 ++++---------------------
+ 1 file changed, 4 insertions(+), 21 deletions(-)
 
+diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
+index 5ff99d2..f036b26 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -400,7 +400,7 @@ static int mc13783_regulator_probe(struct platform_device *pdev)
+ 		dev_get_platdata(&pdev->dev);
+ 	struct mc13xxx_regulator_init_data *mc13xxx_data;
+ 	struct regulator_config config = { };
+-	int i, ret, num_regulators;
++	int i, num_regulators;
+ 
+ 	num_regulators = mc13xxx_get_num_regulators_dt(pdev);
+ 
+@@ -444,32 +444,16 @@ static int mc13783_regulator_probe(struct platform_device *pdev)
+ 		config.driver_data = priv;
+ 		config.of_node = node;
+ 
+-		priv->regulators[i] = regulator_register(desc, &config);
++		priv->regulators[i] = devm_regulator_register(&pdev->dev, desc,
++							      &config);
+ 		if (IS_ERR(priv->regulators[i])) {
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 				mc13783_regulators[i].desc.name);
+-			ret = PTR_ERR(priv->regulators[i]);
+-			goto err;
++			return PTR_ERR(priv->regulators[i]);
+ 		}
+ 	}
+ 
+ 	return 0;
+-err:
+-	while (--i >= 0)
+-		regulator_unregister(priv->regulators[i]);
+-
+-	return ret;
+-}
+-
+-static int mc13783_regulator_remove(struct platform_device *pdev)
+-{
+-	struct mc13xxx_regulator_priv *priv = platform_get_drvdata(pdev);
+-	int i;
+-
+-	for (i = 0; i < priv->num_regulators; i++)
+-		regulator_unregister(priv->regulators[i]);
+-
+-	return 0;
+ }
+ 
+ static struct platform_driver mc13783_regulator_driver = {
+@@ -477,7 +461,6 @@ static struct platform_driver mc13783_regulator_driver = {
+ 		.name	= "mc13783-regulator",
+ 		.owner	= THIS_MODULE,
+ 	},
+-	.remove		= mc13783_regulator_remove,
+ 	.probe		= mc13783_regulator_probe,
+ };
+ 
+-- 
+1.7.9.5
 
-> This link shows an example of marker probing with Systemtap:
-> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
-
-I think the link below would be more helpful for us :)
-
-http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
-
-Thanks,
-Namhyung
-
->
-> - Markers in binaries :
-> These SDT markers are present in the ELF in the section named
-> ".note.stapsdt".
-> Here, the name of the marker, its provider, type, location, base
-> address, semaphore address, arguments are present.
-> We can retrieve these values using the members name_off and desc_off in
-> Nhdr structure. If these are not enabled, they are present in the ELF
-> as nop.
