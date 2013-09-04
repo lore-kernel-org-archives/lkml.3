@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab3IDSv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:51:27 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:41349 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007Ab3IDSvZ (ORCPT
+	id S1760105Ab3IDSwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:52:01 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:59019 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759751Ab3IDSv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:51:25 -0400
-Date: Wed, 4 Sep 2013 14:51:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <20130904185116.GF26609@mtj.dyndns.org>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
- <20130903141824.GD10522@htj.dyndns.org>
- <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
- <20130903182731.GA27092@mtj.dyndns.org>
- <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
- <20130904145559.GB25788@mtj.dyndns.org>
- <20130904161442.GE8726@dhcp-26-207.brq.redhat.com>
- <20130904180607.GD26609@mtj.dyndns.org>
- <20130904184715.GA24341@dhcp-26-207.brq.redhat.com>
+	Wed, 4 Sep 2013 14:51:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904184715.GA24341@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5226FAE1.5070201@fb.com>
+References: <5226FAE1.5070201@fb.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 4 Sep 2013 11:51:38 -0700
+Message-ID: <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com>
+Subject: Re: clock_gettime_ns
+To: Arun Sharma <asharma@fb.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
+        John Stultz <johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 08:47:16PM +0200, Alexander Gordeev wrote:
-> On Wed, Sep 04, 2013 at 02:06:07PM -0400, Tejun Heo wrote:
-> > I don't think it's necessary / a good idea to try to support
-> > everything.  Just following the spec would be fine.  If that doesn't
-> > work for too many devices, maybe just do one fallback?
-> 
-> Calling pci_enable_msi_block_part() in a loop may seem not that terrible
-> if you think of the original interface - pci_enable_msi_block(). If we
-> were to enable multiple MSIs using that one we still had to use it pretty
-> much the same way ;)
+I think that most of the hangup was a lack of agreement on how the API
+should work wrt leap seconds.
 
-I don't know.  The thing is, do we even want to meddle with
-controllers which only accept a value which isn't the value specified
-in the spec or the maximum value described as supported?  It's icky
-and we are far better of playing it safe.  This has the possibility of
-breaking boot on many configurations.
+I've always thought that the Right Way to represent a UTC time is
+nanoseconds since some epoch, where every potential leap second
+counts.
 
-Thanks.
+Pros:
+ - Unambiguously convertible to and from
+year/month/day/hour/minute/second/nanosecond.
+ - Monotonic
+ - Compact
+
+Cons:
+ - Computing differences between timestamps requires a table.  (Note:
+y/m/d/h/m/s/ns has the same problem.)
+ - Weird: no one does this
+ - If you naively subtract times, you end up with jumps forward.  (But
+jumps forward are much less likely to break things than jumps
+backwards.)
+ - Almost, but not quite, compatible with timespec, so it could cause confusion.
+
+If someone wants a hard problem, find a way to implement clock_gettime
+that almost never spins or otherwise block and is continuous.  I've
+thought about it a bit and have something that almost works.
+
+--Andy
+
+On Wed, Sep 4, 2013 at 2:18 AM, Arun Sharma <asharma@fb.com> wrote:
+> A couple of years ago Andy posted this patch series:
+>
+> http://thread.gmane.org/gmane.linux.kernel/1233209/
+>
+> These patches have been in use at facebook for a couple of years and along
+> with a vDSO implementation of thread_cpu_time(), they have proven useful for
+> our profilers.
+>
+> I didn't see any arguments against this patch series. Did I miss some
+> discussion on the topic?
+>
+>  -Arun
+
+
 
 -- 
-tejun
+Andy Lutomirski
+AMA Capital Management, LLC
