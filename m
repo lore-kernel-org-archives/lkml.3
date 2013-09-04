@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762659Ab3IDMLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:11:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757110Ab3IDMLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:11:15 -0400
-Date: Wed, 4 Sep 2013 14:08:58 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH -tip] sched/cputime: do not scale when utime == 0
-Message-ID: <20130904120857.GB2564@redhat.com>
-References: <20130820154257.GD17441@somewhere>
- <20130821153957.GA2969@swordfish.minsk.epam.com>
- <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902140015.GB2368@swordfish.minsk.epam.com>
- <20130903084306.GA2694@redhat.com>
- <20130903180912.GA2340@swordfish>
- <20130903183229.GB30757@gmail.com>
+	id S1762671Ab3IDMLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:11:24 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44698 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756278Ab3IDMLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:11:21 -0400
+Message-ID: <52272365.8070909@hurleysoftware.com>
+Date: Wed, 04 Sep 2013 08:11:17 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903183229.GB30757@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Josef Bacik <jbacik@fusionio.com>
+CC: Michel Lespinasse <walken@google.com>, linux-btrfs@vger.kernel.org,
+        mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rwsem: add rwsem_is_contended
+References: <1377872041-390-1-git-send-email-jbacik@fusionio.com> <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com> <20130903154710.GB15634@localhost.localdomain>
+In-Reply-To: <20130903154710.GB15634@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scale_stime() silently assumes that stime < rtime, otherwise when
-stime == rtime and both values are big (operations on them do not fit
-in 32 bits), the resulting scaling stime can be bigger than rtime.
-In consequence utime = rtime - stime results in negative value.
+On 09/03/2013 11:47 AM, Josef Bacik wrote:
+> On Sun, Sep 01, 2013 at 01:32:36AM -0700, Michel Lespinasse wrote:
+>> Hi Josef,
+>>
+>> On Fri, Aug 30, 2013 at 7:14 AM, Josef Bacik <jbacik@fusionio.com> wrote:
+>>> Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
+>>> read lock on this rwsem while they scan the extent tree, and if need_resched()
+>>> they will drop the lock and schedule.  The transaction commit needs to take a
+>>> write lock for this rwsem for a very short period to switch out the commit
+>>> roots.  If there are a lot of threads doing this caching operation we can starve
+>>> out the committers which slows everybody out.  To address this we want to add
+>>> this functionality to see if our rwsem has anybody waiting to take a write lock
+>>> so we can drop it and schedule for a bit to allow the commit to continue.
+>>> Thanks,
+>>>
+>>> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+>>
+>> FYI, I once tried to introduce something like this before, but my use
+>> case was pretty weak so it was not accepted at the time. I don't think
+>> there were any objections to the API itself though, and I think it's
+>> potentially a good idea if you use case justifies it.
+>>
+>> Two comments:
+>>
+>> - Note that there are two rwsem implementations - if you are going to
+>> add functionality to rwsem.h you want to add the same functionality in
+>> rwsem-spinlock.h as well.
+>>
+>
+> Sure thing.
+>
+>> - I would prefer if you could avoid taking the wait_lock in your
+>> rwsem.h implementation. In your use case (read lock is known to be
+>> held), checking for sem->count < 0 would be sufficient to indicate a
+>> writer is queued (or getting onto the queue). In the general case,
+>> some architectures have the various values set up so that
+>> RWSEM_WAITING_BIAS != RWSEM_ACTIVE_WRITE_BIAS - for these
+>> architectures at least, you can check for waiters by looking if the
+>> lowest bit of RWSEM_WAITING_BIAS is set in sem->count.
+>
+> Question about this one, I can't just do
+>
+> if (sem->count < 0)
+>
+> since each arch has their own atomic way of looking at count, so I'd have to add
+> something to do just a normal read of count for each arch and call that wouldn't
+> I?
 
-Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
- kernel/sched/cputime.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+Reading sem->count is atomic.
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index ace34f9..9994791 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -551,10 +551,7 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, utime, total;
--
--	stime = curr->stime;
--	total = stime + curr->utime;
-+	cputime_t rtime, stime, utime;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -576,13 +573,19 @@ static void cputime_adjust(struct task_cputime *curr,
- 	if (prev->stime + prev->utime >= rtime)
- 		goto out;
- 
--	if (total) {
-+	stime = curr->stime;
-+	utime = curr->utime;
-+
-+	if (utime == 0) {
-+		stime = rtime;
-+	} else if (stime == 0) {
-+		utime = rtime;
-+	} else {
-+		cputime_t total = stime + utime;
-+
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
- 		utime = rtime - stime;
--	} else {
--		stime = rtime;
--		utime = 0;
- 	}
- 
- 	/*
--- 
-1.7.1
+For that matter, in your particular use case (which is more heuristic), you
+could perform the list_empty() check without acquiring the wait_lock.
+
+Regards,
+Peter Hurley
+
+
 
