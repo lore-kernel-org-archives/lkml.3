@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965147Ab3IDRx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:53:58 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:49242 "HELO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S964786Ab3IDRxv (ORCPT
+	id S965165Ab3IDRzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:55:04 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:50831 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762923Ab3IDRzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:53:51 -0400
+	Wed, 4 Sep 2013 13:55:02 -0400
+Message-ID: <522773EF.8080701@gmail.com>
+Date: Wed, 04 Sep 2013 11:54:55 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVvB+GMwMrP2mieXbqAM7mn3nF_1ezbiYVBLKdsL5aCJg@mail.gmail.com>
-References: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
- <CAEP_g=-XvRiHPzSAp2rgC9Hxdd+pGEHvSTEJ1A1SkWnk1-6xZA@mail.gmail.com>
- <20130829.181001.145658561677052552.davem@davemloft.net> <CAEP_g=-XxgK9HVxvcaW3RS2zfa+77pB4cqfLFC0rcV7QJc+2BQ@mail.gmail.com>
- <CAMuHMdU3M9uUFKd3EQ0HbcAvf5e62PA4NJG_mQHhpvZwFJnUWQ@mail.gmail.com>
- <CAEP_g=-BWdWJ5WtNy0=Eq8GJp84i88QbGq-gQcANBhCKajcJsQ@mail.gmail.com> <CAMuHMdVvB+GMwMrP2mieXbqAM7mn3nF_1ezbiYVBLKdsL5aCJg@mail.gmail.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Wed, 4 Sep 2013 10:53:29 -0700
-Message-ID: <CAEP_g=8Q6-i+wSfdcW4X1uYm2_8hqmE3R3_EC7PpHNbkpxK82A@mail.gmail.com>
-Subject: Re: [-next] openvswitch BUILD_BUG_ON failed
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Miller <davem@davemloft.net>, Andy Zhou <azhou@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: latest perf code fails to parse existing data file
+References: <5225051C.3030608@gmail.com> <5225844E.3090700@intel.com> <5225DAFB.1070406@gmail.com> <5225E320.8090307@intel.com> <5225E815.4010705@gmail.com>
+In-Reply-To: <5225E815.4010705@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 11:55 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Tue, Sep 3, 2013 at 11:44 PM, Jesse Gross <jesse@nicira.com> wrote:
->> On Sat, Aug 31, 2013 at 5:11 AM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> On Fri, Aug 30, 2013 at 3:11 AM, Jesse Gross <jesse@nicira.com> wrote:
->>>> On Thu, Aug 29, 2013 at 3:10 PM, David Miller <davem@davemloft.net> wrote:
->>>>> From: Jesse Gross <jesse@nicira.com>
->>>>> Date: Thu, 29 Aug 2013 14:42:22 -0700
->>>>>
->>>>>> On Thu, Aug 29, 2013 at 2:21 PM, Geert Uytterhoeven
->>>>>> <geert@linux-m68k.org> wrote:
->>>>>>> However, I have some doubts about other alignment "enforcements":
->>>>>>>
->>>>>>> "__aligned(__alignof__(long))" makes the whole struct aligned to the
->>>>>>> alignment rule for "long":
->>>>>>>    1. This is only 2 bytes on m68k, i.e. != sizeof(long).
->>>>>>>    2. This is 4 bytes on many 32-bit platforms, which may be less than the
->>>>>>>       default alignment for "__be64" (cfr. some members of struct
->>>>>>>       ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
->>>>>>
->>>>>> Do any of those 32-bit architectures actually care about alignment of
->>>>>> 64 bit values? On 32-bit x86, a long is 32 bits but the alignment
->>>>>> requirement of __be64 is also 32 bit.
->>>>>
->>>>> All except x86-32 do, it is in fact the odd man out with respect to this
->>>>> issue.
->>>>
->>>> Thanks, good to know.
->>>>
->>>> Andy, do you want to modify your patch to just drop the alignment
->>>> specification as Geert suggested (but definitely keep the new build
->>>> assert that you added)? It's probably better to just send the patch to
->>>> netdev (against net-next) as well since you'll likely get better
->>>> comments there and we can fix this faster if you cut out the
->>>> middleman.
->>>
->>> Why do you want to keep the build asserts?
->>> Is this in-memory structure also transfered as-is over the network?
->>> If yes, you definitely want the padding.
+On 9/3/13 7:45 AM, David Ahern wrote:
+> On 9/3/13 7:24 AM, Adrian Hunter wrote:
+>> On 03/09/13 15:50, David Ahern wrote:
+>>> Kernel version? Is your kernel side support there?
 >>
->> Well they caught this bug and really don't cost anything.
+>> The kernel version is the same as the perf version i.e. 3.9
 >>
->>> Nevertheless, as the struct contains u32 and even __be64 members, the
->>> size of the struct will always be a multiple of the alignment unit for
->>> 64-bit quantities (and thus also for long), as per the C standard.
->>> Hence the check
 >>>
->>>     BUILD_BUG_ON(sizeof(struct sw_flow_key) % __alignof__(long));
->>>
->>> will only catch bad compiler bugs or people adding __packed to the struct.
+>>> For me data was collected on 2.6.34 about a week ago. Processed fine
+>>> up to
+>>> the point of this patch getting added.
 >>
->> It's possible that we might want to pack the structure in the future.
->> More generally though, the contents of the struct is really
->> independent of the alignment requirements here because we're accessing
->> it as an array of bytes in long-sized chunks so implicitly depending
->> on the size of the members is not that great.
+>> Is it only "perf trace" that fails or does "perf script" fail too?
 >
-> So you're accessing it as an array of bytes in long-sized chunks.
-> What are you doing with this accessed data?
-> Transfering over the network?
-> Storing on disk?
-> Then it must be portable across machines and architectures, right?
+> Both throw the same error. Command line used to create the file:
+>    perf record -e raw_syscalls:* -e sched:* -p 2271 -g -- sleep 5
 
-It's just an in-memory hash table lookup. No one else ever sees it.
+Seems to be an artifact of older kernels. Definitely occurs for 2.6.34 
+and WindRiver Linux 4. Also reproduced with vanilla 2.6.35. Use newer 
+perf command -- e.g., 3.11 -- to record events and then try to analyze 
+with Linus', Arnaldo's or Ingo's latest branch which now have this 
+patch. Given the breakage it needs to be either fixed or reverted before 
+3.12
+
+David
+
