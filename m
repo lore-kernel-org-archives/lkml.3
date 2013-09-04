@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762731Ab3IDOYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:24:52 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52421 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1762603Ab3IDOYv (ORCPT
+	id S934920Ab3IDOZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:25:35 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:40105 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756310Ab3IDOZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:24:51 -0400
-Date: Wed, 4 Sep 2013 15:24:22 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devicetree@vger.kernel.org"@arm.com
-Subject: Re: [PATCH] Documentation: dt: i2c: Add LPS001WP to the Trivial
- Devices list
-Message-ID: <20130904142422.GM18206@e106331-lin.cambridge.arm.com>
-References: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
+	Wed, 4 Sep 2013 10:25:34 -0400
+X-Auth-Info: wgndIlc2L50jubmXpfJca0vp3CSEhGJisM+TA0wuww0=
+From: Marek Vasut <marex@denx.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 1/7] regulator: anatop-regulator: Use devm_regulator_register
+Date: Wed, 4 Sep 2013 16:25:25 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, nm@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
+        s.hauer@pengutronix.de, Nancy.Chen@freescale.com
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309041625.25514.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Dear Sachin Kamat,
 
-Cheers for producing a binding.
-
-On Wed, Sep 04, 2013 at 02:50:55PM +0100, Lee Jones wrote:
-> LPS001WP is a Pressure and Temperature sensor.
+> devm_* simplifies the code.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+
+Makes sense
+
+Acked-by: Marek Vasut <marex@denx.de>
+
 > ---
->  Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
->  1 file changed, 1 insertion(+)
+> This series is compile tested.
+> ---
+>  drivers/regulator/anatop-regulator.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> index ad6a738..6038807e6 100644
-> --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> @@ -57,6 +57,7 @@ st-micro,24c256		i2c serial eeprom  (24cxx)
->  stm,m41t00		Serial Access TIMEKEEPER
->  stm,m41t62		Serial real-time clock (RTC) with alarm
->  stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
-> +stm,lps001wp		Pressure and Temperature sensor
-
-As I hinted at in the other thread [1], I don't think this can be
-documented as a trivial binding -- the driver expects a couple of
-regulators which should be described in the binding (or the driver
-shouldn't be using them...).
-
-Also, in the other thread the "st," prefix was used [2], while "stm," is
-listed at the prefix in the binding. As far as I can see, "st," should
-be used, as it's in vendor-prefixes and "stm," is not.
-
-I'm happy to cook up a patch adding deprecation notes and corrected
-strings for the existing incorrect "stm," bindings.
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/196561.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/196558.html
-
-Thanks,
-Mark.
-
->  taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
->  ti,tsc2003		I2C Touch-Screen Controller
->  ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
-> -- 
-> 1.8.1.2
+> diff --git a/drivers/regulator/anatop-regulator.c
+> b/drivers/regulator/anatop-regulator.c index 0d4a8cc..e42bfd1 100644
+> --- a/drivers/regulator/anatop-regulator.c
+> +++ b/drivers/regulator/anatop-regulator.c
+> @@ -200,7 +200,7 @@ static int anatop_regulator_probe(struct
+> platform_device *pdev) config.regmap = sreg->anatop;
 > 
+>  	/* register regulator */
+> -	rdev = regulator_register(rdesc, &config);
+> +	rdev = devm_regulator_register(dev, rdesc, &config);
+>  	if (IS_ERR(rdev)) {
+>  		dev_err(dev, "failed to register %s\n",
+>  			rdesc->name);
+> @@ -223,7 +223,6 @@ static int anatop_regulator_remove(struct
+> platform_device *pdev) struct anatop_regulator *sreg =
+> rdev_get_drvdata(rdev);
+>  	const char *name = sreg->name;
 > 
+> -	regulator_unregister(rdev);
+>  	kfree(name);
+> 
+>  	return 0;
+
+Best regards,
+Marek Vasut
