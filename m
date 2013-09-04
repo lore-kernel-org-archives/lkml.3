@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761668Ab3IDUS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:18:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42495 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759617Ab3IDUS4 (ORCPT
+	id S1760101Ab3IDUYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:24:17 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:57247 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab3IDUYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:18:56 -0400
-Message-ID: <522795AB.3060303@wwwdotorg.org>
-Date: Wed, 04 Sep 2013 14:18:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 16:24:16 -0400
 MIME-Version: 1.0
-To: Lars Poeschel <poeschel@lemonage.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <4094364.ACYUvMRRNa@lem-wkst-02> <52261C5C.9000102@wwwdotorg.org> <5034887.FlGzi4P5YS@lem-wkst-02>
-In-Reply-To: <5034887.FlGzi4P5YS@lem-wkst-02>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com>
+References: <5226FAE1.5070201@fb.com> <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 4 Sep 2013 13:23:54 -0700
+Message-ID: <CALCETrVdAGbp-ogvideZ6GiDVu8W3v+6Z=hJSrr+62U50HG8wg@mail.gmail.com>
+Subject: Re: clock_gettime_ns
+To: John Stultz <john.stultz@linaro.org>
+Cc: Arun Sharma <asharma@fb.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kumar Sundararajan <kumar@fb.com>,
+        Richard Cochran <richardcochran@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 03:21 AM, Lars Poeschel wrote:
-> On Wednesday 04 September 2013 11:29:00, Stephen Warren wrote:
->> On 09/02/2013 03:38 AM, Lars Poeschel wrote:
->>> Am Freitag, 30. August 2013, 13:53:45 schrieb Stephen Warren:
->> ...
+On Wed, Sep 4, 2013 at 12:17 PM, John Stultz <john.stultz@linaro.org> wrote:
+> On Wed, Sep 4, 2013 at 2:18 AM, Arun Sharma <asharma@fb.com> wrote:
+>> A couple of years ago Andy posted this patch series:
 >>
->>>> Yet the current patch only addresses a limited set of cases, since it
->>>> doesn't hook the APIs but rather parses the DT. It doesn't cover the
->>>> non-DT case. It should if the feature is useful.
->>>
->>> As pointed out before, only DT has this problem, that,
+>> http://thread.gmane.org/gmane.linux.kernel/1233209/
 >>
->> That's completely false. Both DT and non-DT can represent the exact same
->> HW, and use the exact same drivers. It's equally possible to write a bug
->> in a board file or a DT file (i.e. a typo or incorrect reading of the
->> schematic) that causes the wrong GPIO or IRQ ID to be used, and hence
->> for there to be conflicts. Any solution to this issue needs to address
->> both cases.
-> 
-> This is again not the point. This is not what this patch is trying to solve. 
-> The patch is trying to solve problem A. But you are talking about problem B.
-> Sure I can write a bug in board files and I can write a bug in DT files. The 
-> patch is not trying to prevent that. This is a completly different thing.
+>> These patches have been in use at facebook for a couple of years and along
+>> with a vDSO implementation of thread_cpu_time(), they have proven useful for
+>> our profilers.
+>>
+>> I didn't see any arguments against this patch series. Did I miss some
+>> discussion on the topic?
+>
+> (I've got a new email address, just fyi)
+>
+> So, looking at the thread, I think Richard brought up the issue that
+> the net performance gain with the new interface wasn't significant
+> after the optimizations were applied to both interfaces.
+>
+> If we're going to add a new interface that uses something other then a
+> timespec, we likely need to put some serious thought into that new
+> type, and see how it could be used across a number of syscalls. Some
+> of the discussion around dealing with the 2038 issue touched on this.
+>
+> But getting those optimizations to the existing interface merged would
+> be nice, though.  Anyone want to resend the patch?
 
-I'm not trying to assert what this current patch was written to solve. I
-am asserting what the patch should be (have been) written to solve.
+It's already in.  See 5f293474c4c6c4dc2baaf2dfd486748b5986de76, etc.
 
-My point is that we shouldn't only solve the problem in case B, but
-rather solve the problem in all cases (A, B, and anything else). Doing
-anything else isn't useful in my opinion; it's too special-cased.
+--Andy
