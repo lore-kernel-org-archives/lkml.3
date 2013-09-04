@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab3IDSZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:25:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57935 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab3IDSZL (ORCPT
+	id S1756282Ab3IDS1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:27:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21594 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab3IDS1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:25:11 -0400
-Message-ID: <52277B02.9010707@wwwdotorg.org>
-Date: Wed, 04 Sep 2013 12:25:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>
-CC: Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/5] ARM: tegra: support for Trusted Foundations
-References: <1377770268-14014-1-git-send-email-acourbot@nvidia.com> <52262D8F.9060706@wwwdotorg.org> <52269B92.3070304@nvidia.com>
-In-Reply-To: <52269B92.3070304@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Sep 2013 14:27:46 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=4-ZwMV12aaQA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=tmcskMfHKx0A:10 a=VwQbUJbxAAAA:8 a=zR0Pyx8a9TMKGtOXQ5oA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 4 Sep 2013 14:27:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [for-next][PATCH 00/18] ftrace/rcu: Handle unsafe RCU functions
+ and ftrace callbacks
+Message-ID: <20130904142741.4d57aff4@gandalf.local.home>
+In-Reply-To: <20130904143552.456506259@goodmis.org>
+References: <20130904143552.456506259@goodmis.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 08:31 PM, Alex Courbot wrote:
-> On 09/04/2013 03:42 AM, Stephen Warren wrote:
->> On 08/29/2013 03:57 AM, Alexandre Courbot wrote:
->>> New version revised according to comments received for v3. Hopefully
->>> it will be good enough to be merged.
->>
->> Aside from the small issue in patch 1/5, the series,
->> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+On Wed, 04 Sep 2013 10:35:52 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> This is the latest patches to be queued for 3.12.
 > 
-> Thanks! I have adressed the issues you mentioned and will submit v5
-> soon. Despite the fact this adds some non-Tegra stuff, will you be able
-> to take it into your tree, or should I ask someone else?
+> A little late, but as Dave Jones has been stumbling over this for a
+> while, I thought it would be good to get it in now. It's not that
+> complex to resolve any issues that may pop up.
+> 
+> I'll keep it in linux-next for a while to make sure it really is clean.
+> 
+> Note, the checker will stumble over a few functions in irq and scheduler
+> code if enabled. This is because those patches have not received Acks
+> from Thomas Gleixner and Peter Zijlstra. When I get those acks, I'll
+> add the changes to silent those too.
+> 
+> Thanks to Paul McKenney for reviewing the patches.
+> 
+> Enjoy,
+> 
+> -- Steve
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> for-next
+> 
+> Head SHA1: 7fb3a66134ed5a40448131cf4195823d22f70aa3
+> 
 
-I would like to see an ack from the core ARM maintainer (Russell) on
-patch 1/5 (also CC'ing arm-soc maintainers for their opinion).
+Wu's autobot has found a few stupid mistakes (nothing big, but should
+be cleaned up before pushing to Linus). I reverted this change from my
+for-next tree, and I'm pushing to another branch. If I don't get more
+updates from Wu's checks by tomorrow, I'll push the updated branch to
+for-next again.
 
-If I get that, I think it makes sense to take the series through the
-Tegra tree. I can always create a stable branch for patch 1/5 if needed
-to resolve conflicts elsewhere (e.g. Russell's trees or arm-soc) and/or
-allow other people to build on top of that patch.
+-- Steve
