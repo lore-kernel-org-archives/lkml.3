@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935020Ab3IDOkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:40:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54688 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439Ab3IDOkd (ORCPT
+	id S1762891Ab3IDOk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:40:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14106 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762792Ab3IDOhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:40:33 -0400
-Date: Wed, 4 Sep 2013 07:37:22 -0700
-From: tip-bot for Stanislaw Gruszka <tipbot@zytor.com>
-Message-ID: <tip-5a8e01f8fa51f5cbce8f37acc050eb2319d12956@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
-        sgruszka@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
-        sgruszka@redhat.com
-In-Reply-To: <20130904131602.GC2564@redhat.com>
-References: <20130904131602.GC2564@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] sched/cputime: Do not scale when utime == 0
-Git-Commit-ID: 5a8e01f8fa51f5cbce8f37acc050eb2319d12956
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 04 Sep 2013 07:37:29 -0700 (PDT)
+	Wed, 4 Sep 2013 10:37:05 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=aWgvI_vTb_YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BjXSyJKKwoUA:10 a=oGMlB6cnAAAA:8 a=QyXUC8HyAAAA:8 a=VnNF1IyMAAAA:8 a=BWCg7S580bOAsAZHxxEA:9 a=jeBq3FmKZ4MA:10 a=CY6gl2JlH4YA:10 a=dGJ0OcVc7YAA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130904143703.098712210@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 04 Sep 2013 10:36:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [for-next][PATCH 17/18] ftrace/cpuidle/x86: Mark functions that are RCU unsafe
+References: <20130904143552.456506259@goodmis.org>
+Content-Disposition: inline; filename=0016-ftrace-cpuidle-x86-Mark-functions-that-are-RCU-unsaf.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a8e01f8fa51f5cbce8f37acc050eb2319d12956
-Gitweb:     http://git.kernel.org/tip/5a8e01f8fa51f5cbce8f37acc050eb2319d12956
-Author:     Stanislaw Gruszka <sgruszka@redhat.com>
-AuthorDate: Wed, 4 Sep 2013 15:16:03 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 4 Sep 2013 16:31:25 +0200
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-sched/cputime: Do not scale when utime == 0
+Some callbacks of the function tracer use rcu_read_lock(). This means that
+there's places that can not be traced because RCU is not tracking the CPU
+for various reasons (like NO_HZ_FULL and coming back from userspace).
 
-scale_stime() silently assumes that stime < rtime, otherwise
-when stime == rtime and both values are big enough (operations
-on them do not fit in 32 bits), the resulting scaling stime can
-be bigger than rtime. In consequence utime = rtime - stime
-results in negative value.
+These functions need to be marked so that callbacks that use RCU do not
+trace them.
 
-User space visible symptoms of the bug are overflowed TIME
-values on ps/top, for example:
-
- $ ps aux | grep rcu
- root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
- root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
- root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
- root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
- root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
- root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
-
-or overflowed utime values read directly from /proc/$PID/stat
-
-Reference:
-
-  https://lkml.org/lkml/2013/8/20/259
-
-Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/cputime.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ arch/x86/kernel/process.c |    2 ++
+ drivers/cpuidle/cpuidle.c |    2 ++
+ kernel/cpu/idle.c         |    2 ++
+ 3 files changed, 6 insertions(+)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index c1d7493..5b03f5b 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -551,10 +551,7 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, utime, total;
--
--	stime = curr->stime;
--	total = stime + curr->utime;
-+	cputime_t rtime, stime, utime;
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 83369e5..18739cd 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -17,6 +17,7 @@
+ #include <linux/stackprotector.h>
+ #include <linux/tick.h>
+ #include <linux/cpuidle.h>
++#include <linux/ftrace.h>
+ #include <trace/events/power.h>
+ #include <linux/hw_breakpoint.h>
+ #include <asm/cpu.h>
+@@ -316,6 +317,7 @@ void default_idle(void)
+ #ifdef CONFIG_APM_MODULE
+ EXPORT_SYMBOL(default_idle);
+ #endif
++FTRACE_UNSAFE_RCU(default_idle);
  
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -576,13 +573,19 @@ static void cputime_adjust(struct task_cputime *curr,
- 	if (prev->stime + prev->utime >= rtime)
- 		goto out;
+ #ifdef CONFIG_XEN
+ bool xen_set_default_idle(void)
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index fdc432f..9515457 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -19,6 +19,7 @@
+ #include <linux/ktime.h>
+ #include <linux/hrtimer.h>
+ #include <linux/module.h>
++#include <linux/ftrace.h>
+ #include <trace/events/power.h>
  
--	if (total) {
-+	stime = curr->stime;
-+	utime = curr->utime;
-+
-+	if (utime == 0) {
-+		stime = rtime;
-+	} else if (stime == 0) {
-+		utime = rtime;
-+	} else {
-+		cputime_t total = stime + utime;
-+
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
- 		utime = rtime - stime;
--	} else {
--		stime = rtime;
--		utime = 0;
- 	}
+ #include "cpuidle.h"
+@@ -168,6 +169,7 @@ int cpuidle_idle_call(void)
  
- 	/*
+ 	return 0;
+ }
++FTRACE_UNSAFE_RCU(cpuidle_idle_call);
+ 
+ /**
+  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index e695c0a..d9d290f 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -5,6 +5,7 @@
+ #include <linux/cpu.h>
+ #include <linux/tick.h>
+ #include <linux/mm.h>
++#include <linux/ftrace.h>
+ #include <linux/stackprotector.h>
+ 
+ #include <asm/tlb.h>
+@@ -61,6 +62,7 @@ void __weak arch_cpu_idle(void)
+ 	cpu_idle_force_poll = 1;
+ 	local_irq_enable();
+ }
++FTRACE_UNSAFE_RCU(arch_cpu_idle);
+ 
+ /*
+  * Generic idle loop implementation
+-- 
+1.7.10.4
+
+
