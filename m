@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab3IDVAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 17:00:45 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:57013 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab3IDVAn (ORCPT
+	id S932606Ab3IDVEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 17:04:09 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:35328 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab3IDVEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 17:00:43 -0400
-Message-ID: <1378328440.7360.124.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net/core: Order-3 frag allocator causes SWIOTLB
- bouncing under Xen
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Li Zefan <lizefan@huawei.com>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, malcolm.crossley@citrix.com,
-        david.vrabel@citrix.com, xen-devel@lists.xen.org
-Date: Wed, 04 Sep 2013 14:00:40 -0700
-In-Reply-To: <1378327638-23956-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1378327638-23956-1-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 4 Sep 2013 17:04:06 -0400
+X-Greylist: delayed 1436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 17:04:06 EDT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-ID: <21031.39606.16374.72229@quad.stoffel.home>
+Date: Wed, 4 Sep 2013 16:40:22 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking
+ rename_lock
+In-Reply-To: <52278970.2080803@hp.com>
+References: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com>
+	<52278970.2080803@hp.com>
+X-Mailer: VM 8.2.0b under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 21:47 +0100, Zoltan Kiss wrote:
-> THIS PATCH IS NOT INTENDED TO BE UPSTREAMED, IT HAS ONLY INFORMING PURPOSES!
-> 
-> I've noticed a performance regression with upstream kernels when used as Dom0
-> under Xen. The classic kernel can utilize the whole bandwidth of a 10G NIC
-> (ca. 9.3 Gbps), but upstream can reach only ca. 7 Gbps. I found that it
-> happens because SWIOTLB has to do double buffering. The per task frag
-> allocator introduced in 5640f7 creates 32 kb frags, which are not contiguous
-> in mfn space.
-> This patch provides a workaround by going back to the old way. The possible
-> ideas came up to solve this:
-> 
-> * make sure Dom0 memory is contiguous: it sounds trivial, but doesn't work with
-> driver domains, and there are lots of situations where this is not possible.
-> * use PVH Dom0: so we will have IOMMU. In the future sometime.
-> * use IOMMU with PV Dom0: this seems to happen earlier.
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> ---
->  net/core/sock.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/core/sock.c b/net/core/sock.c
-> index 2c097c5..854a0ea 100644
-> --- a/net/core/sock.c
-> +++ b/net/core/sock.c
-> @@ -1812,7 +1812,7 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
->  EXPORT_SYMBOL(sock_alloc_send_skb);
->  
->  /* On 32bit arches, an skb frag is limited to 2^15 */
-> -#define SKB_FRAG_PAGE_ORDER	get_order(32768)
-> +#define SKB_FRAG_PAGE_ORDER	get_order(4096)
->  
+>>>>> "Waiman" == Waiman Long <waiman.long@hp.com> writes:
 
-Well, this hack is not new...
+Waiman> In term of AIM7 performance, this patch has a performance boost of
+Waiman> about 6-7% on top of Linus' lockref patch on a 8-socket 80-core DL980.
 
-We have dev->gso_max_size and dev->gso_max_segs
+Waiman> User Range          |   10-100  | 200-10000 | 1100-2000 |
+Waiman> Mean JPM w/o patch  | 4,365,114 | 7,211,115 | 6,964,439 |
+Waiman> Mean JPM with patch | 3,872,850 | 7,655,958 | 7,422,598 |
+Waiman> % Change            |  -11.3%   |   +6.2%   |   +6.6%   |
 
-We also have in net-next sk_pacing_rate and dynamic TSO sizing.
+This -11% impact is worisome to me, because at smaller numbers of
+users, I would still expect the performance to go up.  So why the big
+drop?  
 
-Maybe you could add proper infrastructure to deal with Xen limitations.
+Also, how is the impact of these changes on smaller 1 socket, 4 core
+systems?  Just because it helps a couple of big boxes, doesn't mean it
+won't hurt the more common small case.
 
-
-
+John
