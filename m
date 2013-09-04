@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934646Ab3IDMOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:14:47 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:60022 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab3IDMOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:14:45 -0400
-Message-ID: <52272426.2040504@synopsys.com>
-Date: Wed, 4 Sep 2013 17:44:30 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S934616Ab3IDM0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:26:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53737 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab3IDM0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:26:34 -0400
+Date: Wed, 4 Sep 2013 14:26:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130904122632.GB28285@dhcp22.suse.cz>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <20130803170831.GB23319@cmpxchg.org>
+ <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
+ <20130903204850.GA1412@cmpxchg.org>
+ <20130904114523.A9F0173C@pobox.sk>
+ <20130904115741.GA28285@dhcp22.suse.cz>
+ <20130904141000.0F910EFA@pobox.sk>
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>, <netdev@vger.kernel.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Query about TX BD Reclaim in Napi poll path (was Re: [PATCH v3] ethernet/arc/arc_emac
- - Add new driver)
-References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com> <20130613221946.GA16632@electric-eye.fr.zoreil.com>
-In-Reply-To: <20130613221946.GA16632@electric-eye.fr.zoreil.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.111]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904141000.0F910EFA@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Francois,
+On Wed 04-09-13 14:10:00, azurIt wrote:
+> >[...]
+> >> My script has just detected (and killed) another freezed cgroup. I
+> >> must say that i'm not 100% sure that cgroup was really freezed but it
+> >> has 99% or more memory usage for at least 30 seconds (well, or it has
+> >> 99% memory usage in both two cases the script was checking it). Here
+> >> are stacks of processes inside it before they were killed:
+> >[...]
+> >> pid: 26536
+> >> stack:
+> >> [<ffffffff81080a45>] refrigerator+0x95/0x160
+> >> [<ffffffff8106ac2b>] get_signal_to_deliver+0x1cb/0x540
+> >> [<ffffffff8100188b>] do_signal+0x6b/0x750
+> >> [<ffffffff81001fc5>] do_notify_resume+0x55/0x80
+> >> [<ffffffff815cb662>] retint_signal+0x3d/0x7b
+> >> [<ffffffffffffffff>] 0xffffffffffffffff
+> >
+> >[...]
+> >
+> >This task is sitting in the refigerator which means it has been frozen
+> >by the freezer cgroup most probably. I am not familiar with the
+> >implementation but my recollection is that you have to thaw that group
+> >in order the killed process can pass away.
+> 
+> Yes, my script is freezing the cgroup before killing processes inside
+> it. Stacks are taken after the freeze, it that problem?
 
-Resurrecting an old thread.
-
-On 06/14/2013 03:49 AM, Francois Romieu wrote:
->> +static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
->> > +{
->> > +	struct net_device *ndev = dev_instance;
->> > +	struct arc_emac_priv *priv = netdev_priv(ndev);
->> > +	struct net_device_stats *stats = &priv->stats;
->> > +	unsigned int status;
->> > +
->> > +	status = arc_reg_get(priv, R_STATUS);
->> > +	status &= ~MDIO_MASK;
->> > +
->> > +	/* Reset all flags except "MDIO complete"*/
->> > +	arc_reg_set(priv, R_STATUS, status);
->> > +
->> > +	if (status & RXINT_MASK) {
->> > +		if (likely(napi_schedule_prep(&priv->napi))) {
->> > +			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
->> > +			__napi_schedule(&priv->napi);
->> > +		}
->> > +	}
->> > +
->> > +	if (status & TXINT_MASK) {
-> You may consider moving everything into the napi poll handler.
-
-I has to revisit this now-mainlined driver recently for fixing a bug. Per your
-suggestion above, the TX BD reclaim was moved from interrupt context to NAPI
-context. I was wondering if that is the right thing to do (I'm not a networking
-expert but have worked on this driver heavily before it was mainlined by Alexey).
-
-In case of large burst transfers by networking stack (say a large file copy over
-NFS) will it not delay the TX BD reclaim possibly dropping more packets. Ofcourse
-doing this requires enabling Tx interrupts which adds to overall cost from a
-system perspective, but assuming the controller can coalesce the Tx interrupts,
-will it not be better.
-
-I did a quick hack to move the TX reclaim in intr path and it seems to be doing
-slightly better than the current code - so the advantages are not sky high, but I
-want to understand the implications nevertheless.
-
-TIA,
--Vineet
+I thought you had a problem to remove this particular group...
+-- 
+Michal Hocko
+SUSE Labs
