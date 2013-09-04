@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965134Ab3IDQss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:48:48 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:55960 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934560Ab3IDQsq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:48:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <18832.1378311843@warthog.procyon.org.uk>
-References: <cover.1375999914.git.milosz@adfin.com>
-	<306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com>
-	<18832.1378311843@warthog.procyon.org.uk>
-Date: Wed, 4 Sep 2013 12:48:44 -0400
-Message-ID: <CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
-From: Milosz Tanski <milosz@adfin.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Hongyi Jia <jiayisuse@gmail.com>, ceph-devel <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	id S965142Ab3IDQu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756540Ab3IDQu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 12:50:28 -0400
+Date: Wed, 04 Sep 2013 12:50:23 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <1378313423-9sbygyow-mutt-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH] mm: remove obsolete comments about page table lock
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <1378312330-afoa3r2y-mutt-n-horiguchi@ah.jp.nec.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+The callers of free_pgd_range() and hugetlb_free_pgd_range() don't hold
+page table locks. The comments seems to be obsolete, so let's remove them.
 
-If the cache is withdrawn and we're starting anew I would consider
-that to okay. I would consider an empty page cache for a cookie to be
-consistent since there's nothing stale that I can read. Unless there's
-another synchronization issue that I'm missing in fscache.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ arch/powerpc/mm/hugetlbpage.c | 2 --
+ mm/memory.c                   | 2 --
+ 2 files changed, 4 deletions(-)
 
-Thanks,
-- Milosz
-
-On Wed, Sep 4, 2013 at 12:24 PM, David Howells <dhowells@redhat.com> wrote:
-> Hongyi Jia <jiayisuse@gmail.com> wrote:
->
->> +bool __fscache_check_consistency(struct fscache_cookie *cookie)
->> +{
->> +     struct fscache_object *object;
->> +
->> +     if (cookie->def->type != FSCACHE_COOKIE_TYPE_DATAFILE)
->> +             return false;
->> +
->> +     if (hlist_empty(&cookie->backing_objects))
->> +             return false;
->> +
->> +     object = hlist_entry(cookie->backing_objects.first,
->> +                     struct fscache_object, cookie_link);
->> +
->> +     return object->cache->ops->check_consistency(object);
->> +}
->
-> Hmmm...  This isn't actually safe.  You have to either:
->
->  (1) hold cookie->lock whilst touching the object pointer when coming from the
->      netfs side, or:
->
->  (2) set up an operation to do this (as, say, __fscache_alloc_page() does).
->
-> The problem is that you have nothing to defend against the object being
-> withdrawn by the cache under you.
->
-> David
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 7e56cb7..31c20e2 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -635,8 +635,6 @@ static void hugetlb_free_pud_range(struct mmu_gather *tlb, pgd_t *pgd,
+ 
+ /*
+  * This function frees user-level page tables of a process.
+- *
+- * Must be called with pagetable lock held.
+  */
+ void hugetlb_free_pgd_range(struct mmu_gather *tlb,
+ 			    unsigned long addr, unsigned long end,
+diff --git a/mm/memory.c b/mm/memory.c
+index 6827a35..8c97ef0 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -478,8 +478,6 @@ static inline void free_pud_range(struct mmu_gather *tlb, pgd_t *pgd,
+ 
+ /*
+  * This function frees user-level page tables of a process.
+- *
+- * Must be called with pagetable lock held.
+  */
+ void free_pgd_range(struct mmu_gather *tlb,
+ 			unsigned long addr, unsigned long end,
+-- 
+1.8.3.1
