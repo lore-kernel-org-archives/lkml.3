@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab3IDUKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:10:55 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:24575 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab3IDUKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:10:53 -0400
-X-IronPort-AV: E=Sophos;i="4.89,1023,1367971200"; 
-   d="scan'208";a="50554118"
-Message-ID: <522793CA.3060002@citrix.com>
-Date: Wed, 4 Sep 2013 21:10:50 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>,
-        <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH] tracing/events: Add bounce tracing to swiotbl-xen
-References: <1377208048-8963-1-git-send-email-zoltan.kiss@citrix.com> <20130823125533.GC14306@konrad-lan.dumpdata.com> <5224D0D6.40908@citrix.com> <20130903124237.GB9870@konrad-lan.dumpdata.com>
-In-Reply-To: <20130903124237.GB9870@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+	id S932760Ab3IDULP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:11:15 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:11608 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab3IDULM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:11:12 -0400
+Date: Wed, 4 Sep 2013 15:11:10 -0500
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>
+Subject: [PATCH 3/4] hpsa: housekeeping patch for device_id and product arrays
+Message-ID: <20130904201110.GC28147@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/13 13:42, Konrad Rzeszutek Wilk wrote:
-> Correct. The double buffering code is being run in lib/swiotlb.c not the
-> xen-swiotlb.c. Hence the question of why not move the tracing in there.
-I've put the trace to both locations before swiotlb_tbl_map_single is 
-called, so the same tracer will be hit both with classic and Xen 
-SWIOTLB. I used 2 different place instead of calling from 
-swiotlb_tbl_map_single because I want to print out dev_addr, and it's 
-calculated differently.
+Patch 3 of 4
 
-> Yes. And please (if it adds a benefit) also for unmap/sync which can trigger
-> the bounce buffer.
->
-> Or if it makes sense just for the bounce buffer copying - then just
-> leave it at that. Thanks.
-For me the relevant event was to see when we start to do bounce 
-buffering. When does it end, or when syncing happens is a different 
-thing. If someone is interested, they can easily extend this patch with 
-that.
+From: Mike Miller <mike.miller@hp.com>
 
-However one question bothers me: why ftrace doesn't trace these 
-functions? They are not inlined, static, or marked as notrace.
+This patch does a bit of housekeeping for hpsa. Change lowercase alpha hex
+digits to uppercase for consistency within the driver. Also moves the P822se
+in the tables to keep controllers of each family grouped together.
 
-Regards,
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+---
+ drivers/scsi/hpsa.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Zoli
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index d02bdf0..5097e0c 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -89,13 +89,14 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3245},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3247},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324a},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324b},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3233},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334D},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
+@@ -107,7 +108,6 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
+@@ -138,12 +138,13 @@ static struct board_type products[] = {
+ 	{0x3245103C, "Smart Array P410i", &SA5_access},
+ 	{0x3247103C, "Smart Array P411", &SA5_access},
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+-	{0x324a103C, "Smart Array P712m", &SA5_access},
+-	{0x324b103C, "Smart Array P711m", &SA5_access},
++	{0x324A103C, "Smart Array P712m", &SA5_access},
++	{0x324B103C, "Smart Array P711m", &SA5_access},
+ 	{0x3350103C, "Smart Array P222", &SA5_access},
+ 	{0x3351103C, "Smart Array P420", &SA5_access},
+ 	{0x3352103C, "Smart Array P421", &SA5_access},
+ 	{0x3353103C, "Smart Array P822", &SA5_access},
++	{0x334D103C, "Smart Array P822se", &SA5_access},
+ 	{0x3354103C, "Smart Array P420i", &SA5_access},
+ 	{0x3355103C, "Smart Array P220i", &SA5_access},
+ 	{0x3356103C, "Smart Array P721m", &SA5_access},
+@@ -154,7 +155,6 @@ static struct board_type products[] = {
+ 	{0x1926103C, "Smart Array P731m", &SA5_access},
+ 	{0x1928103C, "Smart Array P230i", &SA5_access},
+ 	{0x1929103C, "Smart Array P530", &SA5_access},
+-	{0x334d103C, "Smart Array P822se", &SA5_access},
+ 	{0x21BD103C, "Smart Array", &SA5_access},
+ 	{0x21BE103C, "Smart Array", &SA5_access},
+ 	{0x21BF103C, "Smart Array", &SA5_access},
