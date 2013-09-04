@@ -1,555 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934518Ab3IDMqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:46:17 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:40309 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762399Ab3IDMqP (ORCPT
+	id S1757172Ab3IDMwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:52:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54967 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab3IDMwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:46:15 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/2][usbutils] lsusb: port to hwdb
-Date: Wed,  4 Sep 2013 14:47:07 +0200
-Message-Id: <1378298828-18560-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.8.4
+	Wed, 4 Sep 2013 08:52:18 -0400
+Message-ID: <1378299135.7360.109.camel@edumazet-glaptop>
+Subject: Re: [PATCH net-next v2 2/2] net: migrate direct users to
+ prandom_u32_max
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 04 Sep 2013 05:52:15 -0700
+In-Reply-To: <1378298247-29364-3-git-send-email-dborkman@redhat.com>
+References: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
+	 <1378298247-29364-3-git-send-email-dborkman@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the information in usb.ids is now contained in udev's hwdb. Read the
-information from the hwdb instead of usb.ids.
+On Wed, 2013-09-04 at 14:37 +0200, Daniel Borkmann wrote:
+> Users that directly use or reimplement what we have in prandom_u32_max()
+> can be migrated for now to use it directly, so that we can reduce code size
+> and avoid reimplementations. That's obvious, follow-up patches could inspect
+> modulo use cases for possible migration as well.
+> 
+> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+> ---
+>  drivers/net/team/team_mode_random.c | 8 +-------
+>  include/net/red.h                   | 2 +-
+>  net/802/garp.c                      | 3 ++-
+>  net/802/mrp.c                       | 3 ++-
+>  net/packet/af_packet.c              | 2 +-
+>  net/sched/sch_choke.c               | 8 +-------
+>  6 files changed, 8 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/net/team/team_mode_random.c b/drivers/net/team/team_mode_random.c
+> index 7f032e2..0dbd1eb 100644
+> --- a/drivers/net/team/team_mode_random.c
+> +++ b/drivers/net/team/team_mode_random.c
+> @@ -13,20 +13,14 @@
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/skbuff.h>
+> -#include <linux/reciprocal_div.h>
+>  #include <linux/if_team.h>
+>  
+> -static u32 random_N(unsigned int N)
+> -{
+> -	return reciprocal_divide(prandom_u32(), N);
+> -}
+> -
+>  static bool rnd_transmit(struct team *team, struct sk_buff *skb)
+>  {
+>  	struct team_port *port;
+>  	int port_index;
+>  
+> -	port_index = random_N(team->en_port_count);
+> +	port_index = prandom_u32_max(team->en_port_count - 1);
 
-This would allow distributions to no longer ship (most of) usb.ids by default,
-but rather keep all the usb device information in the hwdb.
 
-This patch introduces a dependency on libusb >= 196.
+Note the random_N(0) gave 0, while prandom_u32_max(0 - 1) can return any
+number in [0 ... ~0U]
 
-v2: drop support from reading data from usb.ids which is already in hwdb
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Makefile.am  |   5 +-
- configure.ac |   2 +
- names.c      | 361 +++++++----------------------------------------------------
- 3 files changed, 45 insertions(+), 323 deletions(-)
-
-diff --git a/Makefile.am b/Makefile.am
-index 1e85a1e..70b9de9 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -23,11 +23,12 @@ lsusb_SOURCES = \
- 	usbmisc.c usbmisc.h
- 
- lsusb_CPPFLAGS = \
--	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) \
-+	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) $(UDEV_CFLAGS) \
- 	-DDATADIR=\"$(datadir)\"
- 
- lsusb_LDADD = \
--	$(LIBUSB_LIBS)
-+	$(LIBUSB_LIBS) \
-+	$(UDEV_LIBS)
- 
- if HAVE_ZLIB
- lsusb_CPPFLAGS += -DHAVE_LIBZ
-diff --git a/configure.ac b/configure.ac
-index adfb4b6..b4b0880 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -26,6 +26,8 @@ AM_CONDITIONAL([INSTALL_USBIDS], [test "x$enable_usbids" != "xno"])
- 
- PKG_CHECK_MODULES(LIBUSB, libusb-1.0 >= 1.0.0)
- 
-+PKG_CHECK_MODULES(UDEV, libudev >= 196)
-+
- AC_CONFIG_HEADERS([config.h])
- AC_CONFIG_FILES([
- 	Makefile
-diff --git a/names.c b/names.c
-index 12cbd60..f543240 100644
---- a/names.c
-+++ b/names.c
-@@ -3,6 +3,7 @@
-  *      names.c  --  USB name database manipulation routines
-  *
-  *      Copyright (C) 1999, 2000  Thomas Sailer (sailer@ife.ee.ethz.ch)
-+ *      Copyright (C) 2013  Tom Gundersen (teg@jklm.no)
-  *
-  *      This program is free software; you can redistribute it and/or modify
-  *      it under the terms of the GNU General Public License as published by
-@@ -34,6 +35,8 @@
- #include <stdio.h>
- #include <ctype.h>
- 
-+#include <libudev.h>
-+
- #ifdef HAVE_LIBZ
- #include <zlib.h>
- #define 	usb_file			gzFile
-@@ -52,36 +55,6 @@
- 
- /* ---------------------------------------------------------------------- */
- 
--struct vendor {
--	struct vendor *next;
--	u_int16_t vendorid;
--	char name[1];
--};
--
--struct product {
--	struct product *next;
--	u_int16_t vendorid, productid;
--	char name[1];
--};
--
--struct class {
--	struct class *next;
--	u_int8_t classid;
--	char name[1];
--};
--
--struct subclass {
--	struct subclass *next;
--	u_int8_t classid, subclassid;
--	char name[1];
--};
--
--struct protocol {
--	struct protocol *next;
--	u_int8_t classid, subclassid, protocolid;
--	char name[1];
--};
--
- struct audioterminal {
- 	struct audioterminal *next;
- 	u_int16_t termt;
-@@ -118,11 +91,8 @@ static unsigned int hashnum(unsigned int num)
- 
- /* ---------------------------------------------------------------------- */
- 
--static struct vendor *vendors[HASHSZ] = { NULL, };
--static struct product *products[HASHSZ] = { NULL, };
--static struct class *classes[HASHSZ] = { NULL, };
--static struct subclass *subclasses[HASHSZ] = { NULL, };
--static struct protocol *protocols[HASHSZ] = { NULL, };
-+static struct udev *udev = NULL;
-+static struct udev_hwdb *hwdb = NULL;
- static struct audioterminal *audioterminals[HASHSZ] = { NULL, };
- static struct videoterminal *videoterminals[HASHSZ] = { NULL, };
- static struct genericstrtable *hiddescriptors[HASHSZ] = { NULL, };
-@@ -187,59 +157,55 @@ const char *names_countrycode(unsigned int countrycode)
- 	return names_genericstrtable(countrycodes, countrycode);
- }
- 
--const char *names_vendor(u_int16_t vendorid)
-+static const char *hwdb_get(const char *modalias, const char *key)
- {
--	struct vendor *v;
-+	struct udev_list_entry *entry;
-+
-+	udev_list_entry_foreach(entry, udev_hwdb_get_properties_list_entry(hwdb, modalias, 0))
-+		if (strcmp(udev_list_entry_get_name(entry), key) == 0)
-+			return udev_list_entry_get_value(entry);
- 
--	v = vendors[hashnum(vendorid)];
--	for (; v; v = v->next)
--		if (v->vendorid == vendorid)
--			return v->name;
- 	return NULL;
- }
- 
-+const char *names_vendor(u_int16_t vendorid)
-+{
-+	char modalias[64];
-+
-+	sprintf(modalias, "usb:v%04X*", vendorid);
-+	return hwdb_get(modalias, "ID_VENDOR_FROM_DATABASE");
-+}
-+
- const char *names_product(u_int16_t vendorid, u_int16_t productid)
- {
--	struct product *p;
-+	char modalias[64];
- 
--	p = products[hashnum((vendorid << 16) | productid)];
--	for (; p; p = p->next)
--		if (p->vendorid == vendorid && p->productid == productid)
--			return p->name;
--	return NULL;
-+	sprintf(modalias, "usb:v%04Xp%04X*", vendorid, productid);
-+	return hwdb_get(modalias, "ID_MODEL_FROM_DATABASE");
- }
- 
- const char *names_class(u_int8_t classid)
- {
--	struct class *c;
-+	char modalias[64];
- 
--	c = classes[hashnum(classid)];
--	for (; c; c = c->next)
--		if (c->classid == classid)
--			return c->name;
--	return NULL;
-+	sprintf(modalias, "usb:v*p*d*dc%02X*", classid);
-+	return hwdb_get(modalias, "ID_USB_CLASS_FROM_DATABASE");
- }
- 
- const char *names_subclass(u_int8_t classid, u_int8_t subclassid)
- {
--	struct subclass *s;
-+	char modalias[64];
- 
--	s = subclasses[hashnum((classid << 8) | subclassid)];
--	for (; s; s = s->next)
--		if (s->classid == classid && s->subclassid == subclassid)
--			return s->name;
--	return NULL;
-+	sprintf(modalias, "usb:v*p*d*dc%02Xdsc%02X*", classid, subclassid);
-+	return hwdb_get(modalias, "ID_USB_SUBCLASS_FROM_DATABASE");
- }
- 
- const char *names_protocol(u_int8_t classid, u_int8_t subclassid, u_int8_t protocolid)
- {
--	struct protocol *p;
-+	char modalias[64];
- 
--	p = protocols[hashnum((classid << 16) | (subclassid << 8) | protocolid)];
--	for (; p; p = p->next)
--		if (p->classid == classid && p->subclassid == subclassid && p->protocolid == protocolid)
--			return p->name;
--	return NULL;
-+	sprintf(modalias, "usb:v*p*d*dc%02Xdsc%02Xdp%02X*", classid, subclassid, protocolid);
-+	return hwdb_get(modalias, "ID_USB_PROTOCOL_FROM_DATABASE");
- }
- 
- const char *names_audioterminal(u_int16_t termt)
-@@ -316,105 +282,6 @@ int get_subclass_string(char *buf, size_t size, u_int8_t cls, u_int8_t subcls)
- 
- /* ---------------------------------------------------------------------- */
- 
--static int new_vendor(const char *name, u_int16_t vendorid)
--{
--	struct vendor *v;
--	unsigned int h = hashnum(vendorid);
--
--	v = vendors[h];
--	for (; v; v = v->next)
--		if (v->vendorid == vendorid)
--			return -1;
--	v = malloc(sizeof(struct vendor) + strlen(name));
--	if (!v)
--		return -1;
--	strcpy(v->name, name);
--	v->vendorid = vendorid;
--	v->next = vendors[h];
--	vendors[h] = v;
--	return 0;
--}
--
--static int new_product(const char *name, u_int16_t vendorid, u_int16_t productid)
--{
--	struct product *p;
--	unsigned int h = hashnum((vendorid << 16) | productid);
--
--	p = products[h];
--	for (; p; p = p->next)
--		if (p->vendorid == vendorid && p->productid == productid)
--			return -1;
--	p = malloc(sizeof(struct product) + strlen(name));
--	if (!p)
--		return -1;
--	strcpy(p->name, name);
--	p->vendorid = vendorid;
--	p->productid = productid;
--	p->next = products[h];
--	products[h] = p;
--	return 0;
--}
--
--static int new_class(const char *name, u_int8_t classid)
--{
--	struct class *c;
--	unsigned int h = hashnum(classid);
--
--	c = classes[h];
--	for (; c; c = c->next)
--		if (c->classid == classid)
--			return -1;
--	c = malloc(sizeof(struct class) + strlen(name));
--	if (!c)
--		return -1;
--	strcpy(c->name, name);
--	c->classid = classid;
--	c->next = classes[h];
--	classes[h] = c;
--	return 0;
--}
--
--static int new_subclass(const char *name, u_int8_t classid, u_int8_t subclassid)
--{
--	struct subclass *s;
--	unsigned int h = hashnum((classid << 8) | subclassid);
--
--	s = subclasses[h];
--	for (; s; s = s->next)
--		if (s->classid == classid && s->subclassid == subclassid)
--			return -1;
--	s = malloc(sizeof(struct subclass) + strlen(name));
--	if (!s)
--		return -1;
--	strcpy(s->name, name);
--	s->classid = classid;
--	s->subclassid = subclassid;
--	s->next = subclasses[h];
--	subclasses[h] = s;
--	return 0;
--}
--
--static int new_protocol(const char *name, u_int8_t classid, u_int8_t subclassid, u_int8_t protocolid)
--{
--	struct protocol *p;
--	unsigned int h = hashnum((classid << 16) | (subclassid << 8) | protocolid);
--
--	p = protocols[h];
--	for (; p; p = p->next)
--		if (p->classid == classid && p->subclassid == subclassid && p->protocolid == protocolid)
--			return -1;
--	p = malloc(sizeof(struct protocol) + strlen(name));
--	if (!p)
--		return -1;
--	strcpy(p->name, name);
--	p->classid = classid;
--	p->subclassid = subclassid;
--	p->protocolid = protocolid;
--	p->next = protocols[h];
--	protocols[h] = p;
--	return 0;
--}
--
- static int new_audioterminal(const char *name, u_int16_t termt)
- {
- 	struct audioterminal *at;
-@@ -513,86 +380,6 @@ static int new_countrycode(const char *name, unsigned int countrycode)
- 
- /* ---------------------------------------------------------------------- */
- 
--static void free_vendor(void)
--{
--	struct vendor *cur, *tmp;
--	int i;
--
--	for (i = 0; i < HASHSZ; i++) {
--		cur = vendors[i];
--		vendors[i] = NULL;
--		while (cur) {
--			tmp = cur;
--			cur = cur->next;
--			free(tmp);
--		}
--	}
--}
--
--static void free_product(void)
--{
--	struct product *cur, *tmp;
--	int i;
--
--	for (i = 0; i < HASHSZ; i++) {
--		cur = products[i];
--		products[i] = NULL;
--		while (cur) {
--			tmp = cur;
--			cur = cur->next;
--			free(tmp);
--		}
--	}
--}
--
--static void free_class(void)
--{
--	struct class *cur, *tmp;
--	int i;
--
--	for (i = 0; i < HASHSZ; i++) {
--		cur = classes[i];
--		classes[i] = NULL;
--		while (cur) {
--			tmp = cur;
--			cur = cur->next;
--			free(tmp);
--		}
--	}
--}
--
--static void free_subclass(void)
--{
--	struct subclass *cur, *tmp;
--	int i;
--
--	for (i = 0; i < HASHSZ; i++) {
--		cur = subclasses[i];
--		subclasses[i] = NULL;
--		while (cur) {
--			tmp = cur;
--			cur = cur->next;
--			free(tmp);
--		}
--	}
--}
--
--static void free_protocol(void)
--{
--	struct protocol *cur, *tmp;
--	int i;
--
--	for (i = 0; i < HASHSZ; i++) {
--		cur = protocols[i];
--		protocols[i] = NULL;
--		while (cur) {
--			tmp = cur;
--			cur = cur->next;
--			free(tmp);
--		}
--	}
--}
--
- static void free_audioterminal(void)
- {
- 	struct audioterminal *cur, *tmp;
-@@ -765,29 +552,6 @@ static void parse(usb_file f)
- 			lastlang = u;
- 			continue;
- 		}
--		if (buf[0] == 'C' && /*isspace(buf[1])*/ buf[1] == ' ') {
--			/* class spec */
--			cp = buf+2;
--			while (isspace(*cp))
--				cp++;
--			if (!isxdigit(*cp)) {
--				fprintf(stderr, "Invalid class spec at line %u\n", linectr);
--				continue;
--			}
--			u = strtoul(cp, &cp, 16);
--			while (isspace(*cp))
--				cp++;
--			if (!*cp) {
--				fprintf(stderr, "Invalid class spec at line %u\n", linectr);
--				continue;
--			}
--			if (new_class(cp, u))
--				fprintf(stderr, "Duplicate class spec at line %u class %04x %s\n", linectr, u, cp);
--			DBG(printf("line %5u class %02x %s\n", linectr, u, cp));
--			lasthut = lastlang = lastvendor = lastsubclass = -1;
--			lastclass = u;
--			continue;
--		}
- 		if (buf[0] == 'A' && buf[1] == 'T' && isspace(buf[2])) {
- 			/* audio terminal type spec */
- 			cp = buf+3;
-@@ -851,22 +615,6 @@ static void parse(usb_file f)
- 			DBG(printf("line %5u keyboard country code %02u %s\n", linectr, u, cp));
- 			continue;
- 		}
--		if (isxdigit(*cp)) {
--			/* vendor */
--			u = strtoul(cp, &cp, 16);
--			while (isspace(*cp))
--				cp++;
--			if (!*cp) {
--				fprintf(stderr, "Invalid vendor spec at line %u\n", linectr);
--				continue;
--			}
--			if (new_vendor(cp, u))
--				fprintf(stderr, "Duplicate vendor spec at line %u vendor %04x %s\n", linectr, u, cp);
--			DBG(printf("line %5u vendor %04x %s\n", linectr, u, cp));
--			lastvendor = u;
--			lasthut = lastlang = lastclass = lastsubclass = -1;
--			continue;
--		}
- 		if (buf[0] == '\t' && isxdigit(buf[1])) {
- 			/* product or subclass spec */
- 			u = strtoul(buf+1, &cp, 16);
-@@ -876,19 +624,6 @@ static void parse(usb_file f)
- 				fprintf(stderr, "Invalid product/subclass spec at line %u\n", linectr);
- 				continue;
- 			}
--			if (lastvendor != -1) {
--				if (new_product(cp, lastvendor, u))
--					fprintf(stderr, "Duplicate product spec at line %u product %04x:%04x %s\n", linectr, lastvendor, u, cp);
--				DBG(printf("line %5u product %04x:%04x %s\n", linectr, lastvendor, u, cp));
--				continue;
--			}
--			if (lastclass != -1) {
--				if (new_subclass(cp, lastclass, u))
--					fprintf(stderr, "Duplicate subclass spec at line %u class %02x:%02x %s\n", linectr, lastclass, u, cp);
--				DBG(printf("line %5u subclass %02x:%02x %s\n", linectr, lastclass, u, cp));
--				lastsubclass = u;
--				continue;
--			}
- 			if (lasthut != -1) {
- 				if (new_hutus(cp, (lasthut << 16)+u))
- 					fprintf(stderr, "Duplicate HUT Usage Spec at line %u\n", linectr);
-@@ -902,24 +637,6 @@ static void parse(usb_file f)
- 			fprintf(stderr, "Product/Subclass spec without prior Vendor/Class spec at line %u\n", linectr);
- 			continue;
- 		}
--		if (buf[0] == '\t' && buf[1] == '\t' && isxdigit(buf[2])) {
--			/* protocol spec */
--			u = strtoul(buf+2, &cp, 16);
--			while (isspace(*cp))
--				cp++;
--			if (!*cp) {
--				fprintf(stderr, "Invalid protocol spec at line %u\n", linectr);
--				continue;
--			}
--			if (lastclass != -1 && lastsubclass != -1) {
--				if (new_protocol(cp, lastclass, lastsubclass, u))
--					fprintf(stderr, "Duplicate protocol spec at line %u class %02x:%02x:%02x %s\n", linectr, lastclass, lastsubclass, u, cp);
--				DBG(printf("line %5u protocol %02x:%02x:%02x %s\n", linectr, lastclass, lastsubclass, u, cp));
--				continue;
--			}
--			fprintf(stderr, "Protocol spec without prior Class and Subclass spec at line %u\n", linectr);
--			continue;
--		}
- 		if (buf[0] == 'H' && buf[1] == 'I' && buf[2] == 'D' && /*isspace(buf[3])*/ buf[3] == ' ') {
- 			cp = buf + 4;
- 			while (isspace(*cp))
-@@ -994,23 +711,25 @@ static void parse(usb_file f)
- int names_init(char *n)
- {
- 	usb_file f;
-+	int r = 0;
- 
- 	f = usb_fopen(n, "r");
- 	if (!f)
--		return errno;
-+		r = errno;
- 
- 	parse(f);
- 	usb_close(f);
--	return 0;
-+
-+	udev = udev_new();
-+	hwdb = udev_hwdb_new(udev);
-+
-+	return r;
- }
- 
- void names_exit(void)
- {
--	free_vendor();
--	free_product();
--	free_class();
--	free_subclass();
--	free_protocol();
-+	hwdb = udev_hwdb_unref(hwdb);
-+	udev = udev_unref(udev);
- 	free_audioterminal();
- 	free_videoterminal();
- 	free_genericstrtable();
--- 
-1.8.4
 
