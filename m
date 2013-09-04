@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759885Ab3IDSN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:13:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758792Ab3IDSN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:13:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com>
-References: <CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com> <cover.1375999914.git.milosz@adfin.com> <306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com> <18832.1378311843@warthog.procyon.org.uk> <CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com> <18284.1378315570@warthog.procyon.org.uk>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: dhowells@redhat.com, Hongyi Jia <jiayisuse@gmail.com>,
-        ceph-devel <ceph-devel@vger.kernel.org>, Sage Weil <sage@inktank.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
-Date: Wed, 04 Sep 2013 19:13:20 +0100
-Message-ID: <16226.1378318400@warthog.procyon.org.uk>
+	id S1755410Ab3IDSV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:21:26 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:59504 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab3IDSVY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 14:21:24 -0400
+Date: Wed, 4 Sep 2013 14:21:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] writeback: fix NULL dereference when device is gone
+Message-ID: <20130904182117.GE26609@mtj.dyndns.org>
+References: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org>
+ <1755678.6GItDDY0bW@al>
+ <20130820133308.GE3926@htj.dyndns.org>
+ <2884335.eGSKV8oXr1@al>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2884335.eGSKV8oXr1@al>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> wrote:
+Hello,
 
-> Is it as simple as stick a mutex at the top of the
-> __fscache_check_consistency function before we try to find the object?
+On Thu, Aug 29, 2013 at 12:31:11AM +0200, Peter Wu wrote:
+> I applied your fix in the workfn, but now dd does not stop with EIO. If I run 
+> `sync`, then I see:
+> 
+> [11882.645618] quiet_error: 591905 callbacks suppressed
+> [11882.650589] Buffer I/O error on device sdd, logical block 129652880
+> [11882.656850] lost page write due to I/O error on sdd
+> [11882.661974] Buffer I/O error on device sdd, logical block 129652881
+> ...
+> 
+> Any other ideas? For now I will stick to the original patch. That probably 
+> does not solve the root issues, but it is at least a workaround to prevent the 
+> machine from locking up.
 
-You can lock a mutex in a function, but where are you actually going to place
-the mutex struct?  And what other code is going to take it?  To do this, you'd
-have to place the mutex struct in fscache_cookie.  The problem is that you
-have to protect the pointer from fscache_cookie to fscache_object - so placing
-the mutex in fscache_object doesn't help.
+I'm out of ideas at the moment and maybe we should just stick to your
+patch for now.  :(
 
-David
+Thanks.
+
+-- 
+tejun
