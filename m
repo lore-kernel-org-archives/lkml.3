@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761620Ab3IDVqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 17:46:05 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60267 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760558Ab3IDVqD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 17:46:03 -0400
-Message-ID: <5227AA13.7090300@gmail.com>
-Date: Wed, 04 Sep 2013 15:45:55 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/2] perf tools: fix parsing with no sample_id_all bit
- set
-References: <1378325897-3840-1-git-send-email-adrian.hunter@intel.com> <1378325897-3840-3-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1378325897-3840-3-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933064Ab3IDVq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 17:46:27 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:36403 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932449Ab3IDVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 17:46:26 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] can: pcan_usb_core: fix memory leak on failure paths in peak_usb_start()
+Date: Thu,  5 Sep 2013 01:46:09 +0400
+Message-Id: <1378331169-26285-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/4/13 2:18 PM, Adrian Hunter wrote:
-> The perf_evlist__event2evsel() is changed to handle
-> non-sample events (such as mmap events) that have no
-> id sample appended i.e. when sample_id_all is not set.
->
-> Note that such events have a fixed format, so that
-> the selected event (evsel) they are associated with
-> is immaterial.
->
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Tx and rx urbs are not deallocated if something goes wrong in peak_usb_start().
+The patch fixes error handling to deallocate all the resources.
 
-Fixes the regression. Thanks for the fix.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Tested-and-Acked-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/can/usb/peak_usb/pcan_usb_core.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-Arnaldo: this needs to go in perf/urgent and pushed into 3.12.
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+index a0f647f..0b7a4c3 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+@@ -463,7 +463,7 @@ static int peak_usb_start(struct peak_usb_device *dev)
+ 	if (i < PCAN_USB_MAX_TX_URBS) {
+ 		if (i == 0) {
+ 			netdev_err(netdev, "couldn't setup any tx URB\n");
+-			return err;
++			goto err_tx;
+ 		}
+ 
+ 		netdev_warn(netdev, "tx performance may be slow\n");
+@@ -472,7 +472,7 @@ static int peak_usb_start(struct peak_usb_device *dev)
+ 	if (dev->adapter->dev_start) {
+ 		err = dev->adapter->dev_start(dev);
+ 		if (err)
+-			goto failed;
++			goto err_adapter;
+ 	}
+ 
+ 	dev->state |= PCAN_USB_STATE_STARTED;
+@@ -481,19 +481,26 @@ static int peak_usb_start(struct peak_usb_device *dev)
+ 	if (dev->adapter->dev_set_bus) {
+ 		err = dev->adapter->dev_set_bus(dev, 1);
+ 		if (err)
+-			goto failed;
++			goto err_adapter;
+ 	}
+ 
+ 	dev->can.state = CAN_STATE_ERROR_ACTIVE;
+ 
+ 	return 0;
+ 
+-failed:
++err_adapter:
+ 	if (err == -ENODEV)
+ 		netif_device_detach(dev->netdev);
+ 
+ 	netdev_warn(netdev, "couldn't submit control: %d\n", err);
+ 
++	for (i = 0; i < PCAN_USB_MAX_TX_URBS; i++) {
++		usb_free_urb(dev->tx_contexts[i].urb);
++		dev->tx_contexts[i].urb = NULL;
++	}
++err_tx:
++	usb_kill_anchored_urbs(&dev->rx_submitted);
++
+ 	return err;
+ }
+ 
+-- 
+1.8.1.2
 
-David
