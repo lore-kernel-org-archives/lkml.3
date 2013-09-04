@@ -1,297 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761332Ab3IDFRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:17:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59866 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754635Ab3IDFRq (ORCPT
+	id S1761776Ab3IDFSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:18:39 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:11448 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761383Ab3IDFSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:17:46 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: starvik@axis.com, jesper.nilsson@axis.com
-Cc: viro@zeniv.linux.org.uk, swarren@nvidia.com, geert@linux-m68k.org,
-        johnstul@us.ibm.com, dhowells@redhat.com, tglx@linutronix.de,
-        paul.gortmaker@windriver.com, gregkh@linuxfoundation.org,
-        adam.buchbinder@gmail.com, jkosina@suse.cz, linux-cris-kernel@axis.com,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] cris: remove deprecated IRQF_DISABLED
-Date: Wed,  4 Sep 2013 07:17:40 +0200
-Message-Id: <1378271860-25336-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 4 Sep 2013 01:18:37 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-e7-5226c2a6cfad
+Message-id: <5226C2A6.9000805@samsung.com>
+Date: Wed, 04 Sep 2013 14:18:30 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, Graeme Gregory <gg@slimlogic.co.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 3/3] extcon: Simplify extcon_dev_register() prototype by
+ removing unnecessary parameter
+References: <1378081208-20274-1-git-send-email-cw00.choi@samsung.com>
+ <1378081208-20274-4-git-send-email-cw00.choi@samsung.com>
+ <20130902004024.GB10709@kroah.com> <5223E648.7020207@samsung.com>
+ <20130903155744.GA21846@kroah.com> <52267BFE.3030106@samsung.com>
+ <20130904011640.GA24275@kroah.com>
+In-reply-to: <20130904011640.GA24275@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsWyRsSkQHfZIbUgg3drTS2mPnzCZvFvyg12
+	i/4tLhbNi9ezWVx42sNmcbbpDbvF5V1z2CxuN65gc+Dw2LSqk81j/9w17B4vJ/5m8+jbsorR
+	Y+qUv4wex29sZ/L4vEkugD2KyyYlNSezLLVI3y6BK+P4VraCddIVs692sjcwPhPrYuTkkBAw
+	kWhf/ZsRwhaTuHBvPVsXIxeHkMBSRomTOxYxdzFygBVN7DaFiE9nlJix8goThPOKUeL1y0fM
+	IN28AloSH7Z1gE1iEVCV+Hx2LxOIzQYU3//iBhuILSoQJrFy+hUWiHpBiR+T74HZIgIaEi+P
+	3mIBGcos0MgkcXHxfBaQzcICuRJLjoZDLFvHJDGpYy/YMk4BfYm3i++xgtjMAjoS+1unsUHY
+	8hKb17xlBmmQEHjJLrGms4kF4iIBiW+TD7FAvCMrsekAM8TLkhIHV9xgmcAoNgvJTbOQjJ2F
+	ZOwCRuZVjKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGIExefrfswk7GO8dsD7EmAy0ciKzlGhy
+	PjCm80riDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	aGgUm+o/P+lLbWewOcuhOKYYrlUvt/5x64tlsElLSrQ4/3xZe11BK4enipG2VNGmFlYdpj3G
+	soJHih9/T7rwYGKd4iEl1l9FXzV/bRGTVZxVwWDmf2T+hLjdKxgP/zyUvjOtVjhoy5nZlp8v
+	beLw2rhWY7Vj3IKdf5cfaH1d+k7qemWXRqy9EktxRqKhFnNRcSIAlMr3oN8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd1lh9SCDB7/1LGY+vAJm8W/KTfY
+	Lfq3uFg0L17PZnHhaQ+bxdmmN+wWl3fNYbO43biCzYHDY9OqTjaP/XPXsHu8nPibzaNvyypG
+	j6lT/jJ6HL+xncnj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
+	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ
+	x7eyFayTrph9tZO9gfGZWBcjB4eEgInExG7TLkZOIFNM4sK99WxdjFwcQgLTGSVmrLzCBOG8
+	YpR4/fIRM0gVr4CWxIdtHYwgNouAqsTns3uZQGw2oPj+FzfYQGxRgTCJldOvsEDUC0r8mHwP
+	zBYR0JB4efQWC8hQZoFGJomLi+ezgFwhLJArseRoOMSydUwSkzr2gi3jFNCXeLv4HiuIzSyg
+	I7G/dRobhC0vsXnNW+YJjAKzkOyYhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNz
+	NzGCI/6Z1A7GlQ0WhxgFOBiVeHg3PFMNEmJNLCuuzD3EKMHBrCTCm+CjFiTEm5JYWZValB9f
+	VJqTWnyIMRkYBBOZpUST84HJKK8k3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakF
+	qUUwW5g4OKUaGHVVJqhE3PyyU3GCv02Ctv7r+skZuxTj7HycA5WjjMpUgvtN9bbsmSl5td3s
+	k9ZT7Qalb3MfLm1pMTowb2W8iteH73IKln/vGBu/nnu+/nJdgGG2/rIVEfMX3BMUby5ZVrzR
+	+J1Qt87O3O3x++IPiB36N+3d3gtTY3o/Z8wRfvBIe3bHrJqjnkosxRmJhlrMRcWJAHtJ5yg8	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from CRIS
-architecture code. It's a NOOP since 2.6.35 and it will be removed
-one day.
+On 09/04/2013 10:16 AM, Greg KH wrote:
+> On Wed, Sep 04, 2013 at 09:17:02AM +0900, Chanwoo Choi wrote:
+>> On 09/04/2013 12:57 AM, Greg KH wrote:
+>>> On Mon, Sep 02, 2013 at 10:13:44AM +0900, Chanwoo Choi wrote:
+>>>> Hi Greg,
+>>>>
+>>>> On 09/02/2013 09:40 AM, Greg KH wrote:
+>>>>> On Mon, Sep 02, 2013 at 09:20:08AM +0900, Chanwoo Choi wrote:
+>>>>>> This patch remove extcon_dev_register()'s second parameter which means
+>>>>>> the pointer of parent device to simplify prototype of this function.
+>>>>>
+>>>>> No, please don't.  You want the parent to be passed in, as the core
+>>>>> needs it when it is registered with the system, otherwise it will not
+>>>>> show up in sysfs properly (i.e. you can't set it afterwards.)
+>>>>
+>>>> Currently, each extcon driver have allocated memory for extcon device
+>>>> by using devm_kzalloc() in each extcon device driver.
+>>>
+>>> That seems backwards, the extcon core should be the one doing the
+>>> allocation, and ownership of the device, like all other subsystem cores
+>>> do.  That makes the driver logic much simpler, and the lifetime
+>>> ownership correct (i.e. what happens when a device is unbound from a
+>>> driver by userspace?  The driver can't control the device memory
+>>> anymore...)
+>>>
+>>
+>> OK,
+>> The extcon core will control memory allocation instead of extcon device driver
+>> as following.
+>> - devm_extcon_allocate_device(struct device *dev)
+> 
+> Huh?  Why do you need a devm allocator?  This is a "real" child device,
+> just create it with a "extcon_create_device()" or some such call, like
+> all other busses do?
 
-Comments mentioning IRQF_DISABLED are also updated, knowing
-that all interrupts are now "fast interrupts", their handlers
-running with interrupts disabled.
+I refer Input/IIO subsystem to check the process of device registration.
+Input subsystem has following functions for memory allocation of input device
+and input device registration.
 
-Don't hesitate to let me know if you have other ways of
-rephrasing the comments!
+Input subsystem
+- struct input_dev *devm_input_allocate_device(struct device *device)
+- struct input_dev *input_allocate_device(void)
+- int input_register_device(struct input_dev *dev)
+drivers/input/input.c
 
-This is an update for 3.11 of a patch already sent for 3.10
+devm_input_allocate_device()/input_allocate_device() can allocate
+memory for input device in input core. And then created input device
+pass input_register_device() as parameter.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/cris/arch-v10/drivers/gpio.c         |  4 ++--
- arch/cris/arch-v10/drivers/sync_serial.c  |  4 ++--
- arch/cris/arch-v10/kernel/time.c          |  6 ++----
- arch/cris/arch-v32/drivers/mach-a3/gpio.c |  2 +-
- arch/cris/arch-v32/drivers/mach-fs/gpio.c |  4 ++--
- arch/cris/arch-v32/kernel/fasttimer.c     |  2 +-
- arch/cris/arch-v32/kernel/irq.c           | 10 +++++-----
- arch/cris/arch-v32/kernel/smp.c           |  2 +-
- arch/cris/arch-v32/kernel/time.c          |  6 ++----
- arch/cris/arch-v32/mach-a3/arbiter.c      |  4 ++--
- arch/cris/arch-v32/mach-fs/arbiter.c      |  2 +-
- arch/cris/include/arch-v10/arch/irq.h     |  6 +++---
- arch/cris/include/arch-v32/arch/irq.h     |  6 +++---
- arch/cris/kernel/irq.c                    |  3 ---
- 14 files changed, 27 insertions(+), 34 deletions(-)
+So, input device driver haven't executed kmalloc() or devm_kmalloc()
+to allocate memory of input device by using input_allocate_device()/
+devm_input_allocate_device().
 
-diff --git a/arch/cris/arch-v10/drivers/gpio.c b/arch/cris/arch-v10/drivers/gpio.c
-index 609d551..f4374ba 100644
---- a/arch/cris/arch-v10/drivers/gpio.c
-+++ b/arch/cris/arch-v10/drivers/gpio.c
-@@ -838,13 +838,13 @@ static int __init gpio_init(void)
- 	 * in some tests.
- 	 */
- 	res = request_irq(TIMER0_IRQ_NBR, gpio_poll_timer_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio poll", gpio_name);
-+		IRQF_SHARED, "gpio poll", gpio_name);
- 	if (res) {
- 		printk(KERN_CRIT "err: timer0 irq for gpio\n");
- 		return res;
- 	}
- 	res = request_irq(PA_IRQ_NBR, gpio_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio PA", gpio_name);
-+		IRQF_SHARED, "gpio PA", gpio_name);
- 	if (res)
- 		printk(KERN_CRIT "err: PA irq for gpio\n");
- 
-diff --git a/arch/cris/arch-v10/drivers/sync_serial.c b/arch/cris/arch-v10/drivers/sync_serial.c
-index a1c498d..04d39e0 100644
---- a/arch/cris/arch-v10/drivers/sync_serial.c
-+++ b/arch/cris/arch-v10/drivers/sync_serial.c
-@@ -580,7 +580,7 @@ static int sync_serial_open(struct inode *inode, struct file *file)
- 			if (port == &ports[0]) {
- 				if (request_irq(8,
- 						manual_interrupt,
--						IRQF_SHARED | IRQF_DISABLED,
-+						IRQF_SHARED,
- 						"synchronous serial manual irq",
- 						&ports[0])) {
- 					printk(KERN_CRIT "Can't alloc "
-@@ -590,7 +590,7 @@ static int sync_serial_open(struct inode *inode, struct file *file)
- 			} else if (port == &ports[1]) {
- 				if (request_irq(8,
- 						manual_interrupt,
--						IRQF_SHARED | IRQF_DISABLED,
-+						IRQF_SHARED,
- 						"synchronous serial manual irq",
- 						&ports[1])) {
- 					printk(KERN_CRIT "Can't alloc "
-diff --git a/arch/cris/arch-v10/kernel/time.c b/arch/cris/arch-v10/kernel/time.c
-index fce7c54..e6a7227 100644
---- a/arch/cris/arch-v10/kernel/time.c
-+++ b/arch/cris/arch-v10/kernel/time.c
-@@ -178,13 +178,11 @@ timer_interrupt(int irq, void *dev_id)
-         return IRQ_HANDLED;
- }
- 
--/* timer is IRQF_SHARED so drivers can add stuff to the timer irq chain
-- * it needs to be IRQF_DISABLED to make the jiffies update work properly
-- */
-+/* timer is IRQF_SHARED so drivers can add stuff to the timer irq chain */
- 
- static struct irqaction irq2  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_SHARED | IRQF_DISABLED,
-+	.flags = IRQF_SHARED,
- 	.name = "timer",
- };
- 
-diff --git a/arch/cris/arch-v32/drivers/mach-a3/gpio.c b/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-index 0b86dee..74f9fe8 100644
---- a/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-+++ b/arch/cris/arch-v32/drivers/mach-a3/gpio.c
-@@ -978,7 +978,7 @@ static int __init gpio_init(void)
- 	CRIS_LED_DISK_WRITE(0);
- 
- 	int res2 = request_irq(GIO_INTR_VECT, gpio_interrupt,
--		IRQF_SHARED | IRQF_DISABLED, "gpio", &alarmlist);
-+		IRQF_SHARED, "gpio", &alarmlist);
- 	if (res2) {
- 		printk(KERN_ERR "err: irq for gpio\n");
- 		return res2;
-diff --git a/arch/cris/arch-v32/drivers/mach-fs/gpio.c b/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-index a2ac091..9e54273 100644
---- a/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-+++ b/arch/cris/arch-v32/drivers/mach-fs/gpio.c
-@@ -964,11 +964,11 @@ gpio_init(void)
- 	 * in some tests.
- 	 */
- 	if (request_irq(TIMER0_INTR_VECT, gpio_poll_timer_interrupt,
--			IRQF_SHARED | IRQF_DISABLED, "gpio poll", &alarmlist))
-+			IRQF_SHARED, "gpio poll", &alarmlist))
- 		printk(KERN_ERR "timer0 irq for gpio\n");
- 
- 	if (request_irq(GIO_INTR_VECT, gpio_pa_interrupt,
--			IRQF_SHARED | IRQF_DISABLED, "gpio PA", &alarmlist))
-+			IRQF_SHARED, "gpio PA", &alarmlist))
- 		printk(KERN_ERR "PA irq for gpio\n");
- 
- #ifdef CONFIG_ETRAX_VIRTUAL_GPIO
-diff --git a/arch/cris/arch-v32/kernel/fasttimer.c b/arch/cris/arch-v32/kernel/fasttimer.c
-index f664453..b130c2c 100644
---- a/arch/cris/arch-v32/kernel/fasttimer.c
-+++ b/arch/cris/arch-v32/kernel/fasttimer.c
-@@ -786,7 +786,7 @@ int fast_timer_init(void)
-     proc_create("fasttimer", 0, NULL, &proc_fasttimer_fops);
- #endif /* PROC_FS */
- 		if (request_irq(TIMER0_INTR_VECT, timer_trig_interrupt,
--				IRQF_SHARED | IRQF_DISABLED,
-+				IRQF_SHARED,
- 				"fast timer int", &fast_timer_list))
- 			printk(KERN_ERR "err: fasttimer irq\n");
-     fast_timer_is_init = 1;
-diff --git a/arch/cris/arch-v32/kernel/irq.c b/arch/cris/arch-v32/kernel/irq.c
-index 5ebe6e8..25437ae 100644
---- a/arch/cris/arch-v32/kernel/irq.c
-+++ b/arch/cris/arch-v32/kernel/irq.c
-@@ -331,11 +331,11 @@ extern void do_IRQ(int irq, struct pt_regs * regs);
- void
- crisv32_do_IRQ(int irq, int block, struct pt_regs* regs)
- {
--	/* Interrupts that may not be moved to another CPU and
--         * are IRQF_DISABLED may skip blocking. This is currently
--         * only valid for the timer IRQ and the IPI and is used
--         * for the timer interrupt to avoid watchdog starvation.
--         */
-+	/* Interrupts that may not be moved to another CPU may
-+	 * skip blocking. This is currently only valid for the
-+	 * timer IRQ and the IPI and is used for the timer
-+	 * interrupt to avoid watchdog starvation.
-+	 */
- 	if (!block) {
- 		do_IRQ(irq, regs);
- 		return;
-diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
-index fe8e603..0698582 100644
---- a/arch/cris/arch-v32/kernel/smp.c
-+++ b/arch/cris/arch-v32/kernel/smp.c
-@@ -64,7 +64,7 @@ static irqreturn_t crisv32_ipi_interrupt(int irq, void *dev_id);
- static int send_ipi(int vector, int wait, cpumask_t cpu_mask);
- static struct irqaction irq_ipi  = {
- 	.handler = crisv32_ipi_interrupt,
--	.flags = IRQF_DISABLED,
-+	.flags = 0,
- 	.name = "ipi",
- };
- 
-diff --git a/arch/cris/arch-v32/kernel/time.c b/arch/cris/arch-v32/kernel/time.c
-index 8c4b45e..ee66866 100644
---- a/arch/cris/arch-v32/kernel/time.c
-+++ b/arch/cris/arch-v32/kernel/time.c
-@@ -216,12 +216,10 @@ static inline irqreturn_t timer_interrupt(int irq, void *dev_id)
-         return IRQ_HANDLED;
- }
- 
--/* Timer is IRQF_SHARED so drivers can add stuff to the timer irq chain.
-- * It needs to be IRQF_DISABLED to make the jiffies update work properly.
-- */
-+/* Timer is IRQF_SHARED so drivers can add stuff to the timer irq chain. */
- static struct irqaction irq_timer = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_SHARED | IRQF_DISABLED,
-+	.flags = IRQF_SHARED,
- 	.name = "timer"
- };
- 
-diff --git a/arch/cris/arch-v32/mach-a3/arbiter.c b/arch/cris/arch-v32/mach-a3/arbiter.c
-index 15f5c9d..ab5c421 100644
---- a/arch/cris/arch-v32/mach-a3/arbiter.c
-+++ b/arch/cris/arch-v32/mach-a3/arbiter.c
-@@ -256,11 +256,11 @@ static void crisv32_arbiter_init(void)
- 	crisv32_arbiter_config(1, EXT_REGION, 0);
- 
- 	if (request_irq(MEMARB_FOO_INTR_VECT, crisv32_foo_arbiter_irq,
--			IRQF_DISABLED, "arbiter", NULL))
-+			0, "arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
- 
- 	if (request_irq(MEMARB_BAR_INTR_VECT, crisv32_bar_arbiter_irq,
--			IRQF_DISABLED, "arbiter", NULL))
-+			0, "arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
- 
- #ifndef CONFIG_ETRAX_KGDB
-diff --git a/arch/cris/arch-v32/mach-fs/arbiter.c b/arch/cris/arch-v32/mach-fs/arbiter.c
-index 3f8ebb5..c97f4d8 100644
---- a/arch/cris/arch-v32/mach-fs/arbiter.c
-+++ b/arch/cris/arch-v32/mach-fs/arbiter.c
-@@ -184,7 +184,7 @@ static void crisv32_arbiter_init(void)
- 	crisv32_arbiter_config(EXT_REGION, 0);
- 	crisv32_arbiter_config(INT_REGION, 0);
- 
--	if (request_irq(MEMARB_INTR_VECT, crisv32_arbiter_irq, IRQF_DISABLED,
-+	if (request_irq(MEMARB_INTR_VECT, crisv32_arbiter_irq, 0,
- 			"arbiter", NULL))
- 		printk(KERN_ERR "Couldn't allocate arbiter IRQ\n");
- 
-diff --git a/arch/cris/include/arch-v10/arch/irq.h b/arch/cris/include/arch-v10/arch/irq.h
-index ca2675a..6aecb83 100644
---- a/arch/cris/include/arch-v10/arch/irq.h
-+++ b/arch/cris/include/arch-v10/arch/irq.h
-@@ -141,9 +141,9 @@ __asm__ ( \
-  * handler is run and it prioritizes the timer interrupt. However if we had BLOCK'ed
-  * it here, we would not get the multiple_irq at all.
-  *
-- * The non-blocking here is based on the knowledge that the timer interrupt is 
-- * registered as a fast interrupt (IRQF_DISABLED) so that we _know_ there will not
-- * be an sti() before the timer irq handler is run to acknowledge the interrupt.
-+ * The non-blocking here is based on the knowledge that the timer interrupt runs
-+ * with interrupts disabled, and therefore there will not be an sti() before the
-+ * timer irq handler is run to acknowledge the interrupt.
-  */
- 
- #define BUILD_TIMER_IRQ(nr,mask) \
-diff --git a/arch/cris/include/arch-v32/arch/irq.h b/arch/cris/include/arch-v32/arch/irq.h
-index fe3cdd2..0c1b4d3 100644
---- a/arch/cris/include/arch-v32/arch/irq.h
-+++ b/arch/cris/include/arch-v32/arch/irq.h
-@@ -102,9 +102,9 @@ __asm__ (				\
-  * multiple_irq handler is run and it prioritizes the timer interrupt. However
-  * if we had BLOCK'edit here, we would not get the multiple_irq at all.
-  *
-- * The non-blocking here is based on the knowledge that the timer interrupt is
-- * registered as a fast interrupt (IRQF_DISABLED) so that we _know_ there will not
-- * be an sti() before the timer irq handler is run to acknowledge the interrupt.
-+ * The non-blocking here is based on the knowledge that the timer interrupt runs
-+ * with interrupts disabled, and therefore there will not be an sti() before the
-+ * timer irq handler is run to acknowledge the interrupt.
-  */
- #define BUILD_TIMER_IRQ(nr, mask) 	\
- void IRQ_NAME(nr);			\
-diff --git a/arch/cris/kernel/irq.c b/arch/cris/kernel/irq.c
-index d36836d..dd0be5d 100644
---- a/arch/cris/kernel/irq.c
-+++ b/arch/cris/kernel/irq.c
-@@ -40,9 +40,6 @@
- 
- /* called by the assembler IRQ entry functions defined in irq.h
-  * to dispatch the interrupts to registered handlers
-- * interrupts are disabled upon entry - depending on if the
-- * interrupt was registered with IRQF_DISABLED or not, interrupts
-- * are re-enabled or not.
-  */
- 
- asmlinkage void do_IRQ(int irq, struct pt_regs * regs)
--- 
-1.8.1.2
+
+Also,IIO subsystem has separate iio_device_alloc() function
+to allocate memory for iio device. But IIO subsystem hasn't
+"devm_" allocator. So, If iio device driver fail initialization
+in *_probe, should execute iio_device_free() to free allocated memory.
+
+IIO Subsystem
+- iio_device_alloc(int sizeof_priv)
+- iio_device_register(struct iio_dev *indio_dev);
+drivers/iio/industrialio-core.c
+
+
+So, I think extcon subsystem need extcon_allocate_device()/devm_extcon_allocate_device()
+to allocate for memory extcon device. To implement devm_extcon_allocate_device() function
+, extcon subsystem need extcon_allocate_device() because devm_extcon_allocate_device()
+must call extcon_allocate_device for memory allocation.
+
+If extcon_allocate_device()/devm_extcon_allocate_device() is implemented to extcon core,
+I think extcon core can control the memory operation of extcon device.
+
+EXTCON Subsystem
+- devm_extcon_allocate_device(struct device *dev)
+- extcon_allocate_device(void)
+- extcon_dev_register(struct extcon_dev *edev)
+
+If I'm wrong, please correct me. Thanks.
+
+Best Regards,
+Chanwoo Choi
+
+
+
+
+
+
+
 
