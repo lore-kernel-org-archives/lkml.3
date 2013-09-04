@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab3IDSxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:53:35 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42130 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab3IDSxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:53:34 -0400
-Date: Wed, 4 Sep 2013 19:53:29 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, ldewangan@nvidia.com, magi@slimlogic.co.uk,
-        gg@slimlogic.co.uk, mike@compulab.co.il, anilkumar@ti.com,
-        vbyravarasu@nvidia.com
-Message-ID: <20130904185329.GY3084@sirena.org.uk>
-References: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
+	id S1760081Ab3IDS6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:58:33 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60116 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759478Ab3IDS6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 14:58:32 -0400
+Date: Wed, 4 Sep 2013 13:58:20 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH v3 0/2] rsxx: RSXX driver Bug fixes.
+Message-ID: <20130904185820.GD24898@oc6784271780.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="70fLfmUGd5x0AJTB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/10] regulator: tps51632: Use devm_regulator_register
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090418-0320-0000-0000-000000E4690A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The incoming patch series contains 2 patches for the
+rsxx driver (drivers/block/rsxx). 
 
---70fLfmUGd5x0AJTB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Version 1:
+A patch series containing 5 patches was sent out a few
+weeks ago.
 
-On Wed, Sep 04, 2013 at 05:17:44PM +0530, Sachin Kamat wrote:
-> devm_* simplifies the code.
+Version 2:
+o This version decreased the number of patches for the patch
+  series based on importance.
+o Started using the function pci_dma_mapping_error to check
+  the return status of pci_map_page.
 
-Applied all, thanks.
+Version 3:
+o Fixes a compile error in patch 1.
+o Changed the error handling for pci_map_page
+  to cancel all dmas instead of just returning
+  out.
 
---70fLfmUGd5x0AJTB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Patch 1:
+	The driver wasn't handling the return value
+	of pci_map_page correctly for the PowerPC
+	architecture. This also uncovered a double
+	free scenario that is fixed here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Patch 2:
+	In this patch, the pci_map_page function has
+	been moved into our issued workqueue to prevent
+	an us running out of mappable addresses on non-
+	HWWD PCIe x8 slots. The maximum amount that
+	can possible be mapped at one time now is:
+	255 dmas X 4 dma channels X 4096 Bytes.
 
-iQIcBAEBAgAGBQJSJ4GmAAoJELSic+t+oim9sN0P/jMNIiDYk5ASHwUU/Nily899
-ZwwEEacySH/5K+3dXgKqVB3IhI35QnUJ2Jjs52pfjXDVJk4knEtgNbsGHFS5bd/J
-QHk4jMWJ/X8bDMZdhxVLEwe4J1yQDcidH6koPRq9wG/A8iufi9SY78Cz0JmGjQvs
-qoJqvNYAhhfx/1i3rmnJqG6ptWSIGrA+c5WGihhJ9qWvMZyr78b9B2+zRrsyI9Xk
-/kn8ScnJQws/w6gKpGYwTWke6LFfVQzzTvMkQZoT03or3b1FlOjOHEgnMb3lNaLg
-vbkMREQcx2B1D2ZKAmqcPjLEiq4nNsrrEVLmwDJY678VD7Iczys/NHsyjRAS+UsC
-LDYI1NqIxAdZ9Za1Z9poqzIvRbq+CmuT1cnQjTsGvGF/Mx4cMTnCs/Q7ujAr80bT
-3MPOrQsWKpYhCpVbHL6PONhWosxY9f9Oush6Vmo3XJZFq/olGIRBEk0kDn15foLg
-2gfdQmzHUXQYERwOy1FcD1ZhBzt+/guulWjXIkAZa/QwwrCkr1MPtqvfb/5F1IyO
-1oCsaFaN5GDGK3oFR5uzr5f2HspfdMyKA8bLwFSo/S14P9lhNULDcM3nI1qcxQXX
-ysLcZsmw52mNgiABb1FwoEu9kcWQ56W4azdvfIKg1guz4Rtn7kh868f5UT+aDA/i
-vm53qzA8gGDEzFflzsK+
-=ahuk
------END PGP SIGNATURE-----
+Regards,
+- Philip Kelleher
+	
 
---70fLfmUGd5x0AJTB--
