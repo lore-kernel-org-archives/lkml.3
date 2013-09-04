@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762256Ab3IDJOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:14:43 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49466 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3IDJOm (ORCPT
+	id S934437Ab3IDJSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:18:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48901 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762196Ab3IDJSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:14:42 -0400
-X-Spam-Score: -100.9
-Message-ID: <5226F9BF.8040304@asianux.com>
-Date: Wed, 04 Sep 2013 17:13:35 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 4 Sep 2013 05:18:10 -0400
+Message-ID: <5226FACC.9030107@codeaurora.org>
+Date: Wed, 04 Sep 2013 14:48:04 +0530
+From: Sujit Reddy Thumma <sthumma@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Jiri Kosina <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com> <52268800.2010200@asianux.com> <CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com> <5226EAAE.6090500@asianux.com> <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
-In-Reply-To: <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Santosh Y <santoshsy@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: build warning after merge of the scsi tree
+References: <20130902182817.87a961aa251604b630620028@canb.auug.org.au>
+In-Reply-To: <20130902182817.87a961aa251604b630620028@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 05:02 PM, Geert Uytterhoeven wrote:
-> On Wed, Sep 4, 2013 at 10:09 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> On 09/04/2013 03:02 PM, Geert Uytterhoeven wrote:
->>> On Wed, Sep 4, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>> On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
->>>>> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>>> --- a/include/uapi/Kbuild
->>>>>> +++ b/include/uapi/Kbuild
->>>>>> @@ -1,7 +1,6 @@
->>>>>>  # UAPI Header export list
->>>>>> -# Top-level Makefile calls into asm-$(ARCH)
->>>>>> -# List only non-arch directories below
->>>>>> -
->>>>>> +# Except "linux/", UAPI means Universal API.
->>>>>
->>>>> Sorry for my silly question, but what's the purpose of this "Universal
->>>>> API" comment?
->>>>>
->>>>
->>>> Firstly, at least for me, I don't think it is a silly question (maybe
->>>> it means I should give additional explanations).  :-)
->>>>
->>>> I 'guess' the "Universal API" means:
->>>>
->>>>   "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
->>>>
->>>> It is just my 'guess', welcome additional suggestions or completions by
->>>> any members.
->>>>
->>>> When we get this correct additional explanation after discussing, if
->>>> suitable, I should add the final explanation to current patch.
->>>
->>> Thanks. As this is not related at all to Linux, I don't see a reason
->>> to add this comment.
->>>
->>> Here, "UAPI" means "userspace API" only.
->>
->> Hmm... why we need "uapi/linux/" ?  (I can not find some related
->> documents, so I have to 'guess').
-> 
-> The "uapi" subdirectories are there to distinguish userspace headers from
-> kernelspace headers, and allow both to live in the kernel source tree.
-> 
-> When running "make headers_install", the (processed) headers in the
-> various "uapi" subdirectories are copied to /usr/include.
-> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
-> In userspace there are no "uapi" subdirectories anymore.
-> 
+On 9/2/2013 1:58 PM, Stephen Rothwell wrote:
+> Hi James,
+>
+> After merging the scsi tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+>
+> drivers/scsi/ufs/ufshcd.c: In function 'ufshcd_eh_host_reset_handler':
+> drivers/scsi/ufs/ufshcd.c:2740:3: warning: 'flush_work_sync' is deprecated (declared at /scratch/sfr/next/include/linux/workqueue.h:624) [-Wdeprecated-declarations]
+>     flush_work_sync(&hba->eh_work);
+>     ^
 
-Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
+James, would you like to pick up follow-up patch @
+http://marc.info/?l=linux-scsi&m=137819519527432&w=2
+or let me update the commit c1e846ab4422 fixing this?
 
-Are they also truly still "Userspace API" but which need not distinguish
-? (at least, it seems that idea is not quite good).
-
-Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
-for compatible (originally they are here, and now we have to follow, it
-is no reason to change if not find related critical issues)?
-
-
-Thanks.
-
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
-> 
-
+>
+> Introduced by commit c1e846ab4422 ("[SCSI] ufs: Fix device and host reset
+> methods").  flush_work_sync was deprecated by commit 43829731dd37
+> ("workqueue: deprecate flush[_delayed]_work_sync()") before v3.7-rc1.
+>
 
 -- 
-Chen Gang
+Regards,
+Sujit
