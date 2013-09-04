@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab3IDJ0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:26:40 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:39353 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762221Ab3IDJ0i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:26:38 -0400
-From: Tom Gundersen <teg@jklm.no>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] input: i8042 - add PNP modaliases
-Date: Wed,  4 Sep 2013 11:27:36 +0200
-Message-Id: <1378286856-6384-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <20130903193547.GA8150@srcf.ucam.org>
-References: <20130903193547.GA8150@srcf.ucam.org>
+	id S934562Ab3IDJ0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:26:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46281 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934527Ab3IDJ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:26:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1020,1367996400"; 
+   d="asc'?scan'208";a="355717211"
+Message-ID: <1378286800.2048.1.camel@jtkirshe-mobl>
+Subject: Re: [E1000-devel] [PATCH 5/7] ixgbe: use
+ pcie_capability_read_word() to simplify code
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
+        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Wed, 04 Sep 2013 02:26:40 -0700
+In-Reply-To: <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+	 <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-FzsLmdWGu8vfr7ZgN+tn"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the module to be autoloaded in the common case.
 
-In order to work on non-PnP systems the module should be compiled in or loaded
-unconditionally at boot (c.f. modules-load.d(5)), as before.
+--=-FzsLmdWGu8vfr7ZgN+tn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Tom Gundersen <teg@jklm.no>
----
+On Tue, 2013-09-03 at 15:35 +0800, Yijing Wang wrote:
+> use pcie_capability_read_word() to simplify code.
+>=20
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 
-This appears to work for me (though I don't have the real hardware to test), I get the following aliases:
-alias:          acpi*:CPQA0D7:*
-alias:          pnp:dCPQA0D7*
-alias:          acpi*:PNP0345:*
-alias:          pnp:dPNP0345*
-alias:          acpi*:PNP0344:*
-alias:          pnp:dPNP0344*
-alias:          acpi*:PNP0343:*
-alias:          pnp:dPNP0343*
-alias:          acpi*:PNP0320:*
-alias:          pnp:dPNP0320*
-alias:          acpi*:PNP030B:*
-alias:          pnp:dPNP030b*
-alias:          acpi*:PNP030A:*
-alias:          pnp:dPNP030a*
-alias:          acpi*:PNP0309:*
-alias:          pnp:dPNP0309*
-alias:          acpi*:PNP0306:*
-alias:          pnp:dPNP0306*
-alias:          acpi*:PNP0305:*
-alias:          pnp:dPNP0305*
-alias:          acpi*:PNP0304:*
-alias:          pnp:dPNP0304*
-alias:          acpi*:PNP0303:*
-alias:          pnp:dPNP0303*
-alias:          acpi*:PNP0302:*
-alias:          pnp:dPNP0302*
-alias:          acpi*:PNP0301:*
-alias:          pnp:dPNP0301*
-alias:          acpi*:PNP0300:*
-alias:          pnp:dPNP0300*
+Thanks Yijing, I will add it to my queue.
 
- drivers/input/serio/i8042-x86ia64io.h | 2 ++
- 1 file changed, 2 insertions(+)
+--=-FzsLmdWGu8vfr7ZgN+tn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 5f306f7..0ec9abb 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -765,6 +765,7 @@ static struct pnp_device_id pnp_kbd_devids[] = {
- 	{ .id = "CPQA0D7", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_kbd_devids);
- 
- static struct pnp_driver i8042_pnp_kbd_driver = {
- 	.name           = "i8042 kbd",
-@@ -786,6 +787,7 @@ static struct pnp_device_id pnp_aux_devids[] = {
- 	{ .id = "SYN0801", .driver_data = 0 },
- 	{ .id = "", },
- };
-+MODULE_DEVICE_TABLE(pnp, pnp_aux_devids);
- 
- static struct pnp_driver i8042_pnp_aux_driver = {
- 	.name           = "i8042 aux",
--- 
-1.8.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAABCgAGBQJSJvzQAAoJEOVv75VaS+3OG8IP/iHrGRDmPGoofrbCkgAIj+uL
+eCCvun9ymY0BSfGB9Uu9VNB+ryJAIk2H5apldYWeURyoVQxdJVlBJnPTqI3jN1Kw
+/DzP+FRUyiRVD9NCW2cRB9ZVzKSlkqOZ/UKtpOwbAh0+rWT/k8T/cvfK1/EMibyh
+71w05n1IlXJoDZqKi01M+w3JQJhK3yLwq/pcW4npwxXI864Mg21ExjQqxgd0ABVl
+2UJ3LNQ297vfTco4bOXXLtS6Wdtl316iYFG3Ix3YdBK+q5ly4qtHX6UEp1YtaZlv
+UMtlEIZu0TDiDzO1srxyroHFcEmB76OmZZnY30huVwx07zbOFP0JuzT4yyWGRIuk
++LBQWMhkJ2c5l74PmejzDfD/Ur4+1dFwi7qs++z2NZJE1IH6L1HZbdPHMm6yq5B8
+ZNzV9nsaS0JO6XVJYdtzB/r0jfHhbTuYqYN83eFtW2n6qGYqyj/K+mm1LVJ+WjmS
+HTsJxbElwVPbJbt8s7OUNt8EFNogezIiPGzqUAx6+CVHAidN5cxxsu7ueF6LLLNF
+MgjlZrWL9a/1mi7pco5JMSLUaQm4Ej3vAm0u2W+hiSfWuNKG9K/9eHHkFqiL7747
+A8xDvnxfpfZPKyK97miOeJAL+GXbndeVcjqdNAAc8AW0Q8OuBQcqYmsqyeqIHFWd
++s2B/j2TWlba8UnxQdRE
+=YYqR
+-----END PGP SIGNATURE-----
+
+--=-FzsLmdWGu8vfr7ZgN+tn--
 
