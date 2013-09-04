@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762486Ab3IDLrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:47:05 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58757 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1762453Ab3IDLrC (ORCPT
+	id S1762516Ab3IDLr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:47:58 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:59850 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669Ab3IDLr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:47:02 -0400
-Message-ID: <52271DB0.8030305@hurleysoftware.com>
-Date: Wed, 04 Sep 2013 07:46:56 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 07:47:56 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <netdev@vger.kernel.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <arc-linux-dev@synopsys.com>
+Subject: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file copies
+Date: Wed, 4 Sep 2013 17:17:15 +0530
+Message-ID: <1378295235-18928-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: Josef Bacik <jbacik@fusionio.com>
-CC: Michel Lespinasse <walken@google.com>, linux-btrfs@vger.kernel.org,
-        mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rwsem: add rwsem_is_contended
-References: <1377872041-390-1-git-send-email-jbacik@fusionio.com> <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com> <5224C850.2060103@hurleysoftware.com> <20130903131805.GA15634@localhost.localdomain>
-In-Reply-To: <20130903131805.GA15634@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 09:18 AM, Josef Bacik wrote:
-> On Mon, Sep 02, 2013 at 01:18:08PM -0400, Peter Hurley wrote:
->> On 09/01/2013 04:32 AM, Michel Lespinasse wrote:
->>> Hi Josef,
->>>
->>> On Fri, Aug 30, 2013 at 7:14 AM, Josef Bacik <jbacik@fusionio.com> wrote:
->>>> Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
->>>> read lock on this rwsem while they scan the extent tree, and if need_resched()
->>>> they will drop the lock and schedule.  The transaction commit needs to take a
->>>> write lock for this rwsem for a very short period to switch out the commit
->>>> roots.  If there are a lot of threads doing this caching operation we can starve
->>>> out the committers which slows everybody out.  To address this we want to add
->>>> this functionality to see if our rwsem has anybody waiting to take a write lock
->>>> so we can drop it and schedule for a bit to allow the commit to continue.
->>>> Thanks,
->>>>
->>>> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
->>>
->>> FYI, I once tried to introduce something like this before, but my use
->>> case was pretty weak so it was not accepted at the time. I don't think
->>> there were any objections to the API itself though, and I think it's
->>> potentially a good idea if you use case justifies it.
->>
->> Exactly, I'm concerned about the use case: readers can't starve writers.
->> Of course, lots of existing readers can temporarily prevent a writer from
->> acquiring, but those readers would already have the lock. Any new readers
->> wouldn't be able to prevent a waiting writer from obtaining the lock.
->>
->> Josef,
->> Could you be more explicit, maybe with some detailed numbers about the
->> condition you report?
->>
->
-> Sure, this came from a community member
->
-> http://article.gmane.org/gmane.comp.file-systems.btrfs/28081
->
-> With the old approach we could block between 1-2 seconds waiting for this rwsem,
-> and with the new approach where we allow many more of these caching threads we
-> were staving out the writer for 80 seconds.
->
-> So what happens is these threads will scan our extent tree to put together the
-> free space cache, and they'll hold this lock while they are doing the scanning.
-> The only way they will drop this lock is if we hit need_resched(), but because
-> these threads are going to do quite a bit of IO I imagine we're not ever being
-> flagged with need_resched() because we schedule while waiting for IO.  So these
-> threads will hold onto this lock for bloody ever without giving it up so the
-> committer can take the write lock.  His patch to "fix" the problem was to have
-> an atomic that let us know somebody was waiting for a write lock and then we'd
-> drop the reader lock and schedule.
+copying large files to a NFS mounted host was taking absurdly large
+time.
 
-Thanks for the additional clarification.
+Turns out that TX BD reclaim had a sublte bug.
 
-> So really we're just using a rwsem in a really mean way for writers.  I'm open
-> to other suggestions but I think this probably the cleanest way.
+Loop starts off from @txbd_dirty cursor and stops when it hits a BD
+still in use by controller. However when it stops it needs to keep the
+cursor at that very BD to resume scanning in next iteration. However it
+was erroneously incrementing the cursor, causing the next scan(s) to
+fail too, unless the BD chain was completely drained out.
 
-Is there substantial saved state at the point where the caching thread is
-checking need_resched() that precludes dropping and reacquiring the
-extent_commit_sem (or before find_next_key())?  Not that it's a cleaner
-solution; just want to understand better the situation.
+[ARCLinux]$ ls -l -sh /disk/log.txt
+ 17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
 
-Regards,
-Peter Hurley
+========== Before =====================
+[ARCLinux]$ time cp /disk/log.txt /mnt/.
+real    31m 7.95s
+user    0m 0.00s
+sys     0m 0.10s
+
+========== After =====================
+[ARCLinux]$ time cp /disk/log.txt /mnt/.
+real    0m 24.33s
+user    0m 0.00s
+sys     0m 0.19s
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Alexey Brodkin <abrodkin@synopsys.com> (commit_signer:3/4=75%)
+Cc: "David S. Miller" <davem@davemloft.net> (commit_signer:3/4=75%)
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: arc-linux-dev@synopsys.com
+---
+ drivers/net/ethernet/arc/emac_main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index 55d79cb..9e16014 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -149,8 +149,6 @@ static void arc_emac_tx_clean(struct net_device *ndev)
+ 		struct sk_buff *skb = tx_buff->skb;
+ 		unsigned int info = le32_to_cpu(txbd->info);
+ 
+-		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
+-
+ 		if ((info & FOR_EMAC) || !txbd->data)
+ 			break;
+ 
+@@ -180,6 +178,8 @@ static void arc_emac_tx_clean(struct net_device *ndev)
+ 		txbd->data = 0;
+ 		txbd->info = 0;
+ 
++		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
++
+ 		if (netif_queue_stopped(ndev))
+ 			netif_wake_queue(ndev);
+ 	}
+-- 
+1.8.1.2
+
