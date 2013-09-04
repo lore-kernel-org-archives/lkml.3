@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab3IDIzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:55:46 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:39019 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934451Ab3IDIzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:55:42 -0400
-Date: Wed, 4 Sep 2013 17:55:39 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v5 0/7] DMA: shdma: switch DT to use OF device ID tables
-Message-ID: <20130904085539.GE25209@verge.net.au>
-References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
- <20130825073656.GF8091@intel.com>
- <20130826071725.GJ26682@verge.net.au>
- <Pine.LNX.4.64.1308291321260.3786@axis700.grange>
+	id S934567Ab3IDI6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:58:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49754 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934433Ab3IDI6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 04:58:05 -0400
+Message-ID: <5226F5E2.5010409@ti.com>
+Date: Wed, 4 Sep 2013 14:27:06 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1308291321260.3786@axis700.grange>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <balbi@ti.com>,
+        <kyungmin.park@samsung.com>, <jg1.han@samsung.com>,
+        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
+        <stern@rowland.harvard.edu>, <broonie@kernel.org>,
+        <tomasz.figa@gmail.com>, <arnd@arndb.de>, <grant.likely@linaro.org>,
+        <tony@atomide.com>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <balajitk@ti.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v11 0/8] PHY framework
+References: <1377063973-22044-1-git-send-email-kishon@ti.com> <521B0E79.6060506@ti.com> <20130827192059.GZ3005@radagast> <5225FF63.6080608@ti.com> <20130903155030.GA21525@kroah.com>
+In-Reply-To: <20130903155030.GA21525@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 29, 2013 at 01:24:31PM +0200, Guennadi Liakhovetski wrote:
-> Hi Simon,
+On Tuesday 03 September 2013 09:20 PM, Greg KH wrote:
+> On Tue, Sep 03, 2013 at 08:55:23PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi Greg,
+>>
+>> On Wednesday 28 August 2013 12:50 AM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Mon, Aug 26, 2013 at 01:44:49PM +0530, Kishon Vijay Abraham I wrote:
+>>>> On Wednesday 21 August 2013 11:16 AM, Kishon Vijay Abraham I wrote:
+>>>>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
+>>>>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
+>>>>> the PHY with or without using phandle.
+>>>>>
+>>>>> This framework will be of use only to devices that uses external PHY (PHY
+>>>>> functionality is not embedded within the controller).
+>>>>>
+>>>>> The intention of creating this framework is to bring the phy drivers spread
+>>>>> all over the Linux kernel to drivers/phy to increase code re-use and to
+>>>>> increase code maintainability.
+>>>>>
+>>>>> Comments to make PHY as bus wasn't done because PHY devices can be part of
+>>>>> other bus and making a same device attached to multiple bus leads to bad
+>>>>> design.
+>>>>>
+>>>>> If the PHY driver has to send notification on connect/disconnect, the PHY
+>>>>> driver should make use of the extcon framework. Using this susbsystem
+>>>>> to use extcon framwork will have to be analysed.
+>>>>>
+>>>>> You can find this patch series @
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
+>>>>
+>>>> Looks like there are not further comments on this series. Can you take this in
+>>>> your misc tree?
+>>>
+>>> Do you want me to queue these for you ? There are quite a few users for
+>>> this framework already and I know of at least 2 others which will show
+>>> up for v3.13.
+>>
+>> Can you queue this patch series? There are quite a few users already for this
+>> framework.
 > 
-> On Mon, 26 Aug 2013, Simon Horman wrote:
-> 
-> > On Sun, Aug 25, 2013 at 01:06:57PM +0530, Vinod Koul wrote:
-> > > On Fri, Aug 02, 2013 at 04:50:35PM +0200, Guennadi Liakhovetski wrote:
-> > > > In this version of shdma Device Tree support I preserved the DT 
-> > > > configuration approach via OF device ID tables from v4, but now it is only 
-> > > > used for the DT-mode, the C-version is left untouched. In this series I 
-> > > > only include one platform: r8a73a4-based APE6EVM, if accepted, others can 
-> > > > be added easily. I also took care not to include mach/*.h headers in 
-> > > > driver .c files. To illustrate the use of DT DMA support for MMC DMA on 
-> > > > APE6EVM a patch from a previously separate patch series "DMA for MMCIF and 
-> > > > SDHI devices in DT mode"
-> > > I have applied all the dma patches, the ARM ones fail for me so should possible
-> > > go thru ARM tree.
-> > 
-> > Guennadi, if you need me to queue up any patches please repost them
-> > once their dependencies are available in a stable branch.
-> 
-> I've just verified, that the current -next has all DMA and MMCIF 
-> prerequisites for the following my patches:
-> 
->       ARM: shmobile: armadillo800eva-reference: add MMCIF and SDHI DT nodes
->       ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
->       ARM: shmobile: r8a73a4: add a DT node and a clock alias for the DMAC
->       ARM: shmobile: ape6evm-reference: enable DMA for the MMC interface
->       ARM: shmobile: ape6evm: disable MMCIF Command Completion Signal
->       ARM: shmobile: ape6evm: add DMA support to MMCIF
->       ARM: shmobile: armadillo800eva: disable MMCIF Command Completion Signal
->       ARM: shmobile: kzm9g: disable MMCIF Command Completion Signal
->       ARM: shmobile: lager: disable MMCIF Command Completion Signal, add CLK_CTRL2
-> 
-> I can re-send them all to your privetly as an archive, if you like, or you 
-> can pick their latest versions from an archive or from patchwork.
+> It will have to wait for 3.13 as the merge window for new features has
+> been closed for a week or so.  Sorry, I'll queue this up after 3.12-rc1
+> is out.
 
-Thanks, I can pick them out of patchwork.
+Alright, thanks.
+
+-Kishon
