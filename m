@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762208Ab3IDX1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 19:27:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761013Ab3IDX1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 19:27:34 -0400
-Date: Wed, 4 Sep 2013 19:27:25 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: linux-scsi@vger.kernel.org, bgrove@attotech.com
-Subject: Re: [SCSI] esas2r: ATTO Technology ExpressSAS 6G SAS/SATA RAID
- Adapter Driver
-Message-ID: <20130904232725.GA5727@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-scsi@vger.kernel.org, bgrove@attotech.com
-References: <20130903233716.5333B660D6B@gitolite.kernel.org>
+	id S1761586Ab3IDXfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 19:35:53 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:56452 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab3IDXfv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 19:35:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903233716.5333B660D6B@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130830211510.GA20307@kmo-pixel>
+References: <CAFkUHxd6xN3On4DTC7VnUgVuy8M57k=8eKYr47bKKnpQWS+p8A@mail.gmail.com>
+	<20130830211510.GA20307@kmo-pixel>
+Date: Wed, 4 Sep 2013 16:35:50 -0700
+Message-ID: <CAFkUHxfYeF8G+r3RYp3dTaOBzPqo_diVoF5g_7sAeW+wKprrjA@mail.gmail.com>
+Subject: Re: [PATCH] bcache: Fix a shrinker deadlock
+From: kernel neophyte <neophyte.hacker001@gmail.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefan Priebe <s.priebe@profihost.ag>, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > +struct esas2r_adapter {
- > +	struct esas2r_target targetdb[ESAS2R_MAX_TARGETS];
- > +	struct esas2r_target *targetdb_end;
- ... 
- > +	u8 fw_coredump_buff[ESAS2R_FWCOREDUMP_SZ];
+On Fri, Aug 30, 2013 at 2:15 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> GFP_NOIO means we could be getting called recursively - mca_alloc() ->
+> mca_data_alloc() - definitely can't use mutex_lock(bucket_lock) then.
+> Whoops.
+>
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 
+Awesome! I tested the fix... no crashes/deadlock.
+But I see lower benchmark numbers for random write.. is this expected
+for this change ?
 
- > +void esas2r_reset_chip(struct esas2r_adapter *a)
- > +{
- > +	if (!esas2r_is_adapter_present(a))
- > +		return;
- > +
- > +	/*
- > +	 * Before we reset the chip, save off the VDA core dump.  The VDA core
- > +	 * dump is located in the upper 512KB of the onchip SRAM.  Make sure
- > +	 * to not overwrite a previous crash that was saved.
- > +	 */
- > +	if ((a->flags2 & AF2_COREDUMP_AVAIL)
- > +	    && !(a->flags2 & AF2_COREDUMP_SAVED)
- > +	    && a->fw_coredump_buff) {
- > +		esas2r_read_mem_block(a,
- > +				      a->fw_coredump_buff,
- > +				      MW_DATA_ADDR_SRAM + 0x80000,
- > +				      ESAS2R_FWCOREDUMP_SZ);
+Thanks Kent.
+-Suhas
 
-Comparing an array (fw_coredump_buff) to null probably isn't what you intended here.
-
-	Dave
+> ---
+>
+> On Thu, Aug 29, 2013 at 05:29:54PM -0700, kernel neophyte wrote:
+>> We are evaluating to use bcache on our production systems where the
+>> caching devices are insanely fast, in this scenario under a moderate load
+>> of random 4k writes.. bcache fails miserably :-(
+>>
+>> [ 3588.513638] bcache: bch_cached_dev_attach() Caching sda4 as bcache0
+>> on set b082ce66-04c6-43d5-8207-ebf39840191d
+>> [ 4442.163661] INFO: task kworker/0:0:4 blocked for more than 120 seconds.
+>> [ 4442.163671] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+>> disables this message.
+>> [ 4442.163678] kworker/0:0     D ffffffff81813d40     0     4      2 0x00000000
+>> [ 4442.163695] Workqueue: bcache bch_data_insert_keys
+>> [ 4442.163699]  ffff882fa6ac93c8 0000000000000046 ffff882fa6ac93e8
+>> 0000000000000151
+>> [ 4442.163705]  ffff882fa6a84cb0 ffff882fa6ac9fd8 ffff882fa6ac9fd8
+>> ffff882fa6ac9fd8
+>> [ 4442.163711]  ffff882fa6ad6640 ffff882fa6a84cb0 ffff882fa6a84cb0
+>> ffff8822ca2c0d98
+>> [ 4442.163716] Call Trace:
+>> [ 4442.163729]  [<ffffffff816be299>] schedule+0x29/0x70
+>> [ 4442.163735]  [<ffffffff816be57e>] schedule_preempt_disabled+0xe/0x10
+>> [ 4442.163741]  [<ffffffff816bc862>] __mutex_lock_slowpath+0x112/0x1b0
+>> [ 4442.163746]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
+>> [ 4442.163752]  [<ffffffff815112e5>] bch_mca_shrink+0x1b5/0x2f0
+>> [ 4442.163759]  [<ffffffff8117fc32>] ? prune_super+0x162/0x1b0
+>> [ 4442.163769]  [<ffffffff8112ebb4>] shrink_slab+0x154/0x300
+>> [ 4442.163776]  [<ffffffff81076828>] ? resched_task+0x68/0x70
+>> [ 4442.163782]  [<ffffffff81077165>] ? check_preempt_curr+0x75/0xa0
+>> [ 4442.163788]  [<ffffffff8113a379>] ? fragmentation_index+0x19/0x70
+>> [ 4442.163794]  [<ffffffff8113140f>] do_try_to_free_pages+0x20f/0x4b0
+>> [ 4442.163800]  [<ffffffff81131864>] try_to_free_pages+0xe4/0x1a0
+>> [ 4442.163810]  [<ffffffff81126e9c>] __alloc_pages_nodemask+0x60c/0x9b0
+>> [ 4442.163818]  [<ffffffff8116062a>] alloc_pages_current+0xba/0x170
+>> [ 4442.163824]  [<ffffffff8112240e>] __get_free_pages+0xe/0x40
+>> [ 4442.163829]  [<ffffffff8150ebb3>] mca_data_alloc+0x73/0x1d0
+>> [ 4442.163834]  [<ffffffff8150ee5a>] mca_bucket_alloc+0x14a/0x1f0
+>> [ 4442.163838]  [<ffffffff81511020>] mca_alloc+0x360/0x470
+>> [ 4442.163843]  [<ffffffff81511d1c>] bch_btree_node_alloc+0x8c/0x1c0
+>> [ 4442.163849]  [<ffffffff81513020>] btree_split+0x110/0x5c0
+>
+> Ohhh, that definitely isn't supposed to happen.
+>
+> Wonder why I hadn't seen this before, looking at the backtrace it's
+> pretty obvious what's broken though - try this patch:
+>
+>  drivers/md/bcache/btree.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 60908de..55e8666 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -617,7 +617,7 @@ static int bch_mca_shrink(struct shrinker *shrink, struct shrink_control *sc)
+>                 return mca_can_free(c) * c->btree_pages;
+>
+>         /* Return -1 if we can't do anything right now */
+> -       if (sc->gfp_mask & __GFP_WAIT)
+> +       if (sc->gfp_mask & __GFP_IO)
+>                 mutex_lock(&c->bucket_lock);
+>         else if (!mutex_trylock(&c->bucket_lock))
+>                 return -1;
+> --
+> 1.8.4.rc3
+>
