@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab3IDBDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:03:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55232 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934081Ab3IDBDF (ORCPT
+	id S1755960Ab3IDBJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:09:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3024 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab3IDBJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:03:05 -0400
-Date: Wed, 4 Sep 2013 02:03:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
-Message-ID: <20130904010301.GE13318@ZenIV.linux.org.uk>
-References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
+	Tue, 3 Sep 2013 21:09:22 -0400
+X-Spam-Score: -100.9
+Message-ID: <52268800.2010200@asianux.com>
+Date: Wed, 04 Sep 2013 09:08:16 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904005456.5025.94309.stgit@perseus.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jiri Kosina <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
+ and "uapi/linux/Kbuild"
+References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
+In-Reply-To: <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 08:54:57AM +0800, Ian Kent wrote:
-> +static int kern_path_top(const char *pathname,
-> +			 unsigned int flags, struct path *path)
-> +{
-> +	struct dentry *dentry;
-> +	struct qstr name;
-> +	const char *tmp;
-> +	unsigned int len;
-> +	int err;
-> +
-> +	len = strlen(pathname);
-> +	if (len <= 1)
-> +		return -EINVAL;
-> +
-> +	tmp = pathname + len - 1;
-> +	len = 0;
-> +	if (*tmp == '/')
-> +		tmp--;
-> +	do {
-> +		if (*tmp == '/')
-> +			break;
-> +		len++;
-> +	} while (--tmp >= pathname);
-> +	tmp++;
-> +
-> +	err = kern_path(pathname, flags | LOOKUP_PARENT, path);
-> +	if (err)
-> +		return err;
-> +
-> +	name.name = tmp;
-> +	name.len = len;
-> +	name.hash = full_name_hash(tmp, len);
-> +
-> +	dentry = d_lookup(path->dentry, &name);
-> +	if (!dentry) {
-> +		path_put(path);
-> +		return -ENOENT;
-> +	}
-> +	dput(path->dentry);
-> +	path->dentry = dentry;
-> +
-> +	while (follow_down_one(path))
-> +		;
-> +
-> +	return 0;
-> +}
+On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
+> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> --- a/include/uapi/Kbuild
+>> +++ b/include/uapi/Kbuild
+>> @@ -1,7 +1,6 @@
+>>  # UAPI Header export list
+>> -# Top-level Makefile calls into asm-$(ARCH)
+>> -# List only non-arch directories below
+>> -
+>> +# Except "linux/", UAPI means Universal API.
+> 
+> Sorry for my silly question, but what's the purpose of this "Universal
+> API" comment?
+> 
 
-Ewwww...   NAK in that form.  Just what will happen if the last component
-given to that sucker will be . or .., for starters?  Or a symlink, with
-'/' added to it to force following the damn thing?
+Firstly, at least for me, I don't think it is a silly question (maybe
+it means I should give additional explanations).  :-)
+
+I 'guess' the "Universal API" means:
+
+  "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
+
+It is just my 'guess', welcome additional suggestions or completions by
+any members.
+
+When we get this correct additional explanation after discussing, if
+suitable, I should add the final explanation to current patch.
+
+
+Thanks.
+
+>> +# For "linux/", UAPI means User API which can be used by user mode.
+>>
+>>  header-y += asm-generic/
+>>  header-y += linux/
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
+> 
+
+
+-- 
+Chen Gang
