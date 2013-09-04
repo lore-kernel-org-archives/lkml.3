@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763236Ab3IDRTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:19:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56562 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763209Ab3IDRTD (ORCPT
+	id S1763269Ab3IDRVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:21:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33876 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab3IDRVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:19:03 -0400
-Date: Wed, 4 Sep 2013 10:18:45 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-f2a7b303d6e0bfb75b611b560af218608e50011f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        ak@linux.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        ak@linux.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <CA+55aFxVv==DC0JdS87V+cPr-twN+TujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com>
-References: <CA+55aFxVv==DC0JdS87V+cPr-twN+TujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asmlinkage] x86, paravirt:
-  Remove duplicate definition for DEF_NATIVE
-Git-Commit-ID: f2a7b303d6e0bfb75b611b560af218608e50011f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 4 Sep 2013 13:21:45 -0400
+Message-ID: <52276BF2.1050902@infradead.org>
+Date: Wed, 04 Sep 2013 10:20:50 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 04 Sep 2013 10:18:51 -0700 (PDT)
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+CC: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, bernie@develer.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: do_div() silently truncates "base" to 32bit
+References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com> <52210D34.5030807@infradead.org> <CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com> <52212128.3000100@infradead.org> <1377905319.2070.38.camel@joe-AO722> <CAOMFOmVrNu2ZDrBrm7Rt_p-C3Po0d6HmyCQ2HvJSVT=cx+OjOw@mail.gmail.com> <CAOMFOmUEKWroSWRfFdHSTPfWT16s41=Qbh3FZnV4CcoaLchrLA@mail.gmail.com>
+In-Reply-To: <CAOMFOmUEKWroSWRfFdHSTPfWT16s41=Qbh3FZnV4CcoaLchrLA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f2a7b303d6e0bfb75b611b560af218608e50011f
-Gitweb:     http://git.kernel.org/tip/f2a7b303d6e0bfb75b611b560af218608e50011f
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 4 Sep 2013 09:43:30 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 4 Sep 2013 09:46:43 -0700
+On 09/04/13 08:32, Anatol Pomozov wrote:
+> Hi
+> 
+> On Fri, Aug 30, 2013 at 5:50 PM, Anatol Pomozov
+> <anatol.pomozov@gmail.com> wrote:
+>> Hi, Joe
+>>
+>> On Fri, Aug 30, 2013 at 4:28 PM, Joe Perches <joe@perches.com> wrote:
+>>> On Fri, 2013-08-30 at 15:48 -0700, Randy Dunlap wrote:
+>>>> On 08/30/13 15:14, Anatol Pomozov wrote:
+>>>>> But another question still remains: why compiler does not warn that
+>>>>> size truncation happens? How to prevent bugs like CFQ one in the
+>>>>> future? Should we add a compile-time assert to do_div() to prevent
+>>>>> passing 64 numbers in "base" macro parameter?
+>>>> That sounds like a fine idea to me.
+>>>
+>>> Geert thought so too and submitted a patch
+>>>
+>>> http://www.spinics.net/lists/linux-btrfs/msg26788.html
+>>
+>> Thanks it works!
+>>
+>> block/cfq-iosched.c: In function 'cfqg_prfill_avg_queue_size':
+>> block/cfq-iosched.c:4423:3: error: size of unnamed array is negative
+>> make[2]: *** [block/gfq-iosched.s] Error 1
+>> make[1]: *** [block/gfq-iosched.s] Error 2
+>> I see a number of other truncation errors. We need to fix them as well.
+> 
+> I looked at the places where do_div() passes incorrect parameters and
+> it is quite a lot of them. It would be better to warn users until all
+> the places are fixed. Is there any BUILD_WARN_ON() macro?
+> 
 
-x86, paravirt: Remove duplicate definition for DEF_NATIVE
 
-DEF_NATIVE() is defined in paravirt_types.h, remove duplicate
-definition in paravirt.c
+Not that I know of or can find.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andi Kleen <ak@linux.kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFxVv==DC0JdS87V%2BcPr-twN%2BTujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com
----
- arch/x86/kernel/paravirt.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 884aa40..1b10af8 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -62,11 +62,6 @@ void __init default_banner(void)
- 	       pv_info.name);
- }
- 
--/* Simple instruction patching code. */
--#define DEF_NATIVE(ops, name, code)					\
--	extern const char start_##ops##_##name[], end_##ops##_##name[];	\
--	asm("start_" #ops "_" #name ": " code "; end_" #ops "_" #name ":")
--
- /* Undefined instruction for dealing with missing ops pointers. */
- static const unsigned char ud2a[] = { 0x0f, 0x0b };
- 
+-- 
+~Randy
