@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763128Ab3IDRIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:08:18 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54015 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3IDRIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:08:16 -0400
-Message-ID: <522768F8.2040307@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 22:38:08 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1763102Ab3IDRPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:15:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:58215 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752831Ab3IDRPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:15:32 -0400
+Date: Wed, 4 Sep 2013 12:15:28 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: Robin Holt <robinmholt@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
+Message-ID: <20130904171528.GB2975@sgi.com>
+References: <87wqo050fc.fsf@tassilo.jf.intel.com>
+ <1376663644-153546-1-git-send-email-athorlton@sgi.com>
+ <1376663644-153546-2-git-send-email-athorlton@sgi.com>
+ <520E672C.3080102@intel.com>
+ <20130816181728.GQ26093@sgi.com>
+ <20130816185212.GA3568@shutemov.name>
+ <20130827165039.GC2886@sgi.com>
+ <CAPp3RGqifK=tum94nGKcqSmDpzj3ceC_ZDo7KNLOz4KHjqv5mw@mail.gmail.com>
+ <20130904154301.GA2975@sgi.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <87mwntt8y0.fsf@sejong.aot.lge.com>
-In-Reply-To: <87mwntt8y0.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090416-4790-0000-0000-00000A24A2A0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904154301.GA2975@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 11:38 AM, Namhyung Kim wrote:
-> Hi Hemant,
->
-> On Tue, 03 Sep 2013 13:06:40 +0530, Hemant Kumar Shaw wrote:
->> This series adds support to perf to list and probe into the SDT markers.
->> The first patch implements listing of all the SDT markers present in
->> the ELFs (executables or libraries). The SDT markers are present in the
->> .note.stapsdt section of the elf. That section can be traversed to list
->> all the markers. Recognition of markers follows the SystemTap approach.
->>
->> The second patch will allow perf to probe into these markers. This is
->> done by writing the marker name and its offset into the
->> uprobe_events file in the tracing directory.
->> Then, perf tools can be used to analyze perf.data file.
-> First, thanks for your work!
->
-> In fact, I was working on the same topic of support SDT markers.  But I
-> started it by adding support for accessing arguments in uprobes [1].
+> Robin,
+> 
+> I tweaked one of our other tests to behave pretty much exactly as I
+> - malloc a large array
+> - Spawn a specified number of threads
+> - Have each thread touch small, evenly spaced chunks of the array (e.g.
+>   for 128 threads, the array is divided into 128 chunks, and each thread
+>   touches 1/128th of each chunk, dividing the array into 16,384 pieces)
 
-I was thinking of adding support to SDT markers' arguments too!! I 
-already have your patches and did some basic testing. I will add support 
-to arguments in the next iteration of my patches.
-
-> The patchset is floating around the list for now but I hope it'll get
-> merged soon.  I guess you want to have it too :).
-
-Of course, that would be great!
-
->
-> Anyway, it'd great if you add me to CC next time.
-
-Sure, will do that.
-
-Thanks
-Hemant
->
-> Thanks,
-> Namhyung
->
->
-> [1] http://thread.gmane.org/gmane.linux.kernel/1555044
->
-
+Forgot to mention that the threads don't touch their chunks of memory
+concurrently, i.e. thread 2 has to wait for thread 1 to finish first.
+This is important to note, since the pages won't all get stuck on the
+first node without this behavior.
