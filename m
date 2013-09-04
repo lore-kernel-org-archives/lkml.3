@@ -1,52 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab3IDTlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 15:41:52 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50083 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606Ab3IDTlu (ORCPT
+	id S932311Ab3IDTmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 15:42:10 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:14051 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab3IDTmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 15:41:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <16226.1378318400@warthog.procyon.org.uk>
-References: <cover.1375999914.git.milosz@adfin.com>
-	<306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com>
-	<18832.1378311843@warthog.procyon.org.uk>
-	<CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com>
-	<18284.1378315570@warthog.procyon.org.uk>
-	<CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com>
-	<16226.1378318400@warthog.procyon.org.uk>
-Date: Wed, 4 Sep 2013 15:41:48 -0400
-Message-ID: <CANP1eJFmMNEr9orps6Dd983sp6QmMfBsMT+dY1CvZ+u0nXKf4w@mail.gmail.com>
-Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
-From: Milosz Tanski <milosz@adfin.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Hongyi Jia <jiayisuse@gmail.com>, ceph-devel <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 4 Sep 2013 15:42:06 -0400
+Message-ID: <1378323618.10300.981.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 11/11] x86, mem_hotplug: Allocate memory near kernel
+ image before SRAT is parsed.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Date: Wed, 04 Sep 2013 13:40:18 -0600
+In-Reply-To: <1377596268-31552-12-git-send-email-tangchen@cn.fujitsu.com>
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1377596268-31552-12-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 2:13 PM, David Howells <dhowells@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> wrote:
->
->> Is it as simple as stick a mutex at the top of the
->> __fscache_check_consistency function before we try to find the object?
->
-> You can lock a mutex in a function, but where are you actually going to place
-> the mutex struct?  And what other code is going to take it?  To do this, you'd
-> have to place the mutex struct in fscache_cookie.  The problem is that you
-> have to protect the pointer from fscache_cookie to fscache_object - so placing
-> the mutex in fscache_object doesn't help.
+On Tue, 2013-08-27 at 17:37 +0800, Tang Chen wrote:
+> After memblock is ready, before SRAT is parsed, we should allocate memory
+> near the kernel image. So this patch does the following:
+> 
+> 1. After memblock is ready, make memblock allocate memory from low address
+>    to high, and set the lowest limit to the end of kernel image.
+> 2. After SRAT is parsed, make memblock behave as default, allocate memory
+>    from high address to low, and reset the lowest limit to 0.
+> 
+> This behavior is controlled by movablenode boot option.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/kernel/setup.c |   37 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 37 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index fa7b5f0..0b35bbd 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1087,6 +1087,31 @@ void __init setup_arch(char **cmdline_p)
+>  	trim_platform_memory_ranges();
+>  	trim_low_memory_range();
+>  
+> +#ifdef CONFIG_MOVABLE_NODE
+> +	if (movablenode_enable_srat) {
+> +		/*
+> +		 * Memory used by the kernel cannot be hot-removed because Linux cannot
+> +		 * migrate the kernel pages. When memory hotplug is enabled, we should
+> +		 * prevent memblock from allocating memory for the kernel.
+> +		 *
+> +		 * ACPI SRAT records all hotpluggable memory ranges. But before SRAT is
+> +		 * parsed, we don't know about it.
+> +		 *
+> +		 * The kernel image is loaded into memory at very early time. We cannot
+> +		 * prevent this anyway. So on NUMA system, we set any node the kernel
+> +		 * resides in as un-hotpluggable.
+> +		 *
+> +		 * Since on modern servers, one node could have double-digit gigabytes
+> +		 * memory, we can assume the memory around the kernel image is also
 
-David,
+Memory hotplug can be supported on virtualized environments, and we
+should allow using SRAT on them as a next step.  In such environments,
+memory hotplug will be performed on per memory device object basis for
+workload balancing, and double-digit gigabytes is unlikely the case for
+now.  So, I'd suggest it should instead state that all allocations are
+kept small until SRAT is pursed.
 
-I meant lock cookie->lock inside of __fscache_check_consistency in the
-beginning of the function. I don't see the need to push this into the
-netfs code.
+> +		 * un-hotpluggable. So before SRAT is parsed, just allocate memory near
+> +		 * the kernel image to try the best to keep the kernel away from
+> +		 * hotpluggable memory.
+> +		 */
+> +		memblock_set_current_order(MEMBLOCK_ORDER_LOW_TO_HIGH);
+> +		memblock_set_current_limit_low(__pa_symbol(_end));
+> +	}
+> +#endif /* CONFIG_MOVABLE_NODE */
 
-- Milosz
+Should the above block be put into init_mem_mapping() since it is
+memblock initialization?  It is good to have some concise comments here,
+though.
+
+> +
+>  	init_mem_mapping();
+>  
+>  	early_trap_pf_init();
+> @@ -1127,6 +1152,18 @@ void __init setup_arch(char **cmdline_p)
+>  	early_acpi_boot_init();
+>  
+>  	initmem_init();
+> +
+> +#ifdef CONFIG_MOVABLE_NODE
+> +	if (movablenode_enable_srat) {
+> +		/*
+> +		 * When ACPI SRAT is parsed, which is done in initmem_init(), set
+> +		 * memblock back to the default behavior.
+> +		 */
+> +		memblock_set_current_order(MEMBLOCK_ORDER_DEFAULT);
+> +		memblock_set_current_limit_low(0);
+> +	}
+> +#endif /* CONFIG_MOVABLE_NODE */
+
+Similarly, should this block be put into initmem_init() with some
+comment here?
+
+Thanks,
+-Toshi
+
