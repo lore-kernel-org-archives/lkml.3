@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762444Ab3IDM6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881Ab3IDM6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:58:54 -0400
-Message-ID: <52272E89.2020403@redhat.com>
-Date: Wed, 04 Sep 2013 14:58:49 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S934693Ab3IDNDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 09:03:35 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:64215 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934452Ab3IDNDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 09:03:33 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <netdev@vger.kernel.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Francois Romieu" <romieu@fr.zoreil.com>,
+        <linux-kernel@vger.kernel.org>, <arc-linux-dev@synopsys.com>
+Subject: [PATCH] ethernet/arc/arc_emac: optimize the Tx/Tx-reclaim paths a bit
+Date: Wed, 4 Sep 2013 18:33:11 +0530
+Message-ID: <1378299791-24598-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next v2 2/2] net: migrate direct users to prandom_u32_max
-References: <1378298247-29364-1-git-send-email-dborkman@redhat.com>  <1378298247-29364-3-git-send-email-dborkman@redhat.com> <1378299135.7360.109.camel@edumazet-glaptop>
-In-Reply-To: <1378299135.7360.109.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 02:52 PM, Eric Dumazet wrote:
-> On Wed, 2013-09-04 at 14:37 +0200, Daniel Borkmann wrote:
->> Users that directly use or reimplement what we have in prandom_u32_max()
->> can be migrated for now to use it directly, so that we can reduce code size
->> and avoid reimplementations. That's obvious, follow-up patches could inspect
->> modulo use cases for possible migration as well.
->>
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> ---
->>   drivers/net/team/team_mode_random.c | 8 +-------
->>   include/net/red.h                   | 2 +-
->>   net/802/garp.c                      | 3 ++-
->>   net/802/mrp.c                       | 3 ++-
->>   net/packet/af_packet.c              | 2 +-
->>   net/sched/sch_choke.c               | 8 +-------
->>   6 files changed, 8 insertions(+), 18 deletions(-)
->>
->> diff --git a/drivers/net/team/team_mode_random.c b/drivers/net/team/team_mode_random.c
->> index 7f032e2..0dbd1eb 100644
->> --- a/drivers/net/team/team_mode_random.c
->> +++ b/drivers/net/team/team_mode_random.c
->> @@ -13,20 +13,14 @@
->>   #include <linux/module.h>
->>   #include <linux/init.h>
->>   #include <linux/skbuff.h>
->> -#include <linux/reciprocal_div.h>
->>   #include <linux/if_team.h>
->>
->> -static u32 random_N(unsigned int N)
->> -{
->> -	return reciprocal_divide(prandom_u32(), N);
->> -}
->> -
->>   static bool rnd_transmit(struct team *team, struct sk_buff *skb)
->>   {
->>   	struct team_port *port;
->>   	int port_index;
->>
->> -	port_index = random_N(team->en_port_count);
->> +	port_index = prandom_u32_max(team->en_port_count - 1);
->
->
-> Note the random_N(0) gave 0, while prandom_u32_max(0 - 1) can return any
-> number in [0 ... ~0U]
+This came out of staring at code due to recent performance fix.
 
-Very true, that was stupid. Thanks for catching!
+* TX BD reclaim can call netif_wake_queue() once, outside the loop if
+  one/more BDs were freed, NO need to do this each iteration.
+
+* TX need not look at next BD to stop the netif queue. It rather be done
+  in the next tx call, when it actually fails as the queue seldom gets
+  full but the check nevertheless needs to be done for each packet Tx.
+  Profiled this under heavy traffic (big tar file cp, LMBench betworking
+  tests) and saw not a single hit to that code.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Alexey Brodkin <abrodkin@synopsys.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: arc-linux-dev@synopsys.com
+---
+ drivers/net/ethernet/arc/emac_main.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index 9e16014..a3dd048 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -179,10 +179,10 @@ static void arc_emac_tx_clean(struct net_device *ndev)
+ 		txbd->info = 0;
+ 
+ 		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
+-
+-		if (netif_queue_stopped(ndev))
+-			netif_wake_queue(ndev);
+ 	}
++
++	if (i && netif_queue_stopped(ndev))
++		netif_wake_queue(ndev);
+ }
+ 
+ /**
+@@ -570,13 +570,6 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
+ 	/* Increment index to point to the next BD */
+ 	*txbd_curr = (*txbd_curr + 1) % TX_BD_NUM;
+ 
+-	/* Get "info" of the next BD */
+-	info = &priv->txbd[*txbd_curr].info;
+-
+-	/* Check if if Tx BD ring is full - next BD is still owned by EMAC */
+-	if (unlikely((le32_to_cpu(*info) & OWN_MASK) == FOR_EMAC))
+-		netif_stop_queue(ndev);
+-
+ 	arc_reg_set(priv, R_STATUS, TXPL_MASK);
+ 
+ 	skb_tx_timestamp(skb);
+-- 
+1.8.1.2
+
