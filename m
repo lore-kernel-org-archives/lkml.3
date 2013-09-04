@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763114Ab3IDRBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:01:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44956 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763050Ab3IDRBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:01:21 -0400
-Message-ID: <5227674A.9020005@ti.com>
-Date: Wed, 4 Sep 2013 12:00:58 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>, <gg@slimlogic.co.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, <marek.vasut@gmail.com>,
-        <Nancy.Chen@freescale.com>
-Subject: Re: [PATCH 7/7] regulator: ti-abb: Use devm_regulator_register
-References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-7-git-send-email-sachin.kamat@linaro.org> <5227355C.1020205@ti.com> <CAK9yfHxyyZ8WGL8Q4cJ7Y=LcJ2dkeZamXydnMYS4uOj-cmU_Dg@mail.gmail.com> <522760C9.8040201@ti.com> <CAK9yfHzq5isoj0bv405DNF_E=u0nKBBVscbcuoHT-8PxVaserA@mail.gmail.com>
-In-Reply-To: <CAK9yfHzq5isoj0bv405DNF_E=u0nKBBVscbcuoHT-8PxVaserA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S965106Ab3IDRBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:01:42 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51416 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763134Ab3IDRBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:01:40 -0400
+From: Manish Sharma <manishrma@gmail.com>
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernelnewbies@kernelnewbies.org, Manish Sharma <manishrma@gmail.com>
+Subject: [PATCH 1/1] Squashfs-Optimized-uncompressed-buffer-loop-v3
+Date: Wed,  4 Sep 2013 22:31:23 +0530
+Message-Id: <1378314083-3677-1-git-send-email-manishrma@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- yong.shen@linaro.org as it bounces.
-On 09/04/2013 11:48 AM, Sachin Kamat wrote:
-> On 4 September 2013 22:03, Nishanth Menon <nm@ti.com> wrote:
->> On 09/04/2013 11:26 AM, Sachin Kamat wrote:
-> 
->> I accept that probe failure gives me the required info for fail, and
->> the cleanup of log prints also make sense, just that the log refactor
->> seems out of context to the specific change.
-> 
-> As I mentioned earlier generally when you do these kind of
-> conversions, most of the trivial
-> clean-ups are also done along with it. Probably you would have
-> appreciated a mention about
-> this in the commit log too.
 
-yes, adding to commit log might have helped me. thanks for the cleanup
-as well.
+Signed-off-by: Manish Sharma <manishrma@gmail.com>
+---
+ fs/squashfs/block.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
+diff --git a/fs/squashfs/block.c b/fs/squashfs/block.c
+index fb50652..41d108e 100644
+--- a/fs/squashfs/block.c
++++ b/fs/squashfs/block.c
+@@ -167,17 +167,14 @@ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
+		/*
+		 * Block is uncompressed.
+		 */
+-		int i, in, pg_offset = 0;
+-
+-		for (i = 0; i < b; i++) {
+-			wait_on_buffer(bh[i]);
+-			if (!buffer_uptodate(bh[i]))
+-				goto block_release;
+-		}
++		int in, pg_offset = 0;
 
--- 
-Regards,
-Nishanth Menon
+		for (bytes = length; k < b; k++) {
+			in = min(bytes, msblk->devblksize - offset);
+			bytes -= in;
++			wait_on_buffer(bh[k]);
++			if (!buffer_uptodate(bh[k]))
++				goto block_release;
+			while (in) {
+				if (pg_offset == PAGE_CACHE_SIZE) {
+					page++;
+--
+1.7.9.5
