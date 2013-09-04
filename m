@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762014Ab3IDGBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 02:01:53 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:62974 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761399Ab3IDGBw (ORCPT
+	id S1762026Ab3IDGDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 02:03:05 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:18358 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079Ab3IDGDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 02:01:52 -0400
-Date: Wed, 4 Sep 2013 11:31:38 +0530 (IST)
-From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-X-X-Sender: hydrogen@as-rtp-nw.cisco.com
-To: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benve@cisco.com, ssujith@cisco.com, nistrive@cisco.com,
-        umalhi@cisco.com
-Subject: Re: [PATCH net-next 3/5] driver/net: enic: Try DMA 64 first, then
- failover to DMA
-In-Reply-To: <1378273638-7780-4-git-send-email-govindarajulu90@gmail.com>
-Message-ID: <alpine.LNX.2.03.1309041127380.1814@gmail.com>
-References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com> <1378273638-7780-4-git-send-email-govindarajulu90@gmail.com>
-User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Wed, 4 Sep 2013 02:03:04 -0400
+Message-ID: <1378274579.3004.9.camel@j-VirtualBox>
+Subject: Re: [RFC][PATCH v4 3/3] sched: Periodically decay max cost of idle
+ balance
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        pjt@google.com, preeti@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mgorman@suse.de, riel@redhat.com, aswin@hp.com, scott.norton@hp.com,
+        srikar@linux.vnet.ibm.com
+Date: Tue, 03 Sep 2013 23:02:59 -0700
+In-Reply-To: <20130830102941.GF10002@twins.programming.kicks-ass.net>
+References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+	 <1377806736-3752-4-git-send-email-jason.low2@hp.com>
+	 <20130830101817.GE10002@twins.programming.kicks-ass.net>
+	 <20130830102941.GF10002@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
+On Fri, 2013-08-30 at 12:29 +0200, Peter Zijlstra wrote:
+>  	rcu_read_lock();
+>  	for_each_domain(cpu, sd) {
+> +		/*
+> +		 * Decay the newidle max times here because this is a regular
+> +		 * visit to all the domains. Decay ~0.5% per second.
+> +		 */
+> +		if (time_after(jiffies, sd->next_decay_max_lb_cost)) {
+> +			sd->max_newidle_lb_cost =
+> +				(sd->max_newidle_lb_cost * 254) / 256;
 
-The subject for this should be "driver/net: enic: Try DMA 64 first, then
-failover to DMA 32"
+I initially picked 0.5%, but after trying it out, it appears to decay very
+slowing when the max is at a high value. Should we increase the decay a
+little bit more? Maybe something like:
 
-The "32" got truncated, please add this while committing. Let me know if
-you want me to send another patch.
+sd->max_newidle_lb_cost = (sd->max_newidle_lb_cost * 63) / 64;
 
-thanks
-//govind
+> +		/*
+> +		 * Stop the load balance at this level. There is another
+> +		 * CPU in our sched group which is doing load balancing more
+> +		 * actively.
+> +		 */
+> +		if (!continue_balancing) {
 
-On Wed, 4 Sep 2013, Govindarajulu Varadarajan wrote:
+Is "continue_balancing" named "balance" in older kernels?
 
-> In servers with more than 1.1 TB of RAM, the existing 40/32 bit DMA
-> could cause failure as the DMA-able address could go outside the range
-> addressable using 40/32 bits.
->
-> The following patch first tried 64 bit DMA if possible, failover to 32
-> bit.
->
-> Signed-off-by: Sujith Sankar <ssujith@cisco.com>
-> Signed-off-by: Christian Benvenuti <benve@cisco.com>
-> Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+Here are the AIM7 results with the other 2 patches + this patch with the
+slightly higher decay value.
+
+----------------------------------------------------------------
+workload     | % improvement   | % improvement  | % improvement
+             | with patch      | with patch     | with patch
+             | 1100-2000 users | 200-1000 users | 10-100 users
+----------------------------------------------------------------
+alltests     |  +9.2%          |  +5.2%         |  +0.3%
+----------------------------------------------------------------
+compute      |  +0.0%          |  -0.9%         |  +0.6%
+----------------------------------------------------------------
+custom       | +18.6%          | +15.3%         |  +7.0%
+----------------------------------------------------------------
+disk         |  +4.0%          | +16.5%         |  +7.1%
+----------------------------------------------------------------
+fserver      | +64.8%          | +27.5%         |  -0.6%
+----------------------------------------------------------------
+high_systime | +15.1%          |  +7.9%         |  +0.0%
+----------------------------------------------------------------
+new_fserver  | +51.0%          | +20.1%         |  -1.3%
+----------------------------------------------------------------
+shared       |  +6.3%          |  +8.8%         |  +2.8%
+----------------------------------------------------------------
+
+
