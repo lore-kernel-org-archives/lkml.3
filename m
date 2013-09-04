@@ -1,232 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762199Ab3IDHWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:22:31 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51109 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab3IDHW3 (ORCPT
+	id S933148Ab3IDH1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:27:42 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:57777 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab3IDH1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:22:29 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jan Kaluza <jkaluza@redhat.com>
-Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
-        tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
-	<1378275261-4553-1-git-send-email-jkaluza@redhat.com>
-	<1378275261-4553-2-git-send-email-jkaluza@redhat.com>
-Date: Wed, 04 Sep 2013 00:22:12 -0700
-In-Reply-To: <1378275261-4553-2-git-send-email-jkaluza@redhat.com> (Jan
-	Kaluza's message of "Wed, 4 Sep 2013 08:14:19 +0200")
-Message-ID: <87bo49gifv.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 4 Sep 2013 03:27:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/iISxUQ7F/IFqgiPhG2vgQzCKOjh+2b3I=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4735]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jan Kaluza <jkaluza@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 1/3] Send loginuid and sessionid in SCM_AUDIT
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <CAKohpom06N4DNZxrQcey-73o1jpQkNpCce2=-Wn+mDHLG9r-3g@mail.gmail.com>
+References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
+	<CANqRtoTSO2yyP35naDe4y6a7rL99=cSs4-bJAWOxR5HL2gbpuw@mail.gmail.com>
+	<CAKohpom06N4DNZxrQcey-73o1jpQkNpCce2=-Wn+mDHLG9r-3g@mail.gmail.com>
+Date: Wed, 4 Sep 2013 16:27:37 +0900
+Message-ID: <CANqRtoQF8-W=EFcV+LEPGbJf=h_yfyjVg=+0F5Sif15jB8XjBg@mail.gmail.com>
+Subject: Re: [Query] CPUFreq: Does these machines have separate clock domains
+ for CPUs?
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Eric Miao <eric.y.miao@gmail.com>, linux-cris-kernel@axis.com,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Miao Steven <realmz6@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Mikael Starvik <starvik@axis.com>, Paul Mundt <lethal@linux-sh.org>,
+        sparclinux@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        David Miller <davem@davemloft.net>, John Crispin <blogic@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kaluza <jkaluza@redhat.com> writes:
+Hi Viresh,
 
-> Server-like processes in many cases need credentials and other
-> metadata of the peer, to decide if the calling process is allowed to
-> request a specific action, or the server just wants to log away this
-> type of information for auditing tasks.
+On Fri, Aug 30, 2013 at 4:33 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 30 August 2013 12:18, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> Hi Viresh,
+>>
+>> On Thu, Aug 29, 2013 at 7:15 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> Hi,
+>>>
+>>> I have been doing some CPUFreq cleanup work and
+>>> wanted to know if the below mentioned machines have separate
+>>> clock domains for their CPUs or all share the same domain?
+>>>
+>>> So, that we can use some generic routines for these drivers which
+>>> would eventually do:
+>>>
+>>> cpumask_setall(policy->cpus);
+>>>
+>>> And I wanted to make sure that this doesn't break them.. :)
+>>>
+>>> ......
+>>>
+>>> The drivers are:
+>> ...
+>>> drivers/cpufreq/sh-cpufreq.c
+>> ...
+>>
+>> The above SH cpufreq driver seems to be written with SMP in mind, but
+>> I would say SMP is a very rare case for SH. So I believe it can be
+>> considered as UP-only at this point. If Paul disagrees I'm quite sure
+>> he will tell us.
 >
-> The current practice to retrieve such process metadata is to look that
-> information up in procfs with the $PID received over SCM_CREDENTIALS.
-> This is sufficient for long-running tasks, but introduces a race which
-> cannot be worked around for short-living processes; the calling
-> process and all the information in /proc/$PID/ is gone before the
-> receiver of the socket message can look it up.
+> Okay.. The problem isn't really SMP but different clock domains for CPUs
+> in a SMP system..
 >
-> This introduces a new SCM type called SCM_AUDIT to allow the direct
-> attaching of "loginuid" and "sessionid" to SCM, which is significantly more
-> efficient and will reliably avoid the race with the round-trip over
-> procfs.
+> So, even if we have a SMP SH machine, will it have same clock line for
+> all CPUs?
 
-Unless I am misreading something this patch will break the build if
-CONFIG_AUDITSYSCALL is not defined.
+Yeah, I understand your question but I'm afraid that I don't know the
+answer myself.
 
-Eric
+> I will go with the change anyway..
 
+Good plan. Thanks for cleaning up the cpufreq bits.
 
-> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
-> ---
->  include/linux/socket.h |  6 ++++++
->  include/net/af_unix.h  |  2 ++
->  include/net/scm.h      | 28 ++++++++++++++++++++++++++--
->  net/unix/af_unix.c     |  7 +++++++
->  4 files changed, 41 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/socket.h b/include/linux/socket.h
-> index 445ef75..505047a 100644
-> --- a/include/linux/socket.h
-> +++ b/include/linux/socket.h
-> @@ -130,6 +130,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
->  #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
->  #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
->  #define SCM_SECURITY	0x03		/* rw: security label		*/
-> +#define SCM_AUDIT	0x04		/* rw: struct uaudit		*/
->  
->  struct ucred {
->  	__u32	pid;
-> @@ -137,6 +138,11 @@ struct ucred {
->  	__u32	gid;
->  };
->  
-> +struct uaudit {
-> +	__u32	loginuid;
-> +	__u32	sessionid;
-> +};
-> +
->  /* Supported address families. */
->  #define AF_UNSPEC	0
->  #define AF_UNIX		1	/* Unix domain sockets 		*/
-> diff --git a/include/net/af_unix.h b/include/net/af_unix.h
-> index a175ba4..3b9d22a 100644
-> --- a/include/net/af_unix.h
-> +++ b/include/net/af_unix.h
-> @@ -36,6 +36,8 @@ struct unix_skb_parms {
->  	u32			secid;		/* Security ID		*/
->  #endif
->  	u32			consumed;
-> +	kuid_t			loginuid;
-> +	unsigned int		sessionid;
->  };
->  
->  #define UNIXCB(skb) 	(*(struct unix_skb_parms *)&((skb)->cb))
-> diff --git a/include/net/scm.h b/include/net/scm.h
-> index 8de2d37..e349a25 100644
-> --- a/include/net/scm.h
-> +++ b/include/net/scm.h
-> @@ -6,6 +6,7 @@
->  #include <linux/security.h>
->  #include <linux/pid.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/audit.h>
->  
->  /* Well, we should have at least one descriptor open
->   * to accept passed FDs 8)
-> @@ -18,6 +19,11 @@ struct scm_creds {
->  	kgid_t	gid;
->  };
->  
-> +struct scm_audit {
-> +	kuid_t loginuid;
-> +	unsigned int sessionid;
-> +};
-> +
->  struct scm_fp_list {
->  	short			count;
->  	short			max;
-> @@ -28,6 +34,7 @@ struct scm_cookie {
->  	struct pid		*pid;		/* Skb credentials */
->  	struct scm_fp_list	*fp;		/* Passed files		*/
->  	struct scm_creds	creds;		/* Skb credentials	*/
-> +	struct scm_audit	audit;		/* Skb audit	*/
->  #ifdef CONFIG_SECURITY_NETWORK
->  	u32			secid;		/* Passed security ID 	*/
->  #endif
-> @@ -58,6 +65,13 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
->  	scm->creds.gid = gid;
->  }
->  
-> +static inline void scm_set_audit(struct scm_cookie *scm,
-> +				    kuid_t loginuid, unsigned int sessionid)
-> +{
-> +	scm->audit.loginuid = loginuid;
-> +	scm->audit.sessionid = sessionid;
-> +}
-> +
->  static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
->  {
->  	put_pid(scm->pid);
-> @@ -77,8 +91,12 @@ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
->  	memset(scm, 0, sizeof(*scm));
->  	scm->creds.uid = INVALID_UID;
->  	scm->creds.gid = INVALID_GID;
-> -	if (forcecreds)
-> -		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
-> +	if (forcecreds) {
-> +		scm_set_cred(scm, task_tgid(current), current_uid(),
-> +			     current_gid());
-> +		scm_set_audit(scm, audit_get_loginuid(current),
-> +			      audit_get_sessionid(current));
-> +	}
->  	unix_get_peersec_dgram(sock, scm);
->  	if (msg->msg_controllen <= 0)
->  		return 0;
-> @@ -123,7 +141,13 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
->  			.uid = from_kuid_munged(current_ns, scm->creds.uid),
->  			.gid = from_kgid_munged(current_ns, scm->creds.gid),
->  		};
-> +		struct uaudit uaudits = {
-> +			.loginuid = from_kuid_munged(current_ns,
-> +						     scm->audit.loginuid),
-> +			.sessionid = scm->audit.sessionid,
-> +		};
->  		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(ucreds), &ucreds);
-> +		put_cmsg(msg, SOL_SOCKET, SCM_AUDIT, sizeof(uaudits), &uaudits);
->  	}
->  
->  	scm_destroy_cred(scm);
-> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-> index 86de99a..c410f76 100644
-> --- a/net/unix/af_unix.c
-> +++ b/net/unix/af_unix.c
-> @@ -1393,6 +1393,8 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
->  	UNIXCB(skb).pid  = get_pid(scm->pid);
->  	UNIXCB(skb).uid = scm->creds.uid;
->  	UNIXCB(skb).gid = scm->creds.gid;
-> +	UNIXCB(skb).loginuid = scm->audit.loginuid;
-> +	UNIXCB(skb).sessionid = scm->audit.sessionid;
->  	UNIXCB(skb).fp = NULL;
->  	if (scm->fp && send_fds)
->  		err = unix_attach_fds(scm, skb);
-> @@ -1416,6 +1418,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
->  	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
->  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
->  		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
-> +		UNIXCB(skb).loginuid = audit_get_loginuid(current);
-> +		UNIXCB(skb).sessionid = audit_get_sessionid(current);
->  	}
->  }
->  
-> @@ -1812,6 +1816,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
->  		memset(&tmp_scm, 0, sizeof(tmp_scm));
->  	}
->  	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
-> +	scm_set_audit(siocb->scm, UNIXCB(skb).loginuid, UNIXCB(skb).sessionid);
->  	unix_set_secdata(siocb->scm, skb);
->  
->  	if (!(flags & MSG_PEEK)) {
-> @@ -1993,6 +1998,8 @@ again:
->  		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
->  			/* Copy credentials */
->  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
-> +			scm_set_audit(siocb->scm, UNIXCB(skb).loginuid,
-> +				      UNIXCB(skb).sessionid);
->  			check_creds = 1;
->  		}
+Cheers,
+
+/ magnus
