@@ -1,146 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759569Ab3IDSFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:05:32 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:54694 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab3IDSEc (ORCPT
+	id S1759796Ab3IDSGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:06:19 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:45114 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759643Ab3IDSGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:04:32 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: patches@linaro.org
-Subject: [PATCH 1/3] ARM: perf: add support for perf regs API
-Date: Wed,  4 Sep 2013 20:04:12 +0200
-Message-Id: <1378317854-25965-2-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
-References: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
+	Wed, 4 Sep 2013 14:06:16 -0400
+Date: Wed, 4 Sep 2013 14:06:07 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
+        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
+ pci_enable_msi_block_part() interface
+Message-ID: <20130904180607.GD26609@mtj.dyndns.org>
+References: <cover.1378111919.git.agordeev@redhat.com>
+ <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
+ <20130903141824.GD10522@htj.dyndns.org>
+ <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
+ <20130903182731.GA27092@mtj.dyndns.org>
+ <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
+ <20130904145559.GB25788@mtj.dyndns.org>
+ <20130904161442.GE8726@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904161442.GE8726@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
+Hello,
 
-This patch implements the functions required for the perf refs API,
-allowing the perf tool to interface kernel register dumps with libunwind
-in order to provide userspace backtracing.
+On Wed, Sep 04, 2013 at 06:14:43PM +0200, Alexander Gordeev wrote:
+> 1. We do not support sharing MSI messages since there is no appropriate
+> interrupt handling for it. I am not sure if any hardware supports it at
+> all. This assumption is just for clarity here.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/arm/Kconfig                      |  2 ++
- arch/arm/include/uapi/asm/Kbuild      |  1 +
- arch/arm/include/uapi/asm/perf_regs.h | 23 +++++++++++++++++++++++
- arch/arm/kernel/Makefile              |  1 +
- arch/arm/kernel/perf_regs.c           | 30 ++++++++++++++++++++++++++++++
- 5 files changed, 57 insertions(+)
- create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
- create mode 100644 arch/arm/kernel/perf_regs.c
+I don't think it even matters.  If we can configure all MSIs, good.
+If not, using single interrupt is good enough.  Being able to allocate
+only some of the interrupts is highly unlikely to begin with and
+there's no reason to meddle with extra complexity.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 86bf7cb..642bc48 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -49,6 +49,8 @@ config ARM
- 	select HAVE_MEMBLOCK
- 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
- 	select HAVE_PERF_EVENTS
-+	select HAVE_PERF_REGS
-+	select HAVE_PERF_USER_STACK_DUMP
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_SYSCALL_TRACEPOINTS
- 	select HAVE_UID16
-diff --git a/arch/arm/include/uapi/asm/Kbuild b/arch/arm/include/uapi/asm/Kbuild
-index 18d76fd..70a1c9d 100644
---- a/arch/arm/include/uapi/asm/Kbuild
-+++ b/arch/arm/include/uapi/asm/Kbuild
-@@ -7,6 +7,7 @@ header-y += hwcap.h
- header-y += ioctls.h
- header-y += kvm_para.h
- header-y += mman.h
-+header-y += perf_regs.h
- header-y += posix_types.h
- header-y += ptrace.h
- header-y += setup.h
-diff --git a/arch/arm/include/uapi/asm/perf_regs.h b/arch/arm/include/uapi/asm/perf_regs.h
-new file mode 100644
-index 0000000..ce59448
---- /dev/null
-+++ b/arch/arm/include/uapi/asm/perf_regs.h
-@@ -0,0 +1,23 @@
-+#ifndef _ASM_ARM_PERF_REGS_H
-+#define _ASM_ARM_PERF_REGS_H
-+
-+enum perf_event_arm_regs {
-+	PERF_REG_ARM_R0,
-+	PERF_REG_ARM_R1,
-+	PERF_REG_ARM_R2,
-+	PERF_REG_ARM_R3,
-+	PERF_REG_ARM_R4,
-+	PERF_REG_ARM_R5,
-+	PERF_REG_ARM_R6,
-+	PERF_REG_ARM_R7,
-+	PERF_REG_ARM_R8,
-+	PERF_REG_ARM_R9,
-+	PERF_REG_ARM_R10,
-+	PERF_REG_ARM_FP,
-+	PERF_REG_ARM_IP,
-+	PERF_REG_ARM_SP,
-+	PERF_REG_ARM_LR,
-+	PERF_REG_ARM_PC,
-+	PERF_REG_ARM_MAX,
-+};
-+#endif /* _ASM_ARM_PERF_REGS_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 86d10dd..c9e05f2 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -78,6 +78,7 @@ obj-$(CONFIG_CPU_XSC3)		+= xscale-cp0.o
- obj-$(CONFIG_CPU_MOHAWK)	+= xscale-cp0.o
- obj-$(CONFIG_CPU_PJ4)		+= pj4-cp0.o
- obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
-+obj-$(CONFIG_PERF_EVENTS)	+= perf_regs.o
- obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o perf_event_cpu.o
- AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
- obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
-diff --git a/arch/arm/kernel/perf_regs.c b/arch/arm/kernel/perf_regs.c
-new file mode 100644
-index 0000000..6e4379c
---- /dev/null
-+++ b/arch/arm/kernel/perf_regs.c
-@@ -0,0 +1,30 @@
-+
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/perf_event.h>
-+#include <linux/bug.h>
-+#include <asm/perf_regs.h>
-+#include <asm/ptrace.h>
-+
-+u64 perf_reg_value(struct pt_regs *regs, int idx)
-+{
-+	if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM_MAX))
-+		return 0;
-+
-+	return regs->uregs[idx];
-+}
-+
-+#define REG_RESERVED (~((1ULL << PERF_REG_ARM_MAX) - 1))
-+
-+int perf_reg_validate(u64 mask)
-+{
-+	if (!mask || mask & REG_RESERVED)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+u64 perf_reg_abi(struct task_struct *task)
-+{
-+	return PERF_SAMPLE_REGS_ABI_32;
-+}
+> 2. We can not just read out MMC value and try to write it to MME, because
+> we are not sure the hardware honours the specification.  I.e. in case of 6
+> ports and MMC value of 16 the value of 8 in MME could enable multiple MSIs
+> while the value of 16 could enforce MRSM. Contradicts to the AHCI
+> specification, but look how weird ICH is [4].
+> 
+> 3. Enabling more MSIs than needed (MME == MMC instead of MME < MMC) could
+> lead to unnecessary allocation of internal device resources. Bit lame, but
+> still true.
+> 
+> 4. We can not derive the value of MME needed from the number of ports, at
+> least in case of ICH. I.e. with 6 ports and MMC value of 16 the value of 8
+> in MME is what would be expected according to the AHCI specification. But
+> the ICH reserves it and MRSMs in case 8 is written to MME.
+> 
+> So to cover all the above assumptions we need to scan from lowest possible
+> and watch the MRSM bit is unset.
+
+I don't think it's necessary / a good idea to try to support
+everything.  Just following the spec would be fine.  If that doesn't
+work for too many devices, maybe just do one fallback?
+
+Thanks.
+
 -- 
-1.7.11.7
-
+tejun
