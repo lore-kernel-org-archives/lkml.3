@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761833Ab3IDFEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:04:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59821 "EHLO
+	id S1757153Ab3IDFJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:09:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59844 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760504Ab3IDFEs (ORCPT
+	with ESMTP id S1754635Ab3IDFI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:04:48 -0400
+	Wed, 4 Sep 2013 01:08:59 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: kernel@pengutronix.de, linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+To: vapier@gentoo.org
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] ARM: imx: remove IRQF_DISABLED
-Date: Wed,  4 Sep 2013 07:04:39 +0200
-Message-Id: <1378271079-24945-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] blackfin: remove unused parameters in Kconfig
+Date: Wed,  4 Sep 2013 07:08:56 +0200
+Message-Id: <1378271336-25134-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag is a NOOP since 2.6.35 and can be removed.
+This patch proposes to remove kernel configuration parameters
+defined in arch/blackfin/Kconfig, but used nowhere
+in the makefiles and source code.
 
 This is an update for 3.11 of a patch already sent for 3.10
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- arch/arm/mach-imx/Kconfig             | 2 +-
- arch/arm/mach-imx/epit.c              | 2 +-
- arch/arm/mach-imx/mach-armadillo5x0.c | 3 +--
- arch/arm/mach-imx/mach-mx31_3ds.c     | 2 +-
- arch/arm/mach-imx/mach-pcm037.c       | 3 +--
- arch/arm/mach-imx/mx31lilly-db.c      | 3 +--
- arch/arm/mach-imx/time.c              | 2 +-
- 7 files changed, 7 insertions(+), 10 deletions(-)
+ arch/blackfin/Kconfig | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index f546560..799a92f 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -22,7 +22,7 @@ config MXC_IRQ_PRIOR
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index 3b6abc5..4445758 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -861,14 +861,6 @@ config SYS_BFIN_SPINLOCK_L1
+ 	  If enabled, sys_bfin_spinlock function is linked
+ 	  into L1 instruction memory. (less latency)
+ 
+-config IP_CHECKSUM_L1
+-	bool "Locate IP Checksum function in L1 Memory"
+-	default n
+-	depends on !SMP
+-	help
+-	  If enabled, the IP Checksum function is linked
+-	  into L1 instruction memory. (less latency)
+-
+ config CACHELINE_ALIGNED_L1
+ 	bool "Locate cacheline_aligned data to L1 Data Memory"
+ 	default y if !BF54x
+@@ -1330,13 +1322,6 @@ config PM_BFIN_WAKE_PB15
  	help
- 	  Select this if you want to use prioritized IRQ handling.
- 	  This feature prevents higher priority ISR to be interrupted
--	  by lower priority IRQ even IRQF_DISABLED flag is not set.
-+	  by lower priority IRQ.
- 	  This may be useful in embedded applications, where are strong
- 	  requirements for timing.
- 	  Say N here, unless you have a specialized requirement.
-diff --git a/arch/arm/mach-imx/epit.c b/arch/arm/mach-imx/epit.c
-index e02de18..074b1a8 100644
---- a/arch/arm/mach-imx/epit.c
-+++ b/arch/arm/mach-imx/epit.c
-@@ -171,7 +171,7 @@ static irqreturn_t epit_timer_interrupt(int irq, void *dev_id)
+ 	  Enable PB15 Wake-Up
  
- static struct irqaction epit_timer_irq = {
- 	.name		= "i.MX EPIT Timer Tick",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= epit_timer_interrupt,
- };
- 
-diff --git a/arch/arm/mach-imx/mach-armadillo5x0.c b/arch/arm/mach-imx/mach-armadillo5x0.c
-index 368a6e3..58b864a 100644
---- a/arch/arm/mach-imx/mach-armadillo5x0.c
-+++ b/arch/arm/mach-imx/mach-armadillo5x0.c
-@@ -404,8 +404,7 @@ static int armadillo5x0_sdhc1_init(struct device *dev,
- 
- 	/* When supported the trigger type have to be BOTH */
- 	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_ATA_DMACK)),
--			  detect_irq,
--			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
-+			  detect_irq, IRQF_TRIGGER_FALLING,
- 			  "sdhc-detect", data);
- 
- 	if (ret)
-diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
-index 1ed9161..50044a2 100644
---- a/arch/arm/mach-imx/mach-mx31_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx31_3ds.c
-@@ -311,7 +311,7 @@ static int mx31_3ds_sdhc1_init(struct device *dev,
- 	}
- 
- 	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO3_1)),
--			  detect_irq, IRQF_DISABLED |
-+			  detect_irq,
- 			  IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
- 			  "sdhc1-detect", data);
- 	if (ret) {
-diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
-index bc0261e..45303bd6 100644
---- a/arch/arm/mach-imx/mach-pcm037.c
-+++ b/arch/arm/mach-imx/mach-pcm037.c
-@@ -371,8 +371,7 @@ static int pcm970_sdhc1_init(struct device *dev, irq_handler_t detect_irq,
- #endif
- 
- 	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_SCK6)), detect_irq,
--			IRQF_DISABLED | IRQF_TRIGGER_FALLING,
--				"sdhc-detect", data);
-+			IRQF_TRIGGER_FALLING, "sdhc-detect", data);
- 	if (ret)
- 		goto err_gpio_free_2;
- 
-diff --git a/arch/arm/mach-imx/mx31lilly-db.c b/arch/arm/mach-imx/mx31lilly-db.c
-index d4361b8..649fe49 100644
---- a/arch/arm/mach-imx/mx31lilly-db.c
-+++ b/arch/arm/mach-imx/mx31lilly-db.c
-@@ -130,8 +130,7 @@ static int mxc_mmc1_init(struct device *dev,
- 	gpio_direction_input(gpio_wp);
- 
- 	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO1_1)),
--			  detect_irq,
--			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
-+			  detect_irq, IRQF_TRIGGER_FALLING,
- 			  "MMC detect", data);
- 	if (ret)
- 		goto exit_free_wp;
-diff --git a/arch/arm/mach-imx/time.c b/arch/arm/mach-imx/time.c
-index cd46529..9b6638a 100644
---- a/arch/arm/mach-imx/time.c
-+++ b/arch/arm/mach-imx/time.c
-@@ -250,7 +250,7 @@ static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction mxc_timer_irq = {
- 	.name		= "i.MX Timer Tick",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= mxc_timer_interrupt,
- };
- 
+-config PM_BFIN_WAKE_PB15_POL
+-	int "Wake-up priority"
+-	depends on PM_BFIN_WAKE_PB15
+-	default 0
+-	help
+-	  Wake-Up priority 0(low) 1(high)
+-
+ config PM_BFIN_WAKE_PC15
+ 	bool "Allow Wake-Up from PC15"
+ 	depends on PM && BF60x
 -- 
 1.8.1.2
 
