@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934849Ab3IDOGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:06:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58106 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934796Ab3IDOGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:06:40 -0400
-Date: Wed, 4 Sep 2013 16:06:35 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 0/5] Rework mtime and ctime updates on mmaped writes
-Message-ID: <20130904140635.GC3996@quack.suse.cz>
-References: <cover.1377193658.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934833Ab3IDOGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:06:41 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:59756 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934755Ab3IDOF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:05:58 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
+Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
+        raven@themaw.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: [PATCH 10/10] fuse: drop dentry on failed revalidate
+Date: Wed,  4 Sep 2013 16:05:56 +0200
+Message-Id: <1378303556-7220-11-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
+References: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-08-13 17:03:16, Andy Lutomirski wrote:
-> Writes via mmap currently update mtime and ctime in ->page_mkwrite.
-> This hurts both throughput and latency.  In workloads that dirty a
-> large number of mmapped pages, ->page_mkwrite can be hot and
-> file_update_time is slow and scales poorly.  Updating timestamps can
-> also sleep, which hurts latency for real-time workloads.
-> 
-> This is also a correctness issue.  SuS says:
-> 
->     The st_ctime and st_mtime fields of a file that is mapped with
->     MAP_SHARED and PROT_WRITE, will be marked for update at some point
->     in the interval between a write reference to the mapped region and
->     the next call to msync() with MS_ASYNC or MS_SYNC for that portion
->     of the file by any process. If there is no such call, these fields
->     may be marked for update at any time after a write reference if
->     the underlying file is modified as a result.
-> 
-> Currently, if the same mmapped page is written twice, the timestamp
-> may not be update at all after the second write, whereas SuS (and
-> anything using timestamps to invalidate caches, backup data, etc.)
-> would expect the timestamp to eventually be updated.
-> 
-> This patchset attempts to fix both issues at once.  It adds a new
-> address_space flag AS_CMTIME that is set atomically whenever the
-> system transfers a pte dirty bit to a struct page backed by the
-> address_space.  This can happen with various locks held and when low
-> on memory.
-> 
-> Later on, a_ops.update_cmtime_deferred is called to tell the FS to
-> update cmtime due to a previous mmapped write.
-> 
-> The core changes have no effect on unmodified filesystems.  To opt in,
-> a filesystem should implement .update_cmtime_deferred (most likely by
-> using generic_update_cmtime_deferred) and must call either
-> mapping_flush_cmtime or mapping_test_clear_cmtime in .writepages.
-> Filesystems should avoid updating timestamps in ->page_mkwrite.
-> 
-> The reason that this is not completely automatic is that filesystems
-> without backing stores do not really fit in to this model.
-> Eventually, someone can add support.
-> 
-> I've converted ext4, xfs, and btrfs.  Converting most other
-> filesystems should be straightforward.
-> 
-> I wrote an xfstest for this.  ext4, xfs, and btrfs pass.  It's here:
-> 
-> https://github.com/amluto/xfstests/commit/5fbb72ac799cc44a9c4c6d3919f00a479202c899
-> 
-> This series is pullable from:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=mmap_mtime/patch_v4
-  As a general note, I think you should CC linux-mm@kvack.org on this
-series so that mm guys are more likely to notice it. Since the patches
-touch mm you should probably get some opinions from them...
+From: Anand Avati <avati@redhat.com>
 
-								Honza
-> 
-> Changes from v3:
->  - The new address space op is now called update_cmtime_deferred.
->    Callers take care of protection from fs freezing and checking
->    AS_CMTIME.  I fixed a deadlock in the freezer interaction.
->  - Block plugs should be handled better.
->  - Fixed an infinite loop in msync(MS_ASYNC).
->  - Converted xfs and btrfs.
->  - Misc minor cleanups.
->  - Fixed a corner case: reclaim or migration could have cleaned all
->    pages without updating cmtime.
-> 
-> Changes from v2:
->  - The core code now interacts with filesystems only through
->    address_space ops, so there should be fewer layering issues.
->  - MS_ASYNC is handled correctly.
-> 
-> Changes from v1:
->  - inode_update_time_writable now locks against the fs freezer.
->  - Minor cleanups.
->  - Major changelog improvements.
-> 
-> Andy Lutomirski (7):
->   mm: Track mappings that have been written via ptes
->   fs: Add inode_update_time_writable
->   mm: Allow filesystems to defer cmtime updates
->   mm: Scan for dirty ptes and update cmtime on MS_ASYNC
->   ext4: Defer mmap cmtime updates
->   btrfs: Defer mmap cmtime updates
->   xfs: Defer mmap cmtime updates
-> 
->  fs/btrfs/extent_io.c      |  1 +
->  fs/btrfs/inode.c          | 32 +++++++++---------
->  fs/buffer.c               |  7 ----
->  fs/ext4/inode.c           | 11 +++++--
->  fs/inode.c                | 64 +++++++++++++++++++++++++++---------
->  fs/xfs/xfs_aops.c         |  1 +
->  include/linux/fs.h        |  9 +++++
->  include/linux/pagemap.h   | 22 +++++++++++++
->  include/linux/writeback.h |  1 +
->  mm/memory.c               |  7 +++-
->  mm/migrate.c              |  2 ++
->  mm/mmap.c                 |  6 +++-
->  mm/msync.c                | 84 ++++++++++++++++++++++++++++++++++++++++-------
->  mm/page-writeback.c       | 53 +++++++++++++++++++++++++++++-
->  mm/rmap.c                 | 27 +++++++++++++--
->  mm/vmscan.c               |  1 +
->  16 files changed, 272 insertions(+), 56 deletions(-)
-> 
-> -- 
-> 1.8.3.1
-> 
+Drop a subtree when we find that it has moved or been delated.  This can be
+done as long as there are no submounts under this location.
+
+If the directory was moved and we come across the same directory in a
+future lookup it will be reconnected by d_materialise_unique().
+
+Signed-off-by: Anand Avati <avati@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/fuse/dir.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 25c6cfe..0e6961a 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -259,6 +259,8 @@ out:
+ 
+ invalid:
+ 	ret = 0;
++	if (check_submounts_and_drop(entry) != 0)
++		ret = 1;
+ 	goto out;
+ }
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.1.4
+
