@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763328Ab3IDRvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:51:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50130 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762844Ab3IDRvJ convert rfc822-to-8bit (ORCPT
+	id S964817Ab3IDRw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:52:28 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46175 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762957Ab3IDRw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:51:09 -0400
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <522767E5.9080302@ti.com>
-Date: Wed, 4 Sep 2013 12:51:11 -0500
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <F363B498-5648-4C19-BC16-096EE12C29CE@codeaurora.org>
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com> <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org> <52275F7D.4030305@ti.com> <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org> <522767E5.9080302@ti.com>
-To: Suman Anna <s-anna@ti.com>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 4 Sep 2013 13:52:26 -0400
+Message-ID: <52277350.6090600@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 23:22:16 +0530
+From: Hemant <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 1/2] SDT markers listing by perf
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <5226DF97.3000704@hitachi.com>
+In-Reply-To: <5226DF97.3000704@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090417-7014-0000-0000-00000390055E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/04/2013 12:51 PM, Masami Hiramatsu wrote:
+> (2013/09/03 16:36), Hemant Kumar wrote:
+>> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+>> index 5f720dc..f2d17b7 100644
+>> --- a/tools/perf/util/symbol.h
+>> +++ b/tools/perf/util/symbol.h
+>> @@ -197,6 +197,17 @@ struct symsrc {
+>>   #endif
+>>   };
+>>   
+>> +/* Note structure */
+>> +struct sdt_note {
+>> +	const char *name;
+>> +	const char *provider;
+>> +	union {
+>> +		Elf64_Addr a64[3];
+>> +		Elf32_Addr a32[3];
+>> +	} addr;
+>> +	struct sdt_note *next;
+>> +};
+> Hmm, could you use struct list_head for listing up the data?
+>
+> Thank you,
+>
 
-On Sep 4, 2013, at 12:03 PM, Suman Anna wrote:
+Yes, it will be better to use struct list_head for fetching the markers 
+in a list. Will do that in the next iteration.
 
->>>>>>>> 
->>>>>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->>>>>>>>> which are all device-tree boot only. This patch adds the
->>>>>>>>> base support for parsing the DT nodes, and removes the code
->>>>>>>>> dealing with the traditional platform device instantiation.
->>>>>>>>> 
->>>>>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>>>>>>> ---
->>>>>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
->>>>>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
->>>>>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->>>>>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
->>>>>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
->>>>>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>>>>>>>> 
->>>>>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>> new file mode 100644
->>>>>>>>> index 0000000..adfb8ad
->>>>>>>>> --- /dev/null
->>>>>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>> @@ -0,0 +1,28 @@
->>>>>>>>> +OMAP4+ HwSpinlock Driver
->>>>>>>>> +
->>>>>>>>> +Required properties:
->>>>>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->>>>>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->>>>>>>>> +- reg:			Contains the hwspinlock register address range (base
->>>>>>>>> +			address and length)
->>>>>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->>>>>>>>> +
->>>>>>>>> +Optional properties:
->>>>>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
->>>>>>>>> +			device. If not mentioned, a default value of 0 is used.
->>>>>>>>> +			This property is mandatory ONLY if a SoC has several
->>>>>>>>> +			hwspinlock devices. There are currently no such OMAP
->>>>>>>>> +			SoCs.
->>>>>>>> 
->>>>>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
->>>>>>> 
->>>>>>> I didn't add the "ti," prefix exactly for the same reason - it is
->>>>>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
->>>>>>> there is nothing ti or OMAP specific about it. I have added it to keep
->>>>>>> the DT node definition in sync with the driver code. If it is too
->>>>>>> generic a name, it can always be renamed as hwlock_base_id. This will be
->>>>>>> SoC agnostic property for the hwspinlock driver. What do you think?
->>>>>> 
->>>>>> I'm wondering if we should use cell-index for this purpose.
->>>>> 
->>>>> I didn't get you completely. Do you intend to compute the base_id using
->>>>> cell-index and number of locks (which may be a separate field altogether
->>>>> if this information cannot be read from the h/w)? My understanding is
->>>>> that cell-index is primarily used for identifying the h/w instance number.
->>>> 
->>>> I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
->>> 
->>> Common hwlock.txt sounds good. Will make the change.
->>> 
->>>> 
->>>> I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
->>>> 
->>> 
->>> I prefer to use hwlock-base-id. I think we should also be defining a
->>> common property name for number of locks, say hwlock-num-locks.
->> 
->> I'm good with that, cell-index is always funny so might as well be explicit.
->> 
->> I'm also good with hwlock-num-locks, I'll update the msm spinlock driver to use this.
->> 
->> Can you also maybe add some helper functions into the hwspinlock core to return these values so we both don't duplicate code in drivers and maintain consistency.
-> 
-> I am trying to understand what you would need these for. Your driver
-> would already know the base_id and num_locks, since these are used in
-> the registration function.
-
-
-It would be something simple like:
-
-static inline int of_get_hwlock_base_id (struct device_node *dn) {
-#ifdef CONFIG_OF
-	u32 val;
-
-	if (of_property_read_u32(dn, "hwlock-base-id", &val)
-		return val;
-#endif
-	return 0;
-}
-
-make sense?
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Thanks
+Hemant
 
