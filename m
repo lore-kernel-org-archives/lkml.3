@@ -1,221 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934446Ab3IDINw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:13:52 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44780 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934404Ab3IDINu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:13:50 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-3c-5226ebbcce28
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH v5.1 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
-Date: Wed,  4 Sep 2013 17:13:32 +0900
-Message-Id: <1378282412-8839-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <871u55t663.fsf@sejong.aot.lge.com>
-References: <871u55t663.fsf@sejong.aot.lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1762234Ab3IDIS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:18:59 -0400
+Received: from gmmr3.centrum.cz ([46.255.225.251]:35171 "EHLO gmmr3.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762130Ab3IDISz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 04:18:55 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Wed, 04 Sep 2013 10:18:52 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk> <20130903204850.GA1412@cmpxchg.org>
+In-Reply-To: <20130903204850.GA1412@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130904101852.58E70042@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>Hello azur,
+>
+>On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+>> >>Hi azur,
+>> >>
+>> >>here is the x86-only rollup of the series for 3.2.
+>> >>
+>> >>Thanks!
+>> >>Johannes
+>> >>---
+>> >
+>> >
+>> >Johannes,
+>> >
+>> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
+>
+>Did the OOM killer go off in this group?
+>
+>Was there a warning in the syslog ("Fixing unhandled memcg OOM
+>context")?
 
-Fetching from user space should be done in a non-atomic context.  So
-use a per-cpu buffer and copy its content to the ring buffer
-atomically.  Note that we can migrate during accessing user memory
-thus use a per-cpu mutex to protect concurrent accesses.
 
-This is needed since we'll be able to fetch args from an user memory
-which can be swapped out.  Before that uprobes could fetch args from
-registers only which saved in a kernel space.
 
-While at it, use __get_data_size() and store_trace_args() to reduce
-code duplication.
+Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
+http://watchdog.sk/lkml/oom_syslog.gz
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_uprobe.c | 98 +++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 82 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 9f2d12d2311d..c32f8f2ddc11 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -530,21 +530,44 @@ static const struct file_operations uprobe_profile_ops = {
- 	.release	= seq_release,
- };
- 
-+static atomic_t uprobe_buffer_ref = ATOMIC_INIT(0);
-+static void __percpu *uprobe_cpu_buffer;
-+static DEFINE_PER_CPU(struct mutex, uprobe_cpu_mutex);
-+
- static void uprobe_trace_print(struct trace_uprobe *tu,
- 				unsigned long func, struct pt_regs *regs)
- {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
--	void *data;
--	int size, i;
-+	struct mutex *mutex;
-+	void *data, *arg_buf;
-+	int size, dsize, esize;
-+	int cpu;
- 	struct ftrace_event_call *call = &tu->p.call;
- 
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	if (WARN_ON_ONCE(!uprobe_cpu_buffer || tu->p.size + dsize > PAGE_SIZE))
-+		return;
-+
-+	cpu = raw_smp_processor_id();
-+	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-+	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-+
-+	/*
-+	 * Use per-cpu buffers for fastest access, but we might migrate
-+	 * so the mutex makes sure we have sole access to it.
-+	 */
-+	mutex_lock(mutex);
-+	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
-+
-+	size = esize + tu->p.size + dsize;
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->p.size, 0, 0);
-+						  size, 0, 0);
- 	if (!event)
--		return;
-+		goto out;
- 
- 	entry = ring_buffer_event_data(event);
- 	if (is_ret_probe(tu)) {
-@@ -556,13 +579,13 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		call_fetch(&tu->p.args[i].fetch, regs,
--			   data + tu->p.args[i].offset);
--	}
-+	memcpy(data, arg_buf, tu->p.size + dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit(buffer, event, 0, 0);
-+
-+out:
-+	mutex_unlock(mutex);
- }
- 
- /* uprobe handler */
-@@ -630,6 +653,19 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
- 	if (trace_probe_is_enabled(&tu->p))
- 		return -EINTR;
- 
-+	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
-+		int cpu;
-+
-+		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
-+		if (uprobe_cpu_buffer == NULL) {
-+			atomic_dec(&uprobe_buffer_ref);
-+			return -ENOMEM;
-+		}
-+
-+		for_each_possible_cpu(cpu)
-+			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
- 
- 	tu->p.flags |= flag;
-@@ -646,6 +682,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
- 	if (!trace_probe_is_enabled(&tu->p))
- 		return;
- 
-+	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
-+		free_percpu(uprobe_cpu_buffer);
-+		uprobe_cpu_buffer = NULL;
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
- 
- 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-@@ -776,11 +817,33 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	struct ftrace_event_call *call = &tu->p.call;
- 	struct uprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
--	void *data;
--	int size, rctx, i;
-+	struct mutex *mutex;
-+	void *data, *arg_buf;
-+	int size, dsize, esize;
-+	int cpu;
-+	int rctx;
- 
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
-+		return;
-+
-+	size = esize + tu->p.size + dsize;
-+	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
-+		return;
-+
-+	cpu = raw_smp_processor_id();
-+	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
-+	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-+
-+	/*
-+	 * Use per-cpu buffers for fastest access, but we might migrate
-+	 * so the mutex makes sure we have sole access to it.
-+	 */
-+	mutex_lock(mutex);
-+	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
- 
- 	preempt_disable();
- 	head = this_cpu_ptr(call->perf_events);
-@@ -800,15 +863,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		struct probe_arg *parg = &tu->p.args[i];
-+	memcpy(data, arg_buf, tu->p.size + dsize);
-+
-+	if (size - esize > tu->p.size + dsize) {
-+		int len = tu->p.size + dsize;
- 
--		call_fetch(&parg->fetch, regs, data + parg->offset);
-+		memset(data + len, 0, size - esize - len);
- 	}
- 
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
-+	mutex_unlock(mutex);
- }
- 
- /* uprobe profile handler */
--- 
-1.7.11.7
-
+azur
