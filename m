@@ -1,97 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964842Ab3IDPnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:43:08 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:45084 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964828Ab3IDPnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:43:05 -0400
-Date: Wed, 4 Sep 2013 10:43:01 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Robin Holt <robinmholt@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
-Message-ID: <20130904154301.GA2975@sgi.com>
-References: <87wqo050fc.fsf@tassilo.jf.intel.com>
- <1376663644-153546-1-git-send-email-athorlton@sgi.com>
- <1376663644-153546-2-git-send-email-athorlton@sgi.com>
- <520E672C.3080102@intel.com>
- <20130816181728.GQ26093@sgi.com>
- <20130816185212.GA3568@shutemov.name>
- <20130827165039.GC2886@sgi.com>
- <CAPp3RGqifK=tum94nGKcqSmDpzj3ceC_ZDo7KNLOz4KHjqv5mw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPp3RGqifK=tum94nGKcqSmDpzj3ceC_ZDo7KNLOz4KHjqv5mw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935210Ab3IDPnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:43:24 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:13920 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934868Ab3IDPnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:43:23 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-22-52275518bbea
+Message-id: <52275517.2090906@samsung.com>
+Date: Wed, 04 Sep 2013 17:43:19 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v6 5/5] clk: Implement clk_unregister
+References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
+ <1377874402-2944-6-git-send-email-s.nawrocki@samsung.com>
+In-reply-to: <1377874402-2944-6-git-send-email-s.nawrocki@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7qSoepBBu02Fu83zmOy6PlTaXG2
+	6Q27RefEJewWmx5fY7W4vGsOm8WEqZPYLeb8mcJscfsyr8XTCRfZLG43rmCzWD/jNYsDj0dL
+	cw+bx4ePcR6zO2ayety5tofN4+jKtUwem5fUe+z+2sTo0bdlFaPH501yAZxRXDYpqTmZZalF
+	+nYJXBmvdt1gLLgsXDFj1Sb2BsbD/F2MnBwSAiYSF/vns0LYYhIX7q1n62Lk4hASWMoo0fb0
+	IZTziVFi6ryn7CBVvAJaErd3NDKB2CwCqhITnu1gA7HZBAwleo/2MYLYogIBEouXnIOqF5T4
+	MfkeC4gtIqAhMaXrMTvIUGaBZUwSVz8dAWsWFrCUeLfhKdS2RkaJ9yueMoMkOAXcJE5ebgLb
+	xiygI7G/dRobhC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1
+	kvNzNzFCYufrDsalx6wOMQpwMCrx8GoYqgcJsSaWFVfmHmKU4GBWEuGV8wYK8aYkVlalFuXH
+	F5XmpBYfYmTi4JRqYJQVvL57z8Q8oYyJSVeyCo+oy8+tXNd/hi3X1Gj/g5ytbz4ffbF7Q2Sd
+	1i7DXhfrDKf3ARcSK/ep/AzkOP1SfIF1/x821ds31TR+HWOTXFAyw3nmzmud7VfM3rboVy1/
+	qrnqSMNtdZ/bxy490TDrV9tx9OiavL8JyasNfKpCzZl+L9i5wO3RRkYlluKMREMt5qLiRADW
+	ZwQOewIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 12:01:01PM -0500, Robin Holt wrote:
-> Alex,
+On 08/30/2013 04:53 PM, Sylwester Nawrocki wrote:
+> clk_unregister() is currently not implemented and it is required when
+> a clock provider module needs to be unloaded.
 > 
-> Although the explanation seems plausible, have you verified this is
-> actually possible?  You could make a simple pthread test case which
-> allocates a getpagesize() * <number-of-threads> area, prints its
-> address and then each thread migrate and reference their page.  Have
-> the task then sleep(<long-time>) before exit.  Look at the physical
-> address space with dlook for those virtual addresses in both the THP
-> and non-THP cases.
+> Normally the clock supplier module is prevented to be unloaded by
+> taking reference on the module in clk_get().
 > 
-> Thanks,
-> Robin
+> For cases when the clock supplier module deinitializes despite the
+> consumers of its clocks holding a reference on the module, e.g. when
+> the driver is unbound through "unbind" sysfs attribute, there are
+> empty clock ops added. These ops are assigned temporarily to struct
+> clk and used until all consumers release the clock, to avoid invoking
+> callbacks from the module which just got removed.
+> 
+> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+[...]
+>  /**
+>   * clk_unregister - unregister a currently registered clock
+>   * @clk: clock to unregister
+> - *
+> - * Currently unimplemented.
+>   */
+> -void clk_unregister(struct clk *clk) {}
+> +void clk_unregister(struct clk *clk)
+> +{
+> +	unsigned long flags;
+> +
+> +	clk_prepare_lock();
+> +
+> +	if (!clk || IS_ERR(clk)) {
+> +		pr_err("%s: invalid clock: %p\n", __func__, clk);
+> +		goto out;
+> +	}
 
-Robin,
+Actually this check could be done before taking the mutex. And to handle
+NULL clocks properly it should be something like:
 
-I tweaked one of our other tests to behave pretty much exactly as I
-described, and I can see a very significant increase in performance with
-THP turned off.  The test behaves as follows:
+       if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+               return;
 
-- malloc a large array
-- Spawn a specified number of threads
-- Have each thread touch small, evenly spaced chunks of the array (e.g.
-  for 128 threads, the array is divided into 128 chunks, and each thread
-  touches 1/128th of each chunk, dividing the array into 16,384 pieces)
+I will hold on with posting a corrected version until there are any
+further comments.
 
-With THP off, the majority of each thread's pages are node local.  With
-THP on, most of the pages end up as THPs on the first thread's nodes,
-since it is touching chunks that are close enough together to be
-collapsed into THPs which will, of course, remain on the first node for
-the duration of the test.
+> +	if (clk->ops == &clk_nodrv_ops) {
+> +		pr_err("%s: unregistered clock: %s\n", __func__, clk->name);
+> +		goto out;
+> +	}
+> +	/*
+> +	 * Assign empty clock ops for consumers that might still hold
+> +	 * a reference to this clock.
+> +	 */
+> +	flags = clk_enable_lock();
+> +	clk->ops = &clk_nodrv_ops;
+> +	clk_enable_unlock(flags);
+> +
+> +	if (!hlist_empty(&clk->children)) {
+> +		struct clk *child;
+> +
+> +		/* Reparent all children to the orphan list. */
+> +		hlist_for_each_entry(child, &clk->children, child_node)
+> +			clk_set_parent(child, NULL);
+> +	}
+> +
+> +	clk_debug_unregister(clk);
+> +
+> +	hlist_del_init(&clk->child_node);
+> +
+> +	if (clk->prepare_count)
+> +		pr_warn("%s: unregistering prepared clock: %s\n",
+> +					__func__, clk->name);
+> +
+> +	kref_put(&clk->ref, __clk_release);
+> +out:
+> +	clk_prepare_unlock();
+> +}
+>  EXPORT_SYMBOL_GPL(clk_unregister);
 
-Here are some timings for 128 threads, allocating a total of 64gb:
-
-THP on:
-
-real	1m6.394s
-user	16m1.160s
-sys	75m25.232s
-
-THP off:
-
-real	0m35.251s
-user	26m37.316s
-sys	3m28.472s
-
-The performance hit here isn't as severe as shown with the SPEC workload
-that we originally used, but it still appears to consistently take about
-twice as long with THP enabled.
