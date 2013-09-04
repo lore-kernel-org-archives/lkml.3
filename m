@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3IDBJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:09:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:3024 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab3IDBJW (ORCPT
+	id S1761585Ab3IDBKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:10:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13477 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab3IDBKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:09:22 -0400
-X-Spam-Score: -100.9
-Message-ID: <52268800.2010200@asianux.com>
-Date: Wed, 04 Sep 2013 09:08:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Jiri Kosina <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
-Content-Type: text/plain; charset=GB2312
+	Tue, 3 Sep 2013 21:10:08 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=fpUlNXHG1joA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JGsZsGeNzdsA:10 a=pGLkceISAAAA:8 a=htLxPNFXqgbjCtIaaKsA:9 a=CjuIK1q_8ugA:10 a=Y94q-NOlkDgA:10 a=MSl-tDqOz04A:10 a=BghlhLnezBPeEaxe:21 a=Qs397YGzIgjCzLPf:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 3 Sep 2013 21:10:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wang Shilong <wangshilong1991@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re:  [RFC, 14/18, v2] ftrace/lockdep: Have the RCU lockdep splat
+ show what function triggered
+Message-ID: <20130903211000.096d4b81@gandalf.local.home>
+In-Reply-To: <5222fab4.9VvQ+evF8NDp5MKJ%wangshilong1991@gmail.com>
+References: <5222fab4.9VvQ+evF8NDp5MKJ%wangshilong1991@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
-> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> --- a/include/uapi/Kbuild
->> +++ b/include/uapi/Kbuild
->> @@ -1,7 +1,6 @@
->>  # UAPI Header export list
->> -# Top-level Makefile calls into asm-$(ARCH)
->> -# List only non-arch directories below
->> -
->> +# Except "linux/", UAPI means Universal API.
+On Sun, 01 Sep 2013 16:28:36 +0800
+Wang Shilong <wangshilong1991@gmail.com> wrote:
+
+> Hello, Using checkpatch.pl, i get the following warnings(errors):
+> WARNING: printk() should include KERN_ facility level
+> #90: FILE: kernel/trace/trace_functions.c:583:
+> +		printk("ftrace_rcu_func: %pS\n",
 > 
-> Sorry for my silly question, but what's the purpose of this "Universal
-> API" comment?
+> total: 0 errors, 1 warnings, 53 lines checked
 > 
-
-Firstly, at least for me, I don't think it is a silly question (maybe
-it means I should give additional explanations).  :-)
-
-I 'guess' the "Universal API" means:
-
-  "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
-
-It is just my 'guess', welcome additional suggestions or completions by
-any members.
-
-When we get this correct additional explanation after discussing, if
-suitable, I should add the final explanation to current patch.
-
-
-Thanks.
-
->> +# For "linux/", UAPI means User API which can be used by user mode.
->>
->>  header-y += asm-generic/
->>  header-y += linux/
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
+> patch has style problems, please review.  If any of these errors
+> are false positives report them to the maintainer, see
+> CHECKPATCH in MAINTAINERS.
 > 
 
+The code is called by lockdep, which uses printk() directly as well.
+This will stay a printk() until lockdep changes.
 
--- 
-Chen Gang
+And please, do not send a patch to change lockdep.
+
+-- Steve
+
+> Thanks, Wang
+> 
+> Notic: this is an automated generated by shell script
+> Any problems please contact: wangshilong1991@gmail.com
+
