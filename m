@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762654Ab3IDNSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 09:18:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab3IDNSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 09:18:22 -0400
-Date: Wed, 4 Sep 2013 15:16:03 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH -tip v2] sched/cputime: do not scale when utime == 0
-Message-ID: <20130904131602.GC2564@redhat.com>
-References: <20130830230402.GA14760@somewhere>
- <20130902122845.GA2457@swordfish.minsk.epam.com>
- <20130902130744.GB2378@somewhere>
- <20130902135033.GA1686@redhat.com>
- <20130902140015.GB2368@swordfish.minsk.epam.com>
- <20130903084306.GA2694@redhat.com>
- <20130903180912.GA2340@swordfish>
- <20130903183229.GB30757@gmail.com>
- <20130904120857.GB2564@redhat.com>
- <20130904123350.GA9773@gmail.com>
+	id S1762609Ab3IDNYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 09:24:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59029 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762404Ab3IDNYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 09:24:50 -0400
+Date: Wed, 4 Sep 2013 14:24:39 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "denis.ciocca@st.com" <denis.ciocca@st.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Message-ID: <20130904132439.GA10155@sirena.org.uk>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
+ <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
 Content-Disposition: inline
-In-Reply-To: <20130904123350.GA9773@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator
+ support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scale_stime() silently assumes that stime < rtime, otherwise when
-stime == rtime and both values are big enough (operations on them do
-not fit in 32 bits), the resulting scaling stime can be bigger than
-rtime. In consequence utime = rtime - stime results in negative value.
 
-User space visible symptoms of the bug are overflowed TIME values on
-ps/top, for example:
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ps aux | grep rcu
-root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
-root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
-root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
-root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
-root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
-root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
+On Wed, Sep 04, 2013 at 02:11:11PM +0100, Mark Rutland wrote:
+> On Wed, Sep 04, 2013 at 10:31:43AM +0100, Lee Jones wrote:
 
-or overflowed utime values read directly from /proc/$PID/stat
+> > +	/* Regulator not mandatory, but if requested we should enable it. */
+> > +	pdata->regulator =3D regulator_get(&indio_dev->dev, "vdd");
+> > +	if (!IS_ERR_OR_NULL(pdata->regulator)) {
 
-Reference:
-https://lkml.org/lkml/2013/8/20/259
+> Can regulator_get return NULL? As far as I can see, it either returns a
+> valid reulator pointer or an ERR_PTR value.
 
-Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-v1 -> v2 : describe user visible symptoms of the bug
+Yes, NULL is a valid regulator.
 
- kernel/sched/cputime.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+> When you say "if requested", do you mean "if described in the dt"? If
+> so, the above doesn't distunguish between a regulator not being listed
+> and one failing to be got (e.g. if we got EPROBE_DEFER from
+> regulator_get).
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index ace34f9..9994791 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -551,10 +551,7 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, utime, total;
--
--	stime = curr->stime;
--	total = stime + curr->utime;
-+	cputime_t rtime, stime, utime;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -576,13 +573,19 @@ static void cputime_adjust(struct task_cputime *curr,
- 	if (prev->stime + prev->utime >= rtime)
- 		goto out;
- 
--	if (total) {
-+	stime = curr->stime;
-+	utime = curr->utime;
-+
-+	if (utime == 0) {
-+		stime = rtime;
-+	} else if (stime == 0) {
-+		utime = rtime;
-+	} else {
-+		cputime_t total = stime + utime;
-+
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
- 		utime = rtime - stime;
--	} else {
--		stime = rtime;
--		utime = 0;
- 	}
- 
- 	/*
--- 
-1.7.1
+> I think this would be better handled with something like Mark Brown's
+> suggested regulator_get_optional [1,2].
 
+If the regulator may genuinely be absent from the system then it should
+be being requested using regulator_get_optional().  Otherwise it should
+be being requested using regulator_get().  In both cases it is important=20
+that the driver pays attention to errors.
+
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSJzSUAAoJELSic+t+oim9GsoQAJ2QeAiazr61zg2oScTu88Qd
+xTV/3LgPZ0ZHJwWWelWS3y6TpMSUYlx/5lFj1bjiQNtdxZ8ITYWM6l1/ipiQ9bsQ
+e3t2Vd29bvwNYUlmO0p5zzRWH26BttY7fjaq1BeJ29IPLW8FknTTPJIjESD+MiGD
+ZdStP/vRsgKoOvjyy3hlAX1LpsTFACWIcTmvCM0I5HB12aisXt+LnID4uiufJCKd
+ibyZf+tqCO9mTfOFhLTo1SUErOJ8xqmytYcM0+sf5Rwj/R+tzJ133G9ACNoLb/WG
+o4y54UrUZh8/RhsK/JrmmyvAH3287RbxlwhENgKMdISOoXDmtBi6gGp79bTGFfjQ
+ovqzrUNLAGT76AI2X55pyp9qngWbMv5yFYn+Jl1mYkb7qWvhUI41xtPJoTrnHPXP
+m6wLGGRKFQuaJPJ/ZLS45C6hVMEJ81cSugiAKArKGebTer89PAe9QE4EVMHDL/a8
+XJMxXX1CV/pahFeG1zFYQcilPQmlDtoCcc8y50R52E3wcuBHOHtPQ61XutBkBvU3
+z2BWQc8cEMKtYsSMOvbFYvvR0M8krUCbzKWyh7rH/SNOV36NMWs0mK6MGV6QYIeH
+lBDDsV7NJRlAkq5+LFgaAFA8eF+PpD4+zKlBwpW9s2CzciFw7oxt0XAL1TnNdKVd
+4FO+YnPIxUbLVk1PdoYl
+=ALTj
+-----END PGP SIGNATURE-----
+
+--rwEMma7ioTxnRzrJ--
