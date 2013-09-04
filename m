@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762663Ab3IDN57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 09:57:59 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:64869 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab3IDN55 (ORCPT
+	id S1762681Ab3IDOFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:05:51 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:50472 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab3IDOFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 09:57:57 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJwKkjb5r7Rwb0vUtI=
-X-RZG-CLASS-ID: mo00
-Date: Wed, 4 Sep 2013 15:57:54 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Drivers: hv: util: Fix a bug in version negotiation
- code for util services
-Message-ID: <20130904135754.GA2010@aepfle.de>
-References: <1372786290-12641-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1372786290-12641-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
+	Wed, 4 Sep 2013 10:05:47 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
+Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
+        raven@themaw.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: [PATCH 00/10] [v3] safely drop directory dentry on failed revalidate
+Date: Wed,  4 Sep 2013 16:05:46 +0200
+Message-Id: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, K. Y. Srinivasan wrote:
+Here's a series for fixing issues with d_drop on a directory dentry with
+children and adding support for such dropped directories in fuse.
 
-> The current code picked the highest version advertised by the host. WS2012 R2
-> has implemented a protocol version for KVP that is not compatible with prior
-> protocol versions of KVP. Fix the bug in the current code by explicitly specifying
-> the protocol version that the guest can support.
+This one adds a helper for walking the dentry tree.  This reduces code
+duplication and reduces the chances of a bug creeping into one of the instances.
 
-> -void vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
-> +bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
->  				struct icmsg_negotiate *negop, u8 *buf,
-> -				int max_fw_version, int max_srv_version)
-> +				int fw_version, int srv_version)
+The only user of have_submounts() is now autofs4, but after discussing with Ian
+I'm still not sure how we should deal with that.
 
-> +fw_error:
-> +	if (!found_match) {
-> +		negop->icframe_vercnt = 0;
-> +		negop->icmsg_vercnt = 0;
-> +	} else {
-> +		negop->icframe_vercnt = 1;
-> +		negop->icmsg_vercnt = 1;
-> +	}
-> +
-> +	negop->icversion_data[0].major = icframe_major;
-> +	negop->icversion_data[0].minor = icframe_minor;
-> +	negop->icversion_data[1].major = icmsg_major;
-> +	negop->icversion_data[1].minor = icmsg_minor;
-> +	return found_match;
->  }
+Thanks,
+Miklos
 
-The new vmbus_prep_negotiate_resp function modifies the *negop buffer if
-no match is found. If called twice from hv_kvp_onchannelcallback, the
-second call uses the modified buffer from the the first call. As a
-result the matching will fail for both calls. If I leave the buffer
-alone, kvp works again on ws2008.
+---
+Anand Avati (1):
+      fuse: drop dentry on failed revalidate
 
-I suggest to let callers deal with error handling. Also as a cleanup,
-vmbus_prep_negotiate_resp does not make use of the negop passed to it.
-So that arg can be removed.
+Miklos Szeredi (9):
+      vfs: add d_walk()
+      vfs: check submounts and drop atomically
+      vfs: check unlinked ancestors before mount
+      afs: use check_submounts_and_drop()
+      gfs2: use check_submounts_and_drop()
+      nfs: use check_submounts_and_drop()
+      sysfs: use check_submounts_and_drop()
+      fuse: use d_materialise_unique()
+      fuse: clean up return in fuse_dentry_revalidate()
 
+---
+ fs/afs/dir.c           |  10 +-
+ fs/dcache.c            | 452 +++++++++++++++++++++++++++++++------------------
+ fs/fuse/dir.c          |  97 +++++------
+ fs/gfs2/dentry.c       |   9 +-
+ fs/internal.h          |   1 +
+ fs/namespace.c         |   9 +
+ fs/nfs/dir.c           |   9 +-
+ fs/sysfs/dir.c         |  20 +--
+ include/linux/dcache.h |   1 +
+ 9 files changed, 364 insertions(+), 244 deletions(-)
 
-Olaf
