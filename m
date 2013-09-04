@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934418Ab3IDIbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:31:47 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:56969 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3IDIbo (ORCPT
+	id S934460Ab3IDIdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:33:09 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:50176 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933033Ab3IDIdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:31:44 -0400
-Date: Wed, 4 Sep 2013 17:31:41 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, johnstultz@linaro.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, linux-sh@vger.kernel.org,
-        sboyd@codeaurora.org, rob.herring@calxeda.com, olof@lixom.net,
-        santosh.shilimkar@ti.com, grant.likely@linaro.org, tglx@linutronix.de
-Subject: Re: [PATCH] clocksource: em_sti: Set cpu_possible_mask to fix SMP
- broadcast
-Message-ID: <20130904083139.GD17329@verge.net.au>
-References: <20130904080151.24562.91334.sendpatchset@w520>
+	Wed, 4 Sep 2013 04:33:07 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-2d-5226f0415ebd
+Date: Wed, 4 Sep 2013 17:33:05 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
+ of a slab
+Message-ID: <20130904083305.GC16355@lge.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
+ <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130904080151.24562.91334.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 05:01:51PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+On Tue, Sep 03, 2013 at 02:15:42PM +0000, Christoph Lameter wrote:
+> On Mon, 2 Sep 2013, Joonsoo Kim wrote:
 > 
-> Update the STI driver by setting cpu_possible_mask to make EMEV2
-> SMP work as expected together with the ARM broadcast timer.
+> > This patchset implements byte sized indexes for the freelist of a slab.
+> >
+> > Currently, the freelist of a slab consist of unsigned int sized indexes.
+> > Most of slabs have less number of objects than 256, so much space is wasted.
+> > To reduce this overhead, this patchset implements byte sized indexes for
+> > the freelist of a slab. With it, we can save 3 bytes for each objects.
+> >
+> > This introduce one likely branch to functions used for setting/getting
+> > objects to/from the freelist, but we may get more benefits from
+> > this change.
+> >
+> > Below is some numbers of 'cat /proc/slabinfo' related to my previous posting
+> > and this patchset.
 > 
-> This breakage was introduced by:
-> 
-> f7db706 ARM: 7674/1: smp: Avoid dummy clockevent being preferred over real hardware clock-event
-> 
-> Without this fix SMP operation is broken on EMEV2 since no
-> broadcast timer interrupts trigger on the secondary CPU cores.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
-> 
->  Thanks to feedback from Stephen Boyd this is is a reworked version of:
->  [PATCH] clocksource: em_sti: Adjust clock event rating to fix SMP broadcast
-> 
->  drivers/clocksource/em_sti.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> You  may also want to run some performance tests. The cache footprint
+> should also be reduced with this patchset and therefore performance should
+> be better.
 
-Tested-by: Simon Horman <horms+renesas@verge.net.au>
+Yes, I did a hackbench test today, but I'm not ready for posting it.
+The performance is improved for my previous posting and futher improvement is
+founded by this patchset. Perhaps I will post it tomorrow.
 
-I will let this sit for a few days to see if there is any further feedback.
-
+Thanks.
