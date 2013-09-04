@@ -1,55 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab3IDUOE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:14:04 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:41507 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab3IDUOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:14:01 -0400
+	id S1760385Ab3IDUQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:16:17 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:39772 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752850Ab3IDUQP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:16:15 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Date: Wed, 4 Sep 2013 22:15:45 +0200
+Subject: Re: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Topic: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Index: Ac6pq4sPVtUU1mzlRTiNsxLyGlSfvQ==
+Message-ID: <522794F1.90301@st.com>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20130904200959.GE8540@anatevka.fc.hp.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	<1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
-	<20130904200959.GE8540@anatevka.fc.hp.com>
-Date: Wed, 4 Sep 2013 16:14:00 -0400
-X-Google-Sender-Auth: UXhIFKiEwJWm9rZzZWQ316e6lUs
-Message-ID: <CA+5PVA6HayQJEDFisvXYJKyoKDbJh53fWki=Arbn_9t=NppGrw@mail.gmail.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel enforces
- module loading restrictions
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: jerry.hoemann@hp.com
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        kexec <kexec@lists.infradead.org>, Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 4:09 PM,  <jerry.hoemann@hp.com> wrote:
-> On Tue, Sep 03, 2013 at 07:50:15PM -0400, Matthew Garrett wrote:
->> kexec permits the loading and execution of arbitrary code in ring 0, which
->> is something that module signing enforcement is meant to prevent. It makes
->> sense to disable kexec in this situation.
->>
->> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> Due to the MACRO used, the task of reading, understanding and maintaining
+> the LPS331AP's channel descriptor is substantially difficult. This patch
+> is based on the view that it's better to have easy to read, maintainable
+> code than to save a few lines here and there. For that reason we're
+> expanding the array so initialisation is completed in full.
+Also for this one, the channel names are general and can be shared 
+between different sensors. For the channel definition it's not a problem 
+for me, but I think it's not necessary adds all that code...
+
+Denis
+
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   drivers/iio/pressure/st_pressure_core.c | 45 +++++++++++++++++++++++++--------
+>   1 file changed, 34 insertions(+), 11 deletions(-)
 >
->
-> Matthew,
->
-> Disabling kexec will disable kdump, correct?
-
-Yes.
-
-> Are there plans to enable kdump on a system where secure
-> boot is enabled?
-
-Vivek Goyal has been working on this.  I've not seen the code yet, but
-I believe it should be posted somewhere relatively soon.  We're also
-planning on talking about it at the Secure Boot microconference at
-Linux Plumbers in two weeks.
-
-josh
+> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+> index becfb25..7ba9299 100644
+> --- a/drivers/iio/pressure/st_pressure_core.c
+> +++ b/drivers/iio/pressure/st_pressure_core.c
+> @@ -58,16 +58,39 @@
+>   #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
+>   #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
+>   
+> -static const struct iio_chan_spec st_press_channels[] = {
+> -	ST_SENSORS_LSM_CHANNELS(IIO_PRESSURE,
+> +static const struct iio_chan_spec st_press_lsp331ap_channels[] = {
+> +	{
+> +		.type = IIO_PRESSURE,
+> +		.channel2 = IIO_NO_MOD,
+> +		.address = ST_PRESS_LPS331AP_OUT_XL_ADDR,
+> +		.scan_index = ST_SENSORS_SCAN_X,
+> +		.scan_type = {
+> +			.sign = 'u',
+> +			.realbits = 24,
+> +			.storagebits = 24,
+> +			.endianness = IIO_LE,
+> +		},
+> +		.info_mask_separate =
+>   			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+> -			ST_SENSORS_SCAN_X, 0, IIO_NO_MOD, 'u', IIO_LE, 24, 24,
+> -			ST_PRESS_LPS331AP_OUT_XL_ADDR),
+> -	ST_SENSORS_LSM_CHANNELS(IIO_TEMP,
+> -			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE) |
+> -						BIT(IIO_CHAN_INFO_OFFSET),
+> -			-1, 0, IIO_NO_MOD, 's', IIO_LE, 16, 16,
+> -			ST_TEMP_LPS331AP_OUT_L_ADDR),
+> +		.modified = 0,
+> +	},
+> +	{
+> +		.type = IIO_TEMP,
+> +		.channel2 = IIO_NO_MOD,
+> +		.address = ST_TEMP_LPS331AP_OUT_L_ADDR,
+> +		.scan_index = -1,
+> +		.scan_type = {
+> +			.sign = 'u',
+> +			.realbits = 16,
+> +			.storagebits = 16,
+> +			.endianness = IIO_LE,
+> +		},
+> +		.info_mask_separate =
+> +			BIT(IIO_CHAN_INFO_RAW) |
+> +			BIT(IIO_CHAN_INFO_SCALE) |
+> +			BIT(IIO_CHAN_INFO_OFFSET),
+> +		.modified = 0,
+> +	},
+>   	IIO_CHAN_SOFT_TIMESTAMP(1)
+>   };
+>   
+> @@ -77,7 +100,7 @@ static const struct st_sensors st_press_sensors[] = {
+>   		.sensors_supported = {
+>   			[0] = LPS331AP_PRESS_DEV_NAME,
+>   		},
+> -		.ch = (struct iio_chan_spec *)st_press_channels,
+> +		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
+>   		.odr = {
+>   			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
+>   			.mask = ST_PRESS_LPS331AP_ODR_MASK,
+> @@ -214,7 +237,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+>   	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
+>   	pdata->multiread_bit = pdata->sensor->multi_read_bit;
+>   	indio_dev->channels = pdata->sensor->ch;
+> -	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
+> +	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+>   
+>   	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+>   						&pdata->sensor->fs.fs_avl[0];
