@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762333Ab3IDLU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:20:28 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:23216 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3IDLU1 (ORCPT
+	id S934453Ab3IDLaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:30:30 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14241 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757161Ab3IDLa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:20:27 -0400
-X-Spam-Score: -100.9
-Message-ID: <52271737.5040002@asianux.com>
-Date: Wed, 04 Sep 2013 19:19:19 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 4 Sep 2013 07:30:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 04:30:24 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [RFC 0/5] New descriptor-based GPIO interface
+Date: Wed, 4 Sep 2013 20:29:24 +0900
+Message-ID: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Jiri Kosina <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com> <52268800.2010200@asianux.com> <CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com> <5226EAAE.6090500@asianux.com> <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com> <5226F9BF.8040304@asianux.com> <CAMuHMdWc3mtva92qDy4j6iUhQc5grHA1-5=vC4iXZoSyFxB4cw@mail.gmail.com> <5226FF86.6030504@asianux.com>
-In-Reply-To: <5226FF86.6030504@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 05:38 PM, Chen Gang wrote:
-> On 09/04/2013 05:27 PM, Geert Uytterhoeven wrote:
->> On Wed, Sep 4, 2013 at 11:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>> Hmm... why we need "uapi/linux/" ?  (I can not find some related
->>>>> documents, so I have to 'guess').
->>>>
->>>> The "uapi" subdirectories are there to distinguish userspace headers from
->>>> kernelspace headers, and allow both to live in the kernel source tree.
->>>>
->>>> When running "make headers_install", the (processed) headers in the
->>>> various "uapi" subdirectories are copied to /usr/include.
->>>> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
->>>> In userspace there are no "uapi" subdirectories anymore.
->>>>
->>>
->>> Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
->>>
->>> Are they also truly still "Userspace API" but which need not distinguish
->>> ? (at least, it seems that idea is not quite good).
->>>
->>> Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
->>> for compatible (originally they are here, and now we have to follow, it
->>> is no reason to change if not find related critical issues)?
->>
->> All uapi files are installed, a.o. /usr/include/scsi/, /usr/include/video/, ...
->>
-> 
-> Oh, sorry, I misunderstand your original mail contents.
-> 
->> Historically, everything under "include" in the kernel source tree was
->> installed in /usr/include/, after (semi)manual cleanup.
->> Since the uapi split, everything is handled automatically.
->> Because of compatibility reasons (do not break userspace), paths had to
->> stay the same.
->>
-> 
-> At least for me, that sounds reasonable.
-> 
-> Hmm... when some members need add a new Userspace API. I guess:
-> 
->   if it is related with one of existent "uapi/*" sub-directory (except "uapi/linux"), they need put the file(or directory) under the related "uapi/*",
-> 
->   if can not find existent "uapi/*" sub-directory, they need put the file(or directory) under "uapi/linux/*".
-> 
+Here is a first RFC for the new GPIO interface. It's terribly overdue, and in
+order to avoid delaying it further I decided to send it as-is instead of being
+even more perfectionist. The main issue I have with it is that it highlights
+some points that could be simplified in gpiolib, some of which require a
+refactoring of gpiolib's clients. I wasn't sure which, of the cleanup or new
+interface, should come first and stayed in this state of confusion for several
+months ; but in the end I believe it's more appropriate to clearly lay the
+interfaces we want to use first, and then refactor the lib accordingly. So
+please be mindful that another round of cleanup, both of gpiolib itself and its
+consumers, should come once a later version of these patches is validated (and
+hopefully merged) and that this series should be considered just another step
+towards gpiolib's sanitization (although I also secretly hope the new interface
+will be deemed useful by itself).
 
-Hmm... if "uapi/*" are really only for compatible, better to keep them
-no touch, that means: should always add new file(or directory) under
-"uapi/linux/" sub-directory (even if they are related with "uapi/*").
+Another point that definitely needs more attention is the documentation. I am
+not sure whether the new interface should be described as a couple of sections
+in the existing GPIO documentation (the current approach) or as a new
+documentation file of its own.
 
+The new gpiod public interface is just an export of how gpiolib now works
+internally. By representing GPIOs as opaque descriptors intead of integers, it
+aims at making GPIO usage safer and more coherent with respect to other
+subsystems by using a proper get/put mechanism and ensuring all GPIOs in use at
+a given time are valid. It also makes GPIO acquisition easier for consumers, by
+offering a standard way to bind GPIOs to devices. Finally, it tries to fix some
+of the inconsistencies gpiolib acquired over time, like the incoherent handling
+of active low GPIOs which was only valid when using the sysfs interface.
 
-Thanks.
+The old GPIO interface is still accessible and works the same way as before ; I
+do not expect any existing code to break as a result of applying this series
+(which is not extensively tested yet BTW).
 
-> Does it sound reasonable ?
-> 
-> 
-> Thanks.
-> 
->> Gr{oetje,eeting}s,
->>
->>                         Geert
->>
->> --
->> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->>
->> In personal conversations with technical people, I call myself a hacker. But
->> when I'm talking to journalists I just say "programmer" or something like that.
->>                                 -- Linus Torvalds
->>
->>
-> 
-> 
+TODO (preferably once this batch is validated):
+- Change gpio_get()'s behavior to allow it to return specifiers other than the
+first one for DT-declared GPIOs?
+- Update as many users of the legacy interface as possible to use the new
+interface
+- Simplify gpiolib by removing redundant code and corner-cases (gpio_request
+must die)
+- Try to implement the GPIO fast-path method with gpiod, maybe using the LSB of
+GPIO descriptors as a marker to forge fake descriptors?
+- If possible, completely deprecate and remove the old gpio interface
 
+Alexandre Courbot (5):
+  gpiolib: factorize gpiod_get/set functions
+  gpiolib: export descriptor-based GPIO interface
+  gpiolib: port of_ functions to use gpiod
+  gpiolib: add gpiod_get() and gpiod_put() functions
+  gpiolib: update documentation
+
+ Documentation/gpio.txt        | 119 ++++++++++
+ drivers/gpio/gpiolib-of.c     |  28 ++-
+ drivers/gpio/gpiolib.c        | 525 ++++++++++++++++++++++++++----------------
+ include/asm-generic/gpio.h    | 227 ++++++------------
+ include/linux/gpio.h          |  11 +-
+ include/linux/gpio/consumer.h | 201 ++++++++++++++++
+ include/linux/gpio/driver.h   | 163 +++++++++++++
+ include/linux/of_gpio.h       |  29 ++-
+ 8 files changed, 920 insertions(+), 383 deletions(-)
+ create mode 100644 include/linux/gpio/consumer.h
+ create mode 100644 include/linux/gpio/driver.h
 
 -- 
-Chen Gang
+1.8.4
+
