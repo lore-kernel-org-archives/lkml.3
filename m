@@ -1,38 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762175Ab3IDGvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 02:51:43 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:60715 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762060Ab3IDGvl (ORCPT
+	id S1762093Ab3IDG4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 02:56:03 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51088 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761963Ab3IDG4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 02:51:41 -0400
+	Wed, 4 Sep 2013 02:56:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1377304261-24668-1-git-send-email-huawei.libin@huawei.com>
-References: <1377304261-24668-1-git-send-email-huawei.libin@huawei.com>
-Date: Wed, 4 Sep 2013 09:51:40 +0300
-X-Google-Sender-Auth: Q7VUZXfWpMZMSIWYI3F-PZPFHag
-Message-ID: <CAOJsxLFRSf89-eKnNdg_G-04k930c1wxVrbz1VD2x1khf+-x+Q@mail.gmail.com>
-Subject: Re: [PATCH] Documentation/kmemcheck: update kmemcheck documentation
-From: Pekka Enberg <penberg@kernel.org>
-To: Libin <huawei.libin@huawei.com>
-Cc: Rob Landley <rob@landley.net>, Vegard Nossum <vegardno@ifi.uio.no>,
-        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
-	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
-	<linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, wangyijing@huawei.com,
-        guohanjun@huawei.com, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAEP_g=-BWdWJ5WtNy0=Eq8GJp84i88QbGq-gQcANBhCKajcJsQ@mail.gmail.com>
+References: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
+	<CAEP_g=-XvRiHPzSAp2rgC9Hxdd+pGEHvSTEJ1A1SkWnk1-6xZA@mail.gmail.com>
+	<20130829.181001.145658561677052552.davem@davemloft.net>
+	<CAEP_g=-XxgK9HVxvcaW3RS2zfa+77pB4cqfLFC0rcV7QJc+2BQ@mail.gmail.com>
+	<CAMuHMdU3M9uUFKd3EQ0HbcAvf5e62PA4NJG_mQHhpvZwFJnUWQ@mail.gmail.com>
+	<CAEP_g=-BWdWJ5WtNy0=Eq8GJp84i88QbGq-gQcANBhCKajcJsQ@mail.gmail.com>
+Date: Wed, 4 Sep 2013 08:55:59 +0200
+X-Google-Sender-Auth: snkeAZMTBQVYt75Mn1ddAIIWY2Y
+Message-ID: <CAMuHMdVvB+GMwMrP2mieXbqAM7mn3nF_1ezbiYVBLKdsL5aCJg@mail.gmail.com>
+Subject: Re: [-next] openvswitch BUILD_BUG_ON failed
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jesse Gross <jesse@nicira.com>
+Cc: David Miller <davem@davemloft.net>, Andy Zhou <azhou@nicira.com>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 3:31 AM, Libin <huawei.libin@huawei.com> wrote:
-> Kmemcheck configuration menu location correction in Documentation/
-> kmemcheck.txt
+On Tue, Sep 3, 2013 at 11:44 PM, Jesse Gross <jesse@nicira.com> wrote:
+> On Sat, Aug 31, 2013 at 5:11 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Fri, Aug 30, 2013 at 3:11 AM, Jesse Gross <jesse@nicira.com> wrote:
+>>> On Thu, Aug 29, 2013 at 3:10 PM, David Miller <davem@davemloft.net> wrote:
+>>>> From: Jesse Gross <jesse@nicira.com>
+>>>> Date: Thu, 29 Aug 2013 14:42:22 -0700
+>>>>
+>>>>> On Thu, Aug 29, 2013 at 2:21 PM, Geert Uytterhoeven
+>>>>> <geert@linux-m68k.org> wrote:
+>>>>>> However, I have some doubts about other alignment "enforcements":
+>>>>>>
+>>>>>> "__aligned(__alignof__(long))" makes the whole struct aligned to the
+>>>>>> alignment rule for "long":
+>>>>>>    1. This is only 2 bytes on m68k, i.e. != sizeof(long).
+>>>>>>    2. This is 4 bytes on many 32-bit platforms, which may be less than the
+>>>>>>       default alignment for "__be64" (cfr. some members of struct
+>>>>>>       ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
+>>>>>
+>>>>> Do any of those 32-bit architectures actually care about alignment of
+>>>>> 64 bit values? On 32-bit x86, a long is 32 bits but the alignment
+>>>>> requirement of __be64 is also 32 bit.
+>>>>
+>>>> All except x86-32 do, it is in fact the odd man out with respect to this
+>>>> issue.
+>>>
+>>> Thanks, good to know.
+>>>
+>>> Andy, do you want to modify your patch to just drop the alignment
+>>> specification as Geert suggested (but definitely keep the new build
+>>> assert that you added)? It's probably better to just send the patch to
+>>> netdev (against net-next) as well since you'll likely get better
+>>> comments there and we can fix this faster if you cut out the
+>>> middleman.
+>>
+>> Why do you want to keep the build asserts?
+>> Is this in-memory structure also transfered as-is over the network?
+>> If yes, you definitely want the padding.
 >
-> Signed-off-by: Libin <huawei.libin@huawei.com>
+> Well they caught this bug and really don't cost anything.
+>
+>> Nevertheless, as the struct contains u32 and even __be64 members, the
+>> size of the struct will always be a multiple of the alignment unit for
+>> 64-bit quantities (and thus also for long), as per the C standard.
+>> Hence the check
+>>
+>>     BUILD_BUG_ON(sizeof(struct sw_flow_key) % __alignof__(long));
+>>
+>> will only catch bad compiler bugs or people adding __packed to the struct.
+>
+> It's possible that we might want to pack the structure in the future.
+> More generally though, the contents of the struct is really
+> independent of the alignment requirements here because we're accessing
+> it as an array of bytes in long-sized chunks so implicitly depending
+> on the size of the members is not that great.
 
-Looks good to me. Andrew mind picking this up?
+So you're accessing it as an array of bytes in long-sized chunks.
+What are you doing with this accessed data?
+Transfering over the network?
+Storing on disk?
+Then it must be portable across machines and architectures, right?
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
