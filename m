@@ -1,70 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3IDVud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 17:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41221 "EHLO mx1.redhat.com"
+	id S933122Ab3IDVzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 17:55:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12552 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932449Ab3IDVub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 17:50:31 -0400
-Date: Wed, 4 Sep 2013 17:50:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: manfred@colorfullife.com
-Subject: soft lockup in sysvipc code.
-Message-ID: <20130904215022.GA30606@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	manfred@colorfullife.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758792Ab3IDVzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 17:55:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,1023,1371106800"; 
+   d="scan'208";a="290909270"
+Subject: RFC Block Layer Extensions to Support NV-DIMMs
+From: Rob Gittins <rob.gittins@linux.intel.com>
+Reply-To: rob.gittins@linux.intel.com
+To: linux-kernel@vger.kernel.org, linux-fsdevel@veger.org,
+        linux-pmfs@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Opensource Technology Center
+Date: Wed, 04 Sep 2013 15:54:49 -0600
+Message-ID: <1378331689.9210.11.camel@Virt-Centos-6.lm.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Haven't seen this before.
-Tree based on v3.11-3104-gf357a82
 
-BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:25479]
-Modules linked in: sctp snd_seq_dummy fuse dlci rfcomm tun bnep hidp ipt_ULOG nfnetlink can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr usb_debug e1000e ptp pps_core
-irq event stamp: 1143030
-hardirqs last  enabled at (1143029): [<ffffffff81715d5c>] restore_args+0x0/0x30
-hardirqs last disabled at (1143030): [<ffffffff8171f9aa>] apic_timer_interrupt+0x6a/0x80
-softirqs last  enabled at (1143028): [<ffffffff8105a938>] __do_softirq+0x198/0x460
-softirqs last disabled at (1143023): [<ffffffff8105ae55>] irq_exit+0x135/0x150
-CPU: 0 PID: 25479 Comm: trinity-child0 Not tainted 3.11.0+ #44
-task: ffff88022c013f90 ti: ffff88022bd8c000 task.ti: ffff88022bd8c000
-RIP: 0010:[<ffffffff8131014b>]  [<ffffffff8131014b>] idr_find_slowpath+0x9b/0x150
-RSP: 0018:ffff88022bd8dc88  EFLAGS: 00000206
-RAX: 0000000000000006 RBX: ffff000a6c0a0000 RCX: 0000000000000008
-RDX: 0000000000000008 RSI: ffffffff81c41040 RDI: ffff88022c014668
-RBP: ffff88022bd8dca0 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88023831a290
-R13: 0000000000000001 R14: ffff88022bd8dbe8 R15: ffff8802449dffff
-FS:  00007fcfcad2c740(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007fcfc84cb968 CR3: 00000001de93f000 CR4: 00000000001407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-Stack:
- 0000000000000260 0000000000002dba ffffffff81c7e258 ffff88022bd8dcf8
- ffffffff812b1131 ffff88022c013f90 ffff8801d37174c0 ffff88022bd8dd38
- ffffffff81c7e2f0 ffff88022bd8dd38 ffff8801e065cec8 ffff880241d86ca8
-Call Trace:
- [<ffffffff812b1131>] sysvipc_find_ipc+0x61/0x300
- [<ffffffff812b1416>] sysvipc_proc_next+0x46/0xd0
- [<ffffffff811e13b9>] traverse.isra.7+0xc9/0x260
- [<ffffffff810c4078>] ? lock_release_non_nested+0x308/0x350
- [<ffffffff811e1b61>] seq_read+0x3e1/0x450
- [<ffffffff81228f10>] ? proc_reg_write+0x80/0x80
- [<ffffffff81228f4d>] proc_reg_read+0x3d/0x80
- [<ffffffff811ba3a3>] do_loop_readv_writev+0x63/0x90
- [<ffffffff811bbccd>] do_readv_writev+0x21d/0x240
- [<ffffffff810994af>] ? local_clock+0x3f/0x50
- [<ffffffff81152376>] ? context_tracking_user_exit+0x46/0x1a0
- [<ffffffff811bbd25>] vfs_readv+0x35/0x60
- [<ffffffff811bbff2>] SyS_preadv+0xa2/0xd0
- [<ffffffff8171ef54>] tracesys+0xdd/0xe2
-Code: 7e 6e 41 8b 84 24 2c 08 00 00 83 eb 08 c1 e0 03 39 c3 0f 85 c1 00 00 00 89 d9 44 89 e8 d3 f8 0f b6 c0 48 83 c0 04 4d 8b 64 c4 08 <e8> 80 b4 d6 ff 85 c0 74 c4 80 3d f7 2f 9d 00 00 75 bb e8 6e b4 
+Non-volatile DIMMs have started to become available.  A NVDIMMs is a
+DIMM that does not lose data across power interruptions.  Some of the
+NVDIMMs act like memory, while others are more like a block device
+on the memory bus. Application uses vary from being used to cache
+critical data, to being a boot device.
+
+There are two access classes of NVDIMMs,  block mode and
+“load/store” mode DIMMs which are referred to as Direct Memory
+Mappable.
+
+The block mode is where the DIMM provides IO ports for read or write
+of data.  These DIMMs reside on the memory bus but do not appear in the
+application address space.  Block mode DIMMs do not require any changes
+to the current infrastructure, since they provide IO type of interface.
+
+Direct Memory Mappable DIMMs (DMMD) appear in the system address space
+and are accessed via load and store instructions.  These NVDIMMs
+are part of the system physical address space (SPA) as memory with
+the attribute that data survives a power interruption.  As such this
+memory is managed by the kernel which can  assign virtual addresses and
+mapped into application’s address space as well as being accessible
+by the kernel.  The area mapped into the system address space is
+being referred to as persistent memory (PMEM).
+
+PMEM introduces the need for new operations in the
+block_device_operations to support the specific characteristics of
+the media.
+
+First data may not propagate all the way through the memory pipeline
+when store instructions are executed.  Data may stay in the CPU cache
+or in other buffers in the processor and memory complex.  In order to
+ensure the durability of data there needs to be a driver entry point
+to force a byte range out to media.  The methods of doing this are
+specific to the PMEM technology and need to be handled by the driver
+that is supporting the DMMDs.  To provide a way to ensure that data is
+durable adding a commit function to the block_device_operations vector.
+
+   void (*commitpmem)(struct block_device *bdev, void *addr);
+
+Another area requiring extension is the need to be able to clear PMEM
+errors.  When data is fetched from errored PMEM it is marked with the
+poison attribute.  If the CPU attempts to access the data it causes a
+machine check.  How errors are cleared is hardware dependent and needs
+to be handled by the specific device driver.  The following function
+in the block_device_operations vector would clear the correct range
+of PMEM and put new data there.  If the argument data is null or the
+size is zero the driver is free to put any data in PMEM it wishes.
+
+	void (*clearerrorpmem)(struct block_device *bdev, void *addr,
+			size_t len, void *data);
+
+Different applications, filesystem and drivers may wish to share
+ranges of PMEM.  This is analogous to partitioning a disk that is
+using multiple and different filesystems.   Since PMEM is addressed
+on a byte basis rather than a block basis the existing partitioning
+model does not fit well.  As a result there needs to be a way to
+describe PMEM ranges.
+
+	struct pmem_layout *(*getpmem)(struct block_device *bdev);
+
+
+Proposed patch.
+
+---
+Documentation/filesystems/Locking |    6 ++++
+fs/block_dev.c                    |   42
++++++++++++++++++++++++++++++++++
+include/linux/blkdev.h            |    4 +++
+include/linux/pmem.h              |   47
++++++++++++++++++++++++++++++++++++++
+4 files changed, 99 insertions(+), 0 deletions(-)
+create mode 100644 include/linux/pmem.h
+
+diff --git a/Documentation/filesystems/Locking
+b/Documentation/filesystems/Locking
+index 0706d32..78910f4 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -386,6 +386,9 @@ prototypes:
+	int (*revalidate_disk) (struct gendisk *);
+	int (*getgeo)(struct block_device *, struct hd_geometry *);
+	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
++	struct pmem_layout *(*getpmem)(struct block_device *);
++	void (*commitpmem)(struct block_device *, void *);
++	void (*clearerrorpmem)(struct block_device *, void *, size_t, void *);
+locking rules:
+			bd_mutex
+@@ -399,6 +402,9 @@ unlock_native_capacity:	no
+revalidate_disk:	no
+getgeo:			no
+swap_slot_free_notify:	no	(see below)
++getpmem:		no
++commitpmem:		no
++clearerrorpmem:	no
+media_changed, unlock_native_capacity and revalidate_disk are called
+only
+from
+check_disk_change().
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index aae187a..a57863c 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -27,6 +27,7 @@
+#include <linux/namei.h>
+#include <linux/log2.h>
+#include <linux/cleancache.h>
++#include <linux/pmem.h>
+#include <asm/uaccess.h>
+#include "internal.h"
+@@ -1716,3 +1717,44 @@ void iterate_bdevs(void (*func)(struct
+block_device
+*, void *), void *arg)
+	spin_unlock(&inode_sb_list_lock);
+	iput(old_inode);
+}
++
++/**
++ * get_pmemgeo() - Return persistent memory geometry information
++ * @bdev:  device to interrogate
++ *
++ * Provides the memory layout for a persistent memory volume which
++ * is made up of CPU-addressable persistent memory.  If the
+interrogated
++ * device does not support CPU-addressable persistent memory then
+-ENOTTY
++ * is returned.
++ *
++ * Return: a pointer to a pmem_layout structure or ERR_PTR
++ */
++struct pmem_layout *get_pmemgeo(struct block_device *bdev)
++{
++	struct gendisk *bd_disk = bdev->bd_disk;
++
++	if (!bd_disk || !bd_disk->fops->getpmem)
++		return ERR_PTR(-ENOTTY);
++	return bd_disk->fops->getpmem(bdev);
++}
++EXPORT_SYMBOL(get_pmemgeo);
++
++void commit_pmem(struct block_device *bdev, void *addr)
++{
++	struct gendisk *bd_disk = bdev->bd_disk;
++
++	if (bd_disk && bd_disk->fops->commitpmem)
++		bd_disk->fops->commitpmem(bdev, addr);
++}
++EXPORT_SYMBOL(commit_pmem);
++
++void clear_pmem_error(struct block_device *bdev, void *addr, size_t
+len,
++				void *data)
++{
++	struct gendisk *bd_disk = bdev->bd_disk;
++
++	if (bd_disk && bd_disk->fops->clearerrorpmem)
++		bd_disk->fops->clearerrorpmem(bdev, addr, len, data);
++}
++EXPORT_SYMBOL(clear_pmem_error);
++
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 78feda9..ba2c1f5 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1498,6 +1498,10 @@ struct block_device_operations {
+	int (*getgeo)(struct block_device *, struct hd_geometry *);
+	/* this callback is with swap_lock and sometimes page table lock held
+*/
+	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
++	/* persistent memory operations */
++	struct pmem_layout * (*getpmem)(struct block_device *);
++	void (*commitpmem)(struct block_device *, void *);
++	void (*clearerrorpmem)(struct block_device *, void *, size_t, void *);
+	struct module *owner;
+};
+diff --git a/include/linux/pmem.h b/include/linux/pmem.h
+new file mode 100644
+index 0000000..f907307
+--- /dev/null
++++ b/include/linux/pmem.h
+@@ -0,0 +1,47 @@
++/*
++ * Definitions for the Persistent Memory interface
++ * Copyright (c) 2013, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
+it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but
+WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License
+for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
+along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#ifndef _LINUX_PMEM_H
++#define _LINUX_PMEM_H
++
++#include <linux/types.h>
++
++struct persistent_memory_extent {
++	phys_addr_t pme_spa;
++	u64         pme_len;
++	int         pme_numa_node;
++};
++
++struct pmem_layout {
++	u64         pml_flags;
++	u64         pml_total_size;
++	u32         pml_extent_count;
++	u32			pml_interleave;	/* interleave bytes */
++	struct persistent_memory_extent pml_extents[];
++};
++
++/*
++ * Flags values
++ */
++#define PMEM_ENABLED 0x0000000000000001 /* can be used for Persistent
+Mem
+*/
++#define PMEM_ERRORED 0x0000000000000002 /* in an error state */
++#define PMEM_COMMIT  0x0000000000000004 /* commit function available */
++#define PMEM_CLEAR_ERROR  0x0000000000000008 /* clear error function
+provided */
++
++#endif
++
+--
+1.7.1
+
+
+
 
