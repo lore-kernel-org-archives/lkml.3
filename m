@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762774Ab3IDOgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:36:31 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8556 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756792Ab3IDOg3 (ORCPT
+	id S1762840Ab3IDOhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:37:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22259 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758801Ab3IDOhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:36:29 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-69-5227456a3ad9
-From: Tomasz Figa <t.figa@samsung.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: 3.12 merge window exynos cpufreq driver fails to build
-Date: Wed, 04 Sep 2013 16:36:25 +0200
-Message-id: <7035644.8Kb1gDYsCf@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <CA+5PVA6SQ9JGBD3F=u5ysch-agp91oTK8ZbKsdQkz57yZ8OUHQ@mail.gmail.com>
-References: <CA+5PVA6SQ9JGBD3F=u5ysch-agp91oTK8ZbKsdQkz57yZ8OUHQ@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xa7pZrupBBi3rTC2eNv1gt2ieN5/N
-	onfBVTaLTY+vsVpc3jWHzWLG+X1MFv0Le5ksNn71cODwmHKvhc3jzrU9bB6bl9R79G1Zxejx
-	aHELo8fnTXIBbFFcNimpOZllqUX6dglcGWeO3WEs2M1Z8XJiN1sD42n2LkZODgkBE4nlU7aw
-	QdhiEhfurQeyuTiEBJYySrxatBnK6WKS6DxwhBGkik1ATeJzwyOwDhEBLYmWHTsYQYqYBeYw
-	SczbPocJJCEs4CzxdfkhZhCbRUBV4uT5x2ANvAKaEo/P/WMFsfkF1CXebXsKVi8q4CrxaeFG
-	sJM4BYIl5n+7CVYvJBAgcWjZClaIXkGJH5PvsYDYzALyEvv2T2WFsLUk1u88zjSBUXAWkrJZ
-	SMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkIr7uYFx6zOoQowAHoxIPr4ah
-	epAQa2JZcWXuIUYJDmYlEd6pzkAh3pTEyqrUovz4otKc1OJDjEwcnFINjEsa5DnDfz+dsX+X
-	D7vfT/6HTwxXdTBG5f3//OGtfekVzsL9iVXR+4KEguZYtjsopUzZmdgjUDK7+94R28MeB3he
-	78v8zuzE1d9ZHS79vTvhtPrZWzNim17qMsR9zV98+WjjKYOmb0kzXO1ech2R+Z20O3/VO/tg
-	w4SktSd3HtKYWmfqayC+Q4mlOCPRUIu5qDgRAB8hM1NmAgAA
+	Wed, 4 Sep 2013 10:37:03 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=fEAZsDgmFpUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6APJjXR-8hQA:10 a=s1CHMtKVOpMdRrh2RDUA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130904143700.632928185@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 04 Sep 2013 10:35:54 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 02/18] ftrace: Fix a slight race in modifying what function callback gets
+ traced
+References: <20130904143552.456506259@goodmis.org>
+Content-Disposition: inline; filename=0001-ftrace-Fix-a-slight-race-in-modifying-what-function-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-On Wednesday 04 of September 2013 10:13:16 Josh Boyer wrote:
-> Using Linus' tree as of this morning (v3.11-2654-g458c3f6), the
-> exynos-cpufreq driver doesn't build because it includes a file that
-> doesn't exist.
-> 
-> + make -s ARCH=arm V=1 -j4 bzImage KALLSYMS_EXTRA_PASS=1
-> arch/arm/kernel/return_address.c:63:2: warning: #warning "TODO:
-> return_address should use unwind tables" [-Wcpp]
->  #warning "TODO: return_address should use unwind tables"
->   ^
-> arch/arm/mm/dma-mapping.c:253:2: warning: #warning ARM Coherent DMA
-> allocator does not (yet) support huge TLB [-Wcpp]
->  #warning ARM Coherent DMA allocator does not (yet) support huge TLB
->   ^
-> drivers/cpufreq/exynos-cpufreq.c:21:22: fatal error: plat/cpu.h: No
-> such file or directory
->  #include <plat/cpu.h>
->                       ^
-> compilation terminated.
-> make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
-> 
-> I'm guessing that <plat/cpu.h> file is supposed to come from
-> arch/arm/plat-samsung/include/plat/, but I don't see anything that
-> specifies a -I there.
-> 
-> Thoughts?
+There's a slight race when going from a list function to a non list
+function. That is, when only one callback is registered to the function
+tracer, it gets called directly by the mcount trampoline. But if this
+function has filters, it may be called by the wrong functions.
 
-Could you attach config that could be used to trigger this? Thanks in 
-advance.
+As the list ops callback that handles multiple callbacks that are
+registered to ftrace, it also handles what functions they call. While
+the transaction is taking place, use the list function always, and
+after all the updates are finished (only the functions that should be
+traced are being traced), then we can update the trampoline to call
+the function directly.
 
-Best regards,
-Tomasz
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index a6d098c..03cf44a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1978,12 +1978,27 @@ int __weak ftrace_arch_code_modify_post_process(void)
+ 
+ void ftrace_modify_all_code(int command)
+ {
++	int update = command & FTRACE_UPDATE_TRACE_FUNC;
++
++	/*
++	 * If the ftrace_caller calls a ftrace_ops func directly,
++	 * we need to make sure that it only traces functions it
++	 * expects to trace. When doing the switch of functions,
++	 * we need to update to the ftrace_ops_list_func first
++	 * before the transition between old and new calls are set,
++	 * as the ftrace_ops_list_func will check the ops hashes
++	 * to make sure the ops are having the right functions
++	 * traced.
++	 */
++	if (update)
++		ftrace_update_ftrace_func(ftrace_ops_list_func);
++
+ 	if (command & FTRACE_UPDATE_CALLS)
+ 		ftrace_replace_code(1);
+ 	else if (command & FTRACE_DISABLE_CALLS)
+ 		ftrace_replace_code(0);
+ 
+-	if (command & FTRACE_UPDATE_TRACE_FUNC)
++	if (update && ftrace_trace_function != ftrace_ops_list_func)
+ 		ftrace_update_ftrace_func(ftrace_trace_function);
+ 
+ 	if (command & FTRACE_START_FUNC_RET)
+-- 
+1.7.10.4
+
 
