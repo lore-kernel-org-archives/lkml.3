@@ -1,54 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935232Ab3IDPo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:44:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18932 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934868Ab3IDPo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:44:27 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=zOSXuZH0-soA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JMugIRAljVAA:10 a=nEyH1i0ZFpS9y60KsbAA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 4 Sep 2013 11:44:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH 03/25] avr32: Use Kbuild infrastructure to handle
- asm-generic headers
-Message-ID: <20130904114426.72b979c5@gandalf.local.home>
-In-Reply-To: <20130901205551.GA21140@samfundet.no>
-References: <20121013022632.024527228@goodmis.org>
-	<20121013022952.855483404@goodmis.org>
-	<20130901205551.GA21140@samfundet.no>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S935182Ab3IDPqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:46:20 -0400
+Received: from imap.thunk.org ([74.207.234.97]:54554 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934941Ab3IDPqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:46:19 -0400
+Date: Wed, 4 Sep 2013 11:46:15 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 updates for 3.12
+Message-ID: <20130904154615.GA13156@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Sep 2013 22:55:51 +0200
-Hans-Christian Egtvedt <egtvedt@samfundet.no> wrote:
+The following changes since commit cde2d7a796f7e895e25b43471ed658079345636d:
 
-> Around Fri 12 Oct 2012 22:26:35 -0400 or thereabout, Steven Rostedt wrote:
-> 
-> Hello Steven,
-> 
-> > Use Kbuild infrastructure to handle the asm-generic headers
-> > and remove the wrapper headers that call them.
-> > 
-> > This only affects headers that do nothing but include the generic
-> > equivalent. It does not touch any header that does a little more.
-> 
-> Thank you for cleaning. A bit old this patch (yikes, almost a year), but I
-> cleaned it up a bit, and added it to my for-linus branch.
-> 
+  ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT (2013-08-12 09:29:30 -0400)
 
-Thanks,
+are available in the git repository at:
 
--- Steve
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+
+for you to fetch changes up to ad4eec613536dc7e5ea0c6e59849e6edca634d8b:
+
+  ext4: allow specifying external journal by pathname mount option (2013-08-28 19:05:07 -0400)
+
+----------------------------------------------------------------
+New features for 3.12:
+
+* Added aggressive extent caching using the extent status tree.  This
+  can actually decrease memory usage in read-mostly workloads since
+  the information is much more compactly stored in the extent status
+  tree than if we had to keep the extent tree metadata blocks in the
+  buffer cache.  This also improves Asynchronous I/O since it is it
+  makes much less likely that we need to do metadata I/O to lookup the
+  extent tree information.
+* Improve the recovery after corrupted allocation bitmaps are found
+  when running in errors=ignore mode.
+
+Also fixed some writeback vs. truncate races when using a blocksize
+less than the page size.
+
+----------------------------------------------------------------
+Anatol Pomozov (1):
+      ext4: Fix misspellings using 'codespell' tool
+
+Andi Shyti (1):
+      ext4: fix use of potentially uninitialized variables in debugging code
+
+Darrick J. Wong (6):
+      jbd2: Fix endian mixing problems in the checksumming code
+      ext4: error out if verifying the block bitmap fails
+      ext4: fix type declaration of ext4_validate_block_bitmap
+      ext4: mark block group as corrupt on block bitmap error
+      ext4: mark block group as corrupt on inode bitmap error
+      ext4: mark group corrupt on group descriptor checksum
+
+Dmitry Monakhov (1):
+      ext4: convert write_begin methods to stable_page_writes semantics
+
+Eric Sandeen (1):
+      ext4: allow specifying external journal by pathname mount option
+
+Jan Kara (8):
+      jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
+      jbd2: Fix oops in jbd2_journal_file_inode()
+      quota: provide interface for readding allocated space into reserved space
+      ext4: fix warning in ext4_da_update_reserve_space()
+      ext4: move test whether extent to map can be extended to one place
+      ext4: fix ext4_writepages() in presence of truncate
+      ext4: simplify truncation code in ext4_setattr()
+      ext4: fix lost truncate due to race with writeback
+
+Theodore Ts'o (8):
+      ext4: refactor code to read the extent tree block
+      ext4: print the block number of invalid extent tree blocks
+      ext4: use unsigned int for es_status values
+      ext4: cache all of an extent tree's leaf block upon reading
+      ext4: add support for extent pre-caching
+      ext4: start handle at least possible moment when renaming files
+      ext4: allocate delayed allocation blocks before rename
+      ext4: avoid reusing recently deleted inodes in no journal mode
+
+Zheng Liu (1):
+      ext4: isolate ext4_extents.h file
+
+ Documentation/filesystems/ext4.txt |   7 +--
+ fs/ext3/dir.c                      |   2 +-
+ fs/ext4/balloc.c                   |  24 ++++++----
+ fs/ext4/dir.c                      |   2 +-
+ fs/ext4/ext4.h                     |  59 +++++++++++++++++++++---
+ fs/ext4/ext4_extents.h             |   6 ---
+ fs/ext4/ext4_jbd2.c                |   8 ++--
+ fs/ext4/ext4_jbd2.h                |   2 +-
+ fs/ext4/extents.c                  | 296 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------------
+ fs/ext4/extents_status.c           | 125 +++++++++++++++++++++++++++++++++++---------------
+ fs/ext4/extents_status.h           |  51 ++++++++++++---------
+ fs/ext4/file.c                     |  21 ++-------
+ fs/ext4/ialloc.c                   |  90 ++++++++++++++++++++++++++++++++----
+ fs/ext4/indirect.c                 |   1 -
+ fs/ext4/inode.c                    | 336 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------------------
+ fs/ext4/ioctl.c                    |   4 +-
+ fs/ext4/mballoc.c                  |  49 +++++++++++++++++---
+ fs/ext4/migrate.c                  |   4 +-
+ fs/ext4/move_extent.c              |   2 +-
+ fs/ext4/namei.c                    |  35 ++++++++------
+ fs/ext4/super.c                    |  47 +++++++++++++++++--
+ fs/jbd2/commit.c                   |   6 +--
+ fs/jbd2/journal.c                  |   5 +-
+ fs/jbd2/recovery.c                 |  24 +++++-----
+ fs/quota/dquot.c                   |  46 +++++++++++++++++++
+ fs/stat.c                          |  11 ++++-
+ include/linux/fs.h                 |   1 +
+ include/linux/quotaops.h           |  15 ++++++
+ include/trace/events/ext4.h        |  29 ++++++++----
+ include/uapi/linux/fiemap.h        |   1 +
+ 30 files changed, 909 insertions(+), 400 deletions(-)
