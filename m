@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762129Ab3IDJCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:02:53 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:36675 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121Ab3IDJCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:02:51 -0400
+	id S934545Ab3IDJGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:06:08 -0400
+Received: from smtp2-1.goneo.de ([212.90.139.83]:33314 "EHLO smtp2-1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756776Ab3IDJGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:06:05 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.74
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Wed, 04 Sep 2013 11:05:58 +0200
+Message-ID: <3144247.j2q6H0KWZx@lem-wkst-02>
+User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52261BF0.4090106@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <5226EAAE.6090500@asianux.com>
-References: <52005571.4080704@asianux.com>
-	<CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
-	<52268800.2010200@asianux.com>
-	<CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com>
-	<5226EAAE.6090500@asianux.com>
-Date: Wed, 4 Sep 2013 11:02:50 +0200
-X-Google-Sender-Auth: GcoDa56d3b7Y_cm4HvcDfPxym0A
-Message-ID: <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for
- "uapi/Kbuild" and "uapi/linux/Kbuild"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 10:09 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> On 09/04/2013 03:02 PM, Geert Uytterhoeven wrote:
->> On Wed, Sep 4, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>> On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
->>>> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>> --- a/include/uapi/Kbuild
->>>>> +++ b/include/uapi/Kbuild
->>>>> @@ -1,7 +1,6 @@
->>>>>  # UAPI Header export list
->>>>> -# Top-level Makefile calls into asm-$(ARCH)
->>>>> -# List only non-arch directories below
->>>>> -
->>>>> +# Except "linux/", UAPI means Universal API.
->>>>
->>>> Sorry for my silly question, but what's the purpose of this "Universal
->>>> API" comment?
->>>>
->>>
->>> Firstly, at least for me, I don't think it is a silly question (maybe
->>> it means I should give additional explanations).  :-)
->>>
->>> I 'guess' the "Universal API" means:
->>>
->>>   "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
->>>
->>> It is just my 'guess', welcome additional suggestions or completions by
->>> any members.
->>>
->>> When we get this correct additional explanation after discussing, if
->>> suitable, I should add the final explanation to current patch.
->>
->> Thanks. As this is not related at all to Linux, I don't see a reason
->> to add this comment.
->>
->> Here, "UAPI" means "userspace API" only.
->
-> Hmm... why we need "uapi/linux/" ?  (I can not find some related
-> documents, so I have to 'guess').
+On Wednesday 04 September 2013 11:27:12, Stephen Warren wrote:
+> On 09/02/2013 03:25 AM, Lars Poeschel wrote:
+> > Some leagcy drivers currently do this:
+> > 
+> > request_gpio(gpio);
+> > gpio_direction_input(gpio);
+> > request_irq(gpio_to_irq(gpio));
+> > 
+> > In that case request_irq should not fail because the driver is already the
+> > correct owner of this gpio. But if some other entity owns this gpio it
+> > should fail.
+> 
+> Yes.
+> 
+> > Also if I understand you correct the other way round should also possible:
+> > 
+> > request_irq(gpio_to_irq(gpio));
+> > request_gpio(gpio);
+> > gpio_direction_input(gpio);
+> > 
+> > request_irq() also requests the gpio then but the following request_gpio()
+> > should also not fail.
+> 
+> I don't believe that code sequence is currently banned. If we want to
+> ban it, we should document that. Until this is documented as being
+> banned, I think we must fully support that code sequence.
+> 
+> > To have it work that way we have to track the owners of all requested
+> > gpios
+> > somewhere. Or am I wrong here?
+> > Where and how to record these owners? Can gpio system achieve this? gpios
+> > are requested without an owning device.
+> 
+> Yes. But, I believe we need to fully track every GPIO/IRQ owner already
+> right now; if a driver (not the GPIO/IRQ chip driver, but a driver that
+> uses the GPIOs/IRQs) calls gpio_request()/request_irq(), and this patch
+> has already requested them, then we already need to fully track GPIO/IRQ
+> ownership to make sure that the driver's own requests aren't failed
+> because the DT/GPIO core has already requested them on its behalf.
 
-The "uapi" subdirectories are there to distinguish userspace headers from
-kernelspace headers, and allow both to live in the kernel source tree.
+The driver that tries to use the GPIO requested by this patch before HAS to 
+fail. This is exactly the intention of this patch. We don't want the GPIO to 
+be requested any more, if it is used as an interrupt pin.
+To be able to implement the way you proposed some mails before, I have to be 
+able to do some checks that to my opinion (and if I understand Linus 
+correctly) aren't possible at the moment. So I asked, where and how to record 
+these owners of the GPIOs? And can the GPIO system achieve this and how? Can 
+you please shed some light on this! Thanks!
 
-When running "make headers_install", the (processed) headers in the
-various "uapi" subdirectories are copied to /usr/include.
-Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
-In userspace there are no "uapi" subdirectories anymore.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
