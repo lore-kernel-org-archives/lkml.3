@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763277Ab3IDR7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:59:20 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29684 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759503Ab3IDR7R (ORCPT
+	id S1759595Ab3IDSAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:00:12 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34312 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab3IDSAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:59:17 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18X4QLOwXxaGsopqwMyQUGG
-Date: Wed, 4 Sep 2013 10:59:09 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Matt Sealey <neko@bakuhatsu.net>, Stephen Boyd <sboyd@codeaurora.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 5/5] clk: dt: binding for basic gate clock
-Message-ID: <20130904175909.GB31541@atomide.com>
-References: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
- <1377150793-27864-6-git-send-email-mturquette@linaro.org>
- <CAD6h2NRBq8hD8J5+P4NBZJZsPo4QAebgGaxmAn5TL0c2Cc5ULQ@mail.gmail.com>
- <5220FB48.7080607@wwwdotorg.org>
- <CAD6h2NSr0cM_SWqniC30pYm0mCeziBOzVg-46-814qPMxUwDCQ@mail.gmail.com>
+	Wed, 4 Sep 2013 14:00:10 -0400
+Message-ID: <52277521.5020800@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 23:30:01 +0530
+From: Hemant <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD6h2NSr0cM_SWqniC30pYm0mCeziBOzVg-46-814qPMxUwDCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+Subject: Re: [PATCH 2/2] Support to perf to probe on SDT markers:
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073703.4793.32779.stgit@hemant-fedora> <8761uht6jk.fsf@sejong.aot.lge.com> <5226EAEA.1010606@hitachi.com>
+In-Reply-To: <5226EAEA.1010606@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090417-5140-0000-0000-000003C726D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Haojian Zhuang <haojian.zhuang@linaro.org> [130903 20:11]:
-> 
-> We can see that it'll try to find static mapping. What's the static mapping?
-> If we define iotable in machine driver, we have the static mapping, just like
-> debug_ll. If we parse everything from DTS file, it'll always get a new virtual
-> address from vm area. So it always create a new page mapping even for one
-> register.
+On 09/04/2013 01:40 PM, Masami Hiramatsu wrote:
+> (2013/09/04 16:00), Namhyung Kim wrote:
+>> On Tue, 03 Sep 2013 13:07:03 +0530, Hemant Kumar wrote:
+>>> This patch enables perf to probe on the marker name specified on the command line.
+>> It looks like you didn't consider prelinked libraries.  You need to check
+>> the address of .stapsdt.base section too.  And obviously this patch
+>> ignores any argument the SDT has which I think pretty important info.
+>> But we can add it later once the uprobes arg fetch patches are in.
+> Agreed, I'd like to see the argument support afterward.
+> Thanks!
+>
 
-I may not follow you here.. But it seems that you've missing something with
-the static mapping: It's found based on the physical address. So if you
-create static mappings for your SoC with iotable_init(), those mappings
-will be available everywhere including drivers when you do ioremap().
+Will add the argument support in the next iteration.
 
-Regards,
+Thanks
+Hemant
 
-Tony
