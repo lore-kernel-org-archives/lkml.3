@@ -1,96 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab3IDWeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:34:07 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58983 "EHLO gloria.sntech.de"
+	id S1761718Ab3IDWen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:34:43 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:59001 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab3IDWeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:34:04 -0400
+	id S1756221Ab3IDWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:34:41 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: kgene.kim@samsung.com
-Subject: [PATCH v4 0/4] ARM: S3C24XX: add dmaengine based dma-driver
+Subject: [PATCH v4 1/4] ARM: S3C24XX: number the dma clocks
+Date: Thu, 5 Sep 2013 00:34:33 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
         linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
         Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-Date: Thu, 5 Sep 2013 00:33:48 +0200
+References: <201309050033.50333.heiko@sntech.de>
+In-Reply-To: <201309050033.50333.heiko@sntech.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201309050033.50333.heiko@sntech.de>
+Message-Id: <201309050034.33582.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series tries to provide a basic dmaengine driver for the s3c24xx
-SoCs to subsequently retire the old one with custom API.
+Each dma channel has its own clock. The upcoming dma driver wants to
+handle these itself and therefore needs to be able to get the correct
+clock for a channel.
 
-Since v3 more smaller fixes were added, and memcpy operations now have a very
-simple mechanism to try to use higher transfer widths.
+Therefore rename the dma clocks to "dma.X" for s3c2412, s3c2416 and
+s3c2443. This does not change the behaviour for the old dma driver at
+all, as all dma clocks are still always on and not handled by the old
+dma driver at all.
 
-Since v2 only some small fixes to the dma driver itself were added.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+changes since v2:
+- remove noise from commit message
 
-Since v1 three big changes happened (appart from fixing received comments):
+ arch/arm/mach-s3c24xx/clock-s3c2412.c  |    8 ++++----
+ arch/arm/mach-s3c24xx/common-s3c2443.c |   12 ++++++------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-For one the limitation of sg-lists to 1 element is gone.Secondly the
-specifics of the virtual channels (target bus, handshake, etc) are not
-encoded with channel ids but in the platformdata - making a later dt
-binding easier, as these informations can there be gathered by the xlate
-function. And lastly I also added a preliminary mechanism to handle the
-specific needs for the earlier variants of the driver.
-
-While s3c2443 and later can use any channel for any peripheral with just
-marking the target-peripheral-id in a register, earlier SoCs can only use
-specific channels and the target-ids also vary depending on the channel.
-
-Therefore on newer SoCs the chansel element only needs to contain the
-requested target-id, while on the older variants use it to encode both
-the valid channels and the channel-specific peripheral-id.
-
-On affected SoCs the target-id is always 3 bit wide, so we use these and
-an additional 4th bit to hold the valid state. As the older SoCs all have
-4 dma channels this can live happily in an u16 element.
-
-The s3c24xx series will most likely not see any new offspring, but even
-if it happens any new model will probably use the newer more flexible
-variant of the dma controller, so this should not restrict anything
-in the future.
-
-Example:
-SDI is valid on channels 0, 2 and 3 - with varying hw request sources.
-For it the chansel field would look like
-
- ((BIT(3) | 1) << 3 * 4) | // channel 3, with request source 1
- ((BIT(3) | 2) << 2 * 4) | // channel 2, with request source 2
- ((BIT(3) | 2) << 0 * 4)   // channel 0, with request source 2
-
-
-Heiko Stuebner (4):
-  ARM: S3C24XX: number the dma clocks
-  dmaengine: add driver for Samsung s3c24xx SoCs
-  ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and
-    s3c2443
-  ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
-
- arch/arm/mach-s3c24xx/clock-s3c2412.c     |    8 +-
- arch/arm/mach-s3c24xx/common-s3c2443.c    |   12 +-
- arch/arm/mach-s3c24xx/common.c            |  106 +++
- arch/arm/mach-s3c24xx/common.h            |    3 +
- arch/arm/mach-s3c24xx/mach-jive.c         |    1 +
- arch/arm/mach-s3c24xx/mach-smdk2413.c     |    1 +
- arch/arm/mach-s3c24xx/mach-smdk2416.c     |    1 +
- arch/arm/mach-s3c24xx/mach-smdk2443.c     |    1 +
- arch/arm/mach-s3c24xx/mach-vstms.c        |    1 +
- arch/arm/plat-samsung/devs.c              |    5 +-
- drivers/dma/Kconfig                       |   12 +
- drivers/dma/Makefile                      |    1 +
- drivers/dma/s3c24xx-dma.c                 | 1340 +++++++++++++++++++++++++++++
- include/linux/platform_data/dma-s3c24xx.h |   43 +
- 14 files changed, 1524 insertions(+), 11 deletions(-)
- create mode 100644 drivers/dma/s3c24xx-dma.c
- create mode 100644 include/linux/platform_data/dma-s3c24xx.h
-
+diff --git a/arch/arm/mach-s3c24xx/clock-s3c2412.c b/arch/arm/mach-s3c24xx/clock-s3c2412.c
+index d8f253f..11b3b28 100644
+--- a/arch/arm/mach-s3c24xx/clock-s3c2412.c
++++ b/arch/arm/mach-s3c24xx/clock-s3c2412.c
+@@ -484,22 +484,22 @@ static struct clk init_clocks_disable[] = {
+ 
+ static struct clk init_clocks[] = {
+ 	{
+-		.name		= "dma",
++		.name		= "dma.0",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA0,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.1",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA1,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.2",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA2,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.3",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA3,
+diff --git a/arch/arm/mach-s3c24xx/common-s3c2443.c b/arch/arm/mach-s3c24xx/common-s3c2443.c
+index f6b9f2e..65d3eef 100644
+--- a/arch/arm/mach-s3c24xx/common-s3c2443.c
++++ b/arch/arm/mach-s3c24xx/common-s3c2443.c
+@@ -438,32 +438,32 @@ static struct clk init_clocks_off[] = {
+ 
+ static struct clk init_clocks[] = {
+ 	{
+-		.name		= "dma",
++		.name		= "dma.0",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA0,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.1",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA1,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.2",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA2,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.3",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA3,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.4",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA4,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.5",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA5,
 -- 
 1.7.10.4
 
