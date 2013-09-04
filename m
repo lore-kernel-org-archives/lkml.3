@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934813Ab3IDOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:32:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762658Ab3IDOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:32:56 -0400
-Date: Wed, 4 Sep 2013 10:32:50 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] edma: Update author email address
-Message-ID: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
+	id S934840Ab3IDOdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:33:35 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48263 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756792Ab3IDOdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:33:33 -0400
+X-Auth-Info: XG6s5U9LtmdNiq7hNDBlX6GFQj6qrePhaQzyKML44Dw=
+From: Marek Vasut <marex@denx.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 6/7] regulator: rc5t583: Use devm_regulator_register
+Date: Wed, 4 Sep 2013 16:33:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, nm@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
+        s.hauer@pengutronix.de, Nancy.Chen@freescale.com
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-6-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1378276263-10735-6-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309041633.33017.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt's @ti.com address bounces.  Update the MODULE_AUTHOR information in
-edma.c to his Linaro address.
+Dear Sachin Kamat,
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> devm_* simplifies the code.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/regulator/rc5t583-regulator.c |   22 ++--------------------
+>  1 file changed, 2 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/regulator/rc5t583-regulator.c
+> b/drivers/regulator/rc5t583-regulator.c index 5885b45..b58affb 100644
+> --- a/drivers/regulator/rc5t583-regulator.c
+> +++ b/drivers/regulator/rc5t583-regulator.c
+> @@ -173,33 +173,16 @@ skip_ext_pwr_config:
+>  		config.driver_data = reg;
+>  		config.regmap = rc5t583->regmap;
+> 
+> -		rdev = regulator_register(&ri->desc, &config);
+> +		rdev = devm_regulator_register(&pdev->dev, &ri->desc, &config);
+>  		if (IS_ERR(rdev)) {
+>  			dev_err(&pdev->dev, "Failed to register regulator %s\n",
+>  						ri->desc.name);
+> -			ret = PTR_ERR(rdev);
+> -			goto clean_exit;
+> +			return PTR_ERR(rdev);
+>  		}
+>  		reg->rdev = rdev;
+>  	}
+>  	platform_set_drvdata(pdev, regs);
+>  	return 0;
+> -
+> -clean_exit:
+> -	while (--id >= 0)
+> -		regulator_unregister(regs[id].rdev);
+> -
+> -	return ret;
+> -}
+> -
+> -static int rc5t583_regulator_remove(struct platform_device *pdev)
+> -{
+> -	struct rc5t583_regulator *regs = platform_get_drvdata(pdev);
+> -	int id;
+> -
+> -	for (id = 0; id < RC5T583_REGULATOR_MAX; ++id)
+> -		regulator_unregister(regs[id].rdev);
+> -	return 0;
+>  }
+> 
+>  static struct platform_driver rc5t583_regulator_driver = {
+> @@ -208,7 +191,6 @@ static struct platform_driver rc5t583_regulator_driver
+> = { .owner	= THIS_MODULE,
+>  	},
+>  	.probe		= rc5t583_regulator_probe,
+> -	.remove		= rc5t583_regulator_remove,
+>  };
+> 
+>  static int __init rc5t583_regulator_init(void)
 
----
-v2: Actually get the right email address....
+Next up, you might want to start flipping the regulator drivers to 
+module_platform_driver ;-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 5f3e532..574b1a7 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -667,6 +667,6 @@ static void __exit edma_exit(void)
- }
- module_exit(edma_exit);
- 
--MODULE_AUTHOR("Matt Porter <mporter@ti.com>");
-+MODULE_AUTHOR("Matt Porter <matt.porter@linaro.org>");
- MODULE_DESCRIPTION("TI EDMA DMA engine driver");
- MODULE_LICENSE("GPL v2");
+Acked-by: Marek Vasut <marex@denx.de>
+
+Best regards,
+Marek Vasut
