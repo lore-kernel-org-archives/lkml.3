@@ -1,239 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762137Ab3IDGt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 02:49:26 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52622 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759710Ab3IDGtW (ORCPT
+	id S1762151Ab3IDGta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 02:49:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43262 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762139Ab3IDGt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 02:49:22 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, sachin.kamat@linaro.org, nm@ti.com,
-        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
-        s.hauer@pengutronix.de, marek.vasut@gmail.com,
-        Nancy.Chen@freescale.com
-Subject: [PATCH 7/7] regulator: ti-abb: Use devm_regulator_register
-Date: Wed,  4 Sep 2013 12:01:03 +0530
-Message-Id: <1378276263-10735-7-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
-References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 4 Sep 2013 02:49:26 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-56-5226d7f47110
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hemant <hkshaw@linux.vnet.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
+References: <20130903072944.4793.93584.stgit@hemant-fedora>
+	<20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com>
+	<5225E2C5.3080001@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 15:49:24 +0900
+In-Reply-To: <5225E2C5.3080001@linux.vnet.ibm.com> (Hemant's message of "Tue,
+	03 Sep 2013 18:53:17 +0530")
+Message-ID: <87a9jtt72j.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_* simplifies the code.
+On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
+> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
+>> (2013/09/03 17:25), Ingo Molnar wrote:
+>>> * Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com> wrote:
+>>>
+>>>> This series adds support to perf to list and probe into the SDT markers.
+>>>> The first patch implements listing of all the SDT markers present in
+>>>> the ELFs (executables or libraries). The SDT markers are present in the
+>>>> .note.stapsdt section of the elf. That section can be traversed to list
+>>>> all the markers. Recognition of markers follows the SystemTap approach.
+>>>>
+>>>> The second patch will allow perf to probe into these markers. This is
+>>>> done by writing the marker name and its offset into the
+>>>> uprobe_events file in the tracing directory.
+>>>> Then, perf tools can be used to analyze perf.data file.
+>>> Please provide a better high level description that explains the history
+>>> and scope of SDT markers, how SDT markers get into binaries, how they can
+>>> be used for probing, a real-life usage example that shows something
+>>> interesting not possible via other ways, etc.
+>> Indeed, and also I'd like to know what versions of SDT this support,
+>> and where we can see the technical document of that. As far as I know,
+>> the previous(?) SDT implementation also involves ugly semaphores.
+>> Have that already gone?
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/regulator/ti-abb-regulator.c |   82 ++++++++++------------------------
- 1 file changed, 23 insertions(+), 59 deletions(-)
+It seems it's not. I see the SDT v3 document still mentions semaphores.
 
-diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
-index 3753ed0..02392f8 100644
---- a/drivers/regulator/ti-abb-regulator.c
-+++ b/drivers/regulator/ti-abb-regulator.c
-@@ -696,22 +696,17 @@ static int ti_abb_probe(struct platform_device *pdev)
- 	match = of_match_device(ti_abb_of_match, dev);
- 	if (!match) {
- 		/* We do not expect this to happen */
--		ret = -ENODEV;
- 		dev_err(dev, "%s: Unable to match device\n", __func__);
--		goto err;
-+		return -ENODEV;
- 	}
- 	if (!match->data) {
--		ret = -EINVAL;
- 		dev_err(dev, "%s: Bad data in match\n", __func__);
--		goto err;
-+		return -EINVAL;
- 	}
- 
- 	abb = devm_kzalloc(dev, sizeof(struct ti_abb), GFP_KERNEL);
--	if (!abb) {
--		dev_err(dev, "%s: Unable to allocate ABB struct\n", __func__);
--		ret = -ENOMEM;
--		goto err;
--	}
-+	if (!abb)
-+		return -ENOMEM;
- 	abb->regs = match->data;
- 
- 	/* Map ABB resources */
-@@ -719,21 +714,17 @@ static int ti_abb_probe(struct platform_device *pdev)
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
- 	if (!res) {
- 		dev_err(dev, "Missing '%s' IO resource\n", pname);
--		ret = -ENODEV;
--		goto err;
-+		return -ENODEV;
- 	}
- 	abb->base = devm_ioremap_resource(dev, res);
--	if (IS_ERR(abb->base)) {
--		ret = PTR_ERR(abb->base);
--		goto err;
--	}
-+	if (IS_ERR(abb->base))
-+		return PTR_ERR(abb->base);
- 
- 	pname = "int-address";
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
- 	if (!res) {
- 		dev_err(dev, "Missing '%s' IO resource\n", pname);
--		ret = -ENODEV;
--		goto err;
-+		return -ENODEV;
- 	}
- 	/*
- 	 * We may have shared interrupt register offsets which are
-@@ -743,8 +734,7 @@ static int ti_abb_probe(struct platform_device *pdev)
- 					     resource_size(res));
- 	if (!abb->int_base) {
- 		dev_err(dev, "Unable to map '%s'\n", pname);
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 
- 	/* Map Optional resources */
-@@ -764,8 +754,7 @@ static int ti_abb_probe(struct platform_device *pdev)
- 					       resource_size(res));
- 	if (!abb->efuse_base) {
- 		dev_err(dev, "Unable to map '%s'\n", pname);
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 
- 	pname = "ldo-address";
-@@ -776,10 +765,8 @@ static int ti_abb_probe(struct platform_device *pdev)
- 		goto skip_opt;
- 	}
- 	abb->ldo_base = devm_ioremap_resource(dev, res);
--	if (IS_ERR(abb->ldo_base)) {
--		ret = PTR_ERR(abb->ldo_base);
--		goto err;
--	}
-+	if (IS_ERR(abb->ldo_base))
-+		return PTR_ERR(abb->ldo_base);
- 
- 	/* IF ldo_base is set, the following are mandatory */
- 	pname = "ti,ldovbb-override-mask";
-@@ -788,12 +775,11 @@ static int ti_abb_probe(struct platform_device *pdev)
- 				 &abb->ldovbb_override_mask);
- 	if (ret) {
- 		dev_err(dev, "Missing '%s' (%d)\n", pname, ret);
--		goto err;
-+		return ret;
- 	}
- 	if (!abb->ldovbb_override_mask) {
- 		dev_err(dev, "Invalid property:'%s' set as 0!\n", pname);
--		ret = -EINVAL;
--		goto err;
-+		return -EINVAL;
- 	}
- 
- 	pname = "ti,ldovbb-vset-mask";
-@@ -802,12 +788,11 @@ static int ti_abb_probe(struct platform_device *pdev)
- 				 &abb->ldovbb_vset_mask);
- 	if (ret) {
- 		dev_err(dev, "Missing '%s' (%d)\n", pname, ret);
--		goto err;
-+		return ret;
- 	}
- 	if (!abb->ldovbb_vset_mask) {
- 		dev_err(dev, "Invalid property:'%s' set as 0!\n", pname);
--		ret = -EINVAL;
--		goto err;
-+		return -EINVAL;
- 	}
- 
- skip_opt:
-@@ -817,31 +802,29 @@ skip_opt:
- 				 &abb->txdone_mask);
- 	if (ret) {
- 		dev_err(dev, "Missing '%s' (%d)\n", pname, ret);
--		goto err;
-+		return ret;
- 	}
- 	if (!abb->txdone_mask) {
- 		dev_err(dev, "Invalid property:'%s' set as 0!\n", pname);
--		ret = -EINVAL;
--		goto err;
-+		return -EINVAL;
- 	}
- 
- 	initdata = of_get_regulator_init_data(dev, pdev->dev.of_node);
- 	if (!initdata) {
--		ret = -ENOMEM;
- 		dev_err(dev, "%s: Unable to alloc regulator init data\n",
- 			__func__);
--		goto err;
-+		return -ENOMEM;
- 	}
- 
- 	/* init ABB opp_sel table */
- 	ret = ti_abb_init_table(dev, abb, initdata);
- 	if (ret)
--		goto err;
-+		return ret;
- 
- 	/* init ABB timing */
- 	ret = ti_abb_init_timings(dev, abb);
- 	if (ret)
--		goto err;
-+		return ret;
- 
- 	desc = &abb->rdesc;
- 	desc->name = dev_name(dev);
-@@ -859,12 +842,12 @@ skip_opt:
- 	config.driver_data = abb;
- 	config.of_node = pdev->dev.of_node;
- 
--	rdev = regulator_register(desc, &config);
-+	rdev = devm_regulator_register(dev, desc, &config);
- 	if (IS_ERR(rdev)) {
- 		ret = PTR_ERR(rdev);
- 		dev_err(dev, "%s: failed to register regulator(%d)\n",
- 			__func__, ret);
--		goto err;
-+		return ret;
- 	}
- 	platform_set_drvdata(pdev, rdev);
- 
-@@ -872,31 +855,12 @@ skip_opt:
- 	ti_abb_rmw(abb->regs->sr2_en_mask, 1, abb->regs->setup_reg, abb->base);
- 
- 	return 0;
--
--err:
--	dev_err(dev, "%s: Failed to initialize(%d)\n", __func__, ret);
--	return ret;
--}
--
--/**
-- * ti_abb_remove() - cleanups
-- * @pdev: ABB platform device
-- *
-- * Return: 0
-- */
--static int ti_abb_remove(struct platform_device *pdev)
--{
--	struct regulator_dev *rdev = platform_get_drvdata(pdev);
--
--	regulator_unregister(rdev);
--	return 0;
- }
- 
- MODULE_ALIAS("platform:ti_abb");
- 
- static struct platform_driver ti_abb_driver = {
- 	.probe = ti_abb_probe,
--	.remove = ti_abb_remove,
- 	.driver = {
- 		   .name = "ti_abb",
- 		   .owner = THIS_MODULE,
--- 
-1.7.9.5
 
+> This link shows an example of marker probing with Systemtap:
+> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+
+I think the link below would be more helpful for us :)
+
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+Thanks,
+Namhyung
+
+>
+> - Markers in binaries :
+> These SDT markers are present in the ELF in the section named
+> ".note.stapsdt".
+> Here, the name of the marker, its provider, type, location, base
+> address, semaphore address, arguments are present.
+> We can retrieve these values using the members name_off and desc_off in
+> Nhdr structure. If these are not enabled, they are present in the ELF
+> as nop.
