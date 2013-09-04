@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762718Ab3IDOUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:20:08 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:54127 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756310Ab3IDOUB (ORCPT
+	id S934651Ab3IDOVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:21:19 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13921 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756532Ab3IDOVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:20:01 -0400
-Date: Wed, 4 Sep 2013 14:19:59 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-arch@vger.kernel.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [gcv v3 10/35] rcu: Replace __get_cpu_var uses
-In-Reply-To: <20130831203559.GY3871@linux.vnet.ibm.com>
-Message-ID: <00000140e95815db-41b26a90-9bc9-490e-a313-e05364a152cb-000000@email.amazonses.com>
-References: <20130828193457.140443630@linux.com> <00000140c67825ee-d9e3a1ca-2e81-4868-8c8c-36ba965f7202-000000@email.amazonses.com> <20130831203559.GY3871@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Sep 2013 10:21:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 04 Sep 2013 07:18:05 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/4] Introduce table driven initializations
+Date: Wed, 4 Sep 2013 17:20:07 +0300
+Message-ID: <1378304438-7780-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.04-54.240.9.74
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Aug 2013, Paul E. McKenney wrote:
+This patchset introduces a table driven initialization method for the
+audio, PMC and gate clocks. It's similar to the table we already have for                                                                                      
+the periph clocks.                                                                                                                                             
 
-> Queued for 3.13.  I had to rework for conflicts, please see below for
-> the update patch.
+Changes since v1:
 
-Looks fine to me. Can I drop the rcu patches from my patchset?
+* Use parent names directly in TEGRA_INIT_DATA_GATE()
+
+Peter De Schrijver (4):
+  clk: tegra: simplify periph clock data
+  clk: tegra: convert Tegra114 gate clocks to table
+  clk: tegra114: table driven audio clock init
+  clk: tegra114: table driven PMC clock init
+
+ drivers/clk/tegra/clk-tegra114.c |  892 +++++++++++++++-----------------------
+ drivers/clk/tegra/clk-tegra20.c  |    4 +-
+ drivers/clk/tegra/clk-tegra30.c  |    4 +-
+ drivers/clk/tegra/clk.h          |   93 ++++-
+ 4 files changed, 436 insertions(+), 557 deletions(-)
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
