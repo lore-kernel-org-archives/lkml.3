@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762165Ab3IDWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:36:27 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:59060 "EHLO gloria.sntech.de"
+	id S1757147Ab3IDWoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:44:11 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57827 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760558Ab3IDWgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:36:25 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: kgene.kim@samsung.com
-Subject: [PATCH v4 4/4] ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
-Date: Thu, 5 Sep 2013 00:36:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-References: <201309050033.50333.heiko@sntech.de>
-In-Reply-To: <201309050033.50333.heiko@sntech.de>
+	id S1753825Ab3IDWoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:44:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots
+Date: Thu, 05 Sep 2013 00:54:58 +0200
+Message-ID: <2449715.ReJj2CQeDS@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1378326994.3246.152.camel@ul30vt.home>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1818424.8fNkf5pBy3@vostro.rjw.lan> <1378326994.3246.152.camel@ul30vt.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309050036.18394.heiko@sntech.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spi-s3c64xx device is also used on the s3c2416 and s3c2443 SoCs.
-The driver also already uses only generic dma-engine operations.
+On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
+> On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > The current implementation of acpiphp_check_bridge() is pretty dumb:
+> >  - It enables a slot if it's not enabled and the slot status is
+> >    ACPI_STA_ALL.
+> >  - It disables a slot if it's enabled and the slot status is not
+> >    ACPI_STA_ALL.
+> > 
+> > This behavior is not sufficient to handle the Thunderbolt daisy
+> > chaining case properly, however, because in that case the bus
+> > behind the already enabled slot needs to be rescanned for new
+> > devices.
+> > 
+> > For this reason, modify acpiphp_check_bridge() so that slots are
+> > disabled and stopped if they are not in the ACPI_STA_ALL state.
+> > 
+> > For slots in the ACPI_STA_ALL state, devices behind them that don't
+> > respond are trimmed using a new function, trim_stale_devices(),
+> > introduced specifically for this purpose.  That function walks
+> > the given bus and checks each device on it.  If the device doesn't
+> > respond, it is assumed to be gone and is removed.
+> > 
+> > Once all of the stale devices directy behind the slot have been
+> > removed, acpiphp_check_bridge() will start looking for new devices
+> > that might have appeared on the given bus.  It will do that even if
+> > the slot is already enabled (SLOT_ENABLED is set for it).
+> > 
+> > In addition to that, make the bus check notification ignore
+> > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
+> > so that devices behind the slot are re-enumerated in that case too.
+> > 
+> > This change is based on earlier patches from Kirill A Shutemov
+> > and Mika Westerberg.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> 
+> FYI, git bisect landed on this patch as the cause of my serial console
+> dying on current upstream.  Further debugging to come...  Thanks,
 
-Therefore add another elif to set the s3c24xx filter.
+Well, sorry about that.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/plat-samsung/devs.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+What exactly do you mean by "dying"?
 
-diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-index 8ce0ac0..a7b9b9e 100644
---- a/arch/arm/plat-samsung/devs.c
-+++ b/arch/arm/plat-samsung/devs.c
-@@ -32,6 +32,7 @@
- #include <linux/ioport.h>
- #include <linux/platform_data/s3c-hsudc.h>
- #include <linux/platform_data/s3c-hsotg.h>
-+#include <linux/platform_data/dma-s3c24xx.h>
- 
- #include <media/s5p_hdmi.h>
- 
-@@ -1499,8 +1500,10 @@ void __init s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi0_cfg_gpio;
--#ifdef CONFIG_PL330_DMA
-+#if defined(CONFIG_PL330_DMA)
- 	pd.filter = pl330_filter;
-+#elif defined(CONFIG_S3C24XX_DMAC)
-+	pd.filter = s3c24xx_dma_filter;
- #endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
--- 
-1.7.10.4
+Rafael
 
