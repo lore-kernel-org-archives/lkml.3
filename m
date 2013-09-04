@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934366Ab3IDFsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:48:03 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:34222 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934173Ab3IDFr7 (ORCPT
+	id S934348Ab3IDFr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:47:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62702 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934173Ab3IDFry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:47:59 -0400
+	Wed, 4 Sep 2013 01:47:54 -0400
 From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: benve@cisco.com, ssujith@cisco.com, nistrive@cisco.com, umalhi@cisco.com,
         Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 4/5] driver/net: enic: Exposing symbols for Cisco's low latency driver
-Date: Wed,  4 Sep 2013 11:17:17 +0530
-Message-Id: <1378273638-7780-5-git-send-email-govindarajulu90@gmail.com>
+Subject: [PATCH net-next 3/5] driver/net: enic: Try DMA 64 first, then failover to DMA
+Date: Wed,  4 Sep 2013 11:17:16 +0530
+Message-Id: <1378273638-7780-4-git-send-email-govindarajulu90@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
 References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
@@ -21,71 +21,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch exposes symbols for usnic low latency driver that can be used to 
-register and unregister vNics as well to traverse the resources on vNics.
+In servers with more than 1.1 TB of RAM, the existing 40/32 bit DMA
+could cause failure as the DMA-able address could go outside the range
+addressable using 40/32 bits.
 
-Signed-off-by: Upinder Malhi <umalhi@cisco.com>
-Signed-off-by: Nishank Trivedi <nistrive@cisco.com>
+The following patch first tried 64 bit DMA if possible, failover to 32
+bit.
+
+Signed-off-by: Sujith Sankar <ssujith@cisco.com>
 Signed-off-by: Christian Benvenuti <benve@cisco.com>
+Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 ---
- drivers/net/ethernet/cisco/enic/vnic_dev.c | 10 ++++++++++
- drivers/net/ethernet/cisco/enic/vnic_dev.h |  1 +
- 2 files changed, 11 insertions(+)
+ drivers/net/ethernet/cisco/enic/enic_main.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.c b/drivers/net/ethernet/cisco/enic/vnic_dev.c
-index 97455c5..69dd925 100644
---- a/drivers/net/ethernet/cisco/enic/vnic_dev.c
-+++ b/drivers/net/ethernet/cisco/enic/vnic_dev.c
-@@ -175,6 +175,7 @@ unsigned int vnic_dev_get_res_count(struct vnic_dev *vdev,
- {
- 	return vdev->res[type].count;
- }
-+EXPORT_SYMBOL(vnic_dev_get_res_count);
+diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
+index 93898ba..7b756cf9 100644
+--- a/drivers/net/ethernet/cisco/enic/enic_main.c
++++ b/drivers/net/ethernet/cisco/enic/enic_main.c
+@@ -2080,11 +2080,11 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	pci_set_master(pdev);
  
- void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum vnic_res_type type,
- 	unsigned int index)
-@@ -193,6 +194,7 @@ void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum vnic_res_type type,
- 		return (char __iomem *)vdev->res[type].vaddr;
- 	}
- }
-+EXPORT_SYMBOL(vnic_dev_get_res);
+ 	/* Query PCI controller on system for DMA addressing
+-	 * limitation for the device.  Try 40-bit first, and
++	 * limitation for the device.  Try 64-bit first, and
+ 	 * fail to 32-bit.
+ 	 */
  
- static unsigned int vnic_dev_desc_ring_size(struct vnic_dev_ring *ring,
- 	unsigned int desc_count, unsigned int desc_size)
-@@ -942,6 +944,7 @@ void vnic_dev_unregister(struct vnic_dev *vdev)
- 		kfree(vdev);
- 	}
- }
-+EXPORT_SYMBOL(vnic_dev_unregister);
- 
- struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
- 	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar,
-@@ -969,6 +972,13 @@ err_out:
- 	vnic_dev_unregister(vdev);
- 	return NULL;
- }
-+EXPORT_SYMBOL(vnic_dev_register);
-+
-+struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev)
-+{
-+	return vdev->pdev;
-+}
-+EXPORT_SYMBOL(vnic_dev_get_pdev);
- 
- int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len)
- {
-diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.h b/drivers/net/ethernet/cisco/enic/vnic_dev.h
-index f3d9b79..e670029 100644
---- a/drivers/net/ethernet/cisco/enic/vnic_dev.h
-+++ b/drivers/net/ethernet/cisco/enic/vnic_dev.h
-@@ -127,6 +127,7 @@ int vnic_dev_set_ig_vlan_rewrite_mode(struct vnic_dev *vdev,
- struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
- 	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar,
- 	unsigned int num_bars);
-+struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev);
- int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len);
- int vnic_dev_enable2(struct vnic_dev *vdev, int active);
- int vnic_dev_enable2_done(struct vnic_dev *vdev, int *status);
+-	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(40));
++	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+ 	if (err) {
+ 		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+ 		if (err) {
+@@ -2098,10 +2098,10 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 			goto err_out_release_regions;
+ 		}
+ 	} else {
+-		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(40));
++		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+ 		if (err) {
+ 			dev_err(dev, "Unable to obtain %u-bit DMA "
+-				"for consistent allocations, aborting\n", 40);
++				"for consistent allocations, aborting\n", 64);
+ 			goto err_out_release_regions;
+ 		}
+ 		using_dac = 1;
 -- 
 1.8.4
 
