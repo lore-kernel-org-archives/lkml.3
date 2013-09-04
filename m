@@ -1,166 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763281Ab3IDRWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:22:46 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:54067 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756765Ab3IDRWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:22:44 -0400
+	id S1763196Ab3IDRYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:24:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10173 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755638Ab3IDRYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:24:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1022,1367996400"; 
+   d="scan'208";a="391064511"
+From: "Keller, Jacob E" <jacob.e.keller@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Yijing Wang <wangyijing@huawei.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+Subject: Re: [PATCH 5/7] ixgbe: use pcie_capability_read_word() to simplify
+ code
+Thread-Topic: [PATCH 5/7] ixgbe: use pcie_capability_read_word() to simplify
+ code
+Thread-Index: AQHOqHieROjV5T8ge0ep4iCOoL6z/5m2ObYAgAAR84A=
+Date: Wed, 4 Sep 2013 17:24:37 +0000
+Message-ID: <1378315477.8626.9.camel@jekeller-desk1.amr.corp.intel.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+	 <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
+	 <20130904162022.GE24733@google.com>
+In-Reply-To: <20130904162022.GE24733@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.173.156]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <55CE56081959964385C745B0FB3C7AF3@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CANN689E4aCwMQwceUntqJiN7vj_m4g+3MYpBJb717VXR6mbpSA@mail.gmail.com>
-References: <1377269106-26468-1-git-send-email-zwu.kernel@gmail.com>
-	<CANN689ET-2q_7WY+4HZjMqQEmLpOQyWOrOzRnP3ADc8TAzoEXw@mail.gmail.com>
-	<CAEH94Li5KuN4V7KVAYJ9YY72HWVS2_gf-_L4zscV1K5fMw58XQ@mail.gmail.com>
-	<CANN689E4aCwMQwceUntqJiN7vj_m4g+3MYpBJb717VXR6mbpSA@mail.gmail.com>
-Date: Thu, 5 Sep 2013 01:22:43 +0800
-Message-ID: <CAEH94Ljp2ebCF6yhbh=MynTJCLbLh8D5cRV9pPO-Gzx1c7YU5A@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: Add some necessary condition checks
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r84HOnYP024485
 
-On Mon, Sep 2, 2013 at 4:57 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Sun, Sep 1, 2013 at 11:30 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
->> In Tue, Aug 27, 2013 at 6:01 AM, Michel Lespinasse <walken@google.com> wrote:
->>> On Fri, Aug 23, 2013 at 7:45 AM,  <zwu.kernel@gmail.com> wrote:
->>>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>>>
->>>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>>> ---
->>>>  include/linux/rbtree_augmented.h | 3 ++-
->>>>  lib/rbtree.c                     | 5 +++--
->>>>  2 files changed, 5 insertions(+), 3 deletions(-)
->>>
->>> So, you are saying that the checks are necessary, but you are not saying why.
->>>
->>> The way I see it, the checks are *not* necessary, because the rbtree
->>> invariants guarantee them to be true. The only way for the checks to
->>> fail would be if people directly manipulate the rbtrees without going
->>> through the proper APIs, and if they do that then I think they're on
->>> their own. So to me, I think it's the same situation as dereferencing
->>> a pointer without checking if it's NULL, because you know it should
->>> never be NULL - which in my eyes is perfectly acceptable.
->> In my patchset, some rbtree APIs to be invoked, and I think that those
->> rbtree APIs are used corrently, Below is the pointer of its code:
->> https://github.com/wuzhy/kernel/compare/torvalds:master...hot_tracking
->> But I hit some issues when using compilebench to do perf benchmark.
->> compile dir kernel-7 691MB in 8.92 seconds (77.53 MB/s)
->
-> Thanks for the link - I now better understand where you are coming
-> from with these fixes.
->
-> Going back to the original message:
->
->> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
->> index fea49b5..7d19770 100644
->> --- a/include/linux/rbtree_augmented.h
->> +++ b/include/linux/rbtree_augmented.h
->> @@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
->>                 }
->>
->>                 successor->rb_left = tmp = node->rb_left;
->> -               rb_set_parent(tmp, successor);
->> +               if (tmp)
->> +                       rb_set_parent(tmp, successor);
->>
->>                 pc = node->__rb_parent_color;
->>                 tmp = __rb_parent(pc);
->
-> Note that node->rb_left was already fetched at the top of
-> __rb_erase_augmented(), and was checked to be non-NULL at the time -
-> otherwise we would have executed 'Case 1' in that function. So, you
-> are not expected to find tmp == NULL here.
->
->> diff --git a/lib/rbtree.c b/lib/rbtree.c
->> index c0e31fe..2cb01ba 100644
->> --- a/lib/rbtree.c
->> +++ b/lib/rbtree.c
->> @@ -214,7 +214,7 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
->>                  */
->>                 sibling = parent->rb_right;
->>                 if (node != sibling) {  /* node == parent->rb_left */
->> -                       if (rb_is_red(sibling)) {
->> +                       if (sibling && rb_is_red(sibling)) {
->>                                 /*
->>                                  * Case 1 - left rotate at parent
->>                                  *
->
-> Note the loop invariants quoted just above:
->
->                 /*
->                  * Loop invariants:
->                  * - node is black (or NULL on first iteration)
->                  * - node is not the root (parent is not NULL)
->                  * - All leaf paths going through parent and node have a
->                  *   black node count that is 1 lower than other leaf paths.
->                  */
->
-> Because of these, each path from sibling to a leaf must include at
-> least one black node, which implies that sibling can't be NULL - or to
-> put it another way, if sibling is null then the expected invariants
-> were violated before we even got there.
->
->> @@ -226,7 +226,8 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
->>                                  */
->>                                 parent->rb_right = tmp1 = sibling->rb_left;
->>                                 sibling->rb_left = parent;
->> -                               rb_set_parent_color(tmp1, parent, RB_BLACK);
->> +                               if (tmp1)
->> +                                       rb_set_parent_color(tmp1, parent, RB_BLACK);
->>                                 __rb_rotate_set_parents(parent, sibling, root,
->>                                                         RB_RED);
->>                                 augment_rotate(parent, sibling);
->
-> This is actually the same invariant here - each path from sibling to a
-> leaf must include at least one black node, and sibling is now known to
-> be red, so it must have two black children.
-If sibling is red, it can be made sure to have two non-null black
-children? but my patchset sometimes trigger red sibling to have no
-non-null black children. Do you know what reason usually cause this?
-You know rbtree code is very tricky.
+On Wed, 2013-09-04 at 10:20 -0600, Bjorn Helgaas wrote:
+> [+cc Jacob, Jeff]
+> 
+> On Tue, Sep 03, 2013 at 03:35:13PM +0800, Yijing Wang wrote:
+> > use pcie_capability_read_word() to simplify code.
+> > 
+> > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> > Cc: e1000-devel@lists.sourceforge.net
+> > Cc: netdev@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    6 ++----
+> >  1 files changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> > index bad8f14..bfa0b06 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> > @@ -152,7 +152,6 @@ MODULE_VERSION(DRV_VERSION);
+> >  static int ixgbe_read_pci_cfg_word_parent(struct ixgbe_adapter *adapter,
+> >  					  u32 reg, u16 *value)
+> >  {
+> > -	int pos = 0;
+> >  	struct pci_dev *parent_dev;
+> >  	struct pci_bus *parent_bus;
+> >  
+> > @@ -164,11 +163,10 @@ static int ixgbe_read_pci_cfg_word_parent(struct ixgbe_adapter *adapter,
+> >  	if (!parent_dev)
+> >  		return -1;
+> >  
+> > -	pos = pci_find_capability(parent_dev, PCI_CAP_ID_EXP);
+> > -	if (!pos)
+> > +	if (!pci_is_pcie(parent_dev))
+> >  		return -1;
+> >  
+> > -	pci_read_config_word(parent_dev, pos + reg, value);
+> > +	pcie_capability_read_word(parent_dev, reg, value);
+> >  	return 0;
+> >  }
+> >  
+> 
+> Here's the caller of ixgbe_read_pci_cfg_word_parent():
+> 
+>     /* Get the negotiated link width and speed from PCI config space of the
+>      * parent, as this device is behind a switch
+>      */
+>     err = ixgbe_read_pci_cfg_word_parent(adapter, 18, &link_status);
+> 
+> This should be using PCI_EXP_LNKSTA instead of "18".
 
->
->
-> Now I had a quick look at your code and I couldn't tell at which point
-> the invariants are violated. However I did notice a couple suspicious
-> things in the very first patch
-> (f5c8f2b256d87ac0bf789a787e6b795ac0c736e8):
->
-> 1- In both hot_range_tree_free() and and hot_tree_exit(), you try to
-> destroy rb trees by iterating on each node with rb_next() and then
-> freeing them. Note that rb_next() can reference prior nodes, which
-> have already been freed in your scheme, so that seems quite unsafe.
->
-> The simplest fix would be to do a full rb_erase() on each node before
-> freeing it. (you may be able to avoid rebalancing the tree here as
-> you're going to destroy it all, but if you really have that need it
-> would be better to come up with a new API to cover it rather than
-> hardcode it where you need it - I think it's easiest to start with the
-> simple dumb fix of using rb_erase).
->
-> 2- I did not look long enough to understand the locking, but it wasn't
-> clear to me if you lock the rbtrees when doing rb_erase() on them
-> (while I could more clearly see that you do it for insertions).
->
-> I'm really not sure if either of these will fix the issues you're
-> seeing, though. What I would try next would be to add explicit rbtree
-> invariant checks before and after rbtree manipulations, like what the
-> check() function does in lib/rbtree_test.c, to see at which point do
-> they get broken.
->
-> --
-> Michel "Walken" Lespinasse
-> A program is never fully debugged until the last user dies.
+Absolutely.. Not sure why I didn't do this originally.....
+
+> 
+> But it would be even better if we could drop ixgbe_get_parent_bus_info()
+> completely.  It seems redundant after merging Jacob's new
+> pcie_get_minimum_link() stuff [1].
+
+I don't know if we can fully drop it. We need this in order to read the
+parent device on some quad port Ethernet adapters which have an internal
+PCIe switch to link two parts together. There are a few places we read
+the parent cfg word. At least one for sure.. but maybe others.. Can't
+recall. The parent bus info is still used to print out the slot width
+and speed. I don't know if it would be better to just print the response
+from get_minimum_link or still print the actual slot.
+
+> 
+> ixgbe_disable_pcie_master() looks like it should be using
+> pcie_capability_read_word() with PCI_EXP_DEVSTA instead of using
+> IXGBE_PCI_DEVICE_STATUS.  If fact, it looks like it could use the
+> new pci_wait_for_pending_transaction() interface [2].
+> 
+
+I can look at doing this. I know it was done this way for historic
+reasons, (and likely for code share with non Linux drivers.. but that's
+not really an excuse)
+
+> It looks like all the #defines in the "PCI Bus Info" block
+> (IXGBE_PCI_DEVICE_STATUS, IXGBE_PCI_DEVICE_STATUS_TRANSACTION_PENDING,
+> IXGBE_PCI_LINK_STATUS, etc.) [3] are really for PCIe-generic things.  If
+> so, the IXGBE-specific ones should be dropped in favor of the generic
+> ones.
+
+Agreed.
+
+Thanks,
+Jake
 
 
-
--- 
-Regards,
-
-Zhi Yong Wu
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
