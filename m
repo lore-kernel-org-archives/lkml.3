@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761651Ab3IDBLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:11:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18489 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab3IDBLb convert rfc822-to-8bit (ORCPT
+	id S1761675Ab3IDBOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:14:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab3IDBOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:11:31 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BtX7XYNuJWsA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=2FbpPqRdQ64A:10 a=VnNF1IyMAAAA:8 a=DRmndHFa2ojEJvqwo1wA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=6unOcP8uajYgLsZ1:21 a=9v34MD2GPJo-9LP0:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 3 Sep 2013 21:11:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC][PATCH 19/18] ftrace: Print a message when the rcu checker is
- disabled
-Message-ID: <20130903211127.1d09c66e@gandalf.local.home>
-In-Reply-To: <20130903201831.2ae872e4@gandalf.local.home>
-References: <20130831051117.884125230@goodmis.org>
-	<20130831051700.601365837@goodmis.org>
-	<20130903171516.16290c47@gandalf.local.home>
-	<20130903221808.GH3871@linux.vnet.ibm.com>
-	<20130903195705.3ba3442f@gandalf.local.home>
-	<20130903201831.2ae872e4@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Sep 2013 21:14:04 -0400
+Date: Tue, 3 Sep 2013 18:16:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, Graeme Gregory <gg@slimlogic.co.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 3/3] extcon: Simplify extcon_dev_register() prototype by
+ removing unnecessary parameter
+Message-ID: <20130904011640.GA24275@kroah.com>
+References: <1378081208-20274-1-git-send-email-cw00.choi@samsung.com>
+ <1378081208-20274-4-git-send-email-cw00.choi@samsung.com>
+ <20130902004024.GB10709@kroah.com>
+ <5223E648.7020207@samsung.com>
+ <20130903155744.GA21846@kroah.com>
+ <52267BFE.3030106@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52267BFE.3030106@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f8f5d278e272c42349b3cd32485faf426d0c459e Mon Sep 17 00:00:00 2001
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Date: Tue, 3 Sep 2013 20:47:59 -0400
-Subject: [PATCH] ftrace: Print a message when the rcu checker is disabled
+On Wed, Sep 04, 2013 at 09:17:02AM +0900, Chanwoo Choi wrote:
+> On 09/04/2013 12:57 AM, Greg KH wrote:
+> > On Mon, Sep 02, 2013 at 10:13:44AM +0900, Chanwoo Choi wrote:
+> >> Hi Greg,
+> >>
+> >> On 09/02/2013 09:40 AM, Greg KH wrote:
+> >>> On Mon, Sep 02, 2013 at 09:20:08AM +0900, Chanwoo Choi wrote:
+> >>>> This patch remove extcon_dev_register()'s second parameter which means
+> >>>> the pointer of parent device to simplify prototype of this function.
+> >>>
+> >>> No, please don't.  You want the parent to be passed in, as the core
+> >>> needs it when it is registered with the system, otherwise it will not
+> >>> show up in sysfs properly (i.e. you can't set it afterwards.)
+> >>
+> >> Currently, each extcon driver have allocated memory for extcon device
+> >> by using devm_kzalloc() in each extcon device driver.
+> > 
+> > That seems backwards, the extcon core should be the one doing the
+> > allocation, and ownership of the device, like all other subsystem cores
+> > do.  That makes the driver logic much simpler, and the lifetime
+> > ownership correct (i.e. what happens when a device is unbound from a
+> > driver by userspace?  The driver can't control the device memory
+> > anymore...)
+> > 
+> 
+> OK,
+> The extcon core will control memory allocation instead of extcon device driver
+> as following.
+> - devm_extcon_allocate_device(struct device *dev)
 
-Let the user know that the RCU safety checker for function tracing
-has been disabled. The checker only runs when the user specifically
-configures it in the kernel, and this is done to search for locations
-in the kernel that may be unsafe for a function trace callback to
-use rcu_read_lock()s. But if things like function graph tracing is
-started, which can live lock the machine when the checker is running,
-it is disabled. It would be nice if the kernel let the user know that
-the checker is disabled, and when it is re-enabled again.
+Huh?  Why do you need a devm allocator?  This is a "real" child device,
+just create it with a "extcon_create_device()" or some such call, like
+all other busses do?
 
-As the checker only gets disabled and re-enabled by user actions
-(starting and stoping the function graph tracer or the irqsoff tracer)
-it is fine to have a printk display that it is disabled or not.
+thanks,
 
-Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_functions.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 0883069..dd59827 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -569,6 +569,8 @@ void ftrace_unsafe_rcu_checker_disable(void)
- 	atomic_inc(&ftrace_unsafe_rcu_disabled);
- 	/* Make sure the update is seen immediately */
- 	smp_wmb();
-+	pr_info("Disabled FTRACE RCU checker (%pS)\n",
-+		__builtin_return_address(0));
- }
- 
- void ftrace_unsafe_rcu_checker_enable(void)
-@@ -576,6 +578,8 @@ void ftrace_unsafe_rcu_checker_enable(void)
- 	atomic_dec(&ftrace_unsafe_rcu_disabled);
- 	/* Make sure the update is seen immediately */
- 	smp_wmb();
-+	pr_info("Enabled FTRACE RCU checker (%pS)\n",
-+		__builtin_return_address(0));
- }
- 
- static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
--- 
-1.8.1.4
-
+greg k-h
