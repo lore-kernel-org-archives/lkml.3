@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964817Ab3IDRw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:52:28 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46175 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762957Ab3IDRw0 (ORCPT
+	id S964937Ab3IDRwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:52:43 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:49911 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964859Ab3IDRwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:52:26 -0400
-Message-ID: <52277350.6090600@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 23:22:16 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 4 Sep 2013 13:52:41 -0400
+Date: Wed, 4 Sep 2013 19:52:39 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Janani Venkataraman <jananive@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Amerigo Wang <amwang@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>, avagin@openvz.org, gorcunov@openvz.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "Randy.Dunlap" <rdunlap@xenotime.net>, Eric Paris <eparis@redhat.com>,
+        ananth@in.ibm.com, suzuki@in.ibm.com, aravinda@linux.vnet.ibm.com,
+        tarundeep.singh@in.ibm.com
+Subject: Re: RFD: Non-Disruptive Core Dump Infrastructure
+Message-ID: <20130904175239.GO19750@two.firstfloor.org>
+References: <522472DA.4000702@linux.vnet.ibm.com>
+ <5225A02B.6080901@linux.vnet.ibm.com>
+ <5225BA91.6080904@parallels.com>
+ <5225BE3A.3090602@linux.vnet.ibm.com>
+ <5225C001.2010208@parallels.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 1/2] SDT markers listing by perf
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <5226DF97.3000704@hitachi.com>
-In-Reply-To: <5226DF97.3000704@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090417-7014-0000-0000-00000390055E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5225C001.2010208@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 12:51 PM, Masami Hiramatsu wrote:
-> (2013/09/03 16:36), Hemant Kumar wrote:
->> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
->> index 5f720dc..f2d17b7 100644
->> --- a/tools/perf/util/symbol.h
->> +++ b/tools/perf/util/symbol.h
->> @@ -197,6 +197,17 @@ struct symsrc {
->>   #endif
->>   };
->>   
->> +/* Note structure */
->> +struct sdt_note {
->> +	const char *name;
->> +	const char *provider;
->> +	union {
->> +		Elf64_Addr a64[3];
->> +		Elf32_Addr a32[3];
->> +	} addr;
->> +	struct sdt_note *next;
->> +};
-> Hmm, could you use struct list_head for listing up the data?
->
-> Thank you,
->
+> Briefly -- we will implement the CRIU service, which is a daemon running from
+> root and listening on a unix socket. When a task wants to dump himself, it sends 
+> to the service a "dump me" message. The service then goes and dumps the process.
 
-Yes, it will be better to use struct list_head for fetching the markers 
-in a list. Will do that in the next iteration.
+Maybe I'm missing something, but if the dump file is then readable by
+the process and includes the output of the new interfaces
+any potential security leaks exposed by the new interfaces would 
+be already there for unpriv. users?
 
-Thanks
-Hemant
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
