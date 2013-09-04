@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760105Ab3IDSwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:52:01 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:59019 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759751Ab3IDSv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:51:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <5226FAE1.5070201@fb.com>
-References: <5226FAE1.5070201@fb.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 4 Sep 2013 11:51:38 -0700
-Message-ID: <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com>
-Subject: Re: clock_gettime_ns
-To: Arun Sharma <asharma@fb.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>,
-        John Stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932520Ab3IDSwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:52:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758009Ab3IDSww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 14:52:52 -0400
+Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
+From: Mark Wielaard <mjw@redhat.com>
+To: Hemant <hkshaw@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+In-Reply-To: <522777FF.2040906@linux.vnet.ibm.com>
+References: <20130903072944.4793.93584.stgit@hemant-fedora>
+	 <20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com>
+	 <5225E2C5.3080001@linux.vnet.ibm.com>  <87a9jtt72j.fsf@sejong.aot.lge.com>
+	 <1378283148.4321.16.camel@bordewijk.wildebeest.org>
+	 <522777FF.2040906@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Sep 2013 20:52:15 +0200
+Message-ID: <1378320735.4321.62.camel@bordewijk.wildebeest.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that most of the hangup was a lack of agreement on how the API
-should work wrt leap seconds.
+On Wed, 2013-09-04 at 23:42 +0530, Hemant wrote:
+> On 09/04/2013 01:55 PM, Mark Wielaard wrote:
+> > Note that if you use the normal DTRACE_PROBE macros no semaphore will be
+> > inserted. And you can opt to not support probes that have a semaphore in
+> > perf if you think that is easier (just check the semaphore link-time
+> > address for the probe, it should normally be zero). Just warn: "No way I
+> > am going to probe something that might have a little extra overhead! I
+> > am no debugger..." :)
+> 
+> I agree. There will be an extra overhead but there may be some important 
+> markers (on which we need to probe) may be worth this overhead?
 
-I've always thought that the Right Way to represent a UTC time is
-nanoseconds since some epoch, where every potential leap second
-counts.
+Yes, there maybe. And gdb and stap do support them. But it means not
+just setting the probe, but also incrementing (and decrementing) the
+semaphore. See "Semaphore Handling" under
+https://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
 
-Pros:
- - Unambiguously convertible to and from
-year/month/day/hour/minute/second/nanosecond.
- - Monotonic
- - Compact
+Which is extra work, so for a minimal implementation that just supports
+normal (no-overhead) probes you might want to skip the extra work
+required to support them. I believe they are normally not used. I
+wouldn't recommend them and when I have added SDT probes myself I never
+used/needed them, but I haven't actually looked what others do.
 
-Cons:
- - Computing differences between timestamps requires a table.  (Note:
-y/m/d/h/m/s/ns has the same problem.)
- - Weird: no one does this
- - If you naively subtract times, you end up with jumps forward.  (But
-jumps forward are much less likely to break things than jumps
-backwards.)
- - Almost, but not quite, compatible with timespec, so it could cause confusion.
+Cheers,
 
-If someone wants a hard problem, find a way to implement clock_gettime
-that almost never spins or otherwise block and is continuous.  I've
-thought about it a bit and have something that almost works.
+Mark
 
---Andy
-
-On Wed, Sep 4, 2013 at 2:18 AM, Arun Sharma <asharma@fb.com> wrote:
-> A couple of years ago Andy posted this patch series:
->
-> http://thread.gmane.org/gmane.linux.kernel/1233209/
->
-> These patches have been in use at facebook for a couple of years and along
-> with a vDSO implementation of thread_cpu_time(), they have proven useful for
-> our profilers.
->
-> I didn't see any arguments against this patch series. Did I miss some
-> discussion on the topic?
->
->  -Arun
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
