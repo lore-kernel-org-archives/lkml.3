@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab3IDCAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 22:00:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55598 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934083Ab3IDCAP (ORCPT
+	id S934271Ab3IDCBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 22:01:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26792 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934213Ab3IDCBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 22:00:15 -0400
-Date: Wed, 4 Sep 2013 03:00:13 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
-Message-ID: <20130904020013.GF13318@ZenIV.linux.org.uk>
-References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
- <20130904010301.GE13318@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904010301.GE13318@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 22:01:17 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6vL9NhcTi7YA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Lu4-lkDicUYA:10 a=VnNF1IyMAAAA:8 a=756R-ZW2Qle6l11XYvwA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 3 Sep 2013 22:01:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
+ functions
+Message-ID: <20130903220115.1018d8f4@gandalf.local.home>
+In-Reply-To: <20130904012404.GI3871@linux.vnet.ibm.com>
+References: <20130831051117.884125230@goodmis.org>
+	<20130831051700.601365837@goodmis.org>
+	<20130903171516.16290c47@gandalf.local.home>
+	<20130903221808.GH3871@linux.vnet.ibm.com>
+	<20130903195705.3ba3442f@gandalf.local.home>
+	<20130904012404.GI3871@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 02:03:02AM +0100, Al Viro wrote:
+On Tue, 3 Sep 2013 18:24:04 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-> Ewwww...   NAK in that form.  Just what will happen if the last component
-> given to that sucker will be . or .., for starters?  Or a symlink, with
-> '/' added to it to force following the damn thing?
 
-OK, in more details:
-	* we are changing a user-visible ABI here - kern_path() with
-LOOKUP_FOLLOW had been there since the introduction of that misc
-device (OK, it used to be path_lookup(), but that changes nothing).
-IOW, we used to follow symlinks there, now we do not.
-	* pathname may end on more than one slash.  Modified that
-way, the code won't do anything good (not to mention that d_lookup()
-on an empty string is an interesting torture test for fs/dcache.c;
-probably you'll just find nothing, but normally the function is never
-called with such arguments, so...).  In any case it's an ABI change.
-	* pathname may end with something/. or something/..; again,
-d_lookup() won't find you anything now, so we have an ABI change.
+> >  static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
+> > @@ -588,15 +593,14 @@ static void
+> >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+> >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
+> >  {
+> > -	int bit;
+> > -
+> > +	/* Make sure we see disabled or not first */
+> > +	smp_rmb();
+> 
+> 	smp_mb__before_atomic_inc()?
+> 
 
-That aside, I'm really not happy with this kind of games; this stuff clearly
-belongs in fs/namei.c where we can simply see the last component.  Doing that
-on the level of "let's scan the pathname for slashes, etc." is just plain
-wrong.  Let's step back for a minute here; what are you trying to do?
-You have a pathname that should resolve to a mountpoint, without triggering
-automount (or crossing into the mountpoint, for that matter) and you want
-struct path for the bottom of that mount stack?  Or is it something
-completely different?
+Ah, but this is before an atomic_read(), and not an atomic_inc(), thus
+the normal smp_rmb() is still required.
+
+-- Steve
+
+> >  	if (atomic_read(&ftrace_unsafe_rcu_disabled))
+> >  		return;
+> > 
+> >  	preempt_disable_notrace();
+> > 
