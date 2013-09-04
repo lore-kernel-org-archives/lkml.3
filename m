@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934985Ab3IDPRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:17:55 -0400
-Received: from [110.4.46.162] ([110.4.46.162]:62153 "EHLO
-	MIMIRON.penang.mschosting.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934783Ab3IDPRy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:17:54 -0400
-X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 11:17:54 EDT
-Subject: Geschaftsvorschlag.
-To: linux-kernel@vger.kernel.org
-Date: Wed, 4 Sep 2013 22:57:32 +0800
-From: "Oliver Ekmann." <oliver_ekmann@hotmail.com>
-Message-ID: <1d927e9514ae1ddd1c6d1264e0f02edf@ceta.com.my>
-X-Priority: 3
+	id S1762866Ab3IDPUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:20:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4430 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755163Ab3IDPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:20:33 -0400
+Date: Wed, 4 Sep 2013 11:20:22 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jan Kaluza <jkaluza@redhat.com>, davem@davemloft.net,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        eparis@redhat.com, tj@kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level
+ control message
+Message-ID: <20130904152022.GD28517@madcap2.tricolour.ca>
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+ <1378275261-4553-1-git-send-email-jkaluza@redhat.com>
+ <878uzdf2xp.fsf@xmission.com>
+ <20130904145830.GC28517@madcap2.tricolour.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="us-ascii"
-X-OriginalArrivalTime: 04 Sep 2013 14:57:32.0513 (UTC) FILETIME=[1563DD10:01CEA97F]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904145830.GC28517@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lieber Freund
+On Wed, Sep 04, 2013 at 10:58:30AM -0400, Richard Guy Briggs wrote:
+> On Wed, Sep 04, 2013 at 12:42:26AM -0700, Eric W. Biederman wrote:
+> > Jan Kaluza <jkaluza@redhat.com> writes:
+> > > this patchset against net-next (applies also to linux-next) adds 3 new types
+> > > of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
+> 
+> > By my count you have overflowed cb in struct sk_buff and are stomping on
+> > _skb_refdest.
+> 
+> For patch1/3 I count 56/48, then for patch3 I get 48/48.  Jan, you might
+> do the conversion to a pointer in patch1/3 to avoid bisect breakage.
 
-Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es ist wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (StandardBank PLC von Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht in anspruch genommen worden ist, wo derzeit USD$18.5M (Achtzehn Million, Fünf Hundert Tausend, US Dollar)  gutgeschrieben sind.Dieses Konto gehörte Herrn Peter Hartmann, der ein Kunde in unsere Bank war, der leider verstorben ist. Herr Hartmann war ein gebürtiger Deutscher.
+Wait, that __aligned(8) is for cb[48], not for the contents.
 
-Damit es mir möglich ist dieses Geld $18,500,000 inanspruch zunehmen,benötige ich die zusammenarbeit eines Ausländischen Partners wie Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Hartmann
-vorstellen kann,damit wir das Geld inanspruch nehmen können. Für diese Unterstützung erhalten Sie 30% der Erbschaftsumme und die restlichen 70% teile ich mirmit meinen zwei Arbeitskollegen, die mich bei dieser Transaktion ebenfalls unterstützen.
+For patch1/3 I count 28/48 on 32-bit, 36/48 on 64-bit (or would that be
+56 by default on 64-bit arches without aligned specified?), then for
+patch3 I get 24/48 on 32 and 40/48 on 64 (or again 48/48 by default?).
 
-Wenn Sie interessiert sind, können Sie mir bitte eine E-Mail auf meinen prtivat E-Mail zuschicken oliver_ekmann@live.com, damit ich Ihnen mehr Details zukommen lassen kann. 
+> > Eric
+> 
+> - RGB
 
-Mit freundlichen Grüßen
+- RGB
 
-Oliver Ekmann.
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
