@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965103Ab3IDRxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:53:50 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:57207 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964786Ab3IDRxt (ORCPT
+	id S965147Ab3IDRx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:53:58 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:49242 "HELO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S964786Ab3IDRxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:53:49 -0400
+	Wed, 4 Sep 2013 13:53:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130903132933.GA24955@gmail.com>
-References: <20130903132933.GA24955@gmail.com>
-Date: Wed, 4 Sep 2013 10:53:47 -0700
-X-Google-Sender-Auth: seGha5GRQ4bonq6cJviCi6PhFqI
-Message-ID: <CA+55aFyyJpCC0EFfPpGYi+6goWbA+LZbrkFcLNW3x8xYHfKvdQ@mail.gmail.com>
-Subject: Re: [GIT PULL] perf changes for v3.12
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <CAMuHMdVvB+GMwMrP2mieXbqAM7mn3nF_1ezbiYVBLKdsL5aCJg@mail.gmail.com>
+References: <CAMuHMdVG9FmZNayrf7HMz4kC4X5QELeXUFjjzpAM80ND_QOm8A@mail.gmail.com>
+ <CAEP_g=-XvRiHPzSAp2rgC9Hxdd+pGEHvSTEJ1A1SkWnk1-6xZA@mail.gmail.com>
+ <20130829.181001.145658561677052552.davem@davemloft.net> <CAEP_g=-XxgK9HVxvcaW3RS2zfa+77pB4cqfLFC0rcV7QJc+2BQ@mail.gmail.com>
+ <CAMuHMdU3M9uUFKd3EQ0HbcAvf5e62PA4NJG_mQHhpvZwFJnUWQ@mail.gmail.com>
+ <CAEP_g=-BWdWJ5WtNy0=Eq8GJp84i88QbGq-gQcANBhCKajcJsQ@mail.gmail.com> <CAMuHMdVvB+GMwMrP2mieXbqAM7mn3nF_1ezbiYVBLKdsL5aCJg@mail.gmail.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Wed, 4 Sep 2013 10:53:29 -0700
+Message-ID: <CAEP_g=8Q6-i+wSfdcW4X1uYm2_8hqmE3R3_EC7PpHNbkpxK82A@mail.gmail.com>
+Subject: Re: [-next] openvswitch BUILD_BUG_ON failed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Miller <davem@davemloft.net>, Andy Zhou <azhou@nicira.com>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r84HrsHf024701
 
-On Tue, Sep 3, 2013 at 6:29 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On Tue, Sep 3, 2013 at 11:55 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, Sep 3, 2013 at 11:44 PM, Jesse Gross <jesse@nicira.com> wrote:
+>> On Sat, Aug 31, 2013 at 5:11 AM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> On Fri, Aug 30, 2013 at 3:11 AM, Jesse Gross <jesse@nicira.com> wrote:
+>>>> On Thu, Aug 29, 2013 at 3:10 PM, David Miller <davem@davemloft.net> wrote:
+>>>>> From: Jesse Gross <jesse@nicira.com>
+>>>>> Date: Thu, 29 Aug 2013 14:42:22 -0700
+>>>>>
+>>>>>> On Thu, Aug 29, 2013 at 2:21 PM, Geert Uytterhoeven
+>>>>>> <geert@linux-m68k.org> wrote:
+>>>>>>> However, I have some doubts about other alignment "enforcements":
+>>>>>>>
+>>>>>>> "__aligned(__alignof__(long))" makes the whole struct aligned to the
+>>>>>>> alignment rule for "long":
+>>>>>>>    1. This is only 2 bytes on m68k, i.e. != sizeof(long).
+>>>>>>>    2. This is 4 bytes on many 32-bit platforms, which may be less than the
+>>>>>>>       default alignment for "__be64" (cfr. some members of struct
+>>>>>>>       ovs_key_ipv4_tunnel), so this may make those 64-bit members unaligned.
+>>>>>>
+>>>>>> Do any of those 32-bit architectures actually care about alignment of
+>>>>>> 64 bit values? On 32-bit x86, a long is 32 bits but the alignment
+>>>>>> requirement of __be64 is also 32 bit.
+>>>>>
+>>>>> All except x86-32 do, it is in fact the odd man out with respect to this
+>>>>> issue.
+>>>>
+>>>> Thanks, good to know.
+>>>>
+>>>> Andy, do you want to modify your patch to just drop the alignment
+>>>> specification as Geert suggested (but definitely keep the new build
+>>>> assert that you added)? It's probably better to just send the patch to
+>>>> netdev (against net-next) as well since you'll likely get better
+>>>> comments there and we can fix this faster if you cut out the
+>>>> middleman.
+>>>
+>>> Why do you want to keep the build asserts?
+>>> Is this in-memory structure also transfered as-is over the network?
+>>> If yes, you definitely want the padding.
+>>
+>> Well they caught this bug and really don't cost anything.
+>>
+>>> Nevertheless, as the struct contains u32 and even __be64 members, the
+>>> size of the struct will always be a multiple of the alignment unit for
+>>> 64-bit quantities (and thus also for long), as per the C standard.
+>>> Hence the check
+>>>
+>>>     BUILD_BUG_ON(sizeof(struct sw_flow_key) % __alignof__(long));
+>>>
+>>> will only catch bad compiler bugs or people adding __packed to the struct.
+>>
+>> It's possible that we might want to pack the structure in the future.
+>> More generally though, the contents of the struct is really
+>> independent of the alignment requirements here because we're accessing
+>> it as an array of bytes in long-sized chunks so implicitly depending
+>> on the size of the members is not that great.
 >
-> Please pull the latest perf-core-for-linus git tree from:
+> So you're accessing it as an array of bytes in long-sized chunks.
+> What are you doing with this accessed data?
+> Transfering over the network?
+> Storing on disk?
+> Then it must be portable across machines and architectures, right?
 
-I don't think this is new at all, but I just tried to do a perf
-record/report of "make -j64 test" on git:
-
-It's a big perf.data file (1.6G), but after it has done the
-"processing time ordered events" thing it results in:
-
-â”Œâ”€Warning:â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚Processed 8672030 events and lost 71 chunks!â”‚
-â”‚Check IO/CPU overload!                      â”‚
-â”‚                                            â”‚
-â”‚                                            â”‚
-â”‚Press any key...                            â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-
-and then it just hangs using 100% CPU time. Pressing any key doesn't
-do anything.
-
-It may well still be *doing* something, and maybe it will come back
-some day with results. But it sure doesn't show any indication that it
-will.
-
-Try this (in a current git source tree: note, by "git" I actually mean
-git itself, not some random git repository)::
-
-    perf record -g -e cycles:pp make -j64 test >& out
-    perf report
-
-maybe you can reproduce it.
-
-                Linus
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It's just an in-memory hash table lookup. No one else ever sees it.
