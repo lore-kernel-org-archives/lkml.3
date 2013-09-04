@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab3IDWoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:44:11 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57827 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753825Ab3IDWoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:44:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots
-Date: Thu, 05 Sep 2013 00:54:58 +0200
-Message-ID: <2449715.ReJj2CQeDS@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378326994.3246.152.camel@ul30vt.home>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1818424.8fNkf5pBy3@vostro.rjw.lan> <1378326994.3246.152.camel@ul30vt.home>
+	id S1756093Ab3IDW7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:59:39 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:41800 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178Ab3IDW7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:59:31 -0400
+Message-ID: <5227BB50.7000301@linaro.org>
+Date: Wed, 04 Sep 2013 15:59:28 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andy Lutomirski <luto@amacapital.net>, Arun Sharma <asharma@fb.com>,
+        LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>
+Subject: Re: clock_gettime_ns
+References: <5226FAE1.5070201@fb.com> <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com> <CANcMJZAi_738t-eDUphC6U_25xFS0NqQqdUZAzu7Aijqmrj=wA@mail.gmail.com> <CALCETrVc-3j=7bP13dkYwqxUg77rdauHQ8_KEti0khh-HX220A@mail.gmail.com> <52279E1D.3060907@linaro.org> <5227B432.8070205@zytor.com>
+In-Reply-To: <5227B432.8070205@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
-> On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > The current implementation of acpiphp_check_bridge() is pretty dumb:
-> >  - It enables a slot if it's not enabled and the slot status is
-> >    ACPI_STA_ALL.
-> >  - It disables a slot if it's enabled and the slot status is not
-> >    ACPI_STA_ALL.
-> > 
-> > This behavior is not sufficient to handle the Thunderbolt daisy
-> > chaining case properly, however, because in that case the bus
-> > behind the already enabled slot needs to be rescanned for new
-> > devices.
-> > 
-> > For this reason, modify acpiphp_check_bridge() so that slots are
-> > disabled and stopped if they are not in the ACPI_STA_ALL state.
-> > 
-> > For slots in the ACPI_STA_ALL state, devices behind them that don't
-> > respond are trimmed using a new function, trim_stale_devices(),
-> > introduced specifically for this purpose.  That function walks
-> > the given bus and checks each device on it.  If the device doesn't
-> > respond, it is assumed to be gone and is removed.
-> > 
-> > Once all of the stale devices directy behind the slot have been
-> > removed, acpiphp_check_bridge() will start looking for new devices
-> > that might have appeared on the given bus.  It will do that even if
-> > the slot is already enabled (SLOT_ENABLED is set for it).
-> > 
-> > In addition to that, make the bus check notification ignore
-> > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-> > so that devices behind the slot are re-enumerated in that case too.
-> > 
-> > This change is based on earlier patches from Kirill A Shutemov
-> > and Mika Westerberg.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> 
-> FYI, git bisect landed on this patch as the cause of my serial console
-> dying on current upstream.  Further debugging to come...  Thanks,
+On 09/04/2013 03:29 PM, H. Peter Anvin wrote:
+> On 09/04/2013 01:54 PM, John Stultz wrote:
+>>> I'd advocate for going whole hog and returning, atomically:
+>>>
+>>>  - TAI (nanoseconds from epoch)
+>>>  - UTC - TAI (seconds or nanoseconds) *
+>>>  - TAI - CLOCK_MONOTONIC (nanoseconds)
+>>>  - a leap second flag.
+>>>
+>>> * There are various ways to define this.  My fancy UTC - TAI wouldn't
+>>> actually need the leap-second flag, since the UTC time would indicate
+>>> leap seconds directly.
+> Not so (see below).
+>
+>>  With the conventional approach, someone would
+>>> have to decide whether the leap second count increments at the
+>>> beginning or the end of the leap second.
+>> Well, adjtimex() gives you UTC & tai offset & leapsecond flag in one go.
+>>
+> But not fractional-second information,right?  I believe it would be
+> desirable if we can create a small structure (<= 16 bytes) for this.
 
-Well, sorry about that.
+Well, depending on if STA_NANO is set, adjtimex returns either nsec or
+usec precision via the timex.time field.
 
-What exactly do you mean by "dying"?
+> UTC - TAI is always an integral number of seconds, possibly negative
+> (unlikely, but...)
+>
+> Something like:
+>
+> 	struct time_ns {
+> 		u64 tai_s;
+> 		u32 tai_ns;
+> 		s16 utcdelta;	/* TAI - UTC */
+> 		u8 leap;	/* Positive leap second in progress */
+> 		u8 pad;		/* Something useful here maybe? */
+> 	};
+>
+> Why the leap second flag?  It is necessary to represent the 61st second
+> in a minute during a positive leap second.  Consider the below
+> (artificial) cases:
+>
+> (leap second)
+> TAI	31536000	31536001	31536002	31536003
+> Delta	2		2		?		3
+> UTC	23:59:58	23:59:59	23:59:60	00:00:00
+>
+> (no leap second)
+> TAI	31536000	31536001	31536002	31536003
+> Delta	2		2		2		2
+> UTC	23:59:58	23:59:59	00:00:00	00:00:01
+>
+> (no leap second)
+> TAI	31536000	31536001	31536002	31536003
+> Delta	3		3		3		3
+> UTC	23:59:57	23:59:58	23:59:59	00:00:00
+>
+> There simply is no sufficiently meaningful value that can be put on the
+> delta during a positive leap second.  Both 2 and 3 would be wrong in the
+> above example, giving UTC of either 00:00:00 or 23:59:59.
+>
+> There is a way to do without the leap second flag by making UTC the main
+> time; this does have the advantage of higher compatibility with time_t,
+> struct timespec, etc:
+>
+> 	struct timespecx {
+> 		time_t tx_sec;		/* POSIX UTC seconds */
+> 		u32 tx_ns;		/* Nanoseconds */
+> 		s32 tx_taidelta;	/* TAI - UTC */
+> 	};
 
-Rafael
 
+And again, most of the detail above is already there w/ adjtimex (though
+admittedly not in a very tight format).
+
+My concern with adding these details to the timespec-like structure this
+is with most clockids I'm not sure taidelta would make sense.
+
+Also, there's been talk of a slewed-leap-second clockid, basically UTC
+but around the leapsecond it slows down to absorb the extra second. This
+means that clockid would have a subsecond offset from TAI.
+
+thanks
+-john
