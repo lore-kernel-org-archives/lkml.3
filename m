@@ -1,143 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762694Ab3IDMNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:13:09 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:46992 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994Ab3IDMNH (ORCPT
+	id S934646Ab3IDMOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:14:47 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:60022 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757034Ab3IDMOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:13:07 -0400
-X-ASG-Debug-ID: 1378296786-0421b5022034a180001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Wed, 4 Sep 2013 08:13:04 -0400
-From: Josef Bacik <jbacik@fusionio.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Josef Bacik <jbacik@fusionio.com>, Michel Lespinasse <walken@google.com>,
-        <linux-btrfs@vger.kernel.org>, <mingo@elte.hu>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rwsem: add rwsem_is_contended
-Message-ID: <20130904121304.GD15634@localhost.localdomain>
-X-ASG-Orig-Subj: Re: [PATCH] rwsem: add rwsem_is_contended
-References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
- <CANN689Gz-g=_0ErGkB1WZhJUxg+op2=DAPr3GMYwiXFeT9NmGw@mail.gmail.com>
- <5224C850.2060103@hurleysoftware.com>
- <20130903131805.GA15634@localhost.localdomain>
- <52271DB0.8030305@hurleysoftware.com>
+	Wed, 4 Sep 2013 08:14:45 -0400
+Message-ID: <52272426.2040504@synopsys.com>
+Date: Wed, 4 Sep 2013 17:44:30 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52271DB0.8030305@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1378296786
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.12
-X-Barracuda-Spam-Status: No, SCORE=0.12 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140308
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.12 CN_BODY_332            BODY: CN_BODY_332
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>, <netdev@vger.kernel.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: Query about TX BD Reclaim in Napi poll path (was Re: [PATCH v3] ethernet/arc/arc_emac
+ - Add new driver)
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com> <20130613221946.GA16632@electric-eye.fr.zoreil.com>
+In-Reply-To: <20130613221946.GA16632@electric-eye.fr.zoreil.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 07:46:56AM -0400, Peter Hurley wrote:
-> On 09/03/2013 09:18 AM, Josef Bacik wrote:
-> >On Mon, Sep 02, 2013 at 01:18:08PM -0400, Peter Hurley wrote:
-> >>On 09/01/2013 04:32 AM, Michel Lespinasse wrote:
-> >>>Hi Josef,
-> >>>
-> >>>On Fri, Aug 30, 2013 at 7:14 AM, Josef Bacik <jbacik@fusionio.com> wrote:
-> >>>>Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
-> >>>>read lock on this rwsem while they scan the extent tree, and if need_resched()
-> >>>>they will drop the lock and schedule.  The transaction commit needs to take a
-> >>>>write lock for this rwsem for a very short period to switch out the commit
-> >>>>roots.  If there are a lot of threads doing this caching operation we can starve
-> >>>>out the committers which slows everybody out.  To address this we want to add
-> >>>>this functionality to see if our rwsem has anybody waiting to take a write lock
-> >>>>so we can drop it and schedule for a bit to allow the commit to continue.
-> >>>>Thanks,
-> >>>>
-> >>>>Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-> >>>
-> >>>FYI, I once tried to introduce something like this before, but my use
-> >>>case was pretty weak so it was not accepted at the time. I don't think
-> >>>there were any objections to the API itself though, and I think it's
-> >>>potentially a good idea if you use case justifies it.
-> >>
-> >>Exactly, I'm concerned about the use case: readers can't starve writers.
-> >>Of course, lots of existing readers can temporarily prevent a writer from
-> >>acquiring, but those readers would already have the lock. Any new readers
-> >>wouldn't be able to prevent a waiting writer from obtaining the lock.
-> >>
-> >>Josef,
-> >>Could you be more explicit, maybe with some detailed numbers about the
-> >>condition you report?
-> >>
-> >
-> >Sure, this came from a community member
-> >
-> >http://article.gmane.org/gmane.comp.file-systems.btrfs/28081
-> >
-> >With the old approach we could block between 1-2 seconds waiting for this rwsem,
-> >and with the new approach where we allow many more of these caching threads we
-> >were staving out the writer for 80 seconds.
-> >
-> >So what happens is these threads will scan our extent tree to put together the
-> >free space cache, and they'll hold this lock while they are doing the scanning.
-> >The only way they will drop this lock is if we hit need_resched(), but because
-> >these threads are going to do quite a bit of IO I imagine we're not ever being
-> >flagged with need_resched() because we schedule while waiting for IO.  So these
-> >threads will hold onto this lock for bloody ever without giving it up so the
-> >committer can take the write lock.  His patch to "fix" the problem was to have
-> >an atomic that let us know somebody was waiting for a write lock and then we'd
-> >drop the reader lock and schedule.
-> 
-> Thanks for the additional clarification.
-> 
-> >So really we're just using a rwsem in a really mean way for writers.  I'm open
-> >to other suggestions but I think this probably the cleanest way.
-> 
-> Is there substantial saved state at the point where the caching thread is
-> checking need_resched() that precludes dropping and reacquiring the
-> extent_commit_sem (or before find_next_key())?  Not that it's a cleaner
-> solution; just want to understand better the situation.
->
+Hi Francois,
 
-Yes I had thought of just dropping our locks everytime we had to do
-find_next_key() but that isn't going to work.  We do have to save state but
-that's not the hard part, it's the fact that we could race with the committing
-transaction and lose space.  So what would happen is something like this
+Resurrecting an old thread.
 
-caching_thread:
-	save last cached offset
-	drop locks
-	find_next_key
-		get a ref on the current commit root
-		search down to the next leaf
-	re-take locks
-	process leaf
+On 06/14/2013 03:49 AM, Francois Romieu wrote:
+>> +static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
+>> > +{
+>> > +	struct net_device *ndev = dev_instance;
+>> > +	struct arc_emac_priv *priv = netdev_priv(ndev);
+>> > +	struct net_device_stats *stats = &priv->stats;
+>> > +	unsigned int status;
+>> > +
+>> > +	status = arc_reg_get(priv, R_STATUS);
+>> > +	status &= ~MDIO_MASK;
+>> > +
+>> > +	/* Reset all flags except "MDIO complete"*/
+>> > +	arc_reg_set(priv, R_STATUS, status);
+>> > +
+>> > +	if (status & RXINT_MASK) {
+>> > +		if (likely(napi_schedule_prep(&priv->napi))) {
+>> > +			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
+>> > +			__napi_schedule(&priv->napi);
+>> > +		}
+>> > +	}
+>> > +
+>> > +	if (status & TXINT_MASK) {
+> You may consider moving everything into the napi poll handler.
 
-transaction committer:
-	acquire locks
-	swap commit root
-	write transaction
-	unpin all extents up to the last saved cached offset
+I has to revisit this now-mainlined driver recently for fixing a bug. Per your
+suggestion above, the TX BD reclaim was moved from interrupt context to NAPI
+context. I was wondering if that is the right thing to do (I'm not a networking
+expert but have worked on this driver heavily before it was mainlined by Alexey).
 
-So if the caching thread grabs a ref on the commit root before the transaction
-committer swaps out the commit root we are dealing with too old of a tree.  So
-say the leaf we're going to process next has data that was free'ed (and
-therefore would have been unpinned) during that transaction, because it is after
-our last cached offset we don't unpin it because we know that the caching thread
-is going to find the leaf where that extent is not there and add free space for
-that extent.  However we got the leaf from two transactions ago which will still
-show that extent in use, so we won't add free space for it, which will cause us
-to leak the extent.  We need to make sure we are always consistently on the
-previous extent root which is why we hold this lock.
+In case of large burst transfers by networking stack (say a large file copy over
+NFS) will it not delay the TX BD reclaim possibly dropping more packets. Ofcourse
+doing this requires enabling Tx interrupts which adds to overall cost from a
+system perspective, but assuming the controller can coalesce the Tx interrupts,
+will it not be better.
 
-I hope that makes sense.  Thanks,
+I did a quick hack to move the TX reclaim in intr path and it seems to be doing
+slightly better than the current code - so the advantages are not sky high, but I
+want to understand the implications nevertheless.
 
-Josef
+TIA,
+-Vineet
