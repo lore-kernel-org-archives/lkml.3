@@ -1,24 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935161Ab3IDPlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:41:22 -0400
+	id S964824Ab3IDPmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:42:15 -0400
 Received: from vms173025pub.verizon.net ([206.46.173.25]:52225 "EHLO
 	vms173025pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935145Ab3IDPlV (ORCPT
+	with ESMTP id S935150Ab3IDPlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:41:21 -0400
+	Wed, 4 Sep 2013 11:41:22 -0400
 X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 11:41:21 EDT
 From: minyard@acm.org
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Subject: [PATCH 0/4] Some minor IPMI fixes
-Date: Wed, 04 Sep 2013 09:40:40 -0500
-Message-id: <1378305644-27138-1-git-send-email-minyard@acm.org>
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        "Jordan_Hargrave@Dell.com" <Jordan_Hargrave@Dell.com>,
+        Jordan Hargrave <jordan_hargrave@Dell.com>,
+        Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH 3/4] Add MODULE_ALIAS for autoloading ipmi driver on ACPI
+ systems
+Date: Wed, 04 Sep 2013 09:40:43 -0500
+Message-id: <1378305644-27138-4-git-send-email-minyard@acm.org>
 X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1378305644-27138-1-git-send-email-minyard@acm.org>
+References: <1378305644-27138-1-git-send-email-minyard@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few things for 3.12 from various people.
+From: "Jordan_Hargrave@Dell.com" <Jordan_Hargrave@Dell.com>
+
+I'd submitted this about a year ago but it never made it upstream.
+
+The latest versions of the kernel drivers for ipmi can use ACPI to
+determine the type of BMC device used in the system.  The following
+patch adds a module alias so that udev will autoload the ipmi_si
+driver.
+
+Signed-off-by: Jordan Hargrave <jordan_hargrave@dell.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+---
+ drivers/char/ipmi/ipmi_si_intf.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index af4b23f..810372c 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -2279,6 +2279,8 @@ static struct pnp_driver ipmi_pnp_driver = {
+ 	.remove		= ipmi_pnp_remove,
+ 	.id_table	= pnp_dev_table,
+ };
++
++MODULE_DEVICE_TABLE(pnp, pnp_dev_table);
+ #endif
+ 
+ #ifdef CONFIG_DMI
+-- 
+1.7.9.5
 
