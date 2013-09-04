@@ -1,133 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab3IDKyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 06:54:53 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43548 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab3IDKyv (ORCPT
+	id S1762383Ab3IDK64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 06:58:56 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51300 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab3IDK6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 06:54:51 -0400
-Message-ID: <5227110D.8030100@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 16:23:01 +0530
-From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 06:58:54 -0400
+Message-ID: <52271255.2080604@huawei.com>
+Date: Wed, 4 Sep 2013 18:58:29 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Amerigo Wang <amwang@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, avagin@openvz.org, gorcunov@openvz.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "Randy.Dunlap" <rdunlap@xenotime.net>, Eric Paris <eparis@redhat.com>,
-        ananth@in.ibm.com, suzuki@in.ibm.com, aravinda@linux.vnet.ibm.com,
-        tarundeep.singh@in.ibm.com
-Subject: Re: RFD: Non-Disruptive Core Dump Infrastructure
-References: <522472DA.4000702@linux.vnet.ibm.com> <5225A02B.6080901@linux.vnet.ibm.com> <5225BA91.6080904@parallels.com> <5225BE3A.3090602@linux.vnet.ibm.com> <5225C001.2010208@parallels.com>
-In-Reply-To: <5225C001.2010208@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <rob@landley.net>, <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] doc: Documentation/cputopology.txt fix typo
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090410-9574-0000-0000-0000097957EF
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 04:24 PM, Pavel Emelyanov wrote:
-> On 09/03/2013 02:47 PM, Janani Venkataraman wrote:
->> On 09/03/2013 04:01 PM, Pavel Emelyanov wrote:
->>> On 09/03/2013 12:39 PM, Janani Venkataraman wrote:
->>>> Hello,
->>>>
->>>> We are working on an infrastructure to create a system core file of a specific
->>>> process at run-time, non-disruptively. It can also be extended to a case where
->>>> a process is able to take a self-core dump.
->>>
->>> This is very close to what we're trying to do in CRIU. And although image files
->>> containing info about processes are not ELF files, an ability to generate ELF-cores
->>> out of existing CRIU images is one of the features that we were asked for.
->>>
->>>> 2) CRIU Approach :
->>>>
->>>> This makes use of the CRIU tool and checkpoints when a dump is called, collects
->>>> the required details and continues the running process.
->>>> * A self dump cannot be initiated using the command line CRIU which is similar
->>>> to the limitation of gcore.
->>>
->>> This is something we're trying to fix at the moment, as people ask for 'self-dump'
->>> ability as well. We plan to have this implemented in v0.8 (the v0.7 is coming out
->>> today/tomorrow) in about a month.
->>>
->>> I can shed more light on this, if required.
->>>
->>>> * A system call to do the same is being implemented which would help us create
->>>> a self dump.The system call is not upstream yet. We could explore that option as
->>>> well.
->>>
->>> Thanks,
->>> Pavel
->>>
->> Hi,
->>
->> I would like to know more about the "self-dump" ability of CRIU. This is
->> the implementation using system calls if I am not wrong.
->
-> Not exactly.
->
-> In CRIU project since it's earliest days, we had to heavily patch the kernel
-> to make it provide additional APIs for getting more info about running tasks
-> and kernel objects. You can find all the patches we've created on the page
-> http://criu.org/Commits
->
-> For almost all the new APIs we proposed the community asked us to restrict them
-> with CAP_SYS_ADMIN checks, so CRIU even for very basic stuff should be run from
-> root. The intention was to create the proof-of-concept with maximal and most
-> strict protection, and then think harder about less strict checks.
->
-> With this the self-dump functionality cannot be implemented as just "CRIU in a
-> .so file", since this would only be usable by root processes. So, instead of
-> just wrapping the whole CRIU stuff into a library, we use a trickier approach.
-> It's described here -- http://criu.org/Self_dump
->
-> Briefly -- we will implement the CRIU service, which is a daemon running from
-> root and listening on a unix socket. When a task wants to dump himself, it sends
-> to the service a "dump me" message. The service then goes and dumps the process.
->
-> Thanks,
-> Pavel
->
+Fix a trivial typo in Documentation/cputopology.txt
 
-Hi,
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ Documentation/cputopology.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-What we require for our infrastructure is just a register snapshot and a
-memory dump.Do we require CAP_SYS privileges,if we want to dump the only
-regset and memory ?
+diff --git a/Documentation/cputopology.txt b/Documentation/cputopology.txt
+index 902d315..0aad6de 100644
+--- a/Documentation/cputopology.txt
++++ b/Documentation/cputopology.txt
+@@ -22,7 +22,7 @@ to /proc/cpuinfo.
+ 
+ 4) /sys/devices/system/cpu/cpuX/topology/thread_siblings:
+ 
+-	internel kernel map of cpuX's hardware threads within the same
++	internal kernel map of cpuX's hardware threads within the same
+ 	core as cpuX
+ 
+ 5) /sys/devices/system/cpu/cpuX/topology/core_siblings:
+-- 
+1.7.1
 
-Is it possible to librarize the dump generation routine so that it is
-transparent to the user. Also, ideally a single API for dump generation
-is preferred for generating the dump, irrespective of whether it is a
-self dump or not.
-
-One another aspect we might want to look at is the DoS attacks. Are
-there any cases where it is prone to such attacks.
-
-We also looked into the Self-dump page you had mentioned and we would 
-like to know more. Is there any additional information/prototype which 
-you share with us .Also would it be possible for us to test a few 
-patches for the self dump case ?
-
-If converting the dump,to ELF-core format from the existing CRIU Image 
-format has not yet been done,we would be happy to contribute towards it.
-
-Thanks,
-Janani
 
