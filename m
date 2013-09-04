@@ -1,623 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763325Ab3IDR0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:26:38 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:47228 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1763150Ab3IDR0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:26:24 -0400
-X-IronPort-AV: E=Sophos;i="4.89,1022,1367964000"; 
-   d="scan'208";a="31508591"
-Date: Wed, 4 Sep 2013 19:26:21 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>
-Subject: [PATCHv2] Route kbd LEDs through the generic LEDs layer
-Message-ID: <20130904172621.GA5957@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-	jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org,
-	Steev Klimaszewski <steev@genesi-usa.com>
-References: <20130717152916.GI5883@type.bordeaux.inria.fr>
+	id S1763174Ab3IDRdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:33:11 -0400
+Received: from mail-bn1lp0157.outbound.protection.outlook.com ([207.46.163.157]:47814
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756063Ab3IDRdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:33:09 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Drivers: hv: util: Fix a bug in version negotiation
+ code for util services
+Thread-Topic: [PATCH 1/1] Drivers: hv: util: Fix a bug in version
+ negotiation code for util services
+Thread-Index: AQHOd0UKrHFKHj6YF0aFkGvHNZstGZm1/vYAgAATQACAACbAYA==
+Date: Wed, 4 Sep 2013 17:33:03 +0000
+Message-ID: <615470dba26b432fa041a02678395e2c@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1372786290-12641-1-git-send-email-kys@microsoft.com>
+ <20130904135754.GA2010@aepfle.de> <20130904150648.GA9162@aepfle.de>
+In-Reply-To: <20130904150648.GA9162@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ed43::4]
+x-forefront-prvs: 095972DF2F
+x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(13464003)(24454002)(377454003)(51704005)(80022001)(31966008)(81342001)(50986001)(47976001)(54316002)(56776001)(69226001)(59766001)(77982001)(49866001)(74706001)(56816003)(19580395003)(77096001)(47736001)(74876001)(79102001)(65816001)(74316001)(74662001)(81542001)(81816001)(47446002)(74502001)(19580405001)(76576001)(76482001)(83322001)(33646001)(551934002)(76796001)(76786001)(51856001)(74366001)(4396001)(81686001)(46102001)(63696002)(83072001)(80976001)(54356001)(53806001)(3826001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ed43::4;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717152916.GI5883@type.bordeaux.inria.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r84HXZmQ024524
 
-This permits to reassign keyboard LEDs to something else than keyboard "leds"
-state, by adding keyboard led and modifier triggers connected to a series
-of VT input LEDs, themselves connected to VT input triggers, which
-per-input device LEDs use by default.  Userland can thus easily change the LED
-behavior of (a priori) all input devices, or of particular input devices.
 
-This also permits to fix #7063 from userland by using a modifier to implement
-proper CapsLock behavior and have the keyboard caps lock led show that modifier
-state.
 
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
-[ebroder@mokafive.com: Rebased to 3.2-rc1 or so, cleaned up some includes, and fixed some constants]
-Signed-off-by: Evan Broder <evan@ebroder.net>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Tested-by: Pavel Machek <pavel@ucw.cz>
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Wednesday, September 04, 2013 8:07 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1] Drivers: hv: util: Fix a bug in version negotiation code for
+> util services
+> 
+> On Wed, Sep 04, Olaf Hering wrote:
+> 
+> > I suggest to let callers deal with error handling. Also as a cleanup,
+> > vmbus_prep_negotiate_resp does not make use of the negop passed to it.
+> > So that arg can be removed.
+> 
+> Simplify vmbus_prep_negotiate_resp. If we take the optimistic approach
+> that negotiation will not fail for any of the callers of
+> vmbus_prep_negotiate_resp this patch on top of yours should fix 2008 and
+> 2012r2.
+Thanks Olaf. I would prefer that we explicitly fail the negotiations than assume that it will succeed.
+Essentially, I want the same behavior as what we had before but only for the final version being
+negotiated. If it is ok with you, I can spin up the patch and send it out.
 
---- a/Documentation/leds/leds-class.txt
-+++ b/Documentation/leds/leds-class.txt
-@@ -2,9 +2,6 @@
- LED handling under Linux
- ========================
- 
--If you're reading this and thinking about keyboard leds, these are
--handled by the input subsystem and the led class is *not* needed.
--
- In its simplest form, the LED class just allows control of LEDs from
- userspace. LEDs appear in /sys/class/leds/. The maximum brightness of the
- LED is defined in max_brightness file. The brightness file will set the brightness
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -708,6 +708,9 @@ static void input_disconnect_device(stru
- 		handle->open = 0;
- 
- 	spin_unlock_irq(&dev->event_lock);
-+
-+	if (is_event_supported(EV_LED, dev->evbit, EV_MAX))
-+		input_led_disconnect(dev);
- }
- 
- /**
-@@ -2092,6 +2095,9 @@ int input_register_device(struct input_d
- 
- 	list_add_tail(&dev->node, &input_dev_list);
- 
-+	if (is_event_supported(EV_LED, dev->evbit, EV_MAX))
-+		input_led_connect(dev);
-+
- 	list_for_each_entry(handler, &input_handler_list, node)
- 		input_attach_handler(dev, handler);
- 
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -178,6 +178,15 @@ comment "Input Device Drivers"
- 
- source "drivers/input/keyboard/Kconfig"
- 
-+config INPUT_LEDS
-+	tristate "LED Support"
-+	depends on LEDS_CLASS
-+	select LEDS_TRIGGERS
-+	default y
-+	help
-+	  This option enables support for LEDs on keyboards managed
-+	  by the input layer.
-+
- source "drivers/input/mouse/Kconfig"
- 
- source "drivers/input/joystick/Kconfig"
---- a/drivers/input/Makefile
-+++ b/drivers/input/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_INPUT_MOUSEDEV)	+= mousedev
- obj-$(CONFIG_INPUT_JOYDEV)	+= joydev.o
- obj-$(CONFIG_INPUT_EVDEV)	+= evdev.o
- obj-$(CONFIG_INPUT_EVBUG)	+= evbug.o
-+obj-$(CONFIG_INPUT_LEDS)	+= leds.o
- 
- obj-$(CONFIG_INPUT_KEYBOARD)	+= keyboard/
- obj-$(CONFIG_INPUT_MOUSE)	+= mouse/
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -11,9 +11,6 @@ menuconfig NEW_LEDS
- 	  Say Y to enable Linux LED support.  This allows control of supported
- 	  LEDs from both userspace and optionally, by kernel events (triggers).
- 
--	  This is not related to standard keyboard LEDs which are controlled
--	  via the input system.
--
- if NEW_LEDS
- 
- config LEDS_CLASS
---- a/drivers/tty/Kconfig
-+++ b/drivers/tty/Kconfig
-@@ -13,6 +13,10 @@ config VT
- 	bool "Virtual terminal" if EXPERT
- 	depends on !S390 && !UML
- 	select INPUT
-+	select NEW_LEDS
-+	select LEDS_CLASS
-+	select LEDS_TRIGGERS
-+	select INPUT_LEDS
- 	default y
- 	---help---
- 	  If you say Y here, you will get support for terminal devices with
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -33,6 +33,7 @@
- #include <linux/string.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/leds.h>
- 
- #include <linux/kbd_kern.h>
- #include <linux/kbd_diacr.h>
-@@ -130,6 +131,7 @@ static char rep;					/* flag telling cha
- static int shift_state = 0;
- 
- static unsigned char ledstate = 0xff;			/* undefined */
-+static unsigned char lockstate = 0xff;			/* undefined */
- static unsigned char ledioctl;
- 
- static struct ledptr {
-@@ -967,6 +969,41 @@ static void k_brl(struct vc_data *vc, un
- 	}
- }
- 
-+/* We route VT keyboard "leds" through triggers */
-+static void kbd_ledstate_trigger_activate(struct led_classdev *cdev);
-+
-+static struct led_trigger ledtrig_ledstate[] = {
-+#define DEFINE_LEDSTATE_TRIGGER(kbd_led, nam) \
-+	[kbd_led] = { \
-+		.name = nam, \
-+		.activate = kbd_ledstate_trigger_activate, \
-+	}
-+	DEFINE_LEDSTATE_TRIGGER(VC_SCROLLOCK, "kbd-scrollock"),
-+	DEFINE_LEDSTATE_TRIGGER(VC_NUMLOCK,   "kbd-numlock"),
-+	DEFINE_LEDSTATE_TRIGGER(VC_CAPSLOCK,  "kbd-capslock"),
-+	DEFINE_LEDSTATE_TRIGGER(VC_KANALOCK,  "kbd-kanalock"),
-+#undef DEFINE_LEDSTATE_TRIGGER
-+};
-+
-+static void kbd_lockstate_trigger_activate(struct led_classdev *cdev);
-+
-+static struct led_trigger ledtrig_lockstate[] = {
-+#define DEFINE_LOCKSTATE_TRIGGER(kbd_led, nam) \
-+	[kbd_led] = { \
-+		.name = nam, \
-+		.activate = kbd_lockstate_trigger_activate, \
-+	}
-+	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTLOCK,  "kbd-shiftlock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_ALTGRLOCK,  "kbd-altgrlock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLLOCK,   "kbd-ctrllock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_ALTLOCK,    "kbd-altlock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTLLOCK, "kbd-shiftllock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTRLOCK, "kbd-shiftrlock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLLLOCK,  "kbd-ctrlllock"),
-+	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLRLOCK,  "kbd-ctrlrlock"),
-+#undef DEFINE_LOCKSTATE_TRIGGER
-+};
-+
- /*
-  * The leds display either (i) the status of NumLock, CapsLock, ScrollLock,
-  * or (ii) whatever pattern of lights people want to show using KDSETLED,
-@@ -1002,6 +1039,7 @@ static inline unsigned char getleds(void
- 
- 	leds = kbd->ledflagstate;
- 
-+	/* TODO: should be replaced by a LED trigger */
- 	if (kbd->ledmode == LED_SHOW_MEM) {
- 		for (i = 0; i < 3; i++)
- 			if (ledptrs[i].valid) {
-@@ -1014,18 +1052,25 @@ static inline unsigned char getleds(void
- 	return leds;
- }
- 
--static int kbd_update_leds_helper(struct input_handle *handle, void *data)
-+/* Called on trigger connection, to set initial state */
-+static void kbd_ledstate_trigger_activate(struct led_classdev *cdev)
- {
--	unsigned char leds = *(unsigned char *)data;
-+	struct led_trigger *trigger = cdev->trigger;
-+	int led = trigger - ledtrig_ledstate;
- 
--	if (test_bit(EV_LED, handle->dev->evbit)) {
--		input_inject_event(handle, EV_LED, LED_SCROLLL, !!(leds & 0x01));
--		input_inject_event(handle, EV_LED, LED_NUML,    !!(leds & 0x02));
--		input_inject_event(handle, EV_LED, LED_CAPSL,   !!(leds & 0x04));
--		input_inject_event(handle, EV_SYN, SYN_REPORT, 0);
--	}
-+	tasklet_disable(&keyboard_tasklet);
-+	led_trigger_event(trigger, ledstate & (1 << led) ? LED_FULL : LED_OFF);
-+	tasklet_enable(&keyboard_tasklet);
-+}
- 
--	return 0;
-+static void kbd_lockstate_trigger_activate(struct led_classdev *cdev)
-+{
-+	struct led_trigger *trigger = cdev->trigger;
-+	int led = trigger - ledtrig_lockstate;
-+
-+	tasklet_disable(&keyboard_tasklet);
-+	led_trigger_event(trigger, lockstate & (1 << led) ? LED_FULL : LED_OFF);
-+	tasklet_enable(&keyboard_tasklet);
- }
- 
- /**
-@@ -1114,16 +1159,29 @@ static void kbd_bh(unsigned long dummy)
- {
- 	unsigned char leds;
- 	unsigned long flags;
--	
-+	int i;
-+
- 	spin_lock_irqsave(&led_lock, flags);
- 	leds = getleds();
- 	spin_unlock_irqrestore(&led_lock, flags);
- 
- 	if (leds != ledstate) {
--		input_handler_for_each_handle(&kbd_handler, &leds,
--					      kbd_update_leds_helper);
-+		for (i = 0; i < ARRAY_SIZE(ledtrig_ledstate); i++)
-+			if ((leds ^ ledstate) & (1 << i))
-+				led_trigger_event(&ledtrig_ledstate[i],
-+						leds & (1 << i)
-+						? LED_FULL : LED_OFF);
- 		ledstate = leds;
- 	}
-+
-+	if (kbd->lockstate != lockstate) {
-+		for (i = 0; i < ARRAY_SIZE(ledtrig_lockstate); i++)
-+			if ((kbd->lockstate ^ lockstate) & (1 << i))
-+				led_trigger_event(&ledtrig_lockstate[i],
-+						kbd->lockstate & (1 << i)
-+						? LED_FULL : LED_OFF);
-+		lockstate = kbd->lockstate;
-+	}
- }
- 
- DECLARE_TASKLET_DISABLED(keyboard_tasklet, kbd_bh, 0);
-@@ -1461,20 +1519,6 @@ static void kbd_disconnect(struct input_
- 	kfree(handle);
- }
- 
--/*
-- * Start keyboard handler on the new keyboard by refreshing LED state to
-- * match the rest of the system.
-- */
--static void kbd_start(struct input_handle *handle)
--{
--	tasklet_disable(&keyboard_tasklet);
--
--	if (ledstate != 0xff)
--		kbd_update_leds_helper(handle, &ledstate);
--
--	tasklet_enable(&keyboard_tasklet);
--}
--
- static const struct input_device_id kbd_ids[] = {
- 	{
- 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
-@@ -1496,7 +1540,6 @@ static struct input_handler kbd_handler
- 	.match		= kbd_match,
- 	.connect	= kbd_connect,
- 	.disconnect	= kbd_disconnect,
--	.start		= kbd_start,
- 	.name		= "kbd",
- 	.id_table	= kbd_ids,
- };
-@@ -1520,6 +1563,20 @@ int __init kbd_init(void)
- 	if (error)
- 		return error;
- 
-+	for (i = 0; i < ARRAY_SIZE(ledtrig_ledstate); i++) {
-+		error = led_trigger_register(&ledtrig_ledstate[i]);
-+		if (error)
-+			pr_err("error %d while registering trigger %s\n",
-+					error, ledtrig_ledstate[i].name);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(ledtrig_lockstate); i++) {
-+		error = led_trigger_register(&ledtrig_lockstate[i]);
-+		if (error)
-+			pr_err("error %d while registering trigger %s\n",
-+					error, ledtrig_lockstate[i].name);
-+	}
-+
- 	tasklet_enable(&keyboard_tasklet);
- 	tasklet_schedule(&keyboard_tasklet);
- 
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -164,6 +164,8 @@ struct input_dev {
- 	unsigned long snd[BITS_TO_LONGS(SND_CNT)];
- 	unsigned long sw[BITS_TO_LONGS(SW_CNT)];
- 
-+	struct led_classdev *leds;
-+
- 	int (*open)(struct input_dev *dev);
- 	void (*close)(struct input_dev *dev);
- 	int (*flush)(struct input_dev *dev, struct file *file);
-@@ -531,4 +533,22 @@ int input_ff_erase(struct input_dev *dev
- int input_ff_create_memless(struct input_dev *dev, void *data,
- 		int (*play_effect)(struct input_dev *, void *, struct ff_effect *));
- 
-+#ifdef CONFIG_INPUT_LEDS
-+
-+int input_led_connect(struct input_dev *dev);
-+void input_led_disconnect(struct input_dev *dev);
-+
-+#else
-+
-+int input_led_connect(struct input_dev *dev)
-+{
-+	return 0;
-+}
-+
-+void input_led_disconnect(struct input_dev *dev)
-+{
-+}
-+
-+#endif
-+
- #endif
---- /dev/null
-+++ b/drivers/input/leds.c
-@@ -0,0 +1,247 @@
-+/*
-+ * LED support for the input layer
-+ *
-+ * Copyright 2010-2013 Samuel Thibault <samuel.thibault@ens-lyon.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/leds.h>
-+#include <linux/input.h>
-+
-+/*
-+ * Keyboard LEDs are propagated by default like the following example:
-+ *
-+ * VT keyboard numlock trigger
-+ * -> vt::numl VT LED
-+ * -> vt-numl VT trigger
-+ * -> per-device inputX::numl LED
-+ *
-+ * Userland can however choose the trigger for the vt::numl LED, or
-+ * independently choose the trigger for any inputx::numl LED.
-+ *
-+ *
-+ * VT LED classes and triggers are registered on-demand according to
-+ * existing LED devices
-+ */
-+
-+/* Handler for VT LEDs, just triggers the corresponding VT trigger. */
-+static void vt_led_set(struct led_classdev *cdev,
-+			  enum led_brightness brightness);
-+static struct led_classdev vt_leds[LED_CNT] = {
-+#define DEFINE_INPUT_LED(vt_led, nam, deftrig) \
-+	[vt_led] = { \
-+		.name = "vt::"nam, \
-+		.max_brightness = 1, \
-+		.brightness_set = vt_led_set, \
-+		.default_trigger = deftrig, \
-+	}
-+/* Default triggers for the VT LEDs just correspond to the legacy
-+ * usage. */
-+	DEFINE_INPUT_LED(LED_NUML, "numl", "kbd-numlock"),
-+	DEFINE_INPUT_LED(LED_CAPSL, "capsl", "kbd-capslock"),
-+	DEFINE_INPUT_LED(LED_SCROLLL, "scrolll", "kbd-scrollock"),
-+	DEFINE_INPUT_LED(LED_COMPOSE, "compose", NULL),
-+	DEFINE_INPUT_LED(LED_KANA, "kana", "kbd-kanalock"),
-+	DEFINE_INPUT_LED(LED_SLEEP, "sleep", NULL),
-+	DEFINE_INPUT_LED(LED_SUSPEND, "suspend", NULL),
-+	DEFINE_INPUT_LED(LED_MUTE, "mute", NULL),
-+	DEFINE_INPUT_LED(LED_MISC, "misc", NULL),
-+	DEFINE_INPUT_LED(LED_MAIL, "mail", NULL),
-+	DEFINE_INPUT_LED(LED_CHARGING, "charging", NULL),
-+};
-+static const char *const vt_led_names[LED_CNT] = {
-+	[LED_NUML] = "numl",
-+	[LED_CAPSL] = "capsl",
-+	[LED_SCROLLL] = "scrolll",
-+	[LED_COMPOSE] = "compose",
-+	[LED_KANA] = "kana",
-+	[LED_SLEEP] = "sleep",
-+	[LED_SUSPEND] = "suspend",
-+	[LED_MUTE] = "mute",
-+	[LED_MISC] = "misc",
-+	[LED_MAIL] = "mail",
-+	[LED_CHARGING] = "charging",
-+};
-+/* Handler for hotplug initialization */
-+static void vt_led_trigger_activate(struct led_classdev *cdev);
-+/* VT triggers */
-+static struct led_trigger vt_led_triggers[LED_CNT] = {
-+#define DEFINE_INPUT_LED_TRIGGER(vt_led, nam) \
-+	[vt_led] = { \
-+		.name = "vt-"nam, \
-+		.activate = vt_led_trigger_activate, \
-+	}
-+	DEFINE_INPUT_LED_TRIGGER(LED_NUML, "numl"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_CAPSL, "capsl"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_SCROLLL, "scrolll"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_COMPOSE, "compose"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_KANA, "kana"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_SLEEP, "sleep"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_SUSPEND, "suspend"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_MUTE, "mute"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_MISC, "misc"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_MAIL, "mail"),
-+	DEFINE_INPUT_LED_TRIGGER(LED_CHARGING, "charging"),
-+};
-+
-+/* Lock for registration coherency */
-+static DEFINE_MUTEX(vt_led_registered_lock);
-+
-+/* Which VT LED classes and triggers are registered */
-+static unsigned long vt_led_registered[BITS_TO_LONGS(LED_CNT)];
-+
-+/* Number of input devices having each LED */
-+static int vt_led_references[LED_CNT];
-+
-+/* VT LED state change, tell the VT trigger.  */
-+static void vt_led_set(struct led_classdev *cdev,
-+			  enum led_brightness brightness)
-+{
-+	int led = cdev - vt_leds;
-+
-+	led_trigger_event(&vt_led_triggers[led], !!brightness);
-+}
-+
-+/* LED state change for some keyboard, notify that keyboard.  */
-+static void perdevice_input_led_set(struct led_classdev *cdev,
-+			  enum led_brightness brightness)
-+{
-+	struct input_dev *dev;
-+	struct led_classdev *leds;
-+	int led;
-+
-+	dev = cdev->dev->platform_data;
-+	if (!dev)
-+		/* Still initializing */
-+		return;
-+	leds = dev->leds;
-+	led = cdev - leds;
-+
-+	input_event(dev, EV_LED, led, !!brightness);
-+	input_event(dev, EV_SYN, SYN_REPORT, 0);
-+}
-+
-+/* Keyboard hotplug, initialize its LED status */
-+static void vt_led_trigger_activate(struct led_classdev *cdev)
-+{
-+	struct led_trigger *trigger = cdev->trigger;
-+	int led = trigger - vt_led_triggers;
-+
-+	if (cdev->brightness_set)
-+		cdev->brightness_set(cdev, vt_leds[led].brightness);
-+}
-+
-+/* Free led stuff from input device, used at abortion and disconnection.  */
-+static void input_led_delete(struct input_dev *dev)
-+{
-+	if (dev) {
-+		struct led_classdev *leds = dev->leds;
-+		if (leds) {
-+			int i;
-+			for (i = 0; i < LED_CNT; i++)
-+				kfree(leds[i].name);
-+			kfree(leds);
-+			dev->leds = NULL;
-+		}
-+	}
-+}
-+
-+/* A new input device with potential LEDs to connect.  */
-+int input_led_connect(struct input_dev *dev)
-+{
-+	int i, error = 0;
-+	struct led_classdev *leds;
-+
-+	dev->leds = leds = kzalloc(sizeof(*leds) * LED_CNT, GFP_KERNEL);
-+	if (!dev->leds)
-+		return -ENOMEM;
-+
-+	/* lazily register missing VT LEDs */
-+	mutex_lock(&vt_led_registered_lock);
-+	for (i = 0; i < LED_CNT; i++)
-+		if (vt_leds[i].name && test_bit(i, dev->ledbit)) {
-+			if (!vt_led_references[i]) {
-+				led_trigger_register(&vt_led_triggers[i]);
-+				/* This keyboard is first to have led i,
-+				 * try to register it */
-+				if (!led_classdev_register(NULL, &vt_leds[i]))
-+					vt_led_references[i] = 1;
-+				else
-+					led_trigger_unregister(&vt_led_triggers[i]);
-+			} else
-+				vt_led_references[i]++;
-+		}
-+	mutex_unlock(&vt_led_registered_lock);
-+
-+	/* and register this device's LEDs */
-+	for (i = 0; i < LED_CNT; i++)
-+		if (vt_leds[i].name && test_bit(i, dev->ledbit)) {
-+			leds[i].name = kasprintf(GFP_KERNEL, "%s::%s",
-+						dev_name(&dev->dev),
-+						vt_led_names[i]);
-+			if (!leds[i].name) {
-+				error = -ENOMEM;
-+				goto err;
-+			}
-+			leds[i].max_brightness = 1;
-+			leds[i].brightness_set = perdevice_input_led_set;
-+			leds[i].default_trigger = vt_led_triggers[i].name;
-+		}
-+
-+	/* No issue so far, we can register for real.  */
-+	for (i = 0; i < LED_CNT; i++)
-+		if (leds[i].name) {
-+			led_classdev_register(&dev->dev, &leds[i]);
-+			leds[i].dev->platform_data = dev;
-+			perdevice_input_led_set(&leds[i],
-+					vt_leds[i].brightness);
-+		}
-+
-+	return 0;
-+
-+err:
-+	input_led_delete(dev);
-+	return error;
-+}
-+
-+/* Disconnected input device. Clean it, and deregister now-useless VT LEDs
-+ * and triggers.  */
-+extern void input_led_disconnect(struct input_dev *dev)
-+{
-+	int i;
-+	struct led_classdev *leds = dev->leds;
-+
-+	for (i = 0; i < LED_CNT; i++)
-+		if (leds[i].name)
-+			led_classdev_unregister(&leds[i]);
-+
-+	input_led_delete(dev);
-+
-+	mutex_lock(&vt_led_registered_lock);
-+	for (i = 0; i < LED_CNT; i++) {
-+		if (!vt_leds[i].name || !test_bit(i, dev->ledbit))
-+			continue;
-+
-+		vt_led_references[i]--;
-+		if (vt_led_references[i]) {
-+			/* Still some devices needing it */
-+			continue;
-+		}
-+
-+		led_classdev_unregister(&vt_leds[i]);
-+		led_trigger_unregister(&vt_led_triggers[i]);
-+		clear_bit(i, vt_led_registered);
-+	}
-+	mutex_unlock(&vt_led_registered_lock);
-+}
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("User LED support for input layer");
-+MODULE_AUTHOR("Samuel Thibault <samuel.thibault@ens-lyon.org>");
+Regards,
+
+K. Y
+
+> 
+> Olaf
+> 
+> ---
+>  drivers/hv/channel_mgmt.c | 22 +++++++++-------------
+>  drivers/hv/hv_kvp.c       |  8 ++++----
+>  drivers/hv/hv_snapshot.c  |  3 +--
+>  drivers/hv/hv_util.c      |  7 +++----
+>  include/linux/hyperv.h    |  4 +---
+>  5 files changed, 18 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+> index 12ec8c8..dcaad3e 100644
+> --- a/drivers/hv/channel_mgmt.c
+> +++ b/drivers/hv/channel_mgmt.c
+> @@ -41,7 +41,6 @@ struct vmbus_channel_message_table_entry {
+>  /**
+>   * vmbus_prep_negotiate_resp() - Create default response for Hyper-V
+> Negotiate message
+>   * @icmsghdrp: Pointer to msg header structure
+> - * @icmsg_negotiate: Pointer to negotiate message structure
+>   * @buf: Raw buffer channel data
+>   *
+>   * @icmsghdrp is of type &struct icmsg_hdr.
+> @@ -54,10 +53,10 @@ struct vmbus_channel_message_table_entry {
+>   *
+>   * Mainly used by Hyper-V drivers.
+>   */
+> -bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+> -				struct icmsg_negotiate *negop, u8 *buf,
+> +bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp, u8 *buf,
+>  				int fw_version, int srv_version)
+>  {
+> +	struct icmsg_negotiate *negop;
+>  	int icframe_major, icframe_minor;
+>  	int icmsg_major, icmsg_minor;
+>  	int fw_major, fw_minor;
+> @@ -65,7 +64,6 @@ bool vmbus_prep_negotiate_resp(struct icmsg_hdr
+> *icmsghdrp,
+>  	int i;
+>  	bool found_match = false;
+> 
+> -	icmsghdrp->icmsgsize = 0x10;
+>  	fw_major = (fw_version >> 16);
+>  	fw_minor = (fw_version & 0xFFFF);
+> 
+> @@ -116,19 +114,17 @@ bool vmbus_prep_negotiate_resp(struct icmsg_hdr
+> *icmsghdrp,
+>  	 * version numbers we can support.
+>  	 */
+> 
+> -fw_error:
+> -	if (!found_match) {
+> -		negop->icframe_vercnt = 0;
+> -		negop->icmsg_vercnt = 0;
+> -	} else {
+> +	if (found_match) {
+> +		icmsghdrp->icmsgsize = 0x10;
+>  		negop->icframe_vercnt = 1;
+>  		negop->icmsg_vercnt = 1;
+> +		negop->icversion_data[0].major = icframe_major;
+> +		negop->icversion_data[0].minor = icframe_minor;
+> +		negop->icversion_data[1].major = icmsg_major;
+> +		negop->icversion_data[1].minor = icmsg_minor;
+>  	}
+> 
+> -	negop->icversion_data[0].major = icframe_major;
+> -	negop->icversion_data[0].minor = icframe_minor;
+> -	negop->icversion_data[1].major = icmsg_major;
+> -	negop->icversion_data[1].minor = icmsg_minor;
+> +fw_error:
+>  	return found_match;
+>  }
+> 
+> diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+> index 5312720..31e338a 100644
+> --- a/drivers/hv/hv_kvp.c
+> +++ b/drivers/hv/hv_kvp.c
+> @@ -584,7 +584,6 @@ void hv_kvp_onchannelcallback(void *context)
+>  	struct hv_kvp_msg *kvp_msg;
+> 
+>  	struct icmsg_hdr *icmsghdrp;
+> -	struct icmsg_negotiate *negop = NULL;
+> 
+>  	if (kvp_transaction.active) {
+>  		/*
+> @@ -607,14 +606,15 @@ void hv_kvp_onchannelcallback(void *context)
+>  			 * We start with win8 version and if the host cannot
+>  			 * support that we use the previous version.
+>  			 */
+> -			if (vmbus_prep_negotiate_resp(icmsghdrp, negop,
+> +			if (vmbus_prep_negotiate_resp(icmsghdrp,
+>  				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+>  				 WIN8_SRV_MAJOR_MINOR))
+>  				goto done;
+> 
+> -			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+> +			if (vmbus_prep_negotiate_resp(icmsghdrp,
+>  				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+> -				 WIN7_SRV_MAJOR_MINOR);
+> +				 WIN7_SRV_MAJOR_MINOR))
+> +				goto done;
+> 
+>  		} else {
+>  			kvp_msg = (struct hv_kvp_msg *)&recv_buffer[
+> diff --git a/drivers/hv/hv_snapshot.c b/drivers/hv/hv_snapshot.c
+> index e4572f3..51e8203 100644
+> --- a/drivers/hv/hv_snapshot.c
+> +++ b/drivers/hv/hv_snapshot.c
+> @@ -170,7 +170,6 @@ void hv_vss_onchannelcallback(void *context)
+> 
+> 
+>  	struct icmsg_hdr *icmsghdrp;
+> -	struct icmsg_negotiate *negop = NULL;
+> 
+>  	if (vss_transaction.active) {
+>  		/*
+> @@ -189,7 +188,7 @@ void hv_vss_onchannelcallback(void *context)
+>  			sizeof(struct vmbuspipe_hdr)];
+> 
+>  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+> -			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+> +			vmbus_prep_negotiate_resp(icmsghdrp,
+>  				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+>  				 VSS_MAJOR_MINOR);
+>  		} else {
+> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> index c16164d..01d7b17 100644
+> --- a/drivers/hv/hv_util.c
+> +++ b/drivers/hv/hv_util.c
+> @@ -88,7 +88,6 @@ static void shutdown_onchannelcallback(void *context)
+>  	struct shutdown_msg_data *shutdown_msg;
+> 
+>  	struct icmsg_hdr *icmsghdrp;
+> -	struct icmsg_negotiate *negop = NULL;
+> 
+>  	vmbus_recvpacket(channel, shut_txf_buf,
+>  			 PAGE_SIZE, &recvlen, &requestid);
+> @@ -98,7 +97,7 @@ static void shutdown_onchannelcallback(void *context)
+>  			sizeof(struct vmbuspipe_hdr)];
+> 
+>  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+> -			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+> +			vmbus_prep_negotiate_resp(icmsghdrp,
+>  					shut_txf_buf, UTIL_FW_MAJOR_MINOR,
+>  					SHUTDOWN_MAJOR_MINOR);
+>  		} else {
+> @@ -225,7 +224,7 @@ static void timesync_onchannelcallback(void *context)
+>  				sizeof(struct vmbuspipe_hdr)];
+> 
+>  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+> -			vmbus_prep_negotiate_resp(icmsghdrp, NULL,
+> time_txf_buf,
+> +			vmbus_prep_negotiate_resp(icmsghdrp, time_txf_buf,
+>  						UTIL_FW_MAJOR_MINOR,
+>  						TIMESYNCH_MAJOR_MINOR);
+>  		} else {
+> @@ -266,7 +265,7 @@ static void heartbeat_onchannelcallback(void *context)
+>  				sizeof(struct vmbuspipe_hdr)];
+> 
+>  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+> -			vmbus_prep_negotiate_resp(icmsghdrp, NULL,
+> +			vmbus_prep_negotiate_resp(icmsghdrp,
+>  				hbeat_txf_buf, UTIL_FW_MAJOR_MINOR,
+>  				HEARTBEAT_MAJOR_MINOR);
+>  		} else {
+> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> index 4994907..084a858 100644
+> --- a/include/linux/hyperv.h
+> +++ b/include/linux/hyperv.h
+> @@ -1502,9 +1502,7 @@ struct hyperv_service_callback {
+>  };
+> 
+>  #define MAX_SRV_VER	0x7ffffff
+> -extern bool vmbus_prep_negotiate_resp(struct icmsg_hdr *,
+> -					struct icmsg_negotiate *, u8 *, int,
+> -					int);
+> +extern bool vmbus_prep_negotiate_resp(struct icmsg_hdr *, u8 *, int, int);
+> 
+>  int hv_kvp_init(struct hv_util_service *);
+>  void hv_kvp_deinit(void);
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
