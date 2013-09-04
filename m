@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934630Ab3IDLa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:30:56 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14263 "EHLO
+	id S934597Ab3IDLak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:30:40 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14257 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762442Ab3IDLan (ORCPT
+	with ESMTP id S1762432Ab3IDLag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:30:43 -0400
+	Wed, 4 Sep 2013 07:30:36 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 04 Sep 2013 04:27:54 -0700
+	by hqnvupgp08.nvidia.com on Wed, 04 Sep 2013 04:27:47 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Grant Likely <grant.likely@linaro.org>,
@@ -18,9 +18,9 @@ CC: <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arch@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 5/5] gpiolib: update documentation
-Date: Wed, 4 Sep 2013 20:29:29 +0900
-Message-ID: <1378294169-22661-6-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 3/5] gpiolib: port of_ functions to use gpiod
+Date: Wed, 4 Sep 2013 20:29:27 +0900
+Message-ID: <1378294169-22661-4-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
 References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
@@ -31,150 +31,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sections about the new gpiod interface in the documentation,
-explaining the motivations behind it and the differences with respect to
-the legacy API.
+Refactor the of_ functions of gpiolib to use the now public gpiod
+interface, and export of_get_named_gpiod() and of_get_gpiod() functions.
+
+Flags are handled internally in the gpiod interface, so these functions
+do not need a flags output parameter contrary to their legacy interface
+counterparts.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- Documentation/gpio.txt | 119 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 119 insertions(+)
+ drivers/gpio/gpiolib-of.c | 28 +++++++++++++++++-----------
+ include/linux/of_gpio.h   | 29 ++++++++++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/gpio.txt b/Documentation/gpio.txt
-index 6f83fa9..e254a38 100644
---- a/Documentation/gpio.txt
-+++ b/Documentation/gpio.txt
-@@ -87,6 +87,38 @@ Note that these operations include I/O barriers on platforms which need to
- use them; drivers don't need to add them explicitly.
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 665f953..fd60bbc 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -15,19 +15,21 @@
+ #include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
+-#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_gpio.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/slab.h>
  
++struct gpio_desc;
++
+ /* Private data structure for of_gpiochip_find_and_xlate */
+ struct gg_data {
+ 	enum of_gpio_flags *flags;
+ 	struct of_phandle_args gpiospec;
  
-+GPIO interfaces
-+---------------
-+The GPIO framework has quite a bit of history behind it. Currently there exist
-+two different (although very similar) ways of using GPIOs:
+-	int out_gpio;
++	struct gpio_desc *out_gpio;
+ };
+ 
+ /* Private function for resolving node pointer to gpio_chip */
+@@ -45,28 +47,31 @@ static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
+ 	if (ret < 0)
+ 		return false;
+ 
+-	gg_data->out_gpio = ret + gc->base;
++	gg_data->out_gpio = gpio_to_desc(ret + gc->base);
+ 	return true;
+ }
+ 
+ /**
+- * of_get_named_gpio_flags() - Get a GPIO number and flags to use with GPIO API
++ * of_get_named_gpiod_flags() - Get a GPIO descriptor and flags for GPIO API
+  * @np:		device node to get GPIO from
+  * @propname:	property name containing gpio specifier(s)
+  * @index:	index of the GPIO
+  * @flags:	a flags pointer to fill in
+  *
+- * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
++ * Returns GPIO descriptor to use with Linux GPIO API, or one of the errno
+  * value on the error condition. If @flags is not NULL the function also fills
+  * in flags for the GPIO.
+  */
+-int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+-			   int index, enum of_gpio_flags *flags)
++struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
++		     const char *propname, int index, enum of_gpio_flags *flags)
+ {
+ 	/* Return -EPROBE_DEFER to support probe() functions to be called
+ 	 * later when the GPIO actually becomes available
+ 	 */
+-	struct gg_data gg_data = { .flags = flags, .out_gpio = -EPROBE_DEFER };
++	struct gg_data gg_data = {
++		.flags = flags,
++		.out_gpio = ERR_PTR(-EPROBE_DEFER)
++	};
+ 	int ret;
+ 
+ 	/* .of_xlate might decide to not fill in the flags, so clear it. */
+@@ -77,16 +82,17 @@ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+ 					 &gg_data.gpiospec);
+ 	if (ret) {
+ 		pr_debug("%s: can't parse gpios property\n", __func__);
+-		return ret;
++		return ERR_PTR(ret);
+ 	}
+ 
+ 	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+ 
+ 	of_node_put(gg_data.gpiospec.np);
+-	pr_debug("%s exited with status %d\n", __func__, gg_data.out_gpio);
++	pr_debug("%s exited with status %d\n", __func__,
++		 PTR_RET(gg_data.out_gpio));
+ 	return gg_data.out_gpio;
+ }
+-EXPORT_SYMBOL(of_get_named_gpio_flags);
++EXPORT_SYMBOL(of_get_named_gpiod_flags);
+ 
+ /**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index a83dc6f..d71f2cc 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -21,6 +21,7 @@
+ #include <linux/of.h>
+ 
+ struct device_node;
++struct gpio_desc;
+ 
+ /*
+  * This is Linux-specific flags. By default controllers' and Linux' mapping
+@@ -47,7 +48,7 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ 	return container_of(gc, struct of_mm_gpio_chip, gc);
+ }
+ 
+-extern int of_get_named_gpio_flags(struct device_node *np,
++extern struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags);
+ 
+ extern int of_mm_gpiochip_add(struct device_node *np,
+@@ -62,10 +63,10 @@ extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+ #else /* CONFIG_OF_GPIO */
+ 
+ /* Drivers may not strictly depend on the GPIO support, so let them link. */
+-static inline int of_get_named_gpio_flags(struct device_node *np,
++static inline struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags)
+ {
+-	return -ENOSYS;
++	return ERR_PTR(-ENOSYS);
+ }
+ 
+ static inline int of_gpio_simple_xlate(struct gpio_chip *gc,
+@@ -80,6 +81,18 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
+ 
+ #endif /* CONFIG_OF_GPIO */
+ 
++static inline int of_get_named_gpio_flags(struct device_node *np,
++		const char *list_name, int index, enum of_gpio_flags *flags)
++{
++	struct gpio_desc *desc;
++	desc = of_get_named_gpiod_flags(np, list_name, index, flags);
 +
-+  - The legacy integer-based interface represents GPIOs as integers. This is
-+    the "historic" way of accessing GPIOs and it was done so because it makes
-+    GPIOs easy to represent and also allows for the compiler to statically know
-+    the GPIO number and use fast-paths on GPIOs for which performance matters.
-+    However, GPIOs can easily be forged this way, and the maximum number of
-+    GPIOs in the system must be known in advance. Functions of this interface
-+    are prefixed with "gpio_".
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
++	else
++		return desc_to_gpio(desc);
++}
 +
-+  - The new descriptor-based interface represents GPIOs as an opaque pointer.
-+    This ensures GPIOs are properly acquired before usage, and also does not
-+    presume anything about their underlying implementation. This interface
-+    provides get/put functions to acquire GPIOs according to their function for
-+    a particular device, similarly to e.g. the regulator framework. For these
-+    reasons, it is the preferred way to access GPIOs. Its functions are prefixed
-+    with "gpiod_".
+ /**
+  * of_gpio_named_count() - Count GPIOs for a device
+  * @np:		device node to count GPIOs for
+@@ -117,15 +130,21 @@ static inline int of_gpio_count(struct device_node *np)
+ }
+ 
+ /**
+- * of_get_gpio_flags() - Get a GPIO number and flags to use with GPIO API
++ * of_get_gpiod_flags() - Get a GPIO descriptor and flags to use with GPIO API
+  * @np:		device node to get GPIO from
+  * @index:	index of the GPIO
+  * @flags:	a flags pointer to fill in
+  *
+- * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
++ * Returns GPIO descriptor to use with Linux generic GPIO API, or a errno
+  * value on the error condition. If @flags is not NULL the function also fills
+  * in flags for the GPIO.
+  */
++static inline struct gpio_desc *of_get_gpiod_flags(struct device_node *np,
++					int index, enum of_gpio_flags *flags)
++{
++	return of_get_named_gpiod_flags(np, "gpios", index, flags);
++}
 +
-+Both interfaces rely on gpiolib. Actually, the older integer-based interface is
-+built as inline functions on top of the new descriptor interface. It is possible
-+and easy to convert a GPIO descriptor to an integer and vice-versa, although it
-+is recommended that drivers stick to using a single interface, preferably the
-+new descriptor-based one.
-+
-+The remainder of this document will describes the old integer-based interface,
-+up to the last section which details the differences of the descriptor-based
-+interface.
-+
-+
- Identifying GPIOs
- -----------------
- GPIOs are identified by unsigned integers in the range 0..MAX_INT.  That
-@@ -773,3 +805,90 @@ differences between boards from user space.  This only affects the
- sysfs interface.  Polarity change can be done both before and after
- gpio_export(), and previously enabled poll(2) support for either
- rising or falling edge will be reconfigured to follow this setting.
-+
-+
-+GPIO descriptor interface
-+=========================
-+A more secure, alternative GPIO interface using descriptors is also available.
-+Instead of relying on integers (which can easily be forged and used without
-+being properly requested) to reference GPIOs, it uses a system of opaque
-+descriptors that must be properly obtained and disposed through the common
-+get/put set of functions. This ensures that all GPIO descriptors are valid at
-+any time and makes it unnecessary to check the validity of a GPIO. Apart from
-+this difference, the interface is similar to the integer-based one, excepted
-+that the gpio_ prefix is changed to gpiod_. There is only one difference in
-+behavior: for GPIOs acquired with a GPIOF_ACTIVE_LOW flag, or for which the
-+active low property has been set through the sysfs interface, the get/set_value
-+functions will take the active low property into account when setting the value.
-+The old interface ignores this property, and its get/set_value work with the
-+actual physical level of the GPIO.
-+
-+Using GPIOs
-+-----------
-+GPIO consumers should include <linux/gpio/consumer.h> which declares the
-+consumer-side GPIO functions. GPIOs are obtained through gpiod_get:
-+
-+ struct gpio_desc *gpiod_get(struct device *dev, const char *con_id);
-+
-+This will return the GPIO descriptor corresponding to the con_id function of
-+dev, or an error code in case of error. A devm variant is also available:
-+
-+ struct gpio_desc *devm_gpiod_get(struct device *dev, const char *con_id);
-+
-+GPIO descriptors are disposed using the corresponding put functions:
-+
-+ void gpiod_put(struct gpio_desc *desc);
-+ void devm_gpiod_put(struct device *dev, struct gpio_desc *desc);
-+
-+A valid descriptor can then be used with one of the gpiod_ functions. Their
-+interface is identical to the integer-based API, excepted that they take a GPIO
-+descriptor instead of an integer:
-+
-+ int gpiod_direction_input(struct gpio_desc *desc);
-+ int gpiod_direction_output(struct gpio_desc *desc, int value);
-+ int gpiod_get_value(struct gpio_desc *desc);
-+ void gpiod_set_value(struct gpio_desc *desc, int value);
-+ ...
-+
-+If you need to convert a descriptor to an integer or vice-versa, you can use
-+gpio_to_desc or desc_to_gpio:
-+
-+ struct gpio_desc *gpio_to_desc(unsigned gpio);
-+ int desc_to_gpio(const struct gpio_desc *desc);
-+
-+The same GPIO can be used by both interfaces as long as it has properly been
-+acquired by one of them (i.e. using either gpio_request() or gpiod_get()).
-+
-+Declaring GPIOs
-+---------------
-+GPIOs can be made available for devices either through board-specific lookup
-+tables, or using the device tree.
-+
-+Board-specific lookup tables match a device name and consumer ID to a GPIO chip
-+and GPIO number relative to that chip. They are declared as follows:
-+
-+ static struct gpio_lookup board_gpio_lookup[] = {
-+     GPIO_LOOKUP("tegra-gpio", 28, "backlight.1", "power", GPIOF_ACTIVE_LOW),
-+ };
-+
-+ static void __init board_init(void)
-+ {
-+     ...
-+     gpiod_add_table(board_gpio_lookup,
-+     ARRAY_SIZE(board_gpio_lookup));
-+     ...
-+ }
-+
-+In the driver side, the following code:
-+
-+ gpiod_get(dev, "power");
-+
-+will return the descriptor for GPIO 28 of the "tegra-gpio" chip provided
-+strcmp(dev_name(dev), "backlight.1") == 0. This GPIO will be active low.
-+
-+If the device tree is used, then the same "power" GPIO can be declared into the
-+device's node as follows:
-+
-+ power-gpios = <&gpio 28 GPIO_ACTIVE_LOW>;
-+
-+Note that gpiod_get() only allows to access the first GPIO specifier.
-\ No newline at end of file
+ static inline int of_get_gpio_flags(struct device_node *np, int index,
+ 		      enum of_gpio_flags *flags)
+ {
 -- 
 1.8.4
 
