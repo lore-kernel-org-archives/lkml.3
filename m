@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935032Ab3IDO6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:58:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934731Ab3IDO6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:58:41 -0400
-Date: Wed, 4 Sep 2013 10:58:30 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Jan Kaluza <jkaluza@redhat.com>, davem@davemloft.net,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        eparis@redhat.com, tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level
- control message
-Message-ID: <20130904145830.GC28517@madcap2.tricolour.ca>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1378275261-4553-1-git-send-email-jkaluza@redhat.com>
- <878uzdf2xp.fsf@xmission.com>
+	id S935054Ab3IDO7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:59:47 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:37551 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762704Ab3IDO7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:59:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878uzdf2xp.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [89.2.206.189]
+In-Reply-To: <mj+md-20130904.134928.12262.nikam@ucw.cz>
+References: <1378302428-19758-1-git-send-email-teg@jklm.no> <mj+md-20130904.134928.12262.nikam@ucw.cz>
+From: Tom Gundersen <teg@jklm.no>
+Date: Wed, 4 Sep 2013 16:59:24 +0200
+Message-ID: <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
+Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb support
+To: Martin Mares <mj@ucw.cz>
+Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 12:42:26AM -0700, Eric W. Biederman wrote:
-> Jan Kaluza <jkaluza@redhat.com> writes:
-> > Hi,
-> >
-> > this patchset against net-next (applies also to linux-next) adds 3 new types
-> > of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
-> >
-> > Server-like processes in many cases need credentials and other
-> > metadata of the peer, to decide if the calling process is allowed to
-> > request a specific action, or the server just wants to log away this
-> > type of information for auditing tasks.
-> >
-> > The current practice to retrieve such process metadata is to look that
-> > information up in procfs with the $PID received over SCM_CREDENTIALS.
-> > This is sufficient for long-running tasks, but introduces a race which
-> > cannot be worked around for short-living processes; the calling
-> > process and all the information in /proc/$PID/ is gone before the
-> > receiver of the socket message can look it up.
-> 
-> > Changes introduced in this patchset can also increase performance
-> > of such server-like processes, because current way of opening and
-> > parsing /proc/$PID/* files is much more expensive than receiving these
-> > metadata using SCM.
-> 
-> Can I just say ick, blech, barf, gag.
+On Wed, Sep 4, 2013 at 3:57 PM, Martin Mares <mj@ucw.cz> wrote:
+> Hello!
+>
+> First of all: Sorry for not replying to the first mail. I do not follow
+> linux-pci too much these days (or, I do that in big batches).
 
-/me hands ebiederman an air sickness bag.
+No problem, I guessed as much.
 
-> You don't require this information to be passed.  You are asking people
-> to suport a lot of new code for the forseeable future.  The only advantage
-> appears to be for short lived racy processes that don't even bother to
-> make certain their message was acknowleged before exiting.
-> 
-> You sent this during the merge window which is the time for code
-> integration and testing not new code.
+>> This lets you select hwdb support at compile time.
+>>
+>> hwdb is an efficient hardware database shipped with recent versions of udev.
+>> It contains among other sources pci.ids so querying hwdb rather than reading
+>> pci.ids directly should give the same result.
+>>
+>> Ideally Linux distros using udev could stop shipping pci.ids, but use hwdb
+>> as the only source of this information, which this patch allows.
+>
+> Generally, I will be glad to include hwdb support in libpci.
 
-This is an RFC.  How is this important?
+Great.
 
-> By my count you have overflowed cb in struct sk_buff and are stomping on
-> _skb_refdest.
+>> +     if [ -f /usr/include/libudev.h -o -f /usr/local/include/libudev.h ] ; then
+>> +             HWDB=yes
+>> +     else
+>> +             HWDB=no
+>> +     fi
+>
+> Does this make sense? Does every version of libudev support hwdb?
 
-For patch1/3 I count 56/48, then for patch3 I get 48/48.  Jan, you might
-do the conversion to a pointer in patch1/3 to avoid bisect breakage.
+Good point. I'll replace it with a pkg-config call, is that acceptable?
 
-> If you are going to go crazy and pass things is there a reason you do
-> not add a patch to pass the bsd SCM_CREDS?  That information seems more
-> relevant in a security context and for making security decisions than
-> about half the information you are passing.
-> 
-> Eric
+>> @@ -86,8 +91,58 @@ char
+>>  *pci_id_lookup(struct pci_access *a, int flags, int cat, int id1, int id2, int id3, int id4)
+>>  {
+>>    struct id_entry *n, *best;
+>> -  u32 id12 = id_pair(id1, id2);
+>> -  u32 id34 = id_pair(id3, id4);
+>> +  u32 id12, id34;
+>> +
+>> +#ifdef PCI_HAVE_HWDB
+>> +  if (!(flags & PCI_LOOKUP_SKIP_LOCAL))
+>> +    {
+>
+> As you wrote it, hwdb has always priority over pci.ids (unless local lookup is
+> disabled). As a user, I would expect that pci.ids (being a part of the pciutils)
+> is the primary source of data and other sources (network lookups, hwdb) are
+> used only if pci.ids do not match or if explicitly requested.
 
-- RGB
+Hm, this was actually intentional. The reason being that I'd like to
+avoid reading in the pci.ids db in the common case, as using the hwdb
+should be much more efficient (it is most likely already in memory and
+lookup is constant time), and also we (at the distro level) want to
+move away from the {usb,pci}.ids and rather default to hwdb
+everywhere.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+My original intention was to make hwdb a replacement for pci.ids, but
+I ended up going the less invasive route, would making it a
+replacement be more acceptable?
+
+If not, I'll just swap around the priority, not a problem.
+
+Cheers,
+
+Tom
