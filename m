@@ -1,152 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761686Ab3IDBvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:51:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31877 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761538Ab3IDBvy (ORCPT
+	id S934241Ab3IDByk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:54:40 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:50076 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761693Ab3IDByi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:51:54 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6vL9NhcTi7YA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Lu4-lkDicUYA:10 a=VnNF1IyMAAAA:8 a=-ErlrlILWjhT9ab7BowA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 3 Sep 2013 21:51:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	Tue, 3 Sep 2013 21:54:38 -0400
+Message-ID: <52269297.5090208@gmail.com>
+Date: Wed, 04 Sep 2013 09:53:27 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, netdev@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
- functions
-Message-ID: <20130903215152.1e91922b@gandalf.local.home>
-In-Reply-To: <20130904012404.GI3871@linux.vnet.ibm.com>
-References: <20130831051117.884125230@goodmis.org>
-	<20130831051700.601365837@goodmis.org>
-	<20130903171516.16290c47@gandalf.local.home>
-	<20130903221808.GH3871@linux.vnet.ibm.com>
-	<20130903195705.3ba3442f@gandalf.local.home>
-	<20130904012404.GI3871@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 0/8] Drop support for Renesas H8/300 architecture
+References: <1377906694-9578-1-git-send-email-linux@roeck-us.net> <52254F11.8070601@gmail.com> <522556D8.803@roeck-us.net> <52255CF1.6020700@gmail.com> <20130903193938.GB13318@ZenIV.linux.org.uk> <20130903205922.GA3372@roeck-us.net>
+In-Reply-To: <20130903205922.GA3372@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Sep 2013 18:24:04 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-> On Tue, Sep 03, 2013 at 07:57:05PM -0400, Steven Rostedt wrote:
+Thank you for your valuable information: it will let kernel waste mails
+less, and also can save my time resources.
 
-> > Paul, can I still keep all your acks and reviewed-bys on this?
+
+On 09/04/2013 04:59 AM, Guenter Roeck wrote:
+> On Tue, Sep 03, 2013 at 08:39:38PM +0100, Al Viro wrote:
+>> On Tue, Sep 03, 2013 at 11:52:17AM +0800, Chen Gang F T wrote:
+>>
+>>>   extreme sample: let 'kernel code style' and 'gcc code style' in one file, that will make the code very ugly.
+>>
+>> gcc style will make any code very ugly, no matter what (if anything) else is
+>> in the same file...
+>>
+
+Hmm... for me, I don't check/judge the 'coding style' of different
+products, what I focus on is to follow the original product 'coding
+style'.
+
+  e.g. Windows, gcc, Linux kernel, their 'coding styles' are quite different with each other.
+
+      Originally I worked under Windows, I followed Windows coding style.
+      Now I worked under Linux kernel, I follow Linux kernel coding style.
+      I plan to make patch for gcc, I will follow gcc coding style.
+        (hope this month I can, but I am not sure, I have no experience for gcc development).
+
+And excuse me, I will be silent during 2013-09-05 - 2013-09-20 (but can
+response mail). During these days, I will focus on gcc issues (wish can
+fix one), and also do some company's internal things.
+
+Thanks.
+
+>> [digs out the ports history table]
+>> x86:		0.01			[alive]
+>> 	i386:		0.01..2.6.24-rc1 [folded into x86]
+>> 	x86_64:		2.5.5-pre1..2.6.24-rc1 [folded into x86]
+>> 	x86:		2.6.24-rc1		[alive]
+>> alpha:		1.1.67			[alive]
+>> sparc:		1.1.77			[alive]
+>> 	sparc64:	2.1.19..2.6.28 [folded into sparc]
+>> mips:		1.1.82			[alive]
+>> 	mips64:		2.3.48-pre2..2.6.0-test2 [folded into mips]
+>> powerpc:	1.3.45			[alive]
+>> 	ppc:    	1.3.45..2.6.26 [folded into powerpc]
+>> 	ppc64:		2.5.5..2.6.15-rc1 [folded into powerpc]
+>> 	powerpc:	2.6.15-rc1		[alive]
+>> m68k:		1.3.94			[alive]
+>> 	m68knommu:	2.5.46..2.6.38 [folded into m68k]
+>> arm:		2.1.80			[alive]
+>> 	arm26:		2.5.71..2.6.23-rc2 [gone]
+>> 	arm64:		3.7-rc1			[alive][might eventually fold]
+>> sh:		2.3.16			[alive]
+>> 	sh64:		2.6.8-rc1..2.6.24 [folded into sh, nearly dead there]
+>> ia64:		2.3.43-pre1		[alive]
+>> s390:		2.3.99pre8		[alive]
+>> 	s390x:		2.5.0..2.5.67 [folded into s390]
+>> parisc:		2.4.0-test12		[alive]
+>> cris:		2.5.0			[alive]
+>> um:		2.5.35			[alive]
+>> v850:		2.5.46..2.6.26 [gone]
+>> h8300:		2.5.68			[moderately responsive]
+>> m32r:		2.6.9-rc3		[alive]
+>> frv:		2.6.11-rc1		[alive]
+>> xtensa:		2.6.13-rc1		[alive]
+>> avr32:		2.6.19-rc1		[alive]
+>> blackfin:	2.6.22-rc1		[alive]
+>> mn10300:	2.6.25-rc1		[alive]
+>> microblaze:	2.6.30-rc2		[alive]
+>> score:		2.6.32-rc1		[abandoned][cloned off mips]
+>> tile:		2.6.36-rc1		[alive]
+>> unicore32:	2.6.39-rc1		[alive][cloned off arm]
+>> openrisc:	3.1-rc1			[alive]
+>> hexagon:	3.2-rc1			[alive]
+>> c6x:		3.3-rc1			[alive]
+>> arc:		3.9-rc1			[alive]
+>> metag:		3.9-rc1			[alive]
+>>
+>> Frankly, I would've expected score and lefotvers of sh64 (aka sh5) to be
+>> the first against the wall - h8300 was a bit surprising...
+>>
 > 
-> Yep, but some questions below.
+> Great summary.
 > 
-> 							Thanx, Paul
+> There seemed to be a consensus to remove h8300, at least so far and sufficiently
+> enough for me to ask Stephen to add the removal branch to linux-next.
+> We'll see if that triggers any further responses.
 > 
-> > -- Steve
-> > 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > index 310b727..899c8c1 100644
-> > --- a/kernel/trace/ftrace.c
-> > +++ b/kernel/trace/ftrace.c
-> > @@ -1373,7 +1373,7 @@ ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
-> > 
-> >  static int ftrace_convert_size_to_bits(int size)
-> >  {
-> > -	int bits;
-> > +	int bits = 0;
-> > 
-> >  	/*
-> >  	 * Make the hash size about 1/2 the # found
-> > diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-> > index f5a9031..0883069 100644
-> > --- a/kernel/trace/trace_functions.c
-> > +++ b/kernel/trace/trace_functions.c
-> > @@ -561,16 +561,21 @@ static inline int init_func_cmd_traceon(void)
-> > 
-> >  #ifdef CONFIG_FTRACE_UNSAFE_RCU_CHECKER
-> > 
-> > +static DEFINE_PER_CPU(int, ftrace_rcu_running);
-> >  static atomic_t ftrace_unsafe_rcu_disabled;
-> > 
-> >  void ftrace_unsafe_rcu_checker_disable(void)
-> >  {
-> >  	atomic_inc(&ftrace_unsafe_rcu_disabled);
-> > +	/* Make sure the update is seen immediately */
-> > +	smp_wmb();
+> With score, I am not entirely sure. I got one Ack for the removal, but
+> on the other side the score maintainers came back and claimed they would
+> still support it. We'll see if anything changes in practice. I am still
+> not sure if I should ask for the removal branch to be added to linux-next.
+> Frankly I thought I might jump the gun here more than with h8300.
 > 
-> 	smp_mb__after_atomic_inc()?
-
-Yep.
-
+> Either case, what to ultimately do with those two architectures will be
+> up to the community to decide.
 > 
-> >  }
-> > 
-> >  void ftrace_unsafe_rcu_checker_enable(void)
-> >  {
-> >  	atomic_dec(&ftrace_unsafe_rcu_disabled);
-> > +	/* Make sure the update is seen immediately */
-> > +	smp_wmb();
+> Guenter
 > 
-> 	smp_mb__after_atomic_dec()?
 
-Yep.
+Thanks again.
 
-> 
-> >  }
-> > 
-> >  static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
-> > @@ -588,15 +593,14 @@ static void
-> >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
-> >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
-> >  {
-> > -	int bit;
-> > -
-> > +	/* Make sure we see disabled or not first */
-> > +	smp_rmb();
-> 
-> 	smp_mb__before_atomic_inc()?
-
-Yep.
-
-I'll update it and restart my tests.
-
-Thanks!
-
--- Steve
-
-> 
-> >  	if (atomic_read(&ftrace_unsafe_rcu_disabled))
-> >  		return;
-> > 
-> >  	preempt_disable_notrace();
-> > 
-> > -	bit = trace_test_and_set_recursion(TRACE_FTRACE_START, TRACE_FTRACE_MAX);
-> > -	if (bit < 0)
-> > +	if (this_cpu_read(ftrace_rcu_running))
-> >  		goto out;
-> > 
-> >  	if (WARN_ONCE(ftrace_rcu_unsafe(ip),
-> > @@ -604,13 +608,15 @@ ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
-> >  		      (void *)ip))
-> >  		goto out;
-> > 
-> > +	this_cpu_write(ftrace_rcu_running, 1);
-> >  	this_cpu_write(ftrace_rcu_func, ip);
-> > +
-> >  	/* Should trigger a RCU splat if called from unsafe RCU function */
-> >  	rcu_read_lock();
-> >  	rcu_read_unlock();
-> >  	this_cpu_write(ftrace_rcu_func, 0);
-> > 
-> > -	trace_clear_recursion(bit);
-> > +	this_cpu_write(ftrace_rcu_running, 0);
-> >   out:
-> >  	preempt_enable_notrace();
-> >  }
-> > 
-
+-- 
+Chen Gang
