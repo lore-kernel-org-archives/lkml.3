@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934957Ab3IDO4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:56:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17769 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762830Ab3IDO4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:56:45 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=TKhX5mLeURAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ftMOpXKlpS4A:10 a=VnNF1IyMAAAA:8 a=sQNCpU6w5R_T-ydTkxoA:9 a=jeBq3FmKZ4MA:10 a=XRkXRusqWGjDEmJ2:21 a=AkA9etonYUd58gPi:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130904143703.256708017@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 04 Sep 2013 10:36:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [for-next][PATCH 18/18] ftrace: Print a message when the rcu checker is disabled
-References: <20130904143552.456506259@goodmis.org>
-Content-Disposition: inline; filename=0017-ftrace-Print-a-message-when-the-rcu-checker-is-disab.patch
+	id S934989Ab3IDO5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:57:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60339 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934731Ab3IDO5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:57:44 -0400
+Date: Wed, 4 Sep 2013 16:57:40 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v4 3/7] mm: Allow filesystems to defer cmtime updates
+Message-ID: <20130904145740.GE3996@quack.suse.cz>
+References: <cover.1377193658.git.luto@amacapital.net>
+ <e1620c8e4909a65e270c8e9590e307c22fd96a44.1377193658.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e1620c8e4909a65e270c8e9590e307c22fd96a44.1377193658.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu 22-08-13 17:03:19, Andy Lutomirski wrote:
+> Filesystems that defer cmtime updates should update cmtime when any
+> of these events happen after a write via a mapping:
+> 
+>  - The mapping is written back to disk.  This happens from all kinds
+>    of places, most of which eventually call ->writepages.  (The
+>    exceptions are vmscan and migration.)
+> 
+>  - munmap is called or the mapping is removed when the process exits
+> 
+>  - msync(MS_ASYNC) is called.  Linux currently does nothing for
+>    msync(MS_ASYNC), but POSIX says that cmtime should be updated some
+>    time between an mmaped write and the subsequent msync call.
+>    MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
+> 
+> Filesystems are responsible for checking for pending deferred cmtime
+> updates in .writepages (a helper is provided for this purpose) and
+> for doing the actual update in .update_cmtime_deferred.
+> 
+> These changes have no effect by themselves; filesystems must opt in
+> by implementing .update_cmtime_deferred and removing any
+> file_update_time call in .page_mkwrite.
+> 
+> This patch does not implement the MS_ASYNC case; that's in the next
+> patch.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+...
+> +/**
+> + * generic_update_cmtime_deferred - update cmtime after an mmapped write
+> + * @mapping: The mapping
+> + *
+> + * This library function implements .update_cmtime_deferred.  It is unlikely
+> + * that any filesystem will want to do anything here except update the time
+> + * (using this helper) or nothing at all (by leaving .update_cmtime_deferred
+> + * NULL).
+> + */
+> +void generic_update_cmtime_deferred(struct address_space *mapping)
+> +{
+> +	struct blk_plug plug;
+> +	blk_start_plug(&plug);
+> +	inode_update_time_writable(mapping->host);
+> +	blk_finish_plug(&plug);
+> +}
+> +EXPORT_SYMBOL(generic_update_cmtime_deferred);
+> +
+  You can remove the pluggin here. Inode update will likely result in a
+single write so there's no point.
 
-Let the user know that the RCU safety checker for function tracing
-has been disabled. The checker only runs when the user specifically
-configures it in the kernel, and this is done to search for locations
-in the kernel that may be unsafe for a function trace callback to
-use rcu_read_lock()s. But if things like function graph tracing is
-started, which can live lock the machine when the checker is running,
-it is disabled. It would be nice if the kernel let the user know that
-the checker is disabled, and when it is re-enabled again.
+> @@ -1970,6 +1988,39 @@ int write_one_page(struct page *page, int wait)
+>  }
+>  EXPORT_SYMBOL(write_one_page);
+>  
+> +void mapping_flush_cmtime(struct address_space *mapping)
+> +{
+> +	if (mapping_test_clear_cmtime(mapping) &&
+> +	    mapping->a_ops->update_cmtime_deferred)
+> +		mapping->a_ops->update_cmtime_deferred(mapping);
+> +}
+> +EXPORT_SYMBOL(mapping_flush_cmtime);
+  Hum, is there a reason for update_cmtime_deferred() operation? I can
+hardly imagine anyone will want to do anything else than what
+inode_update_time_writable() does so why bother? You mention tmpfs & co.
+don't fit into your scheme well with which I agree so let's just keep
+file_update_time() in their page_mkwrite() operation. But I don't see a
+real need for avoiding the deferred cmtime logic...
 
-As the checker only gets disabled and re-enabled by user actions
-(starting and stoping the function graph tracer or the irqsoff tracer)
-it is fine to have a printk display that it is disabled or not.
+> +
+> +void mapping_flush_cmtime_nowb(struct address_space *mapping)
+> +{
+> +	/*
+> +	 * We get called from munmap and msync.  Both calls can race
+> +	 * with fs freezing.  If the fs is frozen after
+> +	 * mapping_test_clear_cmtime but before the time update, then
+> +	 * sync_filesystem will miss the cmtime update (because we
+> +	 * just cleared it) and we don't be able to write (because the
+> +	 * fs is frozen).  On the other hand, we can't just return if
+> +	 * we're in the SB_FREEZE_PAGEFAULT state because our caller
+> +	 * expects the timestamp to be synchronously updated.  So we
+> +	 * get write access without blocking, at the SB_FREEZE_FS
+> +	 * level.  If the fs is already fully frozen, then we already
+> +	 * know we have nothing to do.
+> +	 */
+> +
+> +	if (!mapping_test_cmtime(mapping))
+> +		return;  /* Optimization: nothing to do. */
+> +
+> +	if (__sb_start_write(mapping->host->i_sb, SB_FREEZE_FS, false)) {
+> +		mapping_flush_cmtime(mapping);
+> +		__sb_end_write(mapping->host->i_sb, SB_FREEZE_FS);
+> +	}
+> +}
+  This is wrong because SB_FREEZE_FS level is targetted for filesystem
+internal use. Also it is racy. mapping_flush_cmtime() ends up calling
+mark_inode_dirty() and filesystems such as ext4 or xfs will start a
+transaction to store inode in the journal. This gets freeze protection at
+SB_FREEZE_FS level again. If freeze_super() sets s_writers.frozen to
+SB_FREEZE_FS before this second protection, things will deadlock.
 
-Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_functions.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Since the callers of this function hold mmap_sem, using SB_FREEZE_PAGEFAULT
+protection would be appropriate. Also since there are just two places that
+need the freeze protection I'd be inclined to open code the protection in
+the two places rather than hiding it in a special function.
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 1dec979..57e32e6 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -569,6 +569,8 @@ void ftrace_unsafe_rcu_checker_disable(void)
- 	atomic_inc(&ftrace_unsafe_rcu_disabled);
- 	/* Make sure the update is seen immediately */
- 	smp_mb__after_atomic_inc();
-+	pr_info("Disabled FTRACE RCU checker (%pS)\n",
-+		__builtin_return_address(0));
- }
- 
- void ftrace_unsafe_rcu_checker_enable(void)
-@@ -576,6 +578,8 @@ void ftrace_unsafe_rcu_checker_enable(void)
- 	atomic_dec(&ftrace_unsafe_rcu_disabled);
- 	/* Make sure the update is seen immediately */
- 	smp_mb__after_atomic_dec();
-+	pr_info("Enabled FTRACE RCU checker (%pS)\n",
-+		__builtin_return_address(0));
- }
- 
- static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
+								Honza
+
 -- 
-1.7.10.4
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
