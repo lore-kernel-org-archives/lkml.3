@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab3IDEbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 00:31:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50454 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753639Ab3IDEbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 00:31:31 -0400
-Message-ID: <1378269089.7347.59.camel@joe-AO722>
-Subject: Re: [E1000-devel] [PATCH 0/4] i40e: Neatening and object size
- reductions
-From: Joe Perches <joe@perches.com>
-To: "Nelson, Shannon" <shannon.nelson@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 03 Sep 2013 21:31:29 -0700
-In-Reply-To: <FC41C24E35F18A40888AACA1A36F3E416C61C0E5@FMSMSX102.amr.corp.intel.com>
-References: <cover.1377903831.git.joe@perches.com>
-	 <FC41C24E35F18A40888AACA1A36F3E416C61C0E5@FMSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1761228Ab3IDEe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 00:34:56 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39439 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019Ab3IDEez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 00:34:55 -0400
+Message-ID: <1378269728.32763.438.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v5 1/6] idr: Percpu ida
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@gentwo.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Date: Tue, 03 Sep 2013 21:42:08 -0700
+In-Reply-To: <20130903182749.21052ab6.akpm@linux-foundation.org>
+References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
+	 <1377917556-11955-2-git-send-email-nab@linux-iscsi.org>
+	 <1378224418.32763.409.camel@haakon3.risingtidesystems.com>
+	 <20130903182749.21052ab6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 01:00 +000, Nelson, Shannon wrote:
-> we hadn't noticed the new experimental "--fix" option before.  There
-> are a lot of good suggestions there, but obviously it needs a lot of
-> reading and tweaking before it can be used.
+On Tue, 2013-09-03 at 18:27 -0700, Andrew Morton wrote:
+> On Tue, 03 Sep 2013 09:06:58 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > Are there any other review comments to be addressed for this patch..?
+> > 
+> > If not, please kindly give your Reviewed-by if your OK for an initial
+> > standalone merge.
+> 
+> Sorry, I'm largely offline for the next week...
+> 
+> It looks OK to me (that's as close as I get to an ack :))
+> 
 
-Yes, I think --fix works best on patches.
+Thanks.  That quote is going in the commit log btw.  ;)
 
-When you use -f and --fix together, it can do inappropriate things.
+> Nit:
+> 
+> > +		if (cpu >= nr_cpu_ids)
+> > +			cpu = cpumask_first(&pool->cpus_have_tags);
+> > +
+> > +		if (cpu >= nr_cpu_ids)
+> > +			BUG();
+> 
+> The second `if' can be moved inside the first, but hopefully the
+> compiler already did that.
 
-Using multiple passes of -f --fix --types=<ONE_SPECIFIC_TYPE> and
-changing the "ONE_SPECIFIC_TYPE" can produce more reasonable patch
-sequences.
+Fixed.
 
-If you do try it, and please remember it is experimental, do let me
-know how well it works or doesn't work for you all.
+> 
+> I have dim memories that doing
+> 
+> 	local_irq_save()
+> 	spin_lock()
+> 
+> is not equivalent to
+> 
+> 	spin_lock_irqsave()
+> 
+> in some circumstances.  Perhaps a lockdep thing.  Or perhaps this was fixed in
+> the intervening years and this is no longer the case.
 
-Bug reports (and patches) welcome.
+Mmmm, I had wondered the same thing on the release side with
+kref_put_spinlock_irqsave() here before:
 
-cheers, Joe
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/include/linux/kref.h?id=ccf5ae83a6cf3d9cfe9a7038bfe7cd38ab03d5e1
+
+but at some point was convinced it was not a issue anymore..
+ 
+> 
+> Such things probably won't be detected during 3.12-rcX because few
+> people will test iscsi, I expect.  So please be sure that you've
+> runtime tested it with all the lockdeppy things enabled. 
+> Documentation/SubmitChecklist section 12 has a list, but it might be
+> dated.
+
+<nod>
+
+FYI, my v3.11-rc5 kernel has been running with CONFIG_LOCKDEP_SUPPORT=y
+using vhost/iscsi/iser fabrics on the -v5 patch, and not generated any
+warnings (yet).
+
+I'll double check against the other debug options in Section 12.
+
+Thank you,
+
+--nab
 
