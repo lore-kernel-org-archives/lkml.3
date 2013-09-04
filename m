@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab3IDWDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:03:03 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49961 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab3IDWC7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:02:59 -0400
+	id S1761456Ab3IDWEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:04:13 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:42221 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757147Ab3IDWEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:04:11 -0400
+Message-ID: <5227AE4F.8050603@kapsi.fi>
+Date: Thu, 05 Sep 2013 01:03:59 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CANP1eJFmMNEr9orps6Dd983sp6QmMfBsMT+dY1CvZ+u0nXKf4w@mail.gmail.com>
-References: <cover.1375999914.git.milosz@adfin.com>
-	<306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com>
-	<18832.1378311843@warthog.procyon.org.uk>
-	<CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com>
-	<18284.1378315570@warthog.procyon.org.uk>
-	<CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com>
-	<16226.1378318400@warthog.procyon.org.uk>
-	<CANP1eJFmMNEr9orps6Dd983sp6QmMfBsMT+dY1CvZ+u0nXKf4w@mail.gmail.com>
-Date: Wed, 4 Sep 2013 18:02:57 -0400
-Message-ID: <CANP1eJEK-_C9XhrzXByQtUTGzq3qikNjT7feCispajSGw8zNJQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
-From: Milosz Tanski <milosz@adfin.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Hongyi Jia <jiayisuse@gmail.com>, ceph-devel <ceph-devel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mikko Perttunen <mperttunen@nvidia.com>, thierry.reding@gmail.com,
+        tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] host1x: hdmi: Enable Vdd earlier for hotplug/DDC
+References: <1377704922-2824-1-git-send-email-mperttunen@nvidia.com> <1377704922-2824-4-git-send-email-mperttunen@nvidia.com> <52277F90.40109@wwwdotorg.org>
+In-Reply-To: <52277F90.40109@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.130.34.11
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-
-Is there anyway I can call you at (at your desk) during EST hours. I'd
-like to talk this part through since I think we're going a bit in
-circles. I'd like to get this fixed so we can submit the fscache for
-Ceph code for the upstream kernel in the merge window.
-
-Best,
--- Milosz
-
-On Wed, Sep 4, 2013 at 3:41 PM, Milosz Tanski <milosz@adfin.com> wrote:
-> On Wed, Sep 4, 2013 at 2:13 PM, David Howells <dhowells@redhat.com> wrote:
->> Milosz Tanski <milosz@adfin.com> wrote:
+On 09/04/2013 09:44 PM, Stephen Warren wrote:
+> On 08/28/2013 09:48 AM, Mikko Perttunen wrote:
+>> The Vdd regulator used to be enabled only at tegra_output_hdmi_enable,
+>> which is called after a sink is detected. However, the HDMI hotplug pin
+>> works by returning the voltage supplied by the Vdd pin, so this meant
+>> that the hotplug pin was never asserted and the sink was not detected
+>> unless the Vdd regulator was set to be always on.
 >>
->>> Is it as simple as stick a mutex at the top of the
->>> __fscache_check_consistency function before we try to find the object?
->>
->> You can lock a mutex in a function, but where are you actually going to place
->> the mutex struct?  And what other code is going to take it?  To do this, you'd
->> have to place the mutex struct in fscache_cookie.  The problem is that you
->> have to protect the pointer from fscache_cookie to fscache_object - so placing
->> the mutex in fscache_object doesn't help.
+>> This patch moves the enable to the tegra_hdmi_drm_init function to make
+>> sure the regulator will get enabled.
 >
-> David,
+> The DT binding document isn't very clear on this topic (and should be
+> fixed): What is this regulator intended to control? If this regulator
+> solely controls the supply to the hotplug detection circuit, this change
+> makes sense. If the regulator mainly supplies something else (e.g. part
+> of the HDMI core on the Tegra chip), then perhaps this change isn't
+> correct. The correct approach might be to introduce another (optional)
+> regulator specifically for the hotplug circuit. Presumably both DT
+> properties vdd-supply and hotplug-supply could point at the same
+> regulator if that's the way the HW was wired up.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> I meant lock cookie->lock inside of __fscache_check_consistency in the
-> beginning of the function. I don't see the need to push this into the
-> netfs code.
->
-> - Milosz
+
+AFAICT, it controls the Vdd pin on the HDMI port, so it just affects the 
+hotplug pin and the DDC I2C bus power.
