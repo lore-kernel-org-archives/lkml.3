@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934685Ab3IDMhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:37:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8788 "EHLO mx1.redhat.com"
+	id S934785Ab3IDMja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:39:30 -0400
+Received: from gmmr5.centrum.cz ([46.255.225.250]:49421 "EHLO gmmr5.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932217Ab3IDMhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:37:37 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next v2 2/2] net: migrate direct users to prandom_u32_max
-Date: Wed,  4 Sep 2013 14:37:27 +0200
-Message-Id: <1378298247-29364-3-git-send-email-dborkman@redhat.com>
-In-Reply-To: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
-References: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
+	id S934599Ab3IDMj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:39:27 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Wed, 04 Sep 2013 14:39:25 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904114523.A9F0173C@pobox.sk>, <20130904115741.GA28285@dhcp22.suse.cz>, <20130904141000.0F910EFA@pobox.sk> <20130904122632.GB28285@dhcp22.suse.cz>
+In-Reply-To: <20130904122632.GB28285@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130904143925.6672E0C4@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users that directly use or reimplement what we have in prandom_u32_max()
-can be migrated for now to use it directly, so that we can reduce code size
-and avoid reimplementations. That's obvious, follow-up patches could inspect
-modulo use cases for possible migration as well.
+>> >[...]
+>> >> My script has just detected (and killed) another freezed cgroup. I
+>> >> must say that i'm not 100% sure that cgroup was really freezed but it
+>> >> has 99% or more memory usage for at least 30 seconds (well, or it has
+>> >> 99% memory usage in both two cases the script was checking it). Here
+>> >> are stacks of processes inside it before they were killed:
+>> >[...]
+>> >> pid: 26536
+>> >> stack:
+>> >> [<ffffffff81080a45>] refrigerator+0x95/0x160
+>> >> [<ffffffff8106ac2b>] get_signal_to_deliver+0x1cb/0x540
+>> >> [<ffffffff8100188b>] do_signal+0x6b/0x750
+>> >> [<ffffffff81001fc5>] do_notify_resume+0x55/0x80
+>> >> [<ffffffff815cb662>] retint_signal+0x3d/0x7b
+>> >> [<ffffffffffffffff>] 0xffffffffffffffff
+>> >
+>> >[...]
+>> >
+>> >This task is sitting in the refigerator which means it has been frozen
+>> >by the freezer cgroup most probably. I am not familiar with the
+>> >implementation but my recollection is that you have to thaw that group
+>> >in order the killed process can pass away.
+>> 
+>> Yes, my script is freezing the cgroup before killing processes inside
+>> it. Stacks are taken after the freeze, it that problem?
+>
+>I thought you had a problem to remove this particular group...
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
----
- drivers/net/team/team_mode_random.c | 8 +-------
- include/net/red.h                   | 2 +-
- net/802/garp.c                      | 3 ++-
- net/802/mrp.c                       | 3 ++-
- net/packet/af_packet.c              | 2 +-
- net/sched/sch_choke.c               | 8 +-------
- 6 files changed, 8 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/net/team/team_mode_random.c b/drivers/net/team/team_mode_random.c
-index 7f032e2..0dbd1eb 100644
---- a/drivers/net/team/team_mode_random.c
-+++ b/drivers/net/team/team_mode_random.c
-@@ -13,20 +13,14 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/skbuff.h>
--#include <linux/reciprocal_div.h>
- #include <linux/if_team.h>
- 
--static u32 random_N(unsigned int N)
--{
--	return reciprocal_divide(prandom_u32(), N);
--}
--
- static bool rnd_transmit(struct team *team, struct sk_buff *skb)
- {
- 	struct team_port *port;
- 	int port_index;
- 
--	port_index = random_N(team->en_port_count);
-+	port_index = prandom_u32_max(team->en_port_count - 1);
- 	port = team_get_port_by_index_rcu(team, port_index);
- 	if (unlikely(!port))
- 		goto drop;
-diff --git a/include/net/red.h b/include/net/red.h
-index ef46058..56f3c0c 100644
---- a/include/net/red.h
-+++ b/include/net/red.h
-@@ -303,7 +303,7 @@ static inline unsigned long red_calc_qavg(const struct red_parms *p,
- 
- static inline u32 red_random(const struct red_parms *p)
- {
--	return reciprocal_divide(net_random(), p->max_P_reciprocal);
-+	return prandom_u32_max(p->max_P_reciprocal - 1);
- }
- 
- static inline int red_mark_probability(const struct red_parms *p,
-diff --git a/net/802/garp.c b/net/802/garp.c
-index 5d9630a..b4be421 100644
---- a/net/802/garp.c
-+++ b/net/802/garp.c
-@@ -397,7 +397,8 @@ static void garp_join_timer_arm(struct garp_applicant *app)
- {
- 	unsigned long delay;
- 
--	delay = (u64)msecs_to_jiffies(garp_join_time) * net_random() >> 32;
-+	delay = prandom_u32_max(msecs_to_jiffies(garp_join_time) - 1);
-+
- 	mod_timer(&app->join_timer, jiffies + delay);
- }
- 
-diff --git a/net/802/mrp.c b/net/802/mrp.c
-index 1eb05d8..1a08ae7 100644
---- a/net/802/mrp.c
-+++ b/net/802/mrp.c
-@@ -578,7 +578,8 @@ static void mrp_join_timer_arm(struct mrp_applicant *app)
- {
- 	unsigned long delay;
- 
--	delay = (u64)msecs_to_jiffies(mrp_join_time) * net_random() >> 32;
-+	delay = prandom_u32_max(msecs_to_jiffies(mrp_join_time) - 1);
-+
- 	mod_timer(&app->join_timer, jiffies + delay);
- }
- 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 2e8286b..1c1ccf9 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1162,7 +1162,7 @@ static unsigned int fanout_demux_rnd(struct packet_fanout *f,
- 				     struct sk_buff *skb,
- 				     unsigned int num)
- {
--	return reciprocal_divide(prandom_u32(), num);
-+	return prandom_u32_max(num - 1);
- }
- 
- static unsigned int fanout_demux_rollover(struct packet_fanout *f,
-diff --git a/net/sched/sch_choke.c b/net/sched/sch_choke.c
-index ef53ab8..7a73fbf 100644
---- a/net/sched/sch_choke.c
-+++ b/net/sched/sch_choke.c
-@@ -77,12 +77,6 @@ struct choke_sched_data {
- 	struct sk_buff **tab;
- };
- 
--/* deliver a random number between 0 and N - 1 */
--static u32 random_N(unsigned int N)
--{
--	return reciprocal_divide(prandom_u32(), N);
--}
--
- /* number of elements in queue including holes */
- static unsigned int choke_len(const struct choke_sched_data *q)
- {
-@@ -233,7 +227,7 @@ static struct sk_buff *choke_peek_random(const struct choke_sched_data *q,
- 	int retrys = 3;
- 
- 	do {
--		*pidx = (q->head + random_N(choke_len(q))) & q->tab_mask;
-+		*pidx = (q->head + prandom_u32_max(choke_len(q) - 1)) & q->tab_mask;
- 		skb = q->tab[*pidx];
- 		if (skb)
- 			return skb;
--- 
-1.7.11.7
 
+No, this one is different from the unremovable one. This was, probably, hanged just like when i was originaly reporting this problem (but, as i said, i'm not 100% sure because of reasons i described). Sorry for confusion.
+
+azur
