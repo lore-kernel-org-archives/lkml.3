@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934548Ab3IDJbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:31:31 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9899 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934205Ab3IDJba (ORCPT
+	id S934601Ab3IDJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:31:56 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:59519 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934476Ab3IDJby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:31:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 02:31:29 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <axel.lin@ingics.com>, <kishon@ti.com>,
-        <gg@slimlogic.co.uk>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regulator: palmas: fix the n_voltages for smps to 122
-Date: Wed, 4 Sep 2013 15:20:06 +0530
-Message-ID: <1378288206-20741-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 4 Sep 2013 05:31:54 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jic23@cam.ac.uk
+Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Subject: [PATCH 00/11] iio: ST clean-ups and new pressure sensor device
+Date: Wed,  4 Sep 2013 10:31:32 +0100
+Message-Id: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the following change
----------
-commit ad02e846878ca35e9d3fa584be8ee770e9e14fce
-Author: Axel Lin <axel.lin@ingics.com>
+This patch-set includes a few clean-ups surrounding error handling and
+non-mandatory functionality along with regulator support and the addition
+of a new pressure/temperature sensor (LPS001WP). Everything has been
+tested with Device Tree.
 
-    regulator: palmas: Return raw register values as the selectors in [get|set]_voltage_sel
+ arch/arm/boot/dts/ste-dbx5x0.dtsi               |   5 --
+ arch/arm/boot/dts/ste-snowball.dts              |  10 ++++
+ arch/arm/configs/u8500_defconfig                |   4 ++
+ drivers/iio/common/st_sensors/st_sensors_core.c |  11 ++--
+ drivers/iio/pressure/st_pressure.h              |   1 +
+ drivers/iio/pressure/st_pressure_core.c         | 276 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------
+ drivers/iio/pressure/st_pressure_i2c.c          |  18 +++----
+ include/linux/iio/common/st_sensors.h           |   4 ++
+ 8 files changed, 230 insertions(+), 99 deletions(-)
 
-    Don't adjust the selector in [get|set]_voltage_sel, fix it in list_voltage() instead.
-
-    For smps*(except smps10), the vsel reg-value and voltage mapping as below:
-----------
-The list_voltage() takes the true value of selector which is
-programmed in the register.  As per smsp voltage table
-    reg-value       volt (uV) ( Assume RANGE is x1 )
-    0               0
-    1               500000
-    2               500000
-    3               500000
-    4               500000
-    5               500000
-    6               500000 (0.49V + 1 * 0.01V) * RANGE
-    7               510000 (0.49V + 2 * 0.01V) * RANGE
-    8               520000 (0.49V + 3 * 0.01V) * RANGE
-    9               530000 (0.49V + 4 * 0.01V) * RANGE
-    ....
-    121            1650000 (0.49V + 116 * 0.1) * RANGE
-
-Hence making n_voltages for smps to 122.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/regulator/palmas-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 488dfe7..cb65c6f 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -207,7 +207,7 @@ static unsigned int palmas_smps_ramp_delay[4] = {0, 10000, 5000, 2500};
-  *
-  * So they are basically (maxV-minV)/stepV
-  */
--#define PALMAS_SMPS_NUM_VOLTAGES	117
-+#define PALMAS_SMPS_NUM_VOLTAGES	122
- #define PALMAS_SMPS10_NUM_VOLTAGES	2
- #define PALMAS_LDO_NUM_VOLTAGES		50
- 
--- 
-1.7.1.1
 
