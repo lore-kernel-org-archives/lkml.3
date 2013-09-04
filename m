@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934562Ab3IDJ0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:26:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46281 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934527Ab3IDJ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:26:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1020,1367996400"; 
-   d="asc'?scan'208";a="355717211"
-Message-ID: <1378286800.2048.1.camel@jtkirshe-mobl>
-Subject: Re: [E1000-devel] [PATCH 5/7] ixgbe: use
- pcie_capability_read_word() to simplify code
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Wed, 04 Sep 2013 02:26:40 -0700
-In-Reply-To: <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
-References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
-	 <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FzsLmdWGu8vfr7ZgN+tn"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S934589Ab3IDJ1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:27:45 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44363 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934484Ab3IDJ1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:27:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <5226F9BF.8040304@asianux.com>
+References: <52005571.4080704@asianux.com>
+	<CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
+	<52268800.2010200@asianux.com>
+	<CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com>
+	<5226EAAE.6090500@asianux.com>
+	<CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
+	<5226F9BF.8040304@asianux.com>
+Date: Wed, 4 Sep 2013 11:27:43 +0200
+X-Google-Sender-Auth: IPLRMx6VO5mt2KNq_ECzY0t4FrA
+Message-ID: <CAMuHMdWc3mtva92qDy4j6iUhQc5grHA1-5=vC4iXZoSyFxB4cw@mail.gmail.com>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for
+ "uapi/Kbuild" and "uapi/linux/Kbuild"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 4, 2013 at 11:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> Hmm... why we need "uapi/linux/" ?  (I can not find some related
+>>> documents, so I have to 'guess').
+>>
+>> The "uapi" subdirectories are there to distinguish userspace headers from
+>> kernelspace headers, and allow both to live in the kernel source tree.
+>>
+>> When running "make headers_install", the (processed) headers in the
+>> various "uapi" subdirectories are copied to /usr/include.
+>> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
+>> In userspace there are no "uapi" subdirectories anymore.
+>>
+>
+> Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
+>
+> Are they also truly still "Userspace API" but which need not distinguish
+> ? (at least, it seems that idea is not quite good).
+>
+> Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
+> for compatible (originally they are here, and now we have to follow, it
+> is no reason to change if not find related critical issues)?
 
---=-FzsLmdWGu8vfr7ZgN+tn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+All uapi files are installed, a.o. /usr/include/scsi/, /usr/include/video/, ...
 
-On Tue, 2013-09-03 at 15:35 +0800, Yijing Wang wrote:
-> use pcie_capability_read_word() to simplify code.
->=20
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: e1000-devel@lists.sourceforge.net
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+Historically, everything under "include" in the kernel source tree was
+installed in /usr/include/, after (semi)manual cleanup.
+Since the uapi split, everything is handled automatically.
+Because of compatibility reasons (do not break userspace), paths had to
+stay the same.
 
-Thanks Yijing, I will add it to my queue.
+Gr{oetje,eeting}s,
 
---=-FzsLmdWGu8vfr7ZgN+tn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+                        Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-iQIcBAABCgAGBQJSJvzQAAoJEOVv75VaS+3OG8IP/iHrGRDmPGoofrbCkgAIj+uL
-eCCvun9ymY0BSfGB9Uu9VNB+ryJAIk2H5apldYWeURyoVQxdJVlBJnPTqI3jN1Kw
-/DzP+FRUyiRVD9NCW2cRB9ZVzKSlkqOZ/UKtpOwbAh0+rWT/k8T/cvfK1/EMibyh
-71w05n1IlXJoDZqKi01M+w3JQJhK3yLwq/pcW4npwxXI864Mg21ExjQqxgd0ABVl
-2UJ3LNQ297vfTco4bOXXLtS6Wdtl316iYFG3Ix3YdBK+q5ly4qtHX6UEp1YtaZlv
-UMtlEIZu0TDiDzO1srxyroHFcEmB76OmZZnY30huVwx07zbOFP0JuzT4yyWGRIuk
-+LBQWMhkJ2c5l74PmejzDfD/Ur4+1dFwi7qs++z2NZJE1IH6L1HZbdPHMm6yq5B8
-ZNzV9nsaS0JO6XVJYdtzB/r0jfHhbTuYqYN83eFtW2n6qGYqyj/K+mm1LVJ+WjmS
-HTsJxbElwVPbJbt8s7OUNt8EFNogezIiPGzqUAx6+CVHAidN5cxxsu7ueF6LLLNF
-MgjlZrWL9a/1mi7pco5JMSLUaQm4Ej3vAm0u2W+hiSfWuNKG9K/9eHHkFqiL7747
-A8xDvnxfpfZPKyK97miOeJAL+GXbndeVcjqdNAAc8AW0Q8OuBQcqYmsqyeqIHFWd
-+s2B/j2TWlba8UnxQdRE
-=YYqR
------END PGP SIGNATURE-----
-
---=-FzsLmdWGu8vfr7ZgN+tn--
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
