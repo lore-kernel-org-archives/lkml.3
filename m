@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761722Ab3IDC0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 22:26:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55635 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761631Ab3IDC0U (ORCPT
+	id S934178Ab3IDC1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 22:27:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53878 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761702Ab3IDC1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 22:26:20 -0400
-Date: Wed, 4 Sep 2013 03:26:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ian Kent <raven@themaw.net>, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        rui.xiang@huawei.com, autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
-Message-ID: <20130904022617.GG13318@ZenIV.linux.org.uk>
-References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
- <20130904010301.GE13318@ZenIV.linux.org.uk>
- <20130904020013.GF13318@ZenIV.linux.org.uk>
- <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Sep 2013 22:27:10 -0400
+Date: Tue, 03 Sep 2013 22:27:08 -0400 (EDT)
+Message-Id: <20130903.222708.238851084536537650.davem@davemloft.net>
+To: liujunliang_ljl@163.com
+Cc: horms@verge.net.au, joe@perches.com, romieu@fr.zoreil.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sunhecheng@vip.126.com
+Subject: Re: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NET
+ SR9700Device Driver Support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1378035488-8643-1-git-send-email-liujunliang_ljl@163.com>
+References: <1378035488-8643-1-git-send-email-liujunliang_ljl@163.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 03 Sep 2013 19:27:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 07:18:42PM -0700, Linus Torvalds wrote:
-> On Tue, Sep 3, 2013 at 7:00 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > That aside, I'm really not happy with this kind of games; this stuff clearly
-> > belongs in fs/namei.c where we can simply see the last component.  Doing that
-> > on the level of "let's scan the pathname for slashes, etc." is just plain
-> > wrong.  Let's step back for a minute here; what are you trying to do?
-> > You have a pathname that should resolve to a mountpoint, without triggering
-> > automount (or crossing into the mountpoint, for that matter) and you want
-> > struct path for the bottom of that mount stack?  Or is it something
-> > completely different?
-> 
-> Can we add a LOOKUP_NOAUTOMNT bit or something (not exposed to user
-> space, only used for this particular kern_path() call). Then, if/when
-> automount gets called recursively (through autofs4_lookup? Or is it
-> just the autofs4_d_automount() interface?) it can just decide to not
-> follow that last path.
-> 
-> Hmm? I don't think we pass in the lookup-flags to d_automount, but
-> that could be changed. Yes?
+From: liujunliang_ljl@163.com
+Date: Sun,  1 Sep 2013 19:38:08 +0800
 
-No need, really - what we ought to do, AFAICS, is what umount(2) needs.
-I've applied slightly modified variant of Jeff's "vfs: allow umount to handle
-mountpoints without revalidating them" (modified by just leaving the
-struct path filled with mountpoint and leaving the equivalent of follow_mount()
-to caller) to the local queue and I'm pretty sure that it's what we want
-here as well.
+> From: Liu Junliang <liujunliang_ljl@163.com>
+> 
+> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
 
-I'll push for-next tonight and send a pull request your way tomorrow, if you
-are OK with that.
+Applied, thanks.
