@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935176Ab3IDQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:26:26 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56885 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934851Ab3IDQ0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:26:25 -0400
-Message-ID: <1378310099.1787.9.camel@joe-AO722>
-Subject: Re: [PATCH net-next v2 1/2] random: add prandom_u32_range and
- prandom_u32_max helpers
-From: Joe Perches <joe@perches.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>
-In-Reply-To: <1378298247-29364-2-git-send-email-dborkman@redhat.com>
-References: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
-	 <1378298247-29364-2-git-send-email-dborkman@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 04 Sep 2013 08:54:59 -0700
-Mime-Version: 1.0
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Content-Transfer-Encoding: 7bit
+	id S964802Ab3IDQ0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:26:51 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:35633 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934851Ab3IDQ0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 12:26:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <5227355C.1020205@ti.com>
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org>
+	<1378276263-10735-7-git-send-email-sachin.kamat@linaro.org>
+	<5227355C.1020205@ti.com>
+Date: Wed, 4 Sep 2013 21:56:49 +0530
+Message-ID: <CAK9yfHxyyZ8WGL8Q4cJ7Y=LcJ2dkeZamXydnMYS4uOj-cmU_Dg@mail.gmail.com>
+Subject: Re: [PATCH 7/7] regulator: ti-abb: Use devm_regulator_register
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>, gg@slimlogic.co.uk,
+        yong.shen@linaro.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        marek.vasut@gmail.com, Nancy.Chen@freescale.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 14:37 +0200, Daniel Borkmann wrote:
-> We have implemented the same function over and over, so introduce
-> generic helpers that unify these implementations in order to migrate
-> such code to use them. Make the API similarly to randomize_range()
-> for consistency. prandom_u32_range() generates numbers in [start, end]
-> interval and prandom_u32_max() generates numbers in [0, end] interval.
+Hi  Nishanth,
 
-I think these helpers can in many cases cause
-poorer compiler generated object code.
+On 4 September 2013 18:57, Nishanth Menon <nm@ti.com> wrote:
+> On 09/04/2013 01:31 AM, Sachin Kamat wrote:
+>> -err:
+>> -     dev_err(dev, "%s: Failed to initialize(%d)\n", __func__, ret);
+>> -     return ret;
+> here -> with this, the lazy non detailed prints end with a generic
+> fail case.
 
-> +/**
-> + * prandom_u32_range - return a random number in interval [start, end]
-> + * @start: lower interval endpoint
-> + * @end: higher interval endpoint
-> + *
-> + * Returns a number that is in the given interval:
-> + *
-> + *     [...... <range> .....]
-> + *   start                  end
-> + *
-> + * Callers need to make sure that start <= end. Note that the result
-> + * depends on PRNG being well distributed in [0, ~0U] space. Here we
-> + * use maximally equidistributed combined Tausworthe generator.
-> + */
-> +static inline u32 prandom_u32_range(u32 start, u32 end)
-> +{
-> +	return (u32)(((u64) prandom_u32() * (end + 1 - start)) >> 32) + start;
-> +}
+Generally when a driver is converted to use devm_* APIs, the error
+handling code gets
+refactored and simplified as several unwinding calls get removed. The
+above print was similarly removed as part
+of the cleanup and refactoring as it did not add any extra value.
+Probe failure is reported even without this error
+message.
 
-This is effectively:
-
-	return (prandom_u32() % (end - start)) + start;
-
-and if start and end are constant, gcc can optimize the
-division by constant to a 32 bit multiply/shift/add.
-
-I think if you add __builtin_constant_p tests for start
-and end and expand the code a little you can still get
-the optimizations done.
-
+-- 
+With warm regards,
+Sachin
