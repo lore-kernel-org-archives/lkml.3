@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab3IDSVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:21:46 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53706 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755653Ab3IDSVf (ORCPT
+	id S1759321Ab3IDSYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:24:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53779 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051Ab3IDSYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:21:35 -0400
-Date: Wed, 4 Sep 2013 19:21:13 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-Message-ID: <20130904182113.GD5599@mudshark.cambridge.arm.com>
-References: <20130828193457.140443630@linux.com>
- <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com>
- <20130830100105.GF25628@mudshark.cambridge.arm.com>
- <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
- <20130904093335.GA8007@mudshark.cambridge.arm.com>
- <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com>
- <20130904142324.GD3643@mudshark.cambridge.arm.com>
- <00000140e97747d2-ee164a4d-d692-409a-a919-083eff3a41ca-000000@email.amazonses.com>
- <20130904174624.GB5599@mudshark.cambridge.arm.com>
- <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Sep 2013 14:24:01 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH] drm/i915: i915.quirks_set/quirks_mask overrides dmi match
+Date: Wed,  4 Sep 2013 11:23:55 -0700
+Message-Id: <1378319035-10997-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 07:09:04PM +0100, Christoph Lameter wrote:
-> On Wed, 4 Sep 2013, Will Deacon wrote:
-> 
-> > On ARM, yes. I'm worried that there may be an architecture where the change-
-> > or-fail operation would only fail if the access from the interrupt handler
-> > *also* used that change-or-fail instruction, which isn't the case with
-> > this_cpu_inc.
-> >
-> > I have no idea if such an architecture exists :)
-> 
-> Atomic operations use atomic_t. this_cpu operations can only use regular
-> scalars. So the set of variables that are updated by each should be
-> distinct.
+Boot params quirks_set and quirks_mask allow the user to enable or
+inhibit any dmi-matched quirks, overriding the dmi match table.  Examples:
 
-Right, except that your patch contained the following hunk:
+  i915.quirks_set=0x2   - enables QUIRK_LVDS_SSC_DISABLE
+  i915.quirks_set=0x8   - enables QUIRK_NO_PCH_PWM_ENABLE
+  i915.quirks_mask=0x8  - disables QUIRK_NO_PCH_PWM_ENABLE
+  i915.quirks_mask=0xFF - disables all quirks
 
-Index: linux/arch/arm64/kernel/debug-monitors.c
-===================================================================
---- linux.orig/arch/arm64/kernel/debug-monitors.c       2013-08-26 13:48:40.956794980 -0500
-+++ linux/arch/arm64/kernel/debug-monitors.c    2013-08-26 13:48:40.952795024 -0500
-@@ -98,11 +98,11 @@ void enable_debug_monitors(enum debug_el
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/gpu/drm/i915/intel_display.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-        WARN_ON(preemptible());
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index d88057e..a6af11c 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -10028,8 +10028,19 @@ static struct intel_quirk intel_quirks[] = {
+ 	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
+ 
++unsigned long i915_quirks_set __read_mostly = 0;
++module_param_named(quirks_set, i915_quirks_set, ulong, 0600);
++MODULE_PARM_DESC(quirks_set,
++		"Enable specified quirks bits.");
++
++unsigned long i915_quirks_mask __read_mostly = 0;
++module_param_named(quirks_mask, i915_quirks_mask, ulong, 0600);
++MODULE_PARM_DESC(quirks_mask,
++		"Disable specified quirks bits (override dmi match).");
++
+ static void intel_init_quirks(struct drm_device *dev)
+ {
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct pci_dev *d = dev->pdev;
+ 	int i;
+ 
+@@ -10047,6 +10058,10 @@ static void intel_init_quirks(struct drm_device *dev)
+ 		if (dmi_check_system(*intel_dmi_quirks[i].dmi_id_list) != 0)
+ 			intel_dmi_quirks[i].hook(dev);
+ 	}
++
++	/* handle user-specified quirks overrides */
++	dev_priv->quirks |= i915_quirks_set;
++	dev_priv->quirks &= ~i915_quirks_mask;
+ }
+ 
+ /* Disable the VGA plane that we never use */
+-- 
+1.8.1.2
 
--       if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
-+       if (this_cpu_inc_return(mde_ref_count) == 1)
-                enable = DBG_MDSCR_MDE;
-
-        if (el == DBG_ACTIVE_EL1 &&
--           local_inc_return(&__get_cpu_var(kde_ref_count)) == 1)
-+           this_cpu_inc_return(kde_ref_count) == 1)
-                enable |= DBG_MDSCR_KDE;
-
-        if (enable && debug_enabled) {
-
-
-Then we have:
-
-#define local_inc_return(l) atomic_long_inc_return(&(l)->a)
-
-static inline long atomic_long_inc_return(atomic_long_t *l)
-{
-	atomic_t *v = (atomic_t *)l;
-
-	return (long)atomic_inc_return(v);
-}
-
-
-So that casting lets the two interfaces overlap (and indeed they do after
-your patch, since local_dec_and_test is still used to the same variable).
-
-Will
