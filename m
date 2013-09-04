@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934202Ab3IDB1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 21:27:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34209 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755007Ab3IDB1X (ORCPT
+	id S1761636Ab3IDBal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 21:30:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:34816 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755777Ab3IDBak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 21:27:23 -0400
-Date: Tue, 3 Sep 2013 18:27:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@gentwo.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH-v5 1/6] idr: Percpu ida
-Message-Id: <20130903182749.21052ab6.akpm@linux-foundation.org>
-In-Reply-To: <1378224418.32763.409.camel@haakon3.risingtidesystems.com>
-References: <1377917556-11955-1-git-send-email-nab@linux-iscsi.org>
-	<1377917556-11955-2-git-send-email-nab@linux-iscsi.org>
-	<1378224418.32763.409.camel@haakon3.risingtidesystems.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Sep 2013 21:30:40 -0400
+Date: Tue, 3 Sep 2013 21:30:37 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: lttng-dev@lists.lttng.org
+Cc: lwn@lwn.net, linux-kernel@vger.kernel.org
+Subject: [RELEASE] LTTng modules 2.3.0
+Message-ID: <20130904013037.GB25652@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Sep 2013 09:06:58 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+The LTTng modules provide Linux kernel tracing capability to the LTTng
+2.x tracer toolset.
 
-> Are there any other review comments to be addressed for this patch..?
-> 
-> If not, please kindly give your Reviewed-by if your OK for an initial
-> standalone merge.
+Noteworthy changes:
+- Support for Linux kernels up to (including) 3.11,
+- Flight recorder (snapshot) support,
+- Updated ARM, x86 system call instrumentation,
+- Add 32-bit PowerPC system call instrumentation.
 
-Sorry, I'm largely offline for the next week...
+Changelog since 2.3.0-rc2:
+2013-09-03 LTTng modules 2.3.0
+        * Fix: metadata stream should not reference session
+        * Fix: btrfs: support 3.11 Linux kernel
+        * statedump: remove KERN_DEBUG messages
+        * Fix: ext4: add missing tracepoints for 3.11 kernel
+        * Fix: ext4: Linux 3.11 support
+        * Fix: ext3: 3.11 Linux support
+        * Fix: statedump nsproxy 3.11 Linux support
 
-It looks OK to me (that's as close as I get to an ack :))
+Project website: http://lttng.org
+Download link: http://lttng.org/download
+(please refer to the README files for installation instructions and
+lttng-tools doc/quickstart.txt for usage information)
 
-Nit:
-
-> +		if (cpu >= nr_cpu_ids)
-> +			cpu = cpumask_first(&pool->cpus_have_tags);
-> +
-> +		if (cpu >= nr_cpu_ids)
-> +			BUG();
-
-The second `if' can be moved inside the first, but hopefully the
-compiler already did that.
-
-I have dim memories that doing
-
-	local_irq_save()
-	spin_lock()
-
-is not equivalent to
-
-	spin_lock_irqsave()
-
-in some circumstances.  Perhaps a lockdep thing.  Or perhaps this was fixed in
-the intervening years and this is no longer the case.
-
-Such things probably won't be detected during 3.12-rcX because few
-people will test iscsi, I expect.  So please be sure that you've
-runtime tested it with all the lockdeppy things enabled. 
-Documentation/SubmitChecklist section 12 has a list, but it might be
-dated.
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
