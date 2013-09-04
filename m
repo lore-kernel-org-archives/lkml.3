@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934865Ab3IDOWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:22:42 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6058 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760161Ab3IDOWk (ORCPT
+	id S934891Ab3IDOYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:24:12 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51973 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934867Ab3IDOYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:22:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 07:22:40 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 4/4] clk: tegra114: table driven PMC clock init
-Date: Wed, 4 Sep 2013 17:20:11 +0300
-Message-ID: <1378304438-7780-5-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1378304438-7780-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1378304438-7780-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 4 Sep 2013 10:24:10 -0400
+Date: Wed, 4 Sep 2013 15:23:24 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
+Message-ID: <20130904142324.GD3643@mudshark.cambridge.arm.com>
+References: <20130828193457.140443630@linux.com>
+ <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com>
+ <20130830100105.GF25628@mudshark.cambridge.arm.com>
+ <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
+ <20130904093335.GA8007@mudshark.cambridge.arm.com>
+ <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the Tegra114 audio clock registration to be table driven
-like the periph clocks.
+On Wed, Sep 04, 2013 at 03:17:09PM +0100, Christoph Lameter wrote:
+> On Wed, 4 Sep 2013, Will Deacon wrote:
+> > God knows! You're completely right, and we simply disable interrupts which I
+> > somehow misread as taking a lock. However, is it guaranteed that mixing
+> > an atomic64_* access with a this_cpu_inc_return will retain atomicity
+> > between the two? E.g. if you get interrupted during an atomic64_xchg
+> > operation, the interrupt handler issues this_cpu_inc_return, then on return
+> > to the xchg operation it must reissue any reads that had been executed
+> > prior to the interrupt. This should work on ARM/ARM64 (returning from the
+> > interrupt will clear the exclusive monitor) but I don't know about other
+> > architectures.
+> 
+> You cannot get interrupted during an atomic64_xchg operation. atomic and
+> this_cpu operations are stricly serialzed since both should be behaving
+> like single instructions. __this_cpu ops relax that requirement in case
+> the arch code incurs significant overhead to make that happen. In cases
+> where we know that preemption/interrupt disable etc takes care of things
+> __this_cpu ops come into play.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-tegra114.c |   58 +++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 35 deletions(-)
+Hmm, why can't you get interrupted during atomic64_xchg? On ARM, we have the
+following sequence:
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 0379a19..44ba713 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -1583,45 +1583,33 @@ static void __init tegra114_audio_clk_init(void __iomem *clk_base)
- 	}
- }
- 
-+static struct pmc_clk_init_data tegra_pmc_clk_init_data[] = {
-+	TEGRA_INIT_PMC_CLK("clk_out_1", "extern1", clk_out1_parents, 6, 2, TEGRA114_CLK_CLK_OUT_1),
-+	TEGRA_INIT_PMC_CLK("clk_out_2", "extern2", clk_out2_parents, 14, 10, TEGRA114_CLK_CLK_OUT_2),
-+	TEGRA_INIT_PMC_CLK("clk_out_3", "extern3", clk_out3_parents, 22, 18, TEGRA114_CLK_CLK_OUT_3),
-+};
-+
- static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
- {
- 	struct clk *clk;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_pmc_clk_init_data); i++) {
-+		struct pmc_clk_init_data *data;
- 
--	/* clk_out_1 */
--	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_1_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern1", "clk_out_1");
--	clks[TEGRA114_CLK_CLK_OUT_1] = clk;
--
--	/* clk_out_2 */
--	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
--			       ARRAY_SIZE(clk_out2_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_2_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern2", "clk_out_2");
--	clks[TEGRA114_CLK_CLK_OUT_2] = clk;
--
--	/* clk_out_3 */
--	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
--			       ARRAY_SIZE(clk_out3_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_3_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern3", "clk_out_3");
--	clks[TEGRA114_CLK_CLK_OUT_3] = clk;
-+		data = &tegra_pmc_clk_init_data[i];
-+
-+		clk = clk_register_mux(NULL, data->mux_name, data->parents,
-+				data->num_parents, 0,
-+				pmc_base + PMC_CLK_OUT_CNTRL, data->mux_shift,
-+				3, 0, &clk_out_lock);
-+		clks[data->mux_id] = clk;
-+		clk = clk_register_gate(NULL, data->gate_name, data->mux_name,
-+					0, pmc_base + PMC_CLK_OUT_CNTRL,
-+					data->gate_shift, 0, &clk_out_lock);
-+		clks[data->gate_id] = clk;
-+		clk_register_clkdev(clk, data->dev_name, data->gate_name);
-+	}
- 
- 	/* blink */
- 	/* clear the blink timer register to directly output clk_32k */
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+  static inline u64 atomic64_xchg(atomic64_t *ptr, u64 new)
+  {
+  	u64 result;
+  	unsigned long tmp;
+  
+  	smp_mb();
+  
+  	__asm__ __volatile__("@ atomic64_xchg\n"
+  "1:	ldrexd	%0, %H0, [%3]\n"
+  "	strexd	%1, %4, %H4, [%3]\n"
+  "	teq	%1, #0\n"
+  "	bne	1b"
+  	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
+  	: "r" (&ptr->counter), "r" (new)
+  	: "cc");
+  
+  	smp_mb();
+  
+  	return result;
+  }
 
+which relies on interrupts clearing the exclusive monitor to force us back
+around the loop in the inline asm. I could imagine other architectures doing
+similar, but only detecting the other writer if it used the same
+instructions.
+
+Will
