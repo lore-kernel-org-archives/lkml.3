@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760928Ab3IDTVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 15:21:04 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60702 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759529Ab3IDTU7 (ORCPT
+	id S1761036Ab3IDTWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 15:22:30 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:53801 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab3IDTW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 15:20:59 -0400
+	Wed, 4 Sep 2013 15:22:28 -0400
+Date: Wed, 4 Sep 2013 15:22:15 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+Message-ID: <20130904192215.GG26609@mtj.dyndns.org>
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com>
-References: <5226FAE1.5070201@fb.com>
-	<CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com>
-Date: Wed, 4 Sep 2013 12:20:58 -0700
-X-Google-Sender-Auth: kRG2YIqdmXL3lmHgGzjR5SFiNzY
-Message-ID: <CANcMJZAi_738t-eDUphC6U_25xFS0NqQqdUZAzu7Aijqmrj=wA@mail.gmail.com>
-Subject: Re: clock_gettime_ns
-From: John Stultz <john.stultz@linaro.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Arun Sharma <asharma@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        Kumar Sundararajan <kumar@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 11:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> I think that most of the hangup was a lack of agreement on how the API
-> should work wrt leap seconds.
+Hello,
 
-I don't recall this objection. The interface uses existing clockids,
-so it probably should keep the existing leap-second behavior of those
-clockids.
+On Tue, Aug 27, 2013 at 05:37:37PM +0800, Tang Chen wrote:
+> 1. Make memblock be able to allocate memory from low address to high address.
+>    Also introduce low limit to prevent memblock allocating memory too low.
+> 
+> 2. Improve init_mem_mapping() to support allocate page tables from low address 
+>    to high address.
+> 
+> 3. Introduce "movablenode" boot option to enable and disable this functionality.
+> 
+> PS: Reordering of relocate_initrd() and reserve_crashkernel() has not been done 
+>     yet. acpi_initrd_override() needs to access initrd with virtual address. So 
+>     relocate_initrd() must be done before acpi_initrd_override().
 
-> I've always thought that the Right Way to represent a UTC time is
-> nanoseconds since some epoch, where every potential leap second
-> counts.
+I'm expectedly happier with this approach but some overall review
+points.
 
-Check out the CLOCK_TAI clockid merged in 3.10.
+* I think patch splitting went a bit too far.  e.g. it doesn't make
+  much sense or helps anything to split "introduction of a param" from
+  "the param doing something".
 
-thanks
--john
+* I think it's a lot more complex than necessary.  Just implement a
+  single function - memblock_alloc_bottom_up(@start) where specifying
+  MEMBLOCK_ALLOC_ANYWHERE restores top down behavior and do
+  memblock_alloc_bottom_up(end_of_kernel) early during boot.  If the
+  bottom up mode is set, just try allocating bottom up from the
+  specified address and if that fails do normal top down allocation.
+  No need to meddle with the callers.  The only change necessary
+  (well, aside from the reordering) outside memblock is adding two
+  calls to the above function.
+
+* I don't think "order" is the right word here.  "direction" probably
+  fits a lot better.
+
+Thanks.
+
+-- 
+tejun
