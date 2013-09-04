@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762984Ab3IDPcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:32:39 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:52644 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762970Ab3IDPci (ORCPT
+	id S1763000Ab3IDPfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:35:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38077 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762986Ab3IDPfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:32:38 -0400
+	Wed, 4 Sep 2013 11:35:13 -0400
+Date: Wed, 4 Sep 2013 17:35:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, sgruszka@redhat.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/urgent] sched/cputime: Do not scale when utime == 0
+Message-ID: <20130904153507.GC2308@somewhere>
+References: <20130904131602.GC2564@redhat.com>
+ <tip-5a8e01f8fa51f5cbce8f37acc050eb2319d12956@git.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CAOMFOmVrNu2ZDrBrm7Rt_p-C3Po0d6HmyCQ2HvJSVT=cx+OjOw@mail.gmail.com>
-References: <CAOMFOmXfw2DkesOYip9VFDdUQgVN48qbJfuertPaSCz5aGdaeA@mail.gmail.com>
-	<52210D34.5030807@infradead.org>
-	<CAOMFOmUav+3UqR9s5LF6n4c4oXZ-K5oBJrmLtz-PMY053vH8Rg@mail.gmail.com>
-	<52212128.3000100@infradead.org>
-	<1377905319.2070.38.camel@joe-AO722>
-	<CAOMFOmVrNu2ZDrBrm7Rt_p-C3Po0d6HmyCQ2HvJSVT=cx+OjOw@mail.gmail.com>
-Date: Wed, 4 Sep 2013 08:32:37 -0700
-Message-ID: <CAOMFOmUEKWroSWRfFdHSTPfWT16s41=Qbh3FZnV4CcoaLchrLA@mail.gmail.com>
-Subject: Re: do_div() silently truncates "base" to 32bit
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, bernie@develer.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-5a8e01f8fa51f5cbce8f37acc050eb2319d12956@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Sep 04, 2013 at 07:37:22AM -0700, tip-bot for Stanislaw Gruszka wrote:
+> Commit-ID:  5a8e01f8fa51f5cbce8f37acc050eb2319d12956
+> Gitweb:     http://git.kernel.org/tip/5a8e01f8fa51f5cbce8f37acc050eb2319d12956
+> Author:     Stanislaw Gruszka <sgruszka@redhat.com>
+> AuthorDate: Wed, 4 Sep 2013 15:16:03 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 4 Sep 2013 16:31:25 +0200
+> 
+> sched/cputime: Do not scale when utime == 0
+> 
+> scale_stime() silently assumes that stime < rtime, otherwise
+> when stime == rtime and both values are big enough (operations
+> on them do not fit in 32 bits), the resulting scaling stime can
+> be bigger than rtime. In consequence utime = rtime - stime
+> results in negative value.
+> 
+> User space visible symptoms of the bug are overflowed TIME
+> values on ps/top, for example:
+> 
+>  $ ps aux | grep rcu
+>  root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
+>  root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
+>  root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
+>  root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
+>  root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
+>  root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
+> 
+> or overflowed utime values read directly from /proc/$PID/stat
+> 
+> Reference:
+> 
+>   https://lkml.org/lkml/2013/8/20/259
+> 
+> Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> Cc: stable@vger.kernel.org
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-On Fri, Aug 30, 2013 at 5:50 PM, Anatol Pomozov
-<anatol.pomozov@gmail.com> wrote:
-> Hi, Joe
->
-> On Fri, Aug 30, 2013 at 4:28 PM, Joe Perches <joe@perches.com> wrote:
->> On Fri, 2013-08-30 at 15:48 -0700, Randy Dunlap wrote:
->>> On 08/30/13 15:14, Anatol Pomozov wrote:
->>> > But another question still remains: why compiler does not warn that
->>> > size truncation happens? How to prevent bugs like CFQ one in the
->>> > future? Should we add a compile-time assert to do_div() to prevent
->>> > passing 64 numbers in "base" macro parameter?
->>> That sounds like a fine idea to me.
->>
->> Geert thought so too and submitted a patch
->>
->> http://www.spinics.net/lists/linux-btrfs/msg26788.html
->
-> Thanks it works!
->
-> block/cfq-iosched.c: In function 'cfqg_prfill_avg_queue_size':
-> block/cfq-iosched.c:4423:3: error: size of unnamed array is negative
-> make[2]: *** [block/gfq-iosched.s] Error 1
-> make[1]: *** [block/gfq-iosched.s] Error 2
-> I see a number of other truncation errors. We need to fix them as well.
-
-I looked at the places where do_div() passes incorrect parameters and
-it is quite a lot of them. It would be better to warn users until all
-the places are fixed. Is there any BUILD_WARN_ON() macro?
+Thanks a lot guys!
