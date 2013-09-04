@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760644Ab3IDUr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:47:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:52475 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066Ab3IDUr2 (ORCPT
+	id S1761131Ab3IDUuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:50:35 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:37799 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756913Ab3IDUue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:47:28 -0400
-X-IronPort-AV: E=Sophos;i="4.89,1023,1367971200"; 
-   d="scan'208";a="48222205"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Li Zefan <lizefan@huawei.com>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <malcolm.crossley@citrix.com>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xen.org>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH] net/core: Order-3 frag allocator causes SWIOTLB bouncing under Xen
-Date: Wed, 4 Sep 2013 21:47:18 +0100
-Message-ID: <1378327638-23956-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 4 Sep 2013 16:50:34 -0400
+Message-ID: <52279D17.2010607@linaro.org>
+Date: Wed, 04 Sep 2013 13:50:31 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Arun Sharma <asharma@fb.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kumar Sundararajan <kumar@fb.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: clock_gettime_ns
+References: <5226FAE1.5070201@fb.com> <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com> <CALCETrVdAGbp-ogvideZ6GiDVu8W3v+6Z=hJSrr+62U50HG8wg@mail.gmail.com>
+In-Reply-To: <CALCETrVdAGbp-ogvideZ6GiDVu8W3v+6Z=hJSrr+62U50HG8wg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THIS PATCH IS NOT INTENDED TO BE UPSTREAMED, IT HAS ONLY INFORMING PURPOSES!
+On 09/04/2013 01:23 PM, Andy Lutomirski wrote:
+> On Wed, Sep 4, 2013 at 12:17 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> On Wed, Sep 4, 2013 at 2:18 AM, Arun Sharma <asharma@fb.com> wrote:
+>>> A couple of years ago Andy posted this patch series:
+>>>
+>>> http://thread.gmane.org/gmane.linux.kernel/1233209/
+>>>
+>>> These patches have been in use at facebook for a couple of years and along
+>>> with a vDSO implementation of thread_cpu_time(), they have proven useful for
+>>> our profilers.
+>>>
+>>> I didn't see any arguments against this patch series. Did I miss some
+>>> discussion on the topic?
+>> (I've got a new email address, just fyi)
+>>
+>> So, looking at the thread, I think Richard brought up the issue that
+>> the net performance gain with the new interface wasn't significant
+>> after the optimizations were applied to both interfaces.
+>>
+>> If we're going to add a new interface that uses something other then a
+>> timespec, we likely need to put some serious thought into that new
+>> type, and see how it could be used across a number of syscalls. Some
+>> of the discussion around dealing with the 2038 issue touched on this.
+>>
+>> But getting those optimizations to the existing interface merged would
+>> be nice, though.  Anyone want to resend the patch?
+> It's already in.  See 5f293474c4c6c4dc2baaf2dfd486748b5986de76, etc.
+Great!
+-john
 
-I've noticed a performance regression with upstream kernels when used as Dom0
-under Xen. The classic kernel can utilize the whole bandwidth of a 10G NIC
-(ca. 9.3 Gbps), but upstream can reach only ca. 7 Gbps. I found that it
-happens because SWIOTLB has to do double buffering. The per task frag
-allocator introduced in 5640f7 creates 32 kb frags, which are not contiguous
-in mfn space.
-This patch provides a workaround by going back to the old way. The possible
-ideas came up to solve this:
-
-* make sure Dom0 memory is contiguous: it sounds trivial, but doesn't work with
-driver domains, and there are lots of situations where this is not possible.
-* use PVH Dom0: so we will have IOMMU. In the future sometime.
-* use IOMMU with PV Dom0: this seems to happen earlier.
-
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- net/core/sock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 2c097c5..854a0ea 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1812,7 +1812,7 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
- EXPORT_SYMBOL(sock_alloc_send_skb);
- 
- /* On 32bit arches, an skb frag is limited to 2^15 */
--#define SKB_FRAG_PAGE_ORDER	get_order(32768)
-+#define SKB_FRAG_PAGE_ORDER	get_order(4096)
- 
- bool sk_page_frag_refill(struct sock *sk, struct page_frag *pfrag)
- {
