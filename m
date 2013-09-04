@@ -1,288 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762831Ab3IDQTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:19:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53506 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755150Ab3IDQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:19:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,1022,1367996400"; 
-   d="scan'208";a="398162172"
-Subject: Re: [PATCH v3 0/7] Enable Drivers for Intel MIC X100 Coprocessors.
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-In-Reply-To: <cover.1377104309.git.sudeep.dutt@intel.com>
-References: <cover.1377104309.git.sudeep.dutt@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Sep 2013 09:18:40 -0700
-Message-ID: <1378311520.72268.21.camel@blbiskey-desk1.amr.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1762936Ab3IDQU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:20:29 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:45404 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085Ab3IDQU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 12:20:27 -0400
+Date: Wed, 4 Sep 2013 10:20:22 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jacob Keller <jacob.e.keller@intel.com>
+Subject: Re: [PATCH 5/7] ixgbe: use pcie_capability_read_word() to simplify
+ code
+Message-ID: <20130904162022.GE24733@google.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+ <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378193715-25328-5-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-21 at 10:51 -0700, Sudeep Dutt wrote:
-> ChangeLog:
-> =========
-> 
-> v2 => v3:
-> a) Patch 1 data structure cleanups, header file include cleanups,
->    IDA interface reuse and switching to device_create_with_groups(..)
->    as per feedback from Greg Kroah-Hartman.
-> b) Patch 7 signal documentation, sleep workaround removal and sysfs
->    access API cleanups as per feedback from Michael S. Tsirkin.
-> 
-> v1 => v2: @ http://lwn.net/Articles/563131/
-> a) License wording cleanup, sysfs ABI documentation, patch 1 refactoring
->    into 3 smaller patches and function renames, as per feedback from
->    Greg Kroah-Hartman.
-> b) Use VRINGH infrastructure for accessing virtio rings from the host
->    in patch 5, as per feedback from Michael S. Tsirkin.
-> 
-> v1: Initial post @ https://lwn.net/Articles/561314/
-> 
+[+cc Jacob, Jeff]
 
-Hi Greg,
+On Tue, Sep 03, 2013 at 03:35:13PM +0800, Yijing Wang wrote:
+> use pcie_capability_read_word() to simplify code.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> index bad8f14..bfa0b06 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> @@ -152,7 +152,6 @@ MODULE_VERSION(DRV_VERSION);
+>  static int ixgbe_read_pci_cfg_word_parent(struct ixgbe_adapter *adapter,
+>  					  u32 reg, u16 *value)
+>  {
+> -	int pos = 0;
+>  	struct pci_dev *parent_dev;
+>  	struct pci_bus *parent_bus;
+>  
+> @@ -164,11 +163,10 @@ static int ixgbe_read_pci_cfg_word_parent(struct ixgbe_adapter *adapter,
+>  	if (!parent_dev)
+>  		return -1;
+>  
+> -	pos = pci_find_capability(parent_dev, PCI_CAP_ID_EXP);
+> -	if (!pos)
+> +	if (!pci_is_pcie(parent_dev))
+>  		return -1;
+>  
+> -	pci_read_config_word(parent_dev, pos + reg, value);
+> +	pcie_capability_read_word(parent_dev, reg, value);
+>  	return 0;
+>  }
+>  
 
-It has been a couple of weeks since we posted v3 @
-https://lwn.net/Articles/564795 which addresses all feedback received so
-far. Have you had a chance to review this version? Please let us know
-your thoughts.
+Here's the caller of ixgbe_read_pci_cfg_word_parent():
 
-Thanks in advance,
-Sudeep Dutt
+    /* Get the negotiated link width and speed from PCI config space of the
+     * parent, as this device is behind a switch
+     */
+    err = ixgbe_read_pci_cfg_word_parent(adapter, 18, &link_status);
 
-> Description:
-> ============
-> 
-> An Intel MIC X100 device is a PCIe form factor add-in coprocessor
-> card based on the Intel Many Integrated Core (MIC) architecture
-> that runs a Linux OS. It is a PCIe endpoint in a platform and therefore
-> implements the three required standard address spaces i.e. configuration,
-> memory and I/O. The host OS loads a device driver as is typical for
-> PCIe devices. The card itself runs a bootstrap after reset that
-> transfers control to the card OS downloaded from the host driver.
-> The card OS as shipped by Intel is a Linux kernel with modifications
-> for the X100 devices.
-> 
-> Since it is a PCIe card, it does not have the ability to host hardware
-> devices for networking, storage and console. We provide these devices
-> on X100 coprocessors thus enabling a self-bootable equivalent environment
-> for applications. A key benefit of our solution is that it leverages
-> the standard virtio framework for network, disk and console devices,
-> though in our case the virtio framework is used across a PCIe bus.
-> 
-> Here is a block diagram of the various components described above. The
-> virtio backends are situated on the host rather than the card given better
-> single threaded performance for the host compared to MIC, the ability of
-> the host to initiate DMA's to/from the card using the MIC DMA engine and
-> the fact that the virtio block storage backend can only be on the host.
-> 
->        +----------+           |             +----------+
->        | Card OS  |           |             | Host OS  |
->        +----------+           |             +----------+
->                               |
-> +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
-> | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
-> | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
-> | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
-> +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
->     |         |         |     |      |            |         |
->     |         |         |     |User  |            |         |
->     |         |         |     |------|------------|---------|-------
->     +-------------------+     |Kernel +--------------------------+
->               |               |       | Virtio over PCIe IOCTLs  |
->               |               |       +--------------------------+
->       +--------------+        |                   |
->       |Intel MIC     |        |            +---------------+
->       |Card Driver   |        |            |Intel MIC      |
->       +--------------+        |            |Host Driver    |
->               |               |            +---------------+
->               |               |                   |
->      +-------------------------------------------------------------+
->      |                                                             |
->      |                    PCIe Bus                                 |
->      +-------------------------------------------------------------+
-> 
-> The following series of patches are partitioned as follows:
-> 
-> Patch 1: This patch introduces the "Intel MIC Host Driver" in the block
-> diagram which does the following:
-> a) Initializes the Intel MIC X100 PCIe devices.
-> b) Provides sysfs entries for family and stepping information.
-> 
-> Patch 2: This patch enables the following features in the
-> "Intel MIC Host Driver" in the block diagram:
-> a) MSIx, MSI and legacy interrupt support.
-> b) System Memory Page Table(SMPT) support. SMPT enables system memory
->    access from the card. On X100 devices the host can program 32 SMPT
->    registers each capable of accessing 16GB of system memory
->    address space from X100 devices. The registers can thereby be used
->    to access a cumulative 512GB of system memory address space from
->    X100 devices at any point in time.
-> 
-> Patch 3: This patch enables the following features in the
-> "Intel MIC Host Driver" in the block diagram:
-> a) Boots and shuts down the card via sysfs entries.
-> b) Allocates and maps a device page for communication with the
->    card driver and updates the device page address via scratchpad
->    registers.
-> c) Provides sysfs entries for shutdown status, kernel command line,
->    firmware, ramdisk, bootmode and log buffer information.
-> 
-> Patch 4: This patch introduces the "Intel MIC Card Driver" in the block
-> diagram which does the following:
-> a) Initializes the Intel MIC X100 platform device and driver.
-> b) Sets up support to handle shutdown requests from the host.
-> c) Maps the device page after obtaining the device page address
->    from the scratchpad registers updated by the host.
-> d) Informs the host upon a card crash by registering a panic notifier.
-> e) Informs the host upon a poweroff/halt event.
-> 
-> Patch 5: This patch introduces the host "Virtio over PCIe" interface for
-> Intel MIC. It allows creating user space backends on the host and instantiating
-> virtio devices for them on the Intel MIC card. It uses the existing VRINGH
-> infrastructure in the kernel to access virtio rings from the host. A character
-> device per MIC is exposed with IOCTL, mmap and poll callbacks. This allows the
-> user space backend to:
-> (a) add/remove a virtio device via a device page.
-> (b) map (R/O) virtio rings and device page to user space.
-> (c) poll for availability of data.
-> (d) copy a descriptor or entire descriptor chain to/from the card.
-> (e) modify virtio configuration.
-> (f) handle virtio device reset.
-> The buffers are copied over using CPU copies for this initial patch
-> and host initiated MIC DMA support is planned for future patches.
-> The avail and desc virtio rings are in host memory and the used ring
-> is in card memory to maximize writes across PCIe for performance.
-> 
-> Patch 6: This patch introduces the card "Virtio over PCIe" interface for
-> Intel MIC. It allows virtio drivers on the card to communicate with their
-> user space backends on the host via a device page. Ring 3 apps on the host
-> can add, remove and configure virtio devices. A thin MIC specific
-> virtio_config_ops is implemented which is borrowed heavily from previous
-> similar implementations in lguest and s390 @
-> drivers/lguest/lguest_device.c
-> drivers/s390/kvm/kvm_virtio.c
-> 
-> Patch 7: This patch introduces a sample user space daemon which
-> implements the virtio device backends on the host. The daemon
-> creates/removes/configures virtio device backends by communicating with
-> the Intel MIC Host Driver. The virtio devices currently supported are
-> virtio net, virtio console and virtio block. Virtio net supports TSO/GSO.
-> The daemon also monitors card shutdown status and takes appropriate actions
-> like killing the virtio backends and resetting the card upon card shutdown
-> and crashes.
-> 
-> The patches have been compiled/validated against v3.11-rc5.
-> 
-> Ashutosh Dixit (2):
->   Intel MIC Host Driver Changes for Virtio Devices.
->   Intel MIC Card Driver Changes for Virtio Devices.
-> 
-> Caz Yokoyama (1):
->   Sample Implementation of Intel MIC User Space Daemon.
-> 
-> Dasaratharaman Chandramouli (1):
->   Intel MIC Host Driver Interrupt/SMPT support.
-> 
-> Sudeep Dutt (3):
->   Intel MIC Host Driver for X100 family.
->   Intel MIC Host Driver, card OS state management.
->   Intel MIC Card Driver for X100 family.
-> 
->  Documentation/ABI/testing/sysfs-class-mic.txt |  147 +++
->  Documentation/mic/mic_overview.txt            |   49 +
->  Documentation/mic/mpssd/.gitignore            |    1 +
->  Documentation/mic/mpssd/Makefile              |   19 +
->  Documentation/mic/mpssd/micctrl               |  173 +++
->  Documentation/mic/mpssd/mpss                  |  202 +++
->  Documentation/mic/mpssd/mpssd.c               | 1701 +++++++++++++++++++++++++
->  Documentation/mic/mpssd/mpssd.h               |  100 ++
->  Documentation/mic/mpssd/sysfs.c               |  102 ++
->  drivers/misc/Kconfig                          |    1 +
->  drivers/misc/Makefile                         |    1 +
->  drivers/misc/mic/Kconfig                      |   39 +
->  drivers/misc/mic/Makefile                     |    6 +
->  drivers/misc/mic/card/Makefile                |   11 +
->  drivers/misc/mic/card/mic_debugfs.c           |  130 ++
->  drivers/misc/mic/card/mic_device.c            |  306 +++++
->  drivers/misc/mic/card/mic_device.h            |  133 ++
->  drivers/misc/mic/card/mic_virtio.c            |  631 +++++++++
->  drivers/misc/mic/card/mic_virtio.h            |   77 ++
->  drivers/misc/mic/card/mic_x100.c              |  256 ++++
->  drivers/misc/mic/card/mic_x100.h              |   48 +
->  drivers/misc/mic/common/mic_device.h          |   51 +
->  drivers/misc/mic/host/Makefile                |   13 +
->  drivers/misc/mic/host/mic_boot.c              |  185 +++
->  drivers/misc/mic/host/mic_debugfs.c           |  496 +++++++
->  drivers/misc/mic/host/mic_device.h            |  300 +++++
->  drivers/misc/mic/host/mic_fops.c              |  221 ++++
->  drivers/misc/mic/host/mic_fops.h              |   32 +
->  drivers/misc/mic/host/mic_main.c              | 1098 ++++++++++++++++
->  drivers/misc/mic/host/mic_smpt.c              |  440 +++++++
->  drivers/misc/mic/host/mic_smpt.h              |   98 ++
->  drivers/misc/mic/host/mic_sysfs.c             |  468 +++++++
->  drivers/misc/mic/host/mic_virtio.c            |  704 ++++++++++
->  drivers/misc/mic/host/mic_virtio.h            |  138 ++
->  drivers/misc/mic/host/mic_x100.c              |  573 +++++++++
->  drivers/misc/mic/host/mic_x100.h              |   99 ++
->  include/uapi/linux/Kbuild                     |    2 +
->  include/uapi/linux/mic_common.h               |  238 ++++
->  include/uapi/linux/mic_ioctl.h                |   74 ++
->  39 files changed, 9363 insertions(+)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-mic.txt
->  create mode 100644 Documentation/mic/mic_overview.txt
->  create mode 100644 Documentation/mic/mpssd/.gitignore
->  create mode 100644 Documentation/mic/mpssd/Makefile
->  create mode 100755 Documentation/mic/mpssd/micctrl
->  create mode 100755 Documentation/mic/mpssd/mpss
->  create mode 100644 Documentation/mic/mpssd/mpssd.c
->  create mode 100644 Documentation/mic/mpssd/mpssd.h
->  create mode 100644 Documentation/mic/mpssd/sysfs.c
->  create mode 100644 drivers/misc/mic/Kconfig
->  create mode 100644 drivers/misc/mic/Makefile
->  create mode 100644 drivers/misc/mic/card/Makefile
->  create mode 100644 drivers/misc/mic/card/mic_debugfs.c
->  create mode 100644 drivers/misc/mic/card/mic_device.c
->  create mode 100644 drivers/misc/mic/card/mic_device.h
->  create mode 100644 drivers/misc/mic/card/mic_virtio.c
->  create mode 100644 drivers/misc/mic/card/mic_virtio.h
->  create mode 100644 drivers/misc/mic/card/mic_x100.c
->  create mode 100644 drivers/misc/mic/card/mic_x100.h
->  create mode 100644 drivers/misc/mic/common/mic_device.h
->  create mode 100644 drivers/misc/mic/host/Makefile
->  create mode 100644 drivers/misc/mic/host/mic_boot.c
->  create mode 100644 drivers/misc/mic/host/mic_debugfs.c
->  create mode 100644 drivers/misc/mic/host/mic_device.h
->  create mode 100644 drivers/misc/mic/host/mic_fops.c
->  create mode 100644 drivers/misc/mic/host/mic_fops.h
->  create mode 100644 drivers/misc/mic/host/mic_main.c
->  create mode 100644 drivers/misc/mic/host/mic_smpt.c
->  create mode 100644 drivers/misc/mic/host/mic_smpt.h
->  create mode 100644 drivers/misc/mic/host/mic_sysfs.c
->  create mode 100644 drivers/misc/mic/host/mic_virtio.c
->  create mode 100644 drivers/misc/mic/host/mic_virtio.h
->  create mode 100644 drivers/misc/mic/host/mic_x100.c
->  create mode 100644 drivers/misc/mic/host/mic_x100.h
->  create mode 100644 include/uapi/linux/mic_common.h
->  create mode 100644 include/uapi/linux/mic_ioctl.h
-> 
+This should be using PCI_EXP_LNKSTA instead of "18".
 
+But it would be even better if we could drop ixgbe_get_parent_bus_info()
+completely.  It seems redundant after merging Jacob's new
+pcie_get_minimum_link() stuff [1].
 
+ixgbe_disable_pcie_master() looks like it should be using
+pcie_capability_read_word() with PCI_EXP_DEVSTA instead of using
+IXGBE_PCI_DEVICE_STATUS.  If fact, it looks like it could use the
+new pci_wait_for_pending_transaction() interface [2].
+
+It looks like all the #defines in the "PCI Bus Info" block
+(IXGBE_PCI_DEVICE_STATUS, IXGBE_PCI_DEVICE_STATUS_TRANSACTION_PENDING,
+IXGBE_PCI_LINK_STATUS, etc.) [3] are really for PCIe-generic things.  If
+so, the IXGBE-specific ones should be dropped in favor of the generic
+ones.
+
+[1] http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c?id=e027d1aec4bb49030646d2c186a721f94372d7f2
+[2] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/pci/pci.c?id=3775a209d38aa3a0c7ed89a7d0f529e0230f280e
+[3] http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/tree/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h#n1833
