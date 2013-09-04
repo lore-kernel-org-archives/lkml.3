@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762336Ab3IDKZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 06:25:22 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:34175 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3IDKZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 06:25:20 -0400
-Message-ID: <52270A5B.2040600@free.fr>
-Date: Wed, 04 Sep 2013 12:24:27 +0200
-From: Martin Peres <martin.peres@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1762352Ab3IDK0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 06:26:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48878 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756041Ab3IDK0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 06:26:53 -0400
+Date: Wed, 4 Sep 2013 12:26:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [trivial PATCH] treewide: Convert retrun typos to return
+In-Reply-To: <1378241158.7347.26.camel@joe-AO722>
+Message-ID: <alpine.LNX.2.00.1309041226410.3684@pobox.suse.cz>
+References: <1378241158.7347.26.camel@joe-AO722>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Christopher James Halse Rogers 
-	<christopher.halse.rogers@canonical.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH] dma-buf: Expose buffer size to userspace (v2)
-References: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
-In-Reply-To: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
-Le 04/09/2013 05:15, Christopher James Halse Rogers a écrit :
-> Each dma-buf has an associated size and it's reasonable for userspace
-> to want to know what it is.
->
-> Since userspace already has an fd, expose the size using the
-> size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
-> idiom.
->
-> v2: Added Daniel's sugeested documentation, with minor fixups
->
-> Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
-> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->   Documentation/dma-buf-sharing.txt | 12 ++++++++++++
->   drivers/base/dma-buf.c            | 28 ++++++++++++++++++++++++++++
->   2 files changed, 40 insertions(+)
->
-> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-> index 0b23261..849e982 100644
-> --- a/Documentation/dma-buf-sharing.txt
-> +++ b/Documentation/dma-buf-sharing.txt
-> @@ -407,6 +407,18 @@ Being able to mmap an export dma-buf buffer object has 2 main use-cases:
->      interesting ways depending upong the exporter (if userspace starts depending
->      upon this implicit synchronization).
->   
-> +Other Interfaces Exposed to Userspace on the dma-buf FD
-> +------------------------------------------------------
-> +
-> +- Since kernel 3.12 the dma-buf FD supports the llseek system call, but only
-> +  with offset=0 and whence=SEEK_END|SEEK_SET. SEEK_SET is supported to allow
-> +  the usual size discover pattern size = SEEK_END(0); SEEK_SET(0). Every other
-> +  llseek operation will report -EINVAL.
-> +
-> +  If llseek on dma-buf FDs isn't support the kernel will report -ESPIPE for all
-Shouldn't it be "supported" instead of "support"?
+On Tue, 3 Sep 2013, Joe Perches wrote:
 
-Anyway, I'm just curious, in which case is it important to know the size?
-Do we already have a way to get the dimensions (x, y and stripe)?
+> Tyops should be fixed.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Applied, thanks Joe.
+
+> ---
+>  drivers/net/wireless/rtlwifi/rtl8192de/dm.c | 2 +-
+>  drivers/scsi/bfa/bfad_im.c                  | 2 +-
+>  drivers/scsi/hpsa.c                         | 2 +-
+>  drivers/scsi/lpfc/lpfc_bsg.c                | 2 +-
+>  drivers/scsi/qla2xxx/qla_bsg.c              | 2 +-
+>  drivers/tty/serial/kgdboc.c                 | 2 +-
+>  6 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> index 47875ba..f700f7a 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/dm.c
+> @@ -416,7 +416,7 @@ static void rtl92d_dm_dig(struct ieee80211_hw *hw)
+>  
+>  	/* because we will send data pkt when scanning
+>  	 * this will cause some ap like gear-3700 wep TP
+> -	 * lower if we retrun here, this is the diff of
+> +	 * lower if we return here, this is the diff of
+>  	 * mac80211 driver vs ieee80211 driver */
+>  	/* if (rtlpriv->mac80211.act_scanning)
+>  	 *      return; */
+> diff --git a/drivers/scsi/bfa/bfad_im.c b/drivers/scsi/bfa/bfad_im.c
+> index 9796284..9967f9c 100644
+> --- a/drivers/scsi/bfa/bfad_im.c
+> +++ b/drivers/scsi/bfa/bfad_im.c
+> @@ -206,7 +206,7 @@ bfad_im_abort_handler(struct scsi_cmnd *cmnd)
+>  	spin_lock_irqsave(&bfad->bfad_lock, flags);
+>  	hal_io = (struct bfa_ioim_s *) cmnd->host_scribble;
+>  	if (!hal_io) {
+> -		/* IO has been completed, retrun success */
+> +		/* IO has been completed, return success */
+>  		rc = SUCCESS;
+>  		goto out;
+>  	}
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index b766f5a..fac8cf5 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -1054,7 +1054,7 @@ free_and_out:
+>  }
+>  
+>  /*
+> - * Lookup bus/target/lun and retrun corresponding struct hpsa_scsi_dev_t *
+> + * Lookup bus/target/lun and return corresponding struct hpsa_scsi_dev_t *
+>   * Assume's h->devlock is held.
+>   */
+>  static struct hpsa_scsi_dev_t *lookup_hpsa_scsi_dev(struct ctlr_info *h,
+> diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
+> index bc27063..79c13c3 100644
+> --- a/drivers/scsi/lpfc/lpfc_bsg.c
+> +++ b/drivers/scsi/lpfc/lpfc_bsg.c
+> @@ -2628,7 +2628,7 @@ err_get_xri_exit:
+>   * @phba: Pointer to HBA context object
+>   *
+>   * This function allocates BSG_MBOX_SIZE (4KB) page size dma buffer and.
+> - * retruns the pointer to the buffer.
+> + * returns the pointer to the buffer.
+>   **/
+>  static struct lpfc_dmabuf *
+>  lpfc_bsg_dma_page_alloc(struct lpfc_hba *phba)
+> diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
+> index b989add..aa57bf0 100644
+> --- a/drivers/scsi/qla2xxx/qla_bsg.c
+> +++ b/drivers/scsi/qla2xxx/qla_bsg.c
+> @@ -1895,7 +1895,7 @@ done:
+>  	bsg_job->reply->reply_payload_rcv_len = 0;
+>  	bsg_job->reply->result = (DID_OK) << 16;
+>  	bsg_job->job_done(bsg_job);
+> -	/* Always retrun success, vendor rsp carries correct status */
+> +	/* Always return success, vendor rsp carries correct status */
+>  	return 0;
+>  }
+>  
+> diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
+> index 1002054..a260cde 100644
+> --- a/drivers/tty/serial/kgdboc.c
+> +++ b/drivers/tty/serial/kgdboc.c
+> @@ -45,7 +45,7 @@ static int kgdboc_reset_connect(struct input_handler *handler,
+>  {
+>  	input_reset_device(dev);
+>  
+> -	/* Retrun an error - we do not want to bind, just to reset */
+> +	/* Return an error - we do not want to bind, just to reset */
+>  	return -ENODEV;
+>  }
+>  
+> 
+> 
+
+-- 
+Jiri Kosina
+SUSE Labs
