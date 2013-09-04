@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762284Ab3IDKTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 06:19:18 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:39771 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab3IDKTQ (ORCPT
+	id S1762336Ab3IDKZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 06:25:22 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:34175 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756240Ab3IDKZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 06:19:16 -0400
-Date: Wed, 4 Sep 2013 12:18:28 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, pbonzini@redhat.com
-Subject: Re: [GIT PULL] KVM changes for 3.12
-Message-ID: <20130904101826.GA2744@ulmo>
-References: <20130903121046.GE22899@redhat.com>
+	Wed, 4 Sep 2013 06:25:20 -0400
+Message-ID: <52270A5B.2040600@free.fr>
+Date: Wed, 04 Sep 2013 12:24:27 +0200
+From: Martin Peres <martin.peres@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <20130903121046.GE22899@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christopher James Halse Rogers 
+	<christopher.halse.rogers@canonical.com>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        robclark@gmail.com, linux-media@vger.kernel.org
+Subject: Re: [PATCH] dma-buf: Expose buffer size to userspace (v2)
+References: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
+In-Reply-To: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Christopher,
+Le 04/09/2013 05:15, Christopher James Halse Rogers a écrit :
+> Each dma-buf has an associated size and it's reasonable for userspace
+> to want to know what it is.
+>
+> Since userspace already has an fd, expose the size using the
+> size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
+> idiom.
+>
+> v2: Added Daniel's sugeested documentation, with minor fixups
+>
+> Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>   Documentation/dma-buf-sharing.txt | 12 ++++++++++++
+>   drivers/base/dma-buf.c            | 28 ++++++++++++++++++++++++++++
+>   2 files changed, 40 insertions(+)
+>
+> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+> index 0b23261..849e982 100644
+> --- a/Documentation/dma-buf-sharing.txt
+> +++ b/Documentation/dma-buf-sharing.txt
+> @@ -407,6 +407,18 @@ Being able to mmap an export dma-buf buffer object has 2 main use-cases:
+>      interesting ways depending upong the exporter (if userspace starts depending
+>      upon this implicit synchronization).
+>   
+> +Other Interfaces Exposed to Userspace on the dma-buf FD
+> +------------------------------------------------------
+> +
+> +- Since kernel 3.12 the dma-buf FD supports the llseek system call, but only
+> +  with offset=0 and whence=SEEK_END|SEEK_SET. SEEK_SET is supported to allow
+> +  the usual size discover pattern size = SEEK_END(0); SEEK_SET(0). Every other
+> +  llseek operation will report -EINVAL.
+> +
+> +  If llseek on dma-buf FDs isn't support the kernel will report -ESPIPE for all
+Shouldn't it be "supported" instead of "support"?
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Sep 03, 2013 at 03:10:46PM +0300, Gleb Natapov wrote:
-[...]
-> Aneesh Kumar K.V (5):
->       mm/cma: Move dma contiguous changes into a seperate config
-
-Hi Gleb,
-
-This commit is going to cause runtime regressions on various ARM
-platforms because it renames a symbol but fails to update all default
-configurations that select the symbol. A quick grep shows that three ARM
-platforms are affected:
-
-	$ git grep CONFIG_CMA=y
-	arch/arm/configs/keystone_defconfig:CONFIG_CMA=y
-	arch/arm/configs/omap2plus_defconfig:CONFIG_CMA=y
-	arch/arm/configs/tegra_defconfig:CONFIG_CMA=y
-
-I've been digging around a bit and it seems like the original patch from
-Aneesh had the defconfig changes but they were dropped because they "...
-require separate handling to avoid pointless merge conflicts."[0]
-
-While I can't speak for Keystone or OMAP, at least on Tegra this causes
-issues because we use CMA for framebuffer allocation. Since we only have
-CMA selected but not the new DMA_CMA, large DMA allocations will fail.
-
-Can we have the defconfig changes added back to this patch, please? I
-suspect that Linus can handle any resulting merge conflicts.
-
-Thierry
-
-[0]: http://permalink.gmane.org/gmane.linux.kernel.mm/102707
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJwjyAAoJEN0jrNd/PrOh/ngP/RXk8IXhq7+WtS7OZ2L/igC0
-j7SpGALd/9M5RPsDd2BknVvcbTOirl9eCq7/UOakxEiYxD+XQwIjSh2ERcvyYJz6
-yPsGO84vUEncUJ/5//WOgFppQnMLd2KuKSNcDkJ4PfzqLXp3e34JgD2KstZ8+1A9
-d4pRj4p/y+9abWNQQmtI3HpXFEr1Dvh4s1RidkWlzZxXJ8wYb4vqX33r7xIh8q+e
-zew6aNqNTiEtxFpjJh825Fr3LEtSoKHq3CNHH8cAyhwH2ci5L196zAm52xlhjPc+
-CXDZsYZfOujZ6mNqzHAS/wadK4XvUCNLpjfCOq7KplwDx2/eCy97PN1lmUilHFbJ
-WXCNylOfwMj1xwdrD2/5pMXunEobz8Zz9s+YYyf+IkG9bABc/O0SEgLSRW9A39Op
-zlWBMH0XUh3lMRuSF7QpuqBDbJmV44vrlKVJiG6kkDvlEpJhfolN8MCFXDcRjbft
-pUKADxKqo0Mq4XSwp8U6Gt5KJI3Jz9aZ8H5AkBbkecJ0e++tBsPrSGG9ADdifVUf
-jfXMJERijSEcT5ygMttsg+oyc6hb+i6QH91SebLZI3uljogzlwBVb4Zqk2r7LtfK
-gUZBKyp96x1frhgLntNjyWJHjQ3Cy0ds+zsZqdAT90HAlU5A1USMCnuU5wgRoqak
-zWyU/KHTVAhdT1BjxMUy
-=Q+5W
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
+Anyway, I'm just curious, in which case is it important to know the size?
+Do we already have a way to get the dimensions (x, y and stripe)?
