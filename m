@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761589Ab3IDA12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 20:27:28 -0400
-Received: from mail-lb0-f195.google.com ([209.85.217.195]:52824 "EHLO
-	mail-lb0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab3IDA10 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 20:27:26 -0400
-MIME-Version: 1.0
-Reply-To: drmalik770@yahoo.fr
-Date: Wed, 4 Sep 2013 02:27:25 +0200
-Message-ID: <CACho_zKpH_YvB1gP+LMzXCmEtTJV7fdJRYwDEUFa7_FH9ciPGQ@mail.gmail.com>
-Subject: I Need Your Assistance.
-From: "Dr.Malik Wasim" <drbenkabore@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1761577Ab3IDAeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 20:34:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46414 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1761498Ab3IDAea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 20:34:30 -0400
+Message-ID: <1378254868.7347.40.camel@joe-AO722>
+Subject: [PATCH] kernel-doc: Update script to find more "Return:" sections
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@infradead.org>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Date: Tue, 03 Sep 2013 17:34:28 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+Many kernel-doc return description sections headers
+use variants of the "Return:" section prefix.
 
-I am Dr.Malik Wasim, Manager Auditing and Accountancy Department, Bank
-of Africa in (B.O.A) Burkina Faso. I got your email account while
-searching for a business oriented personality and you happen to be the
-one.
+(some or maybe even most of these aren't in
+ kernel-doc sections, but many are)
 
-I bring forth a business proposal in the tune of $12.5 million U.S.
-dollars to be transferred to an offshore account with your assistance
-acting as beneficiary and next-of-kin to the funds.
-If you know you are capable of involving and partaking in this
-transaction, please send down the following personal details to me via
-dr.malik_wasim@yahoo.com
+$ git grep -E -i "^\s*\*\s*return[s]?:"| \
+  cut -f2- -d":" | awk '{print $1 $2}' | \
+  sort | uniq -c
+    121 *return:
+    838 *Return:
+    778 *RETURN:
+    191 *returns:
+   1965 *Returns:
+    603 *RETURNS:
 
-(1)Full names:........................ .....
-(2)Occupation:................ ..............
-(3)Age and Sex:..........................
-(4)Marital………….
-Status:................
-(5)Private phone number:..................
-(6)Current residential address:.................
+Rather than change all of the variants to the
+canonical "Return:", adapt the script to accept
+case insensitive "Return:" and "Returns:"
 
-Noted; that every discussion is in the detail.
-Dr.Malik Wasim.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+
+I don't know that this actually works.
+It does seem right though.
+
+Randy?  Rob?  Can you test this please?
+
+ scripts/kernel-doc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+index 4305b2f..2b96411 100755
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -418,6 +418,7 @@ sub dump_section {
+ 	$parameterdescs{$name} = $contents;
+ 	$sectcheck = $sectcheck . $name . " ";
+     } else {
++	$name = "Return" if $name =~ /^return[s]?$/i;
+ #	print STDERR "other section '$name' = '$contents'\n";
+ 	if (defined($sections{$name}) && ($sections{$name} ne "")) {
+ 		print STDERR "Error(${file}:$.): duplicate section name '$name'\n";
+
+
