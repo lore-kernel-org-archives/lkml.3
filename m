@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762516Ab3IDLr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:47:58 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:59850 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab3IDLr4 (ORCPT
+	id S1762549Ab3IDLub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 07:50:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12177 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757249Ab3IDLua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:47:56 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <netdev@vger.kernel.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <arc-linux-dev@synopsys.com>
-Subject: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file copies
-Date: Wed, 4 Sep 2013 17:17:15 +0530
-Message-ID: <1378295235-18928-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.111]
+	Wed, 4 Sep 2013 07:50:30 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6vL9NhcTi7YA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Lu4-lkDicUYA:10 a=VnNF1IyMAAAA:8 a=J5_Iyqi5gACGRI3eAPwA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 4 Sep 2013 07:50:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
+ functions
+Message-ID: <20130904075027.483ab9fb@gandalf.local.home>
+In-Reply-To: <20130904041828.GP3871@linux.vnet.ibm.com>
+References: <20130831051117.884125230@goodmis.org>
+	<20130831051700.601365837@goodmis.org>
+	<20130903171516.16290c47@gandalf.local.home>
+	<20130903221808.GH3871@linux.vnet.ibm.com>
+	<20130903195705.3ba3442f@gandalf.local.home>
+	<20130904012404.GI3871@linux.vnet.ibm.com>
+	<20130903220115.1018d8f4@gandalf.local.home>
+	<20130903220325.273c2c7d@gandalf.local.home>
+	<20130904041828.GP3871@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copying large files to a NFS mounted host was taking absurdly large
-time.
+On Tue, 3 Sep 2013 21:18:28 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Turns out that TX BD reclaim had a sublte bug.
+> On Tue, Sep 03, 2013 at 10:03:25PM -0400, Steven Rostedt wrote:
+> > On Tue, 3 Sep 2013 22:01:15 -0400
+> > Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > On Tue, 3 Sep 2013 18:24:04 -0700
+> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > 
+> > > 
+> > > > >  static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
+> > > > > @@ -588,15 +593,14 @@ static void
+> > > > >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+> > > > >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
+> > > > >  {
+> > > > > -	int bit;
+> > > > > -
+> > > > > +	/* Make sure we see disabled or not first */
+> > > > > +	smp_rmb();
+> > > > 
+> > > > 	smp_mb__before_atomic_inc()?
+> > > > 
+> > > 
+> > > Ah, but this is before an atomic_read(), and not an atomic_inc(), thus
+> > > the normal smp_rmb() is still required.
+> > > 
+> > 
+> > Here's the changes against this one: 
+> > 
+> > diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+> > index cdcf187..9e6902a 100644
+> > --- a/kernel/trace/trace_functions.c
+> > +++ b/kernel/trace/trace_functions.c
+> > @@ -569,14 +569,14 @@ void ftrace_unsafe_rcu_checker_disable(void)
+> >  {
+> >  	atomic_inc(&ftrace_unsafe_rcu_disabled);
+> >  	/* Make sure the update is seen immediately */
+> > -	smp_wmb();
+> > +	smp_mb__after_atomic_inc();
+> >  }
+> > 
+> >  void ftrace_unsafe_rcu_checker_enable(void)
+> >  {
+> >  	atomic_dec(&ftrace_unsafe_rcu_disabled);
+> >  	/* Make sure the update is seen immediately */
+> > -	smp_wmb();
+> > +	smp_mb__after_atomic_dec();
+> >  }
+> > 
+> >  static void
+> > 
+> > 
+> > 
+> > Which is nice, because the smp_mb() are now in the really slow path.
+> 
+> Looks good!
+> 
+> But now that I look at it more carefully, including the comments...
+> The smp_mb__after_atomic_dec() isn't going to make the update be seen
+> faster -- instead, it will guarantee that if some other CPU sees this
+> CPU's later write, then that CPU will also see the results of the
+> atomic_dec().
 
-Loop starts off from @txbd_dirty cursor and stops when it hits a BD
-still in use by controller. However when it stops it needs to keep the
-cursor at that very BD to resume scanning in next iteration. However it
-was erroneously incrementing the cursor, causing the next scan(s) to
-fail too, unless the BD chain was completely drained out.
+I don't need to have it seen "faster", just before anything that comes
+next after the call to ftrace_unsafe_rcu_checker_disable(). That's
+what I meant by the comment. In other words, don't delay this write, it
+needs to go first.
 
-[ARCLinux]$ ls -l -sh /disk/log.txt
- 17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
-
-========== Before =====================
-[ARCLinux]$ time cp /disk/log.txt /mnt/.
-real    31m 7.95s
-user    0m 0.00s
-sys     0m 0.10s
-
-========== After =====================
-[ARCLinux]$ time cp /disk/log.txt /mnt/.
-real    0m 24.33s
-user    0m 0.00s
-sys     0m 0.19s
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Alexey Brodkin <abrodkin@synopsys.com> (commit_signer:3/4=75%)
-Cc: "David S. Miller" <davem@davemloft.net> (commit_signer:3/4=75%)
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: arc-linux-dev@synopsys.com
----
- drivers/net/ethernet/arc/emac_main.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 55d79cb..9e16014 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -149,8 +149,6 @@ static void arc_emac_tx_clean(struct net_device *ndev)
- 		struct sk_buff *skb = tx_buff->skb;
- 		unsigned int info = le32_to_cpu(txbd->info);
- 
--		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
--
- 		if ((info & FOR_EMAC) || !txbd->data)
- 			break;
- 
-@@ -180,6 +178,8 @@ static void arc_emac_tx_clean(struct net_device *ndev)
- 		txbd->data = 0;
- 		txbd->info = 0;
- 
-+		*txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
-+
- 		if (netif_queue_stopped(ndev))
- 			netif_wake_queue(ndev);
- 	}
--- 
-1.8.1.2
+-- Steve
 
