@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934460Ab3IDIdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:33:09 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:50176 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033Ab3IDIdH (ORCPT
+	id S934463Ab3IDIfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:35:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63122 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933033Ab3IDIfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:33:07 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-2d-5226f0415ebd
-Date: Wed, 4 Sep 2013 17:33:05 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
- of a slab
-Message-ID: <20130904083305.GC16355@lge.com>
-References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
- <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
- <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
+	Wed, 4 Sep 2013 04:35:40 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-e4-5226f0da8f44
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 01/24] perf tools: Fix 'make install prefix=...' build rule
+References: <1378032529-18498-1-git-send-email-jolsa@redhat.com>
+	<1378032529-18498-2-git-send-email-jolsa@redhat.com>
+Date: Wed, 04 Sep 2013 17:35:38 +0900
+In-Reply-To: <1378032529-18498-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Sun, 1 Sep 2013 12:48:26 +0200")
+Message-ID: <87sixlrnl1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 02:15:42PM +0000, Christoph Lameter wrote:
-> On Mon, 2 Sep 2013, Joonsoo Kim wrote:
-> 
-> > This patchset implements byte sized indexes for the freelist of a slab.
-> >
-> > Currently, the freelist of a slab consist of unsigned int sized indexes.
-> > Most of slabs have less number of objects than 256, so much space is wasted.
-> > To reduce this overhead, this patchset implements byte sized indexes for
-> > the freelist of a slab. With it, we can save 3 bytes for each objects.
-> >
-> > This introduce one likely branch to functions used for setting/getting
-> > objects to/from the freelist, but we may get more benefits from
-> > this change.
-> >
-> > Below is some numbers of 'cat /proc/slabinfo' related to my previous posting
-> > and this patchset.
-> 
-> You  may also want to run some performance tests. The cache footprint
-> should also be reduced with this patchset and therefore performance should
-> be better.
+Hi Jiri,
 
-Yes, I did a hackbench test today, but I'm not ready for posting it.
-The performance is improved for my previous posting and futher improvement is
-founded by this patchset. Perhaps I will post it tomorrow.
+On Sun,  1 Sep 2013 12:48:26 +0200, Jiri Olsa wrote:
+> Currently we fail for following make command:
+>
+>   $ sudo make install prefix=/opt/perf
+>   ...
+>       GEN python/perf.so
+>   install -d -m 755 '/opt/perf/bin'
+>   install perf '/opt/perf/bin'
+>   install perf-archive -t '/opt/perf/libexec/perf-core'
+>   install: accessing `/opt/perf/libexec/perf-core': No such file or directory
+>   make: *** [install-bin] Error 1
+>
+> Fixing this by properly creating '/opt/perf/libexec/perf-core'
+> directory.
+>
 
-Thanks.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
