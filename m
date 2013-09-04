@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762840Ab3IDOhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:37:09 -0400
+	id S934856Ab3IDOhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:37:13 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22259 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758801Ab3IDOhD (ORCPT
+	with ESMTP id S1762771Ab3IDOhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:37:03 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=fEAZsDgmFpUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6APJjXR-8hQA:10 a=s1CHMtKVOpMdRrh2RDUA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 4 Sep 2013 10:37:04 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=6jnj3o-5QEwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0HxU8x3VG1kA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=ayC55rCoAAAA:8 a=_whD2MN1g3_tR11PCDsA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130904143700.632928185@goodmis.org>
+Message-Id: <20130904143701.283063670@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 04 Sep 2013 10:35:54 -0400
+Date: Wed, 04 Sep 2013 10:35:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [for-next][PATCH 02/18] ftrace: Fix a slight race in modifying what function callback gets
- traced
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [for-next][PATCH 06/18] ftrace: Set ftrace internal function tracing RCU safe
 References: <20130904143552.456506259@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Fix-a-slight-race-in-modifying-what-function-.patch
+Content-Disposition: inline; filename=0005-ftrace-Set-ftrace-internal-function-tracing-RCU-safe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-There's a slight race when going from a list function to a non list
-function. That is, when only one callback is registered to the function
-tracer, it gets called directly by the mcount trampoline. But if this
-function has filters, it may be called by the wrong functions.
+Since none of the internal ftrace function tracing uses RCU in
+their callbacks, it is OK to set the global_ops (the one that
+they all use) to RCU safe.
 
-As the list ops callback that handles multiple callbacks that are
-registered to ftrace, it also handles what functions they call. While
-the transaction is taking place, use the list function always, and
-after all the updates are finished (only the functions that should be
-traced are being traced), then we can update the trampoline to call
-the function directly.
-
+Cc: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a6d098c..03cf44a 100644
+index 3327aff..caeeda24 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1978,12 +1978,27 @@ int __weak ftrace_arch_code_modify_post_process(void)
+@@ -1146,7 +1146,9 @@ static struct ftrace_ops global_ops = {
+ 	.func			= ftrace_stub,
+ 	.notrace_hash		= EMPTY_HASH,
+ 	.filter_hash		= EMPTY_HASH,
+-	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
++	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
++				  FTRACE_OPS_FL_INITIALIZED |
++				  FTRACE_OPS_FL_RCU_SAFE,
+ 	INIT_REGEX_LOCK(global_ops)
+ };
  
- void ftrace_modify_all_code(int command)
- {
-+	int update = command & FTRACE_UPDATE_TRACE_FUNC;
-+
-+	/*
-+	 * If the ftrace_caller calls a ftrace_ops func directly,
-+	 * we need to make sure that it only traces functions it
-+	 * expects to trace. When doing the switch of functions,
-+	 * we need to update to the ftrace_ops_list_func first
-+	 * before the transition between old and new calls are set,
-+	 * as the ftrace_ops_list_func will check the ops hashes
-+	 * to make sure the ops are having the right functions
-+	 * traced.
-+	 */
-+	if (update)
-+		ftrace_update_ftrace_func(ftrace_ops_list_func);
-+
- 	if (command & FTRACE_UPDATE_CALLS)
- 		ftrace_replace_code(1);
- 	else if (command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
- 
--	if (command & FTRACE_UPDATE_TRACE_FUNC)
-+	if (update && ftrace_trace_function != ftrace_ops_list_func)
- 		ftrace_update_ftrace_func(ftrace_trace_function);
- 
- 	if (command & FTRACE_START_FUNC_RET)
 -- 
 1.7.10.4
 
