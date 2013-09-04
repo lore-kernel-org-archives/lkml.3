@@ -1,135 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762249Ab3IDX6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 19:58:45 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:43437 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab3IDX6m (ORCPT
+	id S1762532Ab3IDX7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 19:59:17 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:5092 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762462Ab3IDX7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 19:58:42 -0400
-Message-ID: <5227C92D.4040109@gmail.com>
-Date: Thu, 05 Sep 2013 07:58:37 +0800
-From: Jin Xu <jinuxstyle@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] f2fs: optimize gc for better performance
-References: <1377737323-11803-1-git-send-email-jinuxstyle@gmail.com> <1377777368.2354.46.camel@kjgkr> <52201A4F.9020808@gmail.com> <1378169118.2354.56.camel@kjgkr> <522677ED.8090203@gmail.com> <1378287635.2354.84.camel@kjgkr> <522732EB.4020103@gmail.com> <1378338609.2354.86.camel@kjgkr>
-In-Reply-To: <1378338609.2354.86.camel@kjgkr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 4 Sep 2013 19:59:15 -0400
+Message-ID: <1378339153.2064.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] rbtree: Add some necessary condition checks
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 16:59:13 -0700
+In-Reply-To: <CAEH94Ljp2ebCF6yhbh=MynTJCLbLh8D5cRV9pPO-Gzx1c7YU5A@mail.gmail.com>
+References: <1377269106-26468-1-git-send-email-zwu.kernel@gmail.com>
+	 <CANN689ET-2q_7WY+4HZjMqQEmLpOQyWOrOzRnP3ADc8TAzoEXw@mail.gmail.com>
+	 <CAEH94Li5KuN4V7KVAYJ9YY72HWVS2_gf-_L4zscV1K5fMw58XQ@mail.gmail.com>
+	 <CANN689E4aCwMQwceUntqJiN7vj_m4g+3MYpBJb717VXR6mbpSA@mail.gmail.com>
+	 <CAEH94Ljp2ebCF6yhbh=MynTJCLbLh8D5cRV9pPO-Gzx1c7YU5A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I will submit the patch later.
+On Thu, 2013-09-05 at 01:22 +0800, Zhi Yong Wu wrote:
+> On Mon, Sep 2, 2013 at 4:57 PM, Michel Lespinasse <walken@google.com> wrote:
+> > On Sun, Sep 1, 2013 at 11:30 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> >> In Tue, Aug 27, 2013 at 6:01 AM, Michel Lespinasse <walken@google.com> wrote:
+> >>> On Fri, Aug 23, 2013 at 7:45 AM,  <zwu.kernel@gmail.com> wrote:
+> >>>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>>>
+> >>>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>>> ---
+> >>>>  include/linux/rbtree_augmented.h | 3 ++-
+> >>>>  lib/rbtree.c                     | 5 +++--
+> >>>>  2 files changed, 5 insertions(+), 3 deletions(-)
+> >>>
+> >>> So, you are saying that the checks are necessary, but you are not saying why.
+> >>>
+> >>> The way I see it, the checks are *not* necessary, because the rbtree
+> >>> invariants guarantee them to be true. The only way for the checks to
+> >>> fail would be if people directly manipulate the rbtrees without going
+> >>> through the proper APIs, and if they do that then I think they're on
+> >>> their own. So to me, I think it's the same situation as dereferencing
+> >>> a pointer without checking if it's NULL, because you know it should
+> >>> never be NULL - which in my eyes is perfectly acceptable.
+> >> In my patchset, some rbtree APIs to be invoked, and I think that those
+> >> rbtree APIs are used corrently, Below is the pointer of its code:
+> >> https://github.com/wuzhy/kernel/compare/torvalds:master...hot_tracking
+> >> But I hit some issues when using compilebench to do perf benchmark.
+> >> compile dir kernel-7 691MB in 8.92 seconds (77.53 MB/s)
+> >
+> > Thanks for the link - I now better understand where you are coming
+> > from with these fixes.
+> >
+> > Going back to the original message:
+> >
+> >> diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
+> >> index fea49b5..7d19770 100644
+> >> --- a/include/linux/rbtree_augmented.h
+> >> +++ b/include/linux/rbtree_augmented.h
+> >> @@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
+> >>                 }
+> >>
+> >>                 successor->rb_left = tmp = node->rb_left;
+> >> -               rb_set_parent(tmp, successor);
+> >> +               if (tmp)
+> >> +                       rb_set_parent(tmp, successor);
+> >>
+> >>                 pc = node->__rb_parent_color;
+> >>                 tmp = __rb_parent(pc);
+> >
+> > Note that node->rb_left was already fetched at the top of
+> > __rb_erase_augmented(), and was checked to be non-NULL at the time -
+> > otherwise we would have executed 'Case 1' in that function. So, you
+> > are not expected to find tmp == NULL here.
+> >
+> >> diff --git a/lib/rbtree.c b/lib/rbtree.c
+> >> index c0e31fe..2cb01ba 100644
+> >> --- a/lib/rbtree.c
+> >> +++ b/lib/rbtree.c
+> >> @@ -214,7 +214,7 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
+> >>                  */
+> >>                 sibling = parent->rb_right;
+> >>                 if (node != sibling) {  /* node == parent->rb_left */
+> >> -                       if (rb_is_red(sibling)) {
+> >> +                       if (sibling && rb_is_red(sibling)) {
+> >>                                 /*
+> >>                                  * Case 1 - left rotate at parent
+> >>                                  *
+> >
+> > Note the loop invariants quoted just above:
+> >
+> >                 /*
+> >                  * Loop invariants:
+> >                  * - node is black (or NULL on first iteration)
+> >                  * - node is not the root (parent is not NULL)
+> >                  * - All leaf paths going through parent and node have a
+> >                  *   black node count that is 1 lower than other leaf paths.
+> >                  */
+> >
+> > Because of these, each path from sibling to a leaf must include at
+> > least one black node, which implies that sibling can't be NULL - or to
+> > put it another way, if sibling is null then the expected invariants
+> > were violated before we even got there.
+> >
+> >> @@ -226,7 +226,8 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
+> >>                                  */
+> >>                                 parent->rb_right = tmp1 = sibling->rb_left;
+> >>                                 sibling->rb_left = parent;
+> >> -                               rb_set_parent_color(tmp1, parent, RB_BLACK);
+> >> +                               if (tmp1)
+> >> +                                       rb_set_parent_color(tmp1, parent, RB_BLACK);
+> >>                                 __rb_rotate_set_parents(parent, sibling, root,
+> >>                                                         RB_RED);
+> >>                                 augment_rotate(parent, sibling);
+> >
+> > This is actually the same invariant here - each path from sibling to a
+> > leaf must include at least one black node, and sibling is now known to
+> > be red, so it must have two black children.
+> If sibling is red, it can be made sure to have two non-null black
+> children? 
 
-On 05/09/2013 07:50, Jaegeuk Kim wrote:
-> Hi Jin,
->
-> 2013-09-04 (수), 21:17 +0800, Jin Xu:
->> Hi Jaegeuk,
->>
->> On 04/09/2013 17:40, Jaegeuk Kim wrote:
->>> Hi Jin,
->>>
->>> 2013-09-04 (수), 07:59 +0800, Jin Xu:
->>>> Hi Jaegeuk,
->>>>
->>>> On 03/09/2013 08:45, Jaegeuk Kim wrote:
->>>>> Hi Jin,
->>>>>
->>>>>> [...]
->>>>>>>
->>>>>>> It seems that we can obtain the performance gain just by setting the
->>>>>>> MAX_VICTIM_SEARCH to 4096, for example.
->>>>>>> So, how about just adding an ending criteria like below?
->>>>>>>
->>>>>>
->>>>>> I agree that we could get the performance improvement by simply
->>>>>> enlarging the MAX_VICTIM_SEARCH to 4096, but I am concerning the
->>>>>> scalability a little bit. Because it might always searching the whole
->>>>>> bitmap in some cases, for example, when dirty segments is 4000 and
->>>>>> total segments is 409600.
->>>>>>> [snip]
->>>>>> [...]
->>>>>>>
->>>>>>> 	if (p->max_search > MAX_VICTIM_SEARCH)
->>>>>>> 		p->max_search = MAX_VICTIM_SEARCH;
->>>>>>>
->>>>>>
->>>>>> The optimization does not apply to SSR mode. There has a reason.
->>>>>> As noticed in the test, when SSR selected the segments that have most
->>>>>> garbage blocks, then when gc is needed, all the dirty segments might
->>>>>> have very less garbage blocks, thus the gc overhead is high. This might
->>>>>> lead to performance degradation. So the patch does not change the
->>>>>> victim selection policy for SSR.
->>>>>
->>>>> I think it doesn't care.
->>>>> GC is only triggered during the direct node block allocation.
->>>>> What it means that we need to consider the number of GC triggers where
->>>>> the GC triggers more frequently during the normal data allocation than
->>>>> the node block allocation.
->>>>> So, I think it would not degrade performance significatly.
->>>>>
->>>>> BTW, could you show some numbers for this?
->>>>> Or could you test what I suggested?
->>>>>
->>>>> Thanks,
->>>>>
->>>>
->>>> I re-ran the test and got the following result:
->>>>
->>>> ---------------------------------------
->>>> 2GB SDHC
->>>> create 52023 files of size 32768 bytes
->>>> random re-write 100000 records of 4KB
->>>> ---------------------------------------
->>>>
->>>> | file creation (s) | rewrite time (s) | gc count | gc garbage blocks |
->>>>
->>>> no patch       341         4227             1174          174840
->>>> patched        296         2995             634           109314
->>>> patched (KIM)  324         2958             645           106682
->>>>
->>>> In this test, it does not show the minor performance degradation caused
->>>> by applying the patch to SSR mode. Instead, the performance is a little
->>>> better with what you suggested.
->>>>
->>>> I agree that the performance degradation would not be significant even
->>>> it does degrade. I ever saw the minor degradation in some workloads, but
->>>> I didn't save the data.
->>>>
->>>> So, I agree that we can apply the patch to SSR mode as well.
->>>>
->>>> And do you still have concerns about the formula for calculating the #
->>>> of search?
->>>
->>> Thank you for the test. :)
->>> What I've concerned is that, if it is really important to get a victim
->>> more accurately for the performance as you described, it doesn't need to
->>> calculate the number of searches IMO. Just let's select nr_dirty. Why
->>> not?
->>> Only the thing that we should consider is to handle the case where the
->>> nr_dirty is too large.
->>> For this, we can just limit the # of searches to avoid performance
->>> degradation.
->>>
->>> Still actually, I'm not convincing the effectiveness of your formula.
->>> If possible, could you show it with numbers?
->>
->> It's not easy to prove the effectiveness of the formula. It's just for
->> eliminating my concern on the scalability of searching. Since it does
->> not matter much for the performance improvement, we can put it aside
->> and choose the simpler method as you suggested.
->>
->> So, should I revise the patch based on what you suggested or will
->> you take care of it?
->
-> Could you make a patch with your performance description and sumbit it
-> again?
-> Thanks a lot,
->
+This is guaranteed by cases 1 and 2 in __rb_insert().
+
+> but my patchset sometimes trigger red sibling to have no
+> non-null black children. Do you know what reason usually cause this?
+> You know rbtree code is very tricky.
+
+I haven't looked at your code, but a good way of verifying the tree
+integrity is running rbtree_test.
+
+Thanks,
+Davidlohr
+
+> 
+> >
+> >
+> > Now I had a quick look at your code and I couldn't tell at which point
+> > the invariants are violated. However I did notice a couple suspicious
+> > things in the very first patch
+> > (f5c8f2b256d87ac0bf789a787e6b795ac0c736e8):
+> >
+> > 1- In both hot_range_tree_free() and and hot_tree_exit(), you try to
+> > destroy rb trees by iterating on each node with rb_next() and then
+> > freeing them. Note that rb_next() can reference prior nodes, which
+> > have already been freed in your scheme, so that seems quite unsafe.
+> >
+> > The simplest fix would be to do a full rb_erase() on each node before
+> > freeing it. (you may be able to avoid rebalancing the tree here as
+> > you're going to destroy it all, but if you really have that need it
+> > would be better to come up with a new API to cover it rather than
+> > hardcode it where you need it - I think it's easiest to start with the
+> > simple dumb fix of using rb_erase).
+> >
+> > 2- I did not look long enough to understand the locking, but it wasn't
+> > clear to me if you lock the rbtrees when doing rb_erase() on them
+> > (while I could more clearly see that you do it for insertions).
+> >
+> > I'm really not sure if either of these will fix the issues you're
+> > seeing, though. What I would try next would be to add explicit rbtree
+> > invariant checks before and after rbtree manipulations, like what the
+> > check() function does in lib/rbtree_test.c, to see at which point do
+> > they get broken.
+> >
+> > --
+> > Michel "Walken" Lespinasse
+> > A program is never fully debugged until the last user dies.
+> 
+> 
+> 
+
 
