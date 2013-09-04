@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762138Ab3IDX0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 19:26:05 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52688 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab3IDX0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 19:26:02 -0400
-Date: Wed, 4 Sep 2013 16:25:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch] mm, compaction: periodically schedule when freeing pages
-Message-ID: <alpine.DEB.2.02.1309041625060.29607@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1762208Ab3IDX1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 19:27:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761013Ab3IDX1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 19:27:34 -0400
+Date: Wed, 4 Sep 2013 19:27:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linux-scsi@vger.kernel.org, bgrove@attotech.com
+Subject: Re: [SCSI] esas2r: ATTO Technology ExpressSAS 6G SAS/SATA RAID
+ Adapter Driver
+Message-ID: <20130904232725.GA5727@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-scsi@vger.kernel.org, bgrove@attotech.com
+References: <20130903233716.5333B660D6B@gitolite.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903233716.5333B660D6B@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've been getting warnings about an excessive amount of time spent
-allocating pages for migration during memory compaction without
-scheduling.  isolate_freepages_block() already periodically checks for
-contended locks or the need to schedule, but isolate_freepages() never
-does.
+ > +struct esas2r_adapter {
+ > +	struct esas2r_target targetdb[ESAS2R_MAX_TARGETS];
+ > +	struct esas2r_target *targetdb_end;
+ ... 
+ > +	u8 fw_coredump_buff[ESAS2R_FWCOREDUMP_SZ];
 
-When a zone is massively long and no suitable targets can be found, this
-iteration can be quite expensive without ever doing cond_resched().
 
-Check periodically for the need to reschedule while the compaction free
-scanner iterates.
+ > +void esas2r_reset_chip(struct esas2r_adapter *a)
+ > +{
+ > +	if (!esas2r_is_adapter_present(a))
+ > +		return;
+ > +
+ > +	/*
+ > +	 * Before we reset the chip, save off the VDA core dump.  The VDA core
+ > +	 * dump is located in the upper 512KB of the onchip SRAM.  Make sure
+ > +	 * to not overwrite a previous crash that was saved.
+ > +	 */
+ > +	if ((a->flags2 & AF2_COREDUMP_AVAIL)
+ > +	    && !(a->flags2 & AF2_COREDUMP_SAVED)
+ > +	    && a->fw_coredump_buff) {
+ > +		esas2r_read_mem_block(a,
+ > +				      a->fw_coredump_buff,
+ > +				      MW_DATA_ADDR_SRAM + 0x80000,
+ > +				      ESAS2R_FWCOREDUMP_SZ);
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/compaction.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Comparing an array (fw_coredump_buff) to null probably isn't what you intended here.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -677,6 +677,13 @@ static void isolate_freepages(struct zone *zone,
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
- 
-+		/*
-+		 * This can iterate a massively long zone without finding any
-+		 * suitable migration targets, so periodically check if we need
-+		 * to schedule.
-+		 */
-+		cond_resched();
-+
- 		if (!pfn_valid(pfn))
- 			continue;
- 
+	Dave
