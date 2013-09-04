@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760348Ab3IDTRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 15:17:54 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:61969 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab3IDTRx (ORCPT
+	id S1760468Ab3IDTT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 15:19:56 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34213 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757127Ab3IDTTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 15:17:53 -0400
+	Wed, 4 Sep 2013 15:19:54 -0400
+Message-ID: <52278791.3010101@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 14:18:41 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <5226FAE1.5070201@fb.com>
-References: <5226FAE1.5070201@fb.com>
-Date: Wed, 4 Sep 2013 12:17:52 -0700
-X-Google-Sender-Auth: 9LTdoBd33CoRVUiDwZ58buYQTUQ
-Message-ID: <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com>
-Subject: Re: clock_gettime_ns
-From: John Stultz <john.stultz@linaro.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Kumar Sundararajan <kumar@fb.com>,
-        Richard Cochran <richardcochran@gmail.com>
+To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] rsxx: Handling failed pci_map_page on PowerPC
+ and double free.
+References: <20130904185902.GE24898@oc6784271780.ibm.com>
+In-Reply-To: <20130904185902.GE24898@oc6784271780.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090419-0928-0000-0000-000001450443
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 2:18 AM, Arun Sharma <asharma@fb.com> wrote:
-> A couple of years ago Andy posted this patch series:
->
-> http://thread.gmane.org/gmane.linux.kernel/1233209/
->
-> These patches have been in use at facebook for a couple of years and along
-> with a vDSO implementation of thread_cpu_time(), they have proven useful for
-> our profilers.
->
-> I didn't see any arguments against this patch series. Did I miss some
-> discussion on the topic?
+On 09/04/2013 01:59 PM, Philip J. Kelleher wrote:
+> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+> 
+> The rsxx driver was not checking the correct value during a
+> pci_map_page failure. Fixing this also uncovered a
+> double free if the bio was returned before it was
+> broken up into indiviadual 4k dmas, that is also
+> fixed here.
+> 
+> Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-(I've got a new email address, just fyi)
+Reviewed-by: Brian King <brking@linux.vnet.ibm.com>
 
-So, looking at the thread, I think Richard brought up the issue that
-the net performance gain with the new interface wasn't significant
-after the optimizations were applied to both interfaces.
 
-If we're going to add a new interface that uses something other then a
-timespec, we likely need to put some serious thought into that new
-type, and see how it could be used across a number of syscalls. Some
-of the discussion around dealing with the 2038 issue touched on this.
+-- 
+Brian King
+Power Linux I/O
+IBM Linux Technology Center
 
-But getting those optimizations to the existing interface merged would
-be nice, though.  Anyone want to resend the patch?
 
-thanks
--john
