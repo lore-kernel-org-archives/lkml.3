@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab3IDH1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:27:42 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:57777 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab3IDH1j (ORCPT
+	id S1762077Ab3IDHhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:37:04 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:51217 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333Ab3IDHhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:27:39 -0400
+	Wed, 4 Sep 2013 03:37:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpom06N4DNZxrQcey-73o1jpQkNpCce2=-Wn+mDHLG9r-3g@mail.gmail.com>
-References: <CAKohponWn-RN7-6sdhghd6RGCOd357G+TKLsxHfqnSCuMD7xxw@mail.gmail.com>
-	<CANqRtoTSO2yyP35naDe4y6a7rL99=cSs4-bJAWOxR5HL2gbpuw@mail.gmail.com>
-	<CAKohpom06N4DNZxrQcey-73o1jpQkNpCce2=-Wn+mDHLG9r-3g@mail.gmail.com>
-Date: Wed, 4 Sep 2013 16:27:37 +0900
-Message-ID: <CANqRtoQF8-W=EFcV+LEPGbJf=h_yfyjVg=+0F5Sif15jB8XjBg@mail.gmail.com>
-Subject: Re: [Query] CPUFreq: Does these machines have separate clock domains
- for CPUs?
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-cris-kernel@axis.com,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Miao Steven <realmz6@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
-        Mikael Starvik <starvik@axis.com>, Paul Mundt <lethal@linux-sh.org>,
-        sparclinux@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>, John Crispin <blogic@openwrt.org>
+Date: Wed, 4 Sep 2013 09:37:00 +0200
+Message-ID: <CAEk6gTDzhO=2uij-Yps00SW5vJLoeeiixwgUGw9rc=51W+Ls_A@mail.gmail.com>
+Subject: HW timers question (clocksource vs event)
+From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Hi all,
+I'd like to install one timer that provokes IRQ on timeout to measure
+IRQ latencies. I can see that in dw_apb_timer.c Linux driver that
+there is clocksource and event type of timers.
 
-On Fri, Aug 30, 2013 at 4:33 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 30 August 2013 12:18, Magnus Damm <magnus.damm@gmail.com> wrote:
->> Hi Viresh,
->>
->> On Thu, Aug 29, 2013 at 7:15 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> Hi,
->>>
->>> I have been doing some CPUFreq cleanup work and
->>> wanted to know if the below mentioned machines have separate
->>> clock domains for their CPUs or all share the same domain?
->>>
->>> So, that we can use some generic routines for these drivers which
->>> would eventually do:
->>>
->>> cpumask_setall(policy->cpus);
->>>
->>> And I wanted to make sure that this doesn't break them.. :)
->>>
->>> ......
->>>
->>> The drivers are:
->> ...
->>> drivers/cpufreq/sh-cpufreq.c
->> ...
->>
->> The above SH cpufreq driver seems to be written with SMP in mind, but
->> I would say SMP is a very rare case for SH. So I believe it can be
->> considered as UP-only at this point. If Paul disagrees I'm quite sure
->> he will tell us.
->
-> Okay.. The problem isn't really SMP but different clock domains for CPUs
-> in a SMP system..
->
-> So, even if we have a SMP SH machine, will it have same clock line for
-> all CPUs?
 
-Yeah, I understand your question but I'm afraid that I don't know the
-answer myself.
+Can someone please explain me what is really the difference between clocksource
+and event type of timers? If I'd like to produce an interrupt every
+100mS which one should be used?
 
-> I will go with the change anyway..
+Based on your instructions I have added test_timer to dw_apb_timer_of.c :
 
-Good plan. Thanks for cleaning up the cpufreq bits.
+static void __init timer_init(void)
+{
+struct device_node *event_timer, *source_timer, *test_timer;
 
-Cheers,
+event_timer = of_find_matching_node(NULL, osctimer_ids);
+if (!event_timer)
+panic("No timer for clockevent");
+add_clockevent(event_timer);
 
-/ magnus
+source_timer = of_find_matching_node(NULL, sptimer_ids);
+if (!source_timer)
+panic("No timer for clocksource");
+add_clocksource(source_timer);
+
+    //test_timer = of_find_matching_node(source_timer, sptimer_ids);
+ test_timer = of_find_node_by_path("/soc/timer1@ffc09000");
+if (!test_timer)
+panic("test_TIMER: No timer for clockevent");
+add_clockevent(test_timer);
+
+of_node_put(event_timer);
+of_node_put(source_timer);
+    of_node_put(test_timer);
+
+init_sched_clock();
+}
+
+I can now see the timer1 when I do cat proc/interrupts:
+
+root@socfpga_cyclone5:~# cat /proc/interrupts
+           CPU0       CPU1
+525:       2242       2252       GIC  twd
+648:         19          0       GIC  eth0
+653:          0          0       GIC  dwc_otg, dwc_otg_pcd, dwc_otg_hcd:usb1
+656:          0          0       GIC  dwc_otg, dwc_otg_pcd, dwc_otg_hcd:usb2
+667:      54610          0       GIC  dw-mci
+679:          0          0       GIC  ff705000.spi
+682:          0          0       GIC  dw_spi0
+684:          0          0       GIC  dw_spi1
+686:          6          0       GIC  ffc04000.i2c
+687:          0          0       GIC  ffc05000.i2c
+690:        839          0       GIC  serial
+696:          0          0       GIC  timer1
+697:          9          0       GIC  timer2
+IPI0:          0          0  CPU wakeup interrupts
+IPI1:          0          0  Timer broadcast interrupts
+IPI2:       1117       1139  Rescheduling interrupts
+IPI3:          0          0  Function call interrupts
+IPI4:          2          1  Single function call interrupts
+IPI5:          0          0  CPU stop interrupts
+Err:          0
+
+
+However, it provokes 0 interruptions. Looks like it is not enabled,
+although enabling procedure is same like for timer2.
+
+I tried then initializing it to CPU1, this did not help neither.
+I tried defining it as a clocksource - then it was not visible at all.
+
+I have questions at this point - how to enable timer1 to start
+periodically provoking interrupt?
+
+Thanks and best regards,
+Drasko
