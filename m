@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761170Ab3IDVLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 17:11:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17827 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab3IDVLo (ORCPT
+	id S1760780Ab3IDVbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 17:31:53 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:61225 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3IDVbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 17:11:44 -0400
-Date: Wed, 4 Sep 2013 17:11:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Li Zefan <lizefan@huawei.com>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, malcolm.crossley@citrix.com,
-        david.vrabel@citrix.com, xen-devel@lists.xen.org
-Subject: Re: [PATCH] net/core: Order-3 frag allocator causes SWIOTLB bouncing
- under Xen
-Message-ID: <20130904211110.GA17758@phenom.dumpdata.com>
-References: <1378327638-23956-1-git-send-email-zoltan.kiss@citrix.com>
- <1378328440.7360.124.camel@edumazet-glaptop>
+	Wed, 4 Sep 2013 17:31:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378328440.7360.124.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com>
+References: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com>
+Date: Wed, 4 Sep 2013 14:31:49 -0700
+X-Google-Sender-Auth: 52ZhmyYVu1R31xsoEDkmfUYsjLQ
+Message-ID: <CA+55aFzbzz4_YNaM+9jAP2Znkjzar42iTM2wFfRX6ySDwBAUeQ@mail.gmail.com>
+Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking rename_lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 02:00:40PM -0700, Eric Dumazet wrote:
-> On Wed, 2013-09-04 at 21:47 +0100, Zoltan Kiss wrote:
-> > THIS PATCH IS NOT INTENDED TO BE UPSTREAMED, IT HAS ONLY INFORMING PURPOSES!
-> > 
-> > I've noticed a performance regression with upstream kernels when used as Dom0
-> > under Xen. The classic kernel can utilize the whole bandwidth of a 10G NIC
-> > (ca. 9.3 Gbps), but upstream can reach only ca. 7 Gbps. I found that it
-> > happens because SWIOTLB has to do double buffering. The per task frag
-> > allocator introduced in 5640f7 creates 32 kb frags, which are not contiguous
-> > in mfn space.
-> > This patch provides a workaround by going back to the old way. The possible
-> > ideas came up to solve this:
-> > 
-> > * make sure Dom0 memory is contiguous: it sounds trivial, but doesn't work with
-> > driver domains, and there are lots of situations where this is not possible.
-> > * use PVH Dom0: so we will have IOMMU. In the future sometime.
-> > * use IOMMU with PV Dom0: this seems to happen earlier.
-> > 
-> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> > ---
-> >  net/core/sock.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/net/core/sock.c b/net/core/sock.c
-> > index 2c097c5..854a0ea 100644
-> > --- a/net/core/sock.c
-> > +++ b/net/core/sock.c
-> > @@ -1812,7 +1812,7 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
-> >  EXPORT_SYMBOL(sock_alloc_send_skb);
-> >  
-> >  /* On 32bit arches, an skb frag is limited to 2^15 */
-> > -#define SKB_FRAG_PAGE_ORDER	get_order(32768)
-> > +#define SKB_FRAG_PAGE_ORDER	get_order(4096)
-> >  
-> 
-> Well, this hack is not new...
-> 
-> We have dev->gso_max_size and dev->gso_max_segs
-> 
-> We also have in net-next sk_pacing_rate and dynamic TSO sizing.
-> 
-> Maybe you could add proper infrastructure to deal with Xen limitations.
+On Wed, Sep 4, 2013 at 12:05 PM, Waiman Long <Waiman.Long@hp.com> wrote:
+> +       rcu_read_unlock();
+> +       if (read_seqretry(&rename_lock, seq))
+> +               goto restart;
 
-I think Ian posted at some point an sysctl patch for that (more for
-debugging that anything else). And it kind
-of stalled: http://lists.xen.org/archives/html/xen-devel/2012-10/msg01832.html
+Btw, you have this pattern twice, and while it's not necessarily
+incorrect, it's a bit worrisome for performance.
 
-Is that what you mean by proper infrastructure ?
+The rcu_read_unlock() is very possibly going to trigger an immediate
+scheduling event, so checking the sequence lock after dropping the
+read-lock sounds like it would make it much easier to hit the race
+with some rename.
 
-Oh wait, did you mean via dev and not the whole system wide sysctl?
+I'm also a tiny bit worried about livelocking on the sequence lock in
+the presence of lots of renames, so I'm wondering if the locking
+should try to approximate what we do for the RCU lookup path: start
+off optimistically using just the RCU lock and a sequence point, but
+if that fails, fall back to taking the real lock. Maybe using a
+counter ("try twice, then get the rename lock for writing")
 
-> 
-> 
-> 
+Hmm?
+
+             Linus
