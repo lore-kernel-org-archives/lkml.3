@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964819Ab3IDPyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:54:37 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:45969 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934929Ab3IDPyf (ORCPT
+	id S935240Ab3IDP5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:57:09 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49943 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934929Ab3IDP5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:54:35 -0400
-Date: Wed, 4 Sep 2013 08:54:34 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: David Howells <dhowells@redhat.com>
-cc: Milosz Tanski <milosz@adfin.com>, ceph-devel@vger.kernel.org,
-        zheng.z.yan@intel.com, linux-cachefs@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCHv4 0/5] ceph: persistent caching with fscache
-In-Reply-To: <17341.1378309753@warthog.procyon.org.uk>
-Message-ID: <alpine.DEB.2.00.1309040851080.27503@cobra.newdream.net>
-References: <alpine.DEB.2.00.1308212203320.1479@cobra.newdream.net> <cover.1375999914.git.milosz@adfin.com> <17341.1378309753@warthog.procyon.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 4 Sep 2013 11:57:08 -0400
+Date: Wed, 4 Sep 2013 17:56:56 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com
+Subject: Re: [PATCH net-next 1/2] tuntap: purge socket error queue on detach
+Message-ID: <20130904155656.GB4194@netboy>
+References: <1378269226-5969-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378269226-5969-1-git-send-email-jasowang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David!
+On Wed, Sep 04, 2013 at 12:33:45PM +0800, Jason Wang wrote:
+> Commit eda297729171fe16bf34fe5b0419dfb69060f623
+> (tun: Support software transmit time stamping) will queue skbs into error queue
+> when tx stamping is enabled. But it forgets to purge the error queue during
+> detach. This patch fixes this.
+> 
+> Cc: Richard Cochran <richardcochran@gmail.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-On Wed, 4 Sep 2013, David Howells wrote:
-> Sage Weil <sage@inktank.com> wrote:
-> 
-> > David, are the fscache patches here ready for the next merge window?  Do 
-> > you have a preference for whose tree they go through?
-> 
-> There's only one problem - patch 1 needs to come _after_ patch 2 to avoid
-> breaking git bisect.  Plus these patches 2 and 4 extend the fscache API
-> without adjusting the documentation - but that can be added later.
-> 
-> And I think Milosz deserves a beer (or other poison of his choice;-) for
-> finding a longstanding irritating bug.
-> 
-> I think AFS, CIFS, NFS and 9P all need patching too, but I can attend to that.
-> 
-> Should I take the patches through my tree?  Then I can make the adjustments.
-
-Sure.  Do you want the Ceph patches as well, or just the fscache bits?  
-I'll repost the latest version, as it's gotten several fixes squashed in.
-
-Thanks!
-sage
+Acked-by: Richard Cochran <richardcochran@gmail.com>
