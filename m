@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab3IDWYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:24:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38519 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab3IDWYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:24:30 -0400
-Message-ID: <5227B31A.3070404@wwwdotorg.org>
-Date: Wed, 04 Sep 2013 16:24:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1761482Ab3IDW3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:29:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59995 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753825Ab3IDW3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:29:18 -0400
+Message-ID: <5227B432.8070205@zytor.com>
+Date: Wed, 04 Sep 2013 15:29:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-CC: Mikko Perttunen <mperttunen@nvidia.com>, thierry.reding@gmail.com,
-        tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] host1x: hdmi: Enable Vdd earlier for hotplug/DDC
-References: <1377704922-2824-1-git-send-email-mperttunen@nvidia.com> <1377704922-2824-4-git-send-email-mperttunen@nvidia.com> <52277F90.40109@wwwdotorg.org> <5227AE4F.8050603@kapsi.fi>
-In-Reply-To: <5227AE4F.8050603@kapsi.fi>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: John Stultz <john.stultz@linaro.org>
+CC: Andy Lutomirski <luto@amacapital.net>, Arun Sharma <asharma@fb.com>,
+        LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>
+Subject: Re: clock_gettime_ns
+References: <5226FAE1.5070201@fb.com> <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com> <CANcMJZAi_738t-eDUphC6U_25xFS0NqQqdUZAzu7Aijqmrj=wA@mail.gmail.com> <CALCETrVc-3j=7bP13dkYwqxUg77rdauHQ8_KEti0khh-HX220A@mail.gmail.com> <52279E1D.3060907@linaro.org>
+In-Reply-To: <52279E1D.3060907@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 04:03 PM, Mikko Perttunen wrote:
-> On 09/04/2013 09:44 PM, Stephen Warren wrote:
->> On 08/28/2013 09:48 AM, Mikko Perttunen wrote:
->>> The Vdd regulator used to be enabled only at tegra_output_hdmi_enable,
->>> which is called after a sink is detected. However, the HDMI hotplug pin
->>> works by returning the voltage supplied by the Vdd pin, so this meant
->>> that the hotplug pin was never asserted and the sink was not detected
->>> unless the Vdd regulator was set to be always on.
->>>
->>> This patch moves the enable to the tegra_hdmi_drm_init function to make
->>> sure the regulator will get enabled.
+On 09/04/2013 01:54 PM, John Stultz wrote:
 >>
->> The DT binding document isn't very clear on this topic (and should be
->> fixed): What is this regulator intended to control? If this regulator
->> solely controls the supply to the hotplug detection circuit, this change
->> makes sense. If the regulator mainly supplies something else (e.g. part
->> of the HDMI core on the Tegra chip), then perhaps this change isn't
->> correct. The correct approach might be to introduce another (optional)
->> regulator specifically for the hotplug circuit. Presumably both DT
->> properties vdd-supply and hotplug-supply could point at the same
->> regulator if that's the way the HW was wired up.
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> I'd advocate for going whole hog and returning, atomically:
 >>
-> 
-> AFAICT, it controls the Vdd pin on the HDMI port, so it just affects the
-> hotplug pin and the DDC I2C bus power.
+>>  - TAI (nanoseconds from epoch)
+>>  - UTC - TAI (seconds or nanoseconds) *
+>>  - TAI - CLOCK_MONOTONIC (nanoseconds)
+>>  - a leap second flag.
+>>
+>> * There are various ways to define this.  My fancy UTC - TAI wouldn't
+>> actually need the leap-second flag, since the UTC time would indicate
+>> leap seconds directly.
 
-Ah OK, then this code change makes sense. It'd be useful to put what you
-just wrote into the binding doc.
+Not so (see below).
+
+>  With the conventional approach, someone would
+>> have to decide whether the leap second count increments at the
+>> beginning or the end of the leap second.
+> 
+> Well, adjtimex() gives you UTC & tai offset & leapsecond flag in one go.
+> 
+
+But not fractional-second information,right?  I believe it would be
+desirable if we can create a small structure (<= 16 bytes) for this.
+
+UTC - TAI is always an integral number of seconds, possibly negative
+(unlikely, but...)
+
+Something like:
+
+	struct time_ns {
+		u64 tai_s;
+		u32 tai_ns;
+		s16 utcdelta;	/* TAI - UTC */
+		u8 leap;	/* Positive leap second in progress */
+		u8 pad;		/* Something useful here maybe? */
+	};
+
+Why the leap second flag?  It is necessary to represent the 61st second
+in a minute during a positive leap second.  Consider the below
+(artificial) cases:
+
+(leap second)
+TAI	31536000	31536001	31536002	31536003
+Delta	2		2		?		3
+UTC	23:59:58	23:59:59	23:59:60	00:00:00
+
+(no leap second)
+TAI	31536000	31536001	31536002	31536003
+Delta	2		2		2		2
+UTC	23:59:58	23:59:59	00:00:00	00:00:01
+
+(no leap second)
+TAI	31536000	31536001	31536002	31536003
+Delta	3		3		3		3
+UTC	23:59:57	23:59:58	23:59:59	00:00:00
+
+There simply is no sufficiently meaningful value that can be put on the
+delta during a positive leap second.  Both 2 and 3 would be wrong in the
+above example, giving UTC of either 00:00:00 or 23:59:59.
+
+There is a way to do without the leap second flag by making UTC the main
+time; this does have the advantage of higher compatibility with time_t,
+struct timespec, etc:
+
+	struct timespecx {
+		time_t tx_sec;		/* POSIX UTC seconds */
+		u32 tx_ns;		/* Nanoseconds */
+		s32 tx_taidelta;	/* TAI - UTC */
+	};
+
+The trick here is that tx_ns can grow all the way up to 1,999,999,999
+during a positive leap second.
+
+(Note that while planning these sorts of things it is worth noting that
+it is at least theoretically possible that another shift in the rotation
+of the Earth could one day mean needing multiple leap seconds, so at
+least allowing for them would be a good idea.  Both proposals above
+would handle that -- up to 255 leap seconds for the former and 4 leap
+seconds for the latter, either of which should be way more than necessary.)
+
+	-hpa
+
+
+	-hpa
 
