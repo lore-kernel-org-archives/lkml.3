@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090Ab3IDQgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:36:01 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:43468 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763120Ab3IDQdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:33:09 -0400
-Date: Wed, 4 Sep 2013 17:33:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>, wsa@the-dreams.de
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: dt: i2c: Add LPS001WP to the Trivial
- Devices list
-Message-ID: <20130904163303.GC8980@lee--X1>
-References: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
- <20130904142422.GM18206@e106331-lin.cambridge.arm.com>
- <20130904151159.GA8980@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S965070Ab3IDQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:35:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6014 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763130Ab3IDQdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 12:33:10 -0400
+Date: Wed, 04 Sep 2013 12:32:10 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        kirill.shutemov@linux.intel.com, Alex Thorlton <athorlton@sgi.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <1378312330-afoa3r2y-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <87li3dvz3k.fsf@linux.vnet.ibm.com>
+References: <1377883120-5280-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1377883120-5280-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <87li3dvz3k.fsf@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] hugetlbfs: support split page table lock
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130904151159.GA8980@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looping Wolfram back in, as I cocked up his email address.
+Hi Aneesh,
 
-> Cheers for producing a binding.
+On Wed, Sep 04, 2013 at 12:43:19PM +0530, Aneesh Kumar K.V wrote:
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 > 
-> On Wed, Sep 04, 2013 at 02:50:55PM +0100, Lee Jones wrote:
-> > LPS001WP is a Pressure and Temperature sensor.
-> > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > Currently all of page table handling by hugetlbfs code are done under
+> > mm->page_table_lock. So when a process have many threads and they heavily
+> > access to the memory, lock contention happens and impacts the performance.
+> >
+> > This patch makes hugepage support split page table lock so that we use
+> > page->ptl of the leaf node of page table tree which is pte for normal pages
+> > but can be pmd and/or pud for hugepages of some architectures.
+> >
+> > ChangeLog v2:
+> >  - add split ptl on other archs missed in v1
+> >
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 > > ---
-> >  Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > index ad6a738..6038807e6 100644
-> > --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-> > @@ -57,6 +57,7 @@ st-micro,24c256		i2c serial eeprom  (24cxx)
-> >  stm,m41t00		Serial Access TIMEKEEPER
-> >  stm,m41t62		Serial real-time clock (RTC) with alarm
-> >  stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
-> > +stm,lps001wp		Pressure and Temperature sensor
+> >  arch/powerpc/mm/hugetlbpage.c |  6 ++-
+> >  arch/tile/mm/hugetlbpage.c    |  6 ++-
+> >  include/linux/hugetlb.h       | 20 ++++++++++
+> >  mm/hugetlb.c                  | 92 ++++++++++++++++++++++++++-----------------
+> >  mm/mempolicy.c                |  5 ++-
+> >  mm/migrate.c                  |  4 +-
+> >  mm/rmap.c                     |  2 +-
+> >  7 files changed, 90 insertions(+), 45 deletions(-)
+> >
+> > diff --git v3.11-rc3.orig/arch/powerpc/mm/hugetlbpage.c v3.11-rc3/arch/powerpc/mm/hugetlbpage.c
+> > index d67db4b..7e56cb7 100644
+> > --- v3.11-rc3.orig/arch/powerpc/mm/hugetlbpage.c
+> > +++ v3.11-rc3/arch/powerpc/mm/hugetlbpage.c
+> > @@ -124,6 +124,7 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
+> >  {
+> >  	struct kmem_cache *cachep;
+> >  	pte_t *new;
+> > +	spinlock_t *ptl;
+> >
+> >  #ifdef CONFIG_PPC_FSL_BOOK3E
+> >  	int i;
+> > @@ -141,7 +142,8 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
+> >  	if (! new)
+> >  		return -ENOMEM;
+> >
+> > -	spin_lock(&mm->page_table_lock);
+> > +	ptl = huge_pte_lockptr(mm, new);
+> > +	spin_lock(ptl);
 > 
-> As I hinted at in the other thread [1], I don't think this can be
-> documented as a trivial binding -- the driver expects a couple of
-> regulators which should be described in the binding (or the driver
-> shouldn't be using them...).
-
-Surely all devices need to be powered and would subsequently require a
-regulator of one description or other? We don't really *need* to
-manually enable it on my platform but that's because it's 'always
-on', but we do anyway for completeness.
-
-Would a (regulator: vdd) note in this patch be suitable? It seems a
-shame to have to produce a boilerplate binding entry for the sake of a
-regulator.
-
-Wolfram, what's the common procedure in cases such as these?
-
-> Also, in the other thread the "st," prefix was used [2], while "stm," is
-> listed at the prefix in the binding. As far as I can see, "st," should
-> be used, as it's in vendor-prefixes and "stm," is not.
 > 
-> I'm happy to cook up a patch adding deprecation notes and corrected
-> strings for the existing incorrect "stm," bindings.
+> Are you sure we can do that for ppc ?
+> 	new = kmem_cache_zalloc(cachep, GFP_KERNEL|__GFP_REPEAT);
 
-Sure, feel free.
+Ah, thanks. new is not a pointer to one full page occupied by page
+table entries, so trying to use struct page of it is totally wrong.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> The page for new(pte_t) could be shared right ? which mean a deadlock ?
+
+Yes, that's disastrous.
+
+> May be you should do it at the pmd level itself for ppc
+
+Yes, that's possible, but I simply drop the changes in __hugepte_alloc()
+for now because this lock seems to protect us from the race between concurrent
+calls of __hugepte_alloc(), not between allocation and read/write access.
+Split ptl is used to avoid race between read/write accesses, so I think
+that using different types of locks here is not dangerous.
+# I guess that that's why we now use mm->page_table_lock for __pte_alloc()
+# and its family even if USE_SPLIT_PTLOCKS is true.
+
+A bit off-topic, but I found that we have a bogus comment on
+hugetlb_free_pgd_range in arch/powerpc/mm/hugetlbpage.c saying
+"Must be called with pagetable lock held."
+This seems not true because the caller free_pgtables() and its
+callers (unmap_region() and exit_mmap()) never hold it.
+I guess that it's just copied from free_pgd_range() and it's also
+false for this function. I'll post a patch to remove this later.
+
+Anyway, thank you for valuable comments!
+
+Thanks,
+Naoya Horiguchi
+
+> >  #ifdef CONFIG_PPC_FSL_BOOK3E
+> >  	/*
+> >  	 * We have multiple higher-level entries that point to the same
+> > @@ -174,7 +176,7 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
+> >  #endif
+> >  	}
+> >  #endif
+> > -	spin_unlock(&mm->page_table_lock);
+> > +	spin_unlock(ptl);
+> >  	return 0;
+> >  }
+> >
+> 
+> 
+> -aneesh
+>
