@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762217Ab3IDHEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:04:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46050 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755775Ab3IDHEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:04:10 -0400
-Message-ID: <1378278241.26292.60.camel@nilsson.home.kraxel.org>
-Subject: Re: [PATCH 4/5] uas: add dead request list
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "open list:USB ATTACHED SCSI" <linux-scsi@vger.kernel.org>,
-        "open list:USB MASS STORAGE..." 
-	<usb-storage@lists.one-eyed-alien.net>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 04 Sep 2013 09:04:01 +0200
-In-Reply-To: <20130903173908.GA4965@xanatos>
-References: <1378121129-32594-1-git-send-email-kraxel@redhat.com>
-	 <1378121129-32594-5-git-send-email-kraxel@redhat.com>
-	 <20130903173908.GA4965@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1762069Ab3IDHIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:08:55 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60068 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab3IDHIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 03:08:54 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-e1-5226dc84476b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1378187054-27401-1-git-send-email-namhyung@kernel.org>
+	<1378187054-27401-11-git-send-email-namhyung@kernel.org>
+	<5225BEF4.5030901@hitachi.com>
+Date: Wed, 04 Sep 2013 16:08:52 +0900
+In-Reply-To: <5225BEF4.5030901@hitachi.com> (Masami Hiramatsu's message of
+	"Tue, 03 Sep 2013 19:50:28 +0900")
+Message-ID: <871u55t663.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2013-09-03 at 10:39 -0700, Sarah Sharp wrote:
-> Don't you need to send an ABORT TASK message to the device to cancel the
-> outstanding request for that stream ID?  I don't see that in this code.
-> I see lots of URB cancellation code, but nothing to remove the request
-> from the device-side queue.
+On Tue, 03 Sep 2013 19:50:28 +0900, Masami Hiramatsu wrote:
+> (2013/09/03 14:44), Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Fetching from user space should be done in a non-atomic context.  So
+>> use a per-cpu buffer and copy its content to the ring buffer
+>> atomically.  Note that we can migrate during accessing user memory
+>> thus use a per-cpu mutex to protect concurrent accesses.
+>> 
+>> This is needed since we'll be able to fetch args from an user memory
+>> which can be swapped out.  Before that uprobes could fetch args from
+>> registers only which saved in a kernel space.
+>> 
+>> While at it, use __get_data_size() and store_trace_args() to reduce
+>> code duplication.
 
-It is there.  uas_eh_abort_handler() cancels a single request.  There is
-also uas_eh_device_reset_handler() which will try a LOGICAL UNIT RESET.
+[SNIP]
 
-Those might not work though, depending on the failure mode.  If your
-usb3 streams stop working you can't cancel scsi requests that way.
+>> +	size = esize + tu->p.size + dsize;
+>>  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+>> -						  size + tu->p.size, 0, 0);
+>> -	if (!event)
+>> +						  size, 0, 0);
+>> +	if (!event) {
+>> +		mutex_unlock(mutex);
+>>  		return;
+>
+> Just for a maintenance reason, I personally like to use "goto" in this case
+> to fold up the mutex_unlock. :)
+>
+> Other parts are good for me.
+>
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-> Or does it simply ensure that SCSI bus reset works?
+Thank you for review!
 
-The scsi layer invokes the uas_eh_bus_reset_handler() as last resort,
-when everything else fails.  So, yes, there we'll have the sledge hammer
-approach to recover: cancel all usb urbs, abort all requests, full usb
-device reset + re-initialization.  But we hardly have another chance
-when the less invasive methods to cancel a requests didn't work ...
+I'll change it as you said and fix atomic_dec bug that Jovi found.
 
-> Plus, as Joe mentioned, this code is full of BUG_ON(), which is not
-> friendly to users, and doesn't increase my confidence that the driver is
-> ready to have CONFIG_BROKEN removed.
-
-Huh?  Why you are thinking BUG_ON() is a indicator for bad code quality?
-I'm using BUG_ON() like assert() in userspace, i.e. they are extra
-sanity checks which should never ever trigger.
-
-I can switch them to less disruptive WARN_ON() if that is the preferred
-way these says.
-
-cheers,
-  Gerd
-
-
+Thanks,
+Namhyung
