@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab3IDTdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 15:33:14 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:3220 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab3IDTdN (ORCPT
+	id S1757161Ab3IDTlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 15:41:52 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:50083 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3IDTlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 15:33:13 -0400
-Message-ID: <52278AEC.2020307@hp.com>
-Date: Wed, 04 Sep 2013 15:33:00 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 4 Sep 2013 15:41:50 -0400
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking
- rename_lock
-References: <1378321523-40893-1-git-send-email-Waiman.Long@hp.com> <20130904191104.GK13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130904191104.GK13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <16226.1378318400@warthog.procyon.org.uk>
+References: <cover.1375999914.git.milosz@adfin.com>
+	<306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com>
+	<18832.1378311843@warthog.procyon.org.uk>
+	<CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com>
+	<18284.1378315570@warthog.procyon.org.uk>
+	<CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com>
+	<16226.1378318400@warthog.procyon.org.uk>
+Date: Wed, 4 Sep 2013 15:41:48 -0400
+Message-ID: <CANP1eJFmMNEr9orps6Dd983sp6QmMfBsMT+dY1CvZ+u0nXKf4w@mail.gmail.com>
+Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
+From: Milosz Tanski <milosz@adfin.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Hongyi Jia <jiayisuse@gmail.com>, ceph-devel <ceph-devel@vger.kernel.org>,
+        Sage Weil <sage@inktank.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 03:11 PM, Al Viro wrote:
-> On Wed, Sep 04, 2013 at 03:05:23PM -0400, Waiman Long wrote:
->>
->>   static int prepend_name(char **buffer, int *buflen, struct qstr *name)
->>   {
->> -	return prepend(buffer, buflen, name->name, name->len);
->> +	/*
->> +	 * With RCU path tracing, it may race with rename. Use
->> +	 * ACCESS_ONCE() to make sure that it is either the old or
->> +	 * the new name pointer. The length does not really matter as
->> +	 * the sequence number check will eventually catch any ongoing
->> +	 * rename operation.
->> +	 */
->> +	const char *dname = ACCESS_ONCE(name->name);
->> +	int   dlen = name->len;
->> +
->> +	if (unlikely(!dname || !dlen))
->> +		return -EINVAL;
->> +	return prepend(buffer, buflen, dname, dlen);
-> NAK.  A race with d_move() can very well leave you with dname pointing into
-> an object of length smaller than dlen.  You *can* copy it byte-by-byte
-> and rely on NUL-termination, but you can't rely on length being accurate -
-> not without having excluded d_move().
+On Wed, Sep 4, 2013 at 2:13 PM, David Howells <dhowells@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> wrote:
+>
+>> Is it as simple as stick a mutex at the top of the
+>> __fscache_check_consistency function before we try to find the object?
+>
+> You can lock a mutex in a function, but where are you actually going to place
+> the mutex struct?  And what other code is going to take it?  To do this, you'd
+> have to place the mutex struct in fscache_cookie.  The problem is that you
+> have to protect the pointer from fscache_cookie to fscache_object - so placing
+> the mutex in fscache_object doesn't help.
 
-I have thought about that. But if a d_move() is going on, the string in 
-the buffer will be discarded as the sequence number will change. So 
-whether or not it have embedded null byte shouldn't matter. That is why 
-I didn't add code to do byte-by-byte copy at this first patch. I can add 
-code to do that if you think it is safer to do so.
+David,
 
-Regards,
-Longman
+I meant lock cookie->lock inside of __fscache_check_consistency in the
+beginning of the function. I don't see the need to push this into the
+netfs code.
+
+- Milosz
