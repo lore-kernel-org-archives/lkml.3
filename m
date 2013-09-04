@@ -1,191 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935052Ab3IDOm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:42:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9684 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762776Ab3IDOhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:37:04 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=0DKgs0syVEkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fWtwRutPKNMA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=1N1UImZtlF93Ckg_JSIA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130904143701.946250603@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 04 Sep 2013 10:36:02 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
+	id S964789Ab3IDOnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:43:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935061Ab3IDOnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:43:18 -0400
+From: Frantisek Hrbata <fhrbata@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [for-next][PATCH 10/18] ftrace: Add selftest to check if RCU unsafe functions are filtered
- properly
-References: <20130904143552.456506259@goodmis.org>
-Content-Disposition: inline; filename=0009-ftrace-Add-selftest-to-check-if-RCU-unsafe-functions.patch
+Cc: jstancek@redhat.com, keescook@chromium.org, peter.oberparleiter@de.ibm.com,
+        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
+        mgahagan@redhat.com, agospoda@redhat.com, akpm@linux-foundation.org
+Subject: [PATCH v2 3/4] gcov: compile specific gcov implementation based on gcc version
+Date: Wed,  4 Sep 2013 16:42:55 +0200
+Message-Id: <1378305776-3644-4-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
+References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Compile the correct gcov implementation file for the specific gcc version.
 
-Add a boot time start up test that has a RCU safe ftrace_ops as well
-as an unsafe one. Make sure the RCU safe ops can trace RCU unsafe
-functions while the unsafe ftrace_ops can not.
+v2: - added possibility to explicitly select gcc version during configuration,
+      this is based on code provided by Peter Oberparleiter.
+    - added a note about gcov format selection to gcov.txt
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
 ---
- kernel/trace/trace.h                  |    2 +
- kernel/trace/trace_selftest.c         |   94 +++++++++++++++++++++++++++++++++
- kernel/trace/trace_selftest_dynamic.c |    7 +++
- 3 files changed, 103 insertions(+)
+ Documentation/gcov.txt |  4 ++++
+ kernel/gcov/Kconfig    | 30 ++++++++++++++++++++++++++++++
+ kernel/gcov/Makefile   | 32 +++++++++++++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 502fed7..3578be6 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -648,6 +648,8 @@ extern unsigned long ftrace_update_tot_cnt;
- extern int DYN_FTRACE_TEST_NAME(void);
- #define DYN_FTRACE_TEST_NAME2 trace_selftest_dynamic_test_func2
- extern int DYN_FTRACE_TEST_NAME2(void);
-+#define DYN_FTRACE_TEST_RCU_UNSAFE trace_selftest_dynamic_test_rcu_unsafe
-+extern int DYN_FTRACE_TEST_RCU_UNSAFE(void);
+diff --git a/Documentation/gcov.txt b/Documentation/gcov.txt
+index e7ca647..7b72778 100644
+--- a/Documentation/gcov.txt
++++ b/Documentation/gcov.txt
+@@ -50,6 +50,10 @@ Configure the kernel with:
+         CONFIG_DEBUG_FS=y
+         CONFIG_GCOV_KERNEL=y
  
- extern bool ring_buffer_expanded;
- extern bool tracing_selftest_disabled;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index a7329b7..eeacb47 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -185,6 +185,97 @@ static void reset_counts(void)
- 	trace_selftest_test_dyn_cnt = 0;
- }
++select the gcc's gcov format, default is autodetect based on gcc version:
++
++        CONFIG_GCOV_FORMAT_AUTODETECT=y
++
+ and to get coverage data for the entire kernel:
  
-+static struct ftrace_ops ftrace_rcu_safe_ops = {
-+	.func		= trace_selftest_test_probe1_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_RCU_SAFE,
-+};
-+
-+static struct ftrace_ops ftrace_rcu_unsafe_ops = {
-+	.func		= trace_selftest_test_probe2_func,
-+	.flags		= FTRACE_OPS_FL_RECURSION_SAFE,
-+};
-+
-+static int test_rcu_safe_unsafe(void)
-+{
-+	int save_ftrace_enabled = ftrace_enabled;
-+	char *func_name;
-+	int len;
-+	int ret = 0;
-+
-+	printk(KERN_CONT "PASSED\n");
-+	pr_info("Testing ftrace rcu safe unsafe: ");
-+
-+	ftrace_enabled = 1;
-+
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+
-+	func_name = "*" __stringify(DYN_FTRACE_TEST_RCU_UNSAFE);
-+	len = strlen(func_name);
-+
-+	ftrace_set_filter(&ftrace_rcu_safe_ops, func_name, len, 1);
-+	ftrace_set_filter(&ftrace_rcu_unsafe_ops, func_name, len, 1);
-+
-+	/* Do single registrations first */
-+	register_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+	if (trace_selftest_test_probe1_cnt != 1) {
-+		printk(KERN_CONT "rcu_safe expected 1 call but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	register_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	/* Run both together, which uses the list op */
-+
-+	trace_selftest_test_probe1_cnt = 0;
-+	trace_selftest_test_probe2_cnt = 0;
-+
-+	register_ftrace_function(&ftrace_rcu_safe_ops);
-+	register_ftrace_function(&ftrace_rcu_unsafe_ops);
-+
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+	DYN_FTRACE_TEST_RCU_UNSAFE();
-+
-+	unregister_ftrace_function(&ftrace_rcu_unsafe_ops);
-+	unregister_ftrace_function(&ftrace_rcu_safe_ops);
-+
-+
-+	if (trace_selftest_test_probe1_cnt != 3) {
-+		printk(KERN_CONT "rcu_safe expected 3 calls but had %d ",
-+		       trace_selftest_test_probe1_cnt);
-+		goto out;
-+	}
-+
-+	if (trace_selftest_test_probe2_cnt != 0) {
-+		printk(KERN_CONT "rcu_safe expected 0 calls but had %d ",
-+		       trace_selftest_test_probe2_cnt);
-+		goto out;
-+	}
-+
-+	ret = 0;
-+ out:
-+	ftrace_enabled = save_ftrace_enabled;
-+
-+	return ret;
-+}
-+
- static int trace_selftest_ops(int cnt)
- {
- 	int save_ftrace_enabled = ftrace_enabled;
-@@ -401,6 +492,9 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
- 	if (!ret)
- 		ret = trace_selftest_ops(2);
+         CONFIG_GCOV_PROFILE_ALL=y
+diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+index d4da55d..d04ce8a 100644
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
+@@ -46,4 +46,34 @@ config GCOV_PROFILE_ALL
+ 	larger and run slower. Also be sure to exclude files from profiling
+ 	which are not linked to the kernel image to prevent linker errors.
  
-+	if (!ret)
-+		ret = test_rcu_safe_unsafe();
++choice
++	prompt "Specify GCOV format"
++	depends on GCOV_KERNEL
++	default GCOV_FORMAT_AUTODETECT
++	---help---
++	The gcov format is usually determined by the GCC version, but there are
++	exceptions where format changes are integrated in lower-version GCCs.
++	In such a case use this option to adjust the format used in the kernel
++	accordingly.
 +
- 	return ret;
- }
++	If unsure, choose "Autodetect".
++
++config GCOV_FORMAT_AUTODETECT
++	bool "Autodetect"
++	---help---
++	Select this option to use the format that corresponds to your GCC
++	version.
++
++config GCOV_FORMAT_3_4
++	bool "GCC 3.4 format"
++	---help---
++	Select this option to use the format defined by GCC 3.4.
++
++config GCOV_FORMAT_4_7
++	bool "GCC 4.7 format"
++	---help---
++	Select this option to use the format defined by GCC 4.7.
++
++endchoice
++
+ endmenu
+diff --git a/kernel/gcov/Makefile b/kernel/gcov/Makefile
+index e97ca59..52aa7e8 100644
+--- a/kernel/gcov/Makefile
++++ b/kernel/gcov/Makefile
+@@ -1,3 +1,33 @@
+ ccflags-y := -DSRCTREE='"$(srctree)"' -DOBJTREE='"$(objtree)"'
  
-diff --git a/kernel/trace/trace_selftest_dynamic.c b/kernel/trace/trace_selftest_dynamic.c
-index b4c475a..5eefa56 100644
---- a/kernel/trace/trace_selftest_dynamic.c
-+++ b/kernel/trace/trace_selftest_dynamic.c
-@@ -11,3 +11,10 @@ int DYN_FTRACE_TEST_NAME2(void)
- 	/* used to call mcount */
- 	return 0;
- }
+-obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o gcc_3_4.o
++# if-lt
++# Usage VAR := $(call if-lt, $(a), $(b))
++# Returns 1 if (a < b)
++if-lt = $(shell [ $(1) -lt $(2) ] && echo 1)
 +
-+int trace_selftest_dynamic_test_rcu_unsafe(void)
-+{
-+	/* used to call mcount */
-+	return 0;
-+}
-+FTRACE_UNSAFE_RCU(trace_selftest_dynamic_test_rcu_unsafe);
++ifeq ($(CONFIG_GCOV_FORMAT_3_4),y)
++  cc-ver := 0304
++else ifeq ($(CONFIG_GCOV_FORMAT_4_7),y)
++  cc-ver := 0407
++else
++# Use cc-version if available, otherwise set 0
++#
++# scripts/Kbuild.include, which contains cc-version function, is not included
++# during make clean "make -f scripts/Makefile.clean obj=kernel/gcov"
++# Meaning cc-ver is empty causing if-lt test to fail with
++# "/bin/sh: line 0: [: -lt: unary operator expected" error mesage.
++# This has no affect on the clean phase, but the error message could be
++# confusing/annoying. So this dummy workaround sets cc-ver to zero if cc-version
++# is not available. We can probably move if-lt to Kbuild.include, so it's also
++# not defined during clean or to include Kbuild.include in
++# scripts/Makefile.clean. But the following workaround seems least invasive.
++  cc-ver := $(if $(call cc-version),$(call cc-version),0)
++endif
++
++obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o
++
++ifeq ($(call if-lt, $(cc-ver), 0407),1)
++  obj-$(CONFIG_GCOV_KERNEL) += gcc_3_4.o
++else
++  obj-$(CONFIG_GCOV_KERNEL) += gcc_4_7.o
++endif
 -- 
-1.7.10.4
-
+1.8.3.1
 
