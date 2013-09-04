@@ -1,150 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934672Ab3IDJlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:41:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934563Ab3IDJkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:40:52 -0400
-Date: Wed, 4 Sep 2013 12:40:14 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
- from the hypervisor
-Message-ID: <20130904094014.GB7402@redhat.com>
-References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+	id S934650Ab3IDJlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:41:11 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38182 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934402Ab3IDJlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:41:08 -0400
+X-AuditID: 85900ec0-d0927b9000001514-4b-52270030cb15
+Message-ID: <52270022.2050602@hitachi.com>
+Date: Wed, 04 Sep 2013 18:40:50 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org, stable@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Re: [PATCH] [BUGFIX] crash/ioapic: Prevent crash_kexec() from
+ deadlocking of ioapic_lock
+References: <20130819081220.24406.15846.stgit@yunodevel> <20130819094623.GA30389@gmail.com> <5212B31A.6090504@hitachi.com> <871u5or7qn.fsf@tw-ebiederman.twitter.com> <20130820142740.GO239280@redhat.com> <5215CDEF.30004@hitachi.com> <20130822131137.GL5564@redhat.com> <521C1FFF.5060203@hitachi.com> <20130827133355.GM239280@redhat.com> <878uzir80g.fsf@xmission.com> <5224014C.2070801@hitachi.com> <87ob8aix0u.fsf@xmission.com> <5225C1DF.1030301@hitachi.com> <87ob8agjlo.fsf@xmission.com>
+In-Reply-To: <87ob8agjlo.fsf@xmission.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 11:30:23AM -0700, K. Y. Srinivasan wrote:
-> Hyper-V supports a mechanism for retrieving the local APIC frequency.Use this and bypass
-> the calibration code in the kernel. This would allow us to boot the Linux kernel as a
-> "modern VM" on Hyper-V where many of the legacy devices (such as PIT) are not emulated.
+(2013/09/03 21:44), Eric W. Biederman wrote:
+> Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> writes:
 > 
-> I would like to thank Olaf Hering <olaf@aepfle.de>, Jan Beulich <JBeulich@suse.com> and
-> H. Peter Anvin <h.peter.anvin@intel.com> for their help in this effort.
+>> (2013/09/03 9:12), Eric W. Biederman wrote:
+>>>>>> Then again looking at the output of the latest dmesg, it seems the IO APIC
+>>>>>> is initialized way before the tsc is calibrated.  So I am not sure what
+>>>>>> needed to get done or what interrupts are needed before the IO APIC gets
+>>>>>> initialized.
+>>>>>
+>>>>> The practical issue is that jiffies was calibrated off of the PIT timer
+>>>>> if I recall.  But that is all old news.
+>>>>
+>>>> Are the jiffies calibration codes calibrate_delay()?
+>>>> It seems that the jiffies calibration have not used PIT in 2005
+>>>> according to 8a9e1b0.
+>>>
+>>> Exactly.  That was the original reason why we put in the code to
+>>> disable the IOAPIC and the local apic.  There might have been other
+>>> reasons but that was the primary.
+>>
+>> Thanks, but I have still a question for jiffies calibration.
+>>
+>> When kernel boots, calibrate_delay_direct() will be called in
+>> calibrate_delay() for calculating loops_per_jiffy.  Then,
+>> calibrate_delay_direct() waits until jiffies is incremented.
+>> I think this means PIT or HPET is still used for the calibration.
+>> Is there something wrong with my understanding?
+>> If wrong, how is jiffies incremented?
 > 
-> In this version of the patch, I have addressed Jan's comments.
+> Things have definitely changed, and I believe part of what you are
+> seeing is the path when things are not calibrated by an arch specific
+> means.
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  arch/x86/include/uapi/asm/hyperv.h |   19 +++++++++++++++++++
->  arch/x86/kernel/cpu/mshyperv.c     |   24 ++++++++++++++++++++++++
->  2 files changed, 43 insertions(+), 0 deletions(-)
+> Ulimately the issue was not that we waited (or possibly still wait) for
+> a timer interrupt to calibrate the delay loop.  The problem was that we
+> had initialized the interrupt controller in PIC mode (when the kernel
+> did not later use the interrupt controller in PIC mode) to receive the
+> interrupt.
 > 
-> diff --git a/arch/x86/include/uapi/asm/hyperv.h b/arch/x86/include/uapi/asm/hyperv.h
-> index b80420b..b8f1c01 100644
-> --- a/arch/x86/include/uapi/asm/hyperv.h
-> +++ b/arch/x86/include/uapi/asm/hyperv.h
-> @@ -27,6 +27,19 @@
->  #define HV_X64_MSR_VP_RUNTIME_AVAILABLE		(1 << 0)
->  /* Partition Reference Counter (HV_X64_MSR_TIME_REF_COUNT) available*/
->  #define HV_X64_MSR_TIME_REF_COUNT_AVAILABLE	(1 << 1)
-> +
-> +/*
-> + * There is a single feature flag that signifies the presence of the MSR
-> + * that can be used to retrieve both the local APIC Timer frequency as
-> + * well as the TSC frequency.
-> + */
-> +
-> +/* Local APIC timer frequency MSR (HV_X64_MSR_APIC_FREQUENCY) is available */
-> +#define HV_X64_MSR_APIC_FREQUENCY_AVAILABLE (1 << 11)
-> +
-> +/* TSC frequency MSR (HV_X64_MSR_TSC_FREQUENCY) is available */
-> +#define HV_X64_MSR_TSC_FREQUENCY_AVAILABLE (1 << 11)
-> +
->  /*
->   * Basic SynIC MSRs (HV_X64_MSR_SCONTROL through HV_X64_MSR_EOM
->   * and HV_X64_MSR_SINT0 through HV_X64_MSR_SINT15) available
-> @@ -136,6 +149,12 @@
->  /* MSR used to read the per-partition time reference counter */
->  #define HV_X64_MSR_TIME_REF_COUNT		0x40000020
->  
-> +/* MSR used to retrieve the TSC frequency */
-> +#define HV_X64_MSR_TSC_FREQUENCY		0x40000022
-> +
-You do not use this MSR in the patch, but in general how it suppose to
-work during migration if host TSC frequency changes?
+> The actual impetus for getting the last of the bugs shaken out is that
+> we have subarchitectures on x86 that do no support interrupt controllers
+> in PIC mode at all.
 
-> +/* MSR used to retrieve the local APIC timer frequency */
-> +#define HV_X64_MSR_APIC_FREQUENCY		0x40000023
-> +
->  /* Define the virtual APIC registers */
->  #define HV_X64_MSR_EOI				0x40000070
->  #define HV_X64_MSR_ICR				0x40000071
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-> index 71a39f3..b3dc639 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -15,6 +15,7 @@
->  #include <linux/clocksource.h>
->  #include <linux/module.h>
->  #include <linux/hardirq.h>
-> +#include <linux/efi.h>
->  #include <linux/interrupt.h>
->  #include <asm/processor.h>
->  #include <asm/hypervisor.h>
-> @@ -23,6 +24,7 @@
->  #include <asm/desc.h>
->  #include <asm/idle.h>
->  #include <asm/irq_regs.h>
-> +#include <asm/i8259.h>
->  
->  struct ms_hyperv_info ms_hyperv;
->  EXPORT_SYMBOL_GPL(ms_hyperv);
-> @@ -67,6 +69,8 @@ static struct clocksource hyperv_cs = {
->  
->  static void __init ms_hyperv_init_platform(void)
->  {
-> +	u64	hv_lapic_frequency;
-> +
->  	/*
->  	 * Extract the features and hints
->  	 */
-> @@ -76,6 +80,26 @@ static void __init ms_hyperv_init_platform(void)
->  	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
->  	       ms_hyperv.features, ms_hyperv.hints);
->  
-> +	if (ms_hyperv.features & HV_X64_MSR_APIC_FREQUENCY_AVAILABLE) {
-> +		/*
-> +		 * Get the APIC frequency.
-> +		 */
-> +		rdmsrl(HV_X64_MSR_APIC_FREQUENCY, hv_lapic_frequency);
-> +		hv_lapic_frequency /= HZ;
-> +		lapic_timer_frequency = hv_lapic_frequency;
-> +		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
-> +				lapic_timer_frequency);
-> +
-> +		/*
-> +		 * On Hyper-V, when we are booting off an EFI firmware stack,
-> +		 * we do not have many legacy devices including PIC, PIT etc.
-> +		 */
-> +		if (efi_enabled(EFI_BOOT)) {
-> +			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-> +			legacy_pic = &null_legacy_pic;
-> +		}
-> +	}
-> +
->  	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
->  		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
->  }
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Is one of the subarchitectures Moorestown?
 
---
-			Gleb.
+I found the Moorestown patch(05ddafb) which defined
+pre_init_apic_IRQ0(). If this function will enable IOAPIC before using
+timer(i.e. the function is called before calibrate_delay()), we will
+be able to remove disable_IO_APIC. However, this function is a
+Moorestown specific code, and normal PCs don't execute it.
+
+I haven't find the generic cord which operates like pre_init_apic_IRQ0()
+yet. Please tell me if you remember something.
+
+Thanks,
+Yoshihiro YUNOMAE
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
