@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934833Ab3IDOGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:06:41 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:59756 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934755Ab3IDOF6 (ORCPT
+	id S934862Ab3IDOHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:07:17 -0400
+Received: from nikam.ms.mff.cuni.cz ([195.113.20.16]:54654 "EHLO
+	nikam.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752Ab3IDOHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:05:58 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
-Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        raven@themaw.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mszeredi@suse.cz
-Subject: [PATCH 10/10] fuse: drop dentry on failed revalidate
-Date: Wed,  4 Sep 2013 16:05:56 +0200
-Message-Id: <1378303556-7220-11-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
-References: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
+	Wed, 4 Sep 2013 10:07:12 -0400
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 10:07:12 EDT
+Date: Wed, 4 Sep 2013 15:57:41 +0200
+From: Martin Mares <mj@ucw.cz>
+To: Tom Gundersen <teg@jklm.no>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb
+ support
+Message-ID: <mj+md-20130904.134928.12262.nikam@ucw.cz>
+References: <1378302428-19758-1-git-send-email-teg@jklm.no>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378302428-19758-1-git-send-email-teg@jklm.no>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anand Avati <avati@redhat.com>
+Hello!
 
-Drop a subtree when we find that it has moved or been delated.  This can be
-done as long as there are no submounts under this location.
+First of all: Sorry for not replying to the first mail. I do not follow
+linux-pci too much these days (or, I do that in big batches).
 
-If the directory was moved and we come across the same directory in a
-future lookup it will be reconnected by d_materialise_unique().
+> This lets you select hwdb support at compile time.
+> 
+> hwdb is an efficient hardware database shipped with recent versions of udev.
+> It contains among other sources pci.ids so querying hwdb rather than reading
+> pci.ids directly should give the same result.
+> 
+> Ideally Linux distros using udev could stop shipping pci.ids, but use hwdb
+> as the only source of this information, which this patch allows.
 
-Signed-off-by: Anand Avati <avati@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dir.c | 2 ++
- 1 file changed, 2 insertions(+)
+Generally, I will be glad to include hwdb support in libpci.
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 25c6cfe..0e6961a 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -259,6 +259,8 @@ out:
- 
- invalid:
- 	ret = 0;
-+	if (check_submounts_and_drop(entry) != 0)
-+		ret = 1;
- 	goto out;
- }
- 
+There is a couple of details I am concerned with:
+
+> +	if [ -f /usr/include/libudev.h -o -f /usr/local/include/libudev.h ] ; then
+> +		HWDB=yes
+> +	else
+> +		HWDB=no
+> +	fi
+
+Does this make sense? Does every version of libudev support hwdb?
+
+> @@ -86,8 +91,58 @@ char
+>  *pci_id_lookup(struct pci_access *a, int flags, int cat, int id1, int id2, int id3, int id4)
+>  {
+>    struct id_entry *n, *best;
+> -  u32 id12 = id_pair(id1, id2);
+> -  u32 id34 = id_pair(id3, id4);
+> +  u32 id12, id34;
+> +
+> +#ifdef PCI_HAVE_HWDB
+> +  if (!(flags & PCI_LOOKUP_SKIP_LOCAL))
+> +    {
+
+As you wrote it, hwdb has always priority over pci.ids (unless local lookup is
+disabled). As a user, I would expect that pci.ids (being a part of the pciutils)
+is the primary source of data and other sources (network lookups, hwdb) are
+used only if pci.ids do not match or if explicitly requested.
+
+				Have a nice fortnight
 -- 
-1.8.1.4
-
+Martin `MJ' Mares                          <mj@ucw.cz>   http://mj.ucw.cz/
+Faculty of Math and Physics, Charles University, Prague, Czech Rep., Earth
+Quidquid latine dictum sit, altum videtur.
