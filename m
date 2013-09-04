@@ -1,158 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762884Ab3IDQmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:42:13 -0400
-Received: from rcdn-iport-2.cisco.com ([173.37.86.73]:39441 "EHLO
-	rcdn-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935245Ab3IDQmL (ORCPT
+	id S1763027Ab3IDQmt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:42:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46260 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762953Ab3IDQmq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:42:11 -0400
-X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 12:42:11 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AisFAExgJ1KtJXHB/2dsb2JhbABagwc1UYMovhcXgRAWdIIkAQEBAwEBAiAEDRohCgUHBAIBCA4DBAEBAQICBh0DAgICJgkBFAEICAIEAQcGBQgVBIdbBgyoLpFFgSmOBhYbBwaCYzSBAAOVLIN4kDeBY4E9gio
-X-IronPort-AV: E=Sophos;i="4.89,1022,1367971200"; 
-   d="scan'208";a="255525478"
-From: "Christian Benvenuti (benve)" <benve@cisco.com>
-To: Ben Hutchings <bhutchings@solarflare.com>,
-        Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Sujith Sankar (ssujith)" <ssujith@cisco.com>,
-        "Nishank Trivedi (nistrive)" <nistrive@cisco.com>,
-        "Upinder Malhi (umalhi)" <umalhi@cisco.com>
-Subject: RE: [PATCH net-next 4/5] driver/net: enic: Exposing symbols for
- Cisco's low latency driver
-Thread-Topic: [PATCH net-next 4/5] driver/net: enic: Exposing symbols for
- Cisco's low latency driver
-Thread-Index: AQHOqTJYJzcQYUgetk+ym8l5YWToFJm1/k4A///G/BA=
-Date: Wed, 4 Sep 2013 16:32:32 +0000
-Message-ID: <6CE81A2095B0024BBC77007BD04E5538163B23CE@xmb-aln-x02.cisco.com>
-References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
-	 <1378273638-7780-5-git-send-email-govindarajulu90@gmail.com>
- <1378306376.3133.7.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1378306376.3133.7.camel@bwh-desktop.uk.level5networks.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.87.117]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 4 Sep 2013 12:42:46 -0400
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52275F7D.4030305@ti.com>
+Date: Wed, 4 Sep 2013 11:42:49 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org>
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com> <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org> <52275F7D.4030305@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r84GgJTU024289
 
-Hi Ben,
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-
-> owner@vger.kernel.org] On Behalf Of Ben Hutchings
-> Sent: Wednesday, September 04, 2013 7:53 AM
-> To: Govindarajulu Varadarajan
-> Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Christian Benvenuti (benve); Sujith Sankar
-> (ssujith); Nishank Trivedi (nistrive); Upinder Malhi (umalhi)
-> Subject: Re: [PATCH net-next 4/5] driver/net: enic: Exposing symbols for
-> Cisco's low latency driver
-> 
-> On Wed, 2013-09-04 at 11:17 +0530, Govindarajulu Varadarajan wrote:
-> > This patch exposes symbols for usnic low latency driver that can be
-> > used to register and unregister vNics as well to traverse the resources on
-> vNics.
-> >
-> > Signed-off-by: Upinder Malhi <umalhi@cisco.com>
-> > Signed-off-by: Nishank Trivedi <nistrive@cisco.com>
-> > Signed-off-by: Christian Benvenuti <benve@cisco.com>
-> 
-> Will usnic, or any other user of these symbols, be submitted for inclusion in-
-> tree as well?  It is generally expected that exported functions do have an in-
-> tree user.
+On Sep 4, 2013, at 11:27 AM, Suman Anna wrote:
 
-The usnic driver has been posted yesterday on the rdma list.
-(http://www.spinics.net/lists/linux-rdma/msg16999.html)
+> Kumar,
+> 
+>>>>>> 
+>>>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>>>>>>> which are all device-tree boot only. This patch adds the
+>>>>>>> base support for parsing the DT nodes, and removes the code
+>>>>>>> dealing with the traditional platform device instantiation.
+>>>>>>> 
+>>>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>>>>>> ---
+>>>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+>>>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
+>>>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>>>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+>>>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
+>>>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>>>>>> 
+>>>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>> new file mode 100644
+>>>>>>> index 0000000..adfb8ad
+>>>>>>> --- /dev/null
+>>>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>> @@ -0,0 +1,28 @@
+>>>>>>> +OMAP4+ HwSpinlock Driver
+>>>>>>> +
+>>>>>>> +Required properties:
+>>>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>>>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>>>>>>> +- reg:			Contains the hwspinlock register address range (base
+>>>>>>> +			address and length)
+>>>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>>>>>>> +
+>>>>>>> +Optional properties:
+>>>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
+>>>>>>> +			device. If not mentioned, a default value of 0 is used.
+>>>>>>> +			This property is mandatory ONLY if a SoC has several
+>>>>>>> +			hwspinlock devices. There are currently no such OMAP
+>>>>>>> +			SoCs.
+>>>>>> 
+>>>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+>>>>> 
+>>>>> I didn't add the "ti," prefix exactly for the same reason - it is
+>>>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
+>>>>> there is nothing ti or OMAP specific about it. I have added it to keep
+>>>>> the DT node definition in sync with the driver code. If it is too
+>>>>> generic a name, it can always be renamed as hwlock_base_id. This will be
+>>>>> SoC agnostic property for the hwspinlock driver. What do you think?
+>>>> 
+>>>> I'm wondering if we should use cell-index for this purpose.
+>>> 
+>>> I didn't get you completely. Do you intend to compute the base_id using
+>>> cell-index and number of locks (which may be a separate field altogether
+>>> if this information cannot be read from the h/w)? My understanding is
+>>> that cell-index is primarily used for identifying the h/w instance number.
+>> 
+>> I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
+> 
+> Common hwlock.txt sounds good. Will make the change.
+> 
+>> 
+>> I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
+>> 
+> 
+> I prefer to use hwlock-base-id. I think we should also be defining a
+> common property name for number of locks, say hwlock-num-locks.
 
-/Chris
+I'm good with that, cell-index is always funny so might as well be explicit.
 
-> Also, header files under drivers/ generally won't be included in distribution
-> -devel packages, so to support an out-of-tree module the function
-> prototypes would need to be included in a header under include/ (or else
-> you have to repeat them and hope the types never change).
-> 
-> Ben.
-> 
-> > ---
-> >  drivers/net/ethernet/cisco/enic/vnic_dev.c | 10 ++++++++++
-> > drivers/net/ethernet/cisco/enic/vnic_dev.h |  1 +
-> >  2 files changed, 11 insertions(+)
-> >
-> > diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.c
-> > b/drivers/net/ethernet/cisco/enic/vnic_dev.c
-> > index 97455c5..69dd925 100644
-> > --- a/drivers/net/ethernet/cisco/enic/vnic_dev.c
-> > +++ b/drivers/net/ethernet/cisco/enic/vnic_dev.c
-> > @@ -175,6 +175,7 @@ unsigned int vnic_dev_get_res_count(struct
-> > vnic_dev *vdev,  {
-> >  	return vdev->res[type].count;
-> >  }
-> > +EXPORT_SYMBOL(vnic_dev_get_res_count);
-> >
-> >  void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum
-> vnic_res_type type,
-> >  	unsigned int index)
-> > @@ -193,6 +194,7 @@ void __iomem *vnic_dev_get_res(struct vnic_dev
-> *vdev, enum vnic_res_type type,
-> >  		return (char __iomem *)vdev->res[type].vaddr;
-> >  	}
-> >  }
-> > +EXPORT_SYMBOL(vnic_dev_get_res);
-> >
-> >  static unsigned int vnic_dev_desc_ring_size(struct vnic_dev_ring *ring,
-> >  	unsigned int desc_count, unsigned int desc_size) @@ -942,6 +944,7
-> @@
-> > void vnic_dev_unregister(struct vnic_dev *vdev)
-> >  		kfree(vdev);
-> >  	}
-> >  }
-> > +EXPORT_SYMBOL(vnic_dev_unregister);
-> >
-> >  struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
-> >  	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar, @@
-> > -969,6 +972,13 @@ err_out:
-> >  	vnic_dev_unregister(vdev);
-> >  	return NULL;
-> >  }
-> > +EXPORT_SYMBOL(vnic_dev_register);
-> > +
-> > +struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev) {
-> > +	return vdev->pdev;
-> > +}
-> > +EXPORT_SYMBOL(vnic_dev_get_pdev);
-> >
-> >  int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len)  {
-> > diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.h
-> > b/drivers/net/ethernet/cisco/enic/vnic_dev.h
-> > index f3d9b79..e670029 100644
-> > --- a/drivers/net/ethernet/cisco/enic/vnic_dev.h
-> > +++ b/drivers/net/ethernet/cisco/enic/vnic_dev.h
-> > @@ -127,6 +127,7 @@ int vnic_dev_set_ig_vlan_rewrite_mode(struct
-> > vnic_dev *vdev,  struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
-> >  	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar,
-> >  	unsigned int num_bars);
-> > +struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev);
-> >  int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len);
-> > int vnic_dev_enable2(struct vnic_dev *vdev, int active);  int
-> > vnic_dev_enable2_done(struct vnic_dev *vdev, int *status);
-> 
-> --
-> Ben Hutchings, Staff Engineer, Solarflare Not speaking for my employer;
-> that's the marketing department's job.
-> They asked us to note that Solarflare product names are trademarked.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'm also good with hwlock-num-locks, I'll update the msm spinlock driver to use this.
+
+Can you also maybe add some helper functions into the hwspinlock core to return these values so we both don't duplicate code in drivers and maintain consistency.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
