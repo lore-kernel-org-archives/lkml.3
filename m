@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3IDESg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 00:18:36 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53665 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab3IDESf (ORCPT
+	id S1756164Ab3IDETZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 00:19:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64950 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab3IDETY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 00:18:35 -0400
-Date: Tue, 3 Sep 2013 21:18:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
- functions
-Message-ID: <20130904041828.GP3871@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130831051117.884125230@goodmis.org>
- <20130831051700.601365837@goodmis.org>
- <20130903171516.16290c47@gandalf.local.home>
- <20130903221808.GH3871@linux.vnet.ibm.com>
- <20130903195705.3ba3442f@gandalf.local.home>
- <20130904012404.GI3871@linux.vnet.ibm.com>
- <20130903220115.1018d8f4@gandalf.local.home>
- <20130903220325.273c2c7d@gandalf.local.home>
+	Wed, 4 Sep 2013 00:19:24 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5226B4C7.9050509@roeck-us.net>
+Date: Tue, 03 Sep 2013 21:19:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903220325.273c2c7d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090404-0928-0000-0000-0000013F1EF8
+To: Liqin Chen <liqin299@gmail.com>
+CC: Lennox Wu <lennox.wu@gmail.com>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Remove support for score architecture
+References: <1377914435-24206-1-git-send-email-linux@roeck-us.net> <CAF0htA6gW3h82p2sBBpFEi4s0MkQ-NUn79VXWLieZmYNuUPA6w@mail.gmail.com> <5224247E.3050600@roeck-us.net> <CAF0htA6sYZOvLt_JczGpfjEJZep6cAquJV9tZ2FwYC+C6ngzXQ@mail.gmail.com> <5224CB12.50206@roeck-us.net> <CAFP0e=Gio_o6QFboVGe3aBCM0zFrsrJuNBthj63RXr+=SDPp7Q@mail.gmail.com>
+In-Reply-To: <CAFP0e=Gio_o6QFboVGe3aBCM0zFrsrJuNBthj63RXr+=SDPp7Q@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 10:03:25PM -0400, Steven Rostedt wrote:
-> On Tue, 3 Sep 2013 22:01:15 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > On Tue, 3 Sep 2013 18:24:04 -0700
-> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > 
-> > > >  static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
-> > > > @@ -588,15 +593,14 @@ static void
-> > > >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
-> > > >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
-> > > >  {
-> > > > -	int bit;
-> > > > -
-> > > > +	/* Make sure we see disabled or not first */
-> > > > +	smp_rmb();
-> > > 
-> > > 	smp_mb__before_atomic_inc()?
-> > > 
-> > 
-> > Ah, but this is before an atomic_read(), and not an atomic_inc(), thus
-> > the normal smp_rmb() is still required.
-> > 
-> 
-> Here's the changes against this one: 
-> 
-> diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-> index cdcf187..9e6902a 100644
-> --- a/kernel/trace/trace_functions.c
-> +++ b/kernel/trace/trace_functions.c
-> @@ -569,14 +569,14 @@ void ftrace_unsafe_rcu_checker_disable(void)
->  {
->  	atomic_inc(&ftrace_unsafe_rcu_disabled);
->  	/* Make sure the update is seen immediately */
-> -	smp_wmb();
-> +	smp_mb__after_atomic_inc();
->  }
-> 
->  void ftrace_unsafe_rcu_checker_enable(void)
->  {
->  	atomic_dec(&ftrace_unsafe_rcu_disabled);
->  	/* Make sure the update is seen immediately */
-> -	smp_wmb();
-> +	smp_mb__after_atomic_dec();
->  }
-> 
->  static void
-> 
-> 
-> 
-> Which is nice, because the smp_mb() are now in the really slow path.
+On 09/02/2013 09:54 PM, Liqin Chen wrote:
+>
+> 2013/9/3 Guenter Roeck <linux@roeck-us.net <mailto:linux@roeck-us.net>>
+>
+>     On 09/02/2013 08:18 AM, Lennox Wu wrote:
+>
+>         Before we start the development of the S+core, Sunplus had licensed
+>         ARM and MIPS. We develop S+core for other reason such as the price.
+>         Some products on the web of Sunplus adopt S+core , for example
+>         the SPV7050.(http://w3.sunplus.__com/products/spv7050.asp <http://w3.sunplus.com/products/spv7050.asp>) These products
+>         could still be bought from the market. Some high-end products adopt
+>         ARM or MIPS. So, there is no conflict for a company adopts multiple
+>         architectures.
+>
+>         As I said, we recognize that we rarely update because of the limited
+>         applications and rare requests from customers. Maybe we don’t
+>         understand the culture enough; we think that it is unnecessary if we
+>         have no new bugs or new functions, the thought seems wrong. We can
+>         commit some patches in the near future.
+>
+>
+>     The point is not about submitting patches, it is about maintaining the code.
+>     Even if you don't add functionality, one would expect that you ensure that
+>     new kernel versions compile and run on your hardware.
+>
+>     Since January 2012, 68 patches have been applied to arch/score, pretty
+>     much all of them addressing kernel API changes or global cleanup.
+>     Only two of them got an Ack by one of the score maintainers.
+>     This strongly suggests that you don't keep track of what is going on,
+>     and at the very least raises the question if you do compile and test
+>     new kernel versions on a regular basis. Even if you do, no one knows
+>     about it, because ....
+>
+>     As part of this process, I would expect the architecture maintainer to
+>     accept incoming patches, test the same, and send pull requests to Linus.
+>     The last time this happened was early 2011; since then all score patches
+>     were sent to Linus through Andrew and a few other maintainers.
+>     Actually, I don't see many signoffs from a score maintainer at all,
+>     even from the very beginning.
+>
+>     As pointed out, the MAINTAINERS entry for score points to a
+>     non-existing domain, as does the e-mail address of one of the
+>     maintainers.
+>
+>     I would not call that "maintained".
+>
+>
+>
+> Hi Al Viro, Guenter Roeck, Arnd Bergmann and all,
+>
+> I still supports the S+core team to maintain their codes, although I
+> left sunplus co. in 2011.
+>
+> I keep reading the mailing list and testing these patches for S+core,
+> I think the main problems are they have not echoed to any comments on
+> score's questions. Maybe they think the current situation is good
+> enough for their customers, and they don’t understand the rules of the
+> group enough. Even so, they should update score code to the latest
+> status, include my mail address.
+>
+> We will discuss how to maintain the code of S+core. However, if all of
+> you and Linus also think the S+core should be removed from the
+> upstream, we will do it.
+>
 
-Looks good!
+Trying to build gcc for score says:
 
-But now that I look at it more carefully, including the comments...
-The smp_mb__after_atomic_dec() isn't going to make the update be seen
-faster -- instead, it will guarantee that if some other CPU sees this
-CPU's later write, then that CPU will also see the results of the
-atomic_dec().
+*** Configuration score-unknown-elf is obsolete.
+*** Specify --enable-obsolete to build it anyway.
+*** Support will be REMOVED in the next major release of GCC,
+*** unless a maintainer comes forward.
 
-							Thanx, Paul
+That does not sound very encouraging.
+
+Guenter
 
