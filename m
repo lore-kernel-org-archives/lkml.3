@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761482Ab3IDW3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 18:29:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59995 "EHLO mail.zytor.com"
+	id S1758792Ab3IDWeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 18:34:07 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58983 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753825Ab3IDW3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 18:29:18 -0400
-Message-ID: <5227B432.8070205@zytor.com>
-Date: Wed, 04 Sep 2013 15:29:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753309Ab3IDWeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 18:34:04 -0400
+To: kgene.kim@samsung.com
+Subject: [PATCH v4 0/4] ARM: S3C24XX: add dmaengine based dma-driver
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+Date: Thu, 5 Sep 2013 00:33:48 +0200
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Andy Lutomirski <luto@amacapital.net>, Arun Sharma <asharma@fb.com>,
-        LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>
-Subject: Re: clock_gettime_ns
-References: <5226FAE1.5070201@fb.com> <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com> <CANcMJZAi_738t-eDUphC6U_25xFS0NqQqdUZAzu7Aijqmrj=wA@mail.gmail.com> <CALCETrVc-3j=7bP13dkYwqxUg77rdauHQ8_KEti0khh-HX220A@mail.gmail.com> <52279E1D.3060907@linaro.org>
-In-Reply-To: <52279E1D.3060907@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201309050033.50333.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 01:54 PM, John Stultz wrote:
->>
->> I'd advocate for going whole hog and returning, atomically:
->>
->>  - TAI (nanoseconds from epoch)
->>  - UTC - TAI (seconds or nanoseconds) *
->>  - TAI - CLOCK_MONOTONIC (nanoseconds)
->>  - a leap second flag.
->>
->> * There are various ways to define this.  My fancy UTC - TAI wouldn't
->> actually need the leap-second flag, since the UTC time would indicate
->> leap seconds directly.
+This series tries to provide a basic dmaengine driver for the s3c24xx
+SoCs to subsequently retire the old one with custom API.
 
-Not so (see below).
+Since v3 more smaller fixes were added, and memcpy operations now have a very
+simple mechanism to try to use higher transfer widths.
 
->  With the conventional approach, someone would
->> have to decide whether the leap second count increments at the
->> beginning or the end of the leap second.
-> 
-> Well, adjtimex() gives you UTC & tai offset & leapsecond flag in one go.
-> 
+Since v2 only some small fixes to the dma driver itself were added.
 
-But not fractional-second information,right?  I believe it would be
-desirable if we can create a small structure (<= 16 bytes) for this.
+Since v1 three big changes happened (appart from fixing received comments):
 
-UTC - TAI is always an integral number of seconds, possibly negative
-(unlikely, but...)
+For one the limitation of sg-lists to 1 element is gone.Secondly the
+specifics of the virtual channels (target bus, handshake, etc) are not
+encoded with channel ids but in the platformdata - making a later dt
+binding easier, as these informations can there be gathered by the xlate
+function. And lastly I also added a preliminary mechanism to handle the
+specific needs for the earlier variants of the driver.
 
-Something like:
+While s3c2443 and later can use any channel for any peripheral with just
+marking the target-peripheral-id in a register, earlier SoCs can only use
+specific channels and the target-ids also vary depending on the channel.
 
-	struct time_ns {
-		u64 tai_s;
-		u32 tai_ns;
-		s16 utcdelta;	/* TAI - UTC */
-		u8 leap;	/* Positive leap second in progress */
-		u8 pad;		/* Something useful here maybe? */
-	};
+Therefore on newer SoCs the chansel element only needs to contain the
+requested target-id, while on the older variants use it to encode both
+the valid channels and the channel-specific peripheral-id.
 
-Why the leap second flag?  It is necessary to represent the 61st second
-in a minute during a positive leap second.  Consider the below
-(artificial) cases:
+On affected SoCs the target-id is always 3 bit wide, so we use these and
+an additional 4th bit to hold the valid state. As the older SoCs all have
+4 dma channels this can live happily in an u16 element.
 
-(leap second)
-TAI	31536000	31536001	31536002	31536003
-Delta	2		2		?		3
-UTC	23:59:58	23:59:59	23:59:60	00:00:00
+The s3c24xx series will most likely not see any new offspring, but even
+if it happens any new model will probably use the newer more flexible
+variant of the dma controller, so this should not restrict anything
+in the future.
 
-(no leap second)
-TAI	31536000	31536001	31536002	31536003
-Delta	2		2		2		2
-UTC	23:59:58	23:59:59	00:00:00	00:00:01
+Example:
+SDI is valid on channels 0, 2 and 3 - with varying hw request sources.
+For it the chansel field would look like
 
-(no leap second)
-TAI	31536000	31536001	31536002	31536003
-Delta	3		3		3		3
-UTC	23:59:57	23:59:58	23:59:59	00:00:00
-
-There simply is no sufficiently meaningful value that can be put on the
-delta during a positive leap second.  Both 2 and 3 would be wrong in the
-above example, giving UTC of either 00:00:00 or 23:59:59.
-
-There is a way to do without the leap second flag by making UTC the main
-time; this does have the advantage of higher compatibility with time_t,
-struct timespec, etc:
-
-	struct timespecx {
-		time_t tx_sec;		/* POSIX UTC seconds */
-		u32 tx_ns;		/* Nanoseconds */
-		s32 tx_taidelta;	/* TAI - UTC */
-	};
-
-The trick here is that tx_ns can grow all the way up to 1,999,999,999
-during a positive leap second.
-
-(Note that while planning these sorts of things it is worth noting that
-it is at least theoretically possible that another shift in the rotation
-of the Earth could one day mean needing multiple leap seconds, so at
-least allowing for them would be a good idea.  Both proposals above
-would handle that -- up to 255 leap seconds for the former and 4 leap
-seconds for the latter, either of which should be way more than necessary.)
-
-	-hpa
+ ((BIT(3) | 1) << 3 * 4) | // channel 3, with request source 1
+ ((BIT(3) | 2) << 2 * 4) | // channel 2, with request source 2
+ ((BIT(3) | 2) << 0 * 4)   // channel 0, with request source 2
 
 
-	-hpa
+Heiko Stuebner (4):
+  ARM: S3C24XX: number the dma clocks
+  dmaengine: add driver for Samsung s3c24xx SoCs
+  ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and
+    s3c2443
+  ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
+
+ arch/arm/mach-s3c24xx/clock-s3c2412.c     |    8 +-
+ arch/arm/mach-s3c24xx/common-s3c2443.c    |   12 +-
+ arch/arm/mach-s3c24xx/common.c            |  106 +++
+ arch/arm/mach-s3c24xx/common.h            |    3 +
+ arch/arm/mach-s3c24xx/mach-jive.c         |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2413.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2416.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2443.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-vstms.c        |    1 +
+ arch/arm/plat-samsung/devs.c              |    5 +-
+ drivers/dma/Kconfig                       |   12 +
+ drivers/dma/Makefile                      |    1 +
+ drivers/dma/s3c24xx-dma.c                 | 1340 +++++++++++++++++++++++++++++
+ include/linux/platform_data/dma-s3c24xx.h |   43 +
+ 14 files changed, 1524 insertions(+), 11 deletions(-)
+ create mode 100644 drivers/dma/s3c24xx-dma.c
+ create mode 100644 include/linux/platform_data/dma-s3c24xx.h
+
+-- 
+1.7.10.4
 
