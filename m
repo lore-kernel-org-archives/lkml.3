@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761755Ab3IDCzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Sep 2013 22:55:08 -0400
-Received: from m12-13.163.com ([220.181.12.13]:48117 "EHLO m12-13.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761600Ab3IDCzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Sep 2013 22:55:06 -0400
-X-Coremail-DSSMTP: 218.22.19.194
-Date: Wed, 4 Sep 2013 10:54:20 +0800
-From: "liujunliang_ljl" <liujunliang_ljl@163.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: "horms" <horms@verge.net.au>, "joe" <joe@perches.com>,
-        "romieu" <romieu@fr.zoreil.com>, "gregkh" <gregkh@linuxfoundation.org>,
-        "netdev" <netdev@vger.kernel.org>,
-        "linux-usb" <linux-usb@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "sunhecheng" <sunhecheng@vip.126.com>
-References: <1378035488-8643-1-git-send-email-liujunliang_ljl@163.com>,
- <20130903.222708.238851084536537650.davem@davemloft.net>
-Subject: Re: Re: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NETSR9700Device Driver Support
-Message-ID: <201309041054205310872@163.com>
-X-mailer: Foxmail 6, 15, 201, 22 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
-X-CM-TRANSID: DcCowEAJj0PboCZSnY9RBA--.1112S2
-X-Coremail-Antispam: 1Uf129KBjvdXoWrGF45Ar4DtFW3tF4UJw4kXrb_yoWxGwb_ta
-	1ktrWxKrZ0qF1qqrn5AF4xZr17Ww4kXFs8J34j9rZ5Xry3XFW5Xwn5Jws5Zr1rXr4vgr9x
-	GFnaya1qkry8AjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU8FtC7UUUUU==
-X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/xtbB0wyOX1EAF1YK+wAAsv
+	id S1761793Ab3IDC7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Sep 2013 22:59:46 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54368 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319Ab3IDC7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Sep 2013 22:59:44 -0400
+Date: Tue, 3 Sep 2013 20:59:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH 4/7] x86/pci: use pcie_cap to simplify code
+Message-ID: <20130904025940.GD24733@google.com>
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com>
+ <1378193715-25328-4-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378193715-25328-4-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r842tJ1v019303
 
-Dear David Miller £º
-	
-			Thanks a lot.
-
-			I'm sorry that I just wonder to know which kernel version will release this driver, thanks again. 
-
-
-2013-09-04 
-
-
-
-liujunliang_ljl 
-
-
-
-·¢¼þÈË£º David Miller 
-·¢ËÍÊ±¼ä£º 2013-09-04  10:27:14 
-ÊÕ¼þÈË£º liujunliang_ljl 
-³­ËÍ£º horms; joe; romieu; gregkh; netdev; linux-usb; linux-kernel; sunhecheng 
-Ö÷Ìâ£º Re: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NETSR9700Device Driver Support 
- 
-From: liujunliang_ljl@163.com
-Date: Sun,  1 Sep 2013 19:38:08 +0800
-> From: Liu Junliang <liujunliang_ljl@163.com>
+On Tue, Sep 03, 2013 at 03:35:12PM +0800, Yijing Wang wrote:
+> PCI core saves PCIe Cap offset in pcie_cap,
+> use pcie_cap to simplify code.
 > 
-> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
-Applied, thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  arch/x86/pci/fixup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+> index f5809fa..ee8330d 100644
+> --- a/arch/x86/pci/fixup.c
+> +++ b/arch/x86/pci/fixup.c
+> @@ -288,7 +288,7 @@ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
+>  		 */
+>  		list_for_each_entry(dev, &pbus->devices, bus_list) {
+>  			/* There are 0 to 8 devices attached to this bus */
+> -			cap_base = pci_find_capability(dev, PCI_CAP_ID_EXP);
+> +			cap_base = dev->pcie_cap;
+>  			quirk_aspm_offset[GET_INDEX(pdev->device, dev->devfn)] = cap_base + 0x10;
+
+This should use PCI_EXP_LNKCTL instead of "0x10".
+
+>  		}
+>  		pbus->ops = &quirk_pcie_aspm_ops;
+
+This quirk replaces the config accessors with ones that silently ignore
+writes to ASPM control bits.  That really warrants at least a dev_info()
+note here, and we should be using pci_bus_set_ops().
+
+Even that is a little bit dubious because I don't think this is really
+safe -- what happens if this quirk replaces the ops, then somebody
+else replaces the ops again?  aer_inject.c at least keeps track of
+the old ops and seems to fall back to them, but it seems fragile to
+depend on every caller of pci_bus_set_ops() to do the right thing
+there.
+
+But this is beyond the scope of your patch, so if you just
+add a dev_info() note and use pci_bus_set_ops(), that should be
+enough for now.
