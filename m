@@ -1,129 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934788Ab3IDOcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:32:18 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:45358 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762720Ab3IDOcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:32:16 -0400
-X-Auth-Info: f659IZDRuaNr2zp/dc+CowPtW3AXewlHX+sTws5QYEA=
-From: Marek Vasut <marex@denx.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH 5/7] regulator: palmas: Use devm_regulator_register
-Date: Wed, 4 Sep 2013 16:32:12 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, nm@ti.com,
-        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
-        s.hauer@pengutronix.de, Nancy.Chen@freescale.com
-References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-5-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1378276263-10735-5-git-send-email-sachin.kamat@linaro.org>
+	id S934813Ab3IDOc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:32:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64055 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762658Ab3IDOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:32:56 -0400
+Date: Wed, 4 Sep 2013 10:32:50 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] edma: Update author email address
+Message-ID: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309041632.13150.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sachin Kamat,
+Matt's @ti.com address bounces.  Update the MODULE_AUTHOR information in
+edma.c to his Linaro address.
 
-> devm_* simplifies the code.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/regulator/palmas-regulator.c |   38
-> ++++++++++------------------------ 1 file changed, 11 insertions(+), 27
-> deletions(-)
-> 
-> diff --git a/drivers/regulator/palmas-regulator.c
-> b/drivers/regulator/palmas-regulator.c index d0c8785..37b1068 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -852,7 +852,7 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) if (ret < 0) {
->  				dev_err(&pdev->dev,
->  					"reading TSTEP reg failed: %d\n", ret);
-> -				goto err_unregister_regulator;
-> +				return ret;
->  			}
->  			pmic->desc[id].ramp_delay =
->  					palmas_smps_ramp_delay[reg & 0x3];
-> @@ -864,7 +864,7 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) reg_init = pdata->reg_init[id];
->  			ret = palmas_smps_init(palmas, id, reg_init);
->  			if (ret)
-> -				goto err_unregister_regulator;
-> +				return ret;
->  		}
-> 
->  		/* Register the regulators */
-> @@ -897,7 +897,7 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev)
-> 
->  			ret = palmas_smps_read(pmic->palmas, addr, &reg);
->  			if (ret)
-> -				goto err_unregister_regulator;
-> +				return ret;
->  			if (reg & PALMAS_SMPS12_VOLTAGE_RANGE)
->  				pmic->range[id] = 1;
-> 
-> @@ -913,7 +913,7 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) addr = palmas_regs_info[id].ctrl_addr;
->  			ret = palmas_smps_read(pmic->palmas, addr, &reg);
->  			if (ret)
-> -				goto err_unregister_regulator;
-> +				return ret;
->  			pmic->current_reg_mode[id] = reg &
->  					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
->  		}
-> @@ -929,13 +929,13 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) pmic->desc[id].supply_name =
-> palmas_regs_info[id].sname;
->  		config.of_node = palmas_matches[id].of_node;
-> 
-> -		rdev = regulator_register(&pmic->desc[id], &config);
-> +		rdev = devm_regulator_register(&pdev->dev, &pmic->desc[id],
-> +					       &config);
->  		if (IS_ERR(rdev)) {
->  			dev_err(&pdev->dev,
->  				"failed to register %s regulator\n",
->  				pdev->name);
-> -			ret = PTR_ERR(rdev);
-> -			goto err_unregister_regulator;
-> +			return PTR_ERR(rdev);
->  		}
-> 
->  		/* Save regulator for cleanup */
-> @@ -997,13 +997,13 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) pmic->desc[id].supply_name =
-> palmas_regs_info[id].sname;
->  		config.of_node = palmas_matches[id].of_node;
-> 
-> -		rdev = regulator_register(&pmic->desc[id], &config);
-> +		rdev = devm_regulator_register(&pdev->dev, &pmic->desc[id],
-> +					       &config);
->  		if (IS_ERR(rdev)) {
->  			dev_err(&pdev->dev,
->  				"failed to register %s regulator\n",
->  				pdev->name);
-> -			ret = PTR_ERR(rdev);
-> -			goto err_unregister_regulator;
-> +			return PTR_ERR(rdev);
->  		}
-> 
->  		/* Save regulator for cleanup */
-> @@ -1021,7 +1021,7 @@ static int palmas_regulators_probe(struct
-> platform_device *pdev) id, reg_init);
->  				if (ret) {
->  					regulator_unregister(pmic->rdev[id]);
-> -					goto err_unregister_regulator;
-> +					return ret;
->  				}
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 
-what about this regulator_unregister() above here?
+---
+v2: Actually get the right email address....
 
-[...]
-Best regards,
-Marek Vasut
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index 5f3e532..574b1a7 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -667,6 +667,6 @@ static void __exit edma_exit(void)
+ }
+ module_exit(edma_exit);
+ 
+-MODULE_AUTHOR("Matt Porter <mporter@ti.com>");
++MODULE_AUTHOR("Matt Porter <matt.porter@linaro.org>");
+ MODULE_DESCRIPTION("TI EDMA DMA engine driver");
+ MODULE_LICENSE("GPL v2");
