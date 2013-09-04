@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763000Ab3IDPfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:35:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38077 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762986Ab3IDPfN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:35:13 -0400
-Date: Wed, 4 Sep 2013 17:35:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, sgruszka@redhat.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/urgent] sched/cputime: Do not scale when utime == 0
-Message-ID: <20130904153507.GC2308@somewhere>
-References: <20130904131602.GC2564@redhat.com>
- <tip-5a8e01f8fa51f5cbce8f37acc050eb2319d12956@git.kernel.org>
+	id S935043Ab3IDPkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:40:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934868Ab3IDPkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:40:33 -0400
+Message-ID: <52275463.4020206@redhat.com>
+Date: Wed, 04 Sep 2013 17:40:19 +0200
+From: =?UTF-8?B?SmFuIEthbHXFvmE=?= <jkaluza@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-5a8e01f8fa51f5cbce8f37acc050eb2319d12956@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Richard Guy Briggs <rgb@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, davem@davemloft.net,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        eparis@redhat.com, tj@kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level
+ control message
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>  <1378275261-4553-1-git-send-email-jkaluza@redhat.com>  <878uzdf2xp.fsf@xmission.com> <20130904145830.GC28517@madcap2.tricolour.ca>  <20130904152022.GD28517@madcap2.tricolour.ca> <1378308621.7360.110.camel@edumazet-glaptop>
+In-Reply-To: <1378308621.7360.110.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 07:37:22AM -0700, tip-bot for Stanislaw Gruszka wrote:
-> Commit-ID:  5a8e01f8fa51f5cbce8f37acc050eb2319d12956
-> Gitweb:     http://git.kernel.org/tip/5a8e01f8fa51f5cbce8f37acc050eb2319d12956
-> Author:     Stanislaw Gruszka <sgruszka@redhat.com>
-> AuthorDate: Wed, 4 Sep 2013 15:16:03 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 4 Sep 2013 16:31:25 +0200
-> 
-> sched/cputime: Do not scale when utime == 0
-> 
-> scale_stime() silently assumes that stime < rtime, otherwise
-> when stime == rtime and both values are big enough (operations
-> on them do not fit in 32 bits), the resulting scaling stime can
-> be bigger than rtime. In consequence utime = rtime - stime
-> results in negative value.
-> 
-> User space visible symptoms of the bug are overflowed TIME
-> values on ps/top, for example:
-> 
->  $ ps aux | grep rcu
->  root         8  0.0  0.0      0     0 ?        S    12:42   0:00 [rcuc/0]
->  root         9  0.0  0.0      0     0 ?        S    12:42   0:00 [rcub/0]
->  root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
->  root        11  0.1  0.0      0     0 ?        S    12:42   0:02 [rcuop/0]
->  root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35 [rcuop/1]
->  root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37 [rcu_preempt]
-> 
-> or overflowed utime values read directly from /proc/$PID/stat
-> 
-> Reference:
-> 
->   https://lkml.org/lkml/2013/8/20/259
-> 
-> Reported-and-tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> Cc: stable@vger.kernel.org
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Link: http://lkml.kernel.org/r/20130904131602.GC2564@redhat.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+On 09/04/2013 05:30 PM, Eric Dumazet wrote:
+> On Wed, 2013-09-04 at 11:20 -0400, Richard Guy Briggs wrote:
+>> On Wed, Sep 04, 2013 at 10:58:30AM -0400, Richard Guy Briggs wrote:
+>>> On Wed, Sep 04, 2013 at 12:42:26AM -0700, Eric W. Biederman wrote:
+>>>> Jan Kaluza <jkaluza@redhat.com> writes:
+>>>>> this patchset against net-next (applies also to linux-next) adds 3 new types
+>>>>> of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
+>>>
+>>>> By my count you have overflowed cb in struct sk_buff and are stomping on
+>>>> _skb_refdest.
+>>>
+>>> For patch1/3 I count 56/48, then for patch3 I get 48/48.  Jan, you might
+>>> do the conversion to a pointer in patch1/3 to avoid bisect breakage.
+>>
+>> Wait, that __aligned(8) is for cb[48], not for the contents.
+>>
+>> For patch1/3 I count 28/48 on 32-bit, 36/48 on 64-bit (or would that be
+>> 56 by default on 64-bit arches without aligned specified?), then for
+>> patch3 I get 24/48 on 32 and 40/48 on 64 (or again 48/48 by default?).
+>
+> Do not count, just add this :
+>
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index 86de99a..5b61320 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+> @@ -1329,6 +1329,7 @@ static void unix_detach_fds(struct scm_cookie *scm, struct sk_buff *skb)
+>   {
+>   	int i;
+>
+> +	BUILD_BUG_ON(sizeof(struct unix_skb_parms) > sizeof(skb->cb));
+>   	scm->fp = UNIXCB(skb).fp;
+>   	UNIXCB(skb).fp = NULL;
+>
 
-Thanks a lot guys!
+That's already in af_unix.c:
+
+BUILD_BUG_ON(sizeof(struct unix_skb_parms) > FIELD_SIZEOF(struct 
+sk_buff, cb));
+
+This test is passing for me even with only patch1/3 applied when 
+building 64bit kernel.
+
+Jan Kaluza
+
