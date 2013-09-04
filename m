@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762905Ab3IDOk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:40:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9684 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762790Ab3IDOhF (ORCPT
+	id S935005Ab3IDOkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:40:35 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:36228 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762790Ab3IDOk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:37:05 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=foXRB9sBt20A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=8eAZA3Ftb1EA:10 a=F7sj4GA4NglSa3_kcFAA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130904143702.622711865@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 04 Sep 2013 10:36:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [for-next][PATCH 14/18] ftrace: Disable the RCU unsafe checker when irqsoff is enabled
-References: <20130904143552.456506259@goodmis.org>
-Content-Disposition: inline; filename=0013-ftrace-Disable-the-RCU-unsafe-checker-when-irqsoff-i.patch
+	Wed, 4 Sep 2013 10:40:29 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: [PATCH] dma: pl330: Simplify irq allocation
+Date: Wed,  4 Sep 2013 16:40:17 +0200
+Message-Id: <7a8e72582d8f4262a70bb9b7050fb6cb3be15578.1378305608.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-23948-1378305617-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-The irqsoff tracer can be called during some of the RCU unsafe
-regions. The problem is that some of the internal calls that it
-makes may also be traced. For example, it uses spin locks. But if
-the spin lock gets traced and the RCU unsafe checker runs, it will
-trigger that RCU is not safe to use. But the only reason a spin lock
-is being used in an RCU unsafe region is because the irqsoff trace
-uses it, and causes a false positive.
+--=_mimegpg-monstr-desktop-23948-1378305617-0001
 
-Disable the unsafe RCU checker when irqsoff is enabled.
+Use devm_request_irq function.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- kernel/trace/trace_irqsoff.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/dma/pl330.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 2aefbee..62d603c 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -584,9 +584,14 @@ static int start_irqsoff_tracer(struct trace_array *tr, int graph)
- 
- 	ret = register_irqsoff_function(graph, 0);
- 
--	if (!ret && tracing_is_enabled())
-+	if (!ret && tracing_is_enabled()) {
-+		/*
-+		 * irqsoff tracer can cause unsafe rcu checker
-+		 * to have false positives.
-+		 */
-+		ftrace_unsafe_rcu_checker_disable();
- 		tracer_enabled = 1;
--	else
-+	} else
- 		tracer_enabled = 0;
- 
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index fa645d8..1989e4c 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2930,7 +2930,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	amba_set_drvdata(adev, pdmac);
+
+ 	irq = adev->irq[0];
+-	ret = request_irq(irq, pl330_irq_handler, 0,
++	ret = devm_request_irq(&adev->dev, irq, pl330_irq_handler, 0,
+ 			dev_name(&adev->dev), pi);
+ 	if (ret)
+ 		return ret;
+@@ -2938,7 +2938,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pi->pcfg.periph_id = adev->periphid;
+ 	ret = pl330_add(pi);
+ 	if (ret)
+-		goto probe_err1;
++		return ret;
+
+ 	INIT_LIST_HEAD(&pdmac->desc_pool);
+ 	spin_lock_init(&pdmac->pool_lock);
+@@ -3041,8 +3041,6 @@ probe_err3:
+ 	}
+ probe_err2:
+ 	pl330_del(pi);
+-probe_err1:
+-	free_irq(irq, pi);
+
  	return ret;
-@@ -594,6 +599,9 @@ static int start_irqsoff_tracer(struct trace_array *tr, int graph)
- 
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
- {
-+	if (tracer_enabled)
-+		ftrace_unsafe_rcu_checker_enable();
-+
- 	tracer_enabled = 0;
- 
- 	unregister_irqsoff_function(graph);
-@@ -630,11 +638,15 @@ static void irqsoff_tracer_reset(struct trace_array *tr)
- 
- static void irqsoff_tracer_start(struct trace_array *tr)
- {
-+	if (!tracer_enabled)
-+		ftrace_unsafe_rcu_checker_disable();
- 	tracer_enabled = 1;
  }
- 
- static void irqsoff_tracer_stop(struct trace_array *tr)
- {
-+	if (tracer_enabled)
-+		ftrace_unsafe_rcu_checker_enable();
- 	tracer_enabled = 0;
+@@ -3052,7 +3050,6 @@ static int pl330_remove(struct amba_device *adev)
+ 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
+ 	struct dma_pl330_chan *pch, *_p;
+ 	struct pl330_info *pi;
+-	int irq;
+
+ 	if (!pdmac)
+ 		return 0;
+@@ -3079,9 +3076,6 @@ static int pl330_remove(struct amba_device *adev)
+
+ 	pl330_del(pi);
+
+-	irq = adev->irq[0];
+-	free_irq(irq, pi);
+-
+ 	return 0;
  }
- 
--- 
-1.7.10.4
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-23948-1378305617-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlInRlEACgkQykllyylKDCHYewCfYHH/s2iY4Mty/Y0ORHCEa+w9
+yF8Anits++q4/E5ANp2oU9rRtrCNCm8L
+=kB8m
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-23948-1378305617-0001--
