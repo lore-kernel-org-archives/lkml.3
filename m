@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935123Ab3IDOqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:46:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39164 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934851Ab3IDOqS convert rfc822-to-8bit (ORCPT
+	id S935126Ab3IDOrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:47:22 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:50670 "EHLO
+	mail.work-microwave.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934761Ab3IDOrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:46:18 -0400
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <52266409.90908@ti.com>
-Date: Wed, 4 Sep 2013 09:46:19 -0500
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org>
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com>
-To: Suman Anna <s-anna@ti.com>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 4 Sep 2013 10:47:21 -0400
+X-Greylist: delayed 683 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 10:47:20 EDT
+From: Roland Stigge <stigge@antcom.de>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] ARM: LPC32xx: Fix reset function
+Date: Wed,  4 Sep 2013 16:33:28 +0200
+Message-Id: <1378305208-5330-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.8.4.rc3
+X-FEAS-SYSTEM-WL: rst@work-microwave.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the recent change to the reset function API (commit
+7b6d864b48d95e6ea1df7df64475b9cb9616dcf9), the mode argument changed from a
+char to an enum. lpc23xx_restart() only handles REBOOT_SOFT and REBOOT_HARD,
+but the new kernel code emits REBOOT_COLD (0) on reboots now which leads to
+lpc32xx simply not rebooting (but halting).
 
-On Sep 3, 2013, at 5:34 PM, Suman Anna wrote:
+This patch fixes this by just resetting unconditionally as on other platforms
+(e.g. mach-bcm2835).
 
-> Kumar,
-> 
->>> 
->>> On 09/03/2013 01:50 PM, Kumar Gala wrote:
->>>> 
->>>> On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
->>>> 
->>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->>>>> which are all device-tree boot only. This patch adds the
->>>>> base support for parsing the DT nodes, and removes the code
->>>>> dealing with the traditional platform device instantiation.
->>>>> 
->>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>>> ---
->>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
->>>>> arch/arm/mach-omap2/Makefile                       |  3 --
->>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
->>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
->>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>>>> 
->>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> new file mode 100644
->>>>> index 0000000..adfb8ad
->>>>> --- /dev/null
->>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>> @@ -0,0 +1,28 @@
->>>>> +OMAP4+ HwSpinlock Driver
->>>>> +
->>>>> +Required properties:
->>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->>>>> +- reg:			Contains the hwspinlock register address range (base
->>>>> +			address and length)
->>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->>>>> +
->>>>> +Optional properties:
->>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
->>>>> +			device. If not mentioned, a default value of 0 is used.
->>>>> +			This property is mandatory ONLY if a SoC has several
->>>>> +			hwspinlock devices. There are currently no such OMAP
->>>>> +			SoCs.
->>>> 
->>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
->>> 
->>> I didn't add the "ti," prefix exactly for the same reason - it is
->>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
->>> there is nothing ti or OMAP specific about it. I have added it to keep
->>> the DT node definition in sync with the driver code. If it is too
->>> generic a name, it can always be renamed as hwlock_base_id. This will be
->>> SoC agnostic property for the hwspinlock driver. What do you think?
->> 
->> I'm wondering if we should use cell-index for this purpose.
-> 
-> I didn't get you completely. Do you intend to compute the base_id using
-> cell-index and number of locks (which may be a separate field altogether
-> if this information cannot be read from the h/w)? My understanding is
-> that cell-index is primarily used for identifying the h/w instance number.
+Pulling lpc32xx_watchdog_reset() into lpc23xx_restart() since the while() in
+lpc23xx_restart() is part of the procedure anyway and lpc32xx_watchdog_reset()
+isn't used anywhere else anymore.
 
-I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
+--
 
-- k
+Will provide a pull request for arm-soc when someone commented on this one.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+---
+ arch/arm/mach-lpc32xx/common.c |   29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/common.c
++++ linux-2.6/arch/arm/mach-lpc32xx/common.c
+@@ -57,20 +57,6 @@ int clk_is_sysclk_mainosc(void)
+ }
+ 
+ /*
+- * System reset via the watchdog timer
+- */
+-static void lpc32xx_watchdog_reset(void)
+-{
+-	/* Make sure WDT clocks are enabled */
+-	__raw_writel(LPC32XX_CLKPWR_PWMCLK_WDOG_EN,
+-		LPC32XX_CLKPWR_TIMER_CLK_CTRL);
+-
+-	/* Instant assert of RESETOUT_N with pulse length 1mS */
+-	__raw_writel(13000, io_p2v(LPC32XX_WDTIM_BASE + 0x18));
+-	__raw_writel(0x70, io_p2v(LPC32XX_WDTIM_BASE + 0xC));
+-}
+-
+-/*
+  * Detects and returns IRAM size for the device variation
+  */
+ #define LPC32XX_IRAM_BANK_SIZE SZ_128K
+@@ -209,16 +195,13 @@ void __init lpc32xx_map_io(void)
+ 
+ void lpc23xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	switch (mode) {
+-	case REBOOT_SOFT:
+-	case REBOOT_HARD:
+-		lpc32xx_watchdog_reset();
+-		break;
++	/* Make sure WDT clocks are enabled */
++	__raw_writel(LPC32XX_CLKPWR_PWMCLK_WDOG_EN,
++		LPC32XX_CLKPWR_TIMER_CLK_CTRL);
+ 
+-	default:
+-		/* Do nothing */
+-		break;
+-	}
++	/* Instant assert of RESETOUT_N with pulse length 1mS */
++	__raw_writel(13000, io_p2v(LPC32XX_WDTIM_BASE + 0x18));
++	__raw_writel(0x70, io_p2v(LPC32XX_WDTIM_BASE + 0xC));
+ 
+ 	/* Wait for watchdog to reset system */
+ 	while (1)
