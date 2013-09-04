@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934914Ab3IDOYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:24:16 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1094 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934867Ab3IDOYO (ORCPT
+	id S1762731Ab3IDOYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:24:52 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52421 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1762603Ab3IDOYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:24:14 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 04 Sep 2013 07:21:25 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 4/4 Resend] clk: tegra114: table driven PMC clock init
-Date: Wed, 4 Sep 2013 17:23:56 +0300
-Message-ID: <1378304641-7992-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Wed, 4 Sep 2013 10:24:51 -0400
+Date: Wed, 4 Sep 2013 15:24:22 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devicetree@vger.kernel.org"@arm.com
+Subject: Re: [PATCH] Documentation: dt: i2c: Add LPS001WP to the Trivial
+ Devices list
+Message-ID: <20130904142422.GM18206@e106331-lin.cambridge.arm.com>
+References: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the Tegra114 PMC clock registration to be table driven
-like the periph clocks.
+Hi Lee,
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
+Cheers for producing a binding.
 
-Fix comment :)
+On Wed, Sep 04, 2013 at 02:50:55PM +0100, Lee Jones wrote:
+> LPS001WP is a Pressure and Temperature sensor.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> index ad6a738..6038807e6 100644
+> --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> @@ -57,6 +57,7 @@ st-micro,24c256		i2c serial eeprom  (24cxx)
+>  stm,m41t00		Serial Access TIMEKEEPER
+>  stm,m41t62		Serial real-time clock (RTC) with alarm
+>  stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
+> +stm,lps001wp		Pressure and Temperature sensor
 
----
- drivers/clk/tegra/clk-tegra114.c |   58 +++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 35 deletions(-)
+As I hinted at in the other thread [1], I don't think this can be
+documented as a trivial binding -- the driver expects a couple of
+regulators which should be described in the binding (or the driver
+shouldn't be using them...).
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 0379a19..44ba713 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -1583,45 +1583,33 @@ static void __init tegra114_audio_clk_init(void __iomem *clk_base)
- 	}
- }
- 
-+static struct pmc_clk_init_data tegra_pmc_clk_init_data[] = {
-+	TEGRA_INIT_PMC_CLK("clk_out_1", "extern1", clk_out1_parents, 6, 2, TEGRA114_CLK_CLK_OUT_1),
-+	TEGRA_INIT_PMC_CLK("clk_out_2", "extern2", clk_out2_parents, 14, 10, TEGRA114_CLK_CLK_OUT_2),
-+	TEGRA_INIT_PMC_CLK("clk_out_3", "extern3", clk_out3_parents, 22, 18, TEGRA114_CLK_CLK_OUT_3),
-+};
-+
- static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
- {
- 	struct clk *clk;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_pmc_clk_init_data); i++) {
-+		struct pmc_clk_init_data *data;
- 
--	/* clk_out_1 */
--	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_1_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern1", "clk_out_1");
--	clks[TEGRA114_CLK_CLK_OUT_1] = clk;
--
--	/* clk_out_2 */
--	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
--			       ARRAY_SIZE(clk_out2_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_2_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern2", "clk_out_2");
--	clks[TEGRA114_CLK_CLK_OUT_2] = clk;
--
--	/* clk_out_3 */
--	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
--			       ARRAY_SIZE(clk_out3_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
--			       &clk_out_lock);
--	clks[TEGRA114_CLK_CLK_OUT_3_MUX] = clk;
--	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern3", "clk_out_3");
--	clks[TEGRA114_CLK_CLK_OUT_3] = clk;
-+		data = &tegra_pmc_clk_init_data[i];
-+
-+		clk = clk_register_mux(NULL, data->mux_name, data->parents,
-+				data->num_parents, 0,
-+				pmc_base + PMC_CLK_OUT_CNTRL, data->mux_shift,
-+				3, 0, &clk_out_lock);
-+		clks[data->mux_id] = clk;
-+		clk = clk_register_gate(NULL, data->gate_name, data->mux_name,
-+					0, pmc_base + PMC_CLK_OUT_CNTRL,
-+					data->gate_shift, 0, &clk_out_lock);
-+		clks[data->gate_id] = clk;
-+		clk_register_clkdev(clk, data->dev_name, data->gate_name);
-+	}
- 
- 	/* blink */
- 	/* clear the blink timer register to directly output clk_32k */
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Also, in the other thread the "st," prefix was used [2], while "stm," is
+listed at the prefix in the binding. As far as I can see, "st," should
+be used, as it's in vendor-prefixes and "stm," is not.
 
+I'm happy to cook up a patch adding deprecation notes and corrected
+strings for the existing incorrect "stm," bindings.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/196561.html
+[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/196558.html
+
+Thanks,
+Mark.
+
+>  taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
+>  ti,tsc2003		I2C Touch-Screen Controller
+>  ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+> -- 
+> 1.8.1.2
+> 
+> 
