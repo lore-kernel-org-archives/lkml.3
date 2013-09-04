@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762780Ab3IDO0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:26:50 -0400
-Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:12189 "EHLO
-	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762589Ab3IDO0s (ORCPT
+	id S1762799Ab3IDO11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:27:27 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:45911 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760161Ab3IDO10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:26:48 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 10:26:48 EDT
-Date: Wed, 4 Sep 2013 14:17:09 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Will Deacon <will.deacon@arm.com>
-cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-In-Reply-To: <20130904093335.GA8007@mudshark.cambridge.arm.com>
-Message-ID: <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com>
-References: <20130828193457.140443630@linux.com> <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com> <20130830100105.GF25628@mudshark.cambridge.arm.com> <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
- <20130904093335.GA8007@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Sep 2013 10:27:26 -0400
+X-Auth-Info: LVyFgELr87F15n9uKEvQBhF9Ux/t1DSpiTH5spRurgs=
+From: Marek Vasut <marex@denx.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 3/7] regulator: mc13783: Use devm_regulator_register
+Date: Wed, 4 Sep 2013 16:27:25 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, nm@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
+        s.hauer@pengutronix.de, Nancy.Chen@freescale.com
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-3-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1378276263-10735-3-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.110
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309041627.25443.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Sep 2013, Will Deacon wrote:
+Dear Sachin Kamat,
 
-> > Did you apply the first patch of this series which is a bug fix?
->
-> No, sorry, I didn't see that. Do you have a branch anywhere that I can play
-> with?
+> devm_* simplifies the code.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-It was merged in Linus tree yesterday.
+Acked-by: Marek Vasut <marex@denx.de>
 
-> > I do not see any special code for ARM for this_cpu_inc_return. The
-> > fallback solution in the core code is to disable interrupts for the
-> > inc_return and arch/arm/include/asm/percpu.h includes
-> > asm-generic/percpu.h.
-> >
-> > Where did you see it using a lock?
->
-> God knows! You're completely right, and we simply disable interrupts which I
-> somehow misread as taking a lock. However, is it guaranteed that mixing
-> an atomic64_* access with a this_cpu_inc_return will retain atomicity
-> between the two? E.g. if you get interrupted during an atomic64_xchg
-> operation, the interrupt handler issues this_cpu_inc_return, then on return
-> to the xchg operation it must reissue any reads that had been executed
-> prior to the interrupt. This should work on ARM/ARM64 (returning from the
-> interrupt will clear the exclusive monitor) but I don't know about other
-> architectures.
-
-You cannot get interrupted during an atomic64_xchg operation. atomic and
-this_cpu operations are stricly serialzed since both should be behaving
-like single instructions. __this_cpu ops relax that requirement in case
-the arch code incurs significant overhead to make that happen. In cases
-where we know that preemption/interrupt disable etc takes care of things
-__this_cpu ops come into play.
-
+Best regards,
+Marek Vasut
