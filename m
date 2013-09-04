@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762274Ab3IDXjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 19:39:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57985 "EHLO hydra.sisk.pl"
+	id S1762225Ab3IDXmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 19:42:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64468 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761578Ab3IDXjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 19:39:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tang Chen <tangchen@cn.fujitsu.com>, hpa@zytor.com
-Cc: tglx@linutronix.de, mingo@redhat.com, lenb@kernel.org,
-        liwanp@linux.vnet.ibm.com, tj@kernel.org, akpm@linux-foundation.org,
-        joe@perches.com, toshi.kani@hp.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] acpi: Fix and cleanup in acpi.
-Date: Thu, 05 Sep 2013 01:50:26 +0200
-Message-ID: <17694789.JU3fWJ8s3q@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com>
+	id S1756966Ab3IDXmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 19:42:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,843,1371106800"; 
+   d="scan'208";a="391219228"
+From: Andi Kleen <andi@firstfloor.org>
+To: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
+        anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
+References: <20130903072944.4793.93584.stgit@hemant-fedora>
+Date: Wed, 04 Sep 2013 16:41:48 -0700
+In-Reply-To: <20130903072944.4793.93584.stgit@hemant-fedora> (Hemant Kumar
+	Shaw's message of "Tue, 03 Sep 2013 13:06:40 +0530")
+Message-ID: <87ppsonohv.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 03, 2013 04:45:37 PM Tang Chen wrote:
-> This patch-set fix the following problems:
-> 
-> 1. Kill useless function save_add_info() which will block us from using
->    numa when MEMORY_HOTPLUG is not configured.
-> 2. acpi_table_parse() didn't check if @id is NULL.
-> 3. Fix incorrect comment in acpi_table_parse(), and return -ENOENT if a
->    table is not found.
-> 
-> And also did some cleanup.
-> 
-> change log v1 -> v2:
-> 1. Use pr_fmt() to simply the SRAT message.
->    Suggested by Joe Perches <joe@perches.com>
-> 2. Improve the log in patch 4, and change the return value of the stub of 
->    acpi_table_parse() in linux/acpi.h
->    Suggested by Toshi Kani <toshi.kani@hp.com>
-> 3. Merge the two pr_{info|err} patches into one.
-> 4. Remove on of the patch that has been merged by Rafael.
-> 
-> Tang Chen (4):
->   acpi, numa, mem_hotplug: Kill save_add_info().
->   acpi cleanup: Use pr_{info|err}() instead of printk() in
->     arch/x86/mm/srat.c
->   acpi: Check if @id is NULL in acpi_table_parse()
->   acpi: Return -ENOENT in acpi_table_parse() and fix wrong comment.
+Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com> writes:
 
-Thanks for the patches!
+> This series adds support to perf to list and probe into the SDT markers.
+> The first patch implements listing of all the SDT markers present in
+> the ELFs (executables or libraries). The SDT markers are present in the
+> .note.stapsdt section of the elf. That section can be traversed to list
+> all the markers. Recognition of markers follows the SystemTap approach.
+>
+> The second patch will allow perf to probe into these markers. This is
+> done by writing the marker name and its offset into the
+> uprobe_events file in the tracing directory.
+> Then, perf tools can be used to analyze perf.data file.
 
-Peter, any objections against [1-2/4]?  If not, I'll queue them up for 3.13.
+Nice feature
 
-Thanks,
-Rafael
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
