@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935109Ab3IDPEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:04:39 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:9996 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934783Ab3IDPEh (ORCPT
+	id S935115Ab3IDPFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:05:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40183 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934783Ab3IDPFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:04:37 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-14-52274c032e15
-From: Tomasz Figa <t.figa@samsung.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: 3.12 merge window exynos cpufreq driver fails to build
-Date: Wed, 04 Sep 2013 17:04:33 +0200
-Message-id: <1480759.MNj1g1yX4l@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <CA+5PVA7T4P9vMH0r8p78aZYUrL8gzbpY9MmW9=nV3X0tE-e4NA@mail.gmail.com>
-References: <CA+5PVA6SQ9JGBD3F=u5ysch-agp91oTK8ZbKsdQkz57yZ8OUHQ@mail.gmail.com>
- <7035644.8Kb1gDYsCf@amdc1227>
- <CA+5PVA7T4P9vMH0r8p78aZYUrL8gzbpY9MmW9=nV3X0tE-e4NA@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xq7rMPupBBhNucFo8bfrBbvHx9gpG
-	i94FV9ksNj2+xmpxedccNosZ5/cxWfQv7GWy2PjVw4HDY+esu+wed67tYfPYvKTeo2/LKkaP
-	R4tbGD0+b5ILYIvisklJzcksSy3St0vgyph45xZzwTH+ijev/jA1ME7l6WLk5JAQMJG4+LuP
-	CcIWk7hwbz1bFyMXh5DAUkaJqb/7WSCcLiaJmz1X2UCq2ATUJD43PAKyOThEBJQkHjb7gtQw
-	C8xhkpi3fQ7YJGEBZ4mvyw8xg9gsAqoSLfNvsIDYvAKaEvufrWQHsfkF1CXebXsKVi8q4Crx
-	aeFGsDinQLDEnd13GSEW72SUuPxgFTtEs6DEj8n3wAYxC8hL7Ns/lRXC1pJYv/M40wRGwVlI
-	ymYhKZuFpGwBI/MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCI+LqDcekxq0OMAhyMSjy8
-	GobqQUKsiWXFlbmHGCU4mJVEeOW8gUK8KYmVValF+fFFpTmpxYcYmTg4pRoYV7SfZcnUfjUj
-	W2RVqv0B7SIn8yqJ9TWPVF4qeMy8wXdApiuyi/+twc8JRkfZ5/75MTtnz0PRwpuHfm+6y+7i
-	vHCVmWKgddaVq4e+vd22paWai8Ulcs22zKSs3teS54zmckQsviVjtdT3f9XEkm2WXUuj8q84
-	r9gb+qZosXblRpnKZ6bmHbvKlFiKMxINtZiLihMBOjVNl2YCAAA=
+	Wed, 4 Sep 2013 11:05:46 -0400
+Date: Wed, 4 Sep 2013 16:05:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Rutland <mark.rutland@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "denis.ciocca@st.com" <denis.ciocca@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130904150540.GA10849@sirena.org.uk>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
+ <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
+ <5227331A.5050507@metafoo.de>
+ <20130904132638.GG20150@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+In-Reply-To: <20130904132638.GG20150@lee--X1>
+X-Cookie: You will wish you hadn't.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator
+ support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 of September 2013 10:41:31 Josh Boyer wrote:
-> On Wed, Sep 4, 2013 at 10:36 AM, Tomasz Figa <t.figa@samsung.com> wrote:
-> > Hi Josh,
-> > 
-> > On Wednesday 04 of September 2013 10:13:16 Josh Boyer wrote:
-> >> Using Linus' tree as of this morning (v3.11-2654-g458c3f6), the
-> >> exynos-cpufreq driver doesn't build because it includes a file that
-> >> doesn't exist.
-> >> 
-> >> + make -s ARCH=arm V=1 -j4 bzImage KALLSYMS_EXTRA_PASS=1
-> >> arch/arm/kernel/return_address.c:63:2: warning: #warning "TODO:
-> >> return_address should use unwind tables" [-Wcpp]
-> >> 
-> >>  #warning "TODO: return_address should use unwind tables"
-> >>  
-> >>   ^
-> >> 
-> >> arch/arm/mm/dma-mapping.c:253:2: warning: #warning ARM Coherent DMA
-> >> allocator does not (yet) support huge TLB [-Wcpp]
-> >> 
-> >>  #warning ARM Coherent DMA allocator does not (yet) support huge TLB
-> >>  
-> >>   ^
-> >> 
-> >> drivers/cpufreq/exynos-cpufreq.c:21:22: fatal error: plat/cpu.h: No
-> >> such file or directory
-> >> 
-> >>  #include <plat/cpu.h>
-> >>  
-> >>                       ^
-> >> 
-> >> compilation terminated.
-> >> make[2]: *** [drivers/cpufreq/exynos-cpufreq.o] Error 1
-> >> 
-> >> I'm guessing that <plat/cpu.h> file is supposed to come from
-> >> arch/arm/plat-samsung/include/plat/, but I don't see anything that
-> >> specifies a -I there.
-> >> 
-> >> Thoughts?
-> > 
-> > Could you attach config that could be used to trigger this? Thanks in
-> > advance.
-> 
-> Attached.
 
-Hmm, this does not look like config for kernel neither from Linus' nor 
-linux-next tree. The first thing I can see is CONFIG_ARCH_EXYNOS_MULTI 
-selected, which is not available in any mainline tree.
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-As for the build error itself, headers from plat/ are available for drivers 
-only in single platform builds, they can't be included when multiplatform 
-is enabled. The exynos-cpufreq driver is not multiplatform-aware yet and so 
-you get the failure.
+On Wed, Sep 04, 2013 at 02:26:38PM +0100, Lee Jones wrote:
+> On Wed, 04 Sep 2013, Lars-Peter Clausen wrote:
 
-Best regards,
-Tomasz
+> > > I think this would be better handled with something like Mark Brown's
+> > > suggested regulator_get_optional [1,2].
 
+> Thanks Mark, I didn't know that existed.
+
+It's only just gone into Linus' tree this merge window so it's very new.
+
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSJ0xBAAoJELSic+t+oim9N2oQAIdYIPL4q+/cXj8DpzNq+TLA
+sAknQx2cik8r8MIcOZwxJq0F7RceXxHQ3w5xYNoR/fc+AFXYawzV8cq3cyp+SUYa
+aDK9x+N5lmV8OorqviB+tuxIoN2bNFyCt+Akp0MhuStBvGbkzntH2cAm3Ykki323
+Z/59/5DWAh9BG1T4Gd3c08Nx5xCJWpPsLVTE9NRRG32d8F+qG1q9oG0zHqrsURbm
+03ZJkshDWIYJMFqH0wS+g+6FQqv00T8yi/F0dacAZ4QEHewdIeZ55bnG+49PQCCw
+FY2wh8Ohrmf35SUyrFtoF7FDtkINNoeqCMTLiwz6kcc/isSJ+B3uIB2Dr5YN6YTL
+rHHGUX7KKOAAUC9xeN1fXvAcdCmWhglbOKVei2zK3IjMc6jNlswadFF5/Ni9iGb4
+a36+MR/zBP0mTLZ2sw+d7GUI5o2GcF9K+/mGQXVT+XNLOpV4tcufLA1IYdSQDzxl
+Fseufda6EJP05KHpnTpCv4v2iWSWNZDmvnzaUqj8oaPkJHNGS0P+BLcCnP7mN0xD
+pAQzkedY6C/It6u4qrK5UNTfgJqHxFdte2guk3Nmd60OTwvp5J1JfTEi5DEhFdZF
+e024jD+K1gqYsOOYq8vMNmF1SL4vF8F7z1Ya6HKcWbvwBqLOhDsUURoi+jvA7zVD
+6dqUe1bjrOi2nshPkhZZ
+=22IL
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
