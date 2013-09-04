@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934385Ab3IDFsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:48:12 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:52823 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934173Ab3IDFsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:48:07 -0400
-From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: benve@cisco.com, ssujith@cisco.com, nistrive@cisco.com, umalhi@cisco.com,
-        Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 5/5] driver/net: enic: update enic maintainers and driver
-Date: Wed,  4 Sep 2013 11:17:18 +0530
-Message-Id: <1378273638-7780-6-git-send-email-govindarajulu90@gmail.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
-References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
+	id S1762000Ab3IDFvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:51:48 -0400
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:41867
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755924Ab3IDFvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 01:51:47 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas.Mingarelli@hp.com" <Thomas.Mingarelli@hp.com>,
+        "toshi.kani@hp.com" <toshi.kani@hp.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Move and rename HP watchdog timer driver
+Thread-Topic: [PATCH 1/2] Move and rename HP watchdog timer driver
+Thread-Index: AQHOqS/cw8QEpiygLECLA27YDSjc6pm1EPwAgAACTIA=
+Date: Wed, 4 Sep 2013 05:51:41 +0000
+Message-ID: <1378273901.11730.53.camel@x230>
+References: <1378272591-9755-1-git-send-email-matthew.garrett@nebula.com>
+	 <5226C880.8010704@roeck-us.net>
+In-Reply-To: <5226C880.8010704@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 095972DF2F
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(189002)(199002)(377424004)(74502001)(47446002)(33716001)(76796001)(76786001)(74662001)(77982001)(59766001)(54356001)(79102001)(81686001)(33646001)(65816001)(74706001)(80022001)(74876001)(77096001)(56816003)(69226001)(31966008)(19580395003)(74366001)(4396001)(81542001)(50986001)(47976001)(51856001)(83072001)(46102001)(63696002)(80976001)(81816001)(76482001)(54316002)(56776001)(53806001)(49866001)(47736001)(81342001)(19580405001)(83322001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <88237D708F7B1C49BFFFC5CA274CA19A@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r845proG019959
 
-Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Signed-off-by: Sujith Sankar <ssujith@cisco.com>
-Signed-off-by: Nishank Trivedi <nistrive@cisco.com>
-Signed-off-by: Christian Benvenuti <benve@cisco.com>
----
- MAINTAINERS                            | 3 ++-
- drivers/net/ethernet/cisco/enic/enic.h | 2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+On Tue, 2013-09-03 at 22:43 -0700, Guenter Roeck wrote:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 705bb96..ecb83cd 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2076,7 +2076,8 @@ F:	drivers/usb/chipidea/
- 
- CISCO VIC ETHERNET NIC DRIVER
- M:	Christian Benvenuti <benve@cisco.com>
--M:	Roopa Prabhu <roprabhu@cisco.com>
-+M:	Sujith Sankar <ssujith@cisco.com>
-+M:	Govindarajulu Varadarajan <govindarajulu90@gmail.com>
- M:	Neel Patel <neepatel@cisco.com>
- M:	Nishank Trivedi <nistrive@cisco.com>
- S:	Supported
-diff --git a/drivers/net/ethernet/cisco/enic/enic.h b/drivers/net/ethernet/cisco/enic/enic.h
-index 34b637a..e9f7c65 100644
---- a/drivers/net/ethernet/cisco/enic/enic.h
-+++ b/drivers/net/ethernet/cisco/enic/enic.h
-@@ -32,7 +32,7 @@
- 
- #define DRV_NAME		"enic"
- #define DRV_DESCRIPTION		"Cisco VIC Ethernet NIC Driver"
--#define DRV_VERSION		"2.1.1.43"
-+#define DRV_VERSION		"2.1.1.50"
- #define DRV_COPYRIGHT		"Copyright 2008-2013 Cisco Systems, Inc"
- 
- #define ENIC_BARS_MAX		6
+> If that is the case, wouldn't it make more sense to have separate drivers,
+> one per functionality, plus an mfd driver to bind them all together ?
+
+It'd be an option, but I don't think there's a huge benefit - the
+functionality's reasonably related and there's no real internal bus
+architecture on the device.
+
 -- 
-1.8.4
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
