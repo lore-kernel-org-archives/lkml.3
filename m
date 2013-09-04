@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab3IDURj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:17:39 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:46060 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754438Ab3IDURh convert rfc822-to-8bit
+	id S1761076Ab3IDUSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:18:21 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:36588 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757042Ab3IDUSU convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:17:37 -0400
+	Wed, 4 Sep 2013 16:18:20 -0400
 From: Denis CIOCCA <denis.ciocca@st.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
@@ -15,16 +15,16 @@ Cc: "linux-arm-kernel@lists.infradead.org"
         "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
         "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Date: Wed, 4 Sep 2013 22:17:09 +0200
-Subject: Re: [PATCH 07/11] iio: sensors-core: st: Allow full-scale to be an
- optional feature
-Thread-Topic: [PATCH 07/11] iio: sensors-core: st: Allow full-scale to be an
- optional feature
-Thread-Index: Ac6pq7ynl0UPv1rcRxeE5CiOsWQPxQ==
-Message-ID: <52279545.5070903@st.com>
+Date: Wed, 4 Sep 2013 22:17:50 +0200
+Subject: Re: [PATCH 08/11] iio: pressure-core: st: Allow for number of
+ channels to vary
+Thread-Topic: [PATCH 08/11] iio: pressure-core: st: Allow for number of
+ channels to vary
+Thread-Index: Ac6pq9UXKgjqy/+4QLO/NiSZaTLYWg==
+Message-ID: <5227956E.2050607@st.com>
 References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
- <1378287103-21765-8-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1378287103-21765-8-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-9-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378287103-21765-9-git-send-email-lee.jones@linaro.org>
 Accept-Language: it-IT, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -40,51 +40,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Acked-by: Denis Ciocca <denis.ciocca@st.com>
-> Some chips either don't support it or fail to provide adequate documentation,
-> so sometimes it's impossible to enable the feature even if it is supported.
+> At the moment the number of channels specified is dictated by the first
+> sensor supported by the driver. As we add support for more sensors this
+> is likely to vary. Instead of using the ARRAY_SIZE() of the LPS331AP's
+> channel specifier we'll use a new adaptable 'struct st_sensors' element
+> instead.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->   drivers/iio/common/st_sensors/st_sensors_core.c | 11 +++++++----
->   drivers/iio/pressure/st_pressure_core.c         |  6 ++++--
->   2 files changed, 11 insertions(+), 6 deletions(-)
+>   drivers/iio/pressure/st_pressure_core.c | 3 ++-
+>   include/linux/iio/common/st_sensors.h   | 1 +
+>   2 files changed, 3 insertions(+), 1 deletion(-)
 >
-> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
-> index 865b178..fc9acb7 100644
-> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
-> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
-> @@ -209,10 +209,13 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev)
->   	if (err < 0)
->   		goto init_error;
->   
-> -	err = st_sensors_set_fullscale(indio_dev,
-> -						sdata->current_fullscale->num);
-> -	if (err < 0)
-> -		goto init_error;
-> +	if (sdata->current_fullscale) {
-> +		err = st_sensors_set_fullscale(indio_dev,
-> +					       sdata->current_fullscale->num);
-> +		if (err < 0)
-> +			goto init_error;
-> +	} else
-> +		dev_info(&indio_dev->dev, "Full-scale not possible\n");
->   
->   	err = st_sensors_set_odr(indio_dev, sdata->odr);
->   	if (err < 0)
 > diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-> index 7ba9299..423ed6a 100644
+> index 423ed6a..3cf54ed 100644
 > --- a/drivers/iio/pressure/st_pressure_core.c
 > +++ b/drivers/iio/pressure/st_pressure_core.c
-> @@ -239,8 +239,10 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+> @@ -101,6 +101,7 @@ static const struct st_sensors st_press_sensors[] = {
+>   			[0] = LPS331AP_PRESS_DEV_NAME,
+>   		},
+>   		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
+> +		.num_ch = ARRAY_SIZE(st_press_lsp331ap_channels),
+>   		.odr = {
+>   			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
+>   			.mask = ST_PRESS_LPS331AP_ODR_MASK,
+> @@ -237,7 +238,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+>   	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
+>   	pdata->multiread_bit = pdata->sensor->multi_read_bit;
 >   	indio_dev->channels = pdata->sensor->ch;
->   	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+> -	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+> +	indio_dev->num_channels = pdata->sensor->num_ch;
 >   
-> -	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
-> -						&pdata->sensor->fs.fs_avl[0];
-> +	if (pdata->sensor->fs.addr != 0)
-> +		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
-> +			&pdata->sensor->fs.fs_avl[0];
-> +
->   	pdata->odr = pdata->sensor->odr.odr_avl[0].hz;
->   
->   	err = st_sensors_init_sensor(indio_dev);
+>   	if (pdata->sensor->fs.addr != 0)
+>   		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+> diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
+> index 72b2694..4aef925 100644
+> --- a/include/linux/iio/common/st_sensors.h
+> +++ b/include/linux/iio/common/st_sensors.h
+> @@ -180,6 +180,7 @@ struct st_sensors {
+>   	u8 wai;
+>   	char sensors_supported[ST_SENSORS_MAX_4WAI][ST_SENSORS_MAX_NAME];
+>   	struct iio_chan_spec *ch;
+> +	int num_ch;
+>   	struct st_sensor_odr odr;
+>   	struct st_sensor_power pw;
+>   	struct st_sensor_axis enable_axis;
