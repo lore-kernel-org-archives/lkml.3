@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934526Ab3IDIog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:44:36 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44994 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934402Ab3IDIod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:44:33 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-10-5226f2ef3280
-Date: Wed, 4 Sep 2013 17:44:30 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-Message-ID: <20130904084430.GD16355@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
+	id S934498Ab3IDItx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:49:53 -0400
+Received: from verein.lst.de ([213.95.11.211]:37806 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934354Ab3IDItt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 04:49:49 -0400
+Date: Wed, 4 Sep 2013 10:48:59 +0200 (CEST)
+From: Torsten Duwe <duwe@lst.de>
+Reply-To: Torsten Duwe <duwe@lst.de>
+To: tytso@mit.edu, ingo.tuchscherer@de.ibm.com
+cc: linux-kernel@vger.kernel.org, Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <GERALDSC@de.ibm.com>,
+        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>
+Subject: Resend: [PATCH 2/2] s390: provide hardware randomness from zcrypt
+ card to /dev/random
+Message-ID: <alpine.LNX.2.00.1309041044470.3219@linux.site>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Organization: LST e.V.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 06:26:37PM +0900, Joonsoo Kim wrote:
-> If parallel fault occur, we can fail to allocate a hugepage,
-> because many threads dequeue a hugepage to handle a fault of same address.
-> This makes reserved pool shortage just for a little while and this cause
-> faulting thread who can get hugepages to get a SIGBUS signal.
-> 
-> To solve this problem, we already have a nice solution, that is,
-> a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> a fault handler. This solve the problem clearly, but it introduce
-> performance degradation, because it serialize all fault handling.
-> 
-> Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> performance degradation. For achieving it, at first, we should ensure that
-> no one get a SIGBUS if there are enough hugepages.
-> 
-> For this purpose, if we fail to allocate a new hugepage when there is
-> concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
-> these threads defer to get a SIGBUS signal until there is no
-> concurrent user, and so, we can ensure that no one get a SIGBUS if there
-> are enough hugepages.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
+[Checkpatch'ed, IBM folks Cc'ed]
 
-Hello, David.
-May I ask to you to review this one?
-I guess that you already thought about the various race condition,
-so I think that you are the most appropriate reviewer to this patch. :)
+Running completely virtualised, system Z severely lacks good true random sources.
+Gathering entropy in a virtual environment is difficult. To compensate, there is
+specialised crypto hardware which includes a source for hardware randomness;
+the zcrypt driver is able to access this random source. This patch adds a kernel
+thread that feeds the random bits via the interface created with the previous patch.
 
-Thanks.
+Signed-off-by: Torsten Duwe <duwe@lst.de>
 
+---
+ zcrypt_api.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+--- a/drivers/s390/crypto/zcrypt_api.c
++++ b/drivers/s390/crypto/zcrypt_api.c
+@@ -38,6 +38,8 @@
+ #include <linux/atomic.h>
+ #include <asm/uaccess.h>
+ #include <linux/hw_random.h>
++#include <linux/kthread.h>
++#include <linux/delay.h>
+ #include <linux/debugfs.h>
+ #include <asm/debug.h>
+ 
+@@ -99,6 +99,13 @@ static ssize_t zcrypt_online_store(struc
+ 
+ 	if (sscanf(buf, "%d\n", &online) != 1 || online < 0 || online > 1)
+ 		return -EINVAL;
++	if (zdev->ops->rng) {
++		if (zdev->online == 0 && online == 1)
++			zcrypt_rng_device_add();
++		if (zdev->online == 1 && online == 0)
++			zcrypt_rng_device_remove();
++
++	}
+ 	zdev->online = online;
+ 	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%04xo%dman", zdev->ap_dev->qid,
+ 		       zdev->online);
+@@ -1117,6 +1119,7 @@ static int zcrypt_rng_device_count;
+ static u32 *zcrypt_rng_buffer;
+ static int zcrypt_rng_buffer_index;
+ static DEFINE_MUTEX(zcrypt_rng_mutex);
++static struct task_struct *zcrypt_hwrng_fill;
+ 
+ static int zcrypt_rng_data_read(struct hwrng *rng, u32 *data)
+ {
+@@ -1141,6 +1144,36 @@ static struct hwrng zcrypt_rng_dev = {
+ 	.data_read	= zcrypt_rng_data_read,
+ };
+ 
++static int zcrypt_hwrng_fillfn(void *unused)
++{
++	long rc;
++
++	while (!kthread_should_stop()) {
++		rc = zcrypt_rng((char *)zcrypt_rng_buffer);
++		if (rc == -ENODEV || rc == -EINVAL || rc == -ENOMEM) {
++			pr_err("zcrypt_rng unavailable: %ld", rc);
++			break;
++		}
++		if (rc == -EAGAIN || rc == -ERESTARTSYS) {
++			pr_info("zcrypt_rng interrupted: %ld", rc);
++			msleep_interruptible(1000);
++			continue;
++		}
++		if (rc == 0) {
++			pr_err("zcrypt_rng: no data available");
++			msleep_interruptible(10000);
++			continue;
++		}
++		if (rc < 0) {
++			pr_err("zcrypt_rng unknown error: %ld", rc);
++			break;
++		}
++		add_hwgenerator_randomness((void *)zcrypt_rng_buffer, rc);
++	}
++	zcrypt_hwrng_fill = 0;
++	return 0;
++}
++
+ static int zcrypt_rng_device_add(void)
+ {
+ 	int rc = 0;
+@@ -1157,6 +1189,12 @@ static int zcrypt_rng_device_add(void)
+ 		if (rc)
+ 			goto out_free;
+ 		zcrypt_rng_device_count = 1;
++		zcrypt_hwrng_fill = kthread_run(zcrypt_hwrng_fillfn,
++			NULL, "zc_hwrng");
++		if (zcrypt_hwrng_fill == ERR_PTR(-ENOMEM)) {
++			pr_err("zcrypt_hwrng_fill thread creation failed");
++			zcrypt_hwrng_fill = 0;
++		}
+ 	} else
+ 		zcrypt_rng_device_count++;
+ 	mutex_unlock(&zcrypt_rng_mutex);
+@@ -1174,6 +1211,10 @@ static void zcrypt_rng_device_remove(voi
+ 	mutex_lock(&zcrypt_rng_mutex);
+ 	zcrypt_rng_device_count--;
+ 	if (zcrypt_rng_device_count == 0) {
++		if (zcrypt_hwrng_fill) {
++			kthread_stop(zcrypt_hwrng_fill);
++			zcrypt_hwrng_fill = 0;
++		}
+ 		hwrng_unregister(&zcrypt_rng_dev);
+ 		free_page((unsigned long) zcrypt_rng_buffer);
+ 	}
