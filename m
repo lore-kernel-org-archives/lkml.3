@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965084Ab3IDQnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:43:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13464 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762829Ab3IDQnk (ORCPT
+	id S964948Ab3IDQr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:47:27 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:48617 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934560Ab3IDQr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:43:40 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=V6A-_V-Y90oA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=QgmosUVW3wMA:10 a=8vBMTGFyr98EOBUPOZAA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 4 Sep 2013 12:43:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 16/18] ftrace/rcu: Mark functions that are RCU
- unsafe
-Message-ID: <20130904124338.5041c35a@gandalf.local.home>
-In-Reply-To: <20130904143702.945736860@goodmis.org>
-References: <20130904143552.456506259@goodmis.org>
-	<20130904143702.945736860@goodmis.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Sep 2013 12:47:26 -0400
+Message-ID: <5227641A.40500@gmail.com>
+Date: Wed, 04 Sep 2013 10:47:22 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf tools: Separate progress bar update when processing
+ events
+References: <1378312077-28374-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1378312077-28374-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Sep 2013 10:36:08 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On 9/4/13 10:27 AM, Jiri Olsa wrote:
+> Currently when processing events in __perf_session__process_events
+> function we we update progress based on the file_size. During the
+> same processing we update progress bar from within flush_sample_queue
+> which is based on number of samples count.
+>
+> Having 2 different based updates is causing the progress bar to
+> jump heavily back and forth giving not much useful info.
+>
+> Fixing this by keeping only __perf_session__process_events
+> based progress bar update. And turning on flush_sample_queue
+> progress bar update only for final flushing.
+>
+> This reduces the number of times the progress bar update
+> function is called and it significantly reduces the loading
+> time for TUI, where the progress bar update takes quite a lot
+> of time.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> ---
+>   tools/perf/util/session.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 1fc0c62..4df449c 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -495,7 +495,7 @@ static int perf_session_deliver_event(struct perf_session *session,
+>   				      u64 file_offset);
+>
+>   static int flush_sample_queue(struct perf_session *s,
+> -		       struct perf_tool *tool)
+> +		       struct perf_tool *tool, bool final)
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> 
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index aa34411..911a61c 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
+Why not base it on next_flush = ULLONG_MAX? Then you don't need the 
+extra arg.
 
-Wu's bot discovered that rcutiny.c is missing an include to ftrace.h.
-
-Here's the change I made to this, and will rebase linux-next again to
-have this. (Hopefully, Stephen hasn't pulled this branch in yet).
-
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 911a61c..abdfe28 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -28,6 +28,7 @@
- #include <linux/rcupdate.h>
- #include <linux/kernel.h>
- #include <linux/export.h>
-+#include <linux/ftrace.h>
- #include <linux/mutex.h>
- #include <linux/sched.h>
- #include <linux/types.h>
-
--- Steve
-
-
-> @@ -173,6 +173,7 @@ void rcu_irq_enter(void)
->  	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_irq_enter);
-> +FTRACE_UNSAFE_RCU(rcu_irq_enter);
->  
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 068de3a..ca53562 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -53,6 +53,7 @@
->  #include <linux/delay.h>
->  #include <linux/stop_machine.h>
->  #include <linux/random.h>
-> +#include <linux/ftrace.h>
->  
->  #include "rcutree.h"
->  #include <trace/events/rcu.h>
+David
