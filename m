@@ -1,140 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762494Ab3IDNMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 09:12:14 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50085 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751993Ab3IDNMM (ORCPT
+	id S1762598Ab3IDNMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 09:12:42 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:47093 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab3IDNMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 09:12:12 -0400
-Date: Wed, 4 Sep 2013 14:11:11 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "denis.ciocca@st.com" <denis.ciocca@st.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, broonie@kernel.org
-Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct
- regulator support
-Message-ID: <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
-References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
- <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Sep 2013 09:12:40 -0400
+Subject: Re: [PATCH V2 10/10] Add option to automatically enforce module
+ signatures when in Secure Boot mode
+From: joeyli <jlee@suse.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+In-Reply-To: <CA+5PVA4J1mL0o=MHM-D81rcViR+E3JUyGChvHe8P+3+yt3v_qA@mail.gmail.com>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+	 <1376933171-9854-11-git-send-email-matthew.garrett@nebula.com>
+	 <20130829183713.GT20828@hansolo.jdub.homelinux.org>
+	 <522104A6.5000700@zytor.com>
+	 <20130830234133.GR20828@hansolo.jdub.homelinux.org>
+	 <1378291877.6380.74.camel@linux-s257.site>
+	 <CA+5PVA4J1mL0o=MHM-D81rcViR+E3JUyGChvHe8P+3+yt3v_qA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Sep 2013 21:13:18 +0800
+Message-ID: <1378300398.6380.76.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-On Wed, Sep 04, 2013 at 10:31:43AM +0100, Lee Jones wrote:
-> The power to some of the sensors are controlled by regulators. In most
-> cases these are 'always on', but if not they will fail to work until
-> the regulator is enabled using the relevant APIs.
+於 三，2013-09-04 於 08:01 -0400，Josh Boyer 提到：
+> On Wed, Sep 4, 2013 at 6:51 AM, joeyli <jlee@suse.com> wrote:
+> > 於 五，2013-08-30 於 19:41 -0400，Josh Boyer 提到：
+> >> On Fri, Aug 30, 2013 at 01:46:30PM -0700, H. Peter Anvin wrote:
+> >> > On 08/29/2013 11:37 AM, Josh Boyer wrote:
+> >> > >>          setup_efi_pci(boot_params);
+> >> > >> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+> >> > >> index c15ddaf..d35da96 100644
+> >> > >> --- a/arch/x86/include/uapi/asm/bootparam.h
+> >> > >> +++ b/arch/x86/include/uapi/asm/bootparam.h
+> >> > >> @@ -131,7 +131,8 @@ struct boot_params {
+> >> > >>          __u8  eddbuf_entries;                           /* 0x1e9 */
+> >> > >>          __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
+> >> > >>          __u8  kbd_status;                               /* 0x1eb */
+> >> > >> -        __u8  _pad5[3];                                 /* 0x1ec */
+> >> > >> +        __u8  secure_boot;                              /* 0x1ec */
+> >> > >> +        __u8  _pad5[2];                                 /* 0x1ec */
+> >> > >>          /*
+> >> > >>           * The sentinel is set to a nonzero value (0xff) in header.S.
+> >> > >>           *
+> >> > >
+> >> > > You need to include the following chunk of code with this, otherwise the
+> >> > > secure_boot variable gets cleared.
+> >> > >
+> >> >
+> >> > Not really.
+> >> >
+> >> > There are three cases:
+> >> >
+> >> > 1. Boot stub only.  Here we do the right thing with the bootparams.
+> >> > 2. Boot loader bypasses the boot stub completely.  Here we MUST NOT do
+> >> >    what you suggest above.
+> >> > 3. Boot stub with a boot_params structure passed in.  Here we should
+> >> >    run sanitize_boot_params() (an inline for a reason) in the boot
+> >> >    stub, before we set the secure_boot field.  Once that is done, we
+> >> >    again don't need that modification.
+> >>
+> >> OK.  If 3 works, then great.  All I know is that Fedora has been
+> >> carrying the above hunk for months and it was missing in this patch set.
+> >> So when I went to test it, the patches didn't do anything because the
+> >> secure_boot field was getting cleared.
+> >>
+> >> I'm more than happy to try option 3, and I'll poke at it next week
+> >> unless someone beats me to it.
+> >>
+> >> josh
+> >
+> > The secure_boot field cleaned by sanitize_boot_params() when using grub2
+> > linuxefi to load efi stub kernel.
+> > I printed the boot_params->sentinel value, confirm this value is NOT 0
+> > when running grub2 linuxefi path, the entry point is efi_stub_entry.
+> >
+> > On the other hand,
+> > the sentinel value is 0 when direct run efi stub kernel in UEFI shell,
+> > the secure_boot field can keep.
+> >
+> > Does that mean grub2 should clean the sentinel value? or we move the get
+> > secure_boot value to efi_init()?
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/iio/pressure/st_pressure_core.c | 13 +++++++++++++
->  include/linux/iio/common/st_sensors.h   |  3 +++
->  2 files changed, 16 insertions(+)
+> See V3 of this patch that Matthew sent yesterday.  It calls
+> sanitize_boot_params in efi_main before calling get_secure_boot.  I
+> tested that yesterday and it worked fine.
 > 
-> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-> index f452417..7beed89 100644
-> --- a/drivers/iio/pressure/st_pressure_core.c
-> +++ b/drivers/iio/pressure/st_pressure_core.c
-> @@ -23,6 +23,7 @@
->  #include <linux/iio/sysfs.h>
->  #include <linux/iio/trigger.h>
->  #include <linux/iio/buffer.h>
-> +#include <linux/regulator/consumer.h>
->  #include <asm/unaligned.h>
->  
->  #include <linux/iio/common/st_sensors.h>
-> @@ -315,6 +316,15 @@ int st_press_common_probe(struct iio_dev *indio_dev)
->  	indio_dev->modes = INDIO_DIRECT_MODE;
->  	indio_dev->info = &press_info;
->  
-> +	/* Regulator not mandatory, but if requested we should enable it. */
-> +	pdata->regulator = regulator_get(&indio_dev->dev, "vdd");
-> +	if (!IS_ERR_OR_NULL(pdata->regulator)) {
+> josh
 
-Can regulator_get return NULL? As far as I can see, it either returns a
-valid reulator pointer or an ERR_PTR value.
+Ah!
+Thanks for you point out, I missed his v3 patch.
 
-When you say "if requested", do you mean "if described in the dt"? If
-so, the above doesn't distunguish between a regulator not being listed
-and one failing to be got (e.g. if we got EPROBE_DEFER from
-regulator_get).
+Joey Lee
 
-I think this would be better handled with something like Mark Brown's
-suggested regulator_get_optional [1,2].
-
-Thanks,
-Mark.
-
-[1] https://lkml.org/lkml/2013/7/30/328 (cover)
-[2] https://lkml.org/lkml/2013/7/30/334 (patches)
-
-> +		err = regulator_enable(pdata->regulator);
-> +		if (err != 0)
-> +			dev_warn(&indio_dev->dev,
-> +				 "Failed to enable specified vdd regulator\n");
-> +	}
-> +
->  	err = st_sensors_check_device_support(indio_dev,
->  					      ARRAY_SIZE(st_press_sensors),
->  					      st_press_sensors);
-> @@ -363,6 +373,9 @@ void st_press_common_remove(struct iio_dev *indio_dev)
->  {
->  	struct st_sensor_data *pdata = iio_priv(indio_dev);
->  
-> +	if (!IS_ERR_OR_NULL(pdata->regulator))
-> +		regulator_disable(pdata->regulator);
-> +
->  	iio_device_unregister(indio_dev);
->  	if (pdata->get_irq_data_ready(indio_dev) > 0) {
->  		st_sensors_deallocate_trigger(indio_dev);
-> diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
-> index 4aef925..eb6ef3f 100644
-> --- a/include/linux/iio/common/st_sensors.h
-> +++ b/include/linux/iio/common/st_sensors.h
-> @@ -16,6 +16,7 @@
->  #include <linux/irqreturn.h>
->  #include <linux/iio/trigger.h>
->  #include <linux/bitops.h>
-> +#include <linux/regulator/consumer.h>
->  
->  #define ST_SENSORS_TX_MAX_LENGTH		2
->  #define ST_SENSORS_RX_MAX_LENGTH		6
-> @@ -197,6 +198,7 @@ struct st_sensors {
->   * @trig: The trigger in use by the core driver.
->   * @sensor: Pointer to the current sensor struct in use.
->   * @current_fullscale: Maximum range of measure by the sensor.
-> + * @regulator: Pointer to sensor's power supply
->   * @enabled: Status of the sensor (false->off, true->on).
->   * @multiread_bit: Use or not particular bit for [I2C/SPI] multiread.
->   * @buffer_data: Data used by buffer part.
-> @@ -211,6 +213,7 @@ struct st_sensor_data {
->  	struct iio_trigger *trig;
->  	struct st_sensors *sensor;
->  	struct st_sensor_fullscale_avl *current_fullscale;
-> +	struct regulator *regulator;
->  
->  	bool enabled;
->  	bool multiread_bit;
-> -- 
-> 1.8.1.2
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
