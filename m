@@ -1,125 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759858Ab3IDUEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:04:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54599 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab3IDUEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:04:47 -0400
-Message-ID: <52279253.6080603@ti.com>
-Date: Wed, 4 Sep 2013 15:04:35 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1760830Ab3IDUFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:05:50 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:34609 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759586Ab3IDUFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:05:49 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
-References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com> <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org> <52275F7D.4030305@ti.com> <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org> <522767E5.9080302@ti.com> <F363B498-5648-4C19-BC16-096EE12C29CE@codeaurora.org>
-In-Reply-To: <F363B498-5648-4C19-BC16-096EE12C29CE@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130904192048.GM3996@quack.suse.cz>
+References: <cover.1377193658.git.luto@amacapital.net> <e1620c8e4909a65e270c8e9590e307c22fd96a44.1377193658.git.luto@amacapital.net>
+ <20130904145740.GE3996@quack.suse.cz> <CALCETrUA653bw3C=XP=Es9UApqsKsDG-UAzuZ=qS1RA1LeoKYw@mail.gmail.com>
+ <20130904192048.GM3996@quack.suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 4 Sep 2013 13:05:27 -0700
+Message-ID: <CALCETrXLtLbgQH-eXm7AvxyRYa2jxZ=3jR=CfvAY+drGC_O4nA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/7] mm: Allow filesystems to defer cmtime updates
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 12:51 PM, Kumar Gala wrote:
-> 
-> On Sep 4, 2013, at 12:03 PM, Suman Anna wrote:
-> 
->>>>>>>>>
->>>>>>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
->>>>>>>>>> which are all device-tree boot only. This patch adds the
->>>>>>>>>> base support for parsing the DT nodes, and removes the code
->>>>>>>>>> dealing with the traditional platform device instantiation.
->>>>>>>>>>
->>>>>>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>>>>>>>> ---
->>>>>>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
->>>>>>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
->>>>>>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
->>>>>>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
->>>>>>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
->>>>>>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
->>>>>>>>>>
->>>>>>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>>> new file mode 100644
->>>>>>>>>> index 0000000..adfb8ad
->>>>>>>>>> --- /dev/null
->>>>>>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
->>>>>>>>>> @@ -0,0 +1,28 @@
->>>>>>>>>> +OMAP4+ HwSpinlock Driver
->>>>>>>>>> +
->>>>>>>>>> +Required properties:
->>>>>>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
->>>>>>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
->>>>>>>>>> +- reg:			Contains the hwspinlock register address range (base
->>>>>>>>>> +			address and length)
->>>>>>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
->>>>>>>>>> +
->>>>>>>>>> +Optional properties:
->>>>>>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
->>>>>>>>>> +			device. If not mentioned, a default value of 0 is used.
->>>>>>>>>> +			This property is mandatory ONLY if a SoC has several
->>>>>>>>>> +			hwspinlock devices. There are currently no such OMAP
->>>>>>>>>> +			SoCs.
->>>>>>>>>
->>>>>>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
->>>>>>>>
->>>>>>>> I didn't add the "ti," prefix exactly for the same reason - it is
->>>>>>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
->>>>>>>> there is nothing ti or OMAP specific about it. I have added it to keep
->>>>>>>> the DT node definition in sync with the driver code. If it is too
->>>>>>>> generic a name, it can always be renamed as hwlock_base_id. This will be
->>>>>>>> SoC agnostic property for the hwspinlock driver. What do you think?
->>>>>>>
->>>>>>> I'm wondering if we should use cell-index for this purpose.
->>>>>>
->>>>>> I didn't get you completely. Do you intend to compute the base_id using
->>>>>> cell-index and number of locks (which may be a separate field altogether
->>>>>> if this information cannot be read from the h/w)? My understanding is
->>>>>> that cell-index is primarily used for identifying the h/w instance number.
->>>>>
->>>>> I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
->>>>
->>>> Common hwlock.txt sounds good. Will make the change.
->>>>
->>>>>
->>>>> I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
->>>>>
->>>>
->>>> I prefer to use hwlock-base-id. I think we should also be defining a
->>>> common property name for number of locks, say hwlock-num-locks.
->>>
->>> I'm good with that, cell-index is always funny so might as well be explicit.
->>>
->>> I'm also good with hwlock-num-locks, I'll update the msm spinlock driver to use this.
->>>
->>> Can you also maybe add some helper functions into the hwspinlock core to return these values so we both don't duplicate code in drivers and maintain consistency.
+On Wed, Sep 4, 2013 at 12:20 PM, Jan Kara <jack@suse.cz> wrote:
+> On Wed 04-09-13 10:54:50, Andy Lutomirski wrote:
+>> >> @@ -1970,6 +1988,39 @@ int write_one_page(struct page *page, int wait)
+>> >>  }
+>> >>  EXPORT_SYMBOL(write_one_page);
+>> >>
+>> >> +void mapping_flush_cmtime(struct address_space *mapping)
+>> >> +{
+>> >> +     if (mapping_test_clear_cmtime(mapping) &&
+>> >> +         mapping->a_ops->update_cmtime_deferred)
+>> >> +             mapping->a_ops->update_cmtime_deferred(mapping);
+>> >> +}
+>> >> +EXPORT_SYMBOL(mapping_flush_cmtime);
+>> >   Hum, is there a reason for update_cmtime_deferred() operation? I can
+>> > hardly imagine anyone will want to do anything else than what
+>> > inode_update_time_writable() does so why bother? You mention tmpfs & co.
+>> > don't fit into your scheme well with which I agree so let's just keep
+>> > file_update_time() in their page_mkwrite() operation. But I don't see a
+>> > real need for avoiding the deferred cmtime logic...
 >>
->> I am trying to understand what you would need these for. Your driver
->> would already know the base_id and num_locks, since these are used in
->> the registration function.
-> 
-> 
-> It would be something simple like:
-> 
-> static inline int of_get_hwlock_base_id (struct device_node *dn) {
-> #ifdef CONFIG_OF
-> 	u32 val;
-> 
-> 	if (of_property_read_u32(dn, "hwlock-base-id", &val)
-> 		return val;
-> #endif
-> 	return 0;
-> }
-> 
+>> I think there might be odd corner cases.  For example, mmap a tmpfs
+>> file, write it, and unmap it.  Then, an hour later, maybe the system
+>   If you unmap it then that will handle the update. But if you won't unmap,
+> you'd get spurious updates of timestamps which would be strange.
+>
+>> will be under memory pressure and page out the file.  This could
+>> trigger a surprising time update.  (I'm not sure this can actually
+>> happen on tmpfs, but maybe it would on some other filesystem.)
+>>
+>> Does this actually matter?  A flag to turn the feature on or off would
+>> do the trick, but I don't think there's precedent for sticking a flag
+>> in a_ops.
+>   Flag in a_ops is ugly. But you can have a flag in 'struct
+> filesystem_type' which would be reasonable.
 
-Sorry I misinterpreted, thought you were asking for accessor functions
-after, and not of_ helpers. Yes, will add these as well.
+OK, will do.
 
-regards
-Suman
+>
+>> >> +void mapping_flush_cmtime_nowb(struct address_space *mapping)
+>> >> +{
+>> >> +     /*
+>> >> +      * We get called from munmap and msync.  Both calls can race
+>> >> +      * with fs freezing.  If the fs is frozen after
+>> >> +      * mapping_test_clear_cmtime but before the time update, then
+>> >> +      * sync_filesystem will miss the cmtime update (because we
+>> >> +      * just cleared it) and we don't be able to write (because the
+>> >> +      * fs is frozen).  On the other hand, we can't just return if
+>> >> +      * we're in the SB_FREEZE_PAGEFAULT state because our caller
+>> >> +      * expects the timestamp to be synchronously updated.  So we
+>> >> +      * get write access without blocking, at the SB_FREEZE_FS
+>> >> +      * level.  If the fs is already fully frozen, then we already
+>> >> +      * know we have nothing to do.
+>> >> +      */
+>> >> +
+>> >> +     if (!mapping_test_cmtime(mapping))
+>> >> +             return;  /* Optimization: nothing to do. */
+>> >> +
+>> >> +     if (__sb_start_write(mapping->host->i_sb, SB_FREEZE_FS, false)) {
+>> >> +             mapping_flush_cmtime(mapping);
+>> >> +             __sb_end_write(mapping->host->i_sb, SB_FREEZE_FS);
+>> >> +     }
+>> >> +}
+>> >   This is wrong because SB_FREEZE_FS level is targetted for filesystem
+>> > internal use. Also it is racy. mapping_flush_cmtime() ends up calling
+>> > mark_inode_dirty() and filesystems such as ext4 or xfs will start a
+>> > transaction to store inode in the journal. This gets freeze protection at
+>> > SB_FREEZE_FS level again. If freeze_super() sets s_writers.frozen to
+>> > SB_FREEZE_FS before this second protection, things will deadlock.
+>>
+>> Whoops -- I assumed that it was safe to recursively take freeze
+>> protection at the same level.
+>>
+>> I'm worried about the following race:
+>>
+>> Thread 1 (in munmap):
+>> Check AS_CMTIME set
+>> sb_start_pagefault
+>>
+>> Thread 2 (freezing the fs):
+>> frozen = SB_FREEZE_PAGEFAULT;
+>> sync_filesystem()
+>>
+>> Thread 1 is now stuck.  It doesn't need to be, because sync_filesystem
+>> will flush out the cmtime write.  But there doesn't seem to be a clean
+>> mechanism to wait for the freeze to finish.
+>   OK, I see. Frankly, I'd rather live with msync() and munmap() blocking
+> while filesystem is frozen than trying to outsmart the freezing logic...
+> If someone comes up with a usecase where it causes trouble, we can always
+> improve the logic with some clever tricks.
 
+I'll at least check that it's a shared writable mapping before doing
+the flush to avoid blocking on other types of munmap.
+
+--Andy
