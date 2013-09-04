@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762529Ab3IDMBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:01:54 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41539 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab3IDMBx convert rfc822-to-8bit (ORCPT
+	id S1762479Ab3IDMEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:04:55 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35721 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab3IDMEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:01:53 -0400
+	Wed, 4 Sep 2013 08:04:52 -0400
+Date: Wed, 4 Sep 2013 14:05:04 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Martin Peres <martin.peres@free.fr>
+Cc: Christopher James Halse Rogers 
+	<christopher.halse.rogers@canonical.com>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        robclark@gmail.com, linux-media@vger.kernel.org
+Subject: Re: [PATCH] dma-buf: Expose buffer size to userspace (v2)
+Message-ID: <20130904120504.GB28675@phenom.ffwll.local>
+Mail-Followup-To: Martin Peres <martin.peres@free.fr>,
+	Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>,
+	linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+	robclark@gmail.com, linux-media@vger.kernel.org
+References: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
+ <52270A5B.2040600@free.fr>
 MIME-Version: 1.0
-In-Reply-To: <1378291877.6380.74.camel@linux-s257.site>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
-	<1376933171-9854-11-git-send-email-matthew.garrett@nebula.com>
-	<20130829183713.GT20828@hansolo.jdub.homelinux.org>
-	<522104A6.5000700@zytor.com>
-	<20130830234133.GR20828@hansolo.jdub.homelinux.org>
-	<1378291877.6380.74.camel@linux-s257.site>
-Date: Wed, 4 Sep 2013 08:01:52 -0400
-X-Google-Sender-Auth: pvC_Yfosi_p3re4vk05b3rJWI-A
-Message-ID: <CA+5PVA4J1mL0o=MHM-D81rcViR+E3JUyGChvHe8P+3+yt3v_qA@mail.gmail.com>
-Subject: Re: [PATCH V2 10/10] Add option to automatically enforce module
- signatures when in Secure Boot mode
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: joeyli <jlee@suse.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52270A5B.2040600@free.fr>
+X-Operating-System: Linux phenom 3.10-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 6:51 AM, joeyli <jlee@suse.com> wrote:
-> 於 五，2013-08-30 於 19:41 -0400，Josh Boyer 提到：
->> On Fri, Aug 30, 2013 at 01:46:30PM -0700, H. Peter Anvin wrote:
->> > On 08/29/2013 11:37 AM, Josh Boyer wrote:
->> > >>          setup_efi_pci(boot_params);
->> > >> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
->> > >> index c15ddaf..d35da96 100644
->> > >> --- a/arch/x86/include/uapi/asm/bootparam.h
->> > >> +++ b/arch/x86/include/uapi/asm/bootparam.h
->> > >> @@ -131,7 +131,8 @@ struct boot_params {
->> > >>          __u8  eddbuf_entries;                           /* 0x1e9 */
->> > >>          __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
->> > >>          __u8  kbd_status;                               /* 0x1eb */
->> > >> -        __u8  _pad5[3];                                 /* 0x1ec */
->> > >> +        __u8  secure_boot;                              /* 0x1ec */
->> > >> +        __u8  _pad5[2];                                 /* 0x1ec */
->> > >>          /*
->> > >>           * The sentinel is set to a nonzero value (0xff) in header.S.
->> > >>           *
->> > >
->> > > You need to include the following chunk of code with this, otherwise the
->> > > secure_boot variable gets cleared.
->> > >
->> >
->> > Not really.
->> >
->> > There are three cases:
->> >
->> > 1. Boot stub only.  Here we do the right thing with the bootparams.
->> > 2. Boot loader bypasses the boot stub completely.  Here we MUST NOT do
->> >    what you suggest above.
->> > 3. Boot stub with a boot_params structure passed in.  Here we should
->> >    run sanitize_boot_params() (an inline for a reason) in the boot
->> >    stub, before we set the secure_boot field.  Once that is done, we
->> >    again don't need that modification.
->>
->> OK.  If 3 works, then great.  All I know is that Fedora has been
->> carrying the above hunk for months and it was missing in this patch set.
->> So when I went to test it, the patches didn't do anything because the
->> secure_boot field was getting cleared.
->>
->> I'm more than happy to try option 3, and I'll poke at it next week
->> unless someone beats me to it.
->>
->> josh
->
-> The secure_boot field cleaned by sanitize_boot_params() when using grub2
-> linuxefi to load efi stub kernel.
-> I printed the boot_params->sentinel value, confirm this value is NOT 0
-> when running grub2 linuxefi path, the entry point is efi_stub_entry.
->
-> On the other hand,
-> the sentinel value is 0 when direct run efi stub kernel in UEFI shell,
-> the secure_boot field can keep.
->
-> Does that mean grub2 should clean the sentinel value? or we move the get
-> secure_boot value to efi_init()?
+On Wed, Sep 04, 2013 at 12:24:27PM +0200, Martin Peres wrote:
+> Hi Christopher,
+> Le 04/09/2013 05:15, Christopher James Halse Rogers a 嶰rit :
+> >Each dma-buf has an associated size and it's reasonable for userspace
+> >to want to know what it is.
+> >
+> >Since userspace already has an fd, expose the size using the
+> >size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
+> >idiom.
+> >
+> >v2: Added Daniel's sugeested documentation, with minor fixups
+> >
+> >Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
+> >Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >---
+> >  Documentation/dma-buf-sharing.txt | 12 ++++++++++++
+> >  drivers/base/dma-buf.c            | 28 ++++++++++++++++++++++++++++
+> >  2 files changed, 40 insertions(+)
+> >
+> >diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+> >index 0b23261..849e982 100644
+> >--- a/Documentation/dma-buf-sharing.txt
+> >+++ b/Documentation/dma-buf-sharing.txt
+> >@@ -407,6 +407,18 @@ Being able to mmap an export dma-buf buffer object has 2 main use-cases:
+> >     interesting ways depending upong the exporter (if userspace starts depending
+> >     upon this implicit synchronization).
+> >+Other Interfaces Exposed to Userspace on the dma-buf FD
+> >+------------------------------------------------------
+> >+
+> >+- Since kernel 3.12 the dma-buf FD supports the llseek system call, but only
+> >+  with offset=0 and whence=SEEK_END|SEEK_SET. SEEK_SET is supported to allow
+> >+  the usual size discover pattern size = SEEK_END(0); SEEK_SET(0). Every other
+> >+  llseek operation will report -EINVAL.
+> >+
+> >+  If llseek on dma-buf FDs isn't support the kernel will report -ESPIPE for all
+> Shouldn't it be "supported" instead of "support"?
+> 
+> Anyway, I'm just curious, in which case is it important to know the size?
+> Do we already have a way to get the dimensions (x, y and stripe)?
 
-See V3 of this patch that Matthew sent yesterday.  It calls
-sanitize_boot_params in efi_main before calling get_secure_boot.  I
-tested that yesterday and it worked fine.
-
-josh
+Size is an invariant part of a dma-buf. Everything else wrt metadata isn't
+tracked in the kernel, so doesn't make much sense to expose it ;-)
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
