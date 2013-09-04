@@ -1,44 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935190Ab3IDPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:49:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934808Ab3IDPtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:49:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.DEB.2.00.1308212203320.1479@cobra.newdream.net>
-References: <alpine.DEB.2.00.1308212203320.1479@cobra.newdream.net> <cover.1375999914.git.milosz@adfin.com>
-To: Sage Weil <sage@inktank.com>
-Cc: dhowells@redhat.com, Milosz Tanski <milosz@adfin.com>,
-        ceph-devel@vger.kernel.org, zheng.z.yan@intel.com,
-        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCHv4 0/5] ceph: persistent caching with fscache
-Date: Wed, 04 Sep 2013 16:49:13 +0100
-Message-ID: <17341.1378309753@warthog.procyon.org.uk>
+	id S964812Ab3IDPuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:50:46 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:45929 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934808Ab3IDPuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:50:44 -0400
+Date: Wed, 4 Sep 2013 08:50:43 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@vger.kernel.org
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates for 3.12 (part 1)
+Message-ID: <alpine.DEB.2.00.1309032220020.4018@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sage Weil <sage@inktank.com> wrote:
+Hi Linus,
 
-> David, are the fscache patches here ready for the next merge window?  Do 
-> you have a preference for whose tree they go through?
+Please pull this first batch of Ceph updates for 3.12 from
 
-There's only one problem - patch 1 needs to come _after_ patch 2 to avoid
-breaking git bisect.  Plus these patches 2 and 4 extend the fscache API
-without adjusting the documentation - but that can be added later.
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-And I think Milosz deserves a beer (or other poison of his choice;-) for
-finding a longstanding irritating bug.
+This first batch include several important RBD bug fixes (more coming in 
+part 2), hole punch support, several different cleanups in the page cache 
+interactions, improvements in the truncate code (new truncate mutex to 
+avoid shenanigans with i_mutex), and a series of fixes in the synchronous 
+striping read/write code.  On top of that is a random collection of small 
+fixes all across the tree (error code checks and error path cleanup, 
+obsolete wq flags, etc.).
 
-I think AFS, CIFS, NFS and 9P all need patching too, but I can attend to that.
+A second batch of patches will include fscache support for Ceph (waiting 
+on some dependent fixes in the fscache code and an ACK from David) and a 
+second batch of RBD bug fixes that didn't get tested and reviewed in time 
+for 3.11.  Hopefully later this week.
 
-Should I take the patches through my tree?  Then I can make the adjustments.
+Thanks!
+sage
 
-David
+
+----------------------------------------------------------------
+Dan Carpenter (4):
+      ceph: cleanup types in striped_read()
+      libceph: fix error handling in handle_reply()
+      libceph: potential NULL dereference in ceph_osdc_handle_map()
+      libceph: create_singlethread_workqueue() doesn't return ERR_PTRs
+
+Jingoo Han (1):
+      block: rbd: use NULL instead of 0
+
+Josh Durgin (3):
+      rbd: fix I/O error propagation for reads
+      rbd: fix buffer size for writes to images with snapshots
+      rbd: fix null dereference in dout
+
+Li Wang (2):
+      ceph: punch hole support
+      ceph: remove useless variable revoked_rdcache
+
+Milosz Tanski (2):
+      ceph: Remove bogus check in invalidatepage
+      ceph: cleanup the logic in ceph_invalidatepage
+
+Nathaniel Yazdani (1):
+      ceph: fix null pointer dereference
+
+Sage Weil (4):
+      ceph: replace hold_mutex flag with goto
+      Merge remote-tracking branch 'linus/master' into testing
+      ceph: fix fallocate division
+      libceph: use pg_num_mask instead of pgp_num_mask for pg.seed calc
+
+Sha Zhengju (1):
+      ceph: use vfs __set_page_dirty_nobuffers interface instead of doing it inside filesystem
+
+Tejun Heo (1):
+      ceph: WQ_NON_REENTRANT is meaningless and going away
+
+Yan, Zheng (6):
+      ceph: drop CAP_LINK_SHARED when sending "link" request to MDS
+      ceph: wake up writer if vmtruncate work get blocked
+      ceph: trim deleted inode
+      ceph: fix freeing inode vs removing session caps race
+      ceph: introduce i_truncate_mutex
+      ceph: fix request max size
+
+majianpeng (7):
+      ceph: Don't forget the 'up_read(&osdc->map_sem)' if met error.
+      libceph: unregister request in __map_request failed and nofail == false
+      ceph: Don't use ceph-sync-mode for synchronous-fs.
+      ceph: Add check returned value on func ceph_calc_ceph_pg.
+      ceph: Move the place for EOLDSNAPC handle in ceph_aio_write to easily understand
+      ceph: fix bugs about handling short-read for sync read mode.
+      ceph: allow sync_read/write return partial successed size of read/write.
+
+ drivers/block/rbd.c   |   36 ++++---
+ fs/ceph/addr.c        |   76 +++++--------
+ fs/ceph/caps.c        |   68 +++++++++---
+ fs/ceph/dir.c         |    2 +
+ fs/ceph/file.c        |  282 +++++++++++++++++++++++++++++++++++++++++--------
+ fs/ceph/inode.c       |   40 +++++--
+ fs/ceph/ioctl.c       |   12 ++-
+ fs/ceph/mds_client.c  |   34 ++++++
+ fs/ceph/super.h       |    3 +
+ net/ceph/messenger.c  |    2 +-
+ net/ceph/osd_client.c |   27 +++--
+ net/ceph/osdmap.c     |    2 +-
+ 12 files changed, 438 insertions(+), 146 deletions(-)
