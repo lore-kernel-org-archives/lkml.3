@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab3IDMGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:06:42 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:51190 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934622Ab3IDMGM (ORCPT
+	id S934778Ab3IDMHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:07:14 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63015 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762650Ab3IDMGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:06:12 -0400
+	Wed, 4 Sep 2013 08:06:05 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, sachin.kamat@linaro.org, ldewangan@nvidia.com,
         magi@slimlogic.co.uk, gg@slimlogic.co.uk, mike@compulab.co.il,
         anilkumar@ti.com, vbyravarasu@nvidia.com
-Subject: [PATCH 09/10] regulator: tps65912: Use devm_regulator_register
-Date: Wed,  4 Sep 2013 17:17:52 +0530
-Message-Id: <1378295273-32257-9-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 07/10] regulator: tps6586x: Use devm_regulator_register
+Date: Wed,  4 Sep 2013 17:17:50 +0530
+Message-Id: <1378295273-32257-7-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
 References: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
@@ -26,68 +26,87 @@ devm_* simplifies the code.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/regulator/tps65912-regulator.c |   24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+ drivers/regulator/tps6586x-regulator.c |   31 ++++++-------------------------
+ 1 file changed, 6 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index 17e994e..3301af8 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -468,7 +468,7 @@ static int tps65912_probe(struct platform_device *pdev)
- 	struct regulator_dev *rdev;
- 	struct tps65912_reg *pmic;
- 	struct tps65912_board *pmic_plat_data;
--	int i, err;
-+	int i;
- 
- 	pmic_plat_data = dev_get_platdata(tps65912->dev);
- 	if (!pmic_plat_data)
-@@ -505,34 +505,19 @@ static int tps65912_probe(struct platform_device *pdev)
- 		config.init_data = reg_data;
- 		config.driver_data = pmic;
- 
--		rdev = regulator_register(&pmic->desc[i], &config);
-+		rdev = devm_regulator_register(&pdev->dev, &pmic->desc[i],
-+					       &config);
- 		if (IS_ERR(rdev)) {
- 			dev_err(tps65912->dev,
- 				"failed to register %s regulator\n",
- 				pdev->name);
--			err = PTR_ERR(rdev);
--			goto err;
-+			return PTR_ERR(rdev);
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index 2c9155b..45e5d68 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -379,15 +379,14 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
+ 		ri = find_regulator_info(id);
+ 		if (!ri) {
+ 			dev_err(&pdev->dev, "invalid regulator ID specified\n");
+-			err = -EINVAL;
+-			goto fail;
++			return -EINVAL;
  		}
  
- 		/* Save regulator for cleanup */
- 		pmic->rdev[i] = rdev;
+ 		err = tps6586x_regulator_preinit(pdev->dev.parent, ri);
+ 		if (err) {
+ 			dev_err(&pdev->dev,
+ 				"regulator %d preinit failed, e %d\n", id, err);
+-			goto fail;
++			return err;
+ 		}
+ 
+ 		config.dev = pdev->dev.parent;
+@@ -397,12 +396,12 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
+ 		if (tps6586x_reg_matches)
+ 			config.of_node = tps6586x_reg_matches[id].of_node;
+ 
+-		rdev[id] = regulator_register(&ri->desc, &config);
++		rdev[id] = devm_regulator_register(&pdev->dev, &ri->desc,
++						   &config);
+ 		if (IS_ERR(rdev[id])) {
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 					ri->desc.name);
+-			err = PTR_ERR(rdev[id]);
+-			goto fail;
++			return PTR_ERR(rdev[id]);
+ 		}
+ 
+ 		if (reg_data) {
+@@ -411,30 +410,13 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
+ 			if (err < 0) {
+ 				dev_err(&pdev->dev,
+ 					"Slew rate config failed, e %d\n", err);
+-				regulator_unregister(rdev[id]);
+-				goto fail;
++				return err;
+ 			}
+ 		}
  	}
+ 
+ 	platform_set_drvdata(pdev, rdev);
  	return 0;
 -
--err:
--	while (--i >= 0)
--		regulator_unregister(pmic->rdev[i]);
+-fail:
+-	while (--id >= 0)
+-		regulator_unregister(rdev[id]);
 -	return err;
 -}
 -
--static int tps65912_remove(struct platform_device *pdev)
+-static int tps6586x_regulator_remove(struct platform_device *pdev)
 -{
--	struct tps65912_reg *tps65912_reg = platform_get_drvdata(pdev);
--	int i;
+-	struct regulator_dev **rdev = platform_get_drvdata(pdev);
+-	int id = TPS6586X_ID_MAX_REGULATOR;
 -
--	for (i = 0; i < TPS65912_NUM_REGULATOR; i++)
--		regulator_unregister(tps65912_reg->rdev[i]);
+-	while (--id >= 0)
+-		regulator_unregister(rdev[id]);
+-
 -	return 0;
  }
  
- static struct platform_driver tps65912_driver = {
-@@ -541,7 +526,6 @@ static struct platform_driver tps65912_driver = {
- 		.owner = THIS_MODULE,
+ static struct platform_driver tps6586x_regulator_driver = {
+@@ -443,7 +425,6 @@ static struct platform_driver tps6586x_regulator_driver = {
+ 		.owner	= THIS_MODULE,
  	},
- 	.probe = tps65912_probe,
--	.remove = tps65912_remove,
+ 	.probe		= tps6586x_regulator_probe,
+-	.remove		= tps6586x_regulator_remove,
  };
  
- static int __init tps65912_init(void)
+ static int __init tps6586x_regulator_init(void)
 -- 
 1.7.9.5
 
