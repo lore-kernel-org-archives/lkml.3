@@ -1,90 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab3IDULP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:11:15 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:11608 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab3IDULM (ORCPT
+	id S1761043Ab3IDULQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:11:16 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:37761 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932686Ab3IDULO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:11:12 -0400
-Date: Wed, 4 Sep 2013 15:11:10 -0500
-From: Mike Miller <mike.miller@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>
-Subject: [PATCH 3/4] hpsa: housekeeping patch for device_id and product arrays
-Message-ID: <20130904201110.GC28147@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Wed, 4 Sep 2013 16:11:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,1023,1367971200"; 
+   d="scan'208";a="48208876"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>,
+        <virtualization@lists.linux-foundation.org>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCHv2] tracing/events: Add bounce tracing to swiotbl
+Date: Wed, 4 Sep 2013 21:11:05 +0100
+Message-ID: <1378325465-10384-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 3 of 4
+Ftrace is currently not able to detect when SWIOTLB has to do double buffering.
+Under Xen you can only see it indirectly in function_graph, when
+xen_swiotlb_map_page() doesn't stop after range_straddles_page_boundary(), but
+calls spinlock functions, memcpy() and xen_phys_to_bus() as well. This patch
+introduces the swiotlb:swiotlb_bounced event, which also prints out the
+following informations to help you find out why bouncing happened:
 
-From: Mike Miller <mike.miller@hp.com>
+dev_name: 0000:08:00.0 dma_mask=ffffffffffffffff dev_addr=9149f000 size=32768
+swiotlb_force=0
 
-This patch does a bit of housekeeping for hpsa. Change lowercase alpha hex
-digits to uppercase for consistency within the driver. Also moves the P822se
-in the tables to keep controllers of each family grouped together.
+If you use Xen, and (dev_addr + size + 1) > dma_mask, the buffer is out of the
+device's DMA range. If swiotlb_force == 1, you should really change the kernel
+parameters. Otherwise, the buffer is not contiguous in mfn space.
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
- drivers/scsi/hpsa.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/xen/swiotlb-xen.c      |    5 +++++
+ include/trace/events/swiotlb.h |   46 ++++++++++++++++++++++++++++++++++++++++
+ lib/swiotlb.c                  |    4 ++++
+ 3 files changed, 55 insertions(+)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index d02bdf0..5097e0c 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -89,13 +89,14 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3245},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3247},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324a},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324b},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3233},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334D},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
-@@ -107,7 +108,6 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BD},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21BE},
-@@ -138,12 +138,13 @@ static struct board_type products[] = {
- 	{0x3245103C, "Smart Array P410i", &SA5_access},
- 	{0x3247103C, "Smart Array P411", &SA5_access},
- 	{0x3249103C, "Smart Array P812", &SA5_access},
--	{0x324a103C, "Smart Array P712m", &SA5_access},
--	{0x324b103C, "Smart Array P711m", &SA5_access},
-+	{0x324A103C, "Smart Array P712m", &SA5_access},
-+	{0x324B103C, "Smart Array P711m", &SA5_access},
- 	{0x3350103C, "Smart Array P222", &SA5_access},
- 	{0x3351103C, "Smart Array P420", &SA5_access},
- 	{0x3352103C, "Smart Array P421", &SA5_access},
- 	{0x3353103C, "Smart Array P822", &SA5_access},
-+	{0x334D103C, "Smart Array P822se", &SA5_access},
- 	{0x3354103C, "Smart Array P420i", &SA5_access},
- 	{0x3355103C, "Smart Array P220i", &SA5_access},
- 	{0x3356103C, "Smart Array P721m", &SA5_access},
-@@ -154,7 +155,6 @@ static struct board_type products[] = {
- 	{0x1926103C, "Smart Array P731m", &SA5_access},
- 	{0x1928103C, "Smart Array P230i", &SA5_access},
- 	{0x1929103C, "Smart Array P530", &SA5_access},
--	{0x334d103C, "Smart Array P822se", &SA5_access},
- 	{0x21BD103C, "Smart Array", &SA5_access},
- 	{0x21BE103C, "Smart Array", &SA5_access},
- 	{0x21BF103C, "Smart Array", &SA5_access},
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index aadffcf..67a4b77 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -42,6 +42,9 @@
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
+ #include <xen/hvc-console.h>
++
++#define CREATE_TRACE_POINTS
++#include <trace/events/swiotlb.h>
+ /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+@@ -358,6 +361,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	/*
+ 	 * Oh well, have to allocate and map a bounce buffer.
+ 	 */
++	trace_swiotlb_bounced(dev, dev_addr, size, swiotlb_force);
++
+ 	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
+ 	if (map == SWIOTLB_MAP_ERROR)
+ 		return DMA_ERROR_CODE;
+diff --git a/include/trace/events/swiotlb.h b/include/trace/events/swiotlb.h
+new file mode 100644
+index 0000000..6d21410
+--- /dev/null
++++ b/include/trace/events/swiotlb.h
+@@ -0,0 +1,46 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM swiotlb
++
++#if !defined(_TRACE_SWIOTLB_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_SWIOTLB_H
++
++#include <linux/tracepoint.h>
++
++TRACE_EVENT(swiotlb_bounced,
++
++	TP_PROTO(struct device *dev,
++		 dma_addr_t dev_addr,
++		 size_t size,
++		 int swiotlb_force),
++
++	TP_ARGS(dev, dev_addr, size, swiotlb_force),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name(dev)	)
++		__field(	u64,	dma_mask		)
++		__field(	dma_addr_t,	dev_addr	)
++		__field(	size_t,	size			)
++		__field(	int,	swiotlb_force		)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name(dev));
++		__entry->dma_mask = (dev->dma_mask ? *dev->dma_mask : 0);
++		__entry->dev_addr = dev_addr;
++		__entry->size = size;
++		__entry->swiotlb_force = swiotlb_force;
++	),
++
++	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
++		"size=%zu swiotlb_force=%x",
++		__get_str(dev_name),
++		__entry->dma_mask,
++		(unsigned long long)__entry->dev_addr,
++		__entry->size,
++		__entry->swiotlb_force)
++);
++
++#endif /*  _TRACE_SWIOTLB_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index d23762e..d69ecbe 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -38,6 +38,8 @@
+ #include <linux/bootmem.h>
+ #include <linux/iommu-helper.h>
+ 
++#include <trace/events/swiotlb.h>
++
+ #define OFFSET(val,align) ((unsigned long)	\
+ 	                   ( (val) & ( (align) - 1)))
+ 
+@@ -726,6 +728,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+ 	if (dma_capable(dev, dev_addr, size) && !swiotlb_force)
+ 		return dev_addr;
+ 
++	trace_swiotlb_bounced(dev, dev_addr, size, swiotlb_force);
++
+ 	/* Oh well, have to allocate and map a bounce buffer. */
+ 	map = map_single(dev, phys, size, dir);
+ 	if (map == SWIOTLB_MAP_ERROR) {
