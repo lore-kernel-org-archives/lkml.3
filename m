@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762521Ab3IDL5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 07:57:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52026 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756563Ab3IDL5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 07:57:44 -0400
-Date: Wed, 4 Sep 2013 13:57:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130904115741.GA28285@dhcp22.suse.cz>
-References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
- <20130803170831.GB23319@cmpxchg.org>
- <20130830215852.3E5D3D66@pobox.sk>
- <20130902123802.5B8E8CB1@pobox.sk>
- <20130903204850.GA1412@cmpxchg.org>
- <20130904114523.A9F0173C@pobox.sk>
+	id S1762529Ab3IDMBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:01:54 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:41539 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757430Ab3IDMBx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:01:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904114523.A9F0173C@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378291877.6380.74.camel@linux-s257.site>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+	<1376933171-9854-11-git-send-email-matthew.garrett@nebula.com>
+	<20130829183713.GT20828@hansolo.jdub.homelinux.org>
+	<522104A6.5000700@zytor.com>
+	<20130830234133.GR20828@hansolo.jdub.homelinux.org>
+	<1378291877.6380.74.camel@linux-s257.site>
+Date: Wed, 4 Sep 2013 08:01:52 -0400
+X-Google-Sender-Auth: pvC_Yfosi_p3re4vk05b3rJWI-A
+Message-ID: <CA+5PVA4J1mL0o=MHM-D81rcViR+E3JUyGChvHe8P+3+yt3v_qA@mail.gmail.com>
+Subject: Re: [PATCH V2 10/10] Add option to automatically enforce module
+ signatures when in Secure Boot mode
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: joeyli <jlee@suse.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-09-13 11:45:23, azurIt wrote:
-[...]
-> My script has just detected (and killed) another freezed cgroup. I
-> must say that i'm not 100% sure that cgroup was really freezed but it
-> has 99% or more memory usage for at least 30 seconds (well, or it has
-> 99% memory usage in both two cases the script was checking it). Here
-> are stacks of processes inside it before they were killed:
-[...]
-> pid: 26536
-> stack:
-> [<ffffffff81080a45>] refrigerator+0x95/0x160
-> [<ffffffff8106ac2b>] get_signal_to_deliver+0x1cb/0x540
-> [<ffffffff8100188b>] do_signal+0x6b/0x750
-> [<ffffffff81001fc5>] do_notify_resume+0x55/0x80
-> [<ffffffff815cb662>] retint_signal+0x3d/0x7b
-> [<ffffffffffffffff>] 0xffffffffffffffff
+On Wed, Sep 4, 2013 at 6:51 AM, joeyli <jlee@suse.com> wrote:
+> 於 五，2013-08-30 於 19:41 -0400，Josh Boyer 提到：
+>> On Fri, Aug 30, 2013 at 01:46:30PM -0700, H. Peter Anvin wrote:
+>> > On 08/29/2013 11:37 AM, Josh Boyer wrote:
+>> > >>          setup_efi_pci(boot_params);
+>> > >> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+>> > >> index c15ddaf..d35da96 100644
+>> > >> --- a/arch/x86/include/uapi/asm/bootparam.h
+>> > >> +++ b/arch/x86/include/uapi/asm/bootparam.h
+>> > >> @@ -131,7 +131,8 @@ struct boot_params {
+>> > >>          __u8  eddbuf_entries;                           /* 0x1e9 */
+>> > >>          __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
+>> > >>          __u8  kbd_status;                               /* 0x1eb */
+>> > >> -        __u8  _pad5[3];                                 /* 0x1ec */
+>> > >> +        __u8  secure_boot;                              /* 0x1ec */
+>> > >> +        __u8  _pad5[2];                                 /* 0x1ec */
+>> > >>          /*
+>> > >>           * The sentinel is set to a nonzero value (0xff) in header.S.
+>> > >>           *
+>> > >
+>> > > You need to include the following chunk of code with this, otherwise the
+>> > > secure_boot variable gets cleared.
+>> > >
+>> >
+>> > Not really.
+>> >
+>> > There are three cases:
+>> >
+>> > 1. Boot stub only.  Here we do the right thing with the bootparams.
+>> > 2. Boot loader bypasses the boot stub completely.  Here we MUST NOT do
+>> >    what you suggest above.
+>> > 3. Boot stub with a boot_params structure passed in.  Here we should
+>> >    run sanitize_boot_params() (an inline for a reason) in the boot
+>> >    stub, before we set the secure_boot field.  Once that is done, we
+>> >    again don't need that modification.
+>>
+>> OK.  If 3 works, then great.  All I know is that Fedora has been
+>> carrying the above hunk for months and it was missing in this patch set.
+>> So when I went to test it, the patches didn't do anything because the
+>> secure_boot field was getting cleared.
+>>
+>> I'm more than happy to try option 3, and I'll poke at it next week
+>> unless someone beats me to it.
+>>
+>> josh
+>
+> The secure_boot field cleaned by sanitize_boot_params() when using grub2
+> linuxefi to load efi stub kernel.
+> I printed the boot_params->sentinel value, confirm this value is NOT 0
+> when running grub2 linuxefi path, the entry point is efi_stub_entry.
+>
+> On the other hand,
+> the sentinel value is 0 when direct run efi stub kernel in UEFI shell,
+> the secure_boot field can keep.
+>
+> Does that mean grub2 should clean the sentinel value? or we move the get
+> secure_boot value to efi_init()?
 
-[...]
+See V3 of this patch that Matthew sent yesterday.  It calls
+sanitize_boot_params in efi_main before calling get_secure_boot.  I
+tested that yesterday and it worked fine.
 
-This task is sitting in the refigerator which means it has been frozen
-by the freezer cgroup most probably. I am not familiar with the
-implementation but my recollection is that you have to thaw that group
-in order the killed process can pass away.
--- 
-Michal Hocko
-SUSE Labs
+josh
