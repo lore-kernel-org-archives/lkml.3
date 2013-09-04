@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762479Ab3IDMEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:04:55 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:35721 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab3IDMEw (ORCPT
+	id S1762591Ab3IDMFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:05:45 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36352 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762537Ab3IDMFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:04:52 -0400
-Date: Wed, 4 Sep 2013 14:05:04 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Martin Peres <martin.peres@free.fr>
-Cc: Christopher James Halse Rogers 
-	<christopher.halse.rogers@canonical.com>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH] dma-buf: Expose buffer size to userspace (v2)
-Message-ID: <20130904120504.GB28675@phenom.ffwll.local>
-Mail-Followup-To: Martin Peres <martin.peres@free.fr>,
-	Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>,
-	linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-	robclark@gmail.com, linux-media@vger.kernel.org
-References: <1378264549-9185-1-git-send-email-christopher.halse.rogers@canonical.com>
- <52270A5B.2040600@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52270A5B.2040600@free.fr>
-X-Operating-System: Linux phenom 3.10-2-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Sep 2013 08:05:43 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, sachin.kamat@linaro.org, ldewangan@nvidia.com,
+        magi@slimlogic.co.uk, gg@slimlogic.co.uk, mike@compulab.co.il,
+        anilkumar@ti.com, vbyravarasu@nvidia.com
+Subject: [PATCH 01/10] regulator: tps51632: Use devm_regulator_register
+Date: Wed,  4 Sep 2013 17:17:44 +0530
+Message-Id: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 12:24:27PM +0200, Martin Peres wrote:
-> Hi Christopher,
-> Le 04/09/2013 05:15, Christopher James Halse Rogers a écrit :
-> >Each dma-buf has an associated size and it's reasonable for userspace
-> >to want to know what it is.
-> >
-> >Since userspace already has an fd, expose the size using the
-> >size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
-> >idiom.
-> >
-> >v2: Added Daniel's sugeested documentation, with minor fixups
-> >
-> >Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
-> >Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >---
-> >  Documentation/dma-buf-sharing.txt | 12 ++++++++++++
-> >  drivers/base/dma-buf.c            | 28 ++++++++++++++++++++++++++++
-> >  2 files changed, 40 insertions(+)
-> >
-> >diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-> >index 0b23261..849e982 100644
-> >--- a/Documentation/dma-buf-sharing.txt
-> >+++ b/Documentation/dma-buf-sharing.txt
-> >@@ -407,6 +407,18 @@ Being able to mmap an export dma-buf buffer object has 2 main use-cases:
-> >     interesting ways depending upong the exporter (if userspace starts depending
-> >     upon this implicit synchronization).
-> >+Other Interfaces Exposed to Userspace on the dma-buf FD
-> >+------------------------------------------------------
-> >+
-> >+- Since kernel 3.12 the dma-buf FD supports the llseek system call, but only
-> >+  with offset=0 and whence=SEEK_END|SEEK_SET. SEEK_SET is supported to allow
-> >+  the usual size discover pattern size = SEEK_END(0); SEEK_SET(0). Every other
-> >+  llseek operation will report -EINVAL.
-> >+
-> >+  If llseek on dma-buf FDs isn't support the kernel will report -ESPIPE for all
-> Shouldn't it be "supported" instead of "support"?
-> 
-> Anyway, I'm just curious, in which case is it important to know the size?
-> Do we already have a way to get the dimensions (x, y and stripe)?
+devm_* simplifies the code.
 
-Size is an invariant part of a dma-buf. Everything else wrt metadata isn't
-tracked in the kernel, so doesn't make much sense to expose it ;-)
--Daniel
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+This series is compile tested.
+---
+ drivers/regulator/tps51632-regulator.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
+index 6e67be7..83a745e 100644
+--- a/drivers/regulator/tps51632-regulator.c
++++ b/drivers/regulator/tps51632-regulator.c
+@@ -343,7 +343,7 @@ static int tps51632_probe(struct i2c_client *client,
+ 	config.regmap = tps->regmap;
+ 	config.of_node = client->dev.of_node;
+ 
+-	rdev = regulator_register(&tps->desc, &config);
++	rdev = devm_regulator_register(&client->dev, &tps->desc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(tps->dev, "regulator register failed\n");
+ 		return PTR_ERR(rdev);
+@@ -353,14 +353,6 @@ static int tps51632_probe(struct i2c_client *client,
+ 	return 0;
+ }
+ 
+-static int tps51632_remove(struct i2c_client *client)
+-{
+-	struct tps51632_chip *tps = i2c_get_clientdata(client);
+-
+-	regulator_unregister(tps->rdev);
+-	return 0;
+-}
+-
+ static const struct i2c_device_id tps51632_id[] = {
+ 	{.name = "tps51632",},
+ 	{},
+@@ -375,7 +367,6 @@ static struct i2c_driver tps51632_i2c_driver = {
+ 		.of_match_table = of_match_ptr(tps51632_of_match),
+ 	},
+ 	.probe = tps51632_probe,
+-	.remove = tps51632_remove,
+ 	.id_table = tps51632_id,
+ };
+ 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+
