@@ -1,52 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965165Ab3IDRzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:55:04 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50831 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762923Ab3IDRzC (ORCPT
+	id S965184Ab3IDRzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:55:18 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:63156 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762923Ab3IDRzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:55:02 -0400
-Message-ID: <522773EF.8080701@gmail.com>
-Date: Wed, 04 Sep 2013 11:54:55 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 13:55:11 -0400
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: latest perf code fails to parse existing data file
-References: <5225051C.3030608@gmail.com> <5225844E.3090700@intel.com> <5225DAFB.1070406@gmail.com> <5225E320.8090307@intel.com> <5225E815.4010705@gmail.com>
-In-Reply-To: <5225E815.4010705@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130904145740.GE3996@quack.suse.cz>
+References: <cover.1377193658.git.luto@amacapital.net> <e1620c8e4909a65e270c8e9590e307c22fd96a44.1377193658.git.luto@amacapital.net>
+ <20130904145740.GE3996@quack.suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 4 Sep 2013 10:54:50 -0700
+Message-ID: <CALCETrUA653bw3C=XP=Es9UApqsKsDG-UAzuZ=qS1RA1LeoKYw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/7] mm: Allow filesystems to defer cmtime updates
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/3/13 7:45 AM, David Ahern wrote:
-> On 9/3/13 7:24 AM, Adrian Hunter wrote:
->> On 03/09/13 15:50, David Ahern wrote:
->>> Kernel version? Is your kernel side support there?
+On Wed, Sep 4, 2013 at 7:57 AM, Jan Kara <jack@suse.cz> wrote:
+> On Thu 22-08-13 17:03:19, Andy Lutomirski wrote:
+>> Filesystems that defer cmtime updates should update cmtime when any
+>> of these events happen after a write via a mapping:
 >>
->> The kernel version is the same as the perf version i.e. 3.9
+>>  - The mapping is written back to disk.  This happens from all kinds
+>>    of places, most of which eventually call ->writepages.  (The
+>>    exceptions are vmscan and migration.)
 >>
->>>
->>> For me data was collected on 2.6.34 about a week ago. Processed fine
->>> up to
->>> the point of this patch getting added.
+>>  - munmap is called or the mapping is removed when the process exits
 >>
->> Is it only "perf trace" that fails or does "perf script" fail too?
+>>  - msync(MS_ASYNC) is called.  Linux currently does nothing for
+>>    msync(MS_ASYNC), but POSIX says that cmtime should be updated some
+>>    time between an mmaped write and the subsequent msync call.
+>>    MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
+>>
+>> Filesystems are responsible for checking for pending deferred cmtime
+>> updates in .writepages (a helper is provided for this purpose) and
+>> for doing the actual update in .update_cmtime_deferred.
+>>
+>> These changes have no effect by themselves; filesystems must opt in
+>> by implementing .update_cmtime_deferred and removing any
+>> file_update_time call in .page_mkwrite.
+>>
+>> This patch does not implement the MS_ASYNC case; that's in the next
+>> patch.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ...
+>> +/**
+>> + * generic_update_cmtime_deferred - update cmtime after an mmapped write
+>> + * @mapping: The mapping
+>> + *
+>> + * This library function implements .update_cmtime_deferred.  It is unlikely
+>> + * that any filesystem will want to do anything here except update the time
+>> + * (using this helper) or nothing at all (by leaving .update_cmtime_deferred
+>> + * NULL).
+>> + */
+>> +void generic_update_cmtime_deferred(struct address_space *mapping)
+>> +{
+>> +     struct blk_plug plug;
+>> +     blk_start_plug(&plug);
+>> +     inode_update_time_writable(mapping->host);
+>> +     blk_finish_plug(&plug);
+>> +}
+>> +EXPORT_SYMBOL(generic_update_cmtime_deferred);
+>> +
+>   You can remove the pluggin here. Inode update will likely result in a
+> single write so there's no point.
 >
-> Both throw the same error. Command line used to create the file:
->    perf record -e raw_syscalls:* -e sched:* -p 2271 -g -- sleep 5
+>> @@ -1970,6 +1988,39 @@ int write_one_page(struct page *page, int wait)
+>>  }
+>>  EXPORT_SYMBOL(write_one_page);
+>>
+>> +void mapping_flush_cmtime(struct address_space *mapping)
+>> +{
+>> +     if (mapping_test_clear_cmtime(mapping) &&
+>> +         mapping->a_ops->update_cmtime_deferred)
+>> +             mapping->a_ops->update_cmtime_deferred(mapping);
+>> +}
+>> +EXPORT_SYMBOL(mapping_flush_cmtime);
+>   Hum, is there a reason for update_cmtime_deferred() operation? I can
+> hardly imagine anyone will want to do anything else than what
+> inode_update_time_writable() does so why bother? You mention tmpfs & co.
+> don't fit into your scheme well with which I agree so let's just keep
+> file_update_time() in their page_mkwrite() operation. But I don't see a
+> real need for avoiding the deferred cmtime logic...
 
-Seems to be an artifact of older kernels. Definitely occurs for 2.6.34 
-and WindRiver Linux 4. Also reproduced with vanilla 2.6.35. Use newer 
-perf command -- e.g., 3.11 -- to record events and then try to analyze 
-with Linus', Arnaldo's or Ingo's latest branch which now have this 
-patch. Given the breakage it needs to be either fixed or reverted before 
-3.12
+I think there might be odd corner cases.  For example, mmap a tmpfs
+file, write it, and unmap it.  Then, an hour later, maybe the system
+will be under memory pressure and page out the file.  This could
+trigger a surprising time update.  (I'm not sure this can actually
+happen on tmpfs, but maybe it would on some other filesystem.)
 
-David
+Does this actually matter?  A flag to turn the feature on or off would
+do the trick, but I don't think there's precedent for sticking a flag
+in a_ops.
 
+>
+>> +
+>> +void mapping_flush_cmtime_nowb(struct address_space *mapping)
+>> +{
+>> +     /*
+>> +      * We get called from munmap and msync.  Both calls can race
+>> +      * with fs freezing.  If the fs is frozen after
+>> +      * mapping_test_clear_cmtime but before the time update, then
+>> +      * sync_filesystem will miss the cmtime update (because we
+>> +      * just cleared it) and we don't be able to write (because the
+>> +      * fs is frozen).  On the other hand, we can't just return if
+>> +      * we're in the SB_FREEZE_PAGEFAULT state because our caller
+>> +      * expects the timestamp to be synchronously updated.  So we
+>> +      * get write access without blocking, at the SB_FREEZE_FS
+>> +      * level.  If the fs is already fully frozen, then we already
+>> +      * know we have nothing to do.
+>> +      */
+>> +
+>> +     if (!mapping_test_cmtime(mapping))
+>> +             return;  /* Optimization: nothing to do. */
+>> +
+>> +     if (__sb_start_write(mapping->host->i_sb, SB_FREEZE_FS, false)) {
+>> +             mapping_flush_cmtime(mapping);
+>> +             __sb_end_write(mapping->host->i_sb, SB_FREEZE_FS);
+>> +     }
+>> +}
+>   This is wrong because SB_FREEZE_FS level is targetted for filesystem
+> internal use. Also it is racy. mapping_flush_cmtime() ends up calling
+> mark_inode_dirty() and filesystems such as ext4 or xfs will start a
+> transaction to store inode in the journal. This gets freeze protection at
+> SB_FREEZE_FS level again. If freeze_super() sets s_writers.frozen to
+> SB_FREEZE_FS before this second protection, things will deadlock.
+
+Whoops -- I assumed that it was safe to recursively take freeze
+protection at the same level.
+
+I'm worried about the following race:
+
+Thread 1 (in munmap):
+Check AS_CMTIME set
+sb_start_pagefault
+
+Thread 2 (freezing the fs):
+frozen = SB_FREEZE_PAGEFAULT;
+sync_filesystem()
+
+Thread 1 is now stuck.  It doesn't need to be, because sync_filesystem
+will flush out the cmtime write.  But there doesn't seem to be a clean
+mechanism to wait for the freeze to finish.
+
+Is there a clean way to avoid this?  I don't want to return
+immediately if a freeze is in progress, because userspace expects that
+munmap will update cmtime synchronously.
+
+And ugly but simple solution is:
+
+if (!mapping_test_cmtime(mapping))
+    return;  /* Optimization: nothing to do. */
+
+if (__sb_start_write(mapping->host->i_sb, SB_FREEZE_FS, false)) {
+    mapping_flush_cmtime(mapping);
+    __sb_end_write(mapping->host->i_sb, SB_FREEZE_FS);
+} else {
+    /* Freeze is or was in progress.  The part of freezing from
+SB_FREEZE_PAGEFAULT through sync_filesystem holds s_umount for write,
+so we can wait for it to finish by taking s_umount for read. */
+    down_read(&sb->s_umount);
+    up_read(&sb->s_umount);
+}
+
+--Andy
+
+>
+> Since the callers of this function hold mmap_sem, using SB_FREEZE_PAGEFAULT
+> protection would be appropriate. Also since there are just two places that
+> need the freeze protection I'd be inclined to open code the protection in
+> the two places rather than hiding it in a special function.
+
+Given that this is rather subtle (I've gotten it wrong multiple
+times), I'd rather leave it in one place and comment it well.
+
+--Andy
