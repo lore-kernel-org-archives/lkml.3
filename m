@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab3IDXMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 19:12:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab3IDXMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 19:12:23 -0400
-Message-ID: <1378336334.3246.158.camel@ul30vt.home>
-Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on
- enabled slots
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 04 Sep 2013 17:12:14 -0600
-In-Reply-To: <2449715.ReJj2CQeDS@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan>
-	 <1818424.8fNkf5pBy3@vostro.rjw.lan> <1378326994.3246.152.camel@ul30vt.home>
-	 <2449715.ReJj2CQeDS@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1761631Ab3IDXU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 19:20:58 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46121 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab3IDXU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 19:20:56 -0400
+Message-ID: <5227C056.1020604@linaro.org>
+Date: Wed, 04 Sep 2013 16:20:54 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andy Lutomirski <luto@amacapital.net>, Arun Sharma <asharma@fb.com>,
+        LKML <linux-kernel@vger.kernel.org>, Kumar Sundararajan <kumar@fb.com>
+Subject: Re: clock_gettime_ns
+References: <5226FAE1.5070201@fb.com> <CALCETrWify68=_bVmFfnTWH5vY3NgxDChr_cvL7v6VovaSJdKA@mail.gmail.com> <CANcMJZAi_738t-eDUphC6U_25xFS0NqQqdUZAzu7Aijqmrj=wA@mail.gmail.com> <CALCETrVc-3j=7bP13dkYwqxUg77rdauHQ8_KEti0khh-HX220A@mail.gmail.com> <52279E1D.3060907@linaro.org> <5227B432.8070205@zytor.com> <5227BB50.7000301@linaro.org> <5227BC71.6000907@zytor.com>
+In-Reply-To: <5227BC71.6000907@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 00:54 +0200, Rafael J. Wysocki wrote:
-> On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
-> > On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > The current implementation of acpiphp_check_bridge() is pretty dumb:
-> > >  - It enables a slot if it's not enabled and the slot status is
-> > >    ACPI_STA_ALL.
-> > >  - It disables a slot if it's enabled and the slot status is not
-> > >    ACPI_STA_ALL.
-> > > 
-> > > This behavior is not sufficient to handle the Thunderbolt daisy
-> > > chaining case properly, however, because in that case the bus
-> > > behind the already enabled slot needs to be rescanned for new
-> > > devices.
-> > > 
-> > > For this reason, modify acpiphp_check_bridge() so that slots are
-> > > disabled and stopped if they are not in the ACPI_STA_ALL state.
-> > > 
-> > > For slots in the ACPI_STA_ALL state, devices behind them that don't
-> > > respond are trimmed using a new function, trim_stale_devices(),
-> > > introduced specifically for this purpose.  That function walks
-> > > the given bus and checks each device on it.  If the device doesn't
-> > > respond, it is assumed to be gone and is removed.
-> > > 
-> > > Once all of the stale devices directy behind the slot have been
-> > > removed, acpiphp_check_bridge() will start looking for new devices
-> > > that might have appeared on the given bus.  It will do that even if
-> > > the slot is already enabled (SLOT_ENABLED is set for it).
-> > > 
-> > > In addition to that, make the bus check notification ignore
-> > > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-> > > so that devices behind the slot are re-enumerated in that case too.
-> > > 
-> > > This change is based on earlier patches from Kirill A Shutemov
-> > > and Mika Westerberg.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > ---
-> > 
-> > FYI, git bisect landed on this patch as the cause of my serial console
-> > dying on current upstream.  Further debugging to come...  Thanks,
-> 
-> Well, sorry about that.
-> 
-> What exactly do you mean by "dying"?
+On 09/04/2013 04:04 PM, H. Peter Anvin wrote:
+> On 09/04/2013 03:59 PM, John Stultz wrote:
+>> Also, there's been talk of a slewed-leap-second clockid, basically UTC
+>> but around the leapsecond it slows down to absorb the extra second. This
+>> means that clockid would have a subsecond offset from TAI.
+>>
+> Most of what I have heard seem to center around abolishing leap seconds
+> entirely.  Now, I know that some users do slewed leap seconds as a
+> unofficial policy to avoid rare events.
+Well, Google does their own slewed leap-seconds internally (using a
+modified ntp server to slow CLOCK_REALTIME on clients), and I believe
+AIX also provides similar behavior w/ their CLOCK_REALTIME clockid (they
+also provide CLOCK_UTC for those who have the need for UTC/leapseconds).
+And there's also some occasional talk of trying to standardizing a
+leap-second free UTC.
 
-Sorry, I was hoping to have more details quickly, but it's been a pain
-to debug.  By dying I mean serial console output suddenly stops during
-kernel boot and nothing more comes out of it until after the system is
-rebooted.  The problem happens when acpiphp_check_bridge() calls
-enable_slot().  The serial console dies somewhere down in
-acpiphp_bus_trim().  I think this is happening on the 00:1f ISA bridge,
-so there's a good chance the serial ports are described as somewhere
-under there.  Thanks,
+I suspect we have to have an all-of-the-above policy with the kernel. So
+we now (as of 3.10) support CLOCK_TAI, as well as the UTC-based
+CLOCK_REALTIME. If we can get some agreement on what the
+slewed-leapsecond adjustment should look like (have to decide what the
+slewing rate/range is: do we absorb the second over the last-hour,
+half-hour, 15-minutes before and after?), then we can add such a clockid
+(CLOCK_UTC_SLS?) to the kernel as well.
 
-Alex
+thanks
+-john
+
+
 
