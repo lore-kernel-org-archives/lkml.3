@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759796Ab3IDSGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:06:19 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:45114 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759643Ab3IDSGQ (ORCPT
+	id S1755032Ab3IDSId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:08:33 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:35104 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3IDSIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:06:16 -0400
-Date: Wed, 4 Sep 2013 14:06:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <20130904180607.GD26609@mtj.dyndns.org>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
- <20130903141824.GD10522@htj.dyndns.org>
- <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
- <20130903182731.GA27092@mtj.dyndns.org>
- <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
- <20130904145559.GB25788@mtj.dyndns.org>
- <20130904161442.GE8726@dhcp-26-207.brq.redhat.com>
+	Wed, 4 Sep 2013 14:08:31 -0400
+Message-ID: <5227770E.3060106@linux.vnet.ibm.com>
+Date: Wed, 04 Sep 2013 23:38:14 +0530
+From: Hemant <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904161442.GE8726@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Mark Wielaard <mjw@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com> <5225E2C5.3080001@linux.vnet.ibm.com>  <87a9jtt72j.fsf@sejong.aot.lge.com> <1378283148.4321.16.camel@bordewijk.wildebeest.org> <5226F1B6.3000801@hitachi.com>
+In-Reply-To: <5226F1B6.3000801@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090417-6102-0000-0000-000004208A42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/04/2013 02:09 PM, Masami Hiramatsu wrote:
+> (2013/09/04 17:25), Mark Wielaard wrote:
+>> On Wed, 2013-09-04 at 15:49 +0900, Namhyung Kim wrote:
+>>> On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
+>>>> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
+>>>>> Indeed, and also I'd like to know what versions of SDT this support,
+>>>>> and where we can see the technical document of that. As far as I know,
+>>>>> the previous(?) SDT implementation also involves ugly semaphores.
+>>>>> Have that already gone?
+>>> It seems it's not. I see the SDT v3 document still mentions semaphores.
+>> It mentions them, but should normally not be used. They are there for
+>> dtrace (source) compatibility. And you don't have to use them.
+>>
+>> Since normally a SDT probe marker is just a NOP it doesn't have any
+>> overhead. But if you want to add complicated arguments that you would
+>> normally not generate in your code, then you might want to add a
+>> semaphore. That way you can have probes with a bit more overhead that
+>> still have zero overhead when not being probed.
+>>
+>> Note that if you use the normal DTRACE_PROBE macros no semaphore will be
+>> inserted. And you can opt to not support probes that have a semaphore in
+>> perf if you think that is easier (just check the semaphore link-time
+>> address for the probe, it should normally be zero). Just warn: "No way I
+>> am going to probe something that might have a little extra overhead! I
+>> am no debugger..." :)
+> OK, I see. And in that case, we'd better filter out the markers which
+> use a semaphore when list it up, since we can not enable it.
+>
+> Thank you,
+>
+>
 
-On Wed, Sep 04, 2013 at 06:14:43PM +0200, Alexander Gordeev wrote:
-> 1. We do not support sharing MSI messages since there is no appropriate
-> interrupt handling for it. I am not sure if any hardware supports it at
-> all. This assumption is just for clarity here.
+But isn't it a better idea to handle semaphores, because there can be 
+many important markers using semaphores and people may still want to 
+probe on them?
 
-I don't think it even matters.  If we can configure all MSIs, good.
-If not, using single interrupt is good enough.  Being able to allocate
-only some of the interrupts is highly unlikely to begin with and
-there's no reason to meddle with extra complexity.
+Thanks
+Hemant
 
-> 2. We can not just read out MMC value and try to write it to MME, because
-> we are not sure the hardware honours the specification.  I.e. in case of 6
-> ports and MMC value of 16 the value of 8 in MME could enable multiple MSIs
-> while the value of 16 could enforce MRSM. Contradicts to the AHCI
-> specification, but look how weird ICH is [4].
-> 
-> 3. Enabling more MSIs than needed (MME == MMC instead of MME < MMC) could
-> lead to unnecessary allocation of internal device resources. Bit lame, but
-> still true.
-> 
-> 4. We can not derive the value of MME needed from the number of ports, at
-> least in case of ICH. I.e. with 6 ports and MMC value of 16 the value of 8
-> in MME is what would be expected according to the AHCI specification. But
-> the ICH reserves it and MRSMs in case 8 is written to MME.
-> 
-> So to cover all the above assumptions we need to scan from lowest possible
-> and watch the MRSM bit is unset.
-
-I don't think it's necessary / a good idea to try to support
-everything.  Just following the spec would be fine.  If that doesn't
-work for too many devices, maybe just do one fallback?
-
-Thanks.
-
--- 
-tejun
