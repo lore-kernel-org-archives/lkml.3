@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762409Ab3IDK71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 06:59:27 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:61341 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756996Ab3IDK7Z (ORCPT
+	id S1762427Ab3IDK7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 06:59:30 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:57951 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762398Ab3IDK71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 06:59:25 -0400
+	Wed, 4 Sep 2013 06:59:27 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
         Sam Ravnborg <sam@ravnborg.org>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [pull request] Pull request for branch yem/kconfig-for-next
-Date: Wed,  4 Sep 2013 12:59:14 +0200
-Message-Id: <cover.1378292314.git.yann.morin.1998@free.fr>
+Subject: [PATCH 1/3] kconfig: do not special-case 'MODULES' symbol
+Date: Wed,  4 Sep 2013 12:59:15 +0200
+Message-Id: <b1a4fe311c048e595ecaefc0286d61baa6ff2d7f.1378292314.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <cover.1378292314.git.yann.morin.1998@free.fr>
+References: <cover.1378292314.git.yann.morin.1998@free.fr>
+In-Reply-To: <cover.1378292314.git.yann.morin.1998@free.fr>
+References: <cover.1378292314.git.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Hello All!
+Currently, the 'MODULES' symbol is hard-coded to be the default symbol
+that enables/disables tristates, if no other symbol was declared with
+'option modules'.
 
-Michal, please pull for 3.12 this series that removes special-casing of
-the 'MODULES' symbol, as previously discussed with Sam and you.
+While this used to be needed for the Linux kernel, we now have an
+explicit 'option modules' attached to the 'MODULES' symbol (since
+cset 11097a036), so we no longer need to special-case it in the
+kconfig code.
 
-Regards,
-Yann E. MORIN.
+Furthermore, kconfig is extensively used out of the Linux kernel, and
+other projects may have another meaning for a symbol named 'MODULES'.
 
+This patch changes the way we enable/disable tristates: if a symbol was
+found with 'option modules' attached to it, then that symbol controls
+enabling tristates. Otherwise, tristates are disabled, even if a symbol
+named 'MODULES' exists.
 
-The following changes since commit b020bae0467b490797d61e6a658fb7df4568c074:
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>
+---
+ scripts/kconfig/menu.c  |  5 +----
+ scripts/kconfig/zconf.y | 11 ++---------
+ 2 files changed, 3 insertions(+), 13 deletions(-)
 
-  Merge branch 'kbuild/kconfig' into kbuild/for-next (2013-09-01 21:25:45 +0200)
-
-are available in the git repository at:
-
-
-  git://gitorious.org/linux-kconfig/linux-kconfig.git yem/kconfig-for-next
-
-for you to fetch changes up to 2c15d81f712791d3eae9a15414c83780a8dd6ac1:
-
-  kconfig: do not allow more than one symbol to have 'option modules' (2013-09-04 12:57:48 +0200)
-
-----------------------------------------------------------------
-Yann E. MORIN (3):
-      kconfig: do not special-case 'MODULES' symbol
-      kconfig: regenerate bison parser
-      kconfig: do not allow more than one symbol to have 'option modules'
-
- Documentation/kbuild/kconfig-language.txt |   1 +
- scripts/kconfig/menu.c                    |  11 +-
- scripts/kconfig/zconf.tab.c_shipped       | 562 ++++++++++++++++--------------
- scripts/kconfig/zconf.y                   |  11 +-
- 4 files changed, 308 insertions(+), 277 deletions(-)
-
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index 7e233a6..3a9c674 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -197,12 +197,9 @@ void menu_add_symbol(enum prop_type type, struct symbol *sym, struct expr *dep)
+ 
+ void menu_add_option(int token, char *arg)
+ {
+-	struct property *prop;
+-
+ 	switch (token) {
+ 	case T_OPT_MODULES:
+-		prop = prop_alloc(P_DEFAULT, modules_sym);
+-		prop->expr = expr_alloc_symbol(current_entry->sym);
++		modules_sym = current_entry->sym;
+ 		break;
+ 	case T_OPT_DEFCONFIG_LIST:
+ 		if (!sym_defconfig_list)
+diff --git a/scripts/kconfig/zconf.y b/scripts/kconfig/zconf.y
+index 864da07..0653886 100644
+--- a/scripts/kconfig/zconf.y
++++ b/scripts/kconfig/zconf.y
+@@ -493,9 +493,6 @@ void conf_parse(const char *name)
+ 
+ 	sym_init();
+ 	_menu_init();
+-	modules_sym = sym_lookup(NULL, 0);
+-	modules_sym->type = S_BOOLEAN;
+-	modules_sym->flags |= SYMBOL_AUTO;
+ 	rootmenu.prompt = menu_add_prompt(P_MENU, "Linux Kernel Configuration", NULL);
+ 
+ 	if (getenv("ZCONF_DEBUG"))
+@@ -503,12 +500,8 @@ void conf_parse(const char *name)
+ 	zconfparse();
+ 	if (zconfnerrs)
+ 		exit(1);
+-	if (!modules_sym->prop) {
+-		struct property *prop;
+-
+-		prop = prop_alloc(P_DEFAULT, modules_sym);
+-		prop->expr = expr_alloc_symbol(sym_lookup("MODULES", 0));
+-	}
++	if (!modules_sym)
++		modules_sym = sym_find( "n" );
+ 
+ 	rootmenu.prompt->text = _(rootmenu.prompt->text);
+ 	rootmenu.prompt->text = sym_expand_string_value(rootmenu.prompt->text);
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.8.1.2
+
