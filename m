@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762915Ab3IDPQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:16:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39266 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756525Ab3IDPQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:16:12 -0400
-Message-ID: <52274E9F.4050708@ti.com>
-Date: Wed, 4 Sep 2013 10:15:43 -0500
-From: Nishanth Menon <nm@ti.com>
+	id S1762942Ab3IDPQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:16:26 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:37398 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab3IDPQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:16:25 -0400
+Message-ID: <52274EC6.1030100@linaro.org>
+Date: Wed, 04 Sep 2013 11:16:22 -0400
+From: Matt Porter <matt.porter@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Sachin Kamat <sachin.kamat@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <ldewangan@nvidia.com>, <gg@slimlogic.co.uk>, <yong.shen@linaro.org>,
-        <s.hauer@pengutronix.de>, <marek.vasut@gmail.com>,
-        <Nancy.Chen@freescale.com>
-Subject: Re: [PATCH 7/7] regulator: ti-abb: Use devm_regulator_register
-References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-7-git-send-email-sachin.kamat@linaro.org> <5227355C.1020205@ti.com> <20130904151241.GB10849@sirena.org.uk>
-In-Reply-To: <20130904151241.GB10849@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] edma: Update author email address
+References: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
+In-Reply-To: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 10:12 AM, Mark Brown wrote:
-> On Wed, Sep 04, 2013 at 08:27:56AM -0500, Nishanth Menon wrote:
->> On 09/04/2013 01:31 AM, Sachin Kamat wrote:
-> 
->>>  	abb = devm_kzalloc(dev, sizeof(struct ti_abb), GFP_KERNEL);
->>> -	if (!abb) {
->>> -		dev_err(dev, "%s: Unable to allocate ABB struct\n", __func__);
->>> -		ret = -ENOMEM;
->>> -		goto err;
->>> -	}
->>> +	if (!abb)
->>> +		return -ENOMEM;
-> 
->> here.
-> 
-> kzalloc() complains loudly when it fails, there's been a general thing
-> for removing the per-device logs as redundant.
-> 
-True, but for the remaining, I do not thing it kind of helps to quiet
-things up.
+On 09/04/2013 10:32 AM, Josh Boyer wrote:
+> Matt's @ti.com address bounces.  Update the MODULE_AUTHOR information in
+> edma.c to his Linaro address.
+>
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+>
+> ---
+> v2: Actually get the right email address....
+>
+> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> index 5f3e532..574b1a7 100644
+> --- a/drivers/dma/edma.c
+> +++ b/drivers/dma/edma.c
+> @@ -667,6 +667,6 @@ static void __exit edma_exit(void)
+>   }
+>   module_exit(edma_exit);
+>
+> -MODULE_AUTHOR("Matt Porter <mporter@ti.com>");
+> +MODULE_AUTHOR("Matt Porter <matt.porter@linaro.org>");
+>   MODULE_DESCRIPTION("TI EDMA DMA engine driver");
+>   MODULE_LICENSE("GPL v2");
+>
 
--- 
-Regards,
-Nishanth Menon
+Acked-by: Matt Porter <matt.porter@linaro.org>
