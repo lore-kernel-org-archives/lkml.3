@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760385Ab3IDUQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:16:17 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:39772 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752850Ab3IDUQP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:16:15 -0400
-From: Denis CIOCCA <denis.ciocca@st.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Date: Wed, 4 Sep 2013 22:15:45 +0200
-Subject: Re: [PATCH 06/11] iio: pressure-core: st: Expand and rename
- LPS331AP's channel descriptor
-Thread-Topic: [PATCH 06/11] iio: pressure-core: st: Expand and rename
- LPS331AP's channel descriptor
-Thread-Index: Ac6pq4sPVtUU1mzlRTiNsxLyGlSfvQ==
-Message-ID: <522794F1.90301@st.com>
-References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
- <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
-Accept-Language: it-IT, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-acceptlanguage: it-IT, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932669Ab3IDUQo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:16:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38516 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759547Ab3IDUQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:16:41 -0400
+Message-ID: <52279524.8090006@wwwdotorg.org>
+Date: Wed, 04 Sep 2013 14:16:36 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Lars Poeschel <poeschel@lemonage.de>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org> <3144247.j2q6H0KWZx@lem-wkst-02>
+In-Reply-To: <3144247.j2q6H0KWZx@lem-wkst-02>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Due to the MACRO used, the task of reading, understanding and maintaining
-> the LPS331AP's channel descriptor is substantially difficult. This patch
-> is based on the view that it's better to have easy to read, maintainable
-> code than to save a few lines here and there. For that reason we're
-> expanding the array so initialisation is completed in full.
-Also for this one, the channel names are general and can be shared 
-between different sensors. For the channel definition it's not a problem 
-for me, but I think it's not necessary adds all that code...
+On 09/04/2013 03:05 AM, Lars Poeschel wrote:
+> On Wednesday 04 September 2013 11:27:12, Stephen Warren wrote:
+>> On 09/02/2013 03:25 AM, Lars Poeschel wrote:
+>>> Some leagcy drivers currently do this:
+>>>
+>>> request_gpio(gpio);
+>>> gpio_direction_input(gpio);
+>>> request_irq(gpio_to_irq(gpio));
+>>>
+>>> In that case request_irq should not fail because the driver is already the
+>>> correct owner of this gpio. But if some other entity owns this gpio it
+>>> should fail.
+>>
+>> Yes.
+>>
+>>> Also if I understand you correct the other way round should also possible:
+>>>
+>>> request_irq(gpio_to_irq(gpio));
+>>> request_gpio(gpio);
+>>> gpio_direction_input(gpio);
+>>>
+>>> request_irq() also requests the gpio then but the following request_gpio()
+>>> should also not fail.
+>>
+>> I don't believe that code sequence is currently banned. If we want to
+>> ban it, we should document that. Until this is documented as being
+>> banned, I think we must fully support that code sequence.
+>>
+>>> To have it work that way we have to track the owners of all requested
+>>> gpios
+>>> somewhere. Or am I wrong here?
+>>> Where and how to record these owners? Can gpio system achieve this? gpios
+>>> are requested without an owning device.
+>>
+>> Yes. But, I believe we need to fully track every GPIO/IRQ owner already
+>> right now; if a driver (not the GPIO/IRQ chip driver, but a driver that
+>> uses the GPIOs/IRQs) calls gpio_request()/request_irq(), and this patch
+>> has already requested them, then we already need to fully track GPIO/IRQ
+>> ownership to make sure that the driver's own requests aren't failed
+>> because the DT/GPIO core has already requested them on its behalf.
+> 
+> The driver that tries to use the GPIO requested by this patch before HAS to 
+> fail. This is exactly the intention of this patch. We don't want the GPIO to 
+> be requested any more, if it is used as an interrupt pin.
 
-Denis
+That will break existing drivers. There are drivers that request the
+same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
+that way.
 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   drivers/iio/pressure/st_pressure_core.c | 45 +++++++++++++++++++++++++--------
->   1 file changed, 34 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-> index becfb25..7ba9299 100644
-> --- a/drivers/iio/pressure/st_pressure_core.c
-> +++ b/drivers/iio/pressure/st_pressure_core.c
-> @@ -58,16 +58,39 @@
->   #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
->   #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
->   
-> -static const struct iio_chan_spec st_press_channels[] = {
-> -	ST_SENSORS_LSM_CHANNELS(IIO_PRESSURE,
-> +static const struct iio_chan_spec st_press_lsp331ap_channels[] = {
-> +	{
-> +		.type = IIO_PRESSURE,
-> +		.channel2 = IIO_NO_MOD,
-> +		.address = ST_PRESS_LPS331AP_OUT_XL_ADDR,
-> +		.scan_index = ST_SENSORS_SCAN_X,
-> +		.scan_type = {
-> +			.sign = 'u',
-> +			.realbits = 24,
-> +			.storagebits = 24,
-> +			.endianness = IIO_LE,
-> +		},
-> +		.info_mask_separate =
->   			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
-> -			ST_SENSORS_SCAN_X, 0, IIO_NO_MOD, 'u', IIO_LE, 24, 24,
-> -			ST_PRESS_LPS331AP_OUT_XL_ADDR),
-> -	ST_SENSORS_LSM_CHANNELS(IIO_TEMP,
-> -			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE) |
-> -						BIT(IIO_CHAN_INFO_OFFSET),
-> -			-1, 0, IIO_NO_MOD, 's', IIO_LE, 16, 16,
-> -			ST_TEMP_LPS331AP_OUT_L_ADDR),
-> +		.modified = 0,
-> +	},
-> +	{
-> +		.type = IIO_TEMP,
-> +		.channel2 = IIO_NO_MOD,
-> +		.address = ST_TEMP_LPS331AP_OUT_L_ADDR,
-> +		.scan_index = -1,
-> +		.scan_type = {
-> +			.sign = 'u',
-> +			.realbits = 16,
-> +			.storagebits = 16,
-> +			.endianness = IIO_LE,
-> +		},
-> +		.info_mask_separate =
-> +			BIT(IIO_CHAN_INFO_RAW) |
-> +			BIT(IIO_CHAN_INFO_SCALE) |
-> +			BIT(IIO_CHAN_INFO_OFFSET),
-> +		.modified = 0,
-> +	},
->   	IIO_CHAN_SOFT_TIMESTAMP(1)
->   };
->   
-> @@ -77,7 +100,7 @@ static const struct st_sensors st_press_sensors[] = {
->   		.sensors_supported = {
->   			[0] = LPS331AP_PRESS_DEV_NAME,
->   		},
-> -		.ch = (struct iio_chan_spec *)st_press_channels,
-> +		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
->   		.odr = {
->   			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
->   			.mask = ST_PRESS_LPS331AP_ODR_MASK,
-> @@ -214,7 +237,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
->   	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
->   	pdata->multiread_bit = pdata->sensor->multi_read_bit;
->   	indio_dev->channels = pdata->sensor->ch;
-> -	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
-> +	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
->   
->   	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
->   						&pdata->sensor->fs.fs_avl[0];
+> To be able to implement the way you proposed some mails before, I have to be 
+> able to do some checks that to my opinion (and if I understand Linus 
+> correctly) aren't possible at the moment.
+
+True.
+
+> So I asked, where and how to record 
+> these owners of the GPIOs? And can the GPIO system achieve this and how? Can 
+> you please shed some light on this! Thanks!
+
+Alex Courbot's (proposed) new gpiod API has a "dev" parameter to
+gpiod_request() which could be used for this purpose. Something similar
+could be done for interrupts.
