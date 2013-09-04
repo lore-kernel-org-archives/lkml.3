@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762816Ab3IDO2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758780Ab3IDO2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:28:07 -0400
-Date: Wed, 4 Sep 2013 10:28:01 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matt Porter <mporter@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] edma: Update author email address
-Message-ID: <20130904142800.GD12834@hansolo.jdub.homelinux.org>
+	id S1762806Ab3IDO3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:29:36 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:40488 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756532Ab3IDO3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:29:35 -0400
+X-Auth-Info: 9HFOr88MJ2QXPi0Ilk/Nr8xiZfnMtPB8vwMA3g+9/4Q=
+From: Marek Vasut <marex@denx.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 4/7] regulator: mc13892: Use devm_regulator_register
+Date: Wed, 4 Sep 2013 16:29:34 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, nm@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, yong.shen@linaro.org,
+        s.hauer@pengutronix.de, Nancy.Chen@freescale.com
+References: <1378276263-10735-1-git-send-email-sachin.kamat@linaro.org> <1378276263-10735-4-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1378276263-10735-4-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309041629.34221.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt's @ti.com address bounces.  Update the MODULE_AUTHOR information in
-edma.c to his Linaro address.
+Dear Sachin Kamat,
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> devm_* simplifies the code.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 
----
+Acked-by: Marek Vasut <marex@denx.de>
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 5f3e532..8d1932f 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -667,6 +667,6 @@ static void __exit edma_exit(void)
- }
- module_exit(edma_exit);
- 
--MODULE_AUTHOR("Matt Porter <mporter@ti.com>");
-+MODULE_AUTHOR("Matt Porter <mporter@linaro.org>");
- MODULE_DESCRIPTION("TI EDMA DMA engine driver");
- MODULE_LICENSE("GPL v2");
+Best regards,
+Marek Vasut
