@@ -1,38 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934594Ab3IDMhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:37:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20874 "EHLO mx1.redhat.com"
+	id S934733Ab3IDMhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:37:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64867 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932217Ab3IDMhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:37:34 -0400
+	id S934680Ab3IDMhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:37:40 -0400
 From: Daniel Borkmann <dborkman@redhat.com>
 To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next v2 0/2] prandom_u32_range, prandom_u32_max helpers
-Date: Wed,  4 Sep 2013 14:37:25 +0200
-Message-Id: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, Joe Perches <joe@perches.com>
+Subject: [PATCH net-next v2 1/2] random: add prandom_u32_range and prandom_u32_max helpers
+Date: Wed,  4 Sep 2013 14:37:26 +0200
+Message-Id: <1378298247-29364-2-git-send-email-dborkman@redhat.com>
+In-Reply-To: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
+References: <1378298247-29364-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2:
-  - migrated api to random.h, ccing lkml
-  - dropped second patch for now
+We have implemented the same function over and over, so introduce
+generic helpers that unify these implementations in order to migrate
+such code to use them. Make the API similarly to randomize_range()
+for consistency. prandom_u32_range() generates numbers in [start, end]
+interval and prandom_u32_max() generates numbers in [0, end] interval.
 
-Daniel Borkmann (2):
-  random: add prandom_u32_range and prandom_u32_max helpers
-  net: migrate direct users to prandom_u32_max
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ include/linux/random.h | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
- drivers/net/team/team_mode_random.c |  8 +-------
- include/linux/random.h              | 31 ++++++++++++++++++++++++++++++-
- include/net/red.h                   |  2 +-
- net/802/garp.c                      |  3 ++-
- net/802/mrp.c                       |  3 ++-
- net/packet/af_packet.c              |  2 +-
- net/sched/sch_choke.c               |  8 +-------
- 7 files changed, 38 insertions(+), 19 deletions(-)
-
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 3b9377d..17c91c2 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -8,7 +8,6 @@
+ 
+ #include <uapi/linux/random.h>
+ 
+-
+ extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+@@ -32,6 +31,36 @@ void prandom_seed(u32 seed);
+ u32 prandom_u32_state(struct rnd_state *);
+ void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+ 
++/**
++ * prandom_u32_range - return a random number in interval [start, end]
++ * @start: lower interval endpoint
++ * @end: higher interval endpoint
++ *
++ * Returns a number that is in the given interval:
++ *
++ *     [...... <range> .....]
++ *   start                  end
++ *
++ * Callers need to make sure that start <= end. Note that the result
++ * depends on PRNG being well distributed in [0, ~0U] space. Here we
++ * use maximally equidistributed combined Tausworthe generator.
++ */
++static inline u32 prandom_u32_range(u32 start, u32 end)
++{
++	return (u32)(((u64) prandom_u32() * (end + 1 - start)) >> 32) + start;
++}
++
++/**
++ * prandom_u32_max - return a random number in interval [0, max]
++ * @max: higher interval endpoint
++ *
++ * Returns a number that is in interval [0, end].
++ */
++static inline u32 prandom_u32_max(u32 end)
++{
++	return prandom_u32_range(0, end);
++}
++
+ /*
+  * Handle minimum values for seeds
+  */
 -- 
 1.7.11.7
 
