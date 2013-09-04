@@ -1,242 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763306Ab3IDRuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:50:23 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48008 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763004Ab3IDRuU (ORCPT
+	id S1763328Ab3IDRvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:51:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50130 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762844Ab3IDRvJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:50:20 -0400
-Message-ID: <522772D1.7000807@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 23:20:09 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH 2/2] Support to perf to probe on SDT markers:
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073703.4793.32779.stgit@hemant-fedora> <8761uht6jk.fsf@sejong.aot.lge.com>
-In-Reply-To: <8761uht6jk.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090417-5140-0000-0000-000003C724E8
+	Wed, 4 Sep 2013 13:51:09 -0400
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <522767E5.9080302@ti.com>
+Date: Wed, 4 Sep 2013 12:51:11 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <F363B498-5648-4C19-BC16-096EE12C29CE@codeaurora.org>
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com> <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org> <52275F7D.4030305@ti.com> <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org> <522767E5.9080302@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 12:30 PM, Namhyung Kim wrote:
-> On Tue, 03 Sep 2013 13:07:03 +0530, Hemant Kumar wrote:
->> This patch enables perf to probe on the marker name specified on the command line.
-> It looks like you didn't consider prelinked libraries.  You need to check
-> the address of .stapsdt.base section too.  And obviously this patch
 
-Will make the required changes to handle prelinking as well in the next 
-iteration.
+On Sep 4, 2013, at 12:03 PM, Suman Anna wrote:
 
-> ignores any argument the SDT has which I think pretty important info.
-> But we can add it later once the uprobes arg fetch patches are in.
+>>>>>>>> 
+>>>>>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>>>>>>>>> which are all device-tree boot only. This patch adds the
+>>>>>>>>> base support for parsing the DT nodes, and removes the code
+>>>>>>>>> dealing with the traditional platform device instantiation.
+>>>>>>>>> 
+>>>>>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>>>>>>>> ---
+>>>>>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+>>>>>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
+>>>>>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>>>>>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+>>>>>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
+>>>>>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>>>>>>>> 
+>>>>>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>>> new file mode 100644
+>>>>>>>>> index 0000000..adfb8ad
+>>>>>>>>> --- /dev/null
+>>>>>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>>> @@ -0,0 +1,28 @@
+>>>>>>>>> +OMAP4+ HwSpinlock Driver
+>>>>>>>>> +
+>>>>>>>>> +Required properties:
+>>>>>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>>>>>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>>>>>>>>> +- reg:			Contains the hwspinlock register address range (base
+>>>>>>>>> +			address and length)
+>>>>>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>>>>>>>>> +
+>>>>>>>>> +Optional properties:
+>>>>>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
+>>>>>>>>> +			device. If not mentioned, a default value of 0 is used.
+>>>>>>>>> +			This property is mandatory ONLY if a SoC has several
+>>>>>>>>> +			hwspinlock devices. There are currently no such OMAP
+>>>>>>>>> +			SoCs.
+>>>>>>>> 
+>>>>>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+>>>>>>> 
+>>>>>>> I didn't add the "ti," prefix exactly for the same reason - it is
+>>>>>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
+>>>>>>> there is nothing ti or OMAP specific about it. I have added it to keep
+>>>>>>> the DT node definition in sync with the driver code. If it is too
+>>>>>>> generic a name, it can always be renamed as hwlock_base_id. This will be
+>>>>>>> SoC agnostic property for the hwspinlock driver. What do you think?
+>>>>>> 
+>>>>>> I'm wondering if we should use cell-index for this purpose.
+>>>>> 
+>>>>> I didn't get you completely. Do you intend to compute the base_id using
+>>>>> cell-index and number of locks (which may be a separate field altogether
+>>>>> if this information cannot be read from the h/w)? My understanding is
+>>>>> that cell-index is primarily used for identifying the h/w instance number.
+>>>> 
+>>>> I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
+>>> 
+>>> Common hwlock.txt sounds good. Will make the change.
+>>> 
+>>>> 
+>>>> I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
+>>>> 
+>>> 
+>>> I prefer to use hwlock-base-id. I think we should also be defining a
+>>> common property name for number of locks, say hwlock-num-locks.
+>> 
+>> I'm good with that, cell-index is always funny so might as well be explicit.
+>> 
+>> I'm also good with hwlock-num-locks, I'll update the msm spinlock driver to use this.
+>> 
+>> Can you also maybe add some helper functions into the hwspinlock core to return these values so we both don't duplicate code in drivers and maintain consistency.
+> 
+> I am trying to understand what you would need these for. Your driver
+> would already know the base_id and num_locks, since these are used in
+> the registration function.
 
-Yes, will add the arguments' support too in the next iteration.
-> Also please see my previous comment on mixed usage of 'note' and
-> 'marker'.
 
-Yeah, made a note of that and make the required modifications.
+It would be something simple like:
 
-Thanks
-Hemant
->
-> Thanks,
-> Namhyung
->
->
->> ---
->>   tools/perf/builtin-probe.c    |    7 +++
->>   tools/perf/util/probe-event.c |   11 ++++
->>   tools/perf/util/symbol-elf.c  |  112 +++++++++++++++++++++++++++++++++++++++++
->>   tools/perf/util/symbol.h      |    5 ++
->>   4 files changed, 135 insertions(+)
->>
->> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
->> index 3d8dcdf..8382853 100644
->> --- a/tools/perf/builtin-probe.c
->> +++ b/tools/perf/builtin-probe.c
->> @@ -378,6 +378,13 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
->>   				       " (%d)\n", ret);
->>   			return ret;
->>   		}
->> +		params.uprobes = true;
->> +		ret = probe_marker(params.target,
->> +				   params.events[0].point.function);
->> +		if (ret < 0)
->> +			pr_err("Could not probe at %s marker\n",
->> +			       params.events[0].point.function);
->> +		return ret;
->>   	}
->>   
->>   	if (params.list_events) {
->> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->> index 7f846f9..014d642 100644
->> --- a/tools/perf/util/probe-event.c
->> +++ b/tools/perf/util/probe-event.c
->> @@ -2378,3 +2378,14 @@ int show_available_markers(const char *target)
->>   	setup_pager();
->>   	return list_markers(target);
->>   }
->> +
->> +int probe_marker(const char *name, char *mark)
->> +{
->> +	int fd;
->> +
->> +	fd = open_uprobe_events(true);
->> +	if (fd == -1)
->> +		return fd;
->> +	else
->> +		return probe__marker(name, mark, fd);
->> +}
->> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
->> index f3630f2..60938a5 100644
->> --- a/tools/perf/util/symbol-elf.c
->> +++ b/tools/perf/util/symbol-elf.c
->> @@ -1040,6 +1040,118 @@ out_ret:
->>   	return ret;
->>   }
->>   
->> +static void extract_first_name(const char *target, char *fname)
->> +{
->> +	int i, len;
->> +	char *file;
->> +
->> +	file = strrchr(target, DIR_SEP);
->> +	file++;
->> +	len = strlen(file);
->> +	for (i = 0; i <= len; i++) {
->> +		if (!isalpha(file[i]))
->> +			break;
->> +		fname[i] = file[i];
->> +	}
->> +	fname[i] = '\0';
->> +}
->> +
->> +static int probe_at_note(struct sdt_note *r_note, const char *target, bool exec,
->> +			 int fd)
->> +{
->> +	char buf[MAX_CMDLEN];
->> +	int len, err = -1;
->> +	Elf64_Addr offset;
->> +	char *fname = NULL;
->> +
->> +	if (exec)
->> +		offset = r_note->addr.a64[0] - TEXT_SCN;
->> +	else
->> +		offset = r_note->addr.a64[0];
->> +
->> +	fname = (char *)zalloc(sizeof(char) * strlen(target));
->> +	if (fname == NULL) {
->> +		pr_err("Error in allocating memory to fname\n");
->> +		goto out_ret;
->> +	}
->> +
->> +	extract_first_name(target, fname);
->> +	len = snprintf(buf, MAX_CMDLEN, "%c:%s%s/%s %s:0x%x", 'p', "probe_",
->> +		       fname, r_note->name, target, (unsigned)offset);
->> +
->> +	len = write(fd, buf, MAX_CMDLEN);
->> +	if (len < 0) {
->> +		pr_err("Couldn't write into uprobe_events!\n");
->> +		goto out_close;
->> +	} else {
->> +		printf("Added new event :\n");
->> +		printf("event = %s \t (on 0x%x)\n\n", r_note->name,
->> +		       (unsigned)offset);
->> +		printf("You can now use it on all perf tools such as :\n\n");
->> +		printf("\t perf record -e %s%s:%s -aR sleep 1\n\n", "probe_", fname, r_note->name);
->> +		err = 0;
->> +	}
->> +
->> +out_close:
->> +	close(fd);
->> +	free(fname);
->> +out_ret:
->> +	return err;
->> +}
->> +
->> +static int search_and_probe_at_note(char *key, struct sdt_note **start,
->> +				    const char *target, bool exec, int fd)
->> +{
->> +	int ret = -1;
->> +	struct sdt_note *req;
->> +
->> +	for (req = (*start); req != NULL; req = req->next) {
->> +		if (!strcmp(key, req->name))
->> +			break;
->> +	}
->> +	if (!req) {
->> +		pr_err("Could not find marker %s\n", key);
->> +		return ret;
->> +	}
->> +
->> +	ret = probe_at_note(req, target, exec, fd);
->> +	return ret;
->> +}
->> +
->> +int probe__marker(const char *name, char *mark, int evfd)
->> +{
->> +	int ret = -1, fd;
->> +	Elf *elf;
->> +	bool exec = false;
->> +	struct sdt_note *head = NULL;
->> +
->> +	fd = open(name, O_RDONLY);
->> +	if (fd < 0) {
->> +		pr_err("Failed to open the file\n");
->> +		goto out_ret;
->> +	}
->> +
->> +	symbol__elf_init();
->> +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
->> +	if (elf == NULL) {
->> +		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
->> +		goto out_close;
->> +	}
->> +
->> +	head = get_elf_markers(elf, &exec, true);
->> +	if (head) {
->> +		ret = search_and_probe_at_note(mark, &head, name, exec, evfd);
->> +		cleanup_notes(head);
->> +	}
->> +
->> +	elf_end(elf);
->> +
->> +out_close:
->> +	close(fd);
->> +out_ret:
->> +	return ret;
->> +}
->> +
->>   void cleanup_notes(struct sdt_note *start)
->>   {
->>   	struct sdt_note *tmp;
->> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
->> index f2d17b7..95289fd 100644
->> --- a/tools/perf/util/symbol.h
->> +++ b/tools/perf/util/symbol.h
->> @@ -262,8 +262,13 @@ void __map_groups__fixup_end(struct map_groups *mg, enum map_type type);
->>   int show_available_markers(const char *module);
->>   int list_markers(const char *name);
->>   void cleanup_notes(struct sdt_note *start);
->> +int probe_marker(const char *name, char *mark);
->> +int probe__marker(const char *name, char *mark, int fd);
->>   
->>   #define SDT_NOTE_TYPE 3
->>   #define NOTE_SCN ".note.stapsdt"
->> +#define TEXT_SCN 0x400000
->> +#define DIR_SEP '/'
->> +#define MAX_CMDLEN 256
->>   
->>   #endif /* __PERF_SYMBOL */
+static inline int of_get_hwlock_base_id (struct device_node *dn) {
+#ifdef CONFIG_OF
+	u32 val;
+
+	if (of_property_read_u32(dn, "hwlock-base-id", &val)
+		return val;
+#endif
+	return 0;
+}
+
+make sense?
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
