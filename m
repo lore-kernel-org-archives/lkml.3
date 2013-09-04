@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762777Ab3IDPI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:08:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60835 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab3IDPI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:08:57 -0400
-Date: Wed, 4 Sep 2013 17:08:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 0/5] Rework mtime and ctime updates on mmaped writes
-Message-ID: <20130904150854.GF3996@quack.suse.cz>
-References: <cover.1377193658.git.luto@amacapital.net>
+	id S1762855Ab3IDPMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:12:08 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:52472 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762801Ab3IDPMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 11:12:06 -0400
+Date: Wed, 4 Sep 2013 16:11:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>, sa@the-dreams.de
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: dt: i2c: Add LPS001WP to the Trivial
+ Devices list
+Message-ID: <20130904151159.GA8980@lee--X1>
+References: <1378302655-13258-1-git-send-email-lee.jones@linaro.org>
+ <20130904142422.GM18206@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130904142422.GM18206@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-08-13 17:03:16, Andy Lutomirski wrote:
-> Writes via mmap currently update mtime and ctime in ->page_mkwrite.
-> This hurts both throughput and latency.  In workloads that dirty a
-> large number of mmapped pages, ->page_mkwrite can be hot and
-> file_update_time is slow and scales poorly.  Updating timestamps can
-> also sleep, which hurts latency for real-time workloads.
-  It would help to make your case if you posted the latency comparison
-before & after the patchset in this introductory email. We can then see
-how significant is the reduction of latency...
+> Cheers for producing a binding.
+> 
+> On Wed, Sep 04, 2013 at 02:50:55PM +0100, Lee Jones wrote:
+> > LPS001WP is a Pressure and Temperature sensor.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > index ad6a738..6038807e6 100644
+> > --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> > @@ -57,6 +57,7 @@ st-micro,24c256		i2c serial eeprom  (24cxx)
+> >  stm,m41t00		Serial Access TIMEKEEPER
+> >  stm,m41t62		Serial real-time clock (RTC) with alarm
+> >  stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
+> > +stm,lps001wp		Pressure and Temperature sensor
+> 
+> As I hinted at in the other thread [1], I don't think this can be
+> documented as a trivial binding -- the driver expects a couple of
+> regulators which should be described in the binding (or the driver
+> shouldn't be using them...).
 
-								Honza
+Surely all devices need to be powered and would subsequently require a
+regulator of one description or other? We don't really *need* to
+manually enable it on my platform but that's because it's 'always
+on', but we do anyway for completeness.
+
+Would a (regulator: vdd) note in this patch be suitable? It seems a
+shame to have to produce a boilerplate binding entry for the sake of a
+regulator.
+
+Wolfram, what's the common procedure in cases such as these?
+
+> Also, in the other thread the "st," prefix was used [2], while "stm," is
+> listed at the prefix in the binding. As far as I can see, "st," should
+> be used, as it's in vendor-prefixes and "stm," is not.
+> 
+> I'm happy to cook up a patch adding deprecation notes and corrected
+> strings for the existing incorrect "stm," bindings.
+
+Sure, feel free.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
