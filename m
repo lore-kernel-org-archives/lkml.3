@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934578Ab3IDI64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:58:56 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:42566 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934449Ab3IDI6x (ORCPT
+	id S934584Ab3IDJAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:00:25 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:39359 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934451Ab3IDJAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:58:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130903224731.GC1412@cmpxchg.org>
-References: <20130826133658.GA357@larmbr-lcx> <20130903224731.GC1412@cmpxchg.org>
-From: Zhan Jianyu <nasa4836@gmail.com>
-Date: Wed, 4 Sep 2013 16:58:12 +0800
-Message-ID: <CAHz2CGXRz4ComkEZZBKknn-7g5fAtGCrKuJ+nrGNKZHsudYbYg@mail.gmail.com>
-Subject: Re: [PATCH RESEND] mm/vmscan : use vmcan_swappiness( ) basing on
- MEMCG config to elimiate unnecessary runtime cost
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, mhocko@suse.cz, Balbir Singh <bsingharora@gmail.com>,
-        kamezawa.hiroyu@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Sep 2013 05:00:22 -0400
+X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 05:00:22 EDT
+Subject: [PATCH] Add an entry in MAINTAINERS for VMware's hypervisor
+ interface
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: Alok Kataria <akataria@vmware.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Doug Covelli <dcovelli@vmware.com>,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Sep 2013 14:23:41 +0530
+Message-ID: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 6:47 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Mon, Aug 26, 2013 at 09:36:58PM +0800, larmbr wrote:
->> Currently, we get the vm_swappiness via vmscan_swappiness(), which
->> calls global_reclaim() to check if this is a global reclaim.
->>
->> Besides, the current implementation of global_reclaim() always returns
->> true for the !CONFIG_MEGCG case, and judges the other case by checking
->> whether scan_control->target_mem_cgroup is null or not.
->>
->> Thus, we could just use two versions of vmscan_swappiness() based on
->> MEMCG Kconfig , to eliminate the unnecessary run-time cost for
->> the !CONFIG_MEMCG at all, and to squash all memcg-related checking
->> into the CONFIG_MEMCG version.
->
-> The compiler can easily detect that global_reclaim() always returns
-> true for !CONFIG_MEMCG during compile time and not even generate a
-> branch for this.
->
+Hey,
 
-Hi, Johannes Weiner,
+This change adds an entry to the maintainers file to explicitly state
+that any changes to vmware.c should be sent to the authors of the file
+as well.
 
-Thanks for your comment ;)
+If you are thinking why do this now, off late we have seen quite a few
+changes that touched the "arch/x86/kernel/cpu/vmware.c" file but were
+not directed to me, someone else made me aware of those changes. It
+could be that my use of different SOB lines "Alok N Kataria" vs "Alok
+Kataria" confuses get_maintainer.pl, but adding this entry in
+MAINTAINERS should solve the problem at hand. For one of the changes
+[1], I did verify that get_maintainer.pl, now expectedly includes me in
+the cc list.
 
-Andrew has pointed this out and this patch is abandoned.
+Thanks,
+Alok 
+
+[1] http://marc.info/?l=linux-kernel&m=137571112610984&w=2
+
+>From : Alok Kataria <akataria@vmware.com>
+
+Add an entry in MAINTAINERS file to reflect the authors of a file.
+
+Signed-off-by: Alok Kataria <akataria@vmware.com>
+
+Index: linux-2.6/MAINTAINERS
+===================================================================
+--- linux-2.6.orig/MAINTAINERS	2013-09-04 14:07:34.404027068 +0530
++++ linux-2.6/MAINTAINERS	2013-09-04 14:20:39.714026943 +0530
+@@ -9038,6 +9038,12 @@
+ F:	drivers/vme/
+ F:	include/linux/vme*
+ 
++VMWARE HYPERVISOR INTERFACE
++M: Alok Kataria <akataria@vmware.com>
++L: virtualization@lists.linux-foundation.org
++S: Supported
++F: arch/x86/kernel/cpu/vmware.c
++
+ VMWARE VMXNET3 ETHERNET DRIVER
+ M:	Shreyas Bhatewara <sbhatewara@vmware.com>
+ M:	"VMware, Inc." <pv-drivers@vmware.com>
 
 
---
 
-Regards,
-Zhan Jianyu
