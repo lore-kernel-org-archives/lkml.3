@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab3IDSJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:09:08 -0400
-Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:30822 "EHLO
-	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753493Ab3IDSJG (ORCPT
+	id S1756160Ab3IDSMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:12:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53310 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3IDSMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:09:06 -0400
-Date: Wed, 4 Sep 2013 18:09:04 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Will Deacon <will.deacon@arm.com>
-cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-In-Reply-To: <20130904174624.GB5599@mudshark.cambridge.arm.com>
-Message-ID: <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com>
-References: <20130828193457.140443630@linux.com> <00000140c67834c9-cc2bec76-2d70-48d1-a35b-6e2d5dedf22b-000000@email.amazonses.com> <20130830100105.GF25628@mudshark.cambridge.arm.com> <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
- <20130904093335.GA8007@mudshark.cambridge.arm.com> <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com> <20130904142324.GD3643@mudshark.cambridge.arm.com> <00000140e97747d2-ee164a4d-d692-409a-a919-083eff3a41ca-000000@email.amazonses.com>
- <20130904174624.GB5599@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 4 Sep 2013 14:12:05 -0400
+Message-ID: <522777F1.50502@wwwdotorg.org>
+Date: Wed, 04 Sep 2013 12:12:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.35
+To: Gleb Natapov <gleb@redhat.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [GIT PULL] KVM changes for 3.12
+References: <20130903121046.GE22899@redhat.com> <20130904101826.GA2744@ulmo> <20130904103855.GC7402@redhat.com>
+In-Reply-To: <20130904103855.GC7402@redhat.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Sep 2013, Will Deacon wrote:
+On 09/04/2013 04:38 AM, Gleb Natapov wrote:
+> Copying Marek, Aneesh and Alex since this came through PPC kvm tree.
+> 
+> On Wed, Sep 04, 2013 at 12:18:28PM +0200, Thierry Reding wrote:
+>> On Tue, Sep 03, 2013 at 03:10:46PM +0300, Gleb Natapov wrote:
+>> [...]
+>>> Aneesh Kumar K.V (5):
+>>>       mm/cma: Move dma contiguous changes into a seperate config
+>>
+>> Hi Gleb,
+>>
+>> This commit is going to cause runtime regressions on various ARM
+>> platforms because it renames a symbol but fails to update all default
+>> configurations that select the symbol. A quick grep shows that three ARM
+>> platforms are affected:
+>>
+>> 	$ git grep CONFIG_CMA=y
+>> 	arch/arm/configs/keystone_defconfig:CONFIG_CMA=y
+>> 	arch/arm/configs/omap2plus_defconfig:CONFIG_CMA=y
+>> 	arch/arm/configs/tegra_defconfig:CONFIG_CMA=y
+>>
+>> I've been digging around a bit and it seems like the original patch from
+>> Aneesh had the defconfig changes but they were dropped because they "...
+>> require separate handling to avoid pointless merge conflicts."[0]
+>>
+> Marek, that's your words. What do you think about ARM problem?
+> 
+>> While I can't speak for Keystone or OMAP, at least on Tegra this causes
+>> issues because we use CMA for framebuffer allocation. Since we only have
+>> CMA selected but not the new DMA_CMA, large DMA allocations will fail.
+>>
+> Make config suppose to ask you about new option though, does it?
 
-> On ARM, yes. I'm worried that there may be an architecture where the change-
-> or-fail operation would only fail if the access from the interrupt handler
-> *also* used that change-or-fail instruction, which isn't the case with
-> this_cpu_inc.
->
-> I have no idea if such an architecture exists :)
-
-Atomic operations use atomic_t. this_cpu operations can only use regular
-scalars. So the set of variables that are updated by each should be
-distinct.
-
-
-
+"make oldconfig" quite possibly might, but "make tegra_defconfig"
+doesn't, and "make tegra_defconfig; make zImage" is a workflow that has
+historically generated a perfectly working kernel for Tegra, and hence
+people use that flow.
