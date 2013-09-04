@@ -1,90 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934545Ab3IDJGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:06:08 -0400
-Received: from smtp2-1.goneo.de ([212.90.139.83]:33314 "EHLO smtp2-1.goneo.de"
+	id S1762252Ab3IDJHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:07:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26046 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab3IDJGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:06:05 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.74
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-Date: Wed, 04 Sep 2013 11:05:58 +0200
-Message-ID: <3144247.j2q6H0KWZx@lem-wkst-02>
-User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52261BF0.4090106@wwwdotorg.org>
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org>
+	id S1756031Ab3IDJHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 05:07:36 -0400
+Message-ID: <5226F839.4010704@redhat.com>
+Date: Wed, 04 Sep 2013 11:07:05 +0200
+From: =?windows-1252?Q?Jan_Kalu=9Ea?= <jkaluza@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
+        tj@kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v3 1/3] Send loginuid and sessionid in SCM_AUDIT
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com> <1378275261-4553-1-git-send-email-jkaluza@redhat.com> <1378275261-4553-2-git-send-email-jkaluza@redhat.com> <87bo49gifv.fsf@xmission.com>
+In-Reply-To: <87bo49gifv.fsf@xmission.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 September 2013 11:27:12, Stephen Warren wrote:
-> On 09/02/2013 03:25 AM, Lars Poeschel wrote:
-> > Some leagcy drivers currently do this:
-> > 
-> > request_gpio(gpio);
-> > gpio_direction_input(gpio);
-> > request_irq(gpio_to_irq(gpio));
-> > 
-> > In that case request_irq should not fail because the driver is already the
-> > correct owner of this gpio. But if some other entity owns this gpio it
-> > should fail.
-> 
-> Yes.
-> 
-> > Also if I understand you correct the other way round should also possible:
-> > 
-> > request_irq(gpio_to_irq(gpio));
-> > request_gpio(gpio);
-> > gpio_direction_input(gpio);
-> > 
-> > request_irq() also requests the gpio then but the following request_gpio()
-> > should also not fail.
-> 
-> I don't believe that code sequence is currently banned. If we want to
-> ban it, we should document that. Until this is documented as being
-> banned, I think we must fully support that code sequence.
-> 
-> > To have it work that way we have to track the owners of all requested
-> > gpios
-> > somewhere. Or am I wrong here?
-> > Where and how to record these owners? Can gpio system achieve this? gpios
-> > are requested without an owning device.
-> 
-> Yes. But, I believe we need to fully track every GPIO/IRQ owner already
-> right now; if a driver (not the GPIO/IRQ chip driver, but a driver that
-> uses the GPIOs/IRQs) calls gpio_request()/request_irq(), and this patch
-> has already requested them, then we already need to fully track GPIO/IRQ
-> ownership to make sure that the driver's own requests aren't failed
-> because the DT/GPIO core has already requested them on its behalf.
+On 09/04/2013 09:22 AM, Eric W. Biederman wrote:
+> Jan Kaluza <jkaluza@redhat.com> writes:
+>
+>> Server-like processes in many cases need credentials and other
+>> metadata of the peer, to decide if the calling process is allowed to
+>> request a specific action, or the server just wants to log away this
+>> type of information for auditing tasks.
+>>
+>> The current practice to retrieve such process metadata is to look that
+>> information up in procfs with the $PID received over SCM_CREDENTIALS.
+>> This is sufficient for long-running tasks, but introduces a race which
+>> cannot be worked around for short-living processes; the calling
+>> process and all the information in /proc/$PID/ is gone before the
+>> receiver of the socket message can look it up.
+>>
+>> This introduces a new SCM type called SCM_AUDIT to allow the direct
+>> attaching of "loginuid" and "sessionid" to SCM, which is significantly more
+>> efficient and will reliably avoid the race with the round-trip over
+>> procfs.
+>
+> Unless I am misreading something this patch will break the build if
+> CONFIG_AUDITSYSCALL is not defined.
 
-The driver that tries to use the GPIO requested by this patch before HAS to 
-fail. This is exactly the intention of this patch. We don't want the GPIO to 
-be requested any more, if it is used as an interrupt pin.
-To be able to implement the way you proposed some mails before, I have to be 
-able to do some checks that to my opinion (and if I understand Linus 
-correctly) aren't possible at the moment. So I asked, where and how to record 
-these owners of the GPIOs? And can the GPIO system achieve this and how? Can 
-you please shed some light on this! Thanks!
+It does build. In this case, audit_get_loginuid returns INVALID_UID and 
+audit_get_sessionid returns -1.
+
+Jan Kaluza
+
+> Eric
+>
+>
+>> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
+>> ---
+>>   include/linux/socket.h |  6 ++++++
+>>   include/net/af_unix.h  |  2 ++
+>>   include/net/scm.h      | 28 ++++++++++++++++++++++++++--
+>>   net/unix/af_unix.c     |  7 +++++++
+>>   4 files changed, 41 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/socket.h b/include/linux/socket.h
+>> index 445ef75..505047a 100644
+>> --- a/include/linux/socket.h
+>> +++ b/include/linux/socket.h
+>> @@ -130,6 +130,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
+>>   #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
+>>   #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
+>>   #define SCM_SECURITY	0x03		/* rw: security label		*/
+>> +#define SCM_AUDIT	0x04		/* rw: struct uaudit		*/
+>>
+>>   struct ucred {
+>>   	__u32	pid;
+>> @@ -137,6 +138,11 @@ struct ucred {
+>>   	__u32	gid;
+>>   };
+>>
+>> +struct uaudit {
+>> +	__u32	loginuid;
+>> +	__u32	sessionid;
+>> +};
+>> +
+>>   /* Supported address families. */
+>>   #define AF_UNSPEC	0
+>>   #define AF_UNIX		1	/* Unix domain sockets 		*/
+>> diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+>> index a175ba4..3b9d22a 100644
+>> --- a/include/net/af_unix.h
+>> +++ b/include/net/af_unix.h
+>> @@ -36,6 +36,8 @@ struct unix_skb_parms {
+>>   	u32			secid;		/* Security ID		*/
+>>   #endif
+>>   	u32			consumed;
+>> +	kuid_t			loginuid;
+>> +	unsigned int		sessionid;
+>>   };
+>>
+>>   #define UNIXCB(skb) 	(*(struct unix_skb_parms *)&((skb)->cb))
+>> diff --git a/include/net/scm.h b/include/net/scm.h
+>> index 8de2d37..e349a25 100644
+>> --- a/include/net/scm.h
+>> +++ b/include/net/scm.h
+>> @@ -6,6 +6,7 @@
+>>   #include <linux/security.h>
+>>   #include <linux/pid.h>
+>>   #include <linux/nsproxy.h>
+>> +#include <linux/audit.h>
+>>
+>>   /* Well, we should have at least one descriptor open
+>>    * to accept passed FDs 8)
+>> @@ -18,6 +19,11 @@ struct scm_creds {
+>>   	kgid_t	gid;
+>>   };
+>>
+>> +struct scm_audit {
+>> +	kuid_t loginuid;
+>> +	unsigned int sessionid;
+>> +};
+>> +
+>>   struct scm_fp_list {
+>>   	short			count;
+>>   	short			max;
+>> @@ -28,6 +34,7 @@ struct scm_cookie {
+>>   	struct pid		*pid;		/* Skb credentials */
+>>   	struct scm_fp_list	*fp;		/* Passed files		*/
+>>   	struct scm_creds	creds;		/* Skb credentials	*/
+>> +	struct scm_audit	audit;		/* Skb audit	*/
+>>   #ifdef CONFIG_SECURITY_NETWORK
+>>   	u32			secid;		/* Passed security ID 	*/
+>>   #endif
+>> @@ -58,6 +65,13 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
+>>   	scm->creds.gid = gid;
+>>   }
+>>
+>> +static inline void scm_set_audit(struct scm_cookie *scm,
+>> +				    kuid_t loginuid, unsigned int sessionid)
+>> +{
+>> +	scm->audit.loginuid = loginuid;
+>> +	scm->audit.sessionid = sessionid;
+>> +}
+>> +
+>>   static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+>>   {
+>>   	put_pid(scm->pid);
+>> @@ -77,8 +91,12 @@ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
+>>   	memset(scm, 0, sizeof(*scm));
+>>   	scm->creds.uid = INVALID_UID;
+>>   	scm->creds.gid = INVALID_GID;
+>> -	if (forcecreds)
+>> -		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
+>> +	if (forcecreds) {
+>> +		scm_set_cred(scm, task_tgid(current), current_uid(),
+>> +			     current_gid());
+>> +		scm_set_audit(scm, audit_get_loginuid(current),
+>> +			      audit_get_sessionid(current));
+>> +	}
+>>   	unix_get_peersec_dgram(sock, scm);
+>>   	if (msg->msg_controllen <= 0)
+>>   		return 0;
+>> @@ -123,7 +141,13 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>>   			.uid = from_kuid_munged(current_ns, scm->creds.uid),
+>>   			.gid = from_kgid_munged(current_ns, scm->creds.gid),
+>>   		};
+>> +		struct uaudit uaudits = {
+>> +			.loginuid = from_kuid_munged(current_ns,
+>> +						     scm->audit.loginuid),
+>> +			.sessionid = scm->audit.sessionid,
+>> +		};
+>>   		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(ucreds), &ucreds);
+>> +		put_cmsg(msg, SOL_SOCKET, SCM_AUDIT, sizeof(uaudits), &uaudits);
+>>   	}
+>>
+>>   	scm_destroy_cred(scm);
+>> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+>> index 86de99a..c410f76 100644
+>> --- a/net/unix/af_unix.c
+>> +++ b/net/unix/af_unix.c
+>> @@ -1393,6 +1393,8 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
+>>   	UNIXCB(skb).pid  = get_pid(scm->pid);
+>>   	UNIXCB(skb).uid = scm->creds.uid;
+>>   	UNIXCB(skb).gid = scm->creds.gid;
+>> +	UNIXCB(skb).loginuid = scm->audit.loginuid;
+>> +	UNIXCB(skb).sessionid = scm->audit.sessionid;
+>>   	UNIXCB(skb).fp = NULL;
+>>   	if (scm->fp && send_fds)
+>>   		err = unix_attach_fds(scm, skb);
+>> @@ -1416,6 +1418,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
+>>   	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
+>>   		UNIXCB(skb).pid  = get_pid(task_tgid(current));
+>>   		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
+>> +		UNIXCB(skb).loginuid = audit_get_loginuid(current);
+>> +		UNIXCB(skb).sessionid = audit_get_sessionid(current);
+>>   	}
+>>   }
+>>
+>> @@ -1812,6 +1816,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
+>>   		memset(&tmp_scm, 0, sizeof(tmp_scm));
+>>   	}
+>>   	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
+>> +	scm_set_audit(siocb->scm, UNIXCB(skb).loginuid, UNIXCB(skb).sessionid);
+>>   	unix_set_secdata(siocb->scm, skb);
+>>
+>>   	if (!(flags & MSG_PEEK)) {
+>> @@ -1993,6 +1998,8 @@ again:
+>>   		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
+>>   			/* Copy credentials */
+>>   			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
+>> +			scm_set_audit(siocb->scm, UNIXCB(skb).loginuid,
+>> +				      UNIXCB(skb).sessionid);
+>>   			check_creds = 1;
+>>   		}
 
