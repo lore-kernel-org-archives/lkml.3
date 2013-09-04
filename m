@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab3IDSMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:12:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53310 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab3IDSMF (ORCPT
+	id S1759392Ab3IDSM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:12:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56881 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498Ab3IDSMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:12:05 -0400
-Message-ID: <522777F1.50502@wwwdotorg.org>
-Date: Wed, 04 Sep 2013 12:12:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 14:12:22 -0400
+Date: Wed, 4 Sep 2013 19:12:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: rwheeler@redhat.com, avati@redhat.com, bfoster@redhat.com,
+        dhowells@redhat.com, eparis@redhat.com, raven@themaw.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 01/10] vfs: add d_walk()
+Message-ID: <20130904181219.GJ13318@ZenIV.linux.org.uk>
+References: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
+ <1378303556-7220-2-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: [GIT PULL] KVM changes for 3.12
-References: <20130903121046.GE22899@redhat.com> <20130904101826.GA2744@ulmo> <20130904103855.GC7402@redhat.com>
-In-Reply-To: <20130904103855.GC7402@redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378303556-7220-2-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 04:38 AM, Gleb Natapov wrote:
-> Copying Marek, Aneesh and Alex since this came through PPC kvm tree.
+On Wed, Sep 04, 2013 at 04:05:47PM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> On Wed, Sep 04, 2013 at 12:18:28PM +0200, Thierry Reding wrote:
->> On Tue, Sep 03, 2013 at 03:10:46PM +0300, Gleb Natapov wrote:
->> [...]
->>> Aneesh Kumar K.V (5):
->>>       mm/cma: Move dma contiguous changes into a seperate config
->>
->> Hi Gleb,
->>
->> This commit is going to cause runtime regressions on various ARM
->> platforms because it renames a symbol but fails to update all default
->> configurations that select the symbol. A quick grep shows that three ARM
->> platforms are affected:
->>
->> 	$ git grep CONFIG_CMA=y
->> 	arch/arm/configs/keystone_defconfig:CONFIG_CMA=y
->> 	arch/arm/configs/omap2plus_defconfig:CONFIG_CMA=y
->> 	arch/arm/configs/tegra_defconfig:CONFIG_CMA=y
->>
->> I've been digging around a bit and it seems like the original patch from
->> Aneesh had the defconfig changes but they were dropped because they "...
->> require separate handling to avoid pointless merge conflicts."[0]
->>
-> Marek, that's your words. What do you think about ARM problem?
+> This one replaces three instances open coded tree walking (have_submounts,
+> select_parent, d_genocide) with a common helper.
 > 
->> While I can't speak for Keystone or OMAP, at least on Tegra this causes
->> issues because we use CMA for framebuffer allocation. Since we only have
->> CMA selected but not the new DMA_CMA, large DMA allocations will fail.
->>
-> Make config suppose to ask you about new option though, does it?
+> In addition to slightly reducing the kernel size, this simplifies the
+> callers and makes them less bug prone.
 
-"make oldconfig" quite possibly might, but "make tegra_defconfig"
-doesn't, and "make tegra_defconfig; make zImage" is a workflow that has
-historically generated a perfectly working kernel for Tegra, and hence
-people use that flow.
+Two notes:
+
+1) I'd probably kill select_parent() - it made sense when it was a huge
+function called in a loop, but when it's a simple call of d_walk()...
+Might as well do it directly in shrink_dcache_parent().  Moreover, in
+that case we'd be free to embed list_head into your struct select_data,
+rather than passing pointers.
+
+2) I'm not sure we need the "leave" callback at all; the only user is
+d_genocide() and AFAICS it can bloody well be done as part of
+d_genocide_check() - we care about having it done to all nodes in
+the tree, but we don't really care about the order in which it's
+done...
