@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934584Ab3IDJAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:00:25 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:39359 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934451Ab3IDJAW (ORCPT
+	id S1762129Ab3IDJCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:02:53 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:36675 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab3IDJCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:00:22 -0400
-X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 05:00:22 EDT
-Subject: [PATCH] Add an entry in MAINTAINERS for VMware's hypervisor
- interface
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: Alok Kataria <akataria@vmware.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Doug Covelli <dcovelli@vmware.com>,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Sep 2013 14:23:41 +0530
-Message-ID: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Sep 2013 05:02:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <5226EAAE.6090500@asianux.com>
+References: <52005571.4080704@asianux.com>
+	<CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
+	<52268800.2010200@asianux.com>
+	<CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com>
+	<5226EAAE.6090500@asianux.com>
+Date: Wed, 4 Sep 2013 11:02:50 +0200
+X-Google-Sender-Auth: GcoDa56d3b7Y_cm4HvcDfPxym0A
+Message-ID: <CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for
+ "uapi/Kbuild" and "uapi/linux/Kbuild"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Wed, Sep 4, 2013 at 10:09 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> On 09/04/2013 03:02 PM, Geert Uytterhoeven wrote:
+>> On Wed, Sep 4, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> On 09/04/2013 12:41 AM, Geert Uytterhoeven wrote:
+>>>> On Tue, Aug 6, 2013 at 3:46 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>> --- a/include/uapi/Kbuild
+>>>>> +++ b/include/uapi/Kbuild
+>>>>> @@ -1,7 +1,6 @@
+>>>>>  # UAPI Header export list
+>>>>> -# Top-level Makefile calls into asm-$(ARCH)
+>>>>> -# List only non-arch directories below
+>>>>> -
+>>>>> +# Except "linux/", UAPI means Universal API.
+>>>>
+>>>> Sorry for my silly question, but what's the purpose of this "Universal
+>>>> API" comment?
+>>>>
+>>>
+>>> Firstly, at least for me, I don't think it is a silly question (maybe
+>>> it means I should give additional explanations).  :-)
+>>>
+>>> I 'guess' the "Universal API" means:
+>>>
+>>>   "the API which can be used under multiple OS (independent from Linux), it may be used under kernel mode or user mode".
+>>>
+>>> It is just my 'guess', welcome additional suggestions or completions by
+>>> any members.
+>>>
+>>> When we get this correct additional explanation after discussing, if
+>>> suitable, I should add the final explanation to current patch.
+>>
+>> Thanks. As this is not related at all to Linux, I don't see a reason
+>> to add this comment.
+>>
+>> Here, "UAPI" means "userspace API" only.
+>
+> Hmm... why we need "uapi/linux/" ?  (I can not find some related
+> documents, so I have to 'guess').
 
-This change adds an entry to the maintainers file to explicitly state
-that any changes to vmware.c should be sent to the authors of the file
-as well.
+The "uapi" subdirectories are there to distinguish userspace headers from
+kernelspace headers, and allow both to live in the kernel source tree.
 
-If you are thinking why do this now, off late we have seen quite a few
-changes that touched the "arch/x86/kernel/cpu/vmware.c" file but were
-not directed to me, someone else made me aware of those changes. It
-could be that my use of different SOB lines "Alok N Kataria" vs "Alok
-Kataria" confuses get_maintainer.pl, but adding this entry in
-MAINTAINERS should solve the problem at hand. For one of the changes
-[1], I did verify that get_maintainer.pl, now expectedly includes me in
-the cc list.
+When running "make headers_install", the (processed) headers in the
+various "uapi" subdirectories are copied to /usr/include.
+Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
+In userspace there are no "uapi" subdirectories anymore.
 
-Thanks,
-Alok 
+Gr{oetje,eeting}s,
 
-[1] http://marc.info/?l=linux-kernel&m=137571112610984&w=2
+                        Geert
 
->From : Alok Kataria <akataria@vmware.com>
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Add an entry in MAINTAINERS file to reflect the authors of a file.
-
-Signed-off-by: Alok Kataria <akataria@vmware.com>
-
-Index: linux-2.6/MAINTAINERS
-===================================================================
---- linux-2.6.orig/MAINTAINERS	2013-09-04 14:07:34.404027068 +0530
-+++ linux-2.6/MAINTAINERS	2013-09-04 14:20:39.714026943 +0530
-@@ -9038,6 +9038,12 @@
- F:	drivers/vme/
- F:	include/linux/vme*
- 
-+VMWARE HYPERVISOR INTERFACE
-+M: Alok Kataria <akataria@vmware.com>
-+L: virtualization@lists.linux-foundation.org
-+S: Supported
-+F: arch/x86/kernel/cpu/vmware.c
-+
- VMWARE VMXNET3 ETHERNET DRIVER
- M:	Shreyas Bhatewara <sbhatewara@vmware.com>
- M:	"VMware, Inc." <pv-drivers@vmware.com>
-
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
