@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934937Ab3IDO4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:56:10 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:63939 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762628Ab3IDO4I (ORCPT
+	id S934957Ab3IDO4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:56:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17769 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762830Ab3IDO4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:56:08 -0400
-Date: Wed, 4 Sep 2013 10:55:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <20130904145559.GB25788@mtj.dyndns.org>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
- <20130903141824.GD10522@htj.dyndns.org>
- <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
- <20130903182731.GA27092@mtj.dyndns.org>
- <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Sep 2013 10:56:45 -0400
+X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=TKhX5mLeURAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ftMOpXKlpS4A:10 a=VnNF1IyMAAAA:8 a=sQNCpU6w5R_T-ydTkxoA:9 a=jeBq3FmKZ4MA:10 a=XRkXRusqWGjDEmJ2:21 a=AkA9etonYUd58gPi:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130904143703.256708017@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 04 Sep 2013 10:36:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 18/18] ftrace: Print a message when the rcu checker is disabled
+References: <20130904143552.456506259@goodmis.org>
+Content-Disposition: inline; filename=0017-ftrace-Print-a-message-when-the-rcu-checker-is-disab.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-On Wed, Sep 04, 2013 at 09:22:57AM +0200, Alexander Gordeev wrote:
-> I think a general approach that will cover it all (including ICH and undesired
-> sharing of interrupt vectors) - start MME from roundup_pow_of_two(n_ports) and
-> ensure MRSM bit is unset. If not - double MME and retry. If still not and the
-> limit is reached - fall back to single MSI.
-> 
-> Makes sense?
+Let the user know that the RCU safety checker for function tracing
+has been disabled. The checker only runs when the user specifically
+configures it in the kernel, and this is done to search for locations
+in the kernel that may be unsafe for a function trace callback to
+use rcu_read_lock()s. But if things like function graph tracing is
+started, which can live lock the machine when the checker is running,
+it is disabled. It would be nice if the kernel let the user know that
+the checker is disabled, and when it is re-enabled again.
 
-Ugh... I really don't want this sort of retry loop.  I'm still a bit
-lost on why this is necessary.  Can you please elaborate?
+As the checker only gets disabled and re-enabled by user actions
+(starting and stoping the function graph tracer or the irqsoff tracer)
+it is fine to have a printk display that it is disabled or not.
 
-Thanks.
+Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_functions.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 1dec979..57e32e6 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -569,6 +569,8 @@ void ftrace_unsafe_rcu_checker_disable(void)
+ 	atomic_inc(&ftrace_unsafe_rcu_disabled);
+ 	/* Make sure the update is seen immediately */
+ 	smp_mb__after_atomic_inc();
++	pr_info("Disabled FTRACE RCU checker (%pS)\n",
++		__builtin_return_address(0));
+ }
+ 
+ void ftrace_unsafe_rcu_checker_enable(void)
+@@ -576,6 +578,8 @@ void ftrace_unsafe_rcu_checker_enable(void)
+ 	atomic_dec(&ftrace_unsafe_rcu_disabled);
+ 	/* Make sure the update is seen immediately */
+ 	smp_mb__after_atomic_dec();
++	pr_info("Enabled FTRACE RCU checker (%pS)\n",
++		__builtin_return_address(0));
+ }
+ 
+ static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
 -- 
-tejun
+1.7.10.4
+
+
