@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964867Ab3IDRkL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:40:11 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:36725 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763205Ab3IDRkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:40:09 -0400
-Message-ID: <52277073.4090500@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 23:10:03 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com,
-        Aravinda Prasad <aravinda@linux.vnet.ibm.com>,
-        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] SDT markers listing by perf
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <52259B97.9010701@linux.vnet.ibm.com> <87eh95t7cu.fsf@sejong.aot.lge.com>
-In-Reply-To: <87eh95t7cu.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1763179Ab3IDRpL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:45:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34649 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756932Ab3IDRpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:45:09 -0400
+Message-ID: <1378314979.1787.24.camel@joe-AO722>
+Subject: Re: [PATCH] Add an entry in MAINTAINERS for VMware's hypervisor
+ interface
+From: Joe Perches <joe@perches.com>
+To: Alok Kataria <akataria@vmware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Doug Covelli <dcovelli@vmware.com>,
+        virtualization@lists.linux-foundation.org
+In-Reply-To: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
+References: <1378284821.9739.7404.camel@akataria-dtop.eng.vmware.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 04 Sep 2013 10:16:19 -0700
+Mime-Version: 1.0
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090417-2000-0000-0000-00000D96C4C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 12:13 PM, Namhyung Kim wrote:
-> On Tue, 03 Sep 2013 13:49:35 +0530, Hemant wrote:
->> On 09/03/2013 01:06 PM, Hemant Kumar wrote:
->>> This patch will enable perf to list all the sdt markers present
->>> in an elf file. The markers are present in the .note.stapsdt section
->>> of the elf. We can traverse through this section and collect the
->>> required info about the markers.
->>> This hasn't been thoroughly tested with the other
->>> options of perf.
->>> ----
->>> Usage :
->>> ./perf probe --list -x /lib64/libc.so.6
->> There is a mismatch between usage and the patch here. This should be:
->> perf probe --list -S /lib64/libc.so.6
-> I guess it should be
->
->    perf probe -S -x /lib64/libc.so.6
+On Wed, 2013-09-04 at 14:23 +0530, Alok Kataria wrote:
+> Hey,
+> 
+> This change adds an entry to the maintainers file to explicitly state
+> that any changes to vmware.c should be sent to the authors of the file
+> as well.
 
-Yes, missed the -x option.
+It never hurts to add MAINTAINER entries.
 
-Thanks
-Hemant
+> If you are thinking why do this now, off late we have seen quite a few
+> changes that touched the "arch/x86/kernel/cpu/vmware.c" file but were
+> not directed to me, someone else made me aware of those changes.
 
->
->
-> Thanks,
-> Namhyung
->
+Many people don't use get_maintainer
+
+> It
+> could be that my use of different SOB lines "Alok N Kataria" vs "Alok
+> Kataria" confuses get_maintainer.pl,
+
+That shouldn't be a problem unless the email addresses are
+also different.
+
+> +++ linux-2.6/MAINTAINERS	2013-09-04 14:20:39.714026943 +0530
+[]
+> +VMWARE HYPERVISOR INTERFACE
+> +M: Alok Kataria <akataria@vmware.com>
+> +L: virtualization@lists.linux-foundation.org
+> +S: Supported
+> +F: arch/x86/kernel/cpu/vmware.c
+> +
+
+It'd be nicer to use tabs after the colon
+
 
