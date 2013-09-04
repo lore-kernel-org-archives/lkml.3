@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3IDSMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 14:12:34 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38558 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab3IDSMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 14:12:31 -0400
-Message-ID: <522777FF.2040906@linux.vnet.ibm.com>
-Date: Wed, 04 Sep 2013 23:42:15 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Wielaard <mjw@redhat.com>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
-Subject: Re: [RFC PATCH 0/2] Perf support to SDT markers
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com> <5225E2C5.3080001@linux.vnet.ibm.com>  <87a9jtt72j.fsf@sejong.aot.lge.com> <1378283148.4321.16.camel@bordewijk.wildebeest.org>
-In-Reply-To: <1378283148.4321.16.camel@bordewijk.wildebeest.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090417-0260-0000-0000-000003924928
+	id S1759885Ab3IDSN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 14:13:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758792Ab3IDSN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 14:13:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com>
+References: <CANP1eJEo_dNyYU+ZdvrwKfFPihig9m-Yf_-bUoXym-MF5bGnQg@mail.gmail.com> <cover.1375999914.git.milosz@adfin.com> <306cbe63f85921ad40b00e3c7071be19cb6adf04.1375999914.git.milosz@adfin.com> <18832.1378311843@warthog.procyon.org.uk> <CANP1eJFKGD_h6rcWMWpxp3yOD+rz6p2P0B+2CTcy1taDwM9rdg@mail.gmail.com> <18284.1378315570@warthog.procyon.org.uk>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: dhowells@redhat.com, Hongyi Jia <jiayisuse@gmail.com>,
+        ceph-devel <ceph-devel@vger.kernel.org>, Sage Weil <sage@inktank.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] new fscache interface to check cache consistency
+Date: Wed, 04 Sep 2013 19:13:20 +0100
+Message-ID: <16226.1378318400@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 01:55 PM, Mark Wielaard wrote:
-> On Wed, 2013-09-04 at 15:49 +0900, Namhyung Kim wrote:
->> On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
->>> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
->>>> Indeed, and also I'd like to know what versions of SDT this support,
->>>> and where we can see the technical document of that. As far as I know,
->>>> the previous(?) SDT implementation also involves ugly semaphores.
->>>> Have that already gone?
->> It seems it's not. I see the SDT v3 document still mentions semaphores.
-> It mentions them, but should normally not be used. They are there for
-> dtrace (source) compatibility. And you don't have to use them.
->
-> Since normally a SDT probe marker is just a NOP it doesn't have any
-> overhead. But if you want to add complicated arguments that you would
-> normally not generate in your code, then you might want to add a
-> semaphore. That way you can have probes with a bit more overhead that
-> still have zero overhead when not being probed.
->
-> Note that if you use the normal DTRACE_PROBE macros no semaphore will be
-> inserted. And you can opt to not support probes that have a semaphore in
-> perf if you think that is easier (just check the semaphore link-time
-> address for the probe, it should normally be zero). Just warn: "No way I
-> am going to probe something that might have a little extra overhead! I
-> am no debugger..." :)
+Milosz Tanski <milosz@adfin.com> wrote:
 
-I agree. There will be an extra overhead but there may be some important 
-markers (on which we need to probe) may be worth this overhead?
+> Is it as simple as stick a mutex at the top of the
+> __fscache_check_consistency function before we try to find the object?
 
-Thanks
-Hemant
+You can lock a mutex in a function, but where are you actually going to place
+the mutex struct?  And what other code is going to take it?  To do this, you'd
+have to place the mutex struct in fscache_cookie.  The problem is that you
+have to protect the pointer from fscache_cookie to fscache_object - so placing
+the mutex in fscache_object doesn't help.
 
->
->>> This link shows an example of marker probing with Systemtap:
->>> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
->> I think the link below would be more helpful for us :)
->>
->> http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
-> Yes, that should be the canonical description.
->
-> Cheers,
->
-> Mark
->
-
+David
