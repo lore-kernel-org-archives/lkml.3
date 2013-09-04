@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934348Ab3IDFr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:47:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62702 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934173Ab3IDFry (ORCPT
+	id S934385Ab3IDFsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:48:12 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52823 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934173Ab3IDFsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:47:54 -0400
+	Wed, 4 Sep 2013 01:48:07 -0400
 From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: benve@cisco.com, ssujith@cisco.com, nistrive@cisco.com, umalhi@cisco.com,
         Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 3/5] driver/net: enic: Try DMA 64 first, then failover to DMA
-Date: Wed,  4 Sep 2013 11:17:16 +0530
-Message-Id: <1378273638-7780-4-git-send-email-govindarajulu90@gmail.com>
+Subject: [PATCH net-next 5/5] driver/net: enic: update enic maintainers and driver
+Date: Wed,  4 Sep 2013 11:17:18 +0530
+Message-Id: <1378273638-7780-6-git-send-email-govindarajulu90@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
 References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
@@ -21,51 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In servers with more than 1.1 TB of RAM, the existing 40/32 bit DMA
-could cause failure as the DMA-able address could go outside the range
-addressable using 40/32 bits.
-
-The following patch first tried 64 bit DMA if possible, failover to 32
-bit.
-
-Signed-off-by: Sujith Sankar <ssujith@cisco.com>
-Signed-off-by: Christian Benvenuti <benve@cisco.com>
 Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+Signed-off-by: Sujith Sankar <ssujith@cisco.com>
+Signed-off-by: Nishank Trivedi <nistrive@cisco.com>
+Signed-off-by: Christian Benvenuti <benve@cisco.com>
 ---
- drivers/net/ethernet/cisco/enic/enic_main.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ MAINTAINERS                            | 3 ++-
+ drivers/net/ethernet/cisco/enic/enic.h | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-index 93898ba..7b756cf9 100644
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -2080,11 +2080,11 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	pci_set_master(pdev);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 705bb96..ecb83cd 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2076,7 +2076,8 @@ F:	drivers/usb/chipidea/
  
- 	/* Query PCI controller on system for DMA addressing
--	 * limitation for the device.  Try 40-bit first, and
-+	 * limitation for the device.  Try 64-bit first, and
- 	 * fail to 32-bit.
- 	 */
+ CISCO VIC ETHERNET NIC DRIVER
+ M:	Christian Benvenuti <benve@cisco.com>
+-M:	Roopa Prabhu <roprabhu@cisco.com>
++M:	Sujith Sankar <ssujith@cisco.com>
++M:	Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+ M:	Neel Patel <neepatel@cisco.com>
+ M:	Nishank Trivedi <nistrive@cisco.com>
+ S:	Supported
+diff --git a/drivers/net/ethernet/cisco/enic/enic.h b/drivers/net/ethernet/cisco/enic/enic.h
+index 34b637a..e9f7c65 100644
+--- a/drivers/net/ethernet/cisco/enic/enic.h
++++ b/drivers/net/ethernet/cisco/enic/enic.h
+@@ -32,7 +32,7 @@
  
--	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(40));
-+	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
- 	if (err) {
- 		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
- 		if (err) {
-@@ -2098,10 +2098,10 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 			goto err_out_release_regions;
- 		}
- 	} else {
--		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(40));
-+		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
- 		if (err) {
- 			dev_err(dev, "Unable to obtain %u-bit DMA "
--				"for consistent allocations, aborting\n", 40);
-+				"for consistent allocations, aborting\n", 64);
- 			goto err_out_release_regions;
- 		}
- 		using_dac = 1;
+ #define DRV_NAME		"enic"
+ #define DRV_DESCRIPTION		"Cisco VIC Ethernet NIC Driver"
+-#define DRV_VERSION		"2.1.1.43"
++#define DRV_VERSION		"2.1.1.50"
+ #define DRV_COPYRIGHT		"Copyright 2008-2013 Cisco Systems, Inc"
+ 
+ #define ENIC_BARS_MAX		6
 -- 
 1.8.4
 
