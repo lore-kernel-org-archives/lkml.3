@@ -1,109 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3IDETZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 00:19:25 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64950 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738Ab3IDETY (ORCPT
+	id S1761340Ab3IDEYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 00:24:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58275 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab3IDEXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 00:19:24 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5226B4C7.9050509@roeck-us.net>
-Date: Tue, 03 Sep 2013 21:19:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Liqin Chen <liqin299@gmail.com>
-CC: Lennox Wu <lennox.wu@gmail.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Remove support for score architecture
-References: <1377914435-24206-1-git-send-email-linux@roeck-us.net> <CAF0htA6gW3h82p2sBBpFEi4s0MkQ-NUn79VXWLieZmYNuUPA6w@mail.gmail.com> <5224247E.3050600@roeck-us.net> <CAF0htA6sYZOvLt_JczGpfjEJZep6cAquJV9tZ2FwYC+C6ngzXQ@mail.gmail.com> <5224CB12.50206@roeck-us.net> <CAFP0e=Gio_o6QFboVGe3aBCM0zFrsrJuNBthj63RXr+=SDPp7Q@mail.gmail.com>
-In-Reply-To: <CAFP0e=Gio_o6QFboVGe3aBCM0zFrsrJuNBthj63RXr+=SDPp7Q@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 4 Sep 2013 00:23:55 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-a5-5226b5d3acd4
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.daniel@samsung.com, kgene.kim@samsung.com,
+        naveenkrishna.ch@gmail.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH 3/3] thermal: samsung: Add TMU support for Exynos5420 SoCs
+Date: Wed, 04 Sep 2013 09:53:49 +0530
+Message-id: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1378268629-2886-1-git-send-email-ch.naveen@samsung.com>
+References: <1377668719-8602-2-git-send-email-ch.naveen@samsung.com>
+ <1378268629-2886-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42JZI2JSp3t5q1qQwYa/ZhYNV0MsNs5Yz2ox
+	/8g5Vos1+38yWfQuuMpmcXnXHDaLz71HGC1mnN/HZLFo239miycP+9gcuDx2zrrL7rF4z0sm
+	j74tqxg9jt/YzuTxeZNcAGsUl01Kak5mWWqRvl0CV8bK+ctYC1aEVmy5tJ+lgfG9WxcjJ4eE
+	gInEl0+r2CFsMYkL99azdTFycQgJLGWUOD7vIRtM0bo9k5ghEtMZJTZNPskE4fQwSVy+dJkJ
+	pIpNwEzi4KLVYKNEBLwkZj28ClbELHCSUeLyr3uMIAlhoMSzE2uYQWwWAVWJdctPgjXwCrhI
+	7Pt7CWgdB9A6BYk5k2xAwpwCrhKtrdtYQGwhgXqJtyePsoPMlBDYxi7x68oCFog5AhLfJh9i
+	geiVldh0gBniakmJgytusExgFF7AyLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzAKTv97
+	NmEH470D1ocYk4HGTWSWEk3OB0ZRXkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6Yklqdmp
+	qQWpRfFFpTmpxYcYmTg4pRoY3ac+XXqnW09z5+7fl18Xsx4WNOblfftARGhF0r5Tu1xrpm1l
+	2v3Tr/Hr19l+z0yMrn/+dlfsqdwMYcuq31XBW6sqJmx8WO0jw/i68OsEuSOvJ1b+sf1wNqc7
+	TD/L+uDzL/4c5uy/3yTPVwj5fS2wafXjwpfbb6xhim9dzadX+3/Jk57tlfFLNymxFGckGmox
+	FxUnAgC9SQPImAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQd3LW9WCDB4s07FouBpisXHGelaL
+	+UfOsVqs2f+TyaJ3wVU2i8u75rBZfO49wmgx4/w+JotF2/4zWzx52MfmwOWxc9Zddo/Fe14y
+	efRtWcXocfzGdiaPz5vkAlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU
+	8hJzU22VXHwCdN0yc4CuUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm
+	rJy/jLVgRWjFlkv7WRoY37t1MXJySAiYSKzbM4kZwhaTuHBvPVsXIxeHkMB0RolNk08yQTg9
+	TBKXL11mAqliEzCTOLhoNTuILSLgJTHr4VWwImaBk4wSl3/dYwRJCAMlnp1YAzaWRUBVYt3y
+	k2ANvAIuEvv+XgJawQG0TkFiziQbkDCngKtEa+s2FhBbSKBe4u3Jo+wTGHkXMDKsYhRNLUgu
+	KE5KzzXSK07MLS7NS9dLzs/dxAiOsWfSOxhXNVgcYhTgYFTi4T1orxYkxJpYVlyZe4hRgoNZ
+	SYQ3wQcoxJuSWFmVWpQfX1Sak1p8iDEZ6KiJzFKiyfnA+M8riTc0NjE3NTa1NLEwMbMkTVhJ
+	nPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBkY1g0+Xwg45/olysH5zkMdN+ILK2RMWdnOm1LHm
+	VFyM2vLwcsc2jteip74tiFfTcty0Zdne/Rc28HKudlnf/t3e4OqfoA/f0l4FLdx+/Wd444pH
+	rNNsTSb5tr5zkJ+XsVHbJv6p/+Utp6Wf+XXePBdYGrbsPJOe7itPi0XTBOcqXUk5PFOFV3WP
+	EktxRqKhFnNRcSIArjm2nvUCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2013 09:54 PM, Liqin Chen wrote:
->
-> 2013/9/3 Guenter Roeck <linux@roeck-us.net <mailto:linux@roeck-us.net>>
->
->     On 09/02/2013 08:18 AM, Lennox Wu wrote:
->
->         Before we start the development of the S+core, Sunplus had licensed
->         ARM and MIPS. We develop S+core for other reason such as the price.
->         Some products on the web of Sunplus adopt S+core , for example
->         the SPV7050.(http://w3.sunplus.__com/products/spv7050.asp <http://w3.sunplus.com/products/spv7050.asp>) These products
->         could still be bought from the market. Some high-end products adopt
->         ARM or MIPS. So, there is no conflict for a company adopts multiple
->         architectures.
->
->         As I said, we recognize that we rarely update because of the limited
->         applications and rare requests from customers. Maybe we don’t
->         understand the culture enough; we think that it is unnecessary if we
->         have no new bugs or new functions, the thought seems wrong. We can
->         commit some patches in the near future.
->
->
->     The point is not about submitting patches, it is about maintaining the code.
->     Even if you don't add functionality, one would expect that you ensure that
->     new kernel versions compile and run on your hardware.
->
->     Since January 2012, 68 patches have been applied to arch/score, pretty
->     much all of them addressing kernel API changes or global cleanup.
->     Only two of them got an Ack by one of the score maintainers.
->     This strongly suggests that you don't keep track of what is going on,
->     and at the very least raises the question if you do compile and test
->     new kernel versions on a regular basis. Even if you do, no one knows
->     about it, because ....
->
->     As part of this process, I would expect the architecture maintainer to
->     accept incoming patches, test the same, and send pull requests to Linus.
->     The last time this happened was early 2011; since then all score patches
->     were sent to Linus through Andrew and a few other maintainers.
->     Actually, I don't see many signoffs from a score maintainer at all,
->     even from the very beginning.
->
->     As pointed out, the MAINTAINERS entry for score points to a
->     non-existing domain, as does the e-mail address of one of the
->     maintainers.
->
->     I would not call that "maintained".
->
->
->
-> Hi Al Viro, Guenter Roeck, Arnd Bergmann and all,
->
-> I still supports the S+core team to maintain their codes, although I
-> left sunplus co. in 2011.
->
-> I keep reading the mailing list and testing these patches for S+core,
-> I think the main problems are they have not echoed to any comments on
-> score's questions. Maybe they think the current situation is good
-> enough for their customers, and they don’t understand the rules of the
-> group enough. Even so, they should update score code to the latest
-> status, include my mail address.
->
-> We will discuss how to maintain the code of S+core. However, if all of
-> you and Linus also think the S+core should be removed from the
-> upstream, we will do it.
->
+This patch adds the neccessary register changes and arch information
+to support Exynos5420 SoCs
+Exynos5420 has 5 TMU channels one for each CPU 0, 1, 2 and 3 and GPU
 
-Trying to build gcc for score says:
+Also updated the Documentation at
+Documentation/devicetree/bindings/thermal/exynos-thermal.txt
 
-*** Configuration score-unknown-elf is obsolete.
-*** Specify --enable-obsolete to build it anyway.
-*** Support will be REMOVED in the next major release of GCC,
-*** unless a maintainer comes forward.
+Note: The platform data structure will be handled properly once the driver
+ moves to complete device driver solution.
 
-That does not sound very encouraging.
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+---
+Changes since v1:
+1. modified the platform data structure in order to pass SHARED flag
+   for channels that need sharing of address space.
+2. https://lkml.org/lkml/2013/8/1/38 is merged into this patch.
+   As the changes are minimum and can be added here.
 
-Guenter
+ .../devicetree/bindings/thermal/exynos-thermal.txt |   39 ++++++
+ drivers/thermal/samsung/exynos_tmu.c               |   14 ++-
+ drivers/thermal/samsung/exynos_tmu.h               |    1 +
+ drivers/thermal/samsung/exynos_tmu_data.c          |  130 ++++++++++++++++++++
+ drivers/thermal/samsung/exynos_tmu_data.h          |    7 ++
+ 5 files changed, 189 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+index 116cca0..d70f2a4 100644
+--- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
++++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+@@ -7,12 +7,23 @@
+ 	       "samsung,exynos4210-tmu"
+ 	       "samsung,exynos5250-tmu"
+ 	       "samsung,exynos5440-tmu"
++	       "samsung,exynos5420-tmu"
+ - interrupt-parent : The phandle for the interrupt controller
+ - reg : Address range of the thermal registers. For soc's which has multiple
+ 	instances of TMU and some registers are shared across all TMU's like
+ 	interrupt related then 2 set of register has to supplied. First set
+ 	belongs	to each instance of TMU and second set belongs to second set
+ 	of common TMU registers.
++  NOTE: On Exynos5420, the TRIMINFO register is misplaced for TMU
++	channels 2, 3 and 4
++
++	TRIMINFO at 0x1006c000 contains data for TMU channel 3
++	TRIMINFO at 0x100a0000 contains data for TMU channel 4
++	TRIMINFO at 0x10068000 contains data for TMU channel 2
++
++	The misplaced register address is passed through devicetree as the
++	second base
++
+ - interrupts : Should contain interrupt for thermal system
+ - clocks : The main clock for TMU device
+ - clock-names : Thermal system clock name
+@@ -43,6 +54,34 @@ Example 2):
+ 		clock-names = "tmu_apbif";
+ 	};
+ 
++Example 3): (In case of Exynos5420)
++	/* tmu for CPU2 */
++	tmu@10068000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x10068000 0x100>, <0x1006c000 0x4>;
++		interrupts = <0 184 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
++	/* tmu for CPU3 */
++	tmu@1006c000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x1006c000 0x100>, <0x100a0000 0x4>;
++		interrupts = <0 185 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
++	/* tmu for GPU */
++	tmu@100a0000 {
++		compatible = "samsung,exynos5420-tmu";
++		reg = <0x100a0000 0x100>, <0x10068000 0x4>;
++		interrupts = <0 215 0>;
++		clocks = <&clock 318>;
++		clock-names = "tmu_apbif";
++	};
++
+ Note: For multi-instance tmu each instance should have an alias correctly
+ numbered in "aliases" node.
+ 
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 3a55caf..6d34652 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -186,7 +186,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
+ 		}
+ 	} else {
+-		trim_info = readl(data->base + reg->triminfo_data);
++		/* On exynos5420 the triminfo register is in the shared space */
++		if (data->base_second && (data->soc == SOC_ARCH_EXYNOS5420))
++			trim_info = readl(data->base_second +
++							reg->triminfo_data);
++		else
++			trim_info = readl(data->base + reg->triminfo_data);
+ 	}
+ 	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
+ 	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
+@@ -499,6 +504,10 @@ static const struct of_device_id exynos_tmu_match[] = {
+ 		.compatible = "samsung,exynos5440-tmu",
+ 		.data = (void *)EXYNOS5440_TMU_DRV_DATA,
+ 	},
++	{
++		.compatible = "samsung,exynos5420-tmu",
++		.data = (void *)EXYNOS5420_TMU_DRV_DATA,
++	},
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, exynos_tmu_match);
+@@ -637,7 +646,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+ 
+ 	if (pdata->type == SOC_ARCH_EXYNOS ||
+ 		pdata->type == SOC_ARCH_EXYNOS4210 ||
+-				pdata->type == SOC_ARCH_EXYNOS5440)
++				pdata->type == SOC_ARCH_EXYNOS5440 ||
++				pdata->type == SOC_ARCH_EXYNOS5420)
+ 		data->soc = pdata->type;
+ 	else {
+ 		ret = -EINVAL;
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index ebd2ec1..774ab03 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -43,6 +43,7 @@ enum soc_type {
+ 	SOC_ARCH_EXYNOS4210 = 1,
+ 	SOC_ARCH_EXYNOS,
+ 	SOC_ARCH_EXYNOS5440,
++	SOC_ARCH_EXYNOS5420,
+ };
+ 
+ /**
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 58570d0..a6d5cb5 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -177,6 +177,136 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ };
+ #endif
+ 
++#if defined(CONFIG_SOC_EXYNOS5420)
++static const struct exynos_tmu_registers exynos5420_tmu_registers = {
++	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
++	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
++	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
++	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
++	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
++	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
++	.therm_trip_mode_shift = EXYNOS_TMU_TRIP_MODE_SHIFT,
++	.therm_trip_mode_mask = EXYNOS_TMU_TRIP_MODE_MASK,
++	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
++	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
++	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
++	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
++	.tmu_status = EXYNOS_TMU_REG_STATUS,
++	.tmu_cur_temp = EXYNOS_TMU_REG_CURRENT_TEMP,
++	.threshold_th0 = EXYNOS_THD_TEMP_RISE,
++	.threshold_th1 = EXYNOS_THD_TEMP_FALL,
++	.tmu_inten = EXYNOS_TMU_REG_INTEN,
++	.inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
++	.inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
++	.inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
++	.inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
++	.inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
++	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
++	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
++	/* INTEN_RISE3 Not availble in exynos5420 */
++	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
++	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
++	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
++	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
++	.intclr_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
++	.emul_con = EXYNOS_EMUL_CON,
++	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
++	.emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
++	.emul_time_mask = EXYNOS_EMUL_TIME_MASK,
++};
++
++#define EXYNOS5420_TMU_DATA \
++	.threshold_falling = 10, \
++	.trigger_levels[0] = 85, \
++	.trigger_levels[1] = 103, \
++	.trigger_levels[2] = 110, \
++	.trigger_levels[3] = 120, \
++	.trigger_enable[0] = true, \
++	.trigger_enable[1] = true, \
++	.trigger_enable[2] = true, \
++	.trigger_enable[3] = false, \
++	.trigger_type[0] = THROTTLE_ACTIVE, \
++	.trigger_type[1] = THROTTLE_ACTIVE, \
++	.trigger_type[2] = SW_TRIP, \
++	.trigger_type[3] = HW_TRIP, \
++	.max_trigger_level = 4, \
++	.gain = 8, \
++	.reference_voltage = 16, \
++	.noise_cancel_mode = 4, \
++	.cal_type = TYPE_ONE_POINT_TRIMMING, \
++	.efuse_value = 55, \
++	.min_efuse_value = 40, \
++	.max_efuse_value = 100, \
++	.first_point_trim = 25, \
++	.second_point_trim = 85, \
++	.default_temp_offset = 50, \
++	.freq_tab[0] = { \
++		.freq_clip_max = 800 * 1000, \
++		.temp_level = 85, \
++	}, \
++	.freq_tab[1] = { \
++		.freq_clip_max = 200 * 1000, \
++		.temp_level = 103, \
++	}, \
++	.freq_tab_count = 2, \
++	.type = SOC_ARCH_EXYNOS5420, \
++	.registers = &exynos5420_tmu_registers, \
++	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
++			TMU_SUPPORT_EMUL_TIME)
++
++#define EXYNOS5420_TMU_DATA_SHARED \
++	.threshold_falling = 10, \
++	.trigger_levels[0] = 85, \
++	.trigger_levels[1] = 103, \
++	.trigger_levels[2] = 110, \
++	.trigger_levels[3] = 120, \
++	.trigger_enable[0] = true, \
++	.trigger_enable[1] = true, \
++	.trigger_enable[2] = true, \
++	.trigger_enable[3] = false, \
++	.trigger_type[0] = THROTTLE_ACTIVE, \
++	.trigger_type[1] = THROTTLE_ACTIVE, \
++	.trigger_type[2] = SW_TRIP, \
++	.trigger_type[3] = HW_TRIP, \
++	.max_trigger_level = 4, \
++	.gain = 8, \
++	.reference_voltage = 16, \
++	.noise_cancel_mode = 4, \
++	.cal_type = TYPE_ONE_POINT_TRIMMING, \
++	.efuse_value = 55, \
++	.min_efuse_value = 40, \
++	.max_efuse_value = 100, \
++	.first_point_trim = 25, \
++	.second_point_trim = 85, \
++	.default_temp_offset = 50, \
++	.freq_tab[0] = { \
++		.freq_clip_max = 800 * 1000, \
++		.temp_level = 85, \
++	}, \
++	.freq_tab[1] = { \
++		.freq_clip_max = 200 * 1000, \
++		.temp_level = 103, \
++	}, \
++	.freq_tab_count = 2, \
++	.type = SOC_ARCH_EXYNOS5420, \
++	.registers = &exynos5420_tmu_registers, \
++	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
++			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
++
++struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
++	.tmu_data = {
++		{ EXYNOS5420_TMU_DATA },
++		{ EXYNOS5420_TMU_DATA },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++		{ EXYNOS5420_TMU_DATA_SHARED },
++	},
++	.tmu_count = 5,
++};
++#endif
++
+ #if defined(CONFIG_SOC_EXYNOS5440)
+ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+index 8788a87..3ce94cd 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.h
++++ b/drivers/thermal/samsung/exynos_tmu_data.h
+@@ -153,4 +153,11 @@ extern struct exynos_tmu_init_data const exynos5440_default_tmu_data;
+ #define EXYNOS5440_TMU_DRV_DATA (NULL)
+ #endif
+ 
++#if defined(CONFIG_SOC_EXYNOS5420)
++extern struct exynos_tmu_init_data const exynos5420_default_tmu_data;
++#define EXYNOS5420_TMU_DRV_DATA (&exynos5420_default_tmu_data)
++#else
++#define EXYNOS5420_TMU_DRV_DATA (NULL)
++#endif
++
+ #endif /*_EXYNOS_TMU_DATA_H*/
+-- 
+1.7.9.5
 
