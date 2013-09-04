@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762712Ab3IDNcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 09:32:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab3IDNcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 09:32:10 -0400
-Date: Wed, 4 Sep 2013 09:32:03 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] dma/Kconfig: Make TI_EDMA select TI_PRIV_EDMA
-Message-ID: <20130904133203.GB12834@hansolo.jdub.homelinux.org>
+	id S1762642Ab3IDNhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 09:37:03 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:37350 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757291Ab3IDNhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 09:37:00 -0400
+Date: Wed, 4 Sep 2013 14:36:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "denis.ciocca@st.com" <denis.ciocca@st.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 02/11] ARM: ux500: Enable the LPS001WP Pressure &
+ Temperature sensor from DT
+Message-ID: <20130904133654.GH20150@lee--X1>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-3-git-send-email-lee.jones@linaro.org>
+ <20130904123850.GI18206@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130904123850.GI18206@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TI_EDMA driver unconditionally calls functions provided by the
-TI_PRIV_EDMA code, but it doesn't force that to be built-in.  If that isn't
-otherwise enabled somewhere, you can get build errors like:
+On Wed, 04 Sep 2013, Mark Rutland wrote:
 
-linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:593: undefined reference to `edma_free_slot'
-drivers/built-in.o: In function `edma_terminate_all':
-linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:169: undefined reference to `edma_stop'
-drivers/built-in.o: In function `edma_execute':
-linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:122: undefined reference to `edma_write_slot'
-linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:149: undefined reference to `edma_link'
-linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:152: undefined reference to `edma_start'
+> Hi Lee,
+> 
+> On Wed, Sep 04, 2013 at 10:31:34AM +0100, Lee Jones wrote:
+> > After applying this node the LPS001WP sensor chip should probe
+> > successfully once the driver support has also been applied.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/ste-snowball.dts | 10 ++++++++++
+> >  1 file changed, 10 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/ste-snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
+> > index cf9b16e..aad8f54 100644
+> > --- a/arch/arm/boot/dts/ste-snowball.dts
+> > +++ b/arch/arm/boot/dts/ste-snowball.dts
+> > @@ -153,6 +153,16 @@
+> >  			status = "okay";
+> >  		};
+> >  
+> > +		i2c@80128000 {
+> > +			lps001wp@5c {
+> > +				compatible = "lps001wp";
+> > +				reg = <0x5c>;
+> > +
+> > +				vdd-supply = <&ab8500_ldo_aux1_reg>;
+> > +				vms-supply = <&db8500_vsmps2_reg>;
+> > +			};
+> > +		};
+> > +
+> 
+> This appears to be missing a binding document. I couldn't see one
+> anywhere in this series, or in mainline already).
+> 
+> As far as I can see, the compatible string should be "st,lps001wp".
 
-Make TI_EDMA select TI_PRIV_EDMA to avoid this.
+The I2C subsystem doesn't actually care about vendor prefixes. They
+are all stripped before use in all cases. However, I'm happy to
+provide one if for no other reason than to stick to convention.
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
----
- drivers/dma/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+> Please produce a binding document.
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index daa4da2..825374b 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -198,6 +198,7 @@ config TI_EDMA
- 	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
-+	select TI_PRIV_EDMA
- 	default n
- 	help
- 	  Enable support for the TI EDMA controller. This DMA
+Again, I'm happy to provide a boilerplate document, but there's
+nothing special happening here.
+
+> Is there any publicly available documentation on the chip?
+
+If you Google the device name, it will be the first hit.
+
+> >  		uart@80120000 {
+> >  			status = "okay";
+> >  		};
+
+Kind regards,
+Lee
+
 -- 
-1.8.3.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
