@@ -1,246 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3IDRDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 13:03:43 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:53380 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752168Ab3IDRDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 13:03:42 -0400
-X-Greylist: delayed 923 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Sep 2013 13:03:42 EDT
-Date: Wed, 4 Sep 2013 16:48:16 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, linux-mm@kvack.org
-Subject: RFC vmstat: On demand vmstat threads
-Message-ID: <00000140e9dfd6bd-40db3d4f-c1be-434f-8132-7820f81bb586-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757259Ab3IDRDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 13:03:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41143 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab3IDRDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 13:03:45 -0400
+Message-ID: <522767E5.9080302@ti.com>
+Date: Wed, 4 Sep 2013 12:03:33 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.04-54.240.9.62
+To: Kumar Gala <galak@codeaurora.org>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com> <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org> <52275F7D.4030305@ti.com> <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org>
+In-Reply-To: <9BE41927-7C6C-4E62-860B-0288627E9421@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>>>>
+>>>>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>>>>>>>> which are all device-tree boot only. This patch adds the
+>>>>>>>> base support for parsing the DT nodes, and removes the code
+>>>>>>>> dealing with the traditional platform device instantiation.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>>>>>>> ---
+>>>>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+>>>>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
+>>>>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>>>>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+>>>>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
+>>>>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>>>>>>>
+>>>>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>> new file mode 100644
+>>>>>>>> index 0000000..adfb8ad
+>>>>>>>> --- /dev/null
+>>>>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>>>>> @@ -0,0 +1,28 @@
+>>>>>>>> +OMAP4+ HwSpinlock Driver
+>>>>>>>> +
+>>>>>>>> +Required properties:
+>>>>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>>>>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>>>>>>>> +- reg:			Contains the hwspinlock register address range (base
+>>>>>>>> +			address and length)
+>>>>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>>>>>>>> +
+>>>>>>>> +Optional properties:
+>>>>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
+>>>>>>>> +			device. If not mentioned, a default value of 0 is used.
+>>>>>>>> +			This property is mandatory ONLY if a SoC has several
+>>>>>>>> +			hwspinlock devices. There are currently no such OMAP
+>>>>>>>> +			SoCs.
+>>>>>>>
+>>>>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+>>>>>>
+>>>>>> I didn't add the "ti," prefix exactly for the same reason - it is
+>>>>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
+>>>>>> there is nothing ti or OMAP specific about it. I have added it to keep
+>>>>>> the DT node definition in sync with the driver code. If it is too
+>>>>>> generic a name, it can always be renamed as hwlock_base_id. This will be
+>>>>>> SoC agnostic property for the hwspinlock driver. What do you think?
+>>>>>
+>>>>> I'm wondering if we should use cell-index for this purpose.
+>>>>
+>>>> I didn't get you completely. Do you intend to compute the base_id using
+>>>> cell-index and number of locks (which may be a separate field altogether
+>>>> if this information cannot be read from the h/w)? My understanding is
+>>>> that cell-index is primarily used for identifying the h/w instance number.
+>>>
+>>> I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
+>>
+>> Common hwlock.txt sounds good. Will make the change.
+>>
+>>>
+>>> I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
+>>>
+>>
+>> I prefer to use hwlock-base-id. I think we should also be defining a
+>> common property name for number of locks, say hwlock-num-locks.
+> 
+> I'm good with that, cell-index is always funny so might as well be explicit.
+> 
+> I'm also good with hwlock-num-locks, I'll update the msm spinlock driver to use this.
+> 
+> Can you also maybe add some helper functions into the hwspinlock core to return these values so we both don't duplicate code in drivers and maintain consistency.
 
-vmstat threads are used for folding counter differentials into the
-zone, per node and global counters at certain time intervals.
+I am trying to understand what you would need these for. Your driver
+would already know the base_id and num_locks, since these are used in
+the registration function.
 
-They currently run at defined intervals on all processors which will
-cause some holdoff for processors that need minimal intrusion by the
-OS.
-
-This patch creates a vmstat sheperd task that monitors the
-per cpu differentials on all processors. If there are differentials
-on a processor then a vmstat thread local to the processors with
-the differentials is created. That process will then start
-folding the diffs in regular intervals. Should the vmstat
-process find that there is no work to be done then it will
-terminate itself and make the sheperd task monitor the differentials
-again.
-
-Note: This patch is based on the vmstat patches in Andrew's tree
-to be merged for the 3.12 kernel.
-
-Also some of the logic is inspired by Gilad's earlier work.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2013-09-04 10:09:59.158419700 -0500
-+++ linux/mm/vmstat.c	2013-09-04 10:49:55.114407202 -0500
-@@ -14,6 +14,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/cpumask.h>
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
-@@ -414,13 +415,18 @@ void dec_zone_page_state(struct page *pa
- EXPORT_SYMBOL(dec_zone_page_state);
- #endif
-
--static inline void fold_diff(int *diff)
-+
-+static inline int fold_diff(int *diff)
- {
- 	int i;
-+	int changes = 0;
-
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
--		if (diff[i])
-+		if (diff[i]) {
- 			atomic_long_add(diff[i], &vm_stat[i]);
-+			changes++;
-+	}
-+	return changes;
- }
-
- /*
-@@ -437,11 +443,12 @@ static inline void fold_diff(int *diff)
-  * with the global counters. These could cause remote node cache line
-  * bouncing and will have to be only done when necessary.
-  */
--static void refresh_cpu_vm_stats(void)
-+static int refresh_cpu_vm_stats(void)
- {
- 	struct zone *zone;
- 	int i;
- 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
-+	int changes = 0;
-
- 	for_each_populated_zone(zone) {
- 		struct per_cpu_pageset __percpu *p = zone->pageset;
-@@ -485,11 +492,41 @@ static void refresh_cpu_vm_stats(void)
- 		if (__this_cpu_dec_return(p->expire))
- 			continue;
-
--		if (__this_cpu_read(p->pcp.count))
-+		if (__this_cpu_read(p->pcp.count)) {
- 			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
-+			changes++;
-+		}
- #endif
- 	}
--	fold_diff(global_diff);
-+	changes += fold_diff(global_diff);
-+	return changes;
-+}
-+
-+/*
-+ * Check if the diffs for a certain cpu indicate that
-+ * an update is needed.
-+ */
-+static int need_update(int cpu)
-+{
-+	struct zone *zone;
-+	int i;
-+
-+	for_each_populated_zone(zone) {
-+		struct per_cpu_pageset __percpu *p = zone->pageset;
-+
-+		for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
-+			if (__this_cpu_read(p->vm_stat_diff[i]))
-+				return 1;
-+#ifdef CONFIG_NUMA
-+		/*
-+		 * Check if there are pages remaining in this pageset
-+		 */
-+		if (__this_cpu_read(p->pcp.count))
-+			return 1;
-+
-+#endif
-+	}
-+	return 0;
- }
-
- /*
-@@ -1203,12 +1240,15 @@ static const struct file_operations proc
- #ifdef CONFIG_SMP
- static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
- int sysctl_stat_interval __read_mostly = HZ;
-+static struct cpumask *monitored_cpus;
-
- static void vmstat_update(struct work_struct *w)
- {
--	refresh_cpu_vm_stats();
--	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
--		round_jiffies_relative(sysctl_stat_interval));
-+	if (refresh_cpu_vm_stats())
-+		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
-+			round_jiffies_relative(sysctl_stat_interval));
-+	else
-+		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
- }
-
- static void start_cpu_timer(int cpu)
-@@ -1216,9 +1256,41 @@ static void start_cpu_timer(int cpu)
- 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
-
- 	INIT_DEFERRABLE_WORK(work, vmstat_update);
--	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
-+	schedule_delayed_work_on(cpu, work,
-+		__round_jiffies_relative(sysctl_stat_interval, cpu));
-+}
-+
-+static struct delayed_work shepherd_work;
-+extern int tick_do_timer_cpu;
-+
-+static void vmstat_shepherd(struct work_struct *w)
-+{
-+	int cpu;
-+
-+	refresh_cpu_vm_stats();
-+	for_each_cpu(cpu, monitored_cpus)
-+		if (need_update(cpu)) {
-+			cpumask_clear_cpu(cpu, monitored_cpus);
-+			start_cpu_timer(cpu);
-+		}
-+
-+	schedule_delayed_work_on(tick_do_timer_cpu,
-+		&shepherd_work,
-+		__round_jiffies_relative(sysctl_stat_interval,
-+			tick_do_timer_cpu));
- }
-
-+
-+static void start_shepherd_timer(void)
-+{
-+	INIT_DEFERRABLE_WORK(&shepherd_work, vmstat_shepherd);
-+	monitored_cpus = kmalloc(BITS_TO_LONGS(nr_cpu_ids) * sizeof(long), __GFP_NOFAIL);
-+	cpumask_copy(monitored_cpus, cpu_online_mask);
-+	cpumask_clear_cpu(tick_do_timer_cpu, monitored_cpus);
-+	schedule_delayed_work_on(tick_do_timer_cpu,
-+		&shepherd_work, __round_jiffies_relative(sysctl_stat_interval, tick_do_timer_cpu));
-+
-+}
- /*
-  * Use the cpu notifier to insure that the thresholds are recalculated
-  * when necessary.
-@@ -1233,17 +1305,19 @@ static int vmstat_cpuup_callback(struct
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
- 		refresh_zone_stat_thresholds();
--		start_cpu_timer(cpu);
- 		node_set_state(cpu_to_node(cpu), N_CPU);
-+		cpumask_set_cpu(cpu, monitored_cpus);
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
--		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-+		if (!cpumask_test_cpu(cpu, monitored_cpus))
-+			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-+		cpumask_clear_cpu(cpu, monitored_cpus);
- 		per_cpu(vmstat_work, cpu).work.func = NULL;
- 		break;
- 	case CPU_DOWN_FAILED:
- 	case CPU_DOWN_FAILED_FROZEN:
--		start_cpu_timer(cpu);
-+		cpumask_set_cpu(cpu, monitored_cpus);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -1262,12 +1336,8 @@ static struct notifier_block vmstat_noti
- static int __init setup_vmstat(void)
- {
- #ifdef CONFIG_SMP
--	int cpu;
--
- 	register_cpu_notifier(&vmstat_notifier);
--
--	for_each_online_cpu(cpu)
--		start_cpu_timer(cpu);
-+	start_shepherd_timer();
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+regards
+Suman
