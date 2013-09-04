@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761959Ab3IDFaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:30:19 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36275 "EHLO
+	id S1761980Ab3IDFaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:30:24 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:36277 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761389Ab3IDFaQ (ORCPT
+	with ESMTP id S1761389Ab3IDFaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:30:16 -0400
+	Wed, 4 Sep 2013 01:30:20 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas.Mingarelli@hp.com, toshi.kani@hp.com, wim@iguana.be,
         linux-watchdog@vger.kernel.org, platform-driver-x86@vger.kernel.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 2/2] Add support for modifying firmware configuration via HP iLO
-Date: Wed,  4 Sep 2013 01:29:51 -0400
-Message-Id: <1378272591-9755-2-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH 1/2] Move and rename HP watchdog timer driver
+Date: Wed,  4 Sep 2013 01:29:50 -0400
+Message-Id: <1378272591-9755-1-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378272591-9755-1-git-send-email-matthew.garrett@nebula.com>
-References: <1378272591-9755-1-git-send-email-matthew.garrett@nebula.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
 X-SA-Exim-Mail-From: matthew.garrett@nebula.com
@@ -26,931 +24,1904 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent HP iLO systems provide support for modifying the firmware
-configuration at runtime via accesses to the iLO hardware. This patch adds
-support for exposing the available firmware configuration options via sysfs
-and permits userspace to modify them, taking effect after the next reboot.
-This has been implemented based on tracing register accesses from the HP
-userspace utility that performs the same job - the userspace driver performs
-direct hardware access via port IO, which honestly seems like an amazingly
-bad idea. Moving this in-kernel is massively safer.
+The HP watchdog timer driver binds to the HP iLO system support controller
+PCI device. This PCI device actually supports a wider range of
+functionality, so give the driver a more generic name and move it to the x86
+platform driver directory in preparation for the following changes.
 
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- .../ABI/testing/sysfs-firmware-hp_bios_config      |  27 +
- drivers/platform/x86/Kconfig                       |  14 +-
- drivers/platform/x86/hpilo_support.c               | 777 ++++++++++++++++++++-
- 3 files changed, 811 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-hp_bios_config
+ drivers/platform/x86/Kconfig         |  20 +
+ drivers/platform/x86/Makefile        |   1 +
+ drivers/platform/x86/hpilo_support.c | 890 +++++++++++++++++++++++++++++++++++
+ drivers/watchdog/Kconfig             |  18 -
+ drivers/watchdog/Makefile            |   1 -
+ drivers/watchdog/hpwdt.c             | 890 -----------------------------------
+ 6 files changed, 911 insertions(+), 909 deletions(-)
+ create mode 100644 drivers/platform/x86/hpilo_support.c
+ delete mode 100644 drivers/watchdog/hpwdt.c
 
-diff --git a/Documentation/ABI/testing/sysfs-firmware-hp_bios_config b/Documentation/ABI/testing/sysfs-firmware-hp_bios_config
-new file mode 100644
-index 0000000..69ad11b
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-firmware-hp_bios_config
-@@ -0,0 +1,27 @@
-+What:		/sys/firmware/hpilo_bios_config
-+Date:		July 2013
-+Contact:	Matthew Garrett <matthew.garrett@nebula.com>
-+Description:
-+		This directory exposes the HP iLO interface for manipulating
-+		firmware configuration options. One subdirectory is present
-+		for each configuration option, and contains the following
-+		files:
-+
-+		active:		The currently active value for the
-+				configuration option.
-+
-+		choices:	The available choices for the configuration
-+				option with human-readable descriptions of
-+				each option.
-+
-+		description:	The human-readable description of the
-+				configuration option.
-+
-+		new:		Read/write attribute for setting the value
-+				of the configuration option. Writing an integer
-+				will configure the firmware to use this choice
-+				on the next reboot. Reading will return the
-+				value that has been chosen, if any.
-+
-+		warning:	Human-readable text describing any caveats
-+				associated with the configuration option.
-\ No newline at end of file
 diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 34e6a47..e880a37 100644
+index 36a9e60..34e6a47 100644
 --- a/drivers/platform/x86/Kconfig
 +++ b/drivers/platform/x86/Kconfig
-@@ -818,12 +818,18 @@ config PVPANIC
+@@ -817,4 +817,24 @@ config PVPANIC
+ 	  a paravirtualized device provided by QEMU; it lets a virtual machine
  	  (guest) communicate panic events to the host.
  
- config HP_ILO_SUPPORT
--        tristate "HP ProLiant iLO2+ Hardware Watchdog Timer"
-+        tristate "HP ProLiant iLO2+ System Support driver"
-         depends on X86 && PCI
-         help
--          A software monitoring watchdog and NMI sourcing driver. This driver
--          will detect lockups and provide a stack trace. This is a driver that
--          will only load on an HP ProLiant system with a minimum of iLO2 support.
-+	  This driver provides support for the System Support functionality of
-+	  the HP ProLiant iLO2 and later devices. It implements two main
-+	  functions:
++config HP_ILO_SUPPORT
++        tristate "HP ProLiant iLO2+ Hardware Watchdog Timer"
++        depends on X86 && PCI
++        help
++          A software monitoring watchdog and NMI sourcing driver. This driver
++          will detect lockups and provide a stack trace. This is a driver that
++          will only load on an HP ProLiant system with a minimum of iLO2 support.
 +
-+	  1) A software monitoring watchdog and NMI sourcing driver. This
-+	  driver will detect lockups and provide a stack trace.
++          To compile this driver as a module, choose M here: the module will be
++          called hpilo_support.
 +
-+	  2) On systems with appropriate support, an interface to allow
-+	  runtime configuration of system firmware configuration options.
- 
-           To compile this driver as a module, choose M here: the module will be
-           called hpilo_support.
++config HPWDT_NMI_DECODING
++        bool "NMI decoding support for the HP ProLiant iLO2+ Hardware Watchdog Timer"
++        depends on HP_ILO_SUPPORT
++        default y
++        help
++          When an NMI occurs this feature will make the necessary BIOS calls to
++          log the cause of the NMI.
++
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 5dbe193..9198df2 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_DELL_WMI_AIO)	+= dell-wmi-aio.o
+ obj-$(CONFIG_ACER_WMI)		+= acer-wmi.o
+ obj-$(CONFIG_ACERHDF)		+= acerhdf.o
+ obj-$(CONFIG_HP_ACCEL)		+= hp_accel.o
++obj-$(CONFIG_HPILO_SUPPORT)	+= hpilo_support.o
+ obj-$(CONFIG_HP_WMI)		+= hp-wmi.o
+ obj-$(CONFIG_AMILO_RFKILL)	+= amilo-rfkill.o
+ obj-$(CONFIG_TC1100_WMI)	+= tc1100-wmi.o
 diff --git a/drivers/platform/x86/hpilo_support.c b/drivers/platform/x86/hpilo_support.c
-index de7e4f4..d8788fd 100644
---- a/drivers/platform/x86/hpilo_support.c
+new file mode 100644
+index 0000000..de7e4f4
+--- /dev/null
 +++ b/drivers/platform/x86/hpilo_support.c
-@@ -16,22 +16,26 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/device.h>
+@@ -0,0 +1,890 @@
++/*
++ *	HP WatchDog Driver
++ *	based on
++ *
++ *	SoftDog	0.05:	A Software Watchdog Device
++ *
++ *	(c) Copyright 2007 Hewlett-Packard Development Company, L.P.
++ *	Thomas Mingarelli <thomas.mingarelli@hp.com>
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	version 2 as published by the Free Software Foundation
++ *
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/bitops.h>
++#include <linux/kernel.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/pci.h>
++#include <linux/pci_ids.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <linux/watchdog.h>
++#ifdef CONFIG_HPWDT_NMI_DECODING
 +#include <linux/dmi.h>
- #include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/bitops.h>
- #include <linux/kernel.h>
-+#include <linux/nvram.h>
- #include <linux/miscdevice.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
-+#include <linux/nvram.h>
- #include <linux/pci.h>
- #include <linux/pci_ids.h>
-+#include <linux/slab.h>
 +#include <linux/spinlock.h>
-+#include <linux/sysfs.h>
- #include <linux/types.h>
- #include <linux/uaccess.h>
- #include <linux/watchdog.h>
- #ifdef CONFIG_HPWDT_NMI_DECODING
++#include <linux/nmi.h>
++#include <linux/kdebug.h>
++#include <linux/notifier.h>
++#include <asm/cacheflush.h>
++#endif /* CONFIG_HPWDT_NMI_DECODING */
++#include <asm/nmi.h>
++
++#define HPWDT_VERSION			"1.3.2"
++#define SECS_TO_TICKS(secs)		((secs) * 1000 / 128)
++#define TICKS_TO_SECS(ticks)		((ticks) * 128 / 1000)
++#define HPWDT_MAX_TIMER			TICKS_TO_SECS(65535)
++#define DEFAULT_MARGIN			30
++
++static unsigned int soft_margin = DEFAULT_MARGIN;	/* in seconds */
++static unsigned int reload;			/* the computed soft_margin */
++static bool nowayout = WATCHDOG_NOWAYOUT;
++static char expect_release;
++static unsigned long hpwdt_is_open;
++
++static void __iomem *pci_mem_addr;		/* the PCI-memory address */
++static unsigned long __iomem *hpwdt_timer_reg;
++static unsigned long __iomem *hpwdt_timer_con;
++
++static DEFINE_PCI_DEVICE_TABLE(hpwdt_devices) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB203) },	/* iLO2 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3306) },	/* iLO3 */
++	{0},			/* terminate list */
++};
++MODULE_DEVICE_TABLE(pci, hpwdt_devices);
++
++#ifdef CONFIG_HPWDT_NMI_DECODING
++#define PCI_BIOS32_SD_VALUE		0x5F32335F	/* "_32_" */
++#define CRU_BIOS_SIGNATURE_VALUE	0x55524324
++#define PCI_BIOS32_PARAGRAPH_LEN	16
++#define PCI_ROM_BASE1			0x000F0000
++#define ROM_SIZE			0x10000
++
++struct bios32_service_dir {
++	u32 signature;
++	u32 entry_point;
++	u8 revision;
++	u8 length;
++	u8 checksum;
++	u8 reserved[5];
++};
++
++/* type 212 */
++struct smbios_cru64_info {
++	u8 type;
++	u8 byte_length;
++	u16 handle;
++	u32 signature;
++	u64 physical_address;
++	u32 double_length;
++	u32 double_offset;
++};
++#define SMBIOS_CRU64_INFORMATION	212
++
++/* type 219 */
++struct smbios_proliant_info {
++	u8 type;
++	u8 byte_length;
++	u16 handle;
++	u32 power_features;
++	u32 omega_features;
++	u32 reserved;
++	u32 misc_features;
++};
++#define SMBIOS_ICRU_INFORMATION		219
++
++
++struct cmn_registers {
++	union {
++		struct {
++			u8 ral;
++			u8 rah;
++			u16 rea2;
++		};
++		u32 reax;
++	} u1;
++	union {
++		struct {
++			u8 rbl;
++			u8 rbh;
++			u8 reb2l;
++			u8 reb2h;
++		};
++		u32 rebx;
++	} u2;
++	union {
++		struct {
++			u8 rcl;
++			u8 rch;
++			u16 rec2;
++		};
++		u32 recx;
++	} u3;
++	union {
++		struct {
++			u8 rdl;
++			u8 rdh;
++			u16 red2;
++		};
++		u32 redx;
++	} u4;
++
++	u32 resi;
++	u32 redi;
++	u16 rds;
++	u16 res;
++	u32 reflags;
++}  __attribute__((packed));
++
++static unsigned int hpwdt_nmi_decoding;
++static unsigned int allow_kdump = 1;
++static unsigned int is_icru;
++static unsigned int is_uefi;
++static DEFINE_SPINLOCK(rom_lock);
++static void *cru_rom_addr;
++static struct cmn_registers cmn_regs;
++
++extern asmlinkage void asminline_call(struct cmn_registers *pi86Regs,
++						unsigned long *pRomEntry);
++
++#ifdef CONFIG_X86_32
++/* --32 Bit Bios------------------------------------------------------------ */
++
++#define HPWDT_ARCH	32
++
++asm(".text                          \n\t"
++    ".align 4                       \n"
++    "asminline_call:                \n\t"
++    "pushl       %ebp               \n\t"
++    "movl        %esp, %ebp         \n\t"
++    "pusha                          \n\t"
++    "pushf                          \n\t"
++    "push        %es                \n\t"
++    "push        %ds                \n\t"
++    "pop         %es                \n\t"
++    "movl        8(%ebp),%eax       \n\t"
++    "movl        4(%eax),%ebx       \n\t"
++    "movl        8(%eax),%ecx       \n\t"
++    "movl        12(%eax),%edx      \n\t"
++    "movl        16(%eax),%esi      \n\t"
++    "movl        20(%eax),%edi      \n\t"
++    "movl        (%eax),%eax        \n\t"
++    "push        %cs                \n\t"
++    "call        *12(%ebp)          \n\t"
++    "pushf                          \n\t"
++    "pushl       %eax               \n\t"
++    "movl        8(%ebp),%eax       \n\t"
++    "movl        %ebx,4(%eax)       \n\t"
++    "movl        %ecx,8(%eax)       \n\t"
++    "movl        %edx,12(%eax)      \n\t"
++    "movl        %esi,16(%eax)      \n\t"
++    "movl        %edi,20(%eax)      \n\t"
++    "movw        %ds,24(%eax)       \n\t"
++    "movw        %es,26(%eax)       \n\t"
++    "popl        %ebx               \n\t"
++    "movl        %ebx,(%eax)        \n\t"
++    "popl        %ebx               \n\t"
++    "movl        %ebx,28(%eax)      \n\t"
++    "pop         %es                \n\t"
++    "popf                           \n\t"
++    "popa                           \n\t"
++    "leave                          \n\t"
++    "ret                            \n\t"
++    ".previous");
++
++
++/*
++ *	cru_detect
++ *
++ *	Routine Description:
++ *	This function uses the 32-bit BIOS Service Directory record to
++ *	search for a $CRU record.
++ *
++ *	Return Value:
++ *	0        :  SUCCESS
++ *	<0       :  FAILURE
++ */
++static int cru_detect(unsigned long map_entry,
++	unsigned long map_offset)
++{
++	void *bios32_map;
++	unsigned long *bios32_entrypoint;
++	unsigned long cru_physical_address;
++	unsigned long cru_length;
++	unsigned long physical_bios_base = 0;
++	unsigned long physical_bios_offset = 0;
++	int retval = -ENODEV;
++
++	bios32_map = ioremap(map_entry, (2 * PAGE_SIZE));
++
++	if (bios32_map == NULL)
++		return -ENODEV;
++
++	bios32_entrypoint = bios32_map + map_offset;
++
++	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
++
++	set_memory_x((unsigned long)bios32_map, 2);
++	asminline_call(&cmn_regs, bios32_entrypoint);
++
++	if (cmn_regs.u1.ral != 0) {
++		pr_warn("Call succeeded but with an error: 0x%x\n",
++			cmn_regs.u1.ral);
++	} else {
++		physical_bios_base = cmn_regs.u2.rebx;
++		physical_bios_offset = cmn_regs.u4.redx;
++		cru_length = cmn_regs.u3.recx;
++		cru_physical_address =
++			physical_bios_base + physical_bios_offset;
++
++		/* If the values look OK, then map it in. */
++		if ((physical_bios_base + physical_bios_offset)) {
++			cru_rom_addr =
++				ioremap(cru_physical_address, cru_length);
++			if (cru_rom_addr) {
++				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
++					(cru_length + PAGE_SIZE - 1) >> PAGE_SHIFT);
++				retval = 0;
++			}
++		}
++
++		pr_debug("CRU Base Address:   0x%lx\n", physical_bios_base);
++		pr_debug("CRU Offset Address: 0x%lx\n", physical_bios_offset);
++		pr_debug("CRU Length:         0x%lx\n", cru_length);
++		pr_debug("CRU Mapped Address: %p\n", &cru_rom_addr);
++	}
++	iounmap(bios32_map);
++	return retval;
++}
++
++/*
++ *	bios_checksum
++ */
++static int bios_checksum(const char __iomem *ptr, int len)
++{
++	char sum = 0;
++	int i;
++
++	/*
++	 * calculate checksum of size bytes. This should add up
++	 * to zero if we have a valid header.
++	 */
++	for (i = 0; i < len; i++)
++		sum += ptr[i];
++
++	return ((sum == 0) && (len > 0));
++}
++
++/*
++ *	bios32_present
++ *
++ *	Routine Description:
++ *	This function finds the 32-bit BIOS Service Directory
++ *
++ *	Return Value:
++ *	0        :  SUCCESS
++ *	<0       :  FAILURE
++ */
++static int bios32_present(const char __iomem *p)
++{
++	struct bios32_service_dir *bios_32_ptr;
++	int length;
++	unsigned long map_entry, map_offset;
++
++	bios_32_ptr = (struct bios32_service_dir *) p;
++
++	/*
++	 * Search for signature by checking equal to the swizzled value
++	 * instead of calling another routine to perform a strcmp.
++	 */
++	if (bios_32_ptr->signature == PCI_BIOS32_SD_VALUE) {
++		length = bios_32_ptr->length * PCI_BIOS32_PARAGRAPH_LEN;
++		if (bios_checksum(p, length)) {
++			/*
++			 * According to the spec, we're looking for the
++			 * first 4KB-aligned address below the entrypoint
++			 * listed in the header. The Service Directory code
++			 * is guaranteed to occupy no more than 2 4KB pages.
++			 */
++			map_entry = bios_32_ptr->entry_point & ~(PAGE_SIZE - 1);
++			map_offset = bios_32_ptr->entry_point - map_entry;
++
++			return cru_detect(map_entry, map_offset);
++		}
++	}
++	return -ENODEV;
++}
++
++static int detect_cru_service(void)
++{
++	char __iomem *p, *q;
++	int rc = -1;
++
++	/*
++	 * Search from 0x0f0000 through 0x0fffff, inclusive.
++	 */
++	p = ioremap(PCI_ROM_BASE1, ROM_SIZE);
++	if (p == NULL)
++		return -ENOMEM;
++
++	for (q = p; q < p + ROM_SIZE; q += 16) {
++		rc = bios32_present(q);
++		if (!rc)
++			break;
++	}
++	iounmap(p);
++	return rc;
++}
++/* ------------------------------------------------------------------------- */
++#endif /* CONFIG_X86_32 */
++#ifdef CONFIG_X86_64
++/* --64 Bit Bios------------------------------------------------------------ */
++
++#define HPWDT_ARCH	64
++
++asm(".text                      \n\t"
++    ".align 4                   \n"
++    "asminline_call:            \n\t"
++    "pushq      %rbp            \n\t"
++    "movq       %rsp, %rbp      \n\t"
++    "pushq      %rax            \n\t"
++    "pushq      %rbx            \n\t"
++    "pushq      %rdx            \n\t"
++    "pushq      %r12            \n\t"
++    "pushq      %r9             \n\t"
++    "movq       %rsi, %r12      \n\t"
++    "movq       %rdi, %r9       \n\t"
++    "movl       4(%r9),%ebx     \n\t"
++    "movl       8(%r9),%ecx     \n\t"
++    "movl       12(%r9),%edx    \n\t"
++    "movl       16(%r9),%esi    \n\t"
++    "movl       20(%r9),%edi    \n\t"
++    "movl       (%r9),%eax      \n\t"
++    "call       *%r12           \n\t"
++    "pushfq                     \n\t"
++    "popq        %r12           \n\t"
++    "movl       %eax, (%r9)     \n\t"
++    "movl       %ebx, 4(%r9)    \n\t"
++    "movl       %ecx, 8(%r9)    \n\t"
++    "movl       %edx, 12(%r9)   \n\t"
++    "movl       %esi, 16(%r9)   \n\t"
++    "movl       %edi, 20(%r9)   \n\t"
++    "movq       %r12, %rax      \n\t"
++    "movl       %eax, 28(%r9)   \n\t"
++    "popq       %r9             \n\t"
++    "popq       %r12            \n\t"
++    "popq       %rdx            \n\t"
++    "popq       %rbx            \n\t"
++    "popq       %rax            \n\t"
++    "leave                      \n\t"
++    "ret                        \n\t"
++    ".previous");
++
++/*
++ *	dmi_find_cru
++ *
++ *	Routine Description:
++ *	This function checks whether or not a SMBIOS/DMI record is
++ *	the 64bit CRU info or not
++ */
++static void dmi_find_cru(const struct dmi_header *dm, void *dummy)
++{
++	struct smbios_cru64_info *smbios_cru64_ptr;
++	unsigned long cru_physical_address;
++
++	if (dm->type == SMBIOS_CRU64_INFORMATION) {
++		smbios_cru64_ptr = (struct smbios_cru64_info *) dm;
++		if (smbios_cru64_ptr->signature == CRU_BIOS_SIGNATURE_VALUE) {
++			cru_physical_address =
++				smbios_cru64_ptr->physical_address +
++				smbios_cru64_ptr->double_offset;
++			cru_rom_addr = ioremap(cru_physical_address,
++				smbios_cru64_ptr->double_length);
++			set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
++				smbios_cru64_ptr->double_length >> PAGE_SHIFT);
++		}
++	}
++}
++
++static int detect_cru_service(void)
++{
++	cru_rom_addr = NULL;
++
++	dmi_walk(dmi_find_cru, NULL);
++
++	/* if cru_rom_addr has been set then we found a CRU service */
++	return ((cru_rom_addr != NULL) ? 0 : -ENODEV);
++}
++/* ------------------------------------------------------------------------- */
++#endif /* CONFIG_X86_64 */
++#endif /* CONFIG_HPWDT_NMI_DECODING */
++
++/*
++ *	Watchdog operations
++ */
++static void hpwdt_start(void)
++{
++	reload = SECS_TO_TICKS(soft_margin);
++	iowrite16(reload, hpwdt_timer_reg);
++	iowrite8(0x85, hpwdt_timer_con);
++}
++
++static void hpwdt_stop(void)
++{
++	unsigned long data;
++
++	data = ioread8(hpwdt_timer_con);
++	data &= 0xFE;
++	iowrite8(data, hpwdt_timer_con);
++}
++
++static void hpwdt_ping(void)
++{
++	iowrite16(reload, hpwdt_timer_reg);
++}
++
++static int hpwdt_change_timer(int new_margin)
++{
++	if (new_margin < 1 || new_margin > HPWDT_MAX_TIMER) {
++		pr_warn("New value passed in is invalid: %d seconds\n",
++			new_margin);
++		return -EINVAL;
++	}
++
++	soft_margin = new_margin;
++	pr_debug("New timer passed in is %d seconds\n", new_margin);
++	reload = SECS_TO_TICKS(soft_margin);
++
++	return 0;
++}
++
++static int hpwdt_time_left(void)
++{
++	return TICKS_TO_SECS(ioread16(hpwdt_timer_reg));
++}
++
++#ifdef CONFIG_HPWDT_NMI_DECODING
++/*
++ *	NMI Handler
++ */
++static int hpwdt_pretimeout(unsigned int ulReason, struct pt_regs *regs)
++{
++	unsigned long rom_pl;
++	static int die_nmi_called;
++
++	if (!hpwdt_nmi_decoding)
++		goto out;
++
++	spin_lock_irqsave(&rom_lock, rom_pl);
++	if (!die_nmi_called && !is_icru && !is_uefi)
++		asminline_call(&cmn_regs, cru_rom_addr);
++	die_nmi_called = 1;
++	spin_unlock_irqrestore(&rom_lock, rom_pl);
++
++	if (allow_kdump)
++		hpwdt_stop();
++
++	if (!is_icru && !is_uefi) {
++		if (cmn_regs.u1.ral == 0) {
++			panic("An NMI occurred, "
++				"but unable to determine source.\n");
++		}
++	}
++	panic("An NMI occurred, please see the Integrated "
++		"Management Log for details.\n");
++
++out:
++	return NMI_DONE;
++}
++#endif /* CONFIG_HPWDT_NMI_DECODING */
++
++/*
++ *	/dev/watchdog handling
++ */
++static int hpwdt_open(struct inode *inode, struct file *file)
++{
++	/* /dev/watchdog can only be opened once */
++	if (test_and_set_bit(0, &hpwdt_is_open))
++		return -EBUSY;
++
++	/* Start the watchdog */
++	hpwdt_start();
++	hpwdt_ping();
++
++	return nonseekable_open(inode, file);
++}
++
++static int hpwdt_release(struct inode *inode, struct file *file)
++{
++	/* Stop the watchdog */
++	if (expect_release == 42) {
++		hpwdt_stop();
++	} else {
++		pr_crit("Unexpected close, not stopping watchdog!\n");
++		hpwdt_ping();
++	}
++
++	expect_release = 0;
++
++	/* /dev/watchdog is being closed, make sure it can be re-opened */
++	clear_bit(0, &hpwdt_is_open);
++
++	return 0;
++}
++
++static ssize_t hpwdt_write(struct file *file, const char __user *data,
++	size_t len, loff_t *ppos)
++{
++	/* See if we got the magic character 'V' and reload the timer */
++	if (len) {
++		if (!nowayout) {
++			size_t i;
++
++			/* note: just in case someone wrote the magic character
++			 * five months ago... */
++			expect_release = 0;
++
++			/* scan to see whether or not we got the magic char. */
++			for (i = 0; i != len; i++) {
++				char c;
++				if (get_user(c, data + i))
++					return -EFAULT;
++				if (c == 'V')
++					expect_release = 42;
++			}
++		}
++
++		/* someone wrote to us, we should reload the timer */
++		hpwdt_ping();
++	}
++
++	return len;
++}
++
++static const struct watchdog_info ident = {
++	.options = WDIOF_SETTIMEOUT |
++		   WDIOF_KEEPALIVEPING |
++		   WDIOF_MAGICCLOSE,
++	.identity = "HP iLO2+ HW Watchdog Timer",
++};
++
++static long hpwdt_ioctl(struct file *file, unsigned int cmd,
++	unsigned long arg)
++{
++	void __user *argp = (void __user *)arg;
++	int __user *p = argp;
++	int new_margin;
++	int ret = -ENOTTY;
++
++	switch (cmd) {
++	case WDIOC_GETSUPPORT:
++		ret = 0;
++		if (copy_to_user(argp, &ident, sizeof(ident)))
++			ret = -EFAULT;
++		break;
++
++	case WDIOC_GETSTATUS:
++	case WDIOC_GETBOOTSTATUS:
++		ret = put_user(0, p);
++		break;
++
++	case WDIOC_KEEPALIVE:
++		hpwdt_ping();
++		ret = 0;
++		break;
++
++	case WDIOC_SETTIMEOUT:
++		ret = get_user(new_margin, p);
++		if (ret)
++			break;
++
++		ret = hpwdt_change_timer(new_margin);
++		if (ret)
++			break;
++
++		hpwdt_ping();
++		/* Fall */
++	case WDIOC_GETTIMEOUT:
++		ret = put_user(soft_margin, p);
++		break;
++
++	case WDIOC_GETTIMELEFT:
++		ret = put_user(hpwdt_time_left(), p);
++		break;
++	}
++	return ret;
++}
++
++/*
++ *	Kernel interfaces
++ */
++static const struct file_operations hpwdt_fops = {
++	.owner = THIS_MODULE,
++	.llseek = no_llseek,
++	.write = hpwdt_write,
++	.unlocked_ioctl = hpwdt_ioctl,
++	.open = hpwdt_open,
++	.release = hpwdt_release,
++};
++
++static struct miscdevice hpwdt_miscdev = {
++	.minor = WATCHDOG_MINOR,
++	.name = "watchdog",
++	.fops = &hpwdt_fops,
++};
++
++/*
++ *	Init & Exit
++ */
++
++#ifdef CONFIG_HPWDT_NMI_DECODING
++#ifdef CONFIG_X86_LOCAL_APIC
++static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
++{
++	/*
++	 * If nmi_watchdog is turned off then we can turn on
++	 * our nmi decoding capability.
++	 */
++	hpwdt_nmi_decoding = 1;
++}
++#else
++static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
++{
++	dev_warn(&dev->dev, "NMI decoding is disabled. "
++		"Your kernel does not support a NMI Watchdog.\n");
++}
++#endif /* CONFIG_X86_LOCAL_APIC */
++
++/*
++ *	dmi_find_icru
++ *
++ *	Routine Description:
++ *	This function checks whether or not we are on an iCRU-based server.
++ *	This check is independent of architecture and needs to be made for
++ *	any ProLiant system.
++ */
++static void dmi_find_icru(const struct dmi_header *dm, void *dummy)
++{
++	struct smbios_proliant_info *smbios_proliant_ptr;
++
++	if (dm->type == SMBIOS_ICRU_INFORMATION) {
++		smbios_proliant_ptr = (struct smbios_proliant_info *) dm;
++		if (smbios_proliant_ptr->misc_features & 0x01)
++			is_icru = 1;
++		if (smbios_proliant_ptr->misc_features & 0x408)
++			is_uefi = 1;
++	}
++}
++
++static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
++{
++	int retval;
++
++	/*
++	 * On typical CRU-based systems we need to map that service in
++	 * the BIOS. For 32 bit Operating Systems we need to go through
++	 * the 32 Bit BIOS Service Directory. For 64 bit Operating
++	 * Systems we get that service through SMBIOS.
++	 *
++	 * On systems that support the new iCRU service all we need to
++	 * do is call dmi_walk to get the supported flag value and skip
++	 * the old cru detect code.
++	 */
++	dmi_walk(dmi_find_icru, NULL);
++	if (!is_icru && !is_uefi) {
++
++		/*
++		* We need to map the ROM to get the CRU service.
++		* For 32 bit Operating Systems we need to go through the 32 Bit
++		* BIOS Service Directory
++		* For 64 bit Operating Systems we get that service through SMBIOS.
++		*/
++		retval = detect_cru_service();
++		if (retval < 0) {
++			dev_warn(&dev->dev,
++				"Unable to detect the %d Bit CRU Service.\n",
++				HPWDT_ARCH);
++			return retval;
++		}
++
++		/*
++		* We know this is the only CRU call we need to make so lets keep as
++		* few instructions as possible once the NMI comes in.
++		*/
++		cmn_regs.u1.rah = 0x0D;
++		cmn_regs.u1.ral = 0x02;
++	}
++
++	/*
++	 * Only one function can register for NMI_UNKNOWN
++	 */
++	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
++	if (retval)
++		goto error;
++	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
++	if (retval)
++		goto error1;
++	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
++	if (retval)
++		goto error2;
++
++	dev_info(&dev->dev,
++			"HP Watchdog Timer Driver: NMI decoding initialized"
++			", allow kernel dump: %s (default = 0/OFF)\n",
++			(allow_kdump == 0) ? "OFF" : "ON");
++	return 0;
++
++error2:
++	unregister_nmi_handler(NMI_SERR, "hpwdt");
++error1:
++	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
++error:
++	dev_warn(&dev->dev,
++		"Unable to register a die notifier (err=%d).\n",
++		retval);
++	if (cru_rom_addr)
++		iounmap(cru_rom_addr);
++	return retval;
++}
++
++static void hpwdt_exit_nmi_decoding(void)
++{
++	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
++	unregister_nmi_handler(NMI_SERR, "hpwdt");
++	unregister_nmi_handler(NMI_IO_CHECK, "hpwdt");
++	if (cru_rom_addr)
++		iounmap(cru_rom_addr);
++}
++#else /* !CONFIG_HPWDT_NMI_DECODING */
++static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
++{
++}
++
++static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
++{
++	return 0;
++}
++
++static void hpwdt_exit_nmi_decoding(void)
++{
++}
++#endif /* CONFIG_HPWDT_NMI_DECODING */
++
++static int hpwdt_init_one(struct pci_dev *dev,
++					const struct pci_device_id *ent)
++{
++	int retval;
++
++	/*
++	 * Check if we can do NMI decoding or not
++	 */
++	hpwdt_check_nmi_decoding(dev);
++
++	/*
++	 * First let's find out if we are on an iLO2+ server. We will
++	 * not run on a legacy ASM box.
++	 * So we only support the G5 ProLiant servers and higher.
++	 */
++	if (dev->subsystem_vendor != PCI_VENDOR_ID_HP) {
++		dev_warn(&dev->dev,
++			"This server does not have an iLO2+ ASIC.\n");
++		return -ENODEV;
++	}
++
++	if (pci_enable_device(dev)) {
++		dev_warn(&dev->dev,
++			"Not possible to enable PCI Device: 0x%x:0x%x.\n",
++			ent->vendor, ent->device);
++		return -ENODEV;
++	}
++
++	pci_mem_addr = pci_iomap(dev, 1, 0x80);
++	if (!pci_mem_addr) {
++		dev_warn(&dev->dev,
++			"Unable to detect the iLO2+ server memory.\n");
++		retval = -ENOMEM;
++		goto error_pci_iomap;
++	}
++	hpwdt_timer_reg = pci_mem_addr + 0x70;
++	hpwdt_timer_con = pci_mem_addr + 0x72;
++
++	/* Make sure that timer is disabled until /dev/watchdog is opened */
++	hpwdt_stop();
++
++	/* Make sure that we have a valid soft_margin */
++	if (hpwdt_change_timer(soft_margin))
++		hpwdt_change_timer(DEFAULT_MARGIN);
++
++	/* Initialize NMI Decoding functionality */
++	retval = hpwdt_init_nmi_decoding(dev);
++	if (retval != 0)
++		goto error_init_nmi_decoding;
++
++	retval = misc_register(&hpwdt_miscdev);
++	if (retval < 0) {
++		dev_warn(&dev->dev,
++			"Unable to register miscdev on minor=%d (err=%d).\n",
++			WATCHDOG_MINOR, retval);
++		goto error_misc_register;
++	}
++
++	dev_info(&dev->dev, "HP Watchdog Timer Driver: %s"
++			", timer margin: %d seconds (nowayout=%d).\n",
++			HPWDT_VERSION, soft_margin, nowayout);
++	return 0;
++
++error_misc_register:
++	hpwdt_exit_nmi_decoding();
++error_init_nmi_decoding:
++	pci_iounmap(dev, pci_mem_addr);
++error_pci_iomap:
++	pci_disable_device(dev);
++	return retval;
++}
++
++static void hpwdt_exit(struct pci_dev *dev)
++{
++	if (!nowayout)
++		hpwdt_stop();
++
++	misc_deregister(&hpwdt_miscdev);
++	hpwdt_exit_nmi_decoding();
++	pci_iounmap(dev, pci_mem_addr);
++	pci_disable_device(dev);
++}
++
++static struct pci_driver hpwdt_driver = {
++	.name = "hpwdt",
++	.id_table = hpwdt_devices,
++	.probe = hpwdt_init_one,
++	.remove = hpwdt_exit,
++};
++
++MODULE_AUTHOR("Tom Mingarelli");
++MODULE_DESCRIPTION("hp watchdog driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(HPWDT_VERSION);
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++
++module_param(soft_margin, int, 0);
++MODULE_PARM_DESC(soft_margin, "Watchdog timeout in seconds");
++
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
++		__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++#ifdef CONFIG_HPWDT_NMI_DECODING
++module_param(allow_kdump, int, 0);
++MODULE_PARM_DESC(allow_kdump, "Start a kernel dump after NMI occurs");
++#endif /* !CONFIG_HPWDT_NMI_DECODING */
++
++module_pci_driver(hpwdt_driver);
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 362085d..a4e2823 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -668,16 +668,6 @@ config IT87_WDT
+ 	  To compile this driver as a module, choose M here: the module will
+ 	  be called it87_wdt.
+ 
+-config HP_WATCHDOG
+-	tristate "HP ProLiant iLO2+ Hardware Watchdog Timer"
+-	depends on X86 && PCI
+-	help
+-	  A software monitoring watchdog and NMI sourcing driver. This driver
+-	  will detect lockups and provide a stack trace. This is a driver that
+-	  will only load on an HP ProLiant system with a minimum of iLO2 support.
+-	  To compile this driver as a module, choose M here: the module will be
+-	  called hpwdt.
+-
+ config KEMPLD_WDT
+ 	tristate "Kontron COM Watchdog Timer"
+ 	depends on MFD_KEMPLD
+@@ -689,14 +679,6 @@ config KEMPLD_WDT
+ 	  This driver can also be built as a module. If so, the module will be
+ 	  called kempld_wdt.
+ 
+-config HPWDT_NMI_DECODING
+-	bool "NMI decoding support for the HP ProLiant iLO2+ Hardware Watchdog Timer"
+-	depends on HP_WATCHDOG
+-	default y
+-	help
+-	  When an NMI occurs this feature will make the necessary BIOS calls to
+-	  log the cause of the NMI.
+-
+ config SC1200_WDT
+ 	tristate "National Semiconductor PC87307/PC97307 (ala SC1200) Watchdog"
+ 	depends on X86
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 2f26a0b..bb20ee0 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -89,7 +89,6 @@ obj-$(CONFIG_ITCO_WDT) += iTCO_vendor_support.o
+ endif
+ obj-$(CONFIG_IT8712F_WDT) += it8712f_wdt.o
+ obj-$(CONFIG_IT87_WDT) += it87_wdt.o
+-obj-$(CONFIG_HP_WATCHDOG) += hpwdt.o
+ obj-$(CONFIG_KEMPLD_WDT) += kempld_wdt.o
+ obj-$(CONFIG_SC1200_WDT) += sc1200wdt.o
+ obj-$(CONFIG_SCx200_WDT) += scx200_wdt.o
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+deleted file mode 100644
+index de7e4f4..0000000
+--- a/drivers/watchdog/hpwdt.c
++++ /dev/null
+@@ -1,890 +0,0 @@
+-/*
+- *	HP WatchDog Driver
+- *	based on
+- *
+- *	SoftDog	0.05:	A Software Watchdog Device
+- *
+- *	(c) Copyright 2007 Hewlett-Packard Development Company, L.P.
+- *	Thomas Mingarelli <thomas.mingarelli@hp.com>
+- *
+- *	This program is free software; you can redistribute it and/or
+- *	modify it under the terms of the GNU General Public License
+- *	version 2 as published by the Free Software Foundation
+- *
+- */
+-
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+-#include <linux/device.h>
+-#include <linux/fs.h>
+-#include <linux/init.h>
+-#include <linux/io.h>
+-#include <linux/bitops.h>
+-#include <linux/kernel.h>
+-#include <linux/miscdevice.h>
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/pci.h>
+-#include <linux/pci_ids.h>
+-#include <linux/types.h>
+-#include <linux/uaccess.h>
+-#include <linux/watchdog.h>
+-#ifdef CONFIG_HPWDT_NMI_DECODING
 -#include <linux/dmi.h>
 -#include <linux/spinlock.h>
- #include <linux/nmi.h>
- #include <linux/kdebug.h>
- #include <linux/notifier.h>
-@@ -51,9 +55,13 @@ static bool nowayout = WATCHDOG_NOWAYOUT;
- static char expect_release;
- static unsigned long hpwdt_is_open;
- 
-+static struct kobject *hpilo_kobj;
-+static struct pci_dev *hpilo_dev;
- static void __iomem *pci_mem_addr;		/* the PCI-memory address */
- static unsigned long __iomem *hpwdt_timer_reg;
- static unsigned long __iomem *hpwdt_timer_con;
-+static unsigned long rcu_address;
-+static int rcu_size;
- 
- static DEFINE_PCI_DEVICE_TABLE(hpwdt_devices) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB203) },	/* iLO2 */
-@@ -62,6 +70,60 @@ static DEFINE_PCI_DEVICE_TABLE(hpwdt_devices) = {
- };
- MODULE_DEVICE_TABLE(pci, hpwdt_devices);
- 
-+enum access_type { EV, CMOS, NVRAM };
-+enum flag_type { NONE, FLAG_EXCLUDE, FLAG_SET };
-+
-+struct hpilo_option {
-+        struct list_head list;
-+        char name[5];
-+        char *desc;
-+        char *warning;
-+        struct kobject kobj;
-+        u8 active;
-+        u8 new;
-+        spinlock_t choice_lock;
-+        struct list_head choice_list;
-+};
-+
-+struct hpilo_option_choice {
-+        struct list_head list;
-+        enum access_type access_type;
-+        char *name;
-+        char token[7];
-+        u8 choice;
-+        u8 mask;
-+        u8 value;
-+        u16 offset;
-+        enum flag_type flag_type;
-+        char flag_target[5];
-+        u8 flag_choice;
-+};
-+
-+struct hpilo_attribute {
-+        struct attribute attr;
-+        ssize_t (*show) (struct hpilo_option *entry, char *buf);
-+        ssize_t (*store)(struct hpilo_option *entry, const char *buf,
-+                         size_t count);
-+};
-+
-+#define HPILO_ATTR(_name, _mode, _show, _store) \
-+struct hpilo_attribute hpilo_attr_##_name = {            \
-+	.attr = {.name = __stringify(_name), .mode = _mode},	     \
-+	.show = _show,						     \
-+	.store = _store,					     \
-+};
-+
-+static LIST_HEAD(option_list);
-+static DEFINE_SPINLOCK(option_list_lock);
-+
-+static int read_ev(char *token, int offset, unsigned char *value);
-+static int write_ev(char *token, int offset, unsigned char value);
-+static int read_cmos(int offset, unsigned char *value);
-+static int write_cmos(int offset, unsigned char value);
-+static int read_nvram(int offset, unsigned char *value);
-+static int write_nvram(int offset, unsigned char value);
-+static void set_cold_reboot(void);
-+
- #ifdef CONFIG_HPWDT_NMI_DECODING
- #define PCI_BIOS32_SD_VALUE		0x5F32335F	/* "_32_" */
- #define CRU_BIOS_SIGNATURE_VALUE	0x55524324
-@@ -102,7 +164,6 @@ struct smbios_proliant_info {
- };
- #define SMBIOS_ICRU_INFORMATION		219
- 
+-#include <linux/nmi.h>
+-#include <linux/kdebug.h>
+-#include <linux/notifier.h>
+-#include <asm/cacheflush.h>
+-#endif /* CONFIG_HPWDT_NMI_DECODING */
+-#include <asm/nmi.h>
 -
- struct cmn_registers {
- 	union {
- 		struct {
-@@ -428,6 +489,711 @@ static int detect_cru_service(void)
- #endif /* CONFIG_X86_64 */
- #endif /* CONFIG_HPWDT_NMI_DECODING */
- 
-+/* type 229 */
-+struct smbios_table_info {
-+	char signature[4];
-+	u64 address;
-+	u32 length;
-+};
-+#define SMBIOS_TABLE_INFORMATION	229
-+
-+static struct hpilo_option *to_option(struct kobject *kobj)
-+{
-+        return container_of(kobj, struct hpilo_option, kobj);
-+}
-+
-+static struct hpilo_attribute *to_attribute(struct attribute *attr)
-+{
-+        return container_of(attr, struct hpilo_attribute, attr);
-+}
-+
-+static struct hpilo_option *find_option(char *name)
-+{
-+        struct hpilo_option *option;
-+
-+        list_for_each_entry(option, &option_list, list) {
-+                if (strcmp(name, option->name) == 0)
-+                        return option;
-+        }
-+
-+        return NULL;
-+}
-+
-+static struct hpilo_option_choice *find_choice(struct hpilo_option *opt,
-+                                                 int choiceval)
-+{
-+        struct hpilo_option_choice *choice;
-+
-+        list_for_each_entry(choice, &opt->choice_list, list) {
-+                if (choice->choice == choiceval)
-+                        return choice;
-+        }
-+
-+        return NULL;
-+}
-+
-+static bool is_set(struct hpilo_option_choice *choice)
-+{
-+        char value;
-+
-+        switch (choice->access_type) {
-+        case EV:
-+                read_ev(choice->token, choice->offset, &value);
-+                value &= ~(choice->mask);
-+                if (value == choice->value)
-+                        return true;
-+                break;
-+        case CMOS:
-+                read_cmos(choice->offset, &value);
-+                value &= ~(choice->mask);
-+                if (value == choice->value)
-+                        return true;
-+                break;
-+        case NVRAM:
-+                read_nvram(choice->offset, &value);
-+                value &= ~(choice->mask);
-+                if (value == choice->value)
-+                        return true;
-+                break;
-+        default:
-+                dev_err(&hpilo_dev->dev, "Unknown choice address space\n");
-+                return -EINVAL;
-+        }
-+
-+        return false;
-+}
-+
-+static int set_value(struct hpilo_option_choice *choice)
-+{
-+        char value;
-+
-+        switch (choice->access_type) {
-+        case EV:
-+                read_ev(choice->token, choice->offset, &value);
-+                value &= choice->mask;
-+                value |= choice->value;
-+                write_ev(choice->token, choice->offset, value);
-+                break;
-+        case CMOS:
-+                read_cmos(choice->offset, &value);
-+                value &= choice->mask;
-+                value |= choice->value;
-+                write_cmos(choice->offset, value);
-+                break;
-+        case NVRAM:
-+                read_nvram(choice->offset, &value);
-+                value &= choice->mask;
-+                value |= choice->value;
-+                write_nvram(choice->offset, value);
-+                break;
-+        default:
-+                dev_err(&hpilo_dev->dev, "Unknown choice address space\n");
-+                return -EINVAL;
-+        }
-+
-+        return 0;
-+}
-+
-+static ssize_t hpilo_show_active(struct hpilo_option *option, char *buf)
-+{
-+        return sprintf(buf, "%d\n", option->active);
-+}
-+
-+static ssize_t hpilo_show_choices(struct hpilo_option *option, char *buf)
-+{
-+        int size = 0;
-+        struct hpilo_option_choice *choice;
-+
-+        spin_lock(&option->choice_lock);
-+        list_for_each_entry(choice, &option->choice_list, list) {
-+                size += sprintf(buf + size, "%d: %s\n", choice->choice,
-+                                choice->name);
-+        }
-+        spin_unlock(&option->choice_lock);
-+
-+        return size;
-+}
-+
-+static ssize_t hpilo_show_desc(struct hpilo_option *option, char *buf)
-+{
-+        return sprintf(buf, "%s\n", option->desc);
-+}
-+
-+static ssize_t hpilo_show_new(struct hpilo_option *option, char *buf)
-+{
-+	if (option->new)
-+		return sprintf(buf, "%d\n", option->new);
-+	else
-+		return sprintf(buf, "None set\n");
-+}
-+
-+static ssize_t hpilo_store_new(struct hpilo_option *option, const char *buf,
-+                                 size_t count)
-+{
-+        unsigned long result;
-+        struct hpilo_option *flagoption;
-+        struct hpilo_option_choice *choice, *flagchoice;
-+
-+        if (kstrtoul(buf, 10, &result) != 0)
-+                return -EINVAL;
-+
-+        spin_lock(&option_list_lock);
-+
-+        choice = find_choice(option, result);
-+
-+        if (!choice) {
-+                count = -EINVAL;
-+                goto out;
-+        }
-+
-+        if (choice->flag_type == FLAG_SET) {
-+                flagoption = find_option(choice->flag_target);
-+
-+                if (flagoption) {
-+                        flagchoice = find_choice(flagoption,
-+                                                 choice->flag_choice);
-+                        if (flagchoice)
-+                                set_value(flagchoice);
-+                }
-+        } else if (choice->flag_type == FLAG_EXCLUDE) {
-+                flagoption = find_option(choice->flag_target);
-+                if (flagoption) {
-+                        flagchoice = find_choice(flagoption,
-+                                                 choice->flag_choice);
-+                        if (flagchoice) {
-+                                if (is_set(flagchoice)) {
-+                                        dev_err(&hpilo_dev->dev,
-+                                                "Attempting to set mutually exclusive option");
-+                                        count = -EINVAL;
-+                                        goto out;
-+                                }
-+                        }
-+                }
-+        }
-+
-+        set_value(choice);
-+        set_cold_reboot();
-+
-+        option->new = result;
-+out:
-+        spin_unlock(&option_list_lock);
-+        return count;
-+}
-+
-+static ssize_t hpilo_show_warning(struct hpilo_option *option, char *buf)
-+{
-+        if (option->warning)
-+                return sprintf(buf, "%s\n", option->warning);
-+        else
-+                return sprintf(buf, "None\n");
-+}
-+
-+static HPILO_ATTR(active, 0400, hpilo_show_active, NULL);
-+static HPILO_ATTR(choices, 0400, hpilo_show_choices, NULL);
-+static HPILO_ATTR(description, 0400, hpilo_show_desc, NULL);
-+static HPILO_ATTR(new, 0600, hpilo_show_new, hpilo_store_new);
-+static HPILO_ATTR(warning, 0400, hpilo_show_warning, NULL);
-+
-+static void hpilo_option_release(struct kobject *kobj)
-+{
-+        struct hpilo_option *option = to_option(kobj);
-+        struct hpilo_option_choice *choice, *next;
-+
-+        spin_lock(&option->choice_lock);
-+
-+        list_for_each_entry_safe(choice, next, &option->choice_list, list) {
-+                kfree(choice->name);
-+                kfree(choice);
-+        }
-+
-+        spin_unlock(&option->choice_lock);
-+        list_del(&option->list);
-+        kfree(option->warning);
-+        kfree(option->desc);
-+        kfree(option);
-+}
-+static ssize_t hpilo_attr_show(struct kobject *kobj, struct attribute *attr,
-+                                 char *buf)
-+{
-+        struct hpilo_option *option = to_option(kobj);
-+        struct hpilo_attribute *hpilo_attribute = to_attribute(attr);
-+
-+        return hpilo_attribute->show(option, buf);
-+}
-+
-+static ssize_t hpilo_attr_store(struct kobject *kobj, struct attribute *attr,
-+                                  const char *buf, size_t count)
-+{
-+        struct hpilo_option *option = to_option(kobj);
-+        struct hpilo_attribute *hpilo_attribute = to_attribute(attr);
-+
-+        return hpilo_attribute->store(option, buf, count);
-+}
-+
-+static const struct sysfs_ops hpilo_option_ops = {
-+        .show = hpilo_attr_show,
-+        .store = hpilo_attr_store,
-+};
-+
-+static struct attribute *def_attrs[] = {
-+        &hpilo_attr_choices.attr,
-+        &hpilo_attr_description.attr,
-+        &hpilo_attr_warning.attr,
-+        &hpilo_attr_active.attr,
-+        &hpilo_attr_new.attr,
-+        NULL,
-+};
-+
-+static struct kobj_type hp_option_ktype = {
-+        .release = hpilo_option_release,
-+        .sysfs_ops = &hpilo_option_ops,
-+        .default_attrs = def_attrs,
-+};
-+
-+static void find_rcu_table(const struct dmi_header *dm)
-+{
-+	struct smbios_table_info *entry;
-+        int i;
-+
-+        if (dm->length < 16)
-+                return;
-+
-+        entry = (void *)dm + 4;
-+
-+        for (i = 0; i < (dm->length - 4) / sizeof(*entry); i++) {
-+                if (memcmp(entry[i].signature, "$CRP", 4) == 0) {
-+                        rcu_address = entry[i].address;
-+                        rcu_size = entry[i].length;
-+                        return;
-+                }
-+        }
-+}
-+
-+static void find_dmi_table(const struct dmi_header *dm, void *dummy)
-+{
-+        if (dm->type == 0xe5)
-+                find_rcu_table(dm);
-+}
-+
-+static int validate_rcu_table(void __iomem *table)
-+{
-+        if (memcmp(table, "$RBS", 4) != 0)
-+                return -EINVAL;
-+
-+        return 0;
-+}
-+
-+static int find_ev_reg(char *token, int offset, unsigned char *outpage,
-+                       unsigned char *outreg)
-+{
-+        unsigned char registers[6] = {0, 0, 0, 0, 0, 0};
-+        bool found = false;
-+        unsigned char page, reg;
-+
-+        for (page = 0xfd; page >= 0x9e; page--) {
-+                pci_write_config_byte(hpilo_dev, 0xa6, page);
-+                for (reg = 0x9f; reg >= 0x80; reg--) {
-+                        registers[0] = registers[1];
-+                        registers[1] = registers[2];
-+                        registers[2] = registers[3];
-+                        registers[3] = registers[4];
-+                        registers[4] = registers[5];
-+                        pci_read_config_byte(hpilo_dev, reg, &registers[5]);
-+                        if (memcmp(registers, token, 6) == 0) {
-+                                found = true;
-+                                break;
-+                        }
-+                }
-+                if (found)
-+                        break;
-+        }
-+
-+        if (!found)
-+                return -ENOENT;
-+
-+        reg -= offset;
-+        reg -= 3;
-+
-+        if (reg < 0x80) {
-+                page--;
-+                reg += 0x20;
-+        }
-+
-+        *outreg = reg;
-+        *outpage = page;
-+
-+        return 0;
-+}
-+
-+static void set_ev_checksum(void)
-+{
-+        unsigned char page, reg, value;
-+        unsigned short sum = 0;
-+
-+        for (page = 0xfd; page >= 0x9e; page--) {
-+                pci_write_config_byte(hpilo_dev, 0xa6, page);
-+                for (reg = 0x9f; reg >= 0x80; reg--) {
-+                        if (page == 0x9e && reg < 0x82)
-+                                break;
-+                        pci_read_config_byte(hpilo_dev, reg, &value);
-+                        sum += value;
-+                }
-+        }
-+
-+        sum = 0 - sum;
-+
-+        pci_write_config_byte(hpilo_dev, 0x81, sum >> 8);
-+        pci_write_config_byte(hpilo_dev, 0x80, sum & 0xff);
-+}
-+
-+static int read_ev(char *token, int offset, unsigned char *value)
-+{
-+        unsigned char page, reg;
-+        int ret;
-+
-+        ret = find_ev_reg(token, offset, &page, &reg);
-+
-+        if (ret)
-+                return ret;
-+
-+        pci_write_config_byte(hpilo_dev, 0xa6, page);
-+        pci_read_config_byte(hpilo_dev, reg, value);
-+
-+        return 0;
-+}
-+
-+static int write_ev(char *token, int offset, unsigned char value)
-+{
-+        unsigned char page, reg;
-+        int ret;
-+
-+        ret = find_ev_reg(token, offset, &page, &reg);
-+
-+        if (ret)
-+                return ret;
-+
-+        pci_write_config_byte(hpilo_dev, 0xa6, page);
-+        pci_write_config_byte(hpilo_dev, reg, value);
-+
-+        set_ev_checksum();
-+
-+        return 0;
-+}
-+
-+static int read_nvram(int offset, unsigned char *value)
-+{
-+        int page = offset / 0x20;
-+        int reg = offset - (page * 0x20) + 0x80;
-+
-+        pci_write_config_byte(hpilo_dev, 0xa6, page);
-+        pci_read_config_byte(hpilo_dev, reg, value);
-+
-+        return 0;
-+}
-+
-+static int write_nvram(int offset, unsigned char value)
-+{
-+        int page = offset / 0x20;
-+        int reg = offset - (page * 0x20) + 0x80;
-+
-+        pci_write_config_byte(hpilo_dev, 0xa6, page);
-+        pci_write_config_byte(hpilo_dev, reg, value);
-+
-+        return 0;
-+}
-+
-+static int read_cmos(int offset, unsigned char *value)
-+{
-+        *value = nvram_read_byte(offset - NVRAM_FIRST_BYTE);
-+        return 0;
-+}
-+
-+static int write_cmos(int offset, unsigned char value)
-+{
-+        nvram_write_byte(offset - NVRAM_FIRST_BYTE, value);
-+        return 0;
-+}
-+
-+static void set_cold_reboot(void)
-+{
-+        unsigned char value;
-+
-+        read_nvram(0x39, &value);
-+        value |= 0x1;
-+        write_nvram(0x39, value);
-+}
-+
-+static int install_option(struct hpilo_option *option)
-+{
-+        int ret;
-+
-+        if (list_empty(&option->choice_list)) {
-+                kfree(option);
-+                return 0;
-+        }
-+
-+        spin_lock(&option_list_lock);
-+        list_add_tail(&option->list, &option_list);
-+        spin_unlock(&option_list_lock);
-+
-+        if (!option->desc)
-+                return 0;
-+
-+        ret = kobject_init_and_add(&option->kobj, &hp_option_ktype,
-+                                   hpilo_kobj, "%s", option->name);
-+
-+        return ret;
-+}
-+
-+static int parse_entry(struct hpilo_option *option,
-+                       unsigned char __iomem *entry, int type,
-+                       int length)
-+{
-+        struct hpilo_option_choice *choice;
-+        unsigned char __iomem *choiceentry, *flag;
-+        int choicelen, access_type;
-+
-+        /* Don't know what to do with type 3 entries yet */
-+        if (type == 3)
-+                return 0;
-+
-+        option->name[0] = entry[6];
-+        option->name[1] = entry[5];
-+        option->name[2] = entry[4];
-+        option->name[3] = entry[3];
-+        option->name[4] = 0;
-+        access_type = entry[13];
-+
-+        spin_lock_init(&option->choice_lock);
-+        INIT_LIST_HEAD(&option->choice_list);
-+
-+        choiceentry = entry + 15;
-+
-+        while (choiceentry < (entry + length)) {
-+                bool skip = false;
-+
-+                choice = kzalloc(sizeof(*choice), GFP_KERNEL);
-+
-+                if (!choice)
-+                        return -ENOMEM;
-+
-+                INIT_LIST_HEAD(&choice->list);
-+
-+                switch (access_type) {
-+                case 0x03:
-+                        choice->access_type = EV;
-+                        choice->choice = choiceentry[0];
-+                        choice->offset = choiceentry[2];
-+                        choice->mask = choiceentry[3];
-+                        choice->value = choiceentry[4];
-+                        memcpy(choice->token, choiceentry + 6, 6);
-+                        choice->token[6] = 0;
-+                        choicelen = 14;
-+                        break;
-+                case 0x04:
-+                        choice->access_type = NVRAM;
-+                        choice->choice = choiceentry[0];
-+                        choice->offset = (choiceentry[2] << 8) | choiceentry[1];
-+                        choice->mask = choiceentry[3];
-+                        choice->value = choiceentry[4];
-+                        choicelen = 6;
-+                        break;
-+                case 0x05:
-+                        choice->access_type = CMOS;
-+                        choice->choice = choiceentry[0];
-+                        choice->offset = choiceentry[1];
-+                        choice->mask = choiceentry[2];
-+                        choice->value = choiceentry[3];
-+                        choicelen = 5;
-+                        break;
-+                default:
-+                        /*
-+                         * We don't know how to deal with these types
-+                         * yet
-+                         */
-+                        kfree(choice);
-+                        choiceentry = entry + length;
-+                        skip = true;
-+                        break;
-+                }
-+
-+                if (skip)
-+                        continue;
-+
-+                if (choiceentry[choicelen-1] != 0) {
-+                        flag = choiceentry + choicelen;
-+                        /* Parse flags */
-+                        switch (flag[5]) {
-+                        case 0:
-+                                choice->flag_type = FLAG_EXCLUDE;
-+                                break;
-+                        default:
-+                                choice->flag_type = FLAG_SET;
-+                                break;
-+                        }
-+                        choice->flag_target[0] = flag[3];
-+                        choice->flag_target[1] = flag[2];
-+                        choice->flag_target[2] = flag[1];
-+                        choice->flag_target[3] = flag[0];
-+                        choice->flag_target[4] = 0;
-+                        choice->flag_choice = flag[4];
-+                        choiceentry += 6;
-+                }
-+
-+                if (is_set(choice))
-+                        option->active = choice->choice;
-+
-+                list_add_tail(&choice->list, &option->choice_list);
-+
-+                choiceentry += choicelen;
-+        }
-+
-+        return 0;
-+}
-+
-+static void parse_string(struct hpilo_option *option, char __iomem *entry)
-+{
-+        struct hpilo_option_choice *choice;
-+
-+        if (!option)
-+                return;
-+
-+        switch (entry[6]) {
-+        case 0x05:
-+                option->desc = kstrdup(entry + 8, GFP_KERNEL);
-+                break;
-+        case 0x06:
-+                list_for_each_entry(choice, &option->choice_list, list) {
-+                        if (choice->name != NULL)
-+                                continue;
-+
-+                        choice->name = kstrdup(entry + 8, GFP_KERNEL);
-+                        break;
-+                }
-+                break;
-+        case 0x60:
-+                option->warning = kstrdup(entry + 8, GFP_KERNEL);
-+                break;
-+        }
-+}
-+
-+static int parse_rcu_table(void __iomem *table)
-+{
-+        unsigned char __iomem *entry = table + 0x15;
-+        u8 type;
-+        int length, ret;
-+        struct hpilo_option *option = NULL;
-+
-+        while (1) {
-+                type = entry[0];
-+                length = (entry[2] << 8) | entry[1];
-+                if ((void *)entry + length > table + rcu_size) {
-+                        dev_err(&hpilo_dev->dev,
-+                                "Entry overflows rcu table\n");
-+                        return 0;
-+                }
-+
-+                if (length == 0)
-+                        break;
-+
-+                if (type == 1) {
-+                        parse_string(option, entry);
-+                } else {
-+                        /* Skip any entries with null names */
-+                        if (entry[6] == 0) {
-+                                entry += length;
-+                                continue;
-+                        }
-+
-+                        if (option)
-+                                install_option(option);
-+
-+                        option = kzalloc(sizeof(*option), GFP_KERNEL);
-+                        if (!option)
-+                                return -ENOMEM;
-+
-+                        ret = parse_entry(option, entry, type, length);
-+                        if (ret)
-+                                return ret;
-+                }
-+
-+                entry += length;
-+        }
-+
-+        if (option)
-+                install_option(option);
-+
-+        return 0;
-+}
-+
-+void hpilo_bios_config_teardown(void)
-+{
-+        struct hpilo_option *option, *next;
-+
-+        spin_lock(&option_list_lock);
-+        list_for_each_entry_safe(option, next, &option_list, list) {
-+                if (option->desc)
-+                        kobject_put(&option->kobj);
-+        }
-+        spin_unlock(&option_list_lock);
-+        kobject_put(hpilo_kobj);
-+}
-+
-+int hpilo_bios_config_setup(struct pci_dev *dev)
-+{
-+        int ret = 0;
-+        static void __iomem *rcu_table;
-+
-+        hpilo_dev = dev;
-+
-+        hpilo_kobj = kobject_create_and_add("hpilo_bios_config",
-+					    firmware_kobj);
-+
-+        if (!hpilo_kobj) {
-+                ret = -ENOMEM;
-+                goto out;
-+        }
-+
-+        dmi_walk(find_dmi_table, NULL);
-+
-+        if (!rcu_address || !rcu_size) {
-+                dev_err(&dev->dev, "Unable to find RCU table\n");
-+                ret = -ENODEV;
-+                goto out_put;
-+        }
-+
-+        rcu_table = ioremap(rcu_address, rcu_size);
-+
-+        if (!rcu_table) {
-+                dev_err(&dev->dev, "Can't map RCU table");
-+                ret = -ENODEV;
-+                goto out_put;
-+        }
-+
-+        if (validate_rcu_table(rcu_table) != 0) {
-+                dev_err(&dev->dev, "Can't validate RCU table\n");
-+                ret = -ENODEV;
-+                goto out_unmap;
-+        }
-+
-+        if (parse_rcu_table(rcu_table) != 0) {
-+                dev_err(&dev->dev, "Unable to parse RCU table\n");
-+                ret = -EINVAL;
-+                goto out_unmap;
-+        }
-+
-+        iounmap(rcu_table);
-+
-+        return 0;
-+
-+out_unmap:
-+        iounmap(rcu_table);
-+out_put:
-+        kobject_put(hpilo_kobj);
-+out:
-+        return ret;
-+}
-+
- /*
-  *	Watchdog operations
-  */
-@@ -840,6 +1606,10 @@ static int hpwdt_init_one(struct pci_dev *dev,
- 	dev_info(&dev->dev, "HP Watchdog Timer Driver: %s"
- 			", timer margin: %d seconds (nowayout=%d).\n",
- 			HPWDT_VERSION, soft_margin, nowayout);
-+
-+	/* It's ok for this to fail */
-+	hpilo_bios_config_setup(dev);
-+
- 	return 0;
- 
- error_misc_register:
-@@ -856,6 +1626,7 @@ static void hpwdt_exit(struct pci_dev *dev)
- 	if (!nowayout)
- 		hpwdt_stop();
- 
-+	hpilo_bios_config_teardown();
- 	misc_deregister(&hpwdt_miscdev);
- 	hpwdt_exit_nmi_decoding();
- 	pci_iounmap(dev, pci_mem_addr);
+-#define HPWDT_VERSION			"1.3.2"
+-#define SECS_TO_TICKS(secs)		((secs) * 1000 / 128)
+-#define TICKS_TO_SECS(ticks)		((ticks) * 128 / 1000)
+-#define HPWDT_MAX_TIMER			TICKS_TO_SECS(65535)
+-#define DEFAULT_MARGIN			30
+-
+-static unsigned int soft_margin = DEFAULT_MARGIN;	/* in seconds */
+-static unsigned int reload;			/* the computed soft_margin */
+-static bool nowayout = WATCHDOG_NOWAYOUT;
+-static char expect_release;
+-static unsigned long hpwdt_is_open;
+-
+-static void __iomem *pci_mem_addr;		/* the PCI-memory address */
+-static unsigned long __iomem *hpwdt_timer_reg;
+-static unsigned long __iomem *hpwdt_timer_con;
+-
+-static DEFINE_PCI_DEVICE_TABLE(hpwdt_devices) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB203) },	/* iLO2 */
+-	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3306) },	/* iLO3 */
+-	{0},			/* terminate list */
+-};
+-MODULE_DEVICE_TABLE(pci, hpwdt_devices);
+-
+-#ifdef CONFIG_HPWDT_NMI_DECODING
+-#define PCI_BIOS32_SD_VALUE		0x5F32335F	/* "_32_" */
+-#define CRU_BIOS_SIGNATURE_VALUE	0x55524324
+-#define PCI_BIOS32_PARAGRAPH_LEN	16
+-#define PCI_ROM_BASE1			0x000F0000
+-#define ROM_SIZE			0x10000
+-
+-struct bios32_service_dir {
+-	u32 signature;
+-	u32 entry_point;
+-	u8 revision;
+-	u8 length;
+-	u8 checksum;
+-	u8 reserved[5];
+-};
+-
+-/* type 212 */
+-struct smbios_cru64_info {
+-	u8 type;
+-	u8 byte_length;
+-	u16 handle;
+-	u32 signature;
+-	u64 physical_address;
+-	u32 double_length;
+-	u32 double_offset;
+-};
+-#define SMBIOS_CRU64_INFORMATION	212
+-
+-/* type 219 */
+-struct smbios_proliant_info {
+-	u8 type;
+-	u8 byte_length;
+-	u16 handle;
+-	u32 power_features;
+-	u32 omega_features;
+-	u32 reserved;
+-	u32 misc_features;
+-};
+-#define SMBIOS_ICRU_INFORMATION		219
+-
+-
+-struct cmn_registers {
+-	union {
+-		struct {
+-			u8 ral;
+-			u8 rah;
+-			u16 rea2;
+-		};
+-		u32 reax;
+-	} u1;
+-	union {
+-		struct {
+-			u8 rbl;
+-			u8 rbh;
+-			u8 reb2l;
+-			u8 reb2h;
+-		};
+-		u32 rebx;
+-	} u2;
+-	union {
+-		struct {
+-			u8 rcl;
+-			u8 rch;
+-			u16 rec2;
+-		};
+-		u32 recx;
+-	} u3;
+-	union {
+-		struct {
+-			u8 rdl;
+-			u8 rdh;
+-			u16 red2;
+-		};
+-		u32 redx;
+-	} u4;
+-
+-	u32 resi;
+-	u32 redi;
+-	u16 rds;
+-	u16 res;
+-	u32 reflags;
+-}  __attribute__((packed));
+-
+-static unsigned int hpwdt_nmi_decoding;
+-static unsigned int allow_kdump = 1;
+-static unsigned int is_icru;
+-static unsigned int is_uefi;
+-static DEFINE_SPINLOCK(rom_lock);
+-static void *cru_rom_addr;
+-static struct cmn_registers cmn_regs;
+-
+-extern asmlinkage void asminline_call(struct cmn_registers *pi86Regs,
+-						unsigned long *pRomEntry);
+-
+-#ifdef CONFIG_X86_32
+-/* --32 Bit Bios------------------------------------------------------------ */
+-
+-#define HPWDT_ARCH	32
+-
+-asm(".text                          \n\t"
+-    ".align 4                       \n"
+-    "asminline_call:                \n\t"
+-    "pushl       %ebp               \n\t"
+-    "movl        %esp, %ebp         \n\t"
+-    "pusha                          \n\t"
+-    "pushf                          \n\t"
+-    "push        %es                \n\t"
+-    "push        %ds                \n\t"
+-    "pop         %es                \n\t"
+-    "movl        8(%ebp),%eax       \n\t"
+-    "movl        4(%eax),%ebx       \n\t"
+-    "movl        8(%eax),%ecx       \n\t"
+-    "movl        12(%eax),%edx      \n\t"
+-    "movl        16(%eax),%esi      \n\t"
+-    "movl        20(%eax),%edi      \n\t"
+-    "movl        (%eax),%eax        \n\t"
+-    "push        %cs                \n\t"
+-    "call        *12(%ebp)          \n\t"
+-    "pushf                          \n\t"
+-    "pushl       %eax               \n\t"
+-    "movl        8(%ebp),%eax       \n\t"
+-    "movl        %ebx,4(%eax)       \n\t"
+-    "movl        %ecx,8(%eax)       \n\t"
+-    "movl        %edx,12(%eax)      \n\t"
+-    "movl        %esi,16(%eax)      \n\t"
+-    "movl        %edi,20(%eax)      \n\t"
+-    "movw        %ds,24(%eax)       \n\t"
+-    "movw        %es,26(%eax)       \n\t"
+-    "popl        %ebx               \n\t"
+-    "movl        %ebx,(%eax)        \n\t"
+-    "popl        %ebx               \n\t"
+-    "movl        %ebx,28(%eax)      \n\t"
+-    "pop         %es                \n\t"
+-    "popf                           \n\t"
+-    "popa                           \n\t"
+-    "leave                          \n\t"
+-    "ret                            \n\t"
+-    ".previous");
+-
+-
+-/*
+- *	cru_detect
+- *
+- *	Routine Description:
+- *	This function uses the 32-bit BIOS Service Directory record to
+- *	search for a $CRU record.
+- *
+- *	Return Value:
+- *	0        :  SUCCESS
+- *	<0       :  FAILURE
+- */
+-static int cru_detect(unsigned long map_entry,
+-	unsigned long map_offset)
+-{
+-	void *bios32_map;
+-	unsigned long *bios32_entrypoint;
+-	unsigned long cru_physical_address;
+-	unsigned long cru_length;
+-	unsigned long physical_bios_base = 0;
+-	unsigned long physical_bios_offset = 0;
+-	int retval = -ENODEV;
+-
+-	bios32_map = ioremap(map_entry, (2 * PAGE_SIZE));
+-
+-	if (bios32_map == NULL)
+-		return -ENODEV;
+-
+-	bios32_entrypoint = bios32_map + map_offset;
+-
+-	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
+-
+-	set_memory_x((unsigned long)bios32_map, 2);
+-	asminline_call(&cmn_regs, bios32_entrypoint);
+-
+-	if (cmn_regs.u1.ral != 0) {
+-		pr_warn("Call succeeded but with an error: 0x%x\n",
+-			cmn_regs.u1.ral);
+-	} else {
+-		physical_bios_base = cmn_regs.u2.rebx;
+-		physical_bios_offset = cmn_regs.u4.redx;
+-		cru_length = cmn_regs.u3.recx;
+-		cru_physical_address =
+-			physical_bios_base + physical_bios_offset;
+-
+-		/* If the values look OK, then map it in. */
+-		if ((physical_bios_base + physical_bios_offset)) {
+-			cru_rom_addr =
+-				ioremap(cru_physical_address, cru_length);
+-			if (cru_rom_addr) {
+-				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
+-					(cru_length + PAGE_SIZE - 1) >> PAGE_SHIFT);
+-				retval = 0;
+-			}
+-		}
+-
+-		pr_debug("CRU Base Address:   0x%lx\n", physical_bios_base);
+-		pr_debug("CRU Offset Address: 0x%lx\n", physical_bios_offset);
+-		pr_debug("CRU Length:         0x%lx\n", cru_length);
+-		pr_debug("CRU Mapped Address: %p\n", &cru_rom_addr);
+-	}
+-	iounmap(bios32_map);
+-	return retval;
+-}
+-
+-/*
+- *	bios_checksum
+- */
+-static int bios_checksum(const char __iomem *ptr, int len)
+-{
+-	char sum = 0;
+-	int i;
+-
+-	/*
+-	 * calculate checksum of size bytes. This should add up
+-	 * to zero if we have a valid header.
+-	 */
+-	for (i = 0; i < len; i++)
+-		sum += ptr[i];
+-
+-	return ((sum == 0) && (len > 0));
+-}
+-
+-/*
+- *	bios32_present
+- *
+- *	Routine Description:
+- *	This function finds the 32-bit BIOS Service Directory
+- *
+- *	Return Value:
+- *	0        :  SUCCESS
+- *	<0       :  FAILURE
+- */
+-static int bios32_present(const char __iomem *p)
+-{
+-	struct bios32_service_dir *bios_32_ptr;
+-	int length;
+-	unsigned long map_entry, map_offset;
+-
+-	bios_32_ptr = (struct bios32_service_dir *) p;
+-
+-	/*
+-	 * Search for signature by checking equal to the swizzled value
+-	 * instead of calling another routine to perform a strcmp.
+-	 */
+-	if (bios_32_ptr->signature == PCI_BIOS32_SD_VALUE) {
+-		length = bios_32_ptr->length * PCI_BIOS32_PARAGRAPH_LEN;
+-		if (bios_checksum(p, length)) {
+-			/*
+-			 * According to the spec, we're looking for the
+-			 * first 4KB-aligned address below the entrypoint
+-			 * listed in the header. The Service Directory code
+-			 * is guaranteed to occupy no more than 2 4KB pages.
+-			 */
+-			map_entry = bios_32_ptr->entry_point & ~(PAGE_SIZE - 1);
+-			map_offset = bios_32_ptr->entry_point - map_entry;
+-
+-			return cru_detect(map_entry, map_offset);
+-		}
+-	}
+-	return -ENODEV;
+-}
+-
+-static int detect_cru_service(void)
+-{
+-	char __iomem *p, *q;
+-	int rc = -1;
+-
+-	/*
+-	 * Search from 0x0f0000 through 0x0fffff, inclusive.
+-	 */
+-	p = ioremap(PCI_ROM_BASE1, ROM_SIZE);
+-	if (p == NULL)
+-		return -ENOMEM;
+-
+-	for (q = p; q < p + ROM_SIZE; q += 16) {
+-		rc = bios32_present(q);
+-		if (!rc)
+-			break;
+-	}
+-	iounmap(p);
+-	return rc;
+-}
+-/* ------------------------------------------------------------------------- */
+-#endif /* CONFIG_X86_32 */
+-#ifdef CONFIG_X86_64
+-/* --64 Bit Bios------------------------------------------------------------ */
+-
+-#define HPWDT_ARCH	64
+-
+-asm(".text                      \n\t"
+-    ".align 4                   \n"
+-    "asminline_call:            \n\t"
+-    "pushq      %rbp            \n\t"
+-    "movq       %rsp, %rbp      \n\t"
+-    "pushq      %rax            \n\t"
+-    "pushq      %rbx            \n\t"
+-    "pushq      %rdx            \n\t"
+-    "pushq      %r12            \n\t"
+-    "pushq      %r9             \n\t"
+-    "movq       %rsi, %r12      \n\t"
+-    "movq       %rdi, %r9       \n\t"
+-    "movl       4(%r9),%ebx     \n\t"
+-    "movl       8(%r9),%ecx     \n\t"
+-    "movl       12(%r9),%edx    \n\t"
+-    "movl       16(%r9),%esi    \n\t"
+-    "movl       20(%r9),%edi    \n\t"
+-    "movl       (%r9),%eax      \n\t"
+-    "call       *%r12           \n\t"
+-    "pushfq                     \n\t"
+-    "popq        %r12           \n\t"
+-    "movl       %eax, (%r9)     \n\t"
+-    "movl       %ebx, 4(%r9)    \n\t"
+-    "movl       %ecx, 8(%r9)    \n\t"
+-    "movl       %edx, 12(%r9)   \n\t"
+-    "movl       %esi, 16(%r9)   \n\t"
+-    "movl       %edi, 20(%r9)   \n\t"
+-    "movq       %r12, %rax      \n\t"
+-    "movl       %eax, 28(%r9)   \n\t"
+-    "popq       %r9             \n\t"
+-    "popq       %r12            \n\t"
+-    "popq       %rdx            \n\t"
+-    "popq       %rbx            \n\t"
+-    "popq       %rax            \n\t"
+-    "leave                      \n\t"
+-    "ret                        \n\t"
+-    ".previous");
+-
+-/*
+- *	dmi_find_cru
+- *
+- *	Routine Description:
+- *	This function checks whether or not a SMBIOS/DMI record is
+- *	the 64bit CRU info or not
+- */
+-static void dmi_find_cru(const struct dmi_header *dm, void *dummy)
+-{
+-	struct smbios_cru64_info *smbios_cru64_ptr;
+-	unsigned long cru_physical_address;
+-
+-	if (dm->type == SMBIOS_CRU64_INFORMATION) {
+-		smbios_cru64_ptr = (struct smbios_cru64_info *) dm;
+-		if (smbios_cru64_ptr->signature == CRU_BIOS_SIGNATURE_VALUE) {
+-			cru_physical_address =
+-				smbios_cru64_ptr->physical_address +
+-				smbios_cru64_ptr->double_offset;
+-			cru_rom_addr = ioremap(cru_physical_address,
+-				smbios_cru64_ptr->double_length);
+-			set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
+-				smbios_cru64_ptr->double_length >> PAGE_SHIFT);
+-		}
+-	}
+-}
+-
+-static int detect_cru_service(void)
+-{
+-	cru_rom_addr = NULL;
+-
+-	dmi_walk(dmi_find_cru, NULL);
+-
+-	/* if cru_rom_addr has been set then we found a CRU service */
+-	return ((cru_rom_addr != NULL) ? 0 : -ENODEV);
+-}
+-/* ------------------------------------------------------------------------- */
+-#endif /* CONFIG_X86_64 */
+-#endif /* CONFIG_HPWDT_NMI_DECODING */
+-
+-/*
+- *	Watchdog operations
+- */
+-static void hpwdt_start(void)
+-{
+-	reload = SECS_TO_TICKS(soft_margin);
+-	iowrite16(reload, hpwdt_timer_reg);
+-	iowrite8(0x85, hpwdt_timer_con);
+-}
+-
+-static void hpwdt_stop(void)
+-{
+-	unsigned long data;
+-
+-	data = ioread8(hpwdt_timer_con);
+-	data &= 0xFE;
+-	iowrite8(data, hpwdt_timer_con);
+-}
+-
+-static void hpwdt_ping(void)
+-{
+-	iowrite16(reload, hpwdt_timer_reg);
+-}
+-
+-static int hpwdt_change_timer(int new_margin)
+-{
+-	if (new_margin < 1 || new_margin > HPWDT_MAX_TIMER) {
+-		pr_warn("New value passed in is invalid: %d seconds\n",
+-			new_margin);
+-		return -EINVAL;
+-	}
+-
+-	soft_margin = new_margin;
+-	pr_debug("New timer passed in is %d seconds\n", new_margin);
+-	reload = SECS_TO_TICKS(soft_margin);
+-
+-	return 0;
+-}
+-
+-static int hpwdt_time_left(void)
+-{
+-	return TICKS_TO_SECS(ioread16(hpwdt_timer_reg));
+-}
+-
+-#ifdef CONFIG_HPWDT_NMI_DECODING
+-/*
+- *	NMI Handler
+- */
+-static int hpwdt_pretimeout(unsigned int ulReason, struct pt_regs *regs)
+-{
+-	unsigned long rom_pl;
+-	static int die_nmi_called;
+-
+-	if (!hpwdt_nmi_decoding)
+-		goto out;
+-
+-	spin_lock_irqsave(&rom_lock, rom_pl);
+-	if (!die_nmi_called && !is_icru && !is_uefi)
+-		asminline_call(&cmn_regs, cru_rom_addr);
+-	die_nmi_called = 1;
+-	spin_unlock_irqrestore(&rom_lock, rom_pl);
+-
+-	if (allow_kdump)
+-		hpwdt_stop();
+-
+-	if (!is_icru && !is_uefi) {
+-		if (cmn_regs.u1.ral == 0) {
+-			panic("An NMI occurred, "
+-				"but unable to determine source.\n");
+-		}
+-	}
+-	panic("An NMI occurred, please see the Integrated "
+-		"Management Log for details.\n");
+-
+-out:
+-	return NMI_DONE;
+-}
+-#endif /* CONFIG_HPWDT_NMI_DECODING */
+-
+-/*
+- *	/dev/watchdog handling
+- */
+-static int hpwdt_open(struct inode *inode, struct file *file)
+-{
+-	/* /dev/watchdog can only be opened once */
+-	if (test_and_set_bit(0, &hpwdt_is_open))
+-		return -EBUSY;
+-
+-	/* Start the watchdog */
+-	hpwdt_start();
+-	hpwdt_ping();
+-
+-	return nonseekable_open(inode, file);
+-}
+-
+-static int hpwdt_release(struct inode *inode, struct file *file)
+-{
+-	/* Stop the watchdog */
+-	if (expect_release == 42) {
+-		hpwdt_stop();
+-	} else {
+-		pr_crit("Unexpected close, not stopping watchdog!\n");
+-		hpwdt_ping();
+-	}
+-
+-	expect_release = 0;
+-
+-	/* /dev/watchdog is being closed, make sure it can be re-opened */
+-	clear_bit(0, &hpwdt_is_open);
+-
+-	return 0;
+-}
+-
+-static ssize_t hpwdt_write(struct file *file, const char __user *data,
+-	size_t len, loff_t *ppos)
+-{
+-	/* See if we got the magic character 'V' and reload the timer */
+-	if (len) {
+-		if (!nowayout) {
+-			size_t i;
+-
+-			/* note: just in case someone wrote the magic character
+-			 * five months ago... */
+-			expect_release = 0;
+-
+-			/* scan to see whether or not we got the magic char. */
+-			for (i = 0; i != len; i++) {
+-				char c;
+-				if (get_user(c, data + i))
+-					return -EFAULT;
+-				if (c == 'V')
+-					expect_release = 42;
+-			}
+-		}
+-
+-		/* someone wrote to us, we should reload the timer */
+-		hpwdt_ping();
+-	}
+-
+-	return len;
+-}
+-
+-static const struct watchdog_info ident = {
+-	.options = WDIOF_SETTIMEOUT |
+-		   WDIOF_KEEPALIVEPING |
+-		   WDIOF_MAGICCLOSE,
+-	.identity = "HP iLO2+ HW Watchdog Timer",
+-};
+-
+-static long hpwdt_ioctl(struct file *file, unsigned int cmd,
+-	unsigned long arg)
+-{
+-	void __user *argp = (void __user *)arg;
+-	int __user *p = argp;
+-	int new_margin;
+-	int ret = -ENOTTY;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		ret = 0;
+-		if (copy_to_user(argp, &ident, sizeof(ident)))
+-			ret = -EFAULT;
+-		break;
+-
+-	case WDIOC_GETSTATUS:
+-	case WDIOC_GETBOOTSTATUS:
+-		ret = put_user(0, p);
+-		break;
+-
+-	case WDIOC_KEEPALIVE:
+-		hpwdt_ping();
+-		ret = 0;
+-		break;
+-
+-	case WDIOC_SETTIMEOUT:
+-		ret = get_user(new_margin, p);
+-		if (ret)
+-			break;
+-
+-		ret = hpwdt_change_timer(new_margin);
+-		if (ret)
+-			break;
+-
+-		hpwdt_ping();
+-		/* Fall */
+-	case WDIOC_GETTIMEOUT:
+-		ret = put_user(soft_margin, p);
+-		break;
+-
+-	case WDIOC_GETTIMELEFT:
+-		ret = put_user(hpwdt_time_left(), p);
+-		break;
+-	}
+-	return ret;
+-}
+-
+-/*
+- *	Kernel interfaces
+- */
+-static const struct file_operations hpwdt_fops = {
+-	.owner = THIS_MODULE,
+-	.llseek = no_llseek,
+-	.write = hpwdt_write,
+-	.unlocked_ioctl = hpwdt_ioctl,
+-	.open = hpwdt_open,
+-	.release = hpwdt_release,
+-};
+-
+-static struct miscdevice hpwdt_miscdev = {
+-	.minor = WATCHDOG_MINOR,
+-	.name = "watchdog",
+-	.fops = &hpwdt_fops,
+-};
+-
+-/*
+- *	Init & Exit
+- */
+-
+-#ifdef CONFIG_HPWDT_NMI_DECODING
+-#ifdef CONFIG_X86_LOCAL_APIC
+-static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
+-{
+-	/*
+-	 * If nmi_watchdog is turned off then we can turn on
+-	 * our nmi decoding capability.
+-	 */
+-	hpwdt_nmi_decoding = 1;
+-}
+-#else
+-static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
+-{
+-	dev_warn(&dev->dev, "NMI decoding is disabled. "
+-		"Your kernel does not support a NMI Watchdog.\n");
+-}
+-#endif /* CONFIG_X86_LOCAL_APIC */
+-
+-/*
+- *	dmi_find_icru
+- *
+- *	Routine Description:
+- *	This function checks whether or not we are on an iCRU-based server.
+- *	This check is independent of architecture and needs to be made for
+- *	any ProLiant system.
+- */
+-static void dmi_find_icru(const struct dmi_header *dm, void *dummy)
+-{
+-	struct smbios_proliant_info *smbios_proliant_ptr;
+-
+-	if (dm->type == SMBIOS_ICRU_INFORMATION) {
+-		smbios_proliant_ptr = (struct smbios_proliant_info *) dm;
+-		if (smbios_proliant_ptr->misc_features & 0x01)
+-			is_icru = 1;
+-		if (smbios_proliant_ptr->misc_features & 0x408)
+-			is_uefi = 1;
+-	}
+-}
+-
+-static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
+-{
+-	int retval;
+-
+-	/*
+-	 * On typical CRU-based systems we need to map that service in
+-	 * the BIOS. For 32 bit Operating Systems we need to go through
+-	 * the 32 Bit BIOS Service Directory. For 64 bit Operating
+-	 * Systems we get that service through SMBIOS.
+-	 *
+-	 * On systems that support the new iCRU service all we need to
+-	 * do is call dmi_walk to get the supported flag value and skip
+-	 * the old cru detect code.
+-	 */
+-	dmi_walk(dmi_find_icru, NULL);
+-	if (!is_icru && !is_uefi) {
+-
+-		/*
+-		* We need to map the ROM to get the CRU service.
+-		* For 32 bit Operating Systems we need to go through the 32 Bit
+-		* BIOS Service Directory
+-		* For 64 bit Operating Systems we get that service through SMBIOS.
+-		*/
+-		retval = detect_cru_service();
+-		if (retval < 0) {
+-			dev_warn(&dev->dev,
+-				"Unable to detect the %d Bit CRU Service.\n",
+-				HPWDT_ARCH);
+-			return retval;
+-		}
+-
+-		/*
+-		* We know this is the only CRU call we need to make so lets keep as
+-		* few instructions as possible once the NMI comes in.
+-		*/
+-		cmn_regs.u1.rah = 0x0D;
+-		cmn_regs.u1.ral = 0x02;
+-	}
+-
+-	/*
+-	 * Only one function can register for NMI_UNKNOWN
+-	 */
+-	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout, 0, "hpwdt");
+-	if (retval)
+-		goto error;
+-	retval = register_nmi_handler(NMI_SERR, hpwdt_pretimeout, 0, "hpwdt");
+-	if (retval)
+-		goto error1;
+-	retval = register_nmi_handler(NMI_IO_CHECK, hpwdt_pretimeout, 0, "hpwdt");
+-	if (retval)
+-		goto error2;
+-
+-	dev_info(&dev->dev,
+-			"HP Watchdog Timer Driver: NMI decoding initialized"
+-			", allow kernel dump: %s (default = 0/OFF)\n",
+-			(allow_kdump == 0) ? "OFF" : "ON");
+-	return 0;
+-
+-error2:
+-	unregister_nmi_handler(NMI_SERR, "hpwdt");
+-error1:
+-	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
+-error:
+-	dev_warn(&dev->dev,
+-		"Unable to register a die notifier (err=%d).\n",
+-		retval);
+-	if (cru_rom_addr)
+-		iounmap(cru_rom_addr);
+-	return retval;
+-}
+-
+-static void hpwdt_exit_nmi_decoding(void)
+-{
+-	unregister_nmi_handler(NMI_UNKNOWN, "hpwdt");
+-	unregister_nmi_handler(NMI_SERR, "hpwdt");
+-	unregister_nmi_handler(NMI_IO_CHECK, "hpwdt");
+-	if (cru_rom_addr)
+-		iounmap(cru_rom_addr);
+-}
+-#else /* !CONFIG_HPWDT_NMI_DECODING */
+-static void hpwdt_check_nmi_decoding(struct pci_dev *dev)
+-{
+-}
+-
+-static int hpwdt_init_nmi_decoding(struct pci_dev *dev)
+-{
+-	return 0;
+-}
+-
+-static void hpwdt_exit_nmi_decoding(void)
+-{
+-}
+-#endif /* CONFIG_HPWDT_NMI_DECODING */
+-
+-static int hpwdt_init_one(struct pci_dev *dev,
+-					const struct pci_device_id *ent)
+-{
+-	int retval;
+-
+-	/*
+-	 * Check if we can do NMI decoding or not
+-	 */
+-	hpwdt_check_nmi_decoding(dev);
+-
+-	/*
+-	 * First let's find out if we are on an iLO2+ server. We will
+-	 * not run on a legacy ASM box.
+-	 * So we only support the G5 ProLiant servers and higher.
+-	 */
+-	if (dev->subsystem_vendor != PCI_VENDOR_ID_HP) {
+-		dev_warn(&dev->dev,
+-			"This server does not have an iLO2+ ASIC.\n");
+-		return -ENODEV;
+-	}
+-
+-	if (pci_enable_device(dev)) {
+-		dev_warn(&dev->dev,
+-			"Not possible to enable PCI Device: 0x%x:0x%x.\n",
+-			ent->vendor, ent->device);
+-		return -ENODEV;
+-	}
+-
+-	pci_mem_addr = pci_iomap(dev, 1, 0x80);
+-	if (!pci_mem_addr) {
+-		dev_warn(&dev->dev,
+-			"Unable to detect the iLO2+ server memory.\n");
+-		retval = -ENOMEM;
+-		goto error_pci_iomap;
+-	}
+-	hpwdt_timer_reg = pci_mem_addr + 0x70;
+-	hpwdt_timer_con = pci_mem_addr + 0x72;
+-
+-	/* Make sure that timer is disabled until /dev/watchdog is opened */
+-	hpwdt_stop();
+-
+-	/* Make sure that we have a valid soft_margin */
+-	if (hpwdt_change_timer(soft_margin))
+-		hpwdt_change_timer(DEFAULT_MARGIN);
+-
+-	/* Initialize NMI Decoding functionality */
+-	retval = hpwdt_init_nmi_decoding(dev);
+-	if (retval != 0)
+-		goto error_init_nmi_decoding;
+-
+-	retval = misc_register(&hpwdt_miscdev);
+-	if (retval < 0) {
+-		dev_warn(&dev->dev,
+-			"Unable to register miscdev on minor=%d (err=%d).\n",
+-			WATCHDOG_MINOR, retval);
+-		goto error_misc_register;
+-	}
+-
+-	dev_info(&dev->dev, "HP Watchdog Timer Driver: %s"
+-			", timer margin: %d seconds (nowayout=%d).\n",
+-			HPWDT_VERSION, soft_margin, nowayout);
+-	return 0;
+-
+-error_misc_register:
+-	hpwdt_exit_nmi_decoding();
+-error_init_nmi_decoding:
+-	pci_iounmap(dev, pci_mem_addr);
+-error_pci_iomap:
+-	pci_disable_device(dev);
+-	return retval;
+-}
+-
+-static void hpwdt_exit(struct pci_dev *dev)
+-{
+-	if (!nowayout)
+-		hpwdt_stop();
+-
+-	misc_deregister(&hpwdt_miscdev);
+-	hpwdt_exit_nmi_decoding();
+-	pci_iounmap(dev, pci_mem_addr);
+-	pci_disable_device(dev);
+-}
+-
+-static struct pci_driver hpwdt_driver = {
+-	.name = "hpwdt",
+-	.id_table = hpwdt_devices,
+-	.probe = hpwdt_init_one,
+-	.remove = hpwdt_exit,
+-};
+-
+-MODULE_AUTHOR("Tom Mingarelli");
+-MODULE_DESCRIPTION("hp watchdog driver");
+-MODULE_LICENSE("GPL");
+-MODULE_VERSION(HPWDT_VERSION);
+-MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+-
+-module_param(soft_margin, int, 0);
+-MODULE_PARM_DESC(soft_margin, "Watchdog timeout in seconds");
+-
+-module_param(nowayout, bool, 0);
+-MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+-		__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+-
+-#ifdef CONFIG_HPWDT_NMI_DECODING
+-module_param(allow_kdump, int, 0);
+-MODULE_PARM_DESC(allow_kdump, "Start a kernel dump after NMI occurs");
+-#endif /* !CONFIG_HPWDT_NMI_DECODING */
+-
+-module_pci_driver(hpwdt_driver);
 -- 
 1.8.3.1
 
