@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934237Ab3IDGNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 02:13:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50532 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761955Ab3IDGNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 02:13:18 -0400
-Date: Tue, 3 Sep 2013 23:13:01 -0700
-From: tip-bot for Yanchuan Nian <tipbot@zytor.com>
-Message-ID: <tip-7752572f18f98ee796e173334b088a1d621d2da4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ycnian@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ycnian@gmail.com, tglx@linutronix.de
-In-Reply-To: <1378257924-29446-1-git-send-email-ycnian@gmail.com>
-References: <1378257924-29446-1-git-send-email-ycnian@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86/irq:
-  Correct comment about i8259 initialization
-Git-Commit-ID: 7752572f18f98ee796e173334b088a1d621d2da4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 03 Sep 2013 23:13:07 -0700 (PDT)
+	id S1762043Ab3IDGPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 02:15:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61832 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934290Ab3IDGPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 02:15:15 -0400
+From: Jan Kaluza <jkaluza@redhat.com>
+To: davem@davemloft.net
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        eparis@redhat.com, rgb@redhat.com, tj@kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk, Jan Kaluza <jkaluza@redhat.com>
+Subject: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level control message
+Date: Wed,  4 Sep 2013 08:14:18 +0200
+Message-Id: <1378275261-4553-1-git-send-email-jkaluza@redhat.com>
+In-Reply-To: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7752572f18f98ee796e173334b088a1d621d2da4
-Gitweb:     http://git.kernel.org/tip/7752572f18f98ee796e173334b088a1d621d2da4
-Author:     Yanchuan Nian <ycnian@gmail.com>
-AuthorDate: Wed, 4 Sep 2013 09:25:24 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 4 Sep 2013 07:46:04 +0200
+Hi,
 
-x86/irq: Correct comment about i8259 initialization
+this patchset against net-next (applies also to linux-next) adds 3 new types
+of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
 
-0x30-0x3f have been used for ISA interrupts on i386 as well
-since 5 years ago, but old comments about i8259 initialization
-were still referring to the old i386 usage of this port range.
+Server-like processes in many cases need credentials and other
+metadata of the peer, to decide if the calling process is allowed to
+request a specific action, or the server just wants to log away this
+type of information for auditing tasks.
 
-Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
-Cc: yinghai@kernel.org
-Cc: pavel@suse.cz
-Link: http://lkml.kernel.org/r/1378257924-29446-1-git-send-email-ycnian@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/i8259.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+The current practice to retrieve such process metadata is to look that
+information up in procfs with the $PID received over SCM_CREDENTIALS.
+This is sufficient for long-running tasks, but introduces a race which
+cannot be worked around for short-living processes; the calling
+process and all the information in /proc/$PID/ is gone before the
+receiver of the socket message can look it up.
 
-diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-index 9a5c460..2e977b5 100644
---- a/arch/x86/kernel/i8259.c
-+++ b/arch/x86/kernel/i8259.c
-@@ -312,8 +312,7 @@ static void init_8259A(int auto_eoi)
- 	 */
- 	outb_pic(0x11, PIC_MASTER_CMD);	/* ICW1: select 8259A-1 init */
- 
--	/* ICW2: 8259A-1 IR0-7 mapped to 0x30-0x37 on x86-64,
--	   to 0x20-0x27 on i386 */
-+	/* ICW2: 8259A-1 IR0-7 mapped to 0x30-0x37 */
- 	outb_pic(IRQ0_VECTOR, PIC_MASTER_IMR);
- 
- 	/* 8259A-1 (the master) has a slave on IR2 */
+Changes introduced in this patchset can also increase performance
+of such server-like processes, because current way of opening and
+parsing /proc/$PID/* files is much more expensive than receiving these
+metadata using SCM.
+
+Changes in v3:
+- Better description of patches (Thanks to Kay Sievers)
+
+Changes in v2:
+- use PATH_MAX instead of PAGE_SIZE in SCM_CGROUP patch
+- describe each patch individually
+
+Jan Kaluza (3):
+  Send loginuid and sessionid in SCM_AUDIT
+  Send comm and cmdline in SCM_PROCINFO
+  Send cgroup_path in SCM_CGROUP
+
+ include/linux/socket.h |  9 ++++++
+ include/net/af_unix.h  | 10 ++++++
+ include/net/scm.h      | 67 ++++++++++++++++++++++++++++++++++++++--
+ net/core/scm.c         | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ net/unix/af_unix.c     | 70 ++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 237 insertions(+), 2 deletions(-)
+
+-- 
+1.8.3.1
+
