@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3IDEHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 00:07:33 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47184 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752513Ab3IDEHc (ORCPT
+	id S1754956Ab3IDEMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 00:12:15 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50421 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab3IDEMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 00:07:32 -0400
-X-Sasl-enc: d4siwsEai1mDN0ulBgIuDesDTpbgjcaiTLrsjPEfppgP 1378267650
-Message-ID: <1378267648.2364.20.camel@perseus.fritz.box>
-Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
-From: Ian Kent <raven@themaw.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 04 Sep 2013 12:07:28 +0800
-In-Reply-To: <1378266784.2364.11.camel@perseus.fritz.box>
-References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
-	 <20130904010301.GE13318@ZenIV.linux.org.uk>
-	 <20130904020013.GF13318@ZenIV.linux.org.uk>
-	 <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
-	 <20130904022617.GG13318@ZenIV.linux.org.uk>
-	 <20130904024230.GH13318@ZenIV.linux.org.uk>
-	 <1378266784.2364.11.camel@perseus.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Sep 2013 00:12:12 -0400
+Date: Tue, 3 Sep 2013 21:12:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 01/18 v2] ftrace: Add hash list to save RCU unsafe
+ functions
+Message-ID: <20130904041207.GO3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130831051117.884125230@goodmis.org>
+ <20130831051700.601365837@goodmis.org>
+ <20130903171516.16290c47@gandalf.local.home>
+ <20130903221808.GH3871@linux.vnet.ibm.com>
+ <20130903195705.3ba3442f@gandalf.local.home>
+ <20130904012404.GI3871@linux.vnet.ibm.com>
+ <20130903220115.1018d8f4@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903220115.1018d8f4@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090404-4834-0000-0000-00000AB35926
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 11:53 +0800, Ian Kent wrote:
-> On Wed, 2013-09-04 at 03:42 +0100, Al Viro wrote:
-> > On Wed, Sep 04, 2013 at 03:26:17AM +0100, Al Viro wrote:
-> > > I've applied slightly modified variant of Jeff's "vfs: allow umount to handle
-> > > mountpoints without revalidating them" (modified by just leaving the
-> > > struct path filled with mountpoint and leaving the equivalent of follow_mount()
-> > > to caller) to the local queue and I'm pretty sure that it's what we want
-> > > here as well.
+On Tue, Sep 03, 2013 at 10:01:15PM -0400, Steven Rostedt wrote:
+> On Tue, 3 Sep 2013 18:24:04 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> 
+> > >  static DEFINE_PER_CPU(unsigned long, ftrace_rcu_func);
+> > > @@ -588,15 +593,14 @@ static void
+> > >  ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+> > >  		       struct ftrace_ops *op, struct pt_regs *pt_regs)
+> > >  {
+> > > -	int bit;
+> > > -
+> > > +	/* Make sure we see disabled or not first */
+> > > +	smp_rmb();
 > > 
-> > ... and killed the modifications since the result ends up uglier for
-> > caller(s) anyway.  Reapplied as-is.
+> > 	smp_mb__before_atomic_inc()?
+> > 
 > 
-> But isn't that what's needed anyway?
+> Ah, but this is before an atomic_read(), and not an atomic_inc(), thus
+> the normal smp_rmb() is still required.
 
-Except for the question of following symlinks which is still bugging me.
+Good point, color me blind, dazed, and confused.
 
-Granted, the initial implementation (8d7b48e0) didn't check for a
-symlink but probably should have and returned EINVAL if it found one.
+							Thanx, Paul
 
-That's because the whole process is driven by automount maps that have
-specific paths, so needing to follow a symlink is an indication the
-caller is doing something wrong.
-
-It's probably not actually harmful to cater for it in kernel .... though
-the user will likely crash and burn some time later.
-
+> -- Steve
 > 
-> Looks like it fits with the existing code that walks back down looking
-> for a match.
+> > >  	if (atomic_read(&ftrace_unsafe_rcu_disabled))
+> > >  		return;
+> > > 
+> > >  	preempt_disable_notrace();
+> > > 
 > 
-> And that fits in with fixing the bug where we want the first match just
-> means breaking out early. The match should be close to the top, if not
-> the first then the second, for the common case.
-> 
-> Ian
-
 
