@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab3IDUQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:16:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38516 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759547Ab3IDUQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 16:16:41 -0400
-Message-ID: <52279524.8090006@wwwdotorg.org>
-Date: Wed, 04 Sep 2013 14:16:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Lars Poeschel <poeschel@lemonage.de>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	id S932790Ab3IDURj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 16:17:39 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:46060 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754438Ab3IDURh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:17:37 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org> <3144247.j2q6H0KWZx@lem-wkst-02>
-In-Reply-To: <3144247.j2q6H0KWZx@lem-wkst-02>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Date: Wed, 4 Sep 2013 22:17:09 +0200
+Subject: Re: [PATCH 07/11] iio: sensors-core: st: Allow full-scale to be an
+ optional feature
+Thread-Topic: [PATCH 07/11] iio: sensors-core: st: Allow full-scale to be an
+ optional feature
+Thread-Index: Ac6pq7ynl0UPv1rcRxeE5CiOsWQPxQ==
+Message-ID: <52279545.5070903@st.com>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-8-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378287103-21765-8-git-send-email-lee.jones@linaro.org>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 03:05 AM, Lars Poeschel wrote:
-> On Wednesday 04 September 2013 11:27:12, Stephen Warren wrote:
->> On 09/02/2013 03:25 AM, Lars Poeschel wrote:
->>> Some leagcy drivers currently do this:
->>>
->>> request_gpio(gpio);
->>> gpio_direction_input(gpio);
->>> request_irq(gpio_to_irq(gpio));
->>>
->>> In that case request_irq should not fail because the driver is already the
->>> correct owner of this gpio. But if some other entity owns this gpio it
->>> should fail.
->>
->> Yes.
->>
->>> Also if I understand you correct the other way round should also possible:
->>>
->>> request_irq(gpio_to_irq(gpio));
->>> request_gpio(gpio);
->>> gpio_direction_input(gpio);
->>>
->>> request_irq() also requests the gpio then but the following request_gpio()
->>> should also not fail.
->>
->> I don't believe that code sequence is currently banned. If we want to
->> ban it, we should document that. Until this is documented as being
->> banned, I think we must fully support that code sequence.
->>
->>> To have it work that way we have to track the owners of all requested
->>> gpios
->>> somewhere. Or am I wrong here?
->>> Where and how to record these owners? Can gpio system achieve this? gpios
->>> are requested without an owning device.
->>
->> Yes. But, I believe we need to fully track every GPIO/IRQ owner already
->> right now; if a driver (not the GPIO/IRQ chip driver, but a driver that
->> uses the GPIOs/IRQs) calls gpio_request()/request_irq(), and this patch
->> has already requested them, then we already need to fully track GPIO/IRQ
->> ownership to make sure that the driver's own requests aren't failed
->> because the DT/GPIO core has already requested them on its behalf.
-> 
-> The driver that tries to use the GPIO requested by this patch before HAS to 
-> fail. This is exactly the intention of this patch. We don't want the GPIO to 
-> be requested any more, if it is used as an interrupt pin.
-
-That will break existing drivers. There are drivers that request the
-same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
-that way.
-
-> To be able to implement the way you proposed some mails before, I have to be 
-> able to do some checks that to my opinion (and if I understand Linus 
-> correctly) aren't possible at the moment.
-
-True.
-
-> So I asked, where and how to record 
-> these owners of the GPIOs? And can the GPIO system achieve this and how? Can 
-> you please shed some light on this! Thanks!
-
-Alex Courbot's (proposed) new gpiod API has a "dev" parameter to
-gpiod_request() which could be used for this purpose. Something similar
-could be done for interrupts.
+Acked-by: Denis Ciocca <denis.ciocca@st.com>
+> Some chips either don't support it or fail to provide adequate documentation,
+> so sometimes it's impossible to enable the feature even if it is supported.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   drivers/iio/common/st_sensors/st_sensors_core.c | 11 +++++++----
+>   drivers/iio/pressure/st_pressure_core.c         |  6 ++++--
+>   2 files changed, 11 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
+> index 865b178..fc9acb7 100644
+> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
+> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
+> @@ -209,10 +209,13 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev)
+>   	if (err < 0)
+>   		goto init_error;
+>   
+> -	err = st_sensors_set_fullscale(indio_dev,
+> -						sdata->current_fullscale->num);
+> -	if (err < 0)
+> -		goto init_error;
+> +	if (sdata->current_fullscale) {
+> +		err = st_sensors_set_fullscale(indio_dev,
+> +					       sdata->current_fullscale->num);
+> +		if (err < 0)
+> +			goto init_error;
+> +	} else
+> +		dev_info(&indio_dev->dev, "Full-scale not possible\n");
+>   
+>   	err = st_sensors_set_odr(indio_dev, sdata->odr);
+>   	if (err < 0)
+> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+> index 7ba9299..423ed6a 100644
+> --- a/drivers/iio/pressure/st_pressure_core.c
+> +++ b/drivers/iio/pressure/st_pressure_core.c
+> @@ -239,8 +239,10 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+>   	indio_dev->channels = pdata->sensor->ch;
+>   	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+>   
+> -	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+> -						&pdata->sensor->fs.fs_avl[0];
+> +	if (pdata->sensor->fs.addr != 0)
+> +		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+> +			&pdata->sensor->fs.fs_avl[0];
+> +
+>   	pdata->odr = pdata->sensor->odr.odr_avl[0].hz;
+>   
+>   	err = st_sensors_init_sensor(indio_dev);
