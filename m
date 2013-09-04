@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762058Ab3IDHVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:21:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab3IDHVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:21:07 -0400
-Date: Wed, 4 Sep 2013 09:22:57 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/4] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <20130904072256.GA8726@dhcp-26-207.brq.redhat.com>
-References: <cover.1378111919.git.agordeev@redhat.com>
- <3bb1b4375655ecfde5017cc70973d078f2434d5d.1378111919.git.agordeev@redhat.com>
- <20130903141824.GD10522@htj.dyndns.org>
- <20130903161906.GC14221@dhcp-26-207.brq.redhat.com>
- <20130903182731.GA27092@mtj.dyndns.org>
+	id S1762156Ab3IDHWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:22:06 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43866 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab3IDHWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 03:22:04 -0400
+Message-ID: <5226DF97.3000704@hitachi.com>
+Date: Wed, 04 Sep 2013 16:21:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903182731.GA27092@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
+        anton@redhat.com, systemtap@sourceware.org
+Subject: Re: [PATCH 1/2] SDT markers listing by perf
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora>
+In-Reply-To: <20130903073655.4793.20013.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 02:27:31PM -0400, Tejun Heo wrote: > Hello,
-> 
-> On Tue, Sep 03, 2013 at 06:19:06PM +0200, Alexander Gordeev wrote:
-> > We must enable maximum possible number of MSIs - the one reported in
-> > Multiple Message Capable register. Otherwise ICH device will fallback
-> > to MRSM. IOW, if the result of roundup_pow_of_two(n_ports) is not what
-> > in Multiple Message Capable register (i.e. as roundup_pow_of_two(6) vs 16)
-> > ICH will enforce MRSM mode.
-> 
-> Hmmm... I think the interface in general is pretty messy.  Wouldn't it
-> be much cleaner to have a separate function to query MSICAP and let
-> the function just return success / failure?
+(2013/09/03 16:36), Hemant Kumar wrote:
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index 5f720dc..f2d17b7 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -197,6 +197,17 @@ struct symsrc {
+>  #endif
+>  };
+>  
+> +/* Note structure */
+> +struct sdt_note {
+> +	const char *name;
+> +	const char *provider;
+> +	union {
+> +		Elf64_Addr a64[3];
+> +		Elf32_Addr a32[3];
+> +	} addr;
+> +	struct sdt_note *next;
+> +};
 
-Actually, sorry for misleading. It is only ICH (I am aware of) that works
-this way and I was focused on.
+Hmm, could you use struct list_head for listing up the data?
 
-I think a general approach that will cover it all (including ICH and undesired
-sharing of interrupt vectors) - start MME from roundup_pow_of_two(n_ports) and
-ensure MRSM bit is unset. If not - double MME and retry. If still not and the
-limit is reached - fall back to single MSI.
-
-Makes sense?
-
-> Thanks.
-> 
-> -- 
-> tejun
+Thank you,
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
