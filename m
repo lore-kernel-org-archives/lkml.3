@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934330Ab3IDFrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 01:47:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43797 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934300Ab3IDFrt (ORCPT
+	id S934366Ab3IDFsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 01:48:03 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34222 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934173Ab3IDFr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 01:47:49 -0400
+	Wed, 4 Sep 2013 01:47:59 -0400
 From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: benve@cisco.com, ssujith@cisco.com, nistrive@cisco.com, umalhi@cisco.com,
         Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 2/5] driver/net: enic: record q_number and rss_hash for skb
-Date: Wed,  4 Sep 2013 11:17:15 +0530
-Message-Id: <1378273638-7780-3-git-send-email-govindarajulu90@gmail.com>
+Subject: [PATCH net-next 4/5] driver/net: enic: Exposing symbols for Cisco's low latency driver
+Date: Wed,  4 Sep 2013 11:17:17 +0530
+Message-Id: <1378273638-7780-5-git-send-email-govindarajulu90@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
 References: <1378273638-7780-1-git-send-email-govindarajulu90@gmail.com>
@@ -21,53 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch sets the skb->rxhash and skb->q_number.
-This is used by RPS and RFS. Kernel can make use of hw provided hash
-instead of calculating the hash.
+This patch exposes symbols for usnic low latency driver that can be used to 
+register and unregister vNics as well to traverse the resources on vNics.
 
-Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+Signed-off-by: Upinder Malhi <umalhi@cisco.com>
 Signed-off-by: Nishank Trivedi <nistrive@cisco.com>
 Signed-off-by: Christian Benvenuti <benve@cisco.com>
 ---
- drivers/net/ethernet/cisco/enic/enic_main.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/ethernet/cisco/enic/vnic_dev.c | 10 ++++++++++
+ drivers/net/ethernet/cisco/enic/vnic_dev.h |  1 +
+ 2 files changed, 11 insertions(+)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-index 1ab3f18..93898ba 100644
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -1034,6 +1034,14 @@ static void enic_rq_indicate_buf(struct vnic_rq *rq,
+diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.c b/drivers/net/ethernet/cisco/enic/vnic_dev.c
+index 97455c5..69dd925 100644
+--- a/drivers/net/ethernet/cisco/enic/vnic_dev.c
++++ b/drivers/net/ethernet/cisco/enic/vnic_dev.c
+@@ -175,6 +175,7 @@ unsigned int vnic_dev_get_res_count(struct vnic_dev *vdev,
+ {
+ 	return vdev->res[type].count;
+ }
++EXPORT_SYMBOL(vnic_dev_get_res_count);
  
- 		skb_put(skb, bytes_written);
- 		skb->protocol = eth_type_trans(skb, netdev);
-+		skb_record_rx_queue(skb, q_number);
-+		if (netdev->features & NETIF_F_RXHASH) {
-+			skb->rxhash = rss_hash;
-+			if (rss_type & (NIC_CFG_RSS_HASH_TYPE_TCP_IPV6_EX |
-+					NIC_CFG_RSS_HASH_TYPE_TCP_IPV6 |
-+					NIC_CFG_RSS_HASH_TYPE_TCP_IPV4))
-+				skb->l4_rxhash = true;
-+		}
- 
- 		if ((netdev->features & NETIF_F_RXCSUM) && !csum_not_calc) {
- 			skb->csum = htons(checksum);
-@@ -2209,6 +2217,7 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum vnic_res_type type,
+ 	unsigned int index)
+@@ -193,6 +194,7 @@ void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum vnic_res_type type,
+ 		return (char __iomem *)vdev->res[type].vaddr;
  	}
+ }
++EXPORT_SYMBOL(vnic_dev_get_res);
  
- 	netif_set_real_num_tx_queues(netdev, enic->wq_count);
-+	netif_set_real_num_rx_queues(netdev, enic->rq_count);
+ static unsigned int vnic_dev_desc_ring_size(struct vnic_dev_ring *ring,
+ 	unsigned int desc_count, unsigned int desc_size)
+@@ -942,6 +944,7 @@ void vnic_dev_unregister(struct vnic_dev *vdev)
+ 		kfree(vdev);
+ 	}
+ }
++EXPORT_SYMBOL(vnic_dev_unregister);
  
- 	/* Setup notification timer, HW reset task, and wq locks
- 	 */
-@@ -2258,6 +2267,8 @@ static int enic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (ENIC_SETTING(enic, TSO))
- 		netdev->hw_features |= NETIF_F_TSO |
- 			NETIF_F_TSO6 | NETIF_F_TSO_ECN;
-+	if (ENIC_SETTING(enic, RSS))
-+		netdev->hw_features |= NETIF_F_RXHASH;
- 	if (ENIC_SETTING(enic, RXCSUM))
- 		netdev->hw_features |= NETIF_F_RXCSUM;
+ struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
+ 	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar,
+@@ -969,6 +972,13 @@ err_out:
+ 	vnic_dev_unregister(vdev);
+ 	return NULL;
+ }
++EXPORT_SYMBOL(vnic_dev_register);
++
++struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev)
++{
++	return vdev->pdev;
++}
++EXPORT_SYMBOL(vnic_dev_get_pdev);
  
+ int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len)
+ {
+diff --git a/drivers/net/ethernet/cisco/enic/vnic_dev.h b/drivers/net/ethernet/cisco/enic/vnic_dev.h
+index f3d9b79..e670029 100644
+--- a/drivers/net/ethernet/cisco/enic/vnic_dev.h
++++ b/drivers/net/ethernet/cisco/enic/vnic_dev.h
+@@ -127,6 +127,7 @@ int vnic_dev_set_ig_vlan_rewrite_mode(struct vnic_dev *vdev,
+ struct vnic_dev *vnic_dev_register(struct vnic_dev *vdev,
+ 	void *priv, struct pci_dev *pdev, struct vnic_dev_bar *bar,
+ 	unsigned int num_bars);
++struct pci_dev *vnic_dev_get_pdev(struct vnic_dev *vdev);
+ int vnic_dev_init_prov2(struct vnic_dev *vdev, u8 *buf, u32 len);
+ int vnic_dev_enable2(struct vnic_dev *vdev, int active);
+ int vnic_dev_enable2_done(struct vnic_dev *vdev, int *status);
 -- 
 1.8.4
 
