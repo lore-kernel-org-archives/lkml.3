@@ -1,132 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965070Ab3IDQf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 12:35:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763130Ab3IDQdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 12:33:10 -0400
-Date: Wed, 04 Sep 2013 12:32:10 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kirill.shutemov@linux.intel.com, Alex Thorlton <athorlton@sgi.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1378312330-afoa3r2y-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <87li3dvz3k.fsf@linux.vnet.ibm.com>
-References: <1377883120-5280-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1377883120-5280-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87li3dvz3k.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] hugetlbfs: support split page table lock
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S965098Ab3IDQgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 12:36:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964905Ab3IDQct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 12:32:49 -0400
+Date: Wed, 4 Sep 2013 09:32:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH v3 0/7] Enable Drivers for Intel MIC X100 Coprocessors.
+Message-ID: <20130904163248.GA19631@kroah.com>
+References: <cover.1377104309.git.sudeep.dutt@intel.com>
+ <1378311520.72268.21.camel@blbiskey-desk1.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <1378311520.72268.21.camel@blbiskey-desk1.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aneesh,
-
-On Wed, Sep 04, 2013 at 12:43:19PM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+On Wed, Sep 04, 2013 at 09:18:40AM -0700, Sudeep Dutt wrote:
+> On Wed, 2013-08-21 at 10:51 -0700, Sudeep Dutt wrote:
+> > ChangeLog:
+> > =========
+> > 
+> > v2 => v3:
+> > a) Patch 1 data structure cleanups, header file include cleanups,
+> >    IDA interface reuse and switching to device_create_with_groups(..)
+> >    as per feedback from Greg Kroah-Hartman.
+> > b) Patch 7 signal documentation, sleep workaround removal and sysfs
+> >    access API cleanups as per feedback from Michael S. Tsirkin.
+> > 
+> > v1 => v2: @ http://lwn.net/Articles/563131/
+> > a) License wording cleanup, sysfs ABI documentation, patch 1 refactoring
+> >    into 3 smaller patches and function renames, as per feedback from
+> >    Greg Kroah-Hartman.
+> > b) Use VRINGH infrastructure for accessing virtio rings from the host
+> >    in patch 5, as per feedback from Michael S. Tsirkin.
+> > 
+> > v1: Initial post @ https://lwn.net/Articles/561314/
+> > 
 > 
-> > Currently all of page table handling by hugetlbfs code are done under
-> > mm->page_table_lock. So when a process have many threads and they heavily
-> > access to the memory, lock contention happens and impacts the performance.
-> >
-> > This patch makes hugepage support split page table lock so that we use
-> > page->ptl of the leaf node of page table tree which is pte for normal pages
-> > but can be pmd and/or pud for hugepages of some architectures.
-> >
-> > ChangeLog v2:
-> >  - add split ptl on other archs missed in v1
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  arch/powerpc/mm/hugetlbpage.c |  6 ++-
-> >  arch/tile/mm/hugetlbpage.c    |  6 ++-
-> >  include/linux/hugetlb.h       | 20 ++++++++++
-> >  mm/hugetlb.c                  | 92 ++++++++++++++++++++++++++-----------------
-> >  mm/mempolicy.c                |  5 ++-
-> >  mm/migrate.c                  |  4 +-
-> >  mm/rmap.c                     |  2 +-
-> >  7 files changed, 90 insertions(+), 45 deletions(-)
-> >
-> > diff --git v3.11-rc3.orig/arch/powerpc/mm/hugetlbpage.c v3.11-rc3/arch/powerpc/mm/hugetlbpage.c
-> > index d67db4b..7e56cb7 100644
-> > --- v3.11-rc3.orig/arch/powerpc/mm/hugetlbpage.c
-> > +++ v3.11-rc3/arch/powerpc/mm/hugetlbpage.c
-> > @@ -124,6 +124,7 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
-> >  {
-> >  	struct kmem_cache *cachep;
-> >  	pte_t *new;
-> > +	spinlock_t *ptl;
-> >
-> >  #ifdef CONFIG_PPC_FSL_BOOK3E
-> >  	int i;
-> > @@ -141,7 +142,8 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
-> >  	if (! new)
-> >  		return -ENOMEM;
-> >
-> > -	spin_lock(&mm->page_table_lock);
-> > +	ptl = huge_pte_lockptr(mm, new);
-> > +	spin_lock(ptl);
+> Hi Greg,
 > 
-> 
-> Are you sure we can do that for ppc ?
-> 	new = kmem_cache_zalloc(cachep, GFP_KERNEL|__GFP_REPEAT);
+> It has been a couple of weeks since we posted v3 @
+> https://lwn.net/Articles/564795 which addresses all feedback received so
+> far. Have you had a chance to review this version? Please let us know
+> your thoughts.
 
-Ah, thanks. new is not a pointer to one full page occupied by page
-table entries, so trying to use struct page of it is totally wrong.
+I don't have this around anymore, I got 7 copies and thought your
+patch-send script went crazy so I deleted them :(
 
-> The page for new(pte_t) could be shared right ? which mean a deadlock ?
+Care to send them again?  But note, this is the merge window, so I'll
+not be able to do anythign for at least 2 weeks with them.
 
-Yes, that's disastrous.
+thanks,
 
-> May be you should do it at the pmd level itself for ppc
-
-Yes, that's possible, but I simply drop the changes in __hugepte_alloc()
-for now because this lock seems to protect us from the race between concurrent
-calls of __hugepte_alloc(), not between allocation and read/write access.
-Split ptl is used to avoid race between read/write accesses, so I think
-that using different types of locks here is not dangerous.
-# I guess that that's why we now use mm->page_table_lock for __pte_alloc()
-# and its family even if USE_SPLIT_PTLOCKS is true.
-
-A bit off-topic, but I found that we have a bogus comment on
-hugetlb_free_pgd_range in arch/powerpc/mm/hugetlbpage.c saying
-"Must be called with pagetable lock held."
-This seems not true because the caller free_pgtables() and its
-callers (unmap_region() and exit_mmap()) never hold it.
-I guess that it's just copied from free_pgd_range() and it's also
-false for this function. I'll post a patch to remove this later.
-
-Anyway, thank you for valuable comments!
-
-Thanks,
-Naoya Horiguchi
-
-> >  #ifdef CONFIG_PPC_FSL_BOOK3E
-> >  	/*
-> >  	 * We have multiple higher-level entries that point to the same
-> > @@ -174,7 +176,7 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
-> >  #endif
-> >  	}
-> >  #endif
-> > -	spin_unlock(&mm->page_table_lock);
-> > +	spin_unlock(ptl);
-> >  	return 0;
-> >  }
-> >
-> 
-> 
-> -aneesh
->
+greg k-h
