@@ -1,82 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935115Ab3IDPFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:05:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40183 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934783Ab3IDPFq (ORCPT
+	id S935140Ab3IDPGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:06:53 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:58063 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934783Ab3IDPGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:05:46 -0400
-Date: Wed, 4 Sep 2013 16:05:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Rutland <mark.rutland@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "denis.ciocca@st.com" <denis.ciocca@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20130904150540.GA10849@sirena.org.uk>
-References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
- <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
- <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
- <5227331A.5050507@metafoo.de>
- <20130904132638.GG20150@lee--X1>
+	Wed, 4 Sep 2013 11:06:51 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJwKkjb5r7Rwb0vUtI=
+X-RZG-CLASS-ID: mo00
+Date: Wed, 4 Sep 2013 17:06:48 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Drivers: hv: util: Fix a bug in version negotiation
+ code for util services
+Message-ID: <20130904150648.GA9162@aepfle.de>
+References: <1372786290-12641-1-git-send-email-kys@microsoft.com>
+ <20130904135754.GA2010@aepfle.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130904132638.GG20150@lee--X1>
-X-Cookie: You will wish you hadn't.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator
- support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130904135754.GA2010@aepfle.de>
+User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 04, Olaf Hering wrote:
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> I suggest to let callers deal with error handling. Also as a cleanup,
+> vmbus_prep_negotiate_resp does not make use of the negop passed to it.
+> So that arg can be removed.
 
-On Wed, Sep 04, 2013 at 02:26:38PM +0100, Lee Jones wrote:
-> On Wed, 04 Sep 2013, Lars-Peter Clausen wrote:
+Simplify vmbus_prep_negotiate_resp. If we take the optimistic approach
+that negotiation will not fail for any of the callers of
+vmbus_prep_negotiate_resp this patch on top of yours should fix 2008 and
+2012r2.
 
-> > > I think this would be better handled with something like Mark Brown's
-> > > suggested regulator_get_optional [1,2].
+Olaf
 
-> Thanks Mark, I didn't know that existed.
+---
+ drivers/hv/channel_mgmt.c | 22 +++++++++-------------
+ drivers/hv/hv_kvp.c       |  8 ++++----
+ drivers/hv/hv_snapshot.c  |  3 +--
+ drivers/hv/hv_util.c      |  7 +++----
+ include/linux/hyperv.h    |  4 +---
+ 5 files changed, 18 insertions(+), 26 deletions(-)
 
-It's only just gone into Linus' tree this merge window so it's very new.
-
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJ0xBAAoJELSic+t+oim9N2oQAIdYIPL4q+/cXj8DpzNq+TLA
-sAknQx2cik8r8MIcOZwxJq0F7RceXxHQ3w5xYNoR/fc+AFXYawzV8cq3cyp+SUYa
-aDK9x+N5lmV8OorqviB+tuxIoN2bNFyCt+Akp0MhuStBvGbkzntH2cAm3Ykki323
-Z/59/5DWAh9BG1T4Gd3c08Nx5xCJWpPsLVTE9NRRG32d8F+qG1q9oG0zHqrsURbm
-03ZJkshDWIYJMFqH0wS+g+6FQqv00T8yi/F0dacAZ4QEHewdIeZ55bnG+49PQCCw
-FY2wh8Ohrmf35SUyrFtoF7FDtkINNoeqCMTLiwz6kcc/isSJ+B3uIB2Dr5YN6YTL
-rHHGUX7KKOAAUC9xeN1fXvAcdCmWhglbOKVei2zK3IjMc6jNlswadFF5/Ni9iGb4
-a36+MR/zBP0mTLZ2sw+d7GUI5o2GcF9K+/mGQXVT+XNLOpV4tcufLA1IYdSQDzxl
-Fseufda6EJP05KHpnTpCv4v2iWSWNZDmvnzaUqj8oaPkJHNGS0P+BLcCnP7mN0xD
-pAQzkedY6C/It6u4qrK5UNTfgJqHxFdte2guk3Nmd60OTwvp5J1JfTEi5DEhFdZF
-e024jD+K1gqYsOOYq8vMNmF1SL4vF8F7z1Ya6HKcWbvwBqLOhDsUURoi+jvA7zVD
-6dqUe1bjrOi2nshPkhZZ
-=22IL
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index 12ec8c8..dcaad3e 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -41,7 +41,6 @@ struct vmbus_channel_message_table_entry {
+ /**
+  * vmbus_prep_negotiate_resp() - Create default response for Hyper-V Negotiate message
+  * @icmsghdrp: Pointer to msg header structure
+- * @icmsg_negotiate: Pointer to negotiate message structure
+  * @buf: Raw buffer channel data
+  *
+  * @icmsghdrp is of type &struct icmsg_hdr.
+@@ -54,10 +53,10 @@ struct vmbus_channel_message_table_entry {
+  *
+  * Mainly used by Hyper-V drivers.
+  */
+-bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+-				struct icmsg_negotiate *negop, u8 *buf,
++bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp, u8 *buf,
+ 				int fw_version, int srv_version)
+ {
++	struct icmsg_negotiate *negop;
+ 	int icframe_major, icframe_minor;
+ 	int icmsg_major, icmsg_minor;
+ 	int fw_major, fw_minor;
+@@ -65,7 +64,6 @@ bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+ 	int i;
+ 	bool found_match = false;
+ 
+-	icmsghdrp->icmsgsize = 0x10;
+ 	fw_major = (fw_version >> 16);
+ 	fw_minor = (fw_version & 0xFFFF);
+ 
+@@ -116,19 +114,17 @@ bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+ 	 * version numbers we can support.
+ 	 */
+ 
+-fw_error:
+-	if (!found_match) {
+-		negop->icframe_vercnt = 0;
+-		negop->icmsg_vercnt = 0;
+-	} else {
++	if (found_match) {
++		icmsghdrp->icmsgsize = 0x10;
+ 		negop->icframe_vercnt = 1;
+ 		negop->icmsg_vercnt = 1;
++		negop->icversion_data[0].major = icframe_major;
++		negop->icversion_data[0].minor = icframe_minor;
++		negop->icversion_data[1].major = icmsg_major;
++		negop->icversion_data[1].minor = icmsg_minor;
+ 	}
+ 
+-	negop->icversion_data[0].major = icframe_major;
+-	negop->icversion_data[0].minor = icframe_minor;
+-	negop->icversion_data[1].major = icmsg_major;
+-	negop->icversion_data[1].minor = icmsg_minor;
++fw_error:
+ 	return found_match;
+ }
+ 
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index 5312720..31e338a 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -584,7 +584,6 @@ void hv_kvp_onchannelcallback(void *context)
+ 	struct hv_kvp_msg *kvp_msg;
+ 
+ 	struct icmsg_hdr *icmsghdrp;
+-	struct icmsg_negotiate *negop = NULL;
+ 
+ 	if (kvp_transaction.active) {
+ 		/*
+@@ -607,14 +606,15 @@ void hv_kvp_onchannelcallback(void *context)
+ 			 * We start with win8 version and if the host cannot
+ 			 * support that we use the previous version.
+ 			 */
+-			if (vmbus_prep_negotiate_resp(icmsghdrp, negop,
++			if (vmbus_prep_negotiate_resp(icmsghdrp,
+ 				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+ 				 WIN8_SRV_MAJOR_MINOR))
+ 				goto done;
+ 
+-			vmbus_prep_negotiate_resp(icmsghdrp, negop,
++			if (vmbus_prep_negotiate_resp(icmsghdrp,
+ 				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+-				 WIN7_SRV_MAJOR_MINOR);
++				 WIN7_SRV_MAJOR_MINOR))
++				goto done;
+ 
+ 		} else {
+ 			kvp_msg = (struct hv_kvp_msg *)&recv_buffer[
+diff --git a/drivers/hv/hv_snapshot.c b/drivers/hv/hv_snapshot.c
+index e4572f3..51e8203 100644
+--- a/drivers/hv/hv_snapshot.c
++++ b/drivers/hv/hv_snapshot.c
+@@ -170,7 +170,6 @@ void hv_vss_onchannelcallback(void *context)
+ 
+ 
+ 	struct icmsg_hdr *icmsghdrp;
+-	struct icmsg_negotiate *negop = NULL;
+ 
+ 	if (vss_transaction.active) {
+ 		/*
+@@ -189,7 +188,7 @@ void hv_vss_onchannelcallback(void *context)
+ 			sizeof(struct vmbuspipe_hdr)];
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+-			vmbus_prep_negotiate_resp(icmsghdrp, negop,
++			vmbus_prep_negotiate_resp(icmsghdrp,
+ 				 recv_buffer, UTIL_FW_MAJOR_MINOR,
+ 				 VSS_MAJOR_MINOR);
+ 		} else {
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index c16164d..01d7b17 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -88,7 +88,6 @@ static void shutdown_onchannelcallback(void *context)
+ 	struct shutdown_msg_data *shutdown_msg;
+ 
+ 	struct icmsg_hdr *icmsghdrp;
+-	struct icmsg_negotiate *negop = NULL;
+ 
+ 	vmbus_recvpacket(channel, shut_txf_buf,
+ 			 PAGE_SIZE, &recvlen, &requestid);
+@@ -98,7 +97,7 @@ static void shutdown_onchannelcallback(void *context)
+ 			sizeof(struct vmbuspipe_hdr)];
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+-			vmbus_prep_negotiate_resp(icmsghdrp, negop,
++			vmbus_prep_negotiate_resp(icmsghdrp,
+ 					shut_txf_buf, UTIL_FW_MAJOR_MINOR,
+ 					SHUTDOWN_MAJOR_MINOR);
+ 		} else {
+@@ -225,7 +224,7 @@ static void timesync_onchannelcallback(void *context)
+ 				sizeof(struct vmbuspipe_hdr)];
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+-			vmbus_prep_negotiate_resp(icmsghdrp, NULL, time_txf_buf,
++			vmbus_prep_negotiate_resp(icmsghdrp, time_txf_buf,
+ 						UTIL_FW_MAJOR_MINOR,
+ 						TIMESYNCH_MAJOR_MINOR);
+ 		} else {
+@@ -266,7 +265,7 @@ static void heartbeat_onchannelcallback(void *context)
+ 				sizeof(struct vmbuspipe_hdr)];
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+-			vmbus_prep_negotiate_resp(icmsghdrp, NULL,
++			vmbus_prep_negotiate_resp(icmsghdrp,
+ 				hbeat_txf_buf, UTIL_FW_MAJOR_MINOR,
+ 				HEARTBEAT_MAJOR_MINOR);
+ 		} else {
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index 4994907..084a858 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -1502,9 +1502,7 @@ struct hyperv_service_callback {
+ };
+ 
+ #define MAX_SRV_VER	0x7ffffff
+-extern bool vmbus_prep_negotiate_resp(struct icmsg_hdr *,
+-					struct icmsg_negotiate *, u8 *, int,
+-					int);
++extern bool vmbus_prep_negotiate_resp(struct icmsg_hdr *, u8 *, int, int);
+ 
+ int hv_kvp_init(struct hv_util_service *);
+ void hv_kvp_deinit(void);
