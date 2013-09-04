@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934541Ab3IDIj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 04:39:26 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53144 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934370Ab3IDIjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 04:39:23 -0400
-Message-ID: <5226F1B6.3000801@hitachi.com>
-Date: Wed, 04 Sep 2013 17:39:18 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Mark Wielaard <mjw@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Hemant <hkshaw@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
-Subject: Re: Re: [RFC PATCH 0/2] Perf support to SDT markers
-References: <20130903072944.4793.93584.stgit@hemant-fedora>  <20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com>  <5225E2C5.3080001@linux.vnet.ibm.com>  <87a9jtt72j.fsf@sejong.aot.lge.com> <1378283148.4321.16.camel@bordewijk.wildebeest.org>
-In-Reply-To: <1378283148.4321.16.camel@bordewijk.wildebeest.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S934473Ab3IDIm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 04:42:59 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39969 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934353Ab3IDIm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 04:42:56 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <mtosatti@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: [PATCH V2] Documentation/kvm: Update cpuid documentation for steal  time and pv eoi
+Date: Wed,  4 Sep 2013 14:18:46 +0530
+Message-Id: <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <y>
+References: <y>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090408-7182-0000-0000-0000084AE103
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/04 17:25), Mark Wielaard wrote:
-> On Wed, 2013-09-04 at 15:49 +0900, Namhyung Kim wrote:
->> On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
->>> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
->>>> Indeed, and also I'd like to know what versions of SDT this support,
->>>> and where we can see the technical document of that. As far as I know,
->>>> the previous(?) SDT implementation also involves ugly semaphores.
->>>> Have that already gone?
->>
->> It seems it's not. I see the SDT v3 document still mentions semaphores.
-> 
-> It mentions them, but should normally not be used. They are there for
-> dtrace (source) compatibility. And you don't have to use them.
-> 
-> Since normally a SDT probe marker is just a NOP it doesn't have any
-> overhead. But if you want to add complicated arguments that you would
-> normally not generate in your code, then you might want to add a
-> semaphore. That way you can have probes with a bit more overhead that
-> still have zero overhead when not being probed.
-> 
-> Note that if you use the normal DTRACE_PROBE macros no semaphore will be
-> inserted. And you can opt to not support probes that have a semaphore in
-> perf if you think that is easier (just check the semaphore link-time
-> address for the probe, it should normally be zero). Just warn: "No way I
-> am going to probe something that might have a little extra overhead! I
-> am no debugger..." :)
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ Changes in V2:
+  Correction in the description of steal time and added msr info (Michael S Tsirkin)
 
-OK, I see. And in that case, we'd better filter out the markers which
-use a semaphore when list it up, since we can not enable it.
+ Documentation/virtual/kvm/cpuid.txt | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Thank you,
-
-
+diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+index 22ff659..6c4fb20 100644
+--- a/Documentation/virtual/kvm/cpuid.txt
++++ b/Documentation/virtual/kvm/cpuid.txt
+@@ -43,6 +43,16 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
+ KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
+                                    ||       || writing to msr 0x4b564d02
+ ------------------------------------------------------------------------------
++KVM_FEATURE_STEAL_TIME             ||     5 || Steal time available at msr
++                                   ||       || 0x4b564d03. The feature is enabled
++                                   ||       || by guest when host has schedstat
++                                   ||       || or task delay accounting support.
++------------------------------------------------------------------------------
++KVM_FEATURE_PV_EOI                 ||     6 || overrides the generic EOI
++                                   ||       || implementation with a
++                                   ||       || paravirtualized version. Available
++                                   ||       || at msr 0x4b564d04.
++------------------------------------------------------------------------------
+ KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
+                                    ||       || before enabling paravirtualized
+                                    ||       || spinlock support.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.11.7
 
