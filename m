@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762116Ab3IDHPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:15:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60182 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756366Ab3IDHPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:15:53 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: m.chehab@samsung.com, akpm@linux-foundation.org
-Cc: cesarb@cesarb.net, gregkh@linuxfoundation.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] cramfs: mark as obsolete
-Date: Wed,  4 Sep 2013 09:15:49 +0200
-Message-Id: <1378278949-3066-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1762173Ab3IDHRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:17:20 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42931 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366Ab3IDHRT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Wed, 4 Sep 2013 03:17:19 -0400
+Message-Id: <5226FA9702000078000F0387@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 04 Sep 2013 08:17:11 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: <olaf@aepfle.de>, <bp@alien8.de>, <apw@canonical.com>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
+        <gregkh@linuxfoundation.org>, <jasowang@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Who needs cramfs when you have squashfs?
-At least, we should warn people that cramfs
-is obsolete.
+>>> On 03.09.13 at 20:30, "K. Y. Srinivasan" <kys@microsoft.com> wrote:
+> @@ -76,6 +80,26 @@ static void __init ms_hyperv_init_platform(void)
+>  	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+>  	       ms_hyperv.features, ms_hyperv.hints);
+>  
+> +	if (ms_hyperv.features & HV_X64_MSR_APIC_FREQUENCY_AVAILABLE) {
+> +		/*
+> +		 * Get the APIC frequency.
+> +		 */
+> +		rdmsrl(HV_X64_MSR_APIC_FREQUENCY, hv_lapic_frequency);
+> +		hv_lapic_frequency /= HZ;
+> +		lapic_timer_frequency = hv_lapic_frequency;
+> +		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
+> +				lapic_timer_frequency);
+> +
+> +		/*
+> +		 * On Hyper-V, when we are booting off an EFI firmware stack,
+> +		 * we do not have many legacy devices including PIC, PIT etc.
+> +		 */
+> +		if (efi_enabled(EFI_BOOT)) {
+> +			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
+> +			legacy_pic = &null_legacy_pic;
+> +		}
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- MAINTAINERS       | 2 +-
- fs/cramfs/Kconfig | 5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+And this check is really connected to the feature check around the
+whole block, rather than being independent? (I'd also think that
+this latter message would suffice to be KERN_DEBUG).
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5b32bc2..6218be0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2313,7 +2313,7 @@ F:	kernel/cpuset.c
- 
- CRAMFS FILESYSTEM
- W:	http://sourceforge.net/projects/cramfs/
--S:	Orphan
-+S:	Orphan / Obsolete
- F:	Documentation/filesystems/cramfs.txt
- F:	fs/cramfs/
- 
-diff --git a/fs/cramfs/Kconfig b/fs/cramfs/Kconfig
-index cd06466..15c36fe 100644
---- a/fs/cramfs/Kconfig
-+++ b/fs/cramfs/Kconfig
-@@ -1,5 +1,5 @@
- config CRAMFS
--	tristate "Compressed ROM file system support (cramfs)"
-+	tristate "Compressed ROM file system support (cramfs) (OBSOLETE)"
- 	depends on BLOCK
- 	select ZLIB_INFLATE
- 	help
-@@ -16,4 +16,7 @@ config CRAMFS
- 	  cramfs.  Note that the root file system (the one containing the
- 	  directory /) cannot be compiled as a module.
- 
-+	  This filesystem is obsoleted by SquashFS, which is much better
-+  	  in terms of performance and features.
-+
- 	  If unsure, say N.
--- 
-1.8.1.2
+Jan
 
