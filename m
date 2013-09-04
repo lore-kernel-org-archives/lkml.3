@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934778Ab3IDMHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 08:07:14 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:63015 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762650Ab3IDMGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 08:06:05 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, sachin.kamat@linaro.org, ldewangan@nvidia.com,
-        magi@slimlogic.co.uk, gg@slimlogic.co.uk, mike@compulab.co.il,
-        anilkumar@ti.com, vbyravarasu@nvidia.com
-Subject: [PATCH 07/10] regulator: tps6586x: Use devm_regulator_register
-Date: Wed,  4 Sep 2013 17:17:50 +0530
-Message-Id: <1378295273-32257-7-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
-References: <1378295273-32257-1-git-send-email-sachin.kamat@linaro.org>
+	id S1762560Ab3IDMKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 08:10:05 -0400
+Received: from gmmr8.centrum.cz ([46.255.227.254]:53359 "EHLO gmmr8.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756563Ab3IDMKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 08:10:02 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Wed, 04 Sep 2013 14:10:00 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904114523.A9F0173C@pobox.sk> <20130904115741.GA28285@dhcp22.suse.cz>
+In-Reply-To: <20130904115741.GA28285@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130904141000.0F910EFA@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_* simplifies the code.
+>[...]
+>> My script has just detected (and killed) another freezed cgroup. I
+>> must say that i'm not 100% sure that cgroup was really freezed but it
+>> has 99% or more memory usage for at least 30 seconds (well, or it has
+>> 99% memory usage in both two cases the script was checking it). Here
+>> are stacks of processes inside it before they were killed:
+>[...]
+>> pid: 26536
+>> stack:
+>> [<ffffffff81080a45>] refrigerator+0x95/0x160
+>> [<ffffffff8106ac2b>] get_signal_to_deliver+0x1cb/0x540
+>> [<ffffffff8100188b>] do_signal+0x6b/0x750
+>> [<ffffffff81001fc5>] do_notify_resume+0x55/0x80
+>> [<ffffffff815cb662>] retint_signal+0x3d/0x7b
+>> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+>[...]
+>
+>This task is sitting in the refigerator which means it has been frozen
+>by the freezer cgroup most probably. I am not familiar with the
+>implementation but my recollection is that you have to thaw that group
+>in order the killed process can pass away.
+>-- 
+>Michal Hocko
+>SUSE Labs
+>
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/regulator/tps6586x-regulator.c |   31 ++++++-------------------------
- 1 file changed, 6 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index 2c9155b..45e5d68 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -379,15 +379,14 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
- 		ri = find_regulator_info(id);
- 		if (!ri) {
- 			dev_err(&pdev->dev, "invalid regulator ID specified\n");
--			err = -EINVAL;
--			goto fail;
-+			return -EINVAL;
- 		}
- 
- 		err = tps6586x_regulator_preinit(pdev->dev.parent, ri);
- 		if (err) {
- 			dev_err(&pdev->dev,
- 				"regulator %d preinit failed, e %d\n", id, err);
--			goto fail;
-+			return err;
- 		}
- 
- 		config.dev = pdev->dev.parent;
-@@ -397,12 +396,12 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
- 		if (tps6586x_reg_matches)
- 			config.of_node = tps6586x_reg_matches[id].of_node;
- 
--		rdev[id] = regulator_register(&ri->desc, &config);
-+		rdev[id] = devm_regulator_register(&pdev->dev, &ri->desc,
-+						   &config);
- 		if (IS_ERR(rdev[id])) {
- 			dev_err(&pdev->dev, "failed to register regulator %s\n",
- 					ri->desc.name);
--			err = PTR_ERR(rdev[id]);
--			goto fail;
-+			return PTR_ERR(rdev[id]);
- 		}
- 
- 		if (reg_data) {
-@@ -411,30 +410,13 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
- 			if (err < 0) {
- 				dev_err(&pdev->dev,
- 					"Slew rate config failed, e %d\n", err);
--				regulator_unregister(rdev[id]);
--				goto fail;
-+				return err;
- 			}
- 		}
- 	}
- 
- 	platform_set_drvdata(pdev, rdev);
- 	return 0;
--
--fail:
--	while (--id >= 0)
--		regulator_unregister(rdev[id]);
--	return err;
--}
--
--static int tps6586x_regulator_remove(struct platform_device *pdev)
--{
--	struct regulator_dev **rdev = platform_get_drvdata(pdev);
--	int id = TPS6586X_ID_MAX_REGULATOR;
--
--	while (--id >= 0)
--		regulator_unregister(rdev[id]);
--
--	return 0;
- }
- 
- static struct platform_driver tps6586x_regulator_driver = {
-@@ -443,7 +425,6 @@ static struct platform_driver tps6586x_regulator_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= tps6586x_regulator_probe,
--	.remove		= tps6586x_regulator_remove,
- };
- 
- static int __init tps6586x_regulator_init(void)
--- 
-1.7.9.5
 
+Yes, my script is freezing the cgroup before killing processes inside it. Stacks are taken after the freeze, it that problem?
+
+azur
