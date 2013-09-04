@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935250Ab3IDP5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 11:57:51 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:58439 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934929Ab3IDP5u (ORCPT
+	id S935264Ab3IDP62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 11:58:28 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45664 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934941Ab3IDP60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 11:57:50 -0400
-Date: Wed, 4 Sep 2013 17:57:38 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com
-Subject: Re: [PATCH net-next 2/2] tuntap: orphan frags before trying to set
- tx timestamp
-Message-ID: <20130904155738.GC4194@netboy>
-References: <1378269226-5969-1-git-send-email-jasowang@redhat.com>
- <1378269226-5969-2-git-send-email-jasowang@redhat.com>
+	Wed, 4 Sep 2013 11:58:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378269226-5969-2-git-send-email-jasowang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130903143921.GA28290@gmail.com>
+References: <20130903143921.GA28290@gmail.com>
+Date: Wed, 4 Sep 2013 08:58:25 -0700
+X-Google-Sender-Auth: dnz-a5i-YhvaOwkOZqb5zGe-K6Q
+Message-ID: <CA+55aFxVv==DC0JdS87V+cPr-twN+TujYg5XmgHOjJOAkZ4xwQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/asmlinkage changes for v3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 12:33:46PM +0800, Jason Wang wrote:
-> sock_tx_timestamp() will clear all zerocopy flags of skb which may lead the
-> frags never to be orphaned. This will break guest to guest traffic when zerocopy
-> is enabled. Fix this by orphaning the frags before trying to set tx time stamp.
-> 
-> The issue were introduced by commit eda297729171fe16bf34fe5b0419dfb69060f623
-> (tun: Support software transmit time stamping).
-> 
-> Cc: Richard Cochran <richardcochran@gmail.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On Tue, Sep 3, 2013 at 7:39 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Please pull the latest x86-asmlinkage-for-linus git tree from:
 
-Acked-by: Richard Cochran <richardcochran@gmail.com>
+Grr. This one seems to introduce this annoying warning:
+
+arch/x86/kernel/paravirt.c:66:0: warning: "DEF_NATIVE" redefined
+[enabled by default]
+ #define DEF_NATIVE(ops, name, code)     \
+ ^
+In file included from
+/home/torvalds/v2.6/linux/arch/x86/include/asm/ptrace.h:65:0,
+                 from
+/home/torvalds/v2.6/linux/arch/x86/include/asm/alternative.h:8,
+                 from
+/home/torvalds/v2.6/linux/arch/x86/include/asm/bitops.h:16,
+                 from include/linux/bitops.h:22,
+                 from include/linux/kernel.h:10,
+                 from include/linux/cache.h:4,
+                 from include/linux/time.h:4,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from arch/x86/kernel/paravirt.c:22:
+/home/torvalds/v2.6/linux/arch/x86/include/asm/paravirt_types.h:389:0:
+note: this is the location of the previous definition
+ #define DEF_NATIVE(ops, name, code)      \
+ ^
+
+when doing an allmodconfig.
+
+Maybe it gets fixed later in the series (I am about a third through
+your pull requests), but it's clearly bogus.
+
+What the heck is wrong with that macro anyway? It is used in one
+single file, and it is _defined_ twice - in two other files. Somebody
+was very very confused when they wrote that code.
+
+I'm going to let the pull stand, since it doesn't seem to actually
+break anything, but this needs to be fixed.
+
+                Linus
