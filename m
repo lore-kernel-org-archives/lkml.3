@@ -1,67 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab3IDUMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 16:12:48 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:9187
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932888Ab3IDUMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932884Ab3IDUMP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Sep 2013 16:12:15 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "jerry.hoemann@hp.com" <jerry.hoemann@hp.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, kexec <kexec@lists.infradead.org>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Topic: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Index: AQHOqQBlTgRtcELUZ0K5HxHj5bQ8FZm2A3WAgAAAm4A=
-Date: Wed, 4 Sep 2013 20:12:09 +0000
-Message-ID: <1378325529.13193.8.camel@x230>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
-	 <20130904200959.GE8540@anatevka.fc.hp.com>
-In-Reply-To: <20130904200959.GE8540@anatevka.fc.hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [209.6.207.143]
-x-forefront-prvs: 095972DF2F
-x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(377424004)(51704005)(24454002)(74706001)(19580405001)(83322001)(56816003)(77096001)(47446002)(31966008)(74502001)(74662001)(74366001)(19580395003)(53806001)(80976001)(69226001)(76796001)(76786001)(33646001)(81816001)(65816001)(81686001)(66066001)(33716001)(83072001)(80022001)(51856001)(4396001)(59766001)(77982001)(46102001)(76482001)(54356001)(74876001)(56776001)(63696002)(54316002)(81542001)(79102001)(81342001)(47736001)(49866001)(47976001)(50986001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB224;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:209.6.207.143;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <72C1C6130164D64EA8A958B3BA00E179@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Received: from mga03.intel.com ([143.182.124.21]:55344 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761170Ab3IDULz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 16:11:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1023,1367996400"; 
+   d="scan'208";a="391145047"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/2] perf tools: add test for parsing with no sample_id_all bit
+Date: Wed,  4 Sep 2013 23:18:16 +0300
+Message-Id: <1378325897-3840-2-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1378325897-3840-1-git-send-email-adrian.hunter@intel.com>
+References: <1378325897-3840-1-git-send-email-adrian.hunter@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r84KCrXj025528
 
-On Wed, 2013-09-04 at 14:09 -0600, jerry.hoemann@hp.com wrote:
-> On Tue, Sep 03, 2013 at 07:50:15PM -0400, Matthew Garrett wrote:
-> > kexec permits the loading and execution of arbitrary code in ring 0, which
-> > is something that module signing enforcement is meant to prevent. It makes
-> > sense to disable kexec in this situation.
-> > 
-> > Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> 
-> 
-> Matthew,
-> 
-> Disabling kexec will disable kdump, correct?
+Add a test for parsing a non-sample event when there is
+more than one selected event but no sample_id_all bit set.
 
-Yes.
+The test fails because of a bug in the evlist logic.  That
+is fixed in a separate patch.
 
-> Are there plans to enable kdump on a system where secure
-> boot is enabled?
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/Makefile                       |   3 +-
+ tools/perf/tests/builtin-test.c           |   4 ++
+ tools/perf/tests/parse-no-sample-id-all.c | 108 ++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h                  |   1 +
+ 4 files changed, 115 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/tests/parse-no-sample-id-all.c
 
-Yes, Vivek Goyal (cc:ed) is working on that.
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index c5dc1ad..3a0ff7f 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -394,6 +394,8 @@ ifeq ($(ARCH),x86)
+ LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
+ endif
+ LIB_OBJS += $(OUTPUT)tests/code-reading.o
++LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
++LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+@@ -439,7 +441,6 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ ifneq ($(OUTPUT),)
+   CFLAGS += -I$(OUTPUT)
+ endif
+-LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+ 
+ ifdef NO_LIBELF
+ EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 8bbeba3..1e67437 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -112,6 +112,10 @@ static struct test {
+ 		.func = test__keep_tracking,
+ 	},
+ 	{
++		.desc = "Test parsing with no sample_id_all bit set",
++		.func = test__parse_no_sample_id_all,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/parse-no-sample-id-all.c b/tools/perf/tests/parse-no-sample-id-all.c
+new file mode 100644
+index 0000000..e117b6c
+--- /dev/null
++++ b/tools/perf/tests/parse-no-sample-id-all.c
+@@ -0,0 +1,108 @@
++#include <sys/types.h>
++#include <stddef.h>
++
++#include "tests.h"
++
++#include "event.h"
++#include "evlist.h"
++#include "header.h"
++#include "util.h"
++
++static int process_event(struct perf_evlist **pevlist, union perf_event *event)
++{
++	struct perf_sample sample;
++
++	if (event->header.type == PERF_RECORD_HEADER_ATTR) {
++		if (perf_event__process_attr(NULL, event, pevlist)) {
++			pr_debug("perf_event__process_attr failed\n");
++			return -1;
++		}
++		return 0;
++	}
++
++	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
++		return -1;
++
++	if (!*pevlist)
++		return -1;
++
++	if (perf_evlist__parse_sample(*pevlist, event, &sample)) {
++		pr_debug("perf_evlist__parse_sample failed\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++static int process_events(union perf_event **events, size_t count)
++{
++	struct perf_evlist *evlist = NULL;
++	int err = 0;
++	size_t i;
++
++	for (i = 0; i < count && !err; i++)
++		err = process_event(&evlist, events[i]);
++
++	if (evlist)
++		perf_evlist__delete(evlist);
++
++	return err;
++}
++
++struct test_attr_event {
++	struct attr_event attr;
++	u64 id;
++};
++
++/**
++ * test__parse_no_sample_id_all - test parsing with no sample_id_all bit set.
++ *
++ * This function tests parsing data produced on kernel's that do not support the
++ * sample_id_all bit.  Without the sample_id_all bit, non-sample events (such as
++ * mmap events) do not have an id sample appended, and consequently logic
++ * designed to determine the id will not work.  That case happens when there is
++ * more than one selected event, so this test processes three events: 2
++ * attributes representing the selected events and one mmap event.
++ *
++ * Return: %0 on success, %-1 if the test fails.
++ */
++int test__parse_no_sample_id_all(void)
++{
++	int err;
++
++	struct test_attr_event event1 = {
++		.attr = {
++			.header = {
++				.type = PERF_RECORD_HEADER_ATTR,
++				.size = sizeof(struct test_attr_event),
++			},
++		},
++		.id = 1,
++	};
++	struct test_attr_event event2 = {
++		.attr = {
++			.header = {
++				.type = PERF_RECORD_HEADER_ATTR,
++				.size = sizeof(struct test_attr_event),
++			},
++		},
++		.id = 2,
++	};
++	struct mmap_event event3 = {
++		.header = {
++			.type = PERF_RECORD_MMAP,
++			.size = sizeof(struct mmap_event),
++		},
++	};
++	union perf_event *events[] = {
++		(union perf_event *)&event1,
++		(union perf_event *)&event2,
++		(union perf_event *)&event3,
++	};
++
++	err = process_events(events, ARRAY_SIZE(events));
++	if (err)
++		return -1;
++
++	return 0;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index c048b58..e0ac713 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -39,5 +39,6 @@ int test__perf_time_to_tsc(void);
+ int test__code_reading(void);
+ int test__sample_parsing(void);
+ int test__keep_tracking(void);
++int test__parse_no_sample_id_all(void);
+ 
+ #endif /* TESTS_H */
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.11.7
+
