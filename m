@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762609Ab3IDNYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 09:24:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59029 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762404Ab3IDNYu (ORCPT
+	id S1762666Ab3IDN0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 09:26:46 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:46542 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762611Ab3IDN0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 09:24:50 -0400
-Date: Wed, 4 Sep 2013 14:24:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+	Wed, 4 Sep 2013 09:26:44 -0400
+Date: Wed, 4 Sep 2013 14:26:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Rutland <mark.rutland@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
         "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
         "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        broonie@kernel.org, "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
         "denis.ciocca@st.com" <denis.ciocca@st.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Message-ID: <20130904132439.GA10155@sirena.org.uk>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator
+ support
+Message-ID: <20130904132638.GG20150@lee--X1>
 References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
  <1378287103-21765-12-git-send-email-lee.jones@linaro.org>
  <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
+ <5227331A.5050507@metafoo.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130904131111.GJ18206@e106331-lin.cambridge.arm.com>
-X-Cookie: You have no real enemies.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5227331A.5050507@metafoo.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 11/11] iio: pressure-core: st: Provide correct regulator
- support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 04 Sep 2013, Lars-Peter Clausen wrote:
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 09/04/2013 03:11 PM, Mark Rutland wrote:
+> > Hi Lee,
+> > 
+> > On Wed, Sep 04, 2013 at 10:31:43AM +0100, Lee Jones wrote:
+> >> The power to some of the sensors are controlled by regulators. In most
+> >> cases these are 'always on', but if not they will fail to work until
+> >> the regulator is enabled using the relevant APIs.
+> >>
+> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >> ---
+> >>  drivers/iio/pressure/st_pressure_core.c | 13 +++++++++++++
+> >>  include/linux/iio/common/st_sensors.h   |  3 +++
+> >>  2 files changed, 16 insertions(+)
+> >>
+> >> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+> >> index f452417..7beed89 100644
+> >> --- a/drivers/iio/pressure/st_pressure_core.c
+> >> +++ b/drivers/iio/pressure/st_pressure_core.c
+> >> @@ -23,6 +23,7 @@
+> >>  #include <linux/iio/sysfs.h>
+> >>  #include <linux/iio/trigger.h>
+> >>  #include <linux/iio/buffer.h>
+> >> +#include <linux/regulator/consumer.h>
+> >>  #include <asm/unaligned.h>
+> >>  
+> >>  #include <linux/iio/common/st_sensors.h>
+> >> @@ -315,6 +316,15 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+> >>  	indio_dev->modes = INDIO_DIRECT_MODE;
+> >>  	indio_dev->info = &press_info;
+> >>  
+> >> +	/* Regulator not mandatory, but if requested we should enable it. */
+> >> +	pdata->regulator = regulator_get(&indio_dev->dev, "vdd");
+> >> +	if (!IS_ERR_OR_NULL(pdata->regulator)) {
+> > 
+> > Can regulator_get return NULL? As far as I can see, it either returns a
+> > valid reulator pointer or an ERR_PTR value.
+> > 
+> > When you say "if requested", do you mean "if described in the dt"? If
+> > so, the above doesn't distunguish between a regulator not being listed
+> > and one failing to be got (e.g. if we got EPROBE_DEFER from
+> > regulator_get).
+> > 
+> > I think this would be better handled with something like Mark Brown's
+> > suggested regulator_get_optional [1,2].
 
-On Wed, Sep 04, 2013 at 02:11:11PM +0100, Mark Rutland wrote:
-> On Wed, Sep 04, 2013 at 10:31:43AM +0100, Lee Jones wrote:
+Thanks Mark, I didn't know that existed.
 
-> > +	/* Regulator not mandatory, but if requested we should enable it. */
-> > +	pdata->regulator =3D regulator_get(&indio_dev->dev, "vdd");
-> > +	if (!IS_ERR_OR_NULL(pdata->regulator)) {
+> It can return NULL, but NULL is actually a valid regulator in that case, so
+> the check should only be IS_ERR. And yes regulator_get_optional is what
+> should be used here.
 
-> Can regulator_get return NULL? As far as I can see, it either returns a
-> valid reulator pointer or an ERR_PTR value.
+Okay, I'll use that instead.
 
-Yes, NULL is a valid regulator.
-
-> When you say "if requested", do you mean "if described in the dt"? If
-> so, the above doesn't distunguish between a regulator not being listed
-> and one failing to be got (e.g. if we got EPROBE_DEFER from
-> regulator_get).
-
-> I think this would be better handled with something like Mark Brown's
-> suggested regulator_get_optional [1,2].
-
-If the regulator may genuinely be absent from the system then it should
-be being requested using regulator_get_optional().  Otherwise it should
-be being requested using regulator_get().  In both cases it is important=20
-that the driver pays attention to errors.
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSJzSUAAoJELSic+t+oim9GsoQAJ2QeAiazr61zg2oScTu88Qd
-xTV/3LgPZ0ZHJwWWelWS3y6TpMSUYlx/5lFj1bjiQNtdxZ8ITYWM6l1/ipiQ9bsQ
-e3t2Vd29bvwNYUlmO0p5zzRWH26BttY7fjaq1BeJ29IPLW8FknTTPJIjESD+MiGD
-ZdStP/vRsgKoOvjyy3hlAX1LpsTFACWIcTmvCM0I5HB12aisXt+LnID4uiufJCKd
-ibyZf+tqCO9mTfOFhLTo1SUErOJ8xqmytYcM0+sf5Rwj/R+tzJ133G9ACNoLb/WG
-o4y54UrUZh8/RhsK/JrmmyvAH3287RbxlwhENgKMdISOoXDmtBi6gGp79bTGFfjQ
-ovqzrUNLAGT76AI2X55pyp9qngWbMv5yFYn+Jl1mYkb7qWvhUI41xtPJoTrnHPXP
-m6wLGGRKFQuaJPJ/ZLS45C6hVMEJ81cSugiAKArKGebTer89PAe9QE4EVMHDL/a8
-XJMxXX1CV/pahFeG1zFYQcilPQmlDtoCcc8y50R52E3wcuBHOHtPQ61XutBkBvU3
-z2BWQc8cEMKtYsSMOvbFYvvR0M8krUCbzKWyh7rH/SNOV36NMWs0mK6MGV6QYIeH
-lBDDsV7NJRlAkq5+LFgaAFA8eF+PpD4+zKlBwpW9s2CzciFw7oxt0XAL1TnNdKVd
-4FO+YnPIxUbLVk1PdoYl
-=ALTj
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
