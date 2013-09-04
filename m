@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762077Ab3IDHhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 03:37:04 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:51217 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333Ab3IDHhC (ORCPT
+	id S1762144Ab3IDHmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 03:42:42 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55546 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756269Ab3IDHmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 03:37:02 -0400
+	Wed, 4 Sep 2013 03:42:40 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Jan Kaluza <jkaluza@redhat.com>
+Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
+        tj@kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+	<1378275261-4553-1-git-send-email-jkaluza@redhat.com>
+Date: Wed, 04 Sep 2013 00:42:26 -0700
+In-Reply-To: <1378275261-4553-1-git-send-email-jkaluza@redhat.com> (Jan
+	Kaluza's message of "Wed, 4 Sep 2013 08:14:18 +0200")
+Message-ID: <878uzdf2xp.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Date: Wed, 4 Sep 2013 09:37:00 +0200
-Message-ID: <CAEk6gTDzhO=2uij-Yps00SW5vJLoeeiixwgUGw9rc=51W+Ls_A@mail.gmail.com>
-Subject: HW timers question (clocksource vs event)
-From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX182oms2+74UezCBRJRzdbBxaIMtTI0zNns=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4997]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Jan Kaluza <jkaluza@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level control message
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I'd like to install one timer that provokes IRQ on timeout to measure
-IRQ latencies. I can see that in dw_apb_timer.c Linux driver that
-there is clocksource and event type of timers.
+Jan Kaluza <jkaluza@redhat.com> writes:
 
+> Hi,
+>
+> this patchset against net-next (applies also to linux-next) adds 3 new types
+> of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
+>
+> Server-like processes in many cases need credentials and other
+> metadata of the peer, to decide if the calling process is allowed to
+> request a specific action, or the server just wants to log away this
+> type of information for auditing tasks.
+>
+> The current practice to retrieve such process metadata is to look that
+> information up in procfs with the $PID received over SCM_CREDENTIALS.
+> This is sufficient for long-running tasks, but introduces a race which
+> cannot be worked around for short-living processes; the calling
+> process and all the information in /proc/$PID/ is gone before the
+> receiver of the socket message can look it up.
 
-Can someone please explain me what is really the difference between clocksource
-and event type of timers? If I'd like to produce an interrupt every
-100mS which one should be used?
+> Changes introduced in this patchset can also increase performance
+> of such server-like processes, because current way of opening and
+> parsing /proc/$PID/* files is much more expensive than receiving these
+> metadata using SCM.
 
-Based on your instructions I have added test_timer to dw_apb_timer_of.c :
+Can I just say ick, blech, barf, gag.
 
-static void __init timer_init(void)
-{
-struct device_node *event_timer, *source_timer, *test_timer;
+You don't require this information to be passed.  You are asking people
+to suport a lot of new code for the forseeable future.  The only advantage
+appears to be for short lived racy processes that don't even bother to
+make certain their message was acknowleged before exiting.
 
-event_timer = of_find_matching_node(NULL, osctimer_ids);
-if (!event_timer)
-panic("No timer for clockevent");
-add_clockevent(event_timer);
+You sent this during the merge window which is the time for code
+integration and testing not new code.
 
-source_timer = of_find_matching_node(NULL, sptimer_ids);
-if (!source_timer)
-panic("No timer for clocksource");
-add_clocksource(source_timer);
+By my count you have overflowed cb in struct sk_buff and are stomping on
+_skb_refdest.
 
-    //test_timer = of_find_matching_node(source_timer, sptimer_ids);
- test_timer = of_find_node_by_path("/soc/timer1@ffc09000");
-if (!test_timer)
-panic("test_TIMER: No timer for clockevent");
-add_clockevent(test_timer);
+If you are going to go crazy and pass things is there a reason you do
+not add a patch to pass the bsd SCM_CREDS?  That information seems more
+relevant in a security context and for making security decisions than
+about half the information you are passing.
 
-of_node_put(event_timer);
-of_node_put(source_timer);
-    of_node_put(test_timer);
-
-init_sched_clock();
-}
-
-I can now see the timer1 when I do cat proc/interrupts:
-
-root@socfpga_cyclone5:~# cat /proc/interrupts
-           CPU0       CPU1
-525:       2242       2252       GIC  twd
-648:         19          0       GIC  eth0
-653:          0          0       GIC  dwc_otg, dwc_otg_pcd, dwc_otg_hcd:usb1
-656:          0          0       GIC  dwc_otg, dwc_otg_pcd, dwc_otg_hcd:usb2
-667:      54610          0       GIC  dw-mci
-679:          0          0       GIC  ff705000.spi
-682:          0          0       GIC  dw_spi0
-684:          0          0       GIC  dw_spi1
-686:          6          0       GIC  ffc04000.i2c
-687:          0          0       GIC  ffc05000.i2c
-690:        839          0       GIC  serial
-696:          0          0       GIC  timer1
-697:          9          0       GIC  timer2
-IPI0:          0          0  CPU wakeup interrupts
-IPI1:          0          0  Timer broadcast interrupts
-IPI2:       1117       1139  Rescheduling interrupts
-IPI3:          0          0  Function call interrupts
-IPI4:          2          1  Single function call interrupts
-IPI5:          0          0  CPU stop interrupts
-Err:          0
-
-
-However, it provokes 0 interruptions. Looks like it is not enabled,
-although enabling procedure is same like for timer2.
-
-I tried then initializing it to CPU1, this did not help neither.
-I tried defining it as a clocksource - then it was not visible at all.
-
-I have questions at this point - how to enable timer1 to start
-periodically provoking interrupt?
-
-Thanks and best regards,
-Drasko
+Eric
