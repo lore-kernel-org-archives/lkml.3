@@ -1,293 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935064Ab3IDOnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:43:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21883 "EHLO mx1.redhat.com"
+	id S964796Ab3IDOoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:44:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32334 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762938Ab3IDOnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:43:16 -0400
+	id S935062Ab3IDOnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 10:43:19 -0400
 From: Frantisek Hrbata <fhrbata@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: jstancek@redhat.com, keescook@chromium.org, peter.oberparleiter@de.ibm.com,
         rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
         mgahagan@redhat.com, agospoda@redhat.com, akpm@linux-foundation.org
-Subject: [PATCH v2 1/4] gcov: move gcov structs definitions to a gcc version specific file
-Date: Wed,  4 Sep 2013 16:42:53 +0200
-Message-Id: <1378305776-3644-2-git-send-email-fhrbata@redhat.com>
+Subject: [PATCH v2 2/4] gcov: add support for gcc 4.7 gcov format
+Date: Wed,  4 Sep 2013 16:42:54 +0200
+Message-Id: <1378305776-3644-3-git-send-email-fhrbata@redhat.com>
 In-Reply-To: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
 References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since also the gcov structures(gcov_info, gcov_fn_info, gcov_ctr_info) can
-change between gcc releases, as shown in gcc 4.7, they cannot be defined in a
-common header and need to be moved to a specific gcc implemention file. This
-also requires to make the gcov_info structure opaque for the common code and to
-introduce simple helpers for accessing data inside gcov_info.
+The gcov in-memory format changed in gcc 4.7. The biggest change, which
+requires this special implementation, is that gcov_info no longer contains
+array of counters for each counter type for all functions and gcov_fn_info is
+not used for mapping of function's counters to these arrays(offset). Now each
+gcov_fn_info contans it's counters, which makes things a little bit easier.
+
+This is heavily based on the previous gcc_3_4.c implementation and patches
+provided by Peter Oberparleiter. Specially the buffer gcda implementation for
+iterator.
+
+v2: - removed const definition for gcov_fn_info in gcov_info
+    - use vmalloc for counter values in gcov_info_dup
+    - use iter buffer for gcda
 
 Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
 ---
- kernel/gcov/base.c    |  26 ++++++------
- kernel/gcov/fs.c      |  27 ++++++------
- kernel/gcov/gcc_3_4.c | 115 ++++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/gcov/gcov.h    |  65 +++++-----------------------
- 4 files changed, 153 insertions(+), 80 deletions(-)
+ kernel/gcov/base.c    |   6 +
+ kernel/gcov/gcc_4_7.c | 562 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 568 insertions(+)
+ create mode 100644 kernel/gcov/gcc_4_7.c
 
 diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
-index 9b22d03..912576a 100644
+index 912576a..f45b75b 100644
 --- a/kernel/gcov/base.c
 +++ b/kernel/gcov/base.c
-@@ -20,7 +20,6 @@
- #include <linux/mutex.h>
- #include "gcov.h"
- 
--static struct gcov_info *gcov_info_head;
- static int gcov_events_enabled;
- static DEFINE_MUTEX(gcov_lock);
- 
-@@ -34,7 +33,7 @@ void __gcov_init(struct gcov_info *info)
- 
- 	mutex_lock(&gcov_lock);
- 	if (gcov_version == 0) {
--		gcov_version = info->version;
-+		gcov_version = gcov_info_version(info);
- 		/*
- 		 * Printing gcc's version magic may prove useful for debugging
- 		 * incompatibility reports.
-@@ -45,8 +44,7 @@ void __gcov_init(struct gcov_info *info)
- 	 * Add new profiling data structure to list and inform event
- 	 * listener.
- 	 */
--	info->next = gcov_info_head;
--	gcov_info_head = info;
-+	gcov_info_link(info);
- 	if (gcov_events_enabled)
- 		gcov_event(GCOV_ADD, info);
- 	mutex_unlock(&gcov_lock);
-@@ -91,13 +89,15 @@ EXPORT_SYMBOL(__gcov_merge_delta);
-  */
- void gcov_enable_events(void)
- {
--	struct gcov_info *info;
-+	struct gcov_info *info = NULL;
- 
- 	mutex_lock(&gcov_lock);
- 	gcov_events_enabled = 1;
-+
- 	/* Perform event callback for previously registered entries. */
--	for (info = gcov_info_head; info; info = info->next)
-+	while ((info = gcov_info_next(info)))
- 		gcov_event(GCOV_ADD, info);
-+
- 	mutex_unlock(&gcov_lock);
+@@ -79,6 +79,12 @@ void __gcov_merge_delta(gcov_type *counters, unsigned int n_counters)
  }
+ EXPORT_SYMBOL(__gcov_merge_delta);
  
-@@ -112,25 +112,23 @@ static int gcov_module_notifier(struct notifier_block *nb, unsigned long event,
- 				void *data)
- {
- 	struct module *mod = data;
--	struct gcov_info *info;
--	struct gcov_info *prev;
-+	struct gcov_info *info = NULL;
-+	struct gcov_info *prev = NULL;
- 
- 	if (event != MODULE_STATE_GOING)
- 		return NOTIFY_OK;
- 	mutex_lock(&gcov_lock);
--	prev = NULL;
++void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters)
++{
++	/* Unused. */
++}
++EXPORT_SYMBOL(__gcov_merge_ior);
 +
- 	/* Remove entries located in module from linked list. */
--	for (info = gcov_info_head; info; info = info->next) {
-+	while ((info = gcov_info_next(info))) {
- 		if (within(info, mod->module_core, mod->core_size)) {
--			if (prev)
--				prev->next = info->next;
--			else
--				gcov_info_head = info->next;
-+			gcov_info_unlink(prev, info);
- 			if (gcov_events_enabled)
- 				gcov_event(GCOV_REMOVE, info);
- 		} else
- 			prev = info;
- 	}
+ /**
+  * gcov_enable_events - enable event reporting through gcov_event()
+  *
+diff --git a/kernel/gcov/gcc_4_7.c b/kernel/gcov/gcc_4_7.c
+new file mode 100644
+index 0000000..d91afee
+--- /dev/null
++++ b/kernel/gcov/gcc_4_7.c
+@@ -0,0 +1,562 @@
++/*
++ *  This code provides functions to handle gcc's profiling data format
++ *  introduced with gcc 4.7.
++ *
++ *  This file is based heavily on gcc_3_4.c file.
++ *
++ *  For a better understanding, refer to gcc source:
++ *  gcc/gcov-io.h
++ *  libgcc/libgcov.c
++ *
++ *  Uses gcc-internal data definitions.
++ */
 +
- 	mutex_unlock(&gcov_lock);
- 
- 	return NOTIFY_OK;
-diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
-index 9bd0934..27e12ce 100644
---- a/kernel/gcov/fs.c
-+++ b/kernel/gcov/fs.c
-@@ -242,7 +242,7 @@ static struct gcov_node *get_node_by_name(const char *name)
- 
- 	list_for_each_entry(node, &all_head, all) {
- 		info = get_node_info(node);
--		if (info && (strcmp(info->filename, name) == 0))
-+		if (info && (strcmp(gcov_info_filename(info), name) == 0))
- 			return node;
- 	}
- 
-@@ -279,7 +279,7 @@ static ssize_t gcov_seq_write(struct file *file, const char __user *addr,
- 	seq = file->private_data;
- 	info = gcov_iter_get_info(seq->private);
- 	mutex_lock(&node_lock);
--	node = get_node_by_name(info->filename);
-+	node = get_node_by_name(gcov_info_filename(info));
- 	if (node) {
- 		/* Reset counts or remove node for unloaded modules. */
- 		if (node->num_loaded == 0)
-@@ -376,8 +376,9 @@ static void add_links(struct gcov_node *node, struct dentry *parent)
- 	if (!node->links)
- 		return;
- 	for (i = 0; i < num; i++) {
--		target = get_link_target(get_node_info(node)->filename,
--					 &gcov_link[i]);
-+		target = get_link_target(
-+				gcov_info_filename(get_node_info(node)),
-+				&gcov_link[i]);
- 		if (!target)
- 			goto out_err;
- 		basename = strrchr(target, '/');
-@@ -576,7 +577,7 @@ static void add_node(struct gcov_info *info)
- 	struct gcov_node *parent;
- 	struct gcov_node *node;
- 
--	filename = kstrdup(info->filename, GFP_KERNEL);
-+	filename = kstrdup(gcov_info_filename(info), GFP_KERNEL);
- 	if (!filename)
- 		return;
- 	parent = &root_node;
-@@ -631,7 +632,7 @@ static void add_info(struct gcov_node *node, struct gcov_info *info)
- 	loaded_info = kcalloc(num + 1, sizeof(struct gcov_info *), GFP_KERNEL);
- 	if (!loaded_info) {
- 		pr_warning("could not add '%s' (out of memory)\n",
--			   info->filename);
-+			   gcov_info_filename(info));
- 		return;
- 	}
- 	memcpy(loaded_info, node->loaded_info,
-@@ -645,7 +646,8 @@ static void add_info(struct gcov_node *node, struct gcov_info *info)
- 		 */
- 		if (!gcov_info_is_compatible(node->unloaded_info, info)) {
- 			pr_warning("discarding saved data for %s "
--				   "(incompatible version)\n", info->filename);
-+				   "(incompatible version)\n",
-+				   gcov_info_filename(info));
- 			gcov_info_free(node->unloaded_info);
- 			node->unloaded_info = NULL;
- 		}
-@@ -656,7 +658,7 @@ static void add_info(struct gcov_node *node, struct gcov_info *info)
- 		 */
- 		if (!gcov_info_is_compatible(node->loaded_info[0], info)) {
- 			pr_warning("could not add '%s' (incompatible "
--				   "version)\n", info->filename);
-+				   "version)\n", gcov_info_filename(info));
- 			kfree(loaded_info);
- 			return;
- 		}
-@@ -692,7 +694,8 @@ static void save_info(struct gcov_node *node, struct gcov_info *info)
- 		node->unloaded_info = gcov_info_dup(info);
- 		if (!node->unloaded_info) {
- 			pr_warning("could not save data for '%s' "
--				   "(out of memory)\n", info->filename);
-+				   "(out of memory)\n",
-+				   gcov_info_filename(info));
- 		}
- 	}
- }
-@@ -708,7 +711,7 @@ static void remove_info(struct gcov_node *node, struct gcov_info *info)
- 	i = get_info_index(node, info);
- 	if (i < 0) {
- 		pr_warning("could not remove '%s' (not found)\n",
--			   info->filename);
-+			   gcov_info_filename(info));
- 		return;
- 	}
- 	if (gcov_persist)
-@@ -735,7 +738,7 @@ void gcov_event(enum gcov_action action, struct gcov_info *info)
- 	struct gcov_node *node;
- 
- 	mutex_lock(&node_lock);
--	node = get_node_by_name(info->filename);
-+	node = get_node_by_name(gcov_info_filename(info));
- 	switch (action) {
- 	case GCOV_ADD:
- 		if (node)
-@@ -748,7 +751,7 @@ void gcov_event(enum gcov_action action, struct gcov_info *info)
- 			remove_info(node, info);
- 		else {
- 			pr_warning("could not remove '%s' (not found)\n",
--				   info->filename);
-+				   gcov_info_filename(info));
- 		}
- 		break;
- 	}
-diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
-index ae5bb42..27bc88a 100644
---- a/kernel/gcov/gcc_3_4.c
-+++ b/kernel/gcov/gcc_3_4.c
-@@ -21,6 +21,121 @@
- #include <linux/vmalloc.h>
- #include "gcov.h"
- 
-+#define GCOV_COUNTERS		5
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/seq_file.h>
++#include "gcov.h"
++
++#define GCOV_COUNTERS			8
++#define GCOV_TAG_FUNCTION_LENGTH	3
 +
 +static struct gcov_info *gcov_info_head;
 +
 +/**
-+ * struct gcov_fn_info - profiling meta data per function
-+ * @ident: object file-unique function identifier
-+ * @checksum: function checksum
-+ * @n_ctrs: number of values per counter type belonging to this function
-+ *
-+ * This data is generated by gcc during compilation and doesn't change
-+ * at run-time.
-+ */
-+struct gcov_fn_info {
-+	unsigned int ident;
-+	unsigned int checksum;
-+	unsigned int n_ctrs[0];
-+};
-+
-+/**
-+ * struct gcov_ctr_info - profiling data per counter type
++ * struct gcov_ctr_info - information about counters for a single function
 + * @num: number of counter values for this type
 + * @values: array of counter values for this type
-+ * @merge: merge function for counter values of this type (unused)
 + *
 + * This data is generated by gcc during compilation and doesn't change
 + * at run-time with the exception of the values array.
 + */
 +struct gcov_ctr_info {
-+	unsigned int	num;
-+	gcov_type	*values;
-+	void		(*merge)(gcov_type *, unsigned int);
++	unsigned int num;
++	gcov_type *values;
++};
++
++/**
++ * struct gcov_fn_info - profiling meta data per function
++ * @key: comdat key
++ * @ident: unique ident of function
++ * @lineno_checksum: function lineo_checksum
++ * @cfg_checksum: function cfg checksum
++ * @ctrs: instrumented counters
++ *
++ * This data is generated by gcc during compilation and doesn't change
++ * at run-time.
++ *
++ * Information about a single function.  This uses the trailing array
++ * idiom. The number of counters is determined from the merge pointer
++ * array in gcov_info.  The key is used to detect which of a set of
++ * comdat functions was selected -- it points to the gcov_info object
++ * of the object file containing the selected comdat function.
++ */
++struct gcov_fn_info {
++	const struct gcov_info *key;
++	unsigned int ident;
++	unsigned int lineno_checksum;
++	unsigned int cfg_checksum;
++	struct gcov_ctr_info ctrs[0];
 +};
 +
 +/**
 + * struct gcov_info - profiling data per object file
 + * @version: gcov version magic indicating the gcc version used for compilation
 + * @next: list head for a singly-linked list
-+ * @stamp: time stamp
++ * @stamp: uniquifying time stamp
 + * @filename: name of the associated gcov data file
++ * @merge: merge functions (null for unused counter type)
 + * @n_functions: number of instrumented functions
-+ * @functions: function data
-+ * @ctr_mask: mask specifying which counter types are active
-+ * @counts: counter data per counter type
++ * @functions: pointer to pointers to function information
 + *
 + * This data is generated by gcc during compilation and doesn't change
 + * at run-time with the exception of the next pointer.
 + */
 +struct gcov_info {
-+	unsigned int			version;
-+	struct gcov_info		*next;
-+	unsigned int			stamp;
-+	const char			*filename;
-+	unsigned int			n_functions;
-+	const struct gcov_fn_info	*functions;
-+	unsigned int			ctr_mask;
-+	struct gcov_ctr_info		counts[0];
++	unsigned int version;
++	struct gcov_info *next;
++	unsigned int stamp;
++	const char *filename;
++	void (*merge[GCOV_COUNTERS])(gcov_type *, unsigned int);
++	unsigned int n_functions;
++	struct gcov_fn_info **functions;
 +};
 +
 +/**
@@ -346,93 +205,427 @@ index ae5bb42..27bc88a 100644
 +		gcov_info_head = info->next;
 +}
 +
- /* Symbolic links to be created for each profiling data file. */
- const struct gcov_link gcov_link[] = {
- 	{ OBJ_TREE, "gcno" },	/* Link to .gcno file in $(objtree). */
-diff --git a/kernel/gcov/gcov.h b/kernel/gcov/gcov.h
-index 060073e..92c8e22 100644
---- a/kernel/gcov/gcov.h
-+++ b/kernel/gcov/gcov.h
-@@ -21,7 +21,6 @@
-  * gcc and need to be kept as close to the original definition as possible to
-  * remain compatible.
-  */
--#define GCOV_COUNTERS		5
- #define GCOV_DATA_MAGIC		((unsigned int) 0x67636461)
- #define GCOV_TAG_FUNCTION	((unsigned int) 0x01000000)
- #define GCOV_TAG_COUNTER_BASE	((unsigned int) 0x01a10000)
-@@ -34,60 +33,18 @@ typedef long gcov_type;
- typedef long long gcov_type;
- #endif
- 
--/**
-- * struct gcov_fn_info - profiling meta data per function
-- * @ident: object file-unique function identifier
-- * @checksum: function checksum
-- * @n_ctrs: number of values per counter type belonging to this function
-- *
-- * This data is generated by gcc during compilation and doesn't change
-- * at run-time.
-- */
--struct gcov_fn_info {
--	unsigned int ident;
--	unsigned int checksum;
--	unsigned int n_ctrs[0];
--};
--
--/**
-- * struct gcov_ctr_info - profiling data per counter type
-- * @num: number of counter values for this type
-- * @values: array of counter values for this type
-- * @merge: merge function for counter values of this type (unused)
-- *
-- * This data is generated by gcc during compilation and doesn't change
-- * at run-time with the exception of the values array.
-- */
--struct gcov_ctr_info {
--	unsigned int	num;
--	gcov_type	*values;
--	void		(*merge)(gcov_type *, unsigned int);
--};
-+/* Opaque gcov_info. The gcov structures can change as for example in gcc 4.7 so
-+ * we cannot use full definition here and they need to be placed in gcc specific
-+ * implementation of gcov. This also means no direct access to the members in
-+ * generic code and usage of the interface below.*/
-+struct gcov_info;
- 
--/**
-- * struct gcov_info - profiling data per object file
-- * @version: gcov version magic indicating the gcc version used for compilation
-- * @next: list head for a singly-linked list
-- * @stamp: time stamp
-- * @filename: name of the associated gcov data file
-- * @n_functions: number of instrumented functions
-- * @functions: function data
-- * @ctr_mask: mask specifying which counter types are active
-- * @counts: counter data per counter type
-- *
-- * This data is generated by gcc during compilation and doesn't change
-- * at run-time with the exception of the next pointer.
-- */
--struct gcov_info {
--	unsigned int			version;
--	struct gcov_info		*next;
--	unsigned int			stamp;
--	const char			*filename;
--	unsigned int			n_functions;
--	const struct gcov_fn_info	*functions;
--	unsigned int			ctr_mask;
--	struct gcov_ctr_info		counts[0];
--};
-+/* Interface to access gcov_info data  */
-+const char *gcov_info_filename(struct gcov_info *info);
-+unsigned int gcov_info_version(struct gcov_info *info);
-+struct gcov_info *gcov_info_next(struct gcov_info *info);
-+void gcov_info_link(struct gcov_info *info);
-+void gcov_info_unlink(struct gcov_info *prev, struct gcov_info *info);
- 
- /* Base interface. */
- enum gcov_action {
++/* Symbolic links to be created for each profiling data file. */
++const struct gcov_link gcov_link[] = {
++	{ OBJ_TREE, "gcno" },	/* Link to .gcno file in $(objtree). */
++	{ 0, NULL},
++};
++
++/*
++ * Determine whether a counter is active. Doesn't change at run-time.
++ */
++static int counter_active(struct gcov_info *info, unsigned int type)
++{
++	return info->merge[type] ? 1 : 0;
++}
++
++/* Determine number of active counters. Based on gcc magic. */
++static unsigned int num_counter_active(struct gcov_info *info)
++{
++	unsigned int i;
++	unsigned int result = 0;
++
++	for (i = 0; i < GCOV_COUNTERS; i++) {
++		if (counter_active(info, i))
++			result++;
++	}
++	return result;
++}
++
++/**
++ * gcov_info_reset - reset profiling data to zero
++ * @info: profiling data set
++ */
++void gcov_info_reset(struct gcov_info *info)
++{
++	struct gcov_ctr_info *ci_ptr;
++	unsigned int fi_idx;
++	unsigned int ct_idx;
++
++	for (fi_idx = 0; fi_idx < info->n_functions; fi_idx++)
++	{
++		ci_ptr = info->functions[fi_idx]->ctrs;
++
++		for (ct_idx = 0; ct_idx < GCOV_COUNTERS; ct_idx++) {
++			if (!counter_active(info, ct_idx))
++				continue;
++
++			memset(ci_ptr->values, 0,
++					sizeof(gcov_type) * ci_ptr->num);
++			ci_ptr++;
++		}
++	}
++}
++
++/**
++ * gcov_info_is_compatible - check if profiling data can be added
++ * @info1: first profiling data set
++ * @info2: second profiling data set
++ *
++ * Returns non-zero if profiling data can be added, zero otherwise.
++ */
++int gcov_info_is_compatible(struct gcov_info *info1, struct gcov_info *info2)
++{
++	return (info1->stamp == info2->stamp);
++}
++
++/**
++ * gcov_info_add - add up profiling data
++ * @dest: profiling data set to which data is added
++ * @source: profiling data set which is added
++ *
++ * Adds profiling counts of @source to @dest.
++ */
++void gcov_info_add(struct gcov_info *dst, struct gcov_info *src)
++{
++	struct gcov_ctr_info *dci_ptr;
++	struct gcov_ctr_info *sci_ptr;
++	unsigned int fi_idx;
++	unsigned int ct_idx;
++	unsigned int val_idx;
++
++	for (fi_idx = 0; fi_idx < src->n_functions; fi_idx++)
++	{
++		dci_ptr = dst->functions[fi_idx]->ctrs;
++		sci_ptr = src->functions[fi_idx]->ctrs;
++
++		for (ct_idx = 0; ct_idx < GCOV_COUNTERS; ct_idx++) {
++			if (!counter_active(src, ct_idx))
++				continue;
++
++			for (val_idx = 0; val_idx < sci_ptr->num; val_idx++)
++				dci_ptr->values[val_idx] +=
++					sci_ptr->values[val_idx];
++
++			dci_ptr++;
++			sci_ptr++;
++		}
++	}
++}
++
++/**
++ * gcov_info_dup - duplicate profiling data set
++ * @info: profiling data set to duplicate
++ *
++ * Return newly allocated duplicate on success, %NULL on error.
++ */
++struct gcov_info *gcov_info_dup(struct gcov_info *info)
++{
++	struct gcov_info *dup;
++	struct gcov_ctr_info *dci_ptr; /* dst counter info */
++	struct gcov_ctr_info *sci_ptr; /* src counter info */
++	unsigned int active;
++	unsigned int fi_idx; /* function info idx */
++	unsigned int ct_idx; /* counter type idx */
++	size_t fi_size; /* function info size */
++	size_t cv_size; /* counter values size */
++
++	dup = kmalloc(sizeof(struct gcov_info), GFP_KERNEL);
++	if (!dup)
++		return NULL;
++
++	*dup = *info;
++	dup->next = NULL;
++	dup->filename = NULL;
++	dup->functions = NULL;
++
++	dup->filename = kstrdup(info->filename, GFP_KERNEL);
++	if (!dup->filename)
++		goto err_free;
++
++	dup->functions = kzalloc(sizeof(struct gcov_fn_info *) *
++			info->n_functions, GFP_KERNEL);
++	if (!dup->functions)
++		goto err_free;
++
++	active = num_counter_active(info);
++	fi_size = sizeof(struct gcov_fn_info);
++	fi_size += sizeof(struct gcov_ctr_info) * active;
++
++	for (fi_idx = 0; fi_idx < info->n_functions; fi_idx++) {
++		dup->functions[fi_idx] = kzalloc(fi_size, GFP_KERNEL);
++		if (!dup->functions[fi_idx])
++			goto err_free;
++
++		*(dup->functions[fi_idx]) = *(info->functions[fi_idx]);
++
++		sci_ptr = info->functions[fi_idx]->ctrs;
++		dci_ptr = dup->functions[fi_idx]->ctrs;
++
++		for (ct_idx = 0; ct_idx < active; ct_idx++) {
++
++			cv_size = sizeof(gcov_type) * sci_ptr->num;
++
++			dci_ptr->values = vmalloc(cv_size);
++
++			if (!dci_ptr->values)
++				goto err_free;
++
++			dci_ptr->num = sci_ptr->num;
++			memcpy(dci_ptr->values, sci_ptr->values, cv_size);
++
++			sci_ptr++;
++			dci_ptr++;
++		}
++	}
++
++	return dup;
++err_free:
++	gcov_info_free(dup);
++	return NULL;
++}
++
++/**
++ * gcov_info_free - release memory for profiling data set duplicate
++ * @info: profiling data set duplicate to free
++ */
++void gcov_info_free(struct gcov_info *info)
++{
++	unsigned int active;
++	unsigned int fi_idx;
++	unsigned int ct_idx;
++	struct gcov_ctr_info *ci_ptr;
++
++	if (!info->functions)
++		goto free_info;
++
++	active = num_counter_active(info);
++
++	for (fi_idx = 0; fi_idx < info->n_functions; fi_idx++) {
++		if (!info->functions[fi_idx])
++			continue;
++
++		ci_ptr = info->functions[fi_idx]->ctrs;
++
++		for (ct_idx = 0; ct_idx < active; ct_idx++, ci_ptr++)
++			vfree(ci_ptr->values);
++
++		kfree(info->functions[fi_idx]);
++	}
++
++free_info:
++	kfree(info->functions);
++	kfree(info->filename);
++	kfree(info);
++}
++
++#define ITER_STRIDE	PAGE_SIZE
++
++/**
++ * struct gcov_iterator - specifies current file position in logical records
++ * @info: associated profiling data
++ * @buffer: buffer containing file data
++ * @size: size of buffer
++ * @pos: current position in file
++ */
++struct gcov_iterator {
++	struct gcov_info *info;
++	void *buffer;
++	size_t size;
++	loff_t pos;
++};
++
++/**
++ * store_gcov_u32 - store 32 bit number in gcov format to buffer
++ * @buffer: target buffer or NULL
++ * @off: offset into the buffer
++ * @v: value to be stored
++ *
++ * Number format defined by gcc: numbers are recorded in the 32 bit
++ * unsigned binary form of the endianness of the machine generating the
++ * file. Returns the number of bytes stored. If @buffer is %NULL, doesn't
++ * store anything.
++ */
++static size_t store_gcov_u32(void *buffer, size_t off, u32 v)
++{
++	u32 *data;
++
++	if (buffer) {
++		data = buffer + off;
++		*data = v;
++	}
++
++	return sizeof(*data);
++}
++
++/**
++ * store_gcov_u64 - store 64 bit number in gcov format to buffer
++ * @buffer: target buffer or NULL
++ * @off: offset into the buffer
++ * @v: value to be stored
++ *
++ * Number format defined by gcc: numbers are recorded in the 32 bit
++ * unsigned binary form of the endianness of the machine generating the
++ * file. 64 bit numbers are stored as two 32 bit numbers, the low part
++ * first. Returns the number of bytes stored. If @buffer is %NULL, doesn't store
++ * anything.
++ */
++static size_t store_gcov_u64(void *buffer, size_t off, u64 v)
++{
++	u32 *data;
++
++	if (buffer) {
++		data = buffer + off;
++
++		data[0] = (v & 0xffffffffUL);
++		data[1] = (v >> 32);
++	}
++
++	return sizeof(*data) * 2;
++}
++
++/**
++ * convert_to_gcda - convert profiling data set to gcda file format
++ * @buffer: the buffer to store file data or %NULL if no data should be stored
++ * @info: profiling data set to be converted
++ *
++ * Returns the number of bytes that were/would have been stored into the buffer.
++ */
++static size_t convert_to_gcda(char *buffer, struct gcov_info *info)
++{
++	struct gcov_fn_info *fi_ptr;
++	struct gcov_ctr_info *ci_ptr;
++	unsigned int fi_idx;
++	unsigned int ct_idx;
++	unsigned int cv_idx;
++	size_t pos = 0;
++
++	/* File header. */
++	pos += store_gcov_u32(buffer, pos, GCOV_DATA_MAGIC);
++	pos += store_gcov_u32(buffer, pos, info->version);
++	pos += store_gcov_u32(buffer, pos, info->stamp);
++
++	for (fi_idx = 0; fi_idx < info->n_functions; fi_idx++) {
++		fi_ptr = info->functions[fi_idx];
++
++		/* Function record. */
++		pos += store_gcov_u32(buffer, pos, GCOV_TAG_FUNCTION);
++		pos += store_gcov_u32(buffer, pos, GCOV_TAG_FUNCTION_LENGTH);
++		pos += store_gcov_u32(buffer, pos, fi_ptr->ident);
++		pos += store_gcov_u32(buffer, pos, fi_ptr->lineno_checksum);
++		pos += store_gcov_u32(buffer, pos, fi_ptr->cfg_checksum);
++
++		ci_ptr = fi_ptr->ctrs;
++
++		for (ct_idx = 0; ct_idx < GCOV_COUNTERS; ct_idx++) {
++			if (!counter_active(info, ct_idx))
++				continue;
++
++			/* Counter record. */
++			pos += store_gcov_u32(buffer, pos,
++					      GCOV_TAG_FOR_COUNTER(ct_idx));
++			pos += store_gcov_u32(buffer, pos, ci_ptr->num * 2);
++
++			for (cv_idx = 0; cv_idx < ci_ptr->num; cv_idx++) {
++				pos += store_gcov_u64(buffer, pos,
++						      ci_ptr->values[cv_idx]);
++			}
++
++			ci_ptr++;
++		}
++	}
++
++	return pos;
++}
++
++/**
++ * gcov_iter_new - allocate and initialize profiling data iterator
++ * @info: profiling data set to be iterated
++ *
++ * Return file iterator on success, %NULL otherwise.
++ */
++struct gcov_iterator *gcov_iter_new(struct gcov_info *info)
++{
++	struct gcov_iterator *iter;
++
++	iter = kzalloc(sizeof(struct gcov_iterator), GFP_KERNEL);
++	if (!iter)
++		goto err_free;
++
++	iter->info = info;
++	/* Dry-run to get the actual buffer size. */
++	iter->size = convert_to_gcda(NULL, info);
++	iter->buffer = vmalloc(iter->size);
++	if (!iter->buffer)
++		goto err_free;
++
++	convert_to_gcda(iter->buffer, info);
++
++	return iter;
++
++err_free:
++	kfree(iter);
++	return NULL;
++}
++
++
++/**
++ * gcov_iter_get_info - return profiling data set for given file iterator
++ * @iter: file iterator
++ */
++void gcov_iter_free(struct gcov_iterator *iter)
++{
++	vfree(iter->buffer);
++	kfree(iter);
++}
++
++/**
++ * gcov_iter_get_info - return profiling data set for given file iterator
++ * @iter: file iterator
++ */
++struct gcov_info *gcov_iter_get_info(struct gcov_iterator *iter)
++{
++	return iter->info;
++}
++
++/**
++ * gcov_iter_start - reset file iterator to starting position
++ * @iter: file iterator
++ */
++void gcov_iter_start(struct gcov_iterator *iter)
++{
++	iter->pos = 0;
++}
++
++/**
++ * gcov_iter_next - advance file iterator to next logical record
++ * @iter: file iterator
++ *
++ * Return zero if new position is valid, non-zero if iterator has reached end.
++ */
++int gcov_iter_next(struct gcov_iterator *iter)
++{
++	if (iter->pos < iter->size)
++		iter->pos += ITER_STRIDE;
++
++	if (iter->pos >= iter->size)
++		return -EINVAL;
++
++	return 0;
++}
++
++/**
++ * gcov_iter_write - write data for current pos to seq_file
++ * @iter: file iterator
++ * @seq: seq_file handle
++ *
++ * Return zero on success, non-zero otherwise.
++ */
++int gcov_iter_write(struct gcov_iterator *iter, struct seq_file *seq)
++{
++	size_t len;
++
++	if (iter->pos >= iter->size)
++		return -EINVAL;
++
++	len = ITER_STRIDE;
++	if (iter->pos + len > iter->size)
++		len = iter->size - iter->pos;
++
++	seq_write(seq, iter->buffer + iter->pos, len);
++
++	return 0;
++}
 -- 
 1.8.3.1
 
