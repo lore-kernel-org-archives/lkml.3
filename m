@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935119Ab3IDOpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 10:45:22 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:48436 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934972Ab3IDOpR (ORCPT
+	id S935123Ab3IDOqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 10:46:19 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39164 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934851Ab3IDOqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 10:45:17 -0400
-Date: Wed, 4 Sep 2013 10:45:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Jan Kaluza <jkaluza@redhat.com>, davem@davemloft.net,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        eparis@redhat.com, rgb@redhat.com, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v3 0/3] Send audit/procinfo/cgroup data in socket-level
- control message
-Message-ID: <20130904144507.GA25788@mtj.dyndns.org>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1378275261-4553-1-git-send-email-jkaluza@redhat.com>
- <878uzdf2xp.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878uzdf2xp.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Sep 2013 10:46:18 -0400
+Subject: Re: [PATCH 1/2] hwspinlock/omap: add support for dt nodes
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52266409.90908@ti.com>
+Date: Wed, 4 Sep 2013 09:46:19 -0500
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <71570936-39F5-4AE1-AD05-163EA3179271@codeaurora.org>
+References: <1378230767-54931-1-git-send-email-s-anna@ti.com> <43798031-2D57-44F0-A19C-FD80DB9E9794@codeaurora.org> <52263413.1050108@ti.com> <8E84282E-BAD1-4A2B-849A-167C32F629DA@codeaurora.org> <52266409.90908@ti.com>
+To: Suman Anna <s-anna@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
 
-On Wed, Sep 04, 2013 at 12:42:26AM -0700, Eric W. Biederman wrote:
-> Can I just say ick, blech, barf, gag.
+On Sep 3, 2013, at 5:34 PM, Suman Anna wrote:
 
-Gees, an awesome way to start the conversation.  If your gag response
-is hyper-sensitive, go see a frigging doctor.  It's annoying because
-you tend to go over the top while getting things wrong often enough.
-Even if you don't agree, you don't have to start things this way.
-
-> You don't require this information to be passed.  You are asking people
-> to suport a lot of new code for the forseeable future.  The only advantage
-> appears to be for short lived racy processes that don't even bother to
-> make certain their message was acknowleged before exiting.
-
-While I'm not sure whether this is *the* right appraoch, how is "we
-have some pretty visible race conditions but it's probably okay" an
-answer?  This affects auditing and logging directly and you're saying
-"ah well, the program wasn't running long enough"?
-
-> You sent this during the merge window which is the time for code
-> integration and testing not new code.
-
-What are you talking about?  It is *okay* to send new patches during
-merge window even if it's headed for the next merge window.  Sending
-patches to maintainers doesn't mean "this should go in right now".
-Maintainers are of course free to delay response or ask for
-pinging/resending later but it's just stupid to accuse patch
-submitters for sending patches.  What the hell is that?
-
-> By my count you have overflowed cb in struct sk_buff and are stomping on
-> _skb_refdest.
+> Kumar,
 > 
-> If you are going to go crazy and pass things is there a reason you do
-> not add a patch to pass the bsd SCM_CREDS?  That information seems more
-> relevant in a security context and for making security decisions than
-> about half the information you are passing.
+>>> 
+>>> On 09/03/2013 01:50 PM, Kumar Gala wrote:
+>>>> 
+>>>> On Sep 3, 2013, at 12:52 PM, Suman Anna wrote:
+>>>> 
+>>>>> HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+>>>>> which are all device-tree boot only. This patch adds the
+>>>>> base support for parsing the DT nodes, and removes the code
+>>>>> dealing with the traditional platform device instantiation.
+>>>>> 
+>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>>>> ---
+>>>>> .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+>>>>> arch/arm/mach-omap2/Makefile                       |  3 --
+>>>>> arch/arm/mach-omap2/hwspinlock.c                   | 60 ----------------------
+>>>>> drivers/hwspinlock/omap_hwspinlock.c               | 21 ++++++--
+>>>>> 4 files changed, 45 insertions(+), 67 deletions(-)
+>>>>> create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>> delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>>>> 
+>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..adfb8ad
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>>>>> @@ -0,0 +1,28 @@
+>>>>> +OMAP4+ HwSpinlock Driver
+>>>>> +
+>>>>> +Required properties:
+>>>>> +- compatible:		Currently supports only "ti,omap4-hwspinlock" for
+>>>>> +				OMAP44xx, OMAP54xx, AM33xx, AM43xx, DRA7xx SoCs
+>>>>> +- reg:			Contains the hwspinlock register address range (base
+>>>>> +			address and length)
+>>>>> +- ti,hwmods:		Name of the hwmod associated with the hwspinlock device
+>>>>> +
+>>>>> +Optional properties:
+>>>>> +- base_id:		Base Id for the locks for a particular hwspinlock
+>>>>> +			device. If not mentioned, a default value of 0 is used.
+>>>>> +			This property is mandatory ONLY if a SoC has several
+>>>>> +			hwspinlock devices. There are currently no such OMAP
+>>>>> +			SoCs.
+>>>> 
+>>>> Should this be ti,base_id ? [ I know its kinda generic in its intent for any SoC w/multiple blocks ]
+>>> 
+>>> I didn't add the "ti," prefix exactly for the same reason - it is
+>>> generic w.r.t the hwspinlock core irrespective of the SoC family, and
+>>> there is nothing ti or OMAP specific about it. I have added it to keep
+>>> the DT node definition in sync with the driver code. If it is too
+>>> generic a name, it can always be renamed as hwlock_base_id. This will be
+>>> SoC agnostic property for the hwspinlock driver. What do you think?
+>> 
+>> I'm wondering if we should use cell-index for this purpose.
+> 
+> I didn't get you completely. Do you intend to compute the base_id using
+> cell-index and number of locks (which may be a separate field altogether
+> if this information cannot be read from the h/w)? My understanding is
+> that cell-index is primarily used for identifying the h/w instance number.
 
-You could have lost all the other paragraphs and just responded with
-the above.  I don't think we can extend an existing struct but maybe
-how information is packed can be adjusted.  That said, the proposed
-split makes sense to me.
+I was suggesting using cell-index instead of base_id.  What we should probably due is have a devicetree/bindings/hwlock/hwlock.txt that would describe generic properties like this and just reference that in the omap binding spec.
 
-Thanks.
+I'm thinking if we dont use cell-index, that it should probably be hwlock-base-id
+
+- k
 
 -- 
-tejun
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
