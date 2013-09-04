@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934589Ab3IDJ1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 05:27:45 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44363 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934484Ab3IDJ1n (ORCPT
+	id S934548Ab3IDJbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 05:31:31 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:9899 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934205Ab3IDJba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 05:27:43 -0400
+	Wed, 4 Sep 2013 05:31:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 02:31:29 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <axel.lin@ingics.com>, <kishon@ti.com>,
+        <gg@slimlogic.co.uk>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: palmas: fix the n_voltages for smps to 122
+Date: Wed, 4 Sep 2013 15:20:06 +0530
+Message-ID: <1378288206-20741-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <5226F9BF.8040304@asianux.com>
-References: <52005571.4080704@asianux.com>
-	<CAMuHMdXq3kY=xv7Rp5+OUTjefViNMTBzGAoutamuY07=cbRhNg@mail.gmail.com>
-	<52268800.2010200@asianux.com>
-	<CAMuHMdUkpEMx8LuoYxRcs2hmEg0ubJZ_c9kFXQUoOO_3sdh_vQ@mail.gmail.com>
-	<5226EAAE.6090500@asianux.com>
-	<CAMuHMdVY4jwKJau4ZbsMW3D2KabHU8fPibgzT_-tysDdiHzCXw@mail.gmail.com>
-	<5226F9BF.8040304@asianux.com>
-Date: Wed, 4 Sep 2013 11:27:43 +0200
-X-Google-Sender-Auth: IPLRMx6VO5mt2KNq_ECzY0t4FrA
-Message-ID: <CAMuHMdWc3mtva92qDy4j6iUhQc5grHA1-5=vC4iXZoSyFxB4cw@mail.gmail.com>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for
- "uapi/Kbuild" and "uapi/linux/Kbuild"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 11:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
->>> Hmm... why we need "uapi/linux/" ?  (I can not find some related
->>> documents, so I have to 'guess').
->>
->> The "uapi" subdirectories are there to distinguish userspace headers from
->> kernelspace headers, and allow both to live in the kernel source tree.
->>
->> When running "make headers_install", the (processed) headers in the
->> various "uapi" subdirectories are copied to /usr/include.
->> Hence "uapi/linux/foo.h" becomes <linux/foo.h> in userspace.
->> In userspace there are no "uapi" subdirectories anymore.
->>
->
-> Yeah, so why need another "uapi/*" excluding "uapi/linux" ?
->
-> Are they also truly still "Userspace API" but which need not distinguish
-> ? (at least, it seems that idea is not quite good).
->
-> Hmm... maybe the "uapi/*" except "uapi/linux" are also installed? Is it
-> for compatible (originally they are here, and now we have to follow, it
-> is no reason to change if not find related critical issues)?
+With the following change
+---------
+commit ad02e846878ca35e9d3fa584be8ee770e9e14fce
+Author: Axel Lin <axel.lin@ingics.com>
 
-All uapi files are installed, a.o. /usr/include/scsi/, /usr/include/video/, ...
+    regulator: palmas: Return raw register values as the selectors in [get|set]_voltage_sel
 
-Historically, everything under "include" in the kernel source tree was
-installed in /usr/include/, after (semi)manual cleanup.
-Since the uapi split, everything is handled automatically.
-Because of compatibility reasons (do not break userspace), paths had to
-stay the same.
+    Don't adjust the selector in [get|set]_voltage_sel, fix it in list_voltage() instead.
 
-Gr{oetje,eeting}s,
+    For smps*(except smps10), the vsel reg-value and voltage mapping as below:
+----------
+The list_voltage() takes the true value of selector which is
+programmed in the register.  As per smsp voltage table
+    reg-value       volt (uV) ( Assume RANGE is x1 )
+    0               0
+    1               500000
+    2               500000
+    3               500000
+    4               500000
+    5               500000
+    6               500000 (0.49V + 1 * 0.01V) * RANGE
+    7               510000 (0.49V + 2 * 0.01V) * RANGE
+    8               520000 (0.49V + 3 * 0.01V) * RANGE
+    9               530000 (0.49V + 4 * 0.01V) * RANGE
+    ....
+    121            1650000 (0.49V + 116 * 0.1) * RANGE
 
-                        Geert
+Hence making n_voltages for smps to 122.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/palmas-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 488dfe7..cb65c6f 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -207,7 +207,7 @@ static unsigned int palmas_smps_ramp_delay[4] = {0, 10000, 5000, 2500};
+  *
+  * So they are basically (maxV-minV)/stepV
+  */
+-#define PALMAS_SMPS_NUM_VOLTAGES	117
++#define PALMAS_SMPS_NUM_VOLTAGES	122
+ #define PALMAS_SMPS10_NUM_VOLTAGES	2
+ #define PALMAS_LDO_NUM_VOLTAGES		50
+ 
+-- 
+1.7.1.1
+
