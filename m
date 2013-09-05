@@ -1,92 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965259Ab3IEMv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:51:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57022 "EHLO mx1.redhat.com"
+	id S965294Ab3IEMv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:51:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57491 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763374Ab3IEMv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:51:27 -0400
-Date: Thu, 5 Sep 2013 14:53:19 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v2 3/6] MSI/x86: Support pci_enable_msi_block_part() interface
-Message-ID: <1519938bbcfd083c0e091e5ac69b573c39664e40.1378383792.git.agordeev@redhat.com>
-References: <cover.1378383792.git.agordeev@redhat.com>
+	id S965262Ab3IEMvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:51:54 -0400
+Message-ID: <52287E66.9010107@redhat.com>
+Date: Thu, 05 Sep 2013 14:51:50 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1378383792.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@intel.com>
+Subject: [PATCH 2/2 v2] mm: allow to set overcommit ratio more precisely
+References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com>
+In-Reply-To: <1376925478-15506-2-git-send-email-jmarchan@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is a prerequisite for the forthcoming update
-of the AHCI device driver to conserve 10/16 MSIs on Intel
-chipsets. The update makes use of 'nvec_mme' parameter
-for pci_enable_msi_block_part() interface.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Changes since v1:
+ - use overcommit_ratio_ppm instead of overcommit_kbytes
+ - keep both variables in sync
+
+Some applications that run on HPC clusters are designed around the
+availability of RAM and the overcommit ratio is fine tuned to get the
+maximum usage of memory without swapping. With growing memory, the 1%
+of all RAM grain provided by overcommit_ratio has become too coarse
+for these workload (on a 2TB machine it represents no less than
+20GB).
+
+This patch adds the new overcommit_ratio_ppm sysctl variable that
+allow to set overcommit ratio with a part per million precision.
+The old overcommit_ratio variable can still be used to set and read
+the ratio with a 1% precision. That way, overcommit_ratio interface
+isn't broken in any way that I can imagine.
+
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
 ---
- drivers/iommu/irq_remapping.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ include/linux/mman.h   |    6 ++--
+ include/linux/sysctl.h |    2 +
+ kernel/sysctl.c        |   63 +++++++++++++++++++++++++++++++++++++++++++++--
+ mm/mmap.c              |    2 +-
+ mm/nommu.c             |    2 +-
+ 5 files changed, 67 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 1a220a0..7671da3 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -49,9 +49,9 @@ static void irq_remapping_disable_io_apic(void)
- 		disconnect_bsp_APIC(0);
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index d622d34..24f9c12 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -11,7 +11,7 @@
+ #include <linux/swap.h>
+ 
+ extern int sysctl_overcommit_memory;
+-extern int sysctl_overcommit_ratio;
++extern int sysctl_overcommit_ratio_ppm;
+ extern struct percpu_counter vm_committed_as;
+ 
+ #ifdef CONFIG_SMP
+@@ -96,7 +96,7 @@ calc_vm_flag_bits(unsigned long flags)
+  */
+ static inline unsigned long vm_commit_limit()
+ {
+-	return ((totalram_pages - hugetlb_total_pages())
+-		* sysctl_overcommit_ratio / 100) + total_swap_pages;
++	return ((u64) (totalram_pages - hugetlb_total_pages())
++		* sysctl_overcommit_ratio_ppm / 100000) + total_swap_pages;
+ }
+ #endif /* _LINUX_MMAN_H */
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 14a8ff2..2e2389c 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -51,6 +51,8 @@ extern int proc_dointvec_userhz_jiffies(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+ extern int proc_dointvec_ms_jiffies(struct ctl_table *, int,
+ 				    void __user *, size_t *, loff_t *);
++extern int proc_dointvec_percent_ppm(struct ctl_table *, int,
++				     void __user *, size_t *, loff_t *);
+ extern int proc_doulongvec_minmax(struct ctl_table *, int,
+ 				  void __user *, size_t *, loff_t *);
+ extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 07f6fc4..a4d2e37 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -96,7 +96,7 @@
+ 
+ /* External variables not in a header file. */
+ extern int sysctl_overcommit_memory;
+-extern int sysctl_overcommit_ratio;
++extern int sysctl_overcommit_ratio_ppm;
+ extern int max_threads;
+ extern int suid_dumpable;
+ #ifdef CONFIG_COREDUMP
+@@ -1116,8 +1116,15 @@ static struct ctl_table vm_table[] = {
+ 	},
+ 	{
+ 		.procname	= "overcommit_ratio",
+-		.data		= &sysctl_overcommit_ratio,
+-		.maxlen		= sizeof(sysctl_overcommit_ratio),
++		.data		= &sysctl_overcommit_ratio_ppm,
++		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_percent_ppm,
++	},
++	{
++		.procname	= "overcommit_ratio_ppm",
++		.data		= &sysctl_overcommit_ratio_ppm,
++		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
+@@ -2433,6 +2440,56 @@ int proc_dointvec_ms_jiffies(struct ctl_table *table, int write,
+ 				do_proc_dointvec_ms_jiffies_conv, NULL);
  }
  
--static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
-+static int do_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme)
++static int do_proc_dointvec_percent_ppm_conv(bool *negp, unsigned long *lvalp,
++					     int *valp,
++					     int write, void *data)
++{
++	if (write) {
++		unsigned long ppm = (*negp ? -*lvalp : *lvalp) * 10000;
++
++		if (ppm > INT_MAX)
++			return 1;
++		*valp = (int)ppm;
++	} else {
++		int val = *valp;
++		unsigned long lval;
++		if (val < 0) {
++			*negp = true;
++			lval = (unsigned long)-val;
++		} else {
++			*negp = false;
++			lval = (unsigned long)val;
++		}
++		*lvalp = lval / 10000;
++		if (lval % 10000 >= 5000)
++			(*lvalp)++;
++	}
++	return 0;
++}
++
++/**
++ * proc_dointvec_percent_ppm - read a vector of integers as percent and convert it to ppm
++ * @table: the sysctl table
++ * @write: %TRUE if this is a write to the sysctl file
++ * @buffer: the user buffer
++ * @lenp: the size of the user buffer
++ * @ppos: file position
++ * @ppos: the current position in the file
++ *
++ * Reads/writes up to table->maxlen/sizeof(unsigned int) integer
++ * values from/to the user buffer, treated as an ASCII string.
++ * The values read are assumed to be in percents, and are converted
++ * into parts per million.
++ *
++ * Returns 0 on success.
++ */
++int proc_dointvec_percent_ppm(struct ctl_table *table, int write,
++			      void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	return do_proc_dointvec(table, write, buffer, lenp, ppos,
++				do_proc_dointvec_percent_ppm_conv, NULL);
++}
++
+ static int proc_do_cad_pid(struct ctl_table *table, int write,
+ 			   void __user *buffer, size_t *lenp, loff_t *ppos)
  {
--	int node, ret, sub_handle, nvec_pow2, index = 0;
-+	int node, ret, sub_handle, index = 0;
- 	unsigned int irq;
- 	struct msi_desc *msidesc;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 06c98f8..bdec0e1 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -85,7 +85,7 @@ pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ EXPORT_SYMBOL(vm_get_page_prot);
  
-@@ -60,18 +60,18 @@ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
- 	WARN_ON(msidesc->irq);
- 	WARN_ON(msidesc->msi_attrib.multiple);
- 	WARN_ON(msidesc->nvec_used);
-+	BUG_ON(!is_power_of_2(nvec_mme));
- 
- 	node = dev_to_node(&dev->dev);
- 	irq = __create_irqs(get_nr_irqs_gsi(), nvec, node);
- 	if (irq == 0)
- 		return -ENOSPC;
- 
--	nvec_pow2 = __roundup_pow_of_two(nvec);
- 	msidesc->nvec_used = nvec;
--	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
-+	msidesc->msi_attrib.multiple = ilog2(nvec_mme);
- 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
- 		if (!sub_handle) {
--			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
-+			index = msi_alloc_remapped_irq(dev, irq, nvec_mme);
- 			if (index < 0) {
- 				ret = index;
- 				goto error;
-@@ -145,7 +145,7 @@ static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
- 					int nvec, int nvec_mme, int type)
- {
- 	if (type == PCI_CAP_ID_MSI)
--		return do_setup_msi_irqs(dev, nvec);
-+		return do_setup_msi_irqs(dev, nvec, nvec_mme);
- 	else
- 		return do_setup_msix_irqs(dev, nvec);
- }
+ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+-int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
++int sysctl_overcommit_ratio_ppm __read_mostly = 500000;	/* default is 50% */
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
+diff --git a/mm/nommu.c b/mm/nommu.c
+index d8a957b..cf10a9b 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -59,7 +59,7 @@ unsigned long max_mapnr;
+ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+-int sysctl_overcommit_ratio = 50; /* default is 50% */
++int sysctl_overcommit_ratio_ppm = 500000; /* default is 50% */
+ int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
+ int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
 -- 
 1.7.7.6
 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
