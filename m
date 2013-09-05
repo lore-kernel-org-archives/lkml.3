@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3IEFMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:12:10 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56828 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753553Ab3IEFMH (ORCPT
+	id S1756395Ab3IEFM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:12:59 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:44508 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab3IEFM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:12:07 -0400
-X-Greylist: delayed 1575 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 01:12:07 EDT
-Message-ID: <52280C73.9080209@fb.com>
-Date: Thu, 5 Sep 2013 10:15:39 +0530
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 5 Sep 2013 01:12:58 -0400
+From: Libin <huawei.libin@huawei.com>
+To: <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <wangyijing@huawei.com>,
+        <guohanjun@huawei.com>, <wujianguo@huawei.com>
+Subject: [PATCH] workqueue: fix ordered workqueue in multi NUMA nodes platform
+Date: Thu, 5 Sep 2013 13:10:44 +0800
+Message-ID: <1378357844-15632-1-git-send-email-huawei.libin@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Kumar Sundararajan <kumar@fb.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: clock_gettime_ns
-References: <5226FAE1.5070201@fb.com> <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com>
-In-Reply-To: <CANcMJZAv_-nGkjt8r8cp+BhnSfhL2roKZpodN+vLKfmpTVLhrQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-09-05_02:2013-09-05,2013-09-05,1970-01-01 signatures=0
+Content-Type: text/plain
+X-Originating-IP: [10.135.74.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/5/13 12:47 AM, John Stultz wrote:
-> If we're going to add a new interface that uses something other then a
-> timespec, we likely need to put some serious thought into that new
-> type, and see how it could be used across a number of syscalls. Some
-> of the discussion around dealing with the 2038 issue touched on this.
+In platform with multi NUMA nodes, there is no ordering guarantee
+with the workqueue created by calling alloc_ordered_workqueue().
 
-[ I know you're not asking for perf data, but may be useful for new 
-readers ]
+Add member ordered_pwq in structure workqueue_struct, used to hold
+the first choice of pwq, in order to avoid breaking its ordering
+guarantee under enqueueing work in different NUMA nodes.
 
-Here's the benchmarking I did in 2011:
+Signed-off-by: Libin <huawei.libin@huawei.com>
+---
+ kernel/workqueue.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-http://thread.gmane.org/gmane.linux.kernel/1233758/focus=1233781
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 29b7985..42c6c29 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -249,6 +249,7 @@ struct workqueue_struct {
+ 
+ 	struct workqueue_attrs	*unbound_attrs;	/* WQ: only for unbound wqs */
+ 	struct pool_workqueue	*dfl_pwq;	/* WQ: only for unbound wqs */
++	struct pool_workqueue   *ordered_pwq;   /* WQ: only for ordered wqs */
+ 
+ #ifdef CONFIG_SYSFS
+ 	struct wq_device	*wq_dev;	/* I: for sysfs interface */
+@@ -1326,10 +1327,19 @@ retry:
+ 
+ 	/* pwq which will be used unless @work is executing elsewhere */
+ 	if (!(wq->flags & WQ_UNBOUND))
+-		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
+-	else
+-		pwq = unbound_pwq_by_node(wq, cpu_to_node(cpu));
++	    pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
++	else {
++	    pwq = unbound_pwq_by_node(wq, cpu_to_node(cpu));
++	    if (wq->flags & __WQ_ORDERED) {
++		mutex_lock(&wq->mutex);
++		if (wq->ordered_pwq == NULL)
++		    wq->ordered_pwq = pwq;
++		else
++		    pwq = wq->ordered_pwq;
++		mutex_unlock(&wq->mutex);
++	    }
+ 
++	}
+ 	/*
+ 	 * If @work was previously on a different pool, it might still be
+ 	 * running there, in which case the work needs to be queued on that
+-- 
+1.8.2.1
 
-Switching from timespec to s64 was worth 21%. My experience over the 
-years is that this performance delta causes userspace guys to implement 
-their own TSC based timers, against the advice from kernel developers.
 
-http://code.ohloh.net/search?s=wall%20now%20tsc%20hz&pp=0&fl=C&fl=C%2B%2B&ff=1&mp=1&ml=1&me=1&md=1&filterChecked=true
-
-I worry that trying to solve other clock problems will cause the kernel 
-to continue to pass the time in memory instead of registers, giving the 
-userspace TSC based implementations a reason to exist.
-
-  -Arun
