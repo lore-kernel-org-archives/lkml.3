@@ -1,190 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3IEGlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 02:41:20 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15166 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757036Ab3IEGlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 02:41:19 -0400
-Message-ID: <522825E4.7080404@huawei.com>
-Date: Thu, 5 Sep 2013 14:34:12 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1757792Ab3IEGsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 02:48:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53492 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754653Ab3IEGsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 02:48:53 -0400
+Message-ID: <5228294E.8050401@ti.com>
+Date: Thu, 5 Sep 2013 09:48:46 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Jianguo Wu <wujianguo106@gmail.com>, <akpm@linux-foundation.org>,
-        <aarcange@redhat.com>, <kirill.shutemov@linux.intel.com>,
-        <mgorman@suse.de>, <xiaoguangrong@linux.vnet.ibm.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/thp: fix comments in transparent_hugepage_flags
-References: <1378301422-9468-1-git-send-email-wujianguo@huawei.com> <5227e870.ab42320a.62d4.3d12SMTPIN_ADDED_BROKEN@mx.google.com> <5227F4B6.40009@huawei.com> <20130905033704.GA18909@hacker.(null)> <52280058.5070803@huawei.com> <52280f92.e72b320a.2501.6de1SMTPIN_ADDED_BROKEN@mx.google.com>
-In-Reply-To: <52280f92.e72b320a.2501.6de1SMTPIN_ADDED_BROKEN@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [GIT PULL] fbdev changes for 3.12
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="V1XF8LSOtBp6ng7KD1MaW3q2JRFShfLcD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/5 12:58, Wanpeng Li wrote:
+--V1XF8LSOtBp6ng7KD1MaW3q2JRFShfLcD
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Jianguo,
-> On Thu, Sep 05, 2013 at 11:54:00AM +0800, Jianguo Wu wrote:
->> On 2013/9/5 11:37, Wanpeng Li wrote:
->>
->>> On Thu, Sep 05, 2013 at 11:04:22AM +0800, Jianguo Wu wrote:
->>>> Hi Wanpeng,
->>>>
->>>> On 2013/9/5 10:11, Wanpeng Li wrote:
->>>>
->>>>> Hi Jianguo,
->>>>> On Wed, Sep 04, 2013 at 09:30:22PM +0800, Jianguo Wu wrote:
->>>>>> Since commit d39d33c332(thp: enable direct defrag), defrag is enable
->>>>>> for all transparent hugepage page faults by default, not only in
->>>>>> MADV_HUGEPAGE regions.
->>>>>>
->>>>>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->>>>>> ---
->>>>>> mm/huge_memory.c | 6 ++----
->>>>>> 1 file changed, 2 insertions(+), 4 deletions(-)
->>>>>>
->>>>>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->>>>>> index a92012a..abf047e 100644
->>>>>> --- a/mm/huge_memory.c
->>>>>> +++ b/mm/huge_memory.c
->>>>>> @@ -28,10 +28,8 @@
->>>>>>
->>>>>> /*
->>>>>>  * By default transparent hugepage support is enabled for all mappings
->>>>>
->>>>> This is also stale. TRANSPARENT_HUGEPAGE_ALWAYS is not configured by default in
->>>>> order that avoid to risk increase the memory footprint of applications w/o a 
->>>>> guaranteed benefit.
->>>>>
->>>>
->>>> Right, how about this:
->>>>
->>>> By default transparent hugepage support is disabled in order that avoid to risk
->>>
->>> I don't think it's disabled. TRANSPARENT_HUGEPAGE_MADVISE is configured
->>> by default.
->>>
->>
->> Hi Wanpeng,
->>
->> We have TRANSPARENT_HUGEPAGE and TRANSPARENT_HUGEPAGE_ALWAYS/TRANSPARENT_HUGEPAGE_MADVISE,
->> TRANSPARENT_HUGEPAGE_ALWAYS or TRANSPARENT_HUGEPAGE_MADVISE is configured only if TRANSPARENT_HUGEPAGE
->> is configured.
->>
->> By default, TRANSPARENT_HUGEPAGE=n, and TRANSPARENT_HUGEPAGE_ALWAYS is configured when TRANSPARENT_HUGEPAGE=y.
->>
->> commit 13ece886d9(thp: transparent hugepage config choice):
->>
->> config TRANSPARENT_HUGEPAGE
->> -       bool "Transparent Hugepage Support" if EMBEDDED
->> +       bool "Transparent Hugepage Support"
->>        depends on X86 && MMU
->> -       default y
->>
->> +choice
->> +       prompt "Transparent Hugepage Support sysfs defaults"
->> +       depends on TRANSPARENT_HUGEPAGE
->> +       default TRANSPARENT_HUGEPAGE_ALWAYS
->>
-> 
-> mmotm tree:
-> 
-> grep 'TRANSPARENT_HUGEPAGE' .config
-> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
-> CONFIG_TRANSPARENT_HUGEPAGE=y
-> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
-> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
-> 
-> distro:
-> 
-> grep 'TRANSPARENT_HUGEPAGE' config-3.8.0-26-generic 
-> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
-> CONFIG_TRANSPARENT_HUGEPAGE=y
-> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
-> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
-> 
+Hi Linus,
 
-Hi Wanpeng,
+Here are the fbdev changes for 3.12.
 
-I'm a little confused, at mm/Kconfig, TRANSPARENT_HUGEPAGE is not configured by default.
+There's a conflict in drivers/video/simplefb.c, which you can resolve by =
+using
+the version in your tree.
 
-and in x86_64, linus tree:
+I guess the simplefb changes were taken through Ingo's tree because the s=
+eries
+includes x86 arch changes, but it would have been nice to see the patches=
+ in
+the linux-next...
 
-$make defconfig
-$grep 'TRANSPARENT_HUGEPAGE' .config
-CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
-# CONFIG_TRANSPARENT_HUGEPAGE is not set
+ Tomi
 
-Do i misunderstand something here？
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a=
+4b:
 
-Thanks
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
 
-> 
->> Thanks,
->> Jianguo Wu
->>
->>> Regards,
->>> Wanpeng Li 
->>>
->>>> increase the memory footprint of applications w/o a guaranteed benefit, and
->>>> khugepaged scans all mappings when transparent hugepage enabled.
->>>> Defrag is invoked by khugepaged hugepage allocations and by page faults for all
->>>> hugepage allocations.
->>>>
->>>> Thanks,
->>>> Jianguo Wu
->>>>
->>>>> Regards,
->>>>> Wanpeng Li 
->>>>>
->>>>>> - * and khugepaged scans all mappings. Defrag is only invoked by
->>>>>> - * khugepaged hugepage allocations and by page faults inside
->>>>>> - * MADV_HUGEPAGE regions to avoid the risk of slowing down short lived
->>>>>> - * allocations.
->>>>>> + * and khugepaged scans all mappings. Defrag is invoked by khugepaged
->>>>>> + * hugepage allocations and by page faults for all hugepage allocations.
->>>>>>  */
->>>>>> unsigned long transparent_hugepage_flags __read_mostly =
->>>>>> #ifdef CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
->>>>>> -- 
->>>>>> 1.8.1.2
->>>>>>
->>>>>> --
->>>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>>>> see: http://www.linux-mm.org/ .
->>>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>>>
->>>>> --
->>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>>> see: http://www.linux-mm.org/ .
->>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>>>
->>>>>
->>>>
->>>>
->>>
->>>
->>> .
->>>
->>
->>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-3.12
+
+for you to fetch changes up to 028cd86b794f4a7f09525587c8e9ab6b03a6fa0f:
+
+  video: da8xx-fb: fix the polarities of the hsync/vsync pulse (2013-08-3=
+0 14:51:30 +0300)
+
+----------------------------------------------------------------
+fbdev changes for 3.12:
+
+* Improvements to da8xx-fb to make it support v2 of the LCDC IP, used e.g=
+=2E in
+  BeagleBone
+* Himax HX8369 controller support
+* Various small fixes and cleanups
+
+----------------------------------------------------------------
+Afzal Mohammed (11):
+      video: da8xx-fb: fb_check_var enhancement
+      video: da8xx-fb: simplify lcd_reset
+      video: da8xx-fb: use modedb helper to update var
+      video: da8xx-fb: remove unneeded "var" initialization
+      video: da8xx-fb: store current display information
+      video: da8xx-fb: store clk rate even if !CPUFREQ
+      video: da8xx-fb: store struct device *
+      video: da8xx-fb: report correct pixclock
+      video: da8xx-fb: enable sync lost intr for v2 ip
+      video: da8xx-fb: ensure non-null cfg in pdata
+      video: da8xx-fb: reorganize panel detection
+
+Alexandre Belloni (1):
+      fb: backlight: HX8357: Add HX8369 support
+
+Alexandre Courbot (1):
+      simplefb: add support for a8b8g8r8 pixel format
+
+Alexandru Juncu (1):
+      matroxfb: replace kmalloc and memset with kzalloc.
+
+Boris BREZILLON (1):
+      at91/avr32/atmel_lcdfb: prepare clk before calling enable
+
+Chen Gang (1):
+      drivers: video: fbcmap: remove the redundency and incorrect checkin=
+gs
+
+Daniel Mack (1):
+      fbmem: move EXPORT_SYMBOL annotation next to symbol declarations
+
+Darren Etheridge (13):
+      video: da8xx-fb: pix clk and clk div handling cleanup
+      video: da8xx-fb: fb_set_par support
+      video: da8xx-fb: improve readability of code
+      video: da8xx-fb: fix 24bpp raster configuration
+      video: da8xx-fb: use devres
+      video: da8xx-fb: set upstream clock rate (if reqd)
+      video: da8xx-fb: make clock naming consistent
+      video: da8xx-fb: let compiler decide what to inline
+      video: da8xx-fb: adding am33xx as dependency
+      video: da8xx-fb fixing incorrect porch mappings
+      video: da8xx-fb: fixing timing off by one errors
+      video: da8xx-fb: support lcdc v2 timing register expansion
+      video: da8xx-fb: fix the polarities of the hsync/vsync pulse
+
+Fabio Estevam (1):
+      video: mxsfb: Let device core handle pinctrl
+
+Greg Kroah-Hartman (1):
+      video: output: convert class code to use dev_groups
+
+Julia Lawall (2):
+      video: mxsfb: simplify use of devm_ioremap_resource
+      video: xilinxfb: replace devm_request_and_ioremap by devm_ioremap_r=
+esource
+
+Mark Brown (1):
+      video: exynos: Ensure definitions match prototypes
+
+Maxime Ripard (1):
+      video: hx8357: Make IM pins optional
+
+Michael Opdenacker (1):
+      drivers/video: remove unused parameter in Kconfig
+
+Mythri P K (1):
+      OMAPDSS: HDMI: Fix AVI infoframe bug
+
+Peter Jones (1):
+      Release efifb's colormap in efifb_destroy()
+
+Shingo Nakao (1):
+      backlight: lp855x: set zero brightness at FBBLANK
+
+Tomi Valkeinen (3):
+      Merge branch '3.12/da8xx' into 3.12/fbdev
+      OMAPDSS: HDMI: Fix possible NULL reference
+      OMAPDSS: fix WARN_ON in 'alpha_blending_enabled' sysfs file
+
+ .../bindings/video/simple-framebuffer.txt          |   1 +
+ drivers/video/Kconfig                              |  15 +-
+ drivers/video/atmel_lcdfb.c                        |   8 +-
+ drivers/video/backlight/hx8357.c                   | 269 ++++++++++++--
+ drivers/video/backlight/lp855x_bl.c                |   2 +-
+ drivers/video/da8xx-fb.c                           | 387 ++++++++++++---=
+------
+ drivers/video/efifb.c                              |   1 +
+ drivers/video/exynos/exynos_mipi_dsi_lowlevel.c    |   1 +
+ drivers/video/fbcmap.c                             |   7 +-
+ drivers/video/fbmem.c                              |  29 +-
+ drivers/video/matrox/matroxfb_base.c               |   3 +-
+ drivers/video/mxsfb.c                              |  15 +-
+ drivers/video/omap2/dss/hdmi.c                     |   5 +-
+ drivers/video/omap2/dss/manager-sysfs.c            |   8 +-
+ drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c          |  42 ++-
+ drivers/video/output.c                             |  20 +-
+ drivers/video/simplefb.c                           |   1 +
+ drivers/video/xilinxfb.c                           |   8 +-
+ include/video/da8xx-fb.h                           |   5 +
+ 19 files changed, 542 insertions(+), 285 deletions(-)
 
 
+--V1XF8LSOtBp6ng7KD1MaW3q2JRFShfLcD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSKClOAAoJEPo9qoy8lh71vt0QAJg9uzLK4ppG11Td/FJA08p8
+9hND0gGBDdyWOJe5nNObAUveOGZYIidXnKmGUcGIW7kNmWfKVeVdUGWnD3B8Jv3z
+NkHH+ox3+XCBCtH1TWaUY8umHaCnXjHPOW/H6vH3QUBi7Ov8D/cQMQSbu1Vf7xfx
+NQtjWOI5Kp8oxE+1CXF6jQRPxBL7dCqmOmHxjETSjk4JazGrXA/5Nc/g8PR0ubnT
+tw/GggX0Qe4zKheg1zB3z40kDFlgyMI/3P2VZU8YWG8WD6IhXM5wggx1RrpHfhZi
+sDWShThwwr4HmaoUj4ca9APZm5z+5rG6tXp9+O1q/KC2CEndk0iXR7myUfvHIpQp
+YWjQrMt6dCebVcMoH367ZOBqks09Bu8Rm0BKX0fkwXtB5/kDdYxnL6uX1WPF0g4H
+2FkshPpCM7eGd8HpaCj2VvlZz22J63Gs2U9c1xG073GadVjVw9o1AHDhkA6vjkIg
+fJ/rUj9kcAA5RPGLlfvL1n2lRjSvjkuQF7QrLmF5ZCyg18DrU7vn81JCwRXQeJL/
+KyYn7m1k8qXUlT3FM7EzfabPvqI9kExgPLVKQFPvjtqhHfSMVb34K2s+cTfcBIZf
+bfRum6sDqgu6Dik+H9w88YCF/6SJR/jwm88Y+Bv4jkXo8HuiRjnA5nL0tlIJm6ad
+X5E3/pniQc0JqEi47AJk
+=A5U0
+-----END PGP SIGNATURE-----
+
+--V1XF8LSOtBp6ng7KD1MaW3q2JRFShfLcD--
