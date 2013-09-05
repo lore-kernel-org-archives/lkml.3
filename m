@@ -1,142 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab3IEU26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52257 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626Ab3IEU2y (ORCPT
+	id S1757698Ab3IEU3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:29:23 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:25544 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757676Ab3IEU3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 1/7] jfs: fix readdir cookie incompatibility with NFSv4
-Date: Thu,  5 Sep 2013 13:28:34 -0700
-Message-Id: <20130905202757.816133396@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130905202757.642048278@linuxfoundation.org>
-References: <20130905202757.642048278@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 5 Sep 2013 16:29:20 -0400
+Message-ID: <5228E992.5050901@hp.com>
+Date: Thu, 05 Sep 2013 16:29:06 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com> <1378407316-59852-2-git-send-email-Waiman.Long@hp.com> <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
+In-Reply-To: <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 09/05/2013 03:35 PM, Linus Torvalds wrote:
+> No. Stop all these stupid games.
+>
+> No d_lock, no trying to make d_name/d_len consistent.
+>
+> No "compare d_name against d_iname".
+>
+> No EINVAL.
+>
+> No idiotic racy "let's fetch each byte one-by one and test them
+> against NUL", which is just racy and stupid.
+>
+> Just do what I told you to do: *copy* the name one byte at a time, and
+> stop copying if you hit NUL. IOW, make prepend() just use "strncpy()"
+> instead of "memcpy()". You don't even need to check the end result -
+> if it's bogus, the sequence count will fix it.
+>
+> No special cases. No games. No crap. Just make "prepend()" able to
+> handle the special case of "oops, the name length didn't match, but we
+> must not ever go past the end of the buffer".
+>
+> We can optimize strncpy() to use word accesses if it ends up ever
+> being a performance issue. I suspect it never even shows up, but it's
+> not hard to do if if does.
+>
+>              Linus
 
-------------------
+It is not as simple as doing a strncpy(). The pathname was built from 
+the leaf up to the root, and from the end of buffer toward the 
+beginning. As it goes through the while loop, the buffer will look like:
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+"    /c"
+"  /b/c"
+"/a/b/c"
 
-commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
+If the content of the string is unreliable, I have to do at least 2 passes:
+1) Locate the end of the string and determine the actual length
+2) Copy the whole string or byte-by-byte backward
 
-NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
-but jfs allows a value of 2 for a non-special entry. This incompatibility
-can result in the nfs client reporting a readdir loop.
+That is why I am looking for the null byte. Using strncpy() alone won't 
+work. However, if the actual length doesn't match that of the dlen, the 
+name string will be invalid and there is no point in proceeding any further.
 
-This patch doesn't change the value stored internally, but adds one to
-the value exposed to the iterate method.
+I also consider the possible, but unlikely, scenario that during a 
+rename operation, a short old name could be freed and replaced by a long 
+new name. The old name could then be allocated to another user filling 
+it up with non-NULL byte. If the buffer happen to be the end of 
+valid-to-invalid memory page boundary, the code may step over to an 
+invalid address by looking for the null byte. The current code probably 
+won't free the buffer while the RCU lock is being hold, but future code 
+change may make this assumption not valid. Blindly taking the d_lock may 
+be too expensive as the original code does. That is why I come up with 
+the internal vs. external dname check and take the lock only for 
+external dname for safety.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/ctx->pos/filp->f_pos/]
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+I can change the code to do just locating the end of string and copying 
+it backward, but not using strncpy().
 
---- a/fs/jfs/jfs_dtree.c
-+++ b/fs/jfs/jfs_dtree.c
-@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void
- 
- 		dir_index = (u32) filp->f_pos;
- 
-+		/*
-+		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
-+		 * the value we return to the vfs is one greater than the
-+		 * one we use internally.
-+		 */
-+		if (dir_index)
-+			dir_index--;
-+
- 		if (dir_index > 1) {
- 			struct dir_table_slot dirtab_slot;
- 
-@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void
- 			if (p->header.flag & BT_INTERNAL) {
- 				jfs_err("jfs_readdir: bad index table");
- 				DT_PUTPAGE(mp);
--				filp->f_pos = -1;
-+				filp->f_pos = DIREND;
- 				return 0;
- 			}
- 		} else {
-@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void
- 				/*
- 				 * self "."
- 				 */
--				filp->f_pos = 0;
-+				filp->f_pos = 1;
- 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
- 					    DT_DIR))
- 					return 0;
-@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void
- 			/*
- 			 * parent ".."
- 			 */
--			filp->f_pos = 1;
-+			filp->f_pos = 2;
- 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
- 				return 0;
- 
-@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void
- 		/*
- 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
- 		 *
--		 * pn = index = 0:	First entry "."
--		 * pn = 0; index = 1:	Second entry ".."
-+		 * pn = 0; index = 1:	First entry "."
-+		 * pn = 0; index = 2:	Second entry ".."
- 		 * pn > 0:		Real entries, pn=1 -> leftmost page
- 		 * pn = index = -1:	No more entries
- 		 */
- 		dtpos = filp->f_pos;
--		if (dtpos == 0) {
-+		if (dtpos < 2) {
- 			/* build "." entry */
- 
-+			filp->f_pos = 1;
- 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
- 				    DT_DIR))
- 				return 0;
--			dtoffset->index = 1;
-+			dtoffset->index = 2;
- 			filp->f_pos = dtpos;
- 		}
- 
- 		if (dtoffset->pn == 0) {
--			if (dtoffset->index == 1) {
-+			if (dtoffset->index == 2) {
- 				/* build ".." entry */
- 
- 				if (filldir(dirent, "..", 2, filp->f_pos,
-@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void
- 					}
- 					jfs_dirent->position = unique_pos++;
- 				}
-+				/*
-+				 * We add 1 to the index because we may
-+				 * use a value of 2 internally, and NFSv4
-+				 * doesn't like that.
-+				 */
-+				jfs_dirent->position++;
- 			} else {
- 				jfs_dirent->position = dtpos;
- 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
-
-
+-Longman
