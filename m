@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3IEFTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:19:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36366 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3IEFTs (ORCPT
+	id S1756700Ab3IEFVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:21:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51999 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab3IEFV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:19:48 -0400
-Date: Thu, 5 Sep 2013 15:19:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130905151933.10e0558611271fdd2133a790@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl"
+	Thu, 5 Sep 2013 01:21:29 -0400
+Message-ID: <522814D1.100@vlnb.net>
+Date: Wed, 04 Sep 2013 22:21:21 -0700
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE]: Emulex SCST support for 16Gb/s FC and FCoE CNAs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:WwvVSRMUJEkWpq7dFGBqYtCAWbz1dzq2wST+6hVdrfx
+ VNDio3cwQ2PjDnviTwyunZjZ+91nAw1XI8JkTXziy37592dgk/
+ K64ETMxylDREh9G5ZorxYLBkLZl1FE8azVRECArACMg3RCvaGI
+ fPER0p0Odt0ibkbRig+Lw/i3jceEip7FAcczfZR1S7YCdPE7qs
+ T4d2R4IvyMxudgtTJ3OqSocx5u9/LFwkRw9t6cEADZyyd4+pow
+ iAItO2m2j3RVnybkCc3aJy4Dj7/+fisNAAT5WE9bKTOUm0a1zN
+ H7eKM1yInB+c3QZ6FI6zakOcgNvnIxRE4Iu09IijAqVr9OeSg=
+ =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm glad to announce that SCST support for 16Gb/s FC and FCoE Emulex CNAs is now
+available as part of the Emulex OneCore Storage SDK tool set based on the Emulex SLI-4
+API. Support for 16Gb/s Fibre Channel LPe16000 series and FCoE hardware using target
+mode versions of the OneConnect FCoE CNAs is included. Documented for use with
+RHEL/CentOS 6.x based distributions, ocs_fc_scst works with the stable SCST 2.2.1 as
+well as the development versions of 2.2.x and 3.0.x. The driver code and documentation
+are available on the Emulex web site at:
+http://www.emulex.com/products/onecore-storage-software-development-kit/overview.html
 
-Hi all,
+Registration is required on the Developer Portal, but this is free.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/bridge/br_multicast.c between commit 2d98c29b6fb3 ("net: bridge:
-convert MLDv2 Query MRC into msecs_to_jiffies for max_delay") from Linus'
-tree and commit e3f5b17047de ("net: ipv6: mld: get rid of MLDV2_MRC and
-simplify calculation") from the net-next tree.
+Questions regarding this driver better to ask via the Developer Portal.
 
-I just used the net-next tree version and can carry the fix as necessary
-(no action is required).
+SCST is SCSI target mode stack for Linux. SCST allows creation of sophisticated storage
+devices, which provide advanced functionality, like replication, thin provisioning,
+deduplication, high availability, automatic backup, etc. Majority of recently developed
+SAN appliances, especially higher end ones, are SCST based. It might well be that your
+favorite storage appliance running SCST in the firmware.
 
+More info about SCST and its modules you can find on: http://scst.sourceforge.net
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSKBRpAAoJEECxmPOUX5FEihEQAImLN7KDS6lMlkHq63OURAxh
-5U7rO0xdhRavO95aVyYb/tWnLfxTqtpahz/eeC4tXT6k+2ob2n+4bqw3gOsRRcef
-l0LzhuR8SQiOtJrGB1q4rW3aqPknpqUExsDIykqSzGULL6WlgNj1gVZ2vy9WBJZq
-wXTLFadqtlGvtv7MG+g39SvGRSfKuM1Cemg9WXmPKUxf7Kc2IB823LP9Wz9QSQKo
-qdhUE1E4RrJlhmLICIXtFKoDwsSa0EdQk8VTRp6Nkz73GJjskO0DIrMYBdQkupFK
-OHPBnq/NLDQ7+9qgJbPYFHT82q59xvKD5Y9ywQLmp8OsrsC5Myc7FB+Jkz3LITu8
-uYG7hX/8WPpFip3J67Q7gX4wCSdSQBvCGbxfTPYoepO1cJA5h9OjzeLOQTSvJAVj
-+a/Htw8CX8S6LdYuTAsVNt4lfDleK68M+sl6X8Ym6KM/M3dX66P4g489mcYRbPuL
-nolKuQRwIg9GjzRDYfLALxp9qXPBhyTO4unLveh5pjoi6uw40vCloPp+wlY1xBc6
-81zfN4wLvShIqs2WzBK72bqsQgnrYacAmj3hzaBKHNIo9Uz+4Mf5vN/ysvhcOkrt
-4jTcz7v7JrrCIj7kBo/BXb1XrNrstRBHRK1wALSx1AuUOJGoeqXNcUpH4LEI1kqN
-d7QNpmAcILJSzdGRnMqv
-=JPi8
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl--
+Vlad
