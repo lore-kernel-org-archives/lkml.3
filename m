@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3IENXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 09:23:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60316 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3IENXb (ORCPT
+	id S1753126Ab3IENYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 09:24:07 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41387 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab3IENYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 09:23:31 -0400
-Date: Thu, 5 Sep 2013 14:23:25 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
-Message-ID: <20130905132325.GQ13318@ZenIV.linux.org.uk>
-References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
- <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
- <20130905111852.GP13318@ZenIV.linux.org.uk>
- <CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
- <20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
- <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
- <20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
+	Thu, 5 Sep 2013 09:24:05 -0400
+Message-ID: <522885DB.2090204@linux.vnet.ibm.com>
+Date: Thu, 05 Sep 2013 21:23:39 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org, kvm@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v2] KVM: mmu: allow page tables to be in read-only slots
+References: <1378383714-9723-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1378383714-9723-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090513-0260-0000-0000-0000039394D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 02:39:11PM +0200, Miklos Szeredi wrote:
-> +static bool __has_unlinked_ancestor(struct dentry *dentry)
-> +{
-> +	struct dentry *this;
-> +
-> +	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
-> +		int is_unhashed;
-> +
-> +		/* Need exclusion wrt. check_submounts_and_drop() */
-> +		spin_lock(&this->d_lock);
-> +		is_unhashed = d_unhashed(this);
-> +		spin_unlock(&this->d_lock);
-> +
-> +		if (is_unhashed)
-> +			return true;
-> +	}
-> +	return false;
-> +}
+On 09/05/2013 08:21 PM, Paolo Bonzini wrote:
+> Page tables in a read-only memory slot will currently cause a triple
+> fault when running with shadow paging, because the page walker uses
+> gfn_to_hva and it fails on such a slot.
+> 
+> TianoCore uses such a page table.  The idea is that, on real hardware,
+> the firmware can already run in 64-bit flat mode when setting up the
+> memory controller.  Real hardware seems to be fine with that as long as
+> the accessed/dirty bits are set.  Thus, this patch saves whether the
+> slot is readonly, and later checks it when updating the accessed and
+> dirty bits.
+> 
+> Note that this scenario is not supported by NPT at all, as explained by
+> comments in the code.
 
-I still don't get it; why do you need to bother with early setting of
-DCACHE_MOUNTED?
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-You are grabbing rename_lock for write in d_set_mounted().  What kind of races
-with check for submounts are you worried about?  d_walk() will rescan
-everything if something grabs rename_lock for write while it had been running,
-so just fold the "have nothing in d_subdir" case of check_submounts_and_drop()
-into d_walk() and be done with that...  What's the problem with such
-variant?  AFAICS, all you need to care about is d_set_mounted() not getting
-between the scan for submounts and actual __d_drop() and your "finish"
-callback is called only after d_walk() having grabbed d_lock *and* rechecked
-rename_lock.
