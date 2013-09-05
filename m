@@ -1,124 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935596Ab3IEJ2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:28:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53007 "EHLO mx1.redhat.com"
+	id S935659Ab3IEJ3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:29:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57465 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763411Ab3IEJ2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:28:41 -0400
+	id S935586Ab3IEJ2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 05:28:48 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 1/6] GFS2: Move gfs2_sync_meta to lops.c
-Date: Thu,  5 Sep 2013 10:02:07 +0100
-Message-Id: <1378371732-3947-2-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 5/6] GFS2: Don't flag consistency error if first mounter is a spectator
+Date: Thu,  5 Sep 2013 10:02:11 +0100
+Message-Id: <1378371732-3947-6-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1378371732-3947-1-git-send-email-swhiteho@redhat.com>
 References: <1378371732-3947-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since gfs2_sync_meta() is only called from a single file, lets move
-it to lops.c where it is used, and mark it static. At the same
-time, we can clean up the meta_io.h header too.
+From: Bob Peterson <rpeterso@redhat.com>
 
+This patch checks for the first mounter being a specator. If so, it
+makes sure all the journals are clean. If there's a dirty journal,
+the mount fails.
+
+Testing results:
+
+# insmod gfs2.ko
+# mount -tgfs2 -o spectator /dev/sasdrives/scratch /mnt/gfs2
+mount: permission denied
+# dmesg | tail -2
+[ 3390.655996] GFS2: fsid=MUSKETEER:home: Now mounting FS...
+[ 3390.841336] GFS2: fsid=MUSKETEER:home.s: jid=0: Journal is dirty, so the first mounter must not be a spectator.
+# mount -tgfs2 /dev/sasdrives/scratch /mnt/gfs2
+# umount /mnt/gfs2
+# mount -tgfs2 -o spectator /dev/sasdrives/scratch /mnt/gfs2
+# ls /mnt/gfs2|wc -l
+352
+# umount /mnt/gfs2
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
-index 17c5b5d..010b9fb 100644
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -579,6 +579,24 @@ static int buf_lo_scan_elements(struct gfs2_jdesc *jd, unsigned int start,
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index 0262c19..19ff5e8 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -646,6 +646,48 @@ static int gfs2_jindex_hold(struct gfs2_sbd *sdp, struct gfs2_holder *ji_gh)
  	return error;
  }
  
 +/**
-+ * gfs2_meta_sync - Sync all buffers associated with a glock
-+ * @gl: The glock
++ * check_journal_clean - Make sure a journal is clean for a spectator mount
++ * @sdp: The GFS2 superblock
++ * @jd: The journal descriptor
 + *
++ * Returns: 0 if the journal is clean or locked, else an error
 + */
-+
-+static void gfs2_meta_sync(struct gfs2_glock *gl)
++static int check_journal_clean(struct gfs2_sbd *sdp, struct gfs2_jdesc *jd)
 +{
-+	struct address_space *mapping = gfs2_glock2aspace(gl);
 +	int error;
++	struct gfs2_holder j_gh;
++	struct gfs2_log_header_host head;
++	struct gfs2_inode *ip;
 +
-+	filemap_fdatawrite(mapping);
-+	error = filemap_fdatawait(mapping);
++	ip = GFS2_I(jd->jd_inode);
++	error = gfs2_glock_nq_init(ip->i_gl, LM_ST_SHARED, LM_FLAG_NOEXP |
++				   GL_EXACT | GL_NOCACHE, &j_gh);
++	if (error) {
++		fs_err(sdp, "Error locking journal for spectator mount.\n");
++		return -EPERM;
++	}
++	error = gfs2_jdesc_check(jd);
++	if (error) {
++		fs_err(sdp, "Error checking journal for spectator mount.\n");
++		goto out_unlock;
++	}
++	error = gfs2_find_jhead(jd, &head);
++	if (error) {
++		fs_err(sdp, "Error parsing journal for spectator mount.\n");
++		goto out_unlock;
++	}
++	if (!(head.lh_flags & GFS2_LOG_HEAD_UNMOUNT)) {
++		error = -EPERM;
++		fs_err(sdp, "jid=%u: Journal is dirty, so the first mounter "
++		       "must not be a spectator.\n", jd->jd_jid);
++	}
 +
-+	if (error)
-+		gfs2_io_error(gl->gl_sbd);
++out_unlock:
++	gfs2_glock_dq_uninit(&j_gh);
++	return error;
 +}
 +
- static void buf_lo_after_scan(struct gfs2_jdesc *jd, int error, int pass)
+ static int init_journal(struct gfs2_sbd *sdp, int undo)
  {
- 	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
-diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-index 0da3906..9324150 100644
---- a/fs/gfs2/meta_io.c
-+++ b/fs/gfs2/meta_io.c
-@@ -98,24 +98,6 @@ const struct address_space_operations gfs2_meta_aops = {
- };
- 
- /**
-- * gfs2_meta_sync - Sync all buffers associated with a glock
-- * @gl: The glock
-- *
-- */
--
--void gfs2_meta_sync(struct gfs2_glock *gl)
--{
--	struct address_space *mapping = gfs2_glock2aspace(gl);
--	int error;
--
--	filemap_fdatawrite(mapping);
--	error = filemap_fdatawait(mapping);
--
--	if (error)
--		gfs2_io_error(gl->gl_sbd);
--}
--
--/**
-  * gfs2_getbuf - Get a buffer with a given address space
-  * @gl: the glock
-  * @blkno: the block number (filesystem scope)
-diff --git a/fs/gfs2/meta_io.h b/fs/gfs2/meta_io.h
-index 0d4c843..4823b93 100644
---- a/fs/gfs2/meta_io.h
-+++ b/fs/gfs2/meta_io.h
-@@ -48,21 +48,17 @@ static inline struct gfs2_sbd *gfs2_mapping2sbd(struct address_space *mapping)
- 		return inode->i_sb->s_fs_info;
- }
- 
--void gfs2_meta_sync(struct gfs2_glock *gl);
--
--struct buffer_head *gfs2_meta_new(struct gfs2_glock *gl, u64 blkno);
--int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno,
--		   int flags, struct buffer_head **bhp);
--int gfs2_meta_wait(struct gfs2_sbd *sdp, struct buffer_head *bh);
--struct buffer_head *gfs2_getbuf(struct gfs2_glock *gl, u64 blkno, int create);
--
--void gfs2_remove_from_journal(struct buffer_head *bh, struct gfs2_trans *tr,
--			      int meta);
--
--void gfs2_meta_wipe(struct gfs2_inode *ip, u64 bstart, u32 blen);
--
--int gfs2_meta_indirect_buffer(struct gfs2_inode *ip, int height, u64 num,
--			      struct buffer_head **bhp);
-+extern struct buffer_head *gfs2_meta_new(struct gfs2_glock *gl, u64 blkno);
-+extern int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
-+			  struct buffer_head **bhp);
-+extern int gfs2_meta_wait(struct gfs2_sbd *sdp, struct buffer_head *bh);
-+extern struct buffer_head *gfs2_getbuf(struct gfs2_glock *gl, u64 blkno,
-+				       int create);
-+extern void gfs2_remove_from_journal(struct buffer_head *bh,
-+				     struct gfs2_trans *tr, int meta);
-+extern void gfs2_meta_wipe(struct gfs2_inode *ip, u64 bstart, u32 blen);
-+extern int gfs2_meta_indirect_buffer(struct gfs2_inode *ip, int height, u64 num,
-+				     struct buffer_head **bhp);
- 
- static inline int gfs2_meta_inode_buffer(struct gfs2_inode *ip,
- 					 struct buffer_head **bhp)
+ 	struct inode *master = sdp->sd_master_dir->d_inode;
+@@ -732,8 +774,15 @@ static int init_journal(struct gfs2_sbd *sdp, int undo)
+ 	if (sdp->sd_lockstruct.ls_first) {
+ 		unsigned int x;
+ 		for (x = 0; x < sdp->sd_journals; x++) {
+-			error = gfs2_recover_journal(gfs2_jdesc_find(sdp, x),
+-						     true);
++			struct gfs2_jdesc *jd = gfs2_jdesc_find(sdp, x);
++
++			if (sdp->sd_args.ar_spectator) {
++				error = check_journal_clean(sdp, jd);
++				if (error)
++					goto fail_jinode_gh;
++				continue;
++			}
++			error = gfs2_recover_journal(jd, true);
+ 			if (error) {
+ 				fs_err(sdp, "error recovering journal %u: %d\n",
+ 				       x, error);
 -- 
 1.7.4
 
