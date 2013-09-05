@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763195Ab3IECy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 22:54:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759510Ab3IECyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 22:54:55 -0400
-Message-ID: <5227F274.9040506@redhat.com>
-Date: Thu, 05 Sep 2013 10:54:44 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use zerocopy
- at one time
-References: <1378111261-14826-1-git-send-email-jasowang@redhat.com> <1378111261-14826-5-git-send-email-jasowang@redhat.com> <20130904115929.GA9393@redhat.com>
-In-Reply-To: <20130904115929.GA9393@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S935537Ab3IECzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 22:55:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36410 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab3IECzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 22:55:09 -0400
+Date: Thu, 5 Sep 2013 12:54:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, Asias He <asias@redhat.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: linux-next: manual merge of the vfs tree with the aio-direct tree
+Message-Id: <20130905125457.5f1e5e843167a0aaee7816f8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Sep_2013_12_54_57_+1000_tuKIiw7JTIe7Gwrj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 07:59 PM, Michael S. Tsirkin wrote:
-> On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
->> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
->> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
->> later. This could be avoided by determining zerocopy once by checking all
->> conditions at one time before.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
->>  1 files changed, 20 insertions(+), 27 deletions(-)
->>
->> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->> index 8a6dd0d..3f89dea 100644
->> --- a/drivers/vhost/net.c
->> +++ b/drivers/vhost/net.c
->> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
->>  			       iov_length(nvq->hdr, s), hdr_size);
->>  			break;
->>  		}
->> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
->> -				       nvq->upend_idx != nvq->done_idx);
->> +
->> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
->> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
->> +				      nvq->done_idx
-> Thinking about this, this looks strange.
-> The original idea was that once we start doing zcopy, we keep
-> using the heads ring even for short packets until no zcopy is outstanding.
+--Signature=_Thu__5_Sep_2013_12_54_57_+1000_tuKIiw7JTIe7Gwrj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What's the reason for keep using the heads ring?
->
-> What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
-> here?
+Hi Al,
 
-Because we initialize both upend_idx and done_idx to zero, so upend_idx
-!= done_idx could not be used to check whether or not the heads ring
-were full.
->> +				   && vhost_net_tx_select_zcopy(net);
->>  
->>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
->>  		if (zcopy_used) {
->> +			struct ubuf_info *ubuf;
->> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
->> +
->>  			vq->heads[nvq->upend_idx].id = head;
->> -			if (!vhost_net_tx_select_zcopy(net) ||
->> -			    len < VHOST_GOODCOPY_LEN) {
->> -				/* copy don't need to wait for DMA done */
->> -				vq->heads[nvq->upend_idx].len =
->> -							VHOST_DMA_DONE_LEN;
->> -				msg.msg_control = NULL;
->> -				msg.msg_controllen = 0;
->> -				ubufs = NULL;
->> -			} else {
->> -				struct ubuf_info *ubuf;
->> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
->> -
->> -				vq->heads[nvq->upend_idx].len =
->> -					VHOST_DMA_IN_PROGRESS;
->> -				ubuf->callback = vhost_zerocopy_callback;
->> -				ubuf->ctx = nvq->ubufs;
->> -				ubuf->desc = nvq->upend_idx;
->> -				msg.msg_control = ubuf;
->> -				msg.msg_controllen = sizeof(ubuf);
->> -				ubufs = nvq->ubufs;
->> -				kref_get(&ubufs->kref);
->> -			}
->> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
->> +			ubuf->callback = vhost_zerocopy_callback;
->> +			ubuf->ctx = nvq->ubufs;
->> +			ubuf->desc = nvq->upend_idx;
->> +			msg.msg_control = ubuf;
->> +			msg.msg_controllen = sizeof(ubuf);
->> +			ubufs = nvq->ubufs;
->> +			kref_get(&ubufs->kref);
->>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
->> -		} else
->> +		} else {
->>  			msg.msg_control = NULL;
->> +			ubufs = NULL;
->> +		}
->>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
->>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
->>  		if (unlikely(err < 0)) {
->>  			if (zcopy_used) {
->> -				if (ubufs)
->> -					vhost_net_ubuf_put(ubufs);
->> +				vhost_net_ubuf_put(ubufs);
->>  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
->>  					% UIO_MAXIOV;
->>  			}
->> -- 
->> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Today's linux-next merge of the vfs tree got a conflict in fs/block_dev.c
+between commit b176eedb2a8b ("block_dev: add support for read_iter,
+write_iter") from the aio-direct tree and commit 02afc27faec9
+("direct-io: Handle O_(D)SYNC AIO") from the vfs tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/block_dev.c
+index 89d8ec5,1173a4e..0000000
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@@ -1517,8 -1518,8 +1517,8 @@@ ssize_t blkdev_write_iter(struct kiocb=20
+  	BUG_ON(iocb->ki_pos !=3D pos);
+ =20
+  	blk_start_plug(&plug);
+ -	ret =3D __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+ +	ret =3D __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
+- 	if (ret > 0 || ret =3D=3D -EIOCBQUEUED) {
++ 	if (ret > 0) {
+  		ssize_t err;
+ =20
+  		err =3D generic_write_sync(file, pos, ret);
+
+--Signature=_Thu__5_Sep_2013_12_54_57_+1000_tuKIiw7JTIe7Gwrj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJ/KEAAoJEECxmPOUX5FErI8P+wcdEsGVQY7VIkBuFu1+aK8X
+mw/jWtOhO2ojoPhm7QPi28+5wIHoXc6M8aUVlvJ4MSCWxi5WqYHqVMtruWq1tQ5a
+vOhScZzFe130GUWGfvYFftN3p2KVSjrtrO3LMM3RRnvmEz6moHOb5EZGs1GzO9s0
+N/H69UeBBQZlYO5SV56YMBGKpmNVf8RvJgarn39DIF6Kj5dpApFWY/l1EZm2m0Z6
+SSfS4WQQzlgUCb9OZB9FD8uvEe0hH6oQ4xwly0TiejM8D5luYhy8oehHAESjVUfn
+QRjQy845wJDx8MH/nYSwcm578pLCjtmZqIq6eM/Rn18lG4Mtcw/urg3jmnFg1ITI
+OoiTIVN2K8jH38TLweXiTlZCmdfkHqOCnMM3PiSaZ6dPvo28UgvWWiu+HEeKkDAl
+xS2zarHSXMhqjHO0cKmHoCTjVE7uhPIitK7/xh89MQE8bo2G1bud77URAUcMvexV
+75AzxzxbHWWZO2NjOALAMuCNGRIOZQdNJXxbkXT1wvjf+CdLmLcphQKWXPxeg9tN
+hnACqHK3MAEsdXSh+nZZy4eoEVZNT1ImgXuXjz8YEoFV0JfkLmQEHHAnC2WmCO1K
+pMEhDlTZ7tgBdp0qMyr6PIKHEJcscpo0CGLFgYAgW/6itRYDG8CxpzZyWy+R4Cax
+qxPIDWMm3oSrNC+VtHSZ
+=xCYl
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Sep_2013_12_54_57_+1000_tuKIiw7JTIe7Gwrj--
