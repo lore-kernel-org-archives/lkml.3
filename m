@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab3IENim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 09:38:42 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45521 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3IENik (ORCPT
+	id S1752683Ab3IENlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 09:41:47 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45578 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3IENlq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 09:38:40 -0400
-Date: Thu, 5 Sep 2013 15:38:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.12
-Message-ID: <20130905133836.GA26634@gmail.com>
-References: <20130903132933.GA24955@gmail.com>
+	Thu, 5 Sep 2013 09:41:46 -0400
+Date: Thu, 05 Sep 2013 08:41:43 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Remove support for score architecture
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Lennox Wu <lennox.wu@gmail.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>
+In-Reply-To: <1377914435-24206-1-git-send-email-linux@roeck-us.net> (from
+	linux@roeck-us.net on Fri Aug 30 21:00:35 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1378388503.1985.7@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130903132933.GA24955@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
->    * 'perf report/top' enhancements:
+On 08/30/2013 09:00:35 PM, Guenter Roeck wrote:
+> The web site associated with the score architecture in MAINTAINERS
+> is non-functional and available for sale. The last Ack from one
+> of the maintainers was in December 2012. The main maintainer's last
+> commit was in 2011. The last maintainer pull request was early 2011.
 > 
->         . Do annotation using /proc/kcore and /proc/kallsyms when 
->           available, removing the forced need for a vmlinux file kernel 
->           assembly annotation. This also improves this use case because 
->           vmlinux has just the initial kernel image, not what is actually 
->           in use after various code patchings by things like alternatives.
->           By Adrian Hunter.
+> Cc: Lennox Wu <lennox.wu@gmail.com>
+> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> More housekeeping.
+> 
+> Maybe this removal request is a bit early, but architecture support  
+> seems
+> to have vanished entirely. At the very least this puts interested  
+> parties
+> (if there are any) on notice.
 
-Btw., this new feature is most noticeable if you run 'perf top' as root on 
-any random box: you can annotate based on the live kernel image straight 
-away, without having the vmlinux.
+I note that if qemu system emulation supports an obscurish platform,  
+the rest of us can regression test it. If qemu doesn't support it, we  
+can't.
 
-This works on various distro kernels as well.
+(I'm looking at you, Hexagon.)
 
-Thanks,
-
-	Ingo
+Rob
