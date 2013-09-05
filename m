@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3IEEah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 00:30:37 -0400
-Received: from science.horizon.com ([71.41.210.146]:51056 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753798Ab3IEEag (ORCPT
+	id S1754222Ab3IEEgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 00:36:07 -0400
+Received: from mail-in-09.arcor-online.net ([151.189.21.49]:55937 "EHLO
+	mail-in-09.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753088Ab3IEEgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 00:30:36 -0400
-Date: 5 Sep 2013 00:30:33 -0400
-Message-ID: <20130905043033.20292.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: waiman.long@hp.com
-Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking rename_lock
-Cc: linux@horizon.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        viro@ZenIV.linux.org.uk
+	Thu, 5 Sep 2013 00:36:04 -0400
+X-Greylist: Passed host: 92.74.37.206
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-16.arcor-online.net 82DB78253
+X-Greylist: Passed host: 92.74.37.206
+Subject: [PATCH] HID: roccat: MAINTAINERS: Adding Roccat drivers 2nd try
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Sep 2013 06:36:01 +0200
+Message-ID: <1378355761.2457.8.camel@neuromancer.tessier-ashpool>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as you're removing locks from prepend_name and complicating its
-innards, I notice that each and every call site follows it by prepending
-"/".  How about moving that into prepend_name as well?
+Adding maintainer for Roccat hid drivers
 
-Also, if you happen to feel like it, you can delete the slash flag
-and replace it with "bptr != *buffer".
+I sent this patch some weeks ago, seemingly unnoticed.
+Maybe I have more luck via Jiri's hid repo.
 
-Another small tweak would be to the global_root part of the code.
-You could move the is_mounted(vfsmnt) test up, and combine the tail of
-that code path with the regular exit.  All you have to do is change
-the !slash test to:
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+---
+ MAINTAINERS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-	if (error >= 0 && bptr == *buffer) {	/* Root directory */
-		if (--blen < 0)
-			error = -ENAMETOOLONG;
-		else
-			*--bptr = '/';
-	}
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9705318..55d946b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6921,6 +6921,14 @@ M:	Maxim Levitsky <maximlevitsky@gmail.com>
+ S:	Maintained
+ F:	drivers/memstick/host/r592.*
+ 
++ROCCAT DRIVERS
++M:	Stefan Achatz <erazor_de@users.sourceforge.net>
++W:	http://sourceforge.net/projects/roccat/
++S:	Maintained
++F:	drivers/hid/hid-roccat*
++F:	include/linux/hid-roccat*
++F:	Documentation/ABI/*/sysfs-driver-hid-roccat*
++
+ ROCKETPORT DRIVER
+ P:	Comtrol Corp.
+ W:	http://www.comtrol.com
+-- 
+1.7.3.4
 
-This modified form is no more code than an inlined copy of prepend(),
-so we haven't actually slowed the fast path, but it avoids corrupting
-the return value of 0/1/2 if possible.
+
+
+
