@@ -1,140 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763656Ab3IEMDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:03:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39897 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763535Ab3IEMDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:03:50 -0400
-Date: Thu, 5 Sep 2013 14:03:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130905120347.GA13666@dhcp22.suse.cz>
-References: <20130903204850.GA1412@cmpxchg.org>
- <20130904114523.A9F0173C@pobox.sk>
- <20130904115741.GA28285@dhcp22.suse.cz>
- <20130904141000.0F910EFA@pobox.sk>
- <20130904122632.GB28285@dhcp22.suse.cz>
- <20130905111430.CB1392B4@pobox.sk>
- <20130905095331.GA9702@dhcp22.suse.cz>
- <20130905121700.546B5881@pobox.sk>
- <20130905111742.GC9702@dhcp22.suse.cz>
- <20130905134702.C703F65B@pobox.sk>
+	id S965107Ab3IEMIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:08:15 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57804 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab3IEMIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:08:13 -0400
+Date: Thu, 5 Sep 2013 14:08:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Andrew Savchenko <bircoph@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, suspend-devel@lists.sourceforge.net,
+        viro@zeniv.linux.org.uk, linux-pm@vger.kernel.org
+Subject: Re: [Suspend-devel] [BUG] 3.7-rc regression bisected: s2disk fails
+ to resume image: Processes could not be frozen, cannot continue resuming
+Message-ID: <20130905120811.GC15161@amd.pavel.ucw.cz>
+References: <20130812234415.7db639bb0d664e56b6ab2ab2@gmail.com>
+ <20130827074843.ba1b6f62cc0a6dca8e47c06c@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130905134702.C703F65B@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130827074843.ba1b6f62cc0a6dca8e47c06c@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-09-13 13:47:02, azurIt wrote:
-> >On Thu 05-09-13 12:17:00, azurIt wrote:
-> >> >[...]
-> >> >> My script detected another freezed cgroup today, sending stacks. Is
-> >> >> there anything interesting?
-> >> >
-> >> >3 tasks are sleeping and waiting for somebody to take an action to
-> >> >resolve memcg OOM. The memcg oom killer is enabled for that group?  If
-> >> >yes, which task has been selected to be killed? You can find that in oom
-> >> >report in dmesg.
-> >> >
-> >> >I can see a way how this might happen. If the killed task happened to
-> >> >allocate a memory while it is exiting then it would get to the oom
-> >> >condition again without freeing any memory so nobody waiting on the
-> >> >memcg_oom_waitq gets woken. We have a report like that: 
-> >> >https://lkml.org/lkml/2013/7/31/94
-> >> >
-> >> >The issue got silent in the meantime so it is time to wake it up.
-> >> >It would be definitely good to see what happened in your case though.
-> >> >If any of the bellow tasks was the oom victim then it is very probable
-> >> >this is the same issue.
-> >> 
-> >> Here it is:
-> >> http://watchdog.sk/lkml/kern5.log
-> >
-> >$ grep "Killed process \<103[168]\>" kern5.log
-> >$
-> >
-> >So none of the sleeping tasks has been killed previously.
-> >
-> >> Processes were killed by my script
-> >
-> >OK, I am really confused now. The log contains a lot of in-kernel memcg
-> >oom killer messages:
-> >$ grep "Memory cgroup out of memory:" kern5.log | wc -l
-> >809
-> >
-> >This suggests that the oom killer is not disabled. What exactly has you
-> >script done?
-> >
-> >> at about 11:05:35.
-> >
-> >There is an oom killer striking at 11:05:35:
-> >Sep  5 11:05:35 server02 kernel: [1751856.433101] Task in /1066/uid killed as a result of limit of /1066
-> >[...]
-> >Sep  5 11:05:35 server02 kernel: [1751856.539356] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-> >Sep  5 11:05:35 server02 kernel: [1751856.539745] [ 1046]  1066  1046   228537    95491   3       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.539894] [ 1047]  1066  1047   228604    95488   6       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.540043] [ 1050]  1066  1050   228470    95452   5       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.540191] [ 1051]  1066  1051   228592    95521   6       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.540340] [ 1052]  1066  1052   228594    95546   5       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.540489] [ 1054]  1066  1054   228470    95453   5       0             0 apache2
-> >Sep  5 11:05:35 server02 kernel: [1751856.540646] Memory cgroup out of memory: Kill process 1046 (apache2) score 1000 or sacrifice child
-> >
-> >And this doesn't list any of the tasks sleeping and waiting for oom
-> >resolving so they must have been created after this OOM. Is this the
-> >same group?
+Hi!
+
+Rafael, Al: apparently we have a regression caused by
+ba4df2808a86f8b103c4db0b8807649383e9bd13 .
+
+> > after a kernel update from 3.5.7 to the latest stable I found that
+> > user-space resume (from suspend-1.0 aka uswsusp) no longer works.
+> > Kernel-space suspend and resume work fine (e.g. echo disk
+> > > /sys/power/state), problem is with user-space support. (I need
+> > user-space version because it supports image encryption.)
+> > 
+> > After resume (essentially linuxrc) application loads image it fails
+> > to apply it:
+> > 
+> > ========================================================
+> > Processes could not be frozen, cannot continue resuming.
+> > Error 11: Resource temporarily unavailable
+> > 
+> > You can now boot the system and lose the saved state
+> > or reboot and try again.
+> > 
+> > [Notice that if you decide to reboot, you MUST NOT mount
+> > any filesystems before a successful resume.
+> > Resuming after some filesystems have been mounted
+> > will badly damage these filesystems.]
+> > 
+> > Do you want to continue booting (Y/n)?
+> > ========================================================
+> > 
+> > Error code wasn't originally showed, I added it to suspend tool to
+> > aid debugging. Essentially freeze ioctl on /dev/snapshot fails with
+> > this error.
+> > 
+> > I bisected a commit which introduces this bug:
+> > 
+> > ========================================================
+> > commit ba4df2808a86f8b103c4db0b8807649383e9bd13 
+> > Author: Al Viro <viro@zeniv.linux.org.uk> 
+> > Date:   Tue Oct 2 15:29:10 2012 -0400 
+> > 
+> >     don't bother with kernel_thread/kernel_execve for launching
+> > linuxrc 
+> >     exec_usermodehelper_fns() will do just fine... 
+> >     
+> >     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk> 
+> > ========================================================
+> > 
+> > In fact this commit induced/triggered at least two bugs: the first one
+> > I'm facing now and the second one was fixed in commit
+> > f0de17c0babe7f29381892def6b37e9181a53410:
+> > make sure that /linuxrc has std{in,out,err}.
+> > 
+> > As a temporarily workaround for this issue I reverted all changes for
+> > init/do_mounts_initrd.c up to the latest working commit
+> > cb450766bcafc7bd7d40e9a5a0050745e8c68b3e considering the kernel API
+> > changes (kernel_execve -> sys_execve). See linuxrc-workaround.patch.
+> > I understand this isn't a proper solution, I just want to show what
+> > code works for me.
+> > 
+> > I also found an interesting LKML discussion about s2disk and freezer
+> > issue: http://www.spinics.net/lists/linux-nfs/msg38160.html
+> > Maybe it is related to this bug, but patch proposed there doesn't in
+> > my case.
+> > 
+> > Kernel config which fails with
+> > ba4df2808a86f8b103c4db0b8807649383e9bd13 and works with
+> > f0de17c0babe7f29381892def6b37e9181a53410 is also attached.
+> > 
+> > As this issue maybe hardware related, the system is 32-bit EEE PC
+> > 1000H with Atom N270, 2GB RAM, 750 GB SATA drive.
+> > 
+> > Additional (but probably useless) information on this bug may be found
+> > here: https://forums.gentoo.org/viewtopic-p-7371120.html
 > 
-> cgroup was 1066. My script is doing this:
-> 1.) It checks memory usage of all cgroups and is searching for those whos memory usage is >= 99% of their limit.
-> 2.) If any are found, they are saved in an array of 'candidates for killing'.
-> 3.) It sleep for 30 seconds.
-> 4.) Do (1) and if any of found cgorups were also found in (2), it kills all processes inside it.
-> 5.) Clear array of saved cgroups and continue.
+> This bug is still here with 3.11-rc7 and 3.10.9.
+> I opened a kernel bug 60802 for this issue:
+> https://bugzilla.kernel.org/show_bug.cgi?id=60802
+> 
+> Any ideas?
+> 
+> Best regards,
+> Andrew Savchenko
 
-This is racy and doesn't really tell you anything about any group being
-frozen.
 
-[...]
-> But, of course, i cannot guarantee that the killed cgroup was really
-> freezed (because of bug in linux kernel), there could be some false
-> positives - for example, cgroup has 99% usage of memory, my script
-> detected it, OOM successfully resolved the problem and, after 30
-> seconds, the same cgroup has again 99% usage of it's memory and my
-> script detected it again.
 
-Exactly
+> ------------------------------------------------------------------------------
+> Introducing Performance Central, a new site from SourceForge and 
+> AppDynamics. Performance Central is your source for news, insights, 
+> analysis and resources for efficient Application Performance Management. 
+> Visit us today!
+> http://pubads.g.doubleclick.net/gampad/clk?id=48897511&iu=/4140/ostg.clktrk
 
-> This is why i'm sending stacks here, i simply cannot tell if
-> there was or wasn't a problem.
+> _______________________________________________
+> Suspend-devel mailing list
+> Suspend-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/suspend-devel
 
-On the other hand if those processes would be stuck waiting for somebody
-to resolve the OOM for a long time without any change then yes we have a
-problem.
-
-Just to be sure I got you right. You have killed all the processes from
-the group you have sent stacks for, right? If that is the case I am
-really curious about processes sitting in sleep_on_page_killable because
-those are killable by definition.
-
-> I can disable the script and wait until the problem really occurs but
-> when it happens, our services will go down.
-
-I definitely do not want to encourage you to let your services down...
-
-> Hope i was clear enough - if not, i can post the source code of that
-> script.
 
 -- 
-Michal Hocko
-SUSE Labs
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
