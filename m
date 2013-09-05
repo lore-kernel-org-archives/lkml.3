@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab3IETnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:43:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59285 "EHLO
+	id S1757045Ab3IETnD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:43:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59287 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab3IETmz (ORCPT
+	with ESMTP id S1756694Ab3IETmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Sep 2013 15:42:55 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/6] perf tools: Add test for parsing with no sample_id_all bit
-Date: Thu,  5 Sep 2013 16:42:39 -0300
-Message-Id: <1378410163-2606-3-git-send-email-acme@infradead.org>
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 4/6] perf hists: Fix formatting of long symbol names
+Date: Thu,  5 Sep 2013 16:42:41 -0300
+Message-Id: <1378410163-2606-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378410163-2606-1-git-send-email-acme@infradead.org>
 References: <1378410163-2606-1-git-send-email-acme@infradead.org>
@@ -29,194 +28,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Add a test for parsing a non-sample event when there is more than one
-selected event but no sample_id_all bit set.
+We had a hardcoded buffer for formatting histogram entries, truncating
+long symbol names (C++ anyone?).
 
-The test fails because of a bug in the evlist logic.  That is fixed in a
-separate patch.
+Fix it by using hists__sort_list_width() before formatting the first
+histogram entry to calculate the max lenght needed by traversing the
+overheads and columns lists (sort order).
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reported-by: Stephane Eranian <eranian@google.com>
+Tested-by: Stephane Eranian <eranian@google.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1378325897-3840-2-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/n/tip-vdfkkyfdp8rboh7j9344o3ss@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                       |   3 +-
- tools/perf/tests/builtin-test.c           |   4 ++
- tools/perf/tests/parse-no-sample-id-all.c | 108 ++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                  |   1 +
- 4 files changed, 115 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/tests/parse-no-sample-id-all.c
+ tools/perf/ui/stdio/hist.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c5dc1ad..3a0ff7f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -394,6 +394,8 @@ ifeq ($(ARCH),x86)
- LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
- endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
-+LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
-+LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 5b4fb33..194e2f4 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -350,9 +350,9 @@ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+ }
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-@@ -439,7 +441,6 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
- ifneq ($(OUTPUT),)
-   CFLAGS += -I$(OUTPUT)
- endif
--LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+-			       struct hists *hists, FILE *fp)
++			       struct hists *hists,
++			       char *bf, size_t bfsz, FILE *fp)
+ {
+-	char bf[512];
+ 	int ret;
+ 	struct perf_hpp hpp = {
+ 		.buf		= bf,
+@@ -360,8 +360,8 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 	};
+ 	bool color = !symbol_conf.field_sep;
  
- ifdef NO_LIBELF
- EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 8bbeba3..1e67437 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -112,6 +112,10 @@ static struct test {
- 		.func = test__keep_tracking,
- 	},
- 	{
-+		.desc = "Test parsing with no sample_id_all bit set",
-+		.func = test__parse_no_sample_id_all,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/parse-no-sample-id-all.c b/tools/perf/tests/parse-no-sample-id-all.c
-new file mode 100644
-index 0000000..e117b6c
---- /dev/null
-+++ b/tools/perf/tests/parse-no-sample-id-all.c
-@@ -0,0 +1,108 @@
-+#include <sys/types.h>
-+#include <stddef.h>
-+
-+#include "tests.h"
-+
-+#include "event.h"
-+#include "evlist.h"
-+#include "header.h"
-+#include "util.h"
-+
-+static int process_event(struct perf_evlist **pevlist, union perf_event *event)
-+{
-+	struct perf_sample sample;
-+
-+	if (event->header.type == PERF_RECORD_HEADER_ATTR) {
-+		if (perf_event__process_attr(NULL, event, pevlist)) {
-+			pr_debug("perf_event__process_attr failed\n");
-+			return -1;
-+		}
-+		return 0;
+-	if (size == 0 || size > sizeof(bf))
+-		size = hpp.size = sizeof(bf);
++	if (size == 0 || size > bfsz)
++		size = hpp.size = bfsz;
+ 
+ 	ret = hist_entry__period_snprintf(&hpp, he, color);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+@@ -392,6 +392,8 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		.ptr	= hists_to_evsel(hists),
+ 	};
+ 	bool first = true;
++	size_t linesz;
++	char *line = NULL;
+ 
+ 	init_rem_hits();
+ 
+@@ -479,6 +481,13 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		goto out;
+ 
+ print_entries:
++	linesz = hists__sort_list_width(hists) + 3 + 1;
++	line = malloc(linesz);
++	if (line == NULL) {
++		ret = -1;
++		goto out;
 +	}
 +
-+	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
-+		return -1;
-+
-+	if (!*pevlist)
-+		return -1;
-+
-+	if (perf_evlist__parse_sample(*pevlist, event, &sample)) {
-+		pr_debug("perf_evlist__parse_sample failed\n");
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int process_events(union perf_event **events, size_t count)
-+{
-+	struct perf_evlist *evlist = NULL;
-+	int err = 0;
-+	size_t i;
-+
-+	for (i = 0; i < count && !err; i++)
-+		err = process_event(&evlist, events[i]);
-+
-+	if (evlist)
-+		perf_evlist__delete(evlist);
-+
-+	return err;
-+}
-+
-+struct test_attr_event {
-+	struct attr_event attr;
-+	u64 id;
-+};
-+
-+/**
-+ * test__parse_no_sample_id_all - test parsing with no sample_id_all bit set.
-+ *
-+ * This function tests parsing data produced on kernel's that do not support the
-+ * sample_id_all bit.  Without the sample_id_all bit, non-sample events (such as
-+ * mmap events) do not have an id sample appended, and consequently logic
-+ * designed to determine the id will not work.  That case happens when there is
-+ * more than one selected event, so this test processes three events: 2
-+ * attributes representing the selected events and one mmap event.
-+ *
-+ * Return: %0 on success, %-1 if the test fails.
-+ */
-+int test__parse_no_sample_id_all(void)
-+{
-+	int err;
-+
-+	struct test_attr_event event1 = {
-+		.attr = {
-+			.header = {
-+				.type = PERF_RECORD_HEADER_ATTR,
-+				.size = sizeof(struct test_attr_event),
-+			},
-+		},
-+		.id = 1,
-+	};
-+	struct test_attr_event event2 = {
-+		.attr = {
-+			.header = {
-+				.type = PERF_RECORD_HEADER_ATTR,
-+				.size = sizeof(struct test_attr_event),
-+			},
-+		},
-+		.id = 2,
-+	};
-+	struct mmap_event event3 = {
-+		.header = {
-+			.type = PERF_RECORD_MMAP,
-+			.size = sizeof(struct mmap_event),
-+		},
-+	};
-+	union perf_event *events[] = {
-+		(union perf_event *)&event1,
-+		(union perf_event *)&event2,
-+		(union perf_event *)&event3,
-+	};
-+
-+	err = process_events(events, ARRAY_SIZE(events));
-+	if (err)
-+		return -1;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index c048b58..e0ac713 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -39,5 +39,6 @@ int test__perf_time_to_tsc(void);
- int test__code_reading(void);
- int test__sample_parsing(void);
- int test__keep_tracking(void);
-+int test__parse_no_sample_id_all(void);
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		float percent = h->stat.period * 100.0 /
+@@ -490,10 +499,10 @@ print_entries:
+ 		if (percent < min_pcnt)
+ 			continue;
  
- #endif /* TESTS_H */
+-		ret += hist_entry__fprintf(h, max_cols, hists, fp);
++		ret += hist_entry__fprintf(h, max_cols, hists, line, linesz, fp);
+ 
+ 		if (max_rows && ++nr_rows >= max_rows)
+-			goto out;
++			break;
+ 
+ 		if (h->ms.map == NULL && verbose > 1) {
+ 			__map_groups__fprintf_maps(&h->thread->mg,
+@@ -501,6 +510,8 @@ print_entries:
+ 			fprintf(fp, "%.10s end\n", graph_dotted_line);
+ 		}
+ 	}
++
++	free(line);
+ out:
+ 	free(rem_sq_bracket);
+ 
 -- 
 1.8.1.4
 
