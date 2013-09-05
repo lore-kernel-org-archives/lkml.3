@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab3IEUct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:32:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52202 "EHLO
+	id S1757920Ab3IEUdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:33:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757556Ab3IEU2p (ORCPT
+	with ESMTP id S1757543Ab3IEU2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Sep 2013 16:28:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@blackshift.org>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/14] ath9k_htc: Restore skb headroom when returning skb to mac80211
-Date: Thu,  5 Sep 2013 13:28:21 -0700
-Message-Id: <20130905202615.603824526@linuxfoundation.org>
+        Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
+        Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 09/14] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+Date: Thu,  5 Sep 2013 13:28:20 -0700
+Message-Id: <20130905202615.503113715@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
 References: <20130905202614.354156084@linuxfoundation.org>
@@ -28,57 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helmut Schaa <helmut.schaa@googlemail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit d2e9fc141e2aa21f4b35ee27072d84e9aa6e2ba0 upstream.
+commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
 
-ath9k_htc adds padding between the 802.11 header and the payload during
-TX by moving the header. When handing the frame back to mac80211 for TX
-status handling the header is not moved back into its original position.
-This can result in a too small skb headroom when entering ath9k_htc
-again (due to a soft retransmission for example) causing an
-skb_under_panic oops.
+Some architectures, such as ARM-32 do not return the same base address
+when you call kmap_atomic() twice on the same page.
+This causes problems for the memmove() call in the XDR helper routine
+"_shift_data_right_pages()", since it defeats the detection of
+overlapping memory ranges, and has been seen to corrupt memory.
 
-Fix this by moving the 802.11 header back into its original position
-before returning the frame to mac80211 as other drivers like rt2x00
-or ath5k do.
+The fix is to distinguish between the case where we're doing an
+inter-page copy or not. In the former case of we know that the memory
+ranges cannot possibly overlap, so we can additionally micro-optimise
+by replacing memmove() with memcpy().
 
-Reported-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Tested-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Mark Young <MYoung@nvidia.com>
+Reported-by: Matt Craighead <mcraighead@nvidia.com>
+Cc: Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Matt Craighead <mcraighead@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ net/sunrpc/xdr.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct
- 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
- 	bool txok;
- 	int slot;
-+	int hdrlen, padsize;
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -233,10 +233,13 @@ _shift_data_right_pages(struct page **pa
+ 		pgfrom_base -= copy;
  
- 	slot = strip_drv_header(priv, skb);
- 	if (slot < 0) {
-@@ -504,6 +505,15 @@ send_mac80211:
+ 		vto = kmap_atomic(*pgto);
+-		vfrom = kmap_atomic(*pgfrom);
+-		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
++		if (*pgto != *pgfrom) {
++			vfrom = kmap_atomic(*pgfrom);
++			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
++			kunmap_atomic(vfrom);
++		} else
++			memmove(vto + pgto_base, vto + pgfrom_base, copy);
+ 		flush_dcache_page(*pgto);
+-		kunmap_atomic(vfrom);
+ 		kunmap_atomic(vto);
  
- 	ath9k_htc_tx_clear_slot(priv, slot);
- 
-+	/* Remove padding before handing frame back to mac80211 */
-+	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-+
-+	padsize = hdrlen & 3;
-+	if (padsize && skb->len > hdrlen + padsize) {
-+		memmove(skb->data + padsize, skb->data, hdrlen);
-+		skb_pull(skb, padsize);
-+	}
-+
- 	/* Send status to mac80211 */
- 	ieee80211_tx_status(priv->hw, skb);
- }
+ 	} while ((len -= copy) != 0);
 
 
