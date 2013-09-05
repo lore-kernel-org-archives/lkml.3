@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3IEPfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:35:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46809 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab3IEPfH (ORCPT
+	id S1754404Ab3IEPfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:35:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50043 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab3IEPe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:35:07 -0400
-Date: Thu, 5 Sep 2013 16:34:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
-Message-ID: <20130905153432.GD3084@sirena.org.uk>
-References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com>
- <20130823095841.GG25263@sirena.org.uk>
- <522897FD.2030509@nvidia.com>
- <20130905143431.GI8980@lee--X1>
- <52289BD4.9060607@nvidia.com>
+	Thu, 5 Sep 2013 11:34:59 -0400
+Date: Thu, 5 Sep 2013 08:34:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rmk+kernel@arm.linux.org.uk
+Subject: Re: kobject: delayed kobject release: help find buggy drivers
+Message-ID: <20130905153457.GA27954@kroah.com>
+References: <20130903185924.046EE660E91@gitolite.kernel.org>
+ <20130903204442.GA22222@redhat.com>
+ <20130903205527.GA6358@kroah.com>
+ <87zjrt6tz4.fsf@rustcorp.com.au>
+ <20130905041338.GA21090@redhat.com>
+ <20130905045745.GA18876@kroah.com>
+ <20130905051945.GB23209@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Tk7bxryrhVQGv1nz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52289BD4.9060607@nvidia.com>
-X-Cookie: You love peace.
+In-Reply-To: <20130905051945.GB23209@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V4] regulator: palmas: add support for external control
- of rails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 05, 2013 at 01:19:45AM -0400, Dave Jones wrote:
+> On Wed, Sep 04, 2013 at 09:57:45PM -0700, Greg KH wrote:
+>  > On Thu, Sep 05, 2013 at 12:13:38AM -0400, Dave Jones wrote:
+>  > > On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
+>  > >  
+>  > >  > >> With this enabled, I get a bunch of scrolling oopses immediately after
+>  > >  > >> exiting the bootloader. It happens so early I can't even capture them
+>  > >  > >> over usb-serial, or earlyprintk=dbgp.
+>  > >  > >> 
+>  > >  > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
+>  > >  > >> so I can't even use that.
+>  > >  > >> 
+>  > >  > >> any ideas ?
+>  > >  > >
+>  > >  > > The first big bug found with this was with the module kobject code, and
+>  > >  > > a fix for that should be going in through Rusty's tree to Linus for this
+>  > >  > > merge window (right Rusty?)
+>  > >  > 
+>  > >  > Yep, just sent pull request.  The fix was the final commit there...
+>  > > 
+>  > > Crap, that isn't the bug I'm hitting.
+>  > 
+>  > Any chance to get a oops traceback?
+> 
+> Got it. (I think I was getting tracebacks from multiple cpus, hence the spewing).
+> Adding a check for tainted() = infinite loop to show_backtrace() combined with boot_delay
+> gave me a really long oops that I had to grab video to record.
 
---Tk7bxryrhVQGv1nz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Odd, but thanks for going through all of that.
 
-On Thu, Sep 05, 2013 at 08:27:24PM +0530, Laxman Dewangan wrote:
-> On Thursday 05 September 2013 08:04 PM, Lee Jones wrote:
+> RIP: <null>
+> 
+> Trace:
+> <IRQ>
+> run_timer_softirq
+> __do_softirq
+> irq_exit
+> smp_apic_timer_interrupt
+> apic_timer_interrupt
+> <EOI>
+> vprintk_emit
+> dev_vprintk_emit
+> dev_vprint_emit
+> __dev_printk
+> _dev_info
+> ahci_print_info
+> ahci_init_one
+> local_pci_probe
+> pci_device_probe
+> driver_probe_device
+> __driver_attach
+> bus_for_each_dev
+> driver_attach
+> bus_add_driver
+> driver_register
+> __pci_register_driver
+> ahci_pci_driver_init
 
-> >It won't go in until v3.12 now, but I have applied the patch.
+So we are loading a ahci driver here.  Any hint as to which
+driver/device this is?  Is it a device that fails for this driver, and
+then falls back to another more "specific" one?
 
-> Thanks Lee for taking care.
+And dieing in ahci_print_info()?  That's very strange.
 
-If it's going to wait for v3.12 there's no point applying it to MFD as
-the dependency will be in mainline after the merge window.
+Russell (not Rusty), any thoughts about this one?  You've been able to
+debug a bunch of these tracebacks recently really well.
 
---Tk7bxryrhVQGv1nz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSKKSEAAoJELSic+t+oim9RIwQAI3/xUvZccENj93+7I7XUtHc
-ykabf7B3qzIhQ2egdI9UibwgPAI+8gESgTZVBzOsV+n7ArCbu4zjIXZl3JSXkVLD
-rZ0Sxst5MYLXWuC6zxkAfnXpee2ObRMBgEcOnP9HZz2Y714WMinokRlF4osP6Hmt
-dGHpmwCIXpA31fgsoqYeQmEigwwHTElOk77wPmGbfMWZ3NGKV/eJ9aLh1pT0G1at
-hB7xVXmw29EI/tWzdOPM34Unr31rel3+Hj2DmwObO+TCQ64DvPwmV42KVOIzy5az
-GQ6RL6jPBCdI1VRIAkNOnUhPtKh6qG1bzT//gE7oS3eHFkK7gtJuf7qdS36kQFUp
-5RqcYnnVz3ZnqQxAppjNaiutIqVoEBCrkrPDRRYmF6PqdaxuUPOuq6Oim50gkk4o
-Ib9i2M/GyzKSqyFSzu50rpXEO5dVJWMM6D1CoOmaq6EjAjKr6WUHeiZqtU8zJWMg
-CBY7peWZ1jZPmbUWRduzVZMgg31ADhRKqekQjVIryOYtzVeVarStmE3RcUK+sU6+
-v75VSosJbI8APLpG6bhzJzmV1BenyZSU9z5ZHYK3qON8SUvagPpcjtq7BL8bmwm3
-CgeSojNyijIBY6XubKYaGH6UGRV/OS1U0s96+JIZXBJ+BSOsPSx72CROoCdlqdp6
-aoHigbWCcBaU0r3adc+h
-=b56E
------END PGP SIGNATURE-----
-
---Tk7bxryrhVQGv1nz--
+greg k-h
