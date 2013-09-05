@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3IEOcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:32:41 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54734 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab3IEOcj (ORCPT
+	id S1753310Ab3IEOd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:33:58 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:58986 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752345Ab3IEOd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:32:39 -0400
-Message-ID: <52289604.50202@cogentembedded.com>
-Date: Thu, 05 Sep 2013 18:32:36 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 5 Sep 2013 10:33:57 -0400
+Date: Thu, 5 Sep 2013 14:33:56 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
+ of a slab
+In-Reply-To: <20130905065552.GA6384@lge.com>
+Message-ID: <00000140ee8b386a-f9b8a845-58db-482e-8c63-20fb24404dc8-000000@email.amazonses.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com> <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com> <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com> <20130904083305.GC16355@lge.com>
+ <20130905065552.GA6384@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v2 5/6] AHCI: Check MRSM bit when multiple MSIs enabled
-References: <cover.1378383792.git.agordeev@redhat.com> <4bc31d6ccf3f84399b977fe8ed4fe77aadfa1c79.1378383792.git.agordeev@redhat.com>
-In-Reply-To: <4bc31d6ccf3f84399b977fe8ed4fe77aadfa1c79.1378383792.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.05-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, 5 Sep 2013, Joonsoo Kim wrote:
 
-On 09/05/2013 04:54 PM, Alexander Gordeev wrote:
+> I think that all patchsets deserve to be merged, since it reduces memory usage and
+> also improves performance. :)
 
-> Do not trust the hardware and always check if MSI
-> Revert to Single Message mode was enforced. Fall
-> back to the single MSI mode in case it did. Not
-> doing so might screw up the interrupt handling.
+Could you clean things up etc and the repost the patchset? This time do
+*not* do this as a response to an earlier email but start the patchset
+with new thread id. I think some people are not seeing this patchset.
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->   drivers/ata/ahci.c |   16 ++++++++++++++++
->   drivers/ata/ahci.h |    1 +
->   2 files changed, 17 insertions(+), 0 deletions(-)
+There is a tool called "quilt" that can help you send the patchset.
 
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index a6bb618..af5d535 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -1091,6 +1091,14 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
->   {}
->   #endif
->
-> +static int ahci_get_mrsm(struct ahci_host_priv *hpriv)
-> +{
-> +	void __iomem *mmio = hpriv->mmio;
-> +	u32 ctl = readl(mmio + HOST_CTL);
-> +
-> +	return (ctl & HOST_MRSM);
+	quilt mail
 
-    Parens not needed here, in case you'll respin this once more.
-
-WBR, Sergei
-
+Tools for git to do the same also exist.
