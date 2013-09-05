@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762635Ab3IEAyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 20:54:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43676 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125Ab3IEAyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 20:54:53 -0400
-Message-ID: <5227D65A.7040200@codeaurora.org>
-Date: Wed, 04 Sep 2013 17:54:50 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1762719Ab3IEA4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 20:56:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762285Ab3IEA4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 20:56:49 -0400
+Date: Wed, 4 Sep 2013 20:56:37 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org
+Subject: Re: staging: r8188eu: Add files for new driver - part 14
+Message-ID: <20130905005637.GD5727@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org
+References: <20130903185951.92CE2661198@gitolite.kernel.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <1706734.hVYFTCa5rJ@vostro.rjw.lan> <5227C729.5040803@codeaurora.org> <16630296.tCCMEKstkO@vostro.rjw.lan>
-In-Reply-To: <16630296.tCCMEKstkO@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130903185951.92CE2661198@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/13 17:26, Rafael J. Wysocki wrote:
-> On Wednesday, September 04, 2013 04:50:01 PM Stephen Boyd wrote:
->> On 09/04/13 16:55, Rafael J. Wysocki wrote:
->>> Well, I'm not sure when Viresh is going to be back.
->>>
->>> Srivatsa, can you please resend this patch with a proper changelog?
->>>
->> I haven't had a chance to try this out yet, but I was just thinking
->> about this patch. How is it going to work? If one task opens the file
->> and another task is taking down the CPU wouldn't we deadlock in the
->> CPU_DOWN notifier waiting for the kobject to be released? Task 1 will
->> grab the kobject reference and sleep on the hotplug mutex and task 2
->> will put the kobject and wait for the completion, but it won't happen.
->> At least I think that's what would happen.
-> Do you mean the completion in sysfs_deactivate()?  Yes, we can deadlock
-> there.
+On Tue, Sep 03, 2013 at 06:59:51PM +0000, Linux Kernel wrote:
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=615a4d12e55690269ce07e183553cb2752e1fa29
+ > Commit:     615a4d12e55690269ce07e183553cb2752e1fa29
+ > Parent:     7ef8ded0cfdb690e37581af85eea35fa67cdb38d
+ > Author:     Larry Finger <Larry.Finger@lwfinger.net>
+ > AuthorDate: Wed Aug 21 22:33:56 2013 -0500
+ > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ > CommitDate: Thu Aug 22 10:20:01 2013 -0700
+ > 
+ >     staging: r8188eu: Add files for new driver - part 14
+ >     
+ >     This commit adds files hal/rtl8188e_hal_init.c, hal/rtl8188e_mp.c,
+ >     hal/rtl8188e_phycfg.c, and hal/rtl8188e_rf6052.c.
+ 
+ > +void Hal_ReadAntennaDiversity88E(struct adapter *pAdapter, u8 *PROMContent, bool AutoLoadFail)
+ > +{
+ > +	struct hal_data_8188e	*pHalData = GET_HAL_DATA(pAdapter);
+ > +	struct registry_priv	*registry_par = &pAdapter->registrypriv;
+ > +
+ > +	if (!AutoLoadFail) {
+ > +		/*  Antenna Diversity setting. */
+ > +		if (registry_par->antdiv_cfg == 2) { /*  2:By EFUSE */
+ > +			pHalData->AntDivCfg = (PROMContent[EEPROM_RF_BOARD_OPTION_88E]&0x18)>>3;
+ > +			if (PROMContent[EEPROM_RF_BOARD_OPTION_88E] == 0xFF)
+ > +				pHalData->AntDivCfg = (EEPROM_DEFAULT_BOARD_OPTION&0x18)>>3;;
+ > +		} else {
+ > +			pHalData->AntDivCfg = registry_par->antdiv_cfg;  /*  0:OFF , 1:ON, 2:By EFUSE */
+ > +		}
+ > +
+ > +		if (registry_par->antdiv_type == 0) {
+ > +			/* If TRxAntDivType is AUTO in advanced setting, use EFUSE value instead. */
+ > +			pHalData->TRxAntDivType = PROMContent[EEPROM_RF_ANTENNA_OPT_88E];
+ > +			if (pHalData->TRxAntDivType == 0xFF)
+ > +				pHalData->TRxAntDivType = CG_TRX_HW_ANTDIV; /*  For 88EE, 1Tx and 1RxCG are fixed.(1Ant, Tx and RxCG are both on aux port) */
+ > +		} else {
+ > +			pHalData->TRxAntDivType = registry_par->antdiv_type;
+ > +		}
+ > +
+ > +		if (pHalData->TRxAntDivType == CG_TRX_HW_ANTDIV || pHalData->TRxAntDivType == CGCS_RX_HW_ANTDIV)
+ > +			pHalData->AntDivCfg = 1; /*  0xC1[3] is ignored. */
+ > +	} else {
+ > +		pHalData->AntDivCfg = 0;
+ > +		pHalData->TRxAntDivType = pHalData->TRxAntDivType; /*  The value in the driver setting of device manager. */
 
-I mean the complete in cpufreq_sysfs_release(). I don't think that will
-ever be called because the kobject is held by the task calling store()
-which is waiting on the hotplug lock to be released.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
->
-> Well, I guess the Srivatsa's patch may be salvaged by making it do a "trylock"
-> version of get_online_cpus(), but then I wonder if there's no better way.
+I suspect this should be setting itself to something more meaningful ?
+registry_par->antdiv_type maybe ?
 
-I think the real solution is to remove the kobject first if the CPU
-going down is the last user of that policy. Once the completion is done
-we can stop the governor and clean up state. For the case where there
-are still CPUs using the policy why can't we cancel that CPU's work and
-do nothing else? Even in the case where we have to move the cpufreq
-directory do we need to do a STOP/START/LIMITS sequence? I hope we can
-get away with just moving the directory and canceling that CPUs work then.
+What is 'device manager' in this context ?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+	Dave
 
