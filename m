@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935775Ab3IELRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 07:17:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38147 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935671Ab3IELRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 07:17:47 -0400
-Date: Thu, 5 Sep 2013 13:17:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130905111742.GC9702@dhcp22.suse.cz>
-References: <20130830215852.3E5D3D66@pobox.sk>
- <20130902123802.5B8E8CB1@pobox.sk>
- <20130903204850.GA1412@cmpxchg.org>
- <20130904114523.A9F0173C@pobox.sk>
- <20130904115741.GA28285@dhcp22.suse.cz>
- <20130904141000.0F910EFA@pobox.sk>
- <20130904122632.GB28285@dhcp22.suse.cz>
- <20130905111430.CB1392B4@pobox.sk>
- <20130905095331.GA9702@dhcp22.suse.cz>
- <20130905121700.546B5881@pobox.sk>
+	id S935786Ab3IELS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 07:18:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60166 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935623Ab3IELS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 07:18:57 -0400
+Date: Thu, 5 Sep 2013 12:18:52 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mszeredi@suse.cz, David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
+Message-ID: <20130905111852.GP13318@ZenIV.linux.org.uk>
+References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
+ <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130905121700.546B5881@pobox.sk>
+In-Reply-To: <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-09-13 12:17:00, azurIt wrote:
-> >[...]
-> >> My script detected another freezed cgroup today, sending stacks. Is
-> >> there anything interesting?
-> >
-> >3 tasks are sleeping and waiting for somebody to take an action to
-> >resolve memcg OOM. The memcg oom killer is enabled for that group?  If
-> >yes, which task has been selected to be killed? You can find that in oom
-> >report in dmesg.
-> >
-> >I can see a way how this might happen. If the killed task happened to
-> >allocate a memory while it is exiting then it would get to the oom
-> >condition again without freeing any memory so nobody waiting on the
-> >memcg_oom_waitq gets woken. We have a report like that: 
-> >https://lkml.org/lkml/2013/7/31/94
-> >
-> >The issue got silent in the meantime so it is time to wake it up.
-> >It would be definitely good to see what happened in your case though.
-> >If any of the bellow tasks was the oom victim then it is very probable
-> >this is the same issue.
-> 
-> Here it is:
-> http://watchdog.sk/lkml/kern5.log
+On Thu, Sep 05, 2013 at 11:44:37AM +0200, Miklos Szeredi wrote:
+> +static bool __has_unlinked_ancestor(struct dentry *dentry)
+> +{
+> +	struct dentry *this;
+> +
+> +	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
+> +		int is_unhashed;
+> +
+> +		/* Need exclusion wrt. check_submounts_and_drop() */
+> +		spin_lock(&this->d_lock);
+> +		is_unhashed = d_unhashed(this);
+> +		spin_unlock(&this->d_lock);
+> +
+> +		if (is_unhashed)
+> +			return true;
+> +	}
+> +	return false;
+> +}
+> +
+> +/*
+> + * Called by mount code to check if the mountpoint is reachable (e.g. NFS can
+> + * unhash a directory dentry and then the complete subtree can become
+> + * unreachable).
+> + */
+> +bool has_unlinked_ancestor(struct dentry *dentry)
+> +{
+> +	bool found;
+> +
+> +	/* Need exclusion wrt. check_submounts_and_drop() */
+> +	write_seqlock(&rename_lock);
+> +	found = __has_unlinked_ancestor(dentry);
+> +	write_sequnlock(&rename_lock);
+> +
+> +	return found;
+> +}
+> +
+>  /*
+>   * Search the dentry child list of the specified parent,
+>   * and move any unused dentries to the end of the unused
+> diff --git a/fs/internal.h b/fs/internal.h
+> index 7c5f01c..d232355 100644
+> --- a/fs/internal.h
+> +++ b/fs/internal.h
+> @@ -126,6 +126,7 @@ extern int invalidate_inodes(struct super_block *, bool);
+>   * dcache.c
+>   */
+>  extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
+> +extern bool has_unlinked_ancestor(struct dentry *dentry);
+>  
+>  /*
+>   * read_write.c
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index a45ba4f..91b1c39 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -634,6 +634,15 @@ static struct mountpoint *new_mountpoint(struct dentry *dentry)
+>  	}
+>  	dentry->d_flags |= DCACHE_MOUNTED;
+>  	spin_unlock(&dentry->d_lock);
+> +
+> +	if (has_unlinked_ancestor(dentry)) {
+> +		spin_lock(&dentry->d_lock);
+> +		dentry->d_flags &= ~DCACHE_MOUNTED;
+> +		spin_unlock(&dentry->d_lock);
+> +		kfree(mp);
+> +		return ERR_PTR(-ENOENT);
+> +	}
 
-$ grep "Killed process \<103[168]\>" kern5.log
-$
+Something's really odd with locking here.  You are take d_lock, do one
+check, set flag, drop d_lock, grab rename_lock, do another check (taking
+and dropping d_lock in process), and, in case that check fails, grab
+d_lock again to clear the flag.
 
-So none of the sleeping tasks has been killed previously.
-
-> Processes were killed by my script
-
-OK, I am really confused now. The log contains a lot of in-kernel memcg
-oom killer messages:
-$ grep "Memory cgroup out of memory:" kern5.log | wc -l
-809
-
-This suggests that the oom killer is not disabled. What exactly has you
-script done?
-
-> at about 11:05:35.
-
-There is an oom killer striking at 11:05:35:
-Sep  5 11:05:35 server02 kernel: [1751856.433101] Task in /1066/uid killed as a result of limit of /1066
-[...]
-Sep  5 11:05:35 server02 kernel: [1751856.539356] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-Sep  5 11:05:35 server02 kernel: [1751856.539745] [ 1046]  1066  1046   228537    95491   3       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.539894] [ 1047]  1066  1047   228604    95488   6       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.540043] [ 1050]  1066  1050   228470    95452   5       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.540191] [ 1051]  1066  1051   228592    95521   6       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.540340] [ 1052]  1066  1052   228594    95546   5       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.540489] [ 1054]  1066  1054   228470    95453   5       0             0 apache2
-Sep  5 11:05:35 server02 kernel: [1751856.540646] Memory cgroup out of memory: Kill process 1046 (apache2) score 1000 or sacrifice child
-
-And this doesn't list any of the tasks sleeping and waiting for oom
-resolving so they must have been created after this OOM. Is this the
-same group?
--- 
-Michal Hocko
-SUSE Labs
+At the very least it's a massive overkill.  Just grab rename_lock, then
+d_lock, then do the damn check and set the flag only on success.  Moreover,
+with rename_lock held, do you need d_lock on ancestors to mess with in
+has_unlinked_ancestor()?
