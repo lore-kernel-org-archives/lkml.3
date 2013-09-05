@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3IESik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:38:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38285 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab3IESid (ORCPT
+	id S1756903Ab3IESqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:46:15 -0400
+Received: from smtp3.primus.ca ([209.216.129.203]:59095 "EHLO
+	mail-07.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753245Ab3IESqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:38:33 -0400
-Date: Thu, 05 Sep 2013 14:38:30 -0400 (EDT)
-Message-Id: <20130905.143830.660252697193033003.davem@davemloft.net>
-To: rdunlap@infradead.org
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Sep 5 (netfilter: xt_socket.c)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5228C140.1010504@infradead.org>
-References: <20130905193249.8b7c57afd5e39349ff5508bb@canb.auug.org.au>
-	<5228C140.1010504@infradead.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 5 Sep 2013 14:46:13 -0400
+X-Greylist: delayed 1248 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 14:46:13 EDT
+Message-ID: <5228CC9C.9020300@bell.net>
+Date: Thu, 05 Sep 2013 14:25:32 -0400
+From: John David Anglin <dave.anglin@bell.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] parisc: Export flush_cache_page() (needed by lustre)
+References: <1378373595-29471-1-git-send-email-geert@linux-m68k.org> <1378396919.2142.5.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1378396919.2142.5.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Sep 2013 11:38:33 -0700 (PDT)
+X-Authenticated: danglin-lux@magma.ca - i216-58-24-141.cybersurf.com ([192.168.0.181]) [216.58.24.141]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
-Date: Thu, 05 Sep 2013 10:37:04 -0700
+On 9/5/2013 12:01 PM, James Bottomley wrote:
+> On Thu, 2013-09-05 at 11:33 +0200, Geert Uytterhoeven wrote:
+>> ERROR: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> ---
+>>   arch/parisc/kernel/cache.c |    1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
+>> index c035673..b521c0a 100644
+>> --- a/arch/parisc/kernel/cache.c
+>> +++ b/arch/parisc/kernel/cache.c
+>> @@ -602,6 +602,7 @@ flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr, unsigned long
+>>   		__flush_cache_page(vma, vmaddr, PFN_PHYS(pfn));
+>>   	}
+>>   }
+>> +EXPORT_SYMBOL_GPL(flush_cache_page);
+> This is an internal API: no architecture exports this.  Whoever is
+> trying to use it needs to use the correct API, so this is the wrong
+> patch.
+>
+There is a declaration for it in arch/parisc/include/asm/cacheflush.h.  
+There are a bunch
+of callers in mm.  The interface in documented in 
+Documentation/cachetlb.txt.  We currently
+use it in copy_to_user_page and copy_from_user_page.
 
-> On 09/05/13 02:32, Stephen Rothwell wrote:
->> Hi all,
->> 
->> Please do not add any code for v3.13 to your linux-next included branches
->> until after v3.12-rc1 is released.
->> 
->> Changes since 20130904:
->> 
-> 
-> on x86_64:
-> 
-> when CONFIG_IPV6=m
-> and CONFIG_NETFILTER_XT_MATCH_SOCKET=y:
-> 
-> net/built-in.o: In function `socket_mt6_v1_v2':
-> xt_socket.c:(.text+0x51b55): undefined reference to `udp6_lib_lookup'
-> net/built-in.o: In function `socket_mt_init':
-> xt_socket.c:(.init.text+0x1ef8): undefined reference to `nf_defrag_ipv6_enable'
+Dave
 
-I just commited the following to fix this:
-
---------------------
-[PATCH] netfilter: Fix build errors with xt_socket.c
-
-As reported by Randy Dunlap:
-
-====================
-when CONFIG_IPV6=m
-and CONFIG_NETFILTER_XT_MATCH_SOCKET=y:
-
-net/built-in.o: In function `socket_mt6_v1_v2':
-xt_socket.c:(.text+0x51b55): undefined reference to `udp6_lib_lookup'
-net/built-in.o: In function `socket_mt_init':
-xt_socket.c:(.init.text+0x1ef8): undefined reference to `nf_defrag_ipv6_enable'
-====================
-
-Like several other modules under net/netfilter/ we have to
-have a dependency "IPV6 disabled or set compatibly with this
-module" clause.
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/netfilter/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index 62a171a..6e839b6 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -1175,6 +1175,7 @@ config NETFILTER_XT_MATCH_SOCKET
- 	depends on NETFILTER_XTABLES
- 	depends on NETFILTER_ADVANCED
- 	depends on !NF_CONNTRACK || NF_CONNTRACK
-+	depends on (IPV6 || IPV6=n)
- 	select NF_DEFRAG_IPV4
- 	select NF_DEFRAG_IPV6 if IP6_NF_IPTABLES
- 	help
 -- 
-1.7.11.7
+John David Anglin    dave.anglin@bell.net
 
