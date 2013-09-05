@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab3IEU27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52253 "EHLO
+	id S1757621Ab3IEU2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623Ab3IEU2y (ORCPT
+	with ESMTP id S1757502Ab3IEU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:54 -0400
+	Thu, 5 Sep 2013 16:28:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        David Milburn <dmilburn@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [ 7/7] SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
-Date: Thu,  5 Sep 2013 13:28:40 -0700
-Message-Id: <20130905202758.461309943@linuxfoundation.org>
+        Russ Anderson <rja@sgi.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 3/7] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+Date: Thu,  5 Sep 2013 13:28:36 -0700
+Message-Id: <20130905202758.024741883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202757.642048278@linuxfoundation.org>
 References: <20130905202757.642048278@linuxfoundation.org>
@@ -29,132 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Russ Anderson <rja@sgi.com>
 
-commit 35dc248383bbab0a7203fca4d722875bc81ef091 upstream.
+commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
 
-There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
-leads to one process writing data into the address space of some other
-random unrelated process if the ioctl is interrupted by a signal.
-What happens is the following:
+"cat /sys/devices/system/memory/memory*/removable" crashed the system.
 
- - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
-   underlying SCSI command will transfer data from the SCSI device to
-   the buffer provided in the ioctl)
+The problem is that show_mem_removable() is passing a
+bad pfn to is_mem_section_removable(), which causes
 
- - Before the command finishes, a signal is sent to the process waiting
-   in the ioctl.  This will end up waking up the sg_ioctl() code:
+    if (!node_online(page_to_nid(page)))
 
-		result = wait_event_interruptible(sfp->read_wait,
-			(srp_done(sfp, srp) || sdp->detached));
+to blow up.  Why is it passing in a bad pfn?
 
-   but neither srp_done() nor sdp->detached is true, so we end up just
-   setting srp->orphan and returning to userspace:
+The reason is that show_mem_removable() will loop sections_per_block
+times.  sections_per_block is 16, but mem->section_count is 8,
+indicating holes in this memory block.  Checking that the memory section
+is present before checking to see if the memory section is removable
+fixes the problem.
 
-		srp->orphan = 1;
-		write_unlock_irq(&sfp->rq_list_lock);
-		return result;	/* -ERESTARTSYS because signal hit process */
+   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
+   0
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   BUG: unable to handle kernel paging request at ffffea00c3200000
+   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   PGD 83ffd4067 PUD 37bdfce067 PMD 0
+   Oops: 0000 [#1] SMP
+   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
+   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
+   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
+   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
+   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
+   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
+   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
+   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
+   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
+   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
+   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
+   Call Trace:
+     show_mem_removable+0x41/0x70
+     dev_attr_show+0x2a/0x60
+     sysfs_read_file+0xf7/0x1c0
+     vfs_read+0xc8/0x130
+     SyS_read+0x5d/0xa0
+     system_call_fastpath+0x16/0x1b
 
-   At this point the original process is done with the ioctl and
-   blithely goes ahead handling the signal, reissuing the ioctl, etc.
-
- - Eventually, the SCSI command issued by the first ioctl finishes and
-   ends up in sg_rq_end_io().  At the end of that function, we run through:
-
-	write_lock_irqsave(&sfp->rq_list_lock, iflags);
-	if (unlikely(srp->orphan)) {
-		if (sfp->keep_orphan)
-			srp->sg_io_owned = 0;
-		else
-			done = 0;
-	}
-	srp->done = done;
-	write_unlock_irqrestore(&sfp->rq_list_lock, iflags);
-
-	if (likely(done)) {
-		/* Now wake up any sg_read() that is waiting for this
-		 * packet.
-		 */
-		wake_up_interruptible(&sfp->read_wait);
-		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
-		kref_put(&sfp->f_ref, sg_remove_sfp);
-	} else {
-		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
-		schedule_work(&srp->ew.work);
-	}
-
-   Since srp->orphan *is* set, we set done to 0 (assuming the
-   userspace app has not set keep_orphan via an SG_SET_KEEP_ORPHAN
-   ioctl), and therefore we end up scheduling sg_rq_end_io_usercontext()
-   to run in a workqueue.
-
- - In workqueue context we go through sg_rq_end_io_usercontext() ->
-   sg_finish_rem_req() -> blk_rq_unmap_user() -> ... ->
-   bio_uncopy_user() -> __bio_copy_iov() -> copy_to_user().
-
-   The key point here is that we are doing copy_to_user() on a
-   workqueue -- that is, we're on a kernel thread with current->mm
-   equal to whatever random previous user process was scheduled before
-   this kernel thread.  So we end up copying whatever data the SCSI
-   command returned to the virtual address of the buffer passed into
-   the original ioctl, but it's quite likely we do this copying into a
-   different address space!
-
-As suggested by James Bottomley <James.Bottomley@hansenpartnership.com>,
-add a check for current->mm (which is NULL if we're on a kernel thread
-without a real userspace address space) in bio_uncopy_user(), and skip
-the copy if we're on a kernel thread.
-
-There's no reason that I can think of for any caller of bio_uncopy_user()
-to want to do copying on a kernel thread with a random active userspace
-address space.
-
-Huge thanks to Costa Sapuntzakis <costa@purestorage.com> for the
-original pointer to this bug in the sg code.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[lizf: backported to 3.4:
- - Use __bio_for_each_segment() instead of bio_for_each_segment_all()]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- fs/bio.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/base/memory.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -786,12 +786,22 @@ static int __bio_copy_iov(struct bio *bi
- int bio_uncopy_user(struct bio *bio)
- {
- 	struct bio_map_data *bmd = bio->bi_private;
--	int ret = 0;
-+	struct bio_vec *bvec;
-+	int ret = 0, i;
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -172,6 +172,8 @@ static ssize_t show_mem_removable(struct
+ 		container_of(dev, struct memory_block, sysdev);
  
--	if (!bio_flagged(bio, BIO_NULL_MAPPED))
--		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
--				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
--				     0, bmd->is_our_pages);
-+	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
-+		/*
-+		 * if we're in a workqueue, the request is orphaned, so
-+		 * don't copy into a random user address space, just free.
-+		 */
-+		if (current->mm)
-+			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
-+					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
-+					     0, bmd->is_our_pages);
-+		else if (bmd->is_our_pages)
-+			__bio_for_each_segment(bvec, bio, i, 0)
-+				__free_page(bvec->bv_page);
-+	}
- 	bio_free_map_data(bmd);
- 	bio_put(bio);
- 	return ret;
+ 	for (i = 0; i < sections_per_block; i++) {
++		if (!present_section_nr(mem->start_section_nr + i))
++			continue;
+ 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+ 	}
 
 
