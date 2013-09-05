@@ -1,245 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763550Ab3IEINP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 04:13:15 -0400
-Received: from nm17-vm4.access.bullet.mail.gq1.yahoo.com ([216.39.63.105]:33674
-	"EHLO nm17-vm4.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757821Ab3IEINM (ORCPT
+	id S1763536Ab3IEIOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 04:14:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51590 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821Ab3IEIOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 04:13:12 -0400
-X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 04:13:12 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 472282.25915.bm@omp1010.access.mail.gq1.yahoo.com
-X-YMail-OSG: HWfNYD0VM1l47I4xbAyavA.sxcLESVwg3mysiVj.0pTyn0W
- BeQW5KxtvGKXvr5WrHIZTvH64jXslmgwwG2wquBYRiOHEp8w0GfRu.xvTRIb
- S0hGssSS6mB3PPpf7JRmWYQy_ktz3chI1Elx9NRsNgkOCT78bZDqGRb_L.ql
- wil9WiMZEvYy80REwNJ6.RGZ391s7iVo006qWBTm323fH6vbmxN3Ag4NWOjB
- rOs8anbP727JtYf67tzIgyKSm.wUeU2v31aL7ijHay0Kebo_zgfRp9fyisrj
- wu52FU2_rBix.YHlsiKhH7punQWf9a23nYl9atoA8.zbZbW763ak5OJuw8b.
- oFFt_WnwtdprPVCT0VZ5m8E8Ro5ADtKbUaI.9GfjcVnmWEh3LcZJ1ZRPM8pQ
- rfQsTwNqOFwZ8BhjjCqBYGUUjH7Ib_SEOU5Pu7MLhVSVBDzgF3e9ayIoyf9z
- ZNAALcbsoEPc_B1w1KSDYyvaeaPyth.SgOys56dBF4YDWdnGytpcUHnT.4zC
- OfEPI1QXIt5ZKETzmWIM.9Q6XnOKTT6rtzJhONCtJmjdb8Bfh
-X-Rocket-MIMEInfo: 002.001,UmVnYXJkcywKTGFycnkgV2lsbGlhbXMuIAEwAQEBAQ--
-X-RocketYMMF: webukcm
-X-Mailer: YahooMailWebService/0.8.156.576
-References: <1377686633.77887.YahooMailNeo@web5703.biz.mail.ne1.yahoo.com> <1377686674.55043.YahooMailNeo@web5706.biz.mail.ne1.yahoo.com> <1377686730.46273.YahooMailNeo@web5701.biz.mail.ne1.yahoo.com> <1377716773.11750.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com> <1377795000.28480.YahooMailNeo@web5706.biz.mail.ne1.yahoo.com> <1377946076.180.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com> <1377946196.41164.YahooMailNeo@web5701.biz.mail.ne1.yahoo.com> <1378115203.59857.YahooMailNeo@web5705.biz.mail.ne1.yahoo.com> <1378115330.35175.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com> <1378363497.16248.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com> <1378368319.8522.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
-Message-ID: <1378368411.69241.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com>
-Date: Thu, 5 Sep 2013 01:06:51 -0700 (PDT)
-From: Larry Williams <dcgf11@outlook.com>
-Reply-To: Larry Williams <williamslarry007@thepub.co.za>
-Subject: Awaiting your urgent and favorable response!
-To: undisclosed recipients:;
-In-Reply-To: <1378368319.8522.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
+	Thu, 5 Sep 2013 04:14:50 -0400
+Message-ID: <52283CD0.9010108@ti.com>
+Date: Thu, 5 Sep 2013 11:12:00 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-1206156689-1033326795-1378368411=:69241"
+To: James Bates <james.h.bates@gmail.com>
+CC: David Herrmann <dh.herrmann@gmail.com>, Peter Jones <pjones@redhat.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2] efifb: prevent null dereferences by removing unused
+ array indices from dmi_list
+References: <C9C6655E-4974-4C04-8CEE-CA16563F4CC5@gmail.com>  <CANq1E4STAFLpDoyLHxXVXqk7mjzmBr1jO3XuxL2B+cJzgHe0vA@mail.gmail.com> <1376684395.6529.5.camel@hermes>
+In-Reply-To: <1376684395.6529.5.camel@hermes>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="oibh6ujoCACp88hREU1D2lFjli1IGUff2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----1206156689-1033326795-1378368411=:69241
-Content-Type: text/plain; charset=utf-8
+--oibh6ujoCACp88hREU1D2lFjli1IGUff2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Regards,=0ALarry Williams. 
----1206156689-1033326795-1378368411=:69241
-Content-Type: application/pdf; name="Mr."
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Mr. Larry Williams..pdf"
+Hi James,
 
-JVBERi0xLjUKJeLjz9MKMSAwIG9iago8PCAKICAgL1R5cGUgL0NhdGFsb2cK
-ICAgL1BhZ2VzIDIgMCBSCiAgIC9QYWdlTGF5b3V0IC9PbmVDb2x1bW4KICAg
-L1BhZ2VNb2RlIC9Vc2VOb25lCj4+CmVuZG9iagoyIDAgb2JqCjw8IAogICAv
-VHlwZSAvUGFnZXMKICAgL0tpZHMgWzMgMCBSIF0KICAgL0NvdW50IDEKPj4K
-ZW5kb2JqCjMgMCBvYmoKPDwgCiAgIC9UeXBlIC9QYWdlCiAgIC9QYXJlbnQg
-MiAwIFIKICAgL1Jlc291cmNlcyA8PCAKICAgL1Byb2NTZXQgWy9QREYgL1Rl
-eHQgXQogICAvRm9udCA8PCAKICAgL0YxIDYgMCBSCiAgIC9GMiA5IDAgUgo+
-Pgo+PgogICAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXQogICAvQ29udGVudHMg
-NCAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwgCiAgIC9GaWx0ZXIgL0ZsYXRl
-RGVjb2RlCiAgIC9MZW5ndGggNDUwNwo+PgpzdHJlYW0KeF6tHdmO48bxfb5C
-AZJghFgy++CVp9iJbayRRWLsBkEQ54FazUib8YjjmZGzm8/IF4dd1V1d3Twk
-NQXDY4kiq6vrvpr++ebnG7Ew/zzvbqpqnReLMq/WeqFFtc6qhRDrXC6e727u
-b37obv36/c2X33Z3Z+a39/c32cL80z2areu6ruCbWNTZoizEOtOL9483/7z9
-diny2+dleds+dn8Wy5UQt2/N9zV8xAt/Xla3jblo/v1snsDrf19KdftxuSpv
-f1qKovvTfYKvjQH2QgB/vDU3frVcVbfHLT3zav60z0vllvnKQN6Yx5rFsvv+
-tXmgOTyY//y4XP5r8f77m2/eX7BXWVZrUQT7XfTByIWQEzCqbF1NgIgZpIt1
-Vc3mkK7Ng7AckC2myvEjEXwLHw+7L5bErz8CMx8NZYHSL5Yb8KU93BkIjO7v
-gBNwAX66M3yAa19cTC1VrZUM8J8ml8rXqphNLlXhWt8b9Nt9czgYKYPNmH1v
-jkZwd+Ya7lhmmUiQJ1HUa+lXG5Cl0yBKsa70JIxpCotSr3U1BiAmr1Rmtbnk
-lYVZEpZ71x5BMvaemKC29yhCVsY+mEvNenBvJ+ijpVE3tuLlFNL5WusJGDGR
-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
-dKdjW4sFRtZXKCNLBUf0zlhOlFeo8NnxcFjur0YcrNVaUXfWF5C9C2GcwBbG
-Q2itWhceBIUbZCmw5rhjFcEoOgbbtiHOx8IMqhDM0hLb6bVLq6A7wkY3YaoS
-HovzQ3YToO3bO7x038F0fW8ADyb/csnSGbzoixM/xc9rAbLCwUQzzMxabLeB
-GXhxVoa/DGhK3LJifhlTZjWVMW0Lwh8KwQMFB2sWTXXFDwPARd7mjYvI3o/a
-DHngIdo/8Lo9MIPhYoVTPBB9y6UhyOI7G4qT4Cu9i+2eLhmczNUsgxft/oFU
-bA87ejpu1j6/w1zuv4bFAaaEGSEDXRD7UmDo4Ie8OnF2osRshG1pUjTsmxxm
-yobogtbhMueZIKD0eALKOdXHcRDxvrv8YX69VVRWdYPRt++MhKJ/Z+7cK24U
-UF780jbznvKOx7T49EZLsDMz61j2teSw3Ndoole9uTvS0R2etwIdHXjH/MkF
-hYZxGr7oxfIgNIxujcOI6VRkYb0vTSDM/H4ixlYJxiDE+Or6ChUbkYv0aUaL
-8CiIGGNVXqHoI3RGiXHS/8nChQ6hVb9cCfH0FUeH7/6Hm/8DIU8BWAplbmRz
-dHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgCiAgIC9Qcm9kdWNlciA8RkVGRjAw
-NjQwMDZGMDA1MDAwNDQwMDQ2MDAyMDAwNTYwMDY1MDA3MjAwMjAwMDM3MDAy
-RTAwMzMwMDIwMDA0MjAwNzUwMDY5MDA2QzAwNjQwMDIwMDAzMzAwMzkwMDMx
-MDAyMDAwMjgwMDU3MDA2OTAwNkUwMDY0MDA2RjAwNzcwMDczMDAyMDAwNTgw
-MDUwMDAyMDAwNTAwMDcyMDA2RjAwNjYwMDY1MDA3MzAwNzMwMDY5MDA2RjAw
-NkUwMDYxMDA2QzAwMjAwMDQ1MDA2NDAwNjkwMDc0MDA2OTAwNkYwMDZFMDAy
-MDAwMjAwMDI4MDA1MzAwNTAwMDIwMDAzMjAwMjkwMDIwMDAyRDAwMjAwMDU2
-MDA2NTAwNzIwMDczMDA2OTAwNkYwMDZFMDAzQTAwMjAwMDM1MDAyRTAwMzEw
-MDJFMDAzMjAwMzYwMDMwMDAzMDAwMjAwMDI4MDA3ODAwMzgwMDM2MDAyOTAw
-Mjk+CiAgIC9DcmVhdGlvbkRhdGUgKEQ6MjAxMzA5MDMxMTE3NDUrMDInMDAn
-KQo+PgplbmRvYmoKNiAwIG9iago8PCAKICAgL1R5cGUgL0ZvbnQKICAgL1N1
-YnR5cGUgL1RydWVUeXBlCiAgIC9Gb250RGVzY3JpcHRvciA3IDAgUgogICAv
-QmFzZUZvbnQgL1RpbWVzTmV3Um9tYW5QUy1JdGFsaWNNVAogICAvRmlyc3RD
-aGFyIDAKICAgL0xhc3RDaGFyIDI1NQogICAvV2lkdGhzIDggMCBSCiAgIC9F
-bmNvZGluZyAvV2luQW5zaUVuY29kaW5nCj4+CmVuZG9iago3IDAgb2JqCjw8
-IAogICAvVHlwZSAvRm9udERlc2NyaXB0b3IKICAgL0ZvbnROYW1lIC9UaW1l
-c05ld1JvbWFuUFMtSXRhbGljTVQKICAgL0FzY2VudCA2OTQKICAgL0NhcEhl
-aWdodCA2OTQKICAgL0Rlc2NlbnQgLTIxNgogICAvRmxhZ3MgOTYKICAgL0Zv
-bnRCQm94IFstNDk4IC0zMDcgMTEyMCAxMDIzXQogICAvSXRhbGljQW5nbGUg
-LTE2CiAgIC9TdGVtViA4NwogICAvWEhlaWdodCA0NTgKPj4KZW5kb2JqCjgg
-MCBvYmoKWzc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3
-OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4
-IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3Nzgg
-MjUwIDMzMyA0MjAgNTAwIDUwMCA4MzMgNzc4IDIxNCAzMzMgMzMzIDUwMCA2
-NzUgMjUwIDMzMyAyNTAgMjc4IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUw
-MCA1MDAgNTAwIDUwMCAzMzMgMzMzIDY3NSA2NzUgNjc1IDUwMCA5MjAgNjEx
-IDYxMSA2NjcgNzIyIDYxMSA2MTEgNzIyIDcyMiAzMzMgNDQ0IDY2NyA1NTYg
-ODMzIDY2NyA3MjIgNjExIDcyMiA2MTEgNTAwIDU1NiA3MjIgNjExIDgzMyA2
-MTEgNTU2IDU1NiAzODkgMjc4IDM4OSA0MjIgNTAwIDMzMyA1MDAgNTAwIDQ0
-NCA1MDAgNDQ0IDI3OCA1MDAgNTAwIDI3OCAyNzggNDQ0IDI3OCA3MjIgNTAw
-IDUwMCA1MDAgNTAwIDM4OSAzODkgMjc4IDUwMCA0NDQgNjY3IDQ0NCA0NDQg
-Mzg5IDQwMCAyNzUgNDAwIDU0MSAzNTAgNTAwIDM1MCAzMzMgNTAwIDU1NiA4
-ODkgNTAwIDUwMCAzMzMgMTAwMCA1MDAgMzMzIDk0NCAzNTAgNTU2IDM1MCAz
-NTAgMzMzIDMzMyA1NTYgNTU2IDM1MCA1MDAgODg5IDMzMyA5ODAgMzg5IDMz
-MyA2NjcgMzUwIDM4OSA1NTYgMjUwIDM4OSA1MDAgNTAwIDUwMCA1MDAgMjc1
-IDUwMCAzMzMgNzYwIDI3NiA1MDAgNjc1IDMzMyA3NjAgNTAwIDQwMCA1NDkg
-MzAwIDMwMCAzMzMgNTc2IDUyMyAyNTAgMzMzIDMwMCAzMTAgNTAwIDc1MCA3
-NTAgNzUwIDUwMCA2MTEgNjExIDYxMSA2MTEgNjExIDYxMSA4ODkgNjY3IDYx
-MSA2MTEgNjExIDYxMSAzMzMgMzMzIDMzMyAzMzMgNzIyIDY2NyA3MjIgNzIy
-IDcyMiA3MjIgNzIyIDY3NSA3MjIgNzIyIDcyMiA3MjIgNzIyIDU1NiA2MTEg
-NTAwIDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDY2NyA0NDQgNDQ0IDQ0NCA0
-NDQgNDQ0IDI3OCAyNzggMjc4IDI3OCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUw
-MCA1MDAgNTQ5IDUwMCA1MDAgNTAwIDUwMCA1MDAgNDQ0IDUwMCA0NDQgXQpl
-bmRvYmoKOSAwIG9iago8PCAKICAgL1R5cGUgL0ZvbnQKICAgL1N1YnR5cGUg
-L1RydWVUeXBlCiAgIC9Gb250RGVzY3JpcHRvciAxMCAwIFIKICAgL0Jhc2VG
-b250IC9UaW1lc05ld1JvbWFuUFNNVAogICAvRmlyc3RDaGFyIDAKICAgL0xh
-c3RDaGFyIDI1NQogICAvV2lkdGhzIDExIDAgUgogICAvRW5jb2RpbmcgL1dp
-bkFuc2lFbmNvZGluZwo+PgplbmRvYmoKMTAgMCBvYmoKPDwgCiAgIC9UeXBl
-IC9Gb250RGVzY3JpcHRvcgogICAvRm9udE5hbWUgL1RpbWVzTmV3Um9tYW5Q
-U01UCiAgIC9Bc2NlbnQgNjkzCiAgIC9DYXBIZWlnaHQgNjkzCiAgIC9EZXNj
-ZW50IC0yMTYKICAgL0ZsYWdzIDMyCiAgIC9Gb250QkJveCBbLTU2OCAtMzA3
-IDIwMDAgMTAwN10KICAgL0l0YWxpY0FuZ2xlIDAKICAgL1N0ZW1WIDg3CiAg
-IC9YSGVpZ2h0IDQ1Nwo+PgplbmRvYmoKMTEgMCBvYmoKWzc3OCA3NzggNzc4
-IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3Nzgg
-Nzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3
-NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggMjUwIDMzMyA0MDggNTAwIDUw
-MCA4MzMgNzc4IDE4MCAzMzMgMzMzIDUwMCA1NjQgMjUwIDMzMyAyNTAgMjc4
-IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCAyNzgg
-Mjc4IDU2NCA1NjQgNTY0IDQ0NCA5MjEgNzIyIDY2NyA2NjcgNzIyIDYxMSA1
-NTYgNzIyIDcyMiAzMzMgMzg5IDcyMiA2MTEgODg5IDcyMiA3MjIgNTU2IDcy
-MiA2NjcgNTU2IDYxMSA3MjIgNzIyIDk0NCA3MjIgNzIyIDYxMSAzMzMgMjc4
-IDMzMyA0NjkgNTAwIDMzMyA0NDQgNTAwIDQ0NCA1MDAgNDQ0IDMzMyA1MDAg
-NTAwIDI3OCAyNzggNTAwIDI3OCA3NzggNTAwIDUwMCA1MDAgNTAwIDMzMyAz
-ODkgMjc4IDUwMCA1MDAgNzIyIDUwMCA1MDAgNDQ0IDQ4MCAyMDAgNDgwIDU0
-MSAzNTAgNTAwIDM1MCAzMzMgNTAwIDQ0NCAxMDAwIDUwMCA1MDAgMzMzIDEw
-MDAgNTU2IDMzMyA4ODkgMzUwIDYxMSAzNTAgMzUwIDMzMyAzMzMgNDQ0IDQ0
-NCAzNTAgNTAwIDEwMDAgMzMzIDk4MCAzODkgMzMzIDcyMiAzNTAgNDQ0IDcy
-MiAyNTAgMzMzIDUwMCA1MDAgNTAwIDUwMCAyMDAgNTAwIDMzMyA3NjAgMjc2
-IDUwMCA1NjQgMzMzIDc2MCA1MDAgNDAwIDU0OSAzMDAgMzAwIDMzMyA1NzYg
-NDUzIDI1MCAzMzMgMzAwIDMxMCA1MDAgNzUwIDc1MCA3NTAgNDQ0IDcyMiA3
-MjIgNzIyIDcyMiA3MjIgNzIyIDg4OSA2NjcgNjExIDYxMSA2MTEgNjExIDMz
-MyAzMzMgMzMzIDMzMyA3MjIgNzIyIDcyMiA3MjIgNzIyIDcyMiA3MjIgNTY0
-IDcyMiA3MjIgNzIyIDcyMiA3MjIgNzIyIDU1NiA1MDAgNDQ0IDQ0NCA0NDQg
-NDQ0IDQ0NCA0NDQgNjY3IDQ0NCA0NDQgNDQ0IDQ0NCA0NDQgMjc4IDI3OCAy
-NzggMjc4IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCA1NDkgNTAwIDUw
-MCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCBdCmVuZG9iagp4cmVmCjAgMTIg
-CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAxNSAwMDAwMCBuIAowMDAw
-MDAwMTE5IDAwMDAwIG4gCjAwMDAwMDAxODcgMDAwMDAgbiAKMDAwMDAwMDM3
-NiAwMDAwMCBuIAowMDAwMDA0OTYzIDAwMDAwIG4gCjAwMDAwMDU0MTIgMDAw
-MDAgbiAKMDAwMDAwNTYxNSAwMDAwMCBuIAowMDAwMDA1ODQ4IDAwMDAwIG4g
-CjAwMDAwMDY4OTEgMDAwMDAgbiAKMDAwMDAwNzA4OSAwMDAwMCBuIAowMDAw
-MDA3MzE0IDAwMDAwIG4gCnRyYWlsZXIKPDwgCiAgIC9Sb290IDEgMCBSCiAg
-IC9JbmZvIDUgMCBSCiAgIC9TaXplIDEyCj4+CnN0YXJ0eHJlZgo4MzYwCiUl
-RU9GCg==
+Can you resend this? I don't know how I could apply the patch from this
+mail without re-creating it manually.
 
----1206156689-1033326795-1378368411=:69241--
+ Tomi
+
+On 16/08/13 23:19, James Bates wrote:
+> On Fri, 2013-08-16 at 15:37 +0200, David Herrmann wrote:
+>> Hi
+>> (CC'ing hpa)
+>>
+>> Yepp, this patch looks good:
+>> Reviewed-by: David Herrmann <dh.herrmann@gmail.com <mailto:dh.herrmann=
+@gmail.com>>
+>>
+>> However, I'd like to see some code to prevent this from happening
+>> again. It isn't really obvious that removing an entry will result in a=
+
+>> NULL-deref. I am not the maintainer of this code, but I'd really like
+>> to see a "(dmi_list[i].optname && !strcmp())" check in efifb_setup().
+>> Otherwise we _will_ run into this again.
+>>
+>> Side note: this code got moved to arch/x86/kernel/sysfb_efi.c in the
+>> x86 tree. I am adding hpa here so he will remember this once Linus
+>> gets a merge conflict (iff the sysfb changes get merged through the
+>> x86 tree).
+>>
+>> Thanks
+>> David
+> Sure thing, here is the patch again, with the extra check in
+> efifb_setup() (it turns out one can simply
+> switch around the order of the checks: implicitly initialized dmi_list
+> items will have base =3D=3D 0):
+>=20
+> Full patch v2:
+> the dmi_list array is initialized using gnu designated initializers, an=
+d
+> therefore
+> contains fewer explicitly defined entries as there are elements in it. =
+This
+> is because the enum above with M_blabla constants contains more items
+> than the designated
+> initializer. Those elements not explicitly initialized are implicitly
+> set to 0.
+>=20
+> Now efifb_setup(), L.322 & L.323, loops through all these array
+> elements, and performs
+> a strcmp o a field (optname) in each item. For non explicitly
+> initialized elements this
+> will be a null pointer:
+>=20
+>                         for (i =3D 0; i < M_UNKNOWN; i++) {
+>                                 if (!strcmp(this_opt,
+> dmi_list[i].optname) &&
+>=20
+> On my macbook6,1 the predefined values are for some reason incorrect,
+> and most parameters
+> are preset correctly by my efi bootloader (elilo). but
+> stride/line_length is not detected
+> correctly and so I wish to set it explicitly using a
+> "video=3Defifb:stride:2048" command-line
+> argument. Because of the above null dereference, an exception
+> (presumably) occurs before
+> the parsing code (L.333) is ever reached. I say presumably since the ma=
+c
+> hangs on boot
+> without a console, and I can therefore not see any output.
+>=20
+> By removing the unused values from the enum, and thus preventing
+> implicitly initialized items
+> in the dmi_list array, the null dereference does not occur, my customer=
+
+> command-line arg is
+> parsed correctly, and my console displays correctly.
+>=20
+> This patch removes the unused enum values, and also guards against any
+> future implicit
+> initializing by inverting the check order in the if statement, and
+> checking first whether
+> dmi_list[i].base is null.
+>=20
+> Signed-off-by: James Bates <james.h.bates@yahoo.com
+> <mailto:james.h.bates@yahoo.com>>
+> ---
+> drivers/video/efifb.c | 7 ++-----
+> 1 file changed, 2 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index 50fe668..161757b 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -50,12 +50,9 @@ enum {
+> M_MINI_3_1, /* Mac Mini, 3,1th gen */
+> M_MINI_4_1, /* Mac Mini, 4,1th gen */
+> M_MB, /* MacBook */
+> - M_MB_2, /* MacBook, 2nd rev. */
+> - M_MB_3, /* MacBook, 3rd rev. */
+> M_MB_5_1, /* MacBook, 5th rev. */
+> M_MB_6_1, /* MacBook, 6th rev. */
+> M_MB_7_1, /* MacBook, 7th rev. */
+> - M_MB_SR, /* MacBook, 2nd gen, (Santa Rosa) */
+> M_MBA, /* MacBook Air */
+> M_MBA_3, /* Macbook Air, 3rd rev */
+> M_MBP, /* MacBook Pro */
+> @@ -323,8 +320,8 @@ static int __init efifb_setup(char *options)
+> if (!*this_opt) continue;
+>=20
+> for (i =3D 0; i < M_UNKNOWN; i++) {
+> - if (!strcmp(this_opt, dmi_list[i].optname) &&
+> -     dmi_list[i].base !=3D 0) {
+> + if (dmi_list[i].base !=3D 0 &&
+> +     !strcmp(this_opt, dmi_list[i].optname)) {
+> screen_info.lfb_base =3D dmi_list[i].base;
+> screen_info.lfb_linelength =3D dmi_list[i].stride;
+> screen_info.lfb_width =3D dmi_list[i].width;
+> --=20
+>=20
+
+
+
+--oibh6ujoCACp88hREU1D2lFjli1IGUff2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSKDzQAAoJEPo9qoy8lh71/xIQAJWKMyeBnxTZ4aMwwDShFYqu
+u00uv5IIgtnvnFwq9fS/8Njdjb2uPh7aaOz9GWIPAP4mMy/rfJ5ZQTlN4kraj9/Y
+/l+zPVqW1JfOR5K0Olk2byEmHKIXMEzxzshlgXDFlOcHcbGv2tgPkyYIrolEvfKU
+8d04/Is0NRbTihVxyoFHnOJ9SM2u2+TAgGBNqZfnSfJqMAGbgDJT8DxS/4l21wG6
+Km178mLW/6zPrUVx7Xx+tIrBQQJU6FHZ2ENrQ2+DUCejKo7BIs5GWkMOjGjBqM73
+IK8R2Q8neqPtB/q/wtWsSYEJq2t5iVmfNLXCYhBINIwERIMDTXsUodz9ILM6a0Nv
+fFB8IBIQhDpY0BNTmNcO+ekoav27R67y3S0a+KYxkH1ZOb6u1g3+e2iexN4hcG0o
+iSMAaYxG0IAmjg2PF961MWjeimWyPioaiBV90kcRu4vmLATIZJ5biPRZ9guNXe12
+Z6oHtrF+btI8caZiyNcpfDiarilHwjna1i1S6pW1/wXc03osXl709ydPwKLYPP3f
+VR1Kgxwicata43G3OncTtD2/Ow8idwpriGgkTu3LX4RG4Fx9C6ycQF8syW1COb8G
+NXEuKiPTahR5NgTkbCs5uTeuolySCUI4p+XKxMTXDyc1B88jh1Jj42sLC/IUuHxd
+CK6Q9kLl3C4ejx3T6quW
+=BPn0
+-----END PGP SIGNATURE-----
+
+--oibh6ujoCACp88hREU1D2lFjli1IGUff2--
