@@ -1,75 +1,448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab3IESwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:52:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753521Ab3IESwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:52:46 -0400
-Date: Thu, 5 Sep 2013 20:54:40 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
-References: <cover.1378383792.git.agordeev@redhat.com>
- <c5ff8fbf905a3df2b75369da725ab5ebf31544ff.1378383792.git.agordeev@redhat.com>
- <20130905130902.GA26314@htj.dyndns.org>
- <20130905150259.GA30984@dhcp-26-207.brq.redhat.com>
- <20130905150442.GA24148@htj.dyndns.org>
- <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905154436.GC24148@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756912Ab3IES4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:56:09 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:10631 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab3IES4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 14:56:06 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: [PATCH v2 1/1] dcache: Translating dentry into pathname without taking rename_lock
+Date: Thu,  5 Sep 2013 14:55:16 -0400
+Message-Id: <1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
+References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 11:44:36AM -0400, Tejun Heo wrote:
-> Given that multiple MSI is something which isn't too popular / already
-> superseded and that the condition is highly unlikely, do we really
-> care about possible partial success?  This sort of interface is
-> unnecessarily complex and actively harmful.  It forces all users to
-> wonder what could possibly happen and implement all sorts of nutty
-> fallback logic which is highly likely to be error-prone on both the
-> software and hardware side.  Seriously, how much testing would such
-> code path would get both on the driver and firmware sides?
-> 
-> It's an operation which isn't too likely to fail with a firm
-> known-to-work fallback.  It's pointless and error-prone to try to
-> extract the last point zero zero one percent.
+When running the AIM7's short workload, Linus' lockref patch eliminated
+most of the spinlock contention. However, there were still some left:
 
-I assume reasons for having this type of interface at the moment of
-taking design decision about pci_enable_msi_block() still hold true.
-I do not know what those reasons were, but I think the fact multiple
-MSIs are rarely used and MSI-X exists does not invalidate them now.
+     8.46%     reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+                 |--42.21%-- d_path
+                 |          proc_pid_readlink
+                 |          SyS_readlinkat
+                 |          SyS_readlink
+                 |          system_call
+                 |          __GI___readlink
+                 |
+                 |--40.97%-- sys_getcwd
+                 |          system_call
+                 |          __getcwd
 
-I did consider the other argument - since pci_enable_msi_block_part()
-is explicitly provided with a value of MME the caller will not be
-satisfied with any other value and hence a repeated call with a lesser
-MME does not make sense for the caller. Therefore we could just fail
-in case the architecture returned a positive value. Same result, but
-different reasoning.
+The big one here is the rename_lock (seqlock) contention in d_path()
+and the getcwd system call. This patch will eliminate the need to take
+the rename_lock while translating dentries into the full pathnames.
 
-At the moment I still prefer pci_enable_msi_block_part() to be similar
-to pci_enable_msi_block(). I do agree the fallback logic is error-prone,
-but I would not dare to scrap it all right away.
+The need to take the rename_lock is to make sure that no rename
+operation can be ongoing while the translation is in progress. However,
+only one thread can take the rename_lock thus blocking all the other
+threads that need it even though the translation process won't make
+any change to the dentries.
 
-Bjorn?
+This patch will replace the writer's write_seqlock/write_sequnlock
+sequence of the rename_lock of the callers of the prepend_path() and
+__dentry_path() functions with the reader's read_seqbegin/read_seqretry
+sequence within these 2 functions. As a result, the code will have to
+retry if one or more rename operations had been performed. In addition,
+RCU read lock will be taken during the translation process to make sure
+that no dentries will go away. To prevent live-lock from happening,
+the code will switch back to take the rename_lock if read_seqretry()
+fails for three times.
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+To further reduce spinlock contention, this patch also tries not
+to take the dentry's d_lock if the dentry name is internal. For
+external dentry name, it is safer to take the d_lock as racing with
+d_move() may cause it to access invalid memory location leading to
+segmentation fault.  For safety, there is also additional check to
+see if the name string is valid (no embedded null).
 
+The following code re-factoring are also made:
+1. Move prepend('/') into prepend_name().
+2. Move the global root check in prepend_path() back to the top of
+   the while loop.
+
+With this patch, the _raw_spin_lock will now account for only 1.2%
+of the total CPU cycles for the short workload. This patch also has
+the effect of reducing the effect of running perf on its profile
+since the perf command itself can be a heavy user of the d_path()
+function depending on the complexity of the workload.
+
+When taking the perf profile of the high-systime workload, the amount
+of spinlock contention contributed by running perf without this patch
+was about 16%. With this patch, the spinlock contention caused by
+the running of perf will go away and we will have a more accurate
+perf profile.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ fs/dcache.c |  213 ++++++++++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 151 insertions(+), 62 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 96655f4..9703aa6 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2510,9 +2510,57 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
+ 	return 0;
+ }
+ 
+-static int prepend_name(char **buffer, int *buflen, struct qstr *name)
++static int prepend_name(char **buffer, int *buflen, struct dentry *dentry)
+ {
+-	return prepend(buffer, buflen, name->name, name->len);
++	/*
++	 * With RCU path tracing, it may race with rename. Use
++	 * ACCESS_ONCE() to make sure that it is either the old or
++	 * the new name pointer. The length does not really matter as
++	 * the sequence number check will eventually catch any ongoing
++	 * rename operation.
++	 */
++	const char *dname = ACCESS_ONCE(dentry->d_name.name);
++	u32 dlen = dentry->d_name.len;
++	int error;
++
++	if (likely(dname == (const char *)dentry->d_iname)) {
++		/*
++		 * Internal dname, the string memory is valid as long
++		 * as its length is not over the limit.
++		 */
++		if (unlikely(dlen > sizeof(dentry->d_iname)))
++			return -EINVAL;
++	} else if (!dname)
++		return -EINVAL;
++	else {
++		const char *ptr;
++		u32 len;
++
++		/*
++		 * External dname, need to fetch name pointer and length
++		 * again under d_lock to get a consistent set and avoid
++		 * racing with d_move() which will take d_lock before
++		 * acting on the dentries.
++		 */
++		spin_lock(&dentry->d_lock);
++		dname = dentry->d_name.name;
++		dlen  = dentry->d_name.len;
++		spin_unlock(&dentry->d_lock);
++
++		if (unlikely(!dname || !dlen))
++			return -EINVAL;
++		/*
++		 * As the length and the content of the string may not be
++		 * valid, need to scan the string and return EINVAL if there
++		 * is embedded null byte within the length of the string.
++		 */
++		for (ptr = dname, len = dlen; len; len--, ptr++) {
++			if (*ptr == '\0')
++				return -EINVAL;
++		}
++	}
++	error = prepend(buffer, buflen, dname, dlen);
++	return error ? error : prepend(buffer, buflen, "/", 1);
+ }
+ 
+ /**
+@@ -2522,7 +2570,14 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+  * @buffer: pointer to the end of the buffer
+  * @buflen: pointer to buffer length
+  *
+- * Caller holds the rename_lock.
++ * The function tries to write out the pathname without taking any lock other
++ * than the RCU read lock to make sure that dentries won't go away. It only
++ * checks the sequence number of the global rename_lock as any change in the
++ * dentry's d_seq will be preceded by changes in the rename_lock sequence
++ * number. If the sequence number had been change, it will restart the whole
++ * pathname back-tracing sequence again. It performs a total of 3 trials of
++ * lockless back-tracing sequences before falling back to take the
++ * rename_lock.
+  */
+ static int prepend_path(const struct path *path,
+ 			const struct path *root,
+@@ -2531,54 +2586,80 @@ static int prepend_path(const struct path *path,
+ 	struct dentry *dentry = path->dentry;
+ 	struct vfsmount *vfsmnt = path->mnt;
+ 	struct mount *mnt = real_mount(vfsmnt);
+-	bool slash = false;
+ 	int error = 0;
++	unsigned seq = 0;
++	char *bptr;
++	int blen;
++	int retry_cnt = 3;	/* Try lockless path conversion 3 times */
+ 
++restart:
++	bptr = *buffer;
++	blen = *buflen;
++	if (retry_cnt) {
++		seq = read_seqbegin(&rename_lock);
++		rcu_read_lock();
++	} else
++		write_seqlock(&rename_lock);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+ 		if (dentry == vfsmnt->mnt_root || IS_ROOT(dentry)) {
+ 			/* Global root? */
+-			if (!mnt_has_parent(mnt))
+-				goto global_root;
+-			dentry = mnt->mnt_mountpoint;
+-			mnt = mnt->mnt_parent;
+-			vfsmnt = &mnt->mnt;
+-			continue;
++			if (mnt_has_parent(mnt)) {
++				dentry = mnt->mnt_mountpoint;
++				mnt = mnt->mnt_parent;
++				vfsmnt = &mnt->mnt;
++				continue;
++			}
++			/*
++			 * Filesystems needing to implement special "root names"
++			 * should do so with ->d_dname()
++			 */
++			if (IS_ROOT(dentry) &&
++			   (dentry->d_name.len != 1 ||
++			    dentry->d_name.name[0] != '/')) {
++				WARN(1, "Root dentry has weird name <%.*s>\n",
++				     (int) dentry->d_name.len,
++				     dentry->d_name.name);
++			}
++			if (!error)
++				error = is_mounted(vfsmnt) ? 1 : 2;
++			break;
+ 		}
+ 		parent = dentry->d_parent;
++		if (unlikely(parent == NULL)) {
++			error = -EINVAL;
++			break;	/* Check sequence number */
++		}
+ 		prefetch(parent);
+-		spin_lock(&dentry->d_lock);
+-		error = prepend_name(buffer, buflen, &dentry->d_name);
+-		spin_unlock(&dentry->d_lock);
+-		if (!error)
+-			error = prepend(buffer, buflen, "/", 1);
++		error = prepend_name(&bptr, &blen, dentry);
+ 		if (error)
+ 			break;
+ 
+-		slash = true;
+ 		dentry = parent;
+ 	}
++	if (retry_cnt) {
++		retry_cnt--;
++		rcu_read_unlock();
++		if (read_seqretry(&rename_lock, seq))
++			goto restart;
++	} else
++		write_sequnlock(&rename_lock);
+ 
+-	if (!error && !slash)
+-		error = prepend(buffer, buflen, "/", 1);
+-
++	if (error >= 0 && bptr == *buffer) {
++		if (--blen < 0)
++			error = -ENAMETOOLONG;
++		else
++			*--bptr = '/';
++	}
++	if (error == -EINVAL)
++		goto garbage;
++	*buffer = bptr;
++	*buflen = blen;
+ 	return error;
+ 
+-global_root:
+-	/*
+-	 * Filesystems needing to implement special "root names"
+-	 * should do so with ->d_dname()
+-	 */
+-	if (IS_ROOT(dentry) &&
+-	    (dentry->d_name.len != 1 || dentry->d_name.name[0] != '/')) {
+-		WARN(1, "Root dentry has weird name <%.*s>\n",
+-		     (int) dentry->d_name.len, dentry->d_name.name);
+-	}
+-	if (!slash)
+-		error = prepend(buffer, buflen, "/", 1);
+-	if (!error)
+-		error = is_mounted(vfsmnt) ? 1 : 2;
++garbage:
++	error = prepend(buffer, buflen, "(garbage)", 10);
+ 	return error;
+ }
+ 
+@@ -2607,9 +2688,7 @@ char *__d_path(const struct path *path,
+ 
+ 	prepend(&res, &buflen, "\0", 1);
+ 	br_read_lock(&vfsmount_lock);
+-	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+-	write_sequnlock(&rename_lock);
+ 	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error < 0)
+@@ -2628,9 +2707,7 @@ char *d_absolute_path(const struct path *path,
+ 
+ 	prepend(&res, &buflen, "\0", 1);
+ 	br_read_lock(&vfsmount_lock);
+-	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+-	write_sequnlock(&rename_lock);
+ 	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error > 1)
+@@ -2696,9 +2773,7 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 
+ 	get_fs_root(current->fs, &root);
+ 	br_read_lock(&vfsmount_lock);
+-	write_seqlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
+-	write_sequnlock(&rename_lock);
+ 	br_read_unlock(&vfsmount_lock);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+@@ -2733,10 +2808,10 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+ 	char *end = buffer + buflen;
+ 	/* these dentries are never renamed, so d_lock is not needed */
+ 	if (prepend(&end, &buflen, " (deleted)", 11) ||
+-	    prepend_name(&end, &buflen, &dentry->d_name) ||
++	    prepend(&end, &buflen, dentry->d_name.name, dentry->d_name.len) ||
+ 	    prepend(&end, &buflen, "/", 1))  
+ 		end = ERR_PTR(-ENAMETOOLONG);
+-	return end;  
++	return end;
+ }
+ 
+ /*
+@@ -2744,30 +2819,55 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+  */
+ static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
+ {
+-	char *end = buf + buflen;
+-	char *retval;
++	char *end, *retval;
++	int len, seq = 0;
++	int error = 0;
++	int retry_cnt = 3;	/* Try lockless 3 times before taking lock */
+ 
+-	prepend(&end, &buflen, "\0", 1);
++restart:
++	end = buf + buflen;
++	len = buflen;
++	prepend(&end, &len, "\0", 1);
+ 	if (buflen < 1)
+ 		goto Elong;
+ 	/* Get '/' right */
+ 	retval = end-1;
+ 	*retval = '/';
+-
++	if (retry_cnt) {
++		seq = read_seqbegin(&rename_lock);
++		rcu_read_lock();
++	} else
++		write_seqlock(&rename_lock);
+ 	while (!IS_ROOT(dentry)) {
+ 		struct dentry *parent = dentry->d_parent;
+ 		int error;
+ 
++		if (unlikely(parent == NULL)) {
++			error = -EINVAL;
++			break;
++		}
+ 		prefetch(parent);
+-		spin_lock(&dentry->d_lock);
+-		error = prepend_name(&end, &buflen, &dentry->d_name);
+-		spin_unlock(&dentry->d_lock);
+-		if (error != 0 || prepend(&end, &buflen, "/", 1) != 0)
+-			goto Elong;
++		error = prepend_name(&end, &len, dentry);
++		if (error)
++			break;
+ 
+ 		retval = end;
+ 		dentry = parent;
+ 	}
++	if (retry_cnt) {
++		retry_cnt--;
++		rcu_read_unlock();
++		if (read_seqretry(&rename_lock, seq))
++			goto restart;
++	} else
++		write_sequnlock(&rename_lock);
++	if (error == -EINVAL) {
++		error = prepend(&end, &len, "//garbage", 10);
++		if (!error)
++			return end;
++	}
++	if (error)
++		goto Elong;
+ 	return retval;
+ Elong:
+ 	return ERR_PTR(-ENAMETOOLONG);
+@@ -2775,13 +2875,7 @@ Elong:
+ 
+ char *dentry_path_raw(struct dentry *dentry, char *buf, int buflen)
+ {
+-	char *retval;
+-
+-	write_seqlock(&rename_lock);
+-	retval = __dentry_path(dentry, buf, buflen);
+-	write_sequnlock(&rename_lock);
+-
+-	return retval;
++	return __dentry_path(dentry, buf, buflen);
+ }
+ EXPORT_SYMBOL(dentry_path_raw);
+ 
+@@ -2790,7 +2884,6 @@ char *dentry_path(struct dentry *dentry, char *buf, int buflen)
+ 	char *p = NULL;
+ 	char *retval;
+ 
+-	write_seqlock(&rename_lock);
+ 	if (d_unlinked(dentry)) {
+ 		p = buf + buflen;
+ 		if (prepend(&p, &buflen, "//deleted", 10) != 0)
+@@ -2798,7 +2891,6 @@ char *dentry_path(struct dentry *dentry, char *buf, int buflen)
+ 		buflen++;
+ 	}
+ 	retval = __dentry_path(dentry, buf, buflen);
+-	write_sequnlock(&rename_lock);
+ 	if (!IS_ERR(retval) && p)
+ 		*p = '/';	/* restore '/' overriden with '\0' */
+ 	return retval;
+@@ -2837,7 +2929,6 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 
+ 	error = -ENOENT;
+ 	br_read_lock(&vfsmount_lock);
+-	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+ 		char *cwd = page + PAGE_SIZE;
+@@ -2845,7 +2936,6 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+-		write_sequnlock(&rename_lock);
+ 		br_read_unlock(&vfsmount_lock);
+ 
+ 		if (error < 0)
+@@ -2866,7 +2956,6 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 				error = -EFAULT;
+ 		}
+ 	} else {
+-		write_sequnlock(&rename_lock);
+ 		br_read_unlock(&vfsmount_lock);
+ 	}
+ 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.1
+
