@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3IERGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 13:06:50 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:39021 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab3IERGs (ORCPT
+	id S1753097Ab3IERNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 13:13:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35038 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab3IERM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 13:06:48 -0400
-Message-ID: <5228BA1B.5030501@hp.com>
-Date: Thu, 05 Sep 2013 13:06:35 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 5 Sep 2013 13:12:59 -0400
+Date: Thu, 5 Sep 2013 19:12:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, acme@infradead.org,
+        jolsa@redhat.com, eranian@google.com
+Subject: Re: perf, x86: Add parts of the remaining haswell PMU functionality
+Message-ID: <20130905171255.GA30176@gmail.com>
+References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
+ <20130902065512.GA29060@gmail.com>
+ <20130905131502.GA26387@gmail.com>
+ <20130905151034.GP19750@two.firstfloor.org>
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH] dcache: Translating dentry into pathname without taking
- rename_lock
-References: <20130905043033.20292.qmail@science.horizon.com>
-In-Reply-To: <20130905043033.20292.qmail@science.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905151034.GP19750@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 12:30 AM, George Spelvin wrote:
-> As long as you're removing locks from prepend_name and complicating its
-> innards, I notice that each and every call site follows it by prepending
-> "/".  How about moving that into prepend_name as well?
->
-> Also, if you happen to feel like it, you can delete the slash flag
-> and replace it with "bptr != *buffer".
->
-> Another small tweak would be to the global_root part of the code.
-> You could move the is_mounted(vfsmnt) test up, and combine the tail of
-> that code path with the regular exit.  All you have to do is change
-> the !slash test to:
->
-> 	if (error>= 0&&  bptr == *buffer) {	/* Root directory */
-> 		if (--blen<  0)
-> 			error = -ENAMETOOLONG;
-> 		else
-> 			*--bptr = '/';
-> 	}
->
-> This modified form is no more code than an inlined copy of prepend(),
-> so we haven't actually slowed the fast path, but it avoids corrupting
-> the return value of 0/1/2 if possible.
 
-Thank for the suggestions. I will implement them in my v2 patch.
+* Andi Kleen <andi@firstfloor.org> wrote:
 
--Longman
+> The correct way is to implement it like TopDown level 1, but I don't 
+> know how to put that into the kernel.
+
+Create an event group, with some callbacks to do the 
+additions/subtractions to get at the right figures? (if it's plain linear 
+arithmetics then that could be encoded in some simple operation flags as 
+well, executed and calculated when the group count is accessed.)
+
+That's something that would be useful to have in the kernel anyway, to 
+abstract away simple concepts that are not so simple to measure.
+
+> http://software.intel.com/en-us/articles/how-to-tune-applications-using-a-top-down-characterization-of-microarchitectural-issues
+> 
+> It requires running 4 counters and computing some equations.
+>
+> My toplev tool in http://github.com/andikleen/pmu-tools has a 
+> implementation on top of perf.
+> 
+> I could put it into perf stat if you want, but it would be somewhat 
+> Intel specific.
+
+Yeah, would be nice to hide this mostly transparently, behind a group of 
+events or so.
+
+Thanks,
+
+	Ingo
