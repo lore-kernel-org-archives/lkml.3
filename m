@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab3IEOoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:44:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3IEOoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:44:02 -0400
-Date: Thu, 5 Sep 2013 10:43:53 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Aravind.Gopalakrishnan@amd.com
-Subject: Re: amd64_edac: Add ECC decoding support for newer F15h models
-Message-ID: <20130905144353.GB15894@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Aravind.Gopalakrishnan@amd.com
-References: <20130904185224.67DFF660948@gitolite.kernel.org>
+	id S1753512Ab3IEOof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:44:35 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:1363 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab3IEOod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 10:44:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Sep 2013 07:36:19 -0700
+Message-ID: <52289BD4.9060607@nvidia.com>
+Date: Thu, 5 Sep 2013 20:27:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904185224.67DFF660948@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
+Subject: Re: [PATCH V4] regulator: palmas: add support for external control
+ of rails
+References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com> <20130823095841.GG25263@sirena.org.uk> <522897FD.2030509@nvidia.com> <20130905143431.GI8980@lee--X1>
+In-Reply-To: <20130905143431.GI8980@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 06:52:24PM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=18b94f66f9537003cee30d475d79a57c58f1e1d8
- > Commit:     18b94f66f9537003cee30d475d79a57c58f1e1d8
- > Parent:     7d64ac6422092adbbdaa279ab32f9d4c90a84558
- > Author:     Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
- > AuthorDate: Fri Aug 9 11:54:49 2013 -0500
- > Committer:  Borislav Petkov <bp@suse.de>
- > CommitDate: Mon Aug 12 16:00:10 2013 +0200
- > 
- >     amd64_edac: Add ECC decoding support for newer F15h models
+On Thursday 05 September 2013 08:04 PM, Lee Jones wrote:
+> On Thu, 05 Sep 2013, Laxman Dewangan wrote:
+>> On Friday 23 August 2013 03:28 PM, Mark Brown wrote:
+>>> * PGP Signed by an unknown key
+>>>
+>>> On Wed, Aug 21, 2013 at 04:18:16PM +0530, Laxman Dewangan wrote:
+>>>> Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
+>>>> by register programming through I2C communication as well as it can be
+>>>> enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
+>>> Acked-by: Mark Brown <broonie@linaro.org>
+>>>
+>> Can you please take this in your tree as dependent patch is already
+>> in your tree?
+> It won't go in until v3.12 now, but I have applied the patch.
+>
 
- > +static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
- > +					u64 sys_addr, int *chan_sel)
- > +{
- > +	...
- > +	u8 channel, alias_channel, leg_mmio_hole, dct_sel, dct_offset_en;
-        ^^^^^^^^^^
+Thanks Lee for taking care.
 
- > +
- > +  ....
- > +
- > +	channel = f15_m30h_determine_channel(pvt, sys_addr, intlv_en,
- > +					     num_dcts_intlv, dct_sel);
- > +
- > +	/* Verify we stay within the MAX number of channels allowed */
- > +	if (channel > 4 || channel < 0)
- > +		return -EINVAL;
- 
-Channel will never be < 0, as it's unsigned.
-
-	Dave
-
+Thanks,
+Laxman
