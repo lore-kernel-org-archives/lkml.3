@@ -1,142 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab3IEUdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:33:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52183 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3IEU2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757525Ab3IEU2n (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Sep 2013 16:28:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52162 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3IEU2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 16:28:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jakob Bornecrantz <jakob@vmware.com>, Biran Paul <brianp@vmware.com>,
-        Zack Rusin <zackr@vmware.com>, Dave Airlie <airlied@gmail.com>
-Subject: [ 07/14] drm/vmwgfx: Split GMR2_REMAP commands if they are to large
-Date: Thu,  5 Sep 2013 13:28:18 -0700
-Message-Id: <20130905202615.273246956@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/14] 3.4.61-stable review
+Date: Thu,  5 Sep 2013 13:28:11 -0700
+Message-Id: <20130905202614.354156084@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
-References: <20130905202614.354156084@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.61 release.
+There are 14 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+Anything received after that time might be too late.
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+and the diffstat can be found below.
 
-commit 6e4dcff3adbf25acb87e74500a58e3c07bdec40f upstream.
+thanks,
 
-This fixes the piglit test texturing/max-texture-size
-causing the VM to die due to a too large SVGA command.
+greg k-h
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Reviewed-by: Biran Paul <brianp@vmware.com>
-Reviewed-by: Zack Rusin <zackr@vmware.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c |   60 ++++++++++++++++++++++++------------
- 1 file changed, 40 insertions(+), 20 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.61-rc1
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-@@ -29,7 +29,9 @@
- #include "drmP.h"
- #include "ttm/ttm_bo_driver.h"
- 
--#define VMW_PPN_SIZE sizeof(unsigned long)
-+#define VMW_PPN_SIZE (sizeof(unsigned long))
-+/* A future safe maximum remap size. */
-+#define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
- 
- static int vmw_gmr2_bind(struct vmw_private *dev_priv,
- 			 struct page *pages[],
-@@ -38,43 +40,61 @@ static int vmw_gmr2_bind(struct vmw_priv
- {
- 	SVGAFifoCmdDefineGMR2 define_cmd;
- 	SVGAFifoCmdRemapGMR2 remap_cmd;
--	uint32_t define_size = sizeof(define_cmd) + 4;
--	uint32_t remap_size = VMW_PPN_SIZE * num_pages + sizeof(remap_cmd) + 4;
- 	uint32_t *cmd;
- 	uint32_t *cmd_orig;
-+	uint32_t define_size = sizeof(define_cmd) + sizeof(*cmd);
-+	uint32_t remap_num = num_pages / VMW_PPN_PER_REMAP + ((num_pages % VMW_PPN_PER_REMAP) > 0);
-+	uint32_t remap_size = VMW_PPN_SIZE * num_pages + (sizeof(remap_cmd) + sizeof(*cmd)) * remap_num;
-+	uint32_t remap_pos = 0;
-+	uint32_t cmd_size = define_size + remap_size;
- 	uint32_t i;
- 
--	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, define_size + remap_size);
-+	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, cmd_size);
- 	if (unlikely(cmd == NULL))
- 		return -ENOMEM;
- 
- 	define_cmd.gmrId = gmr_id;
- 	define_cmd.numPages = num_pages;
- 
-+	*cmd++ = SVGA_CMD_DEFINE_GMR2;
-+	memcpy(cmd, &define_cmd, sizeof(define_cmd));
-+	cmd += sizeof(define_cmd) / sizeof(*cmd);
-+
-+	/*
-+	 * Need to split the command if there are too many
-+	 * pages that goes into the gmr.
-+	 */
-+
- 	remap_cmd.gmrId = gmr_id;
- 	remap_cmd.flags = (VMW_PPN_SIZE > sizeof(*cmd)) ?
- 		SVGA_REMAP_GMR2_PPN64 : SVGA_REMAP_GMR2_PPN32;
--	remap_cmd.offsetPages = 0;
--	remap_cmd.numPages = num_pages;
- 
--	*cmd++ = SVGA_CMD_DEFINE_GMR2;
--	memcpy(cmd, &define_cmd, sizeof(define_cmd));
--	cmd += sizeof(define_cmd) / sizeof(uint32);
-+	while (num_pages > 0) {
-+		unsigned long nr = min(num_pages, (unsigned long)VMW_PPN_PER_REMAP);
-+
-+		remap_cmd.offsetPages = remap_pos;
-+		remap_cmd.numPages = nr;
- 
--	*cmd++ = SVGA_CMD_REMAP_GMR2;
--	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
--	cmd += sizeof(remap_cmd) / sizeof(uint32);
--
--	for (i = 0; i < num_pages; ++i) {
--		if (VMW_PPN_SIZE <= 4)
--			*cmd = page_to_pfn(*pages++);
--		else
--			*((uint64_t *)cmd) = page_to_pfn(*pages++);
-+		*cmd++ = SVGA_CMD_REMAP_GMR2;
-+		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
-+		cmd += sizeof(remap_cmd) / sizeof(*cmd);
-+
-+		for (i = 0; i < nr; ++i) {
-+			if (VMW_PPN_SIZE <= 4)
-+				*cmd = page_to_pfn(*pages++);
-+			else
-+				*((uint64_t *)cmd) = page_to_pfn(*pages++);
- 
--		cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+			cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+		}
-+
-+		num_pages -= nr;
-+		remap_pos += nr;
- 	}
- 
--	vmw_fifo_commit(dev_priv, define_size + remap_size);
-+	BUG_ON(cmd != cmd_orig + cmd_size / sizeof(*cmd));
-+
-+	vmw_fifo_commit(dev_priv, cmd_size);
- 
- 	return 0;
- }
+Roland Dreier <roland@purestorage.com>
+    SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    target: Fix trailing ASCII space usage in INQUIRY vendor+model
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / EC: Add ASUSTEK L4R to quirk list in order to validate ECDT
+
+Stanislaw Gruszka <sgruszka@redhat.com>
+    iwl4965: fix rfkill set state regression
+
+Helmut Schaa <helmut.schaa@googlemail.com>
+    ath9k_htc: Restore skb headroom when returning skb to mac80211
+
+Trond Myklebust <Trond.Myklebust@netapp.com>
+    SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+
+Imre Deak <imre.deak@intel.com>
+    drm/i915: ivb: fix edp voltage swing reg val
+
+Jakob Bornecrantz <jakob@vmware.com>
+    drm/vmwgfx: Split GMR2_REMAP commands if they are to large
+
+Russ Anderson <rja@sgi.com>
+    drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+
+Paul Bolle <pebolle@tiscali.nl>
+    regmap: silence GCC warning
+
+Eugene Surovegin <ebs@ebshome.net>
+    powerpc/hvsi: Increase handshake timeout from 200ms to 400ms.
+
+Paul Mackerras <paulus@samba.org>
+    powerpc: Work around gcc miscompilation of __pa() on 64-bit
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: opti9xx: Fix conflicting driver object name
+
+Dave Kleikamp <dave.kleikamp@oracle.com>
+    jfs: fix readdir cookie incompatibility with NFSv4
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                      |  4 +-
+ arch/powerpc/Kconfig                          |  1 +
+ arch/powerpc/include/asm/page.h               | 10 +++++
+ drivers/acpi/ec.c                             |  4 ++
+ drivers/base/memory.c                         |  2 +
+ drivers/base/regmap/regmap.c                  |  2 +-
+ drivers/gpu/drm/i915/i915_reg.h               |  2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c           | 58 ++++++++++++++++++---------
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c | 10 +++++
+ drivers/net/wireless/iwlegacy/4965-mac.c      |  2 +-
+ drivers/target/target_core_cdb.c              |  9 +++--
+ drivers/tty/hvc/hvsi_lib.c                    |  4 +-
+ fs/bio.c                                      | 20 ++++++---
+ fs/jfs/jfs_dtree.c                            | 31 ++++++++++----
+ net/sunrpc/xdr.c                              |  9 +++--
+ sound/isa/opti9xx/opti92x-ad1848.c            |  8 +---
+ 16 files changed, 125 insertions(+), 51 deletions(-)
 
 
