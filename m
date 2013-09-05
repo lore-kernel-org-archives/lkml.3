@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab3IEU2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52158 "EHLO
+	id S1757635Ab3IEUdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:33:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757498Ab3IEU2j (ORCPT
+	with ESMTP id S1757536Ab3IEU2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:39 -0400
+	Thu, 5 Sep 2013 16:28:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 01/14] jfs: fix readdir cookie incompatibility with NFSv4
-Date: Thu,  5 Sep 2013 13:28:12 -0700
-Message-Id: <20130905202614.586973579@linuxfoundation.org>
+        Jeremy Moles <cubicool@gmail.com>, Imre Deak <imre.deak@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 08/14] drm/i915: ivb: fix edp voltage swing reg val
+Date: Thu,  5 Sep 2013 13:28:19 -0700
+Message-Id: <20130905202615.376741925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
 References: <20130905202614.354156084@linuxfoundation.org>
@@ -28,115 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
+commit 77fa4cbd5fa389e28419bbe8ac491b5fdd54840d upstream.
 
-NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
-but jfs allows a value of 2 for a non-special entry. This incompatibility
-can result in the nfs client reporting a readdir loop.
+Fix the typo introduced in
 
-This patch doesn't change the value stored internally, but adds one to
-the value exposed to the iterate method.
+commit 1a2eb4604b85c5efb343da8a4dcf41288fcfca85
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Nov 16 16:26:07 2011 -0800
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/ctx->pos/filp->f_pos/]
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+    drm/i915: Hook up Ivybridge eDP
+
+This fixes eDP link-training failures and cases where all voltage swing
+/pre-emphasis levels were tried and failed during clock recovery and -
+as a fallback - we go on to do channel equalization with the last voltage
+swing/pre-emphasis level which will succeed. Both issues can lead to a
+blank screen.
+
+v2:
+- improve commit message
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64880
+Tested-by: Jeremy Moles <cubicool@gmail.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
 
---- a/fs/jfs/jfs_dtree.c
-+++ b/fs/jfs/jfs_dtree.c
-@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void
+---
+ drivers/gpu/drm/i915/i915_reg.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3741,7 +3741,7 @@
+ #define EDP_LINK_TRAIN_600MV_0DB_IVB		(0x30 <<22)
+ #define EDP_LINK_TRAIN_600MV_3_5DB_IVB		(0x36 <<22)
+ #define EDP_LINK_TRAIN_800MV_0DB_IVB		(0x38 <<22)
+-#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x33 <<22)
++#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x3e <<22)
  
- 		dir_index = (u32) filp->f_pos;
- 
-+		/*
-+		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
-+		 * the value we return to the vfs is one greater than the
-+		 * one we use internally.
-+		 */
-+		if (dir_index)
-+			dir_index--;
-+
- 		if (dir_index > 1) {
- 			struct dir_table_slot dirtab_slot;
- 
-@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void
- 			if (p->header.flag & BT_INTERNAL) {
- 				jfs_err("jfs_readdir: bad index table");
- 				DT_PUTPAGE(mp);
--				filp->f_pos = -1;
-+				filp->f_pos = DIREND;
- 				return 0;
- 			}
- 		} else {
-@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void
- 				/*
- 				 * self "."
- 				 */
--				filp->f_pos = 0;
-+				filp->f_pos = 1;
- 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
- 					    DT_DIR))
- 					return 0;
-@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void
- 			/*
- 			 * parent ".."
- 			 */
--			filp->f_pos = 1;
-+			filp->f_pos = 2;
- 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
- 				return 0;
- 
-@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void
- 		/*
- 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
- 		 *
--		 * pn = index = 0:	First entry "."
--		 * pn = 0; index = 1:	Second entry ".."
-+		 * pn = 0; index = 1:	First entry "."
-+		 * pn = 0; index = 2:	Second entry ".."
- 		 * pn > 0:		Real entries, pn=1 -> leftmost page
- 		 * pn = index = -1:	No more entries
- 		 */
- 		dtpos = filp->f_pos;
--		if (dtpos == 0) {
-+		if (dtpos < 2) {
- 			/* build "." entry */
- 
-+			filp->f_pos = 1;
- 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
- 				    DT_DIR))
- 				return 0;
--			dtoffset->index = 1;
-+			dtoffset->index = 2;
- 			filp->f_pos = dtpos;
- 		}
- 
- 		if (dtoffset->pn == 0) {
--			if (dtoffset->index == 1) {
-+			if (dtoffset->index == 2) {
- 				/* build ".." entry */
- 
- 				if (filldir(dirent, "..", 2, filp->f_pos,
-@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void
- 					}
- 					jfs_dirent->position = unique_pos++;
- 				}
-+				/*
-+				 * We add 1 to the index because we may
-+				 * use a value of 2 internally, and NFSv4
-+				 * doesn't like that.
-+				 */
-+				jfs_dirent->position++;
- 			} else {
- 				jfs_dirent->position = dtpos;
- 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
+ /* legacy values */
+ #define EDP_LINK_TRAIN_500MV_0DB_IVB		(0x00 <<22)
 
 
