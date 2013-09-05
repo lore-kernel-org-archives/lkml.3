@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab3IEXGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 19:06:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36263 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758708Ab3IEXF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 19:05:57 -0400
-Date: Fri, 6 Sep 2013 09:05:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: problem fetching the watchdog tree
-Message-Id: <20130906090550.1b995b91877609b9361f99ae@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Sep_2013_09_05_50_+1000_9S53j=lu+xmyD5sG"
+	id S1753909Ab3IEWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:51:25 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:51633 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753093Ab3IEWug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 18:50:36 -0400
+Message-Id: <20130905225034.187504361@asylum.americas.sgi.com>
+References: <20130905225032.879120272@asylum.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Thu, 05 Sep 2013 17:50:40 -0500
+From: Mike Travis <travis@sgi.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/9] x86/UV: Add uvtrace support
+Content-Disposition: inline; filename=uv-add-trace-support.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Sep_2013_09_05_50_+1000_9S53j=lu+xmyD5sG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds support for the uvtrace module by providing a skeleton
+call to the registered trace function.  It also provides another separate
+'NMI' tracer that is triggered by the system wide 'power nmi' command.
 
-Hi Wim,
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Reviewed-by: Hedi Berriche <hberrich@sgi.com>
+---
+ arch/x86/include/asm/uv/uv.h  |    8 ++++++++
+ arch/x86/platform/uv/uv_nmi.c |   13 ++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
 
-Fetching the wireless tree yesterday and today produced this error:
+--- linux.orig/arch/x86/include/asm/uv/uv.h
++++ linux/arch/x86/include/asm/uv/uv.h
+@@ -14,6 +14,13 @@ extern void uv_cpu_init(void);
+ extern void uv_nmi_init(void);
+ extern void uv_register_nmi_notifier(void);
+ extern void uv_system_init(void);
++extern void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
++extern void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
++#define uv_trace(fmt, ...)						\
++do {									\
++	if (unlikely(uv_trace_func))					\
++		(uv_trace_func)(__func__, __LINE__, fmt, ##__VA_ARGS__);\
++} while (0)
+ extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 						 struct mm_struct *mm,
+ 						 unsigned long start,
+@@ -26,6 +33,7 @@ static inline enum uv_system_type get_uv
+ static inline int is_uv_system(void)	{ return 0; }
+ static inline void uv_cpu_init(void)	{ }
+ static inline void uv_system_init(void)	{ }
++static inline void uv_trace(void *fmt, ...)	{ }
+ static inline void uv_register_nmi_notifier(void) { }
+ static inline const struct cpumask *
+ uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
+--- linux.orig/arch/x86/platform/uv/uv_nmi.c
++++ linux/arch/x86/platform/uv/uv_nmi.c
+@@ -1,5 +1,5 @@
+ /*
+- * SGI NMI support routines
++ * SGI NMI/TRACE support routines
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -39,6 +39,13 @@
+ #include <asm/uv/uv_hub.h>
+ #include <asm/uv/uv_mmrs.h>
+ 
++void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
++EXPORT_SYMBOL(uv_trace_func);
++
++void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
++EXPORT_SYMBOL(uv_trace_nmi_func);
++
++
+ /*
+  * UV handler for NMI
+  *
+@@ -592,6 +599,10 @@ int uv_handle_nmi(unsigned int reason, s
+ 		return NMI_DONE;
+ 	}
+ 
++	/* Call possible NMI trace function */
++	if (unlikely(uv_trace_nmi_func))
++		(uv_trace_nmi_func)(reason, regs);
++
+ 	/* Indicate we are the first CPU into the NMI handler */
+ 	master = (atomic_read(&uv_nmi_cpu) == cpu);
+ 
 
-fatal: unable to connect to www.linux-watchdog.org:
-www.linux-watchdog.org[0: 83.149.101.17]: errno=3DConnection refused
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__6_Sep_2013_09_05_50_+1000_9S53j=lu+xmyD5sG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSKQ5SAAoJEECxmPOUX5FE8lQP/0J9XA1ayMzI3JJlqCYVMNnu
-1TgBLcGCqipt5Nmbr5Ukr+XsH9bfWUiScV7OZSCg0WCuIG7rEU5kD3RP1OiApDcV
-XtV24Xb+FpwZOLxPCQoDJOjQnEtIG+y1n5FwkSw5kb6G7grCAoW+ir8MnsgNDqFW
-PrmeM38wcd8sQ1WLM7b5612D/Y6ffJndIvqtbNq202/QUTNf4qfwdIZUNRSA6viw
-0r/gg9E5POduYxARB8CiNdOHiWlTCrAwz+I45dlIAlBM+W6inaVVO0Rdl5hq510I
-J5alh4ViOBuYAn21Gs88/Kg8o536HlT1/zmo9CAAHesUEnVwE1lf399w/0w118N0
-LFqGspKEsdIUOuYgCRIiSt3jj/FNxvxwEcD684XNfKnr7DMKS1g+urtLy77eZ2vM
-u39uo/CeOnAVxOOvZD/cA8kQ9eZRdOyihWum/6KODQdTlUgBjUSfjKcW74/qlUuE
-s9oiyygE+gEES6+UXyjj6DbAF16LHQUQRm/gf+P7tby7BVst9YU5A/4p4aRz6QUj
-I3CXAgLOcPPC6P+MbX+K/ufNk+/bmTUBNyl1WiE9JpkAsP0OLJHxJ46qQ7c6jw8r
-ifgSQ4M1b1XJ3+zElgEKUxZ3hHvSEpiEffVQsqa1RHpmiXrgdarRilE4i1UoQhOp
-BLFzcNzQ/TEe5myVrkGB
-=Tuer
------END PGP SIGNATURE-----
-
---Signature=_Fri__6_Sep_2013_09_05_50_+1000_9S53j=lu+xmyD5sG--
+-- 
