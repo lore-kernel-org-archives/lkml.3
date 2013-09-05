@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965030Ab3IEKC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:02:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35755 "EHLO mx2.suse.de"
+	id S935618Ab3IEKFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:05:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63741 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935570Ab3IEKCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:02:55 -0400
-Message-ID: <522856C9.3030106@suse.cz>
-Date: Thu, 05 Sep 2013 12:02:49 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 1/3] kconfig: do not special-case 'MODULES' symbol
-References: <1378242287-12759-1-git-send-email-yann.morin.1998@free.fr> <5228510C.1020906@suse.cz>
-In-Reply-To: <5228510C.1020906@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1763454Ab3IEKFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 06:05:45 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: [PATCH V2 net-next 1/2] tuntap: purge socket error queue on detach
+Date: Thu,  5 Sep 2013 17:53:59 +0800
+Message-Id: <1378374840-39130-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5.9.2013 11:38, Michal Marek wrote:
-> On 3.9.2013 23:04, Yann E. MORIN wrote:
->> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
->> This patch changes the way we enable/disable tristates: if a symbol was
->> found with 'option modules' attached to it, then that symbol controls
->> enabling tristates. Otherwise, tristates are disabled, even if a symbol
->> named 'MODULES' exists.
-> 
-> Wasn't this change supposed to fix allmodconfig with KCONFIG_ALLCONFIG
-> (http://lkml.org/lkml/2013/8/8/573)? Or is there still more to do?
-> Because I'm still getting:
-> [...]
-> $ grep MODULES .config
-> CONFIG_MODULES_USE_ELF_RELA=y
-> # CONFIG_MODULES is not set
-> $
+Commit eda297729171fe16bf34fe5b0419dfb69060f623
+(tun: Support software transmit time stamping) will queue skbs into error queue
+when tx stamping is enabled. But it forgets to purge the error queue during
+detach. This patch fixes this.
 
-Otherwise, I have no problem merging this series. I'm just curious what
-to do with the allmodconfig with KCONFIG_ALLCONFIG bug.
+Cc: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-Michal
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 60a1e93..2dddb1b 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -409,6 +409,12 @@ static struct tun_struct *tun_enable_queue(struct tun_file *tfile)
+ 	return tun;
+ }
+ 
++static void tun_queue_purge(struct tun_file *tfile)
++{
++	skb_queue_purge(&tfile->sk.sk_receive_queue);
++	skb_queue_purge(&tfile->sk.sk_error_queue);
++}
++
+ static void __tun_detach(struct tun_file *tfile, bool clean)
+ {
+ 	struct tun_file *ntfile;
+@@ -435,7 +441,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+ 		synchronize_net();
+ 		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
+ 		/* Drop read queue */
+-		skb_queue_purge(&tfile->sk.sk_receive_queue);
++		tun_queue_purge(tfile);
+ 		tun_set_real_num_queues(tun);
+ 	} else if (tfile->detached && clean) {
+ 		tun = tun_enable_queue(tfile);
+@@ -487,12 +493,12 @@ static void tun_detach_all(struct net_device *dev)
+ 	for (i = 0; i < n; i++) {
+ 		tfile = rtnl_dereference(tun->tfiles[i]);
+ 		/* Drop read queue */
+-		skb_queue_purge(&tfile->sk.sk_receive_queue);
++		tun_queue_purge(tfile);
+ 		sock_put(&tfile->sk);
+ 	}
+ 	list_for_each_entry_safe(tfile, tmp, &tun->disabled, next) {
+ 		tun_enable_queue(tfile);
+-		skb_queue_purge(&tfile->sk.sk_receive_queue);
++		tun_queue_purge(tfile);
+ 		sock_put(&tfile->sk);
+ 	}
+ 	BUG_ON(tun->numdisabled != 0);
+-- 
+1.7.1
+
