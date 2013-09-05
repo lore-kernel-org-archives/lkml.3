@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965085Ab3IEJfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:35:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49207 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964825Ab3IEJfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:35:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH RFC v2 01/16] ARM: call clk_of_init from time_init
-Date: Thu, 5 Sep 2013 11:34:40 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Michal Simek <michal.simek@xilinx.com>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <52279D79.9070408@gmail.com> <cfedb014-695a-49cd-8e41-afabd585496a@DB8EHSMHS006.ehs.local>
-In-Reply-To: <cfedb014-695a-49cd-8e41-afabd585496a@DB8EHSMHS006.ehs.local>
+	id S965094Ab3IEJi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:38:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756998Ab3IEJiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 05:38:24 -0400
+Message-ID: <5228510C.1020906@suse.cz>
+Date: Thu, 05 Sep 2013 11:38:20 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201309051134.40421.arnd@arndb.de>
-X-Provags-ID: V02:K0:4r3ab7AeR3VFbYu5KDUwQPgOUNlX1g8wJFF7Ur/V/hZ
- hpIFkcnpmm97SCAJj/TvsnalV3t90zjp7aW+QdS5+NRiuTQUrU
- mGKfGCi50pDNXmKLuy6KufyAAdhMLRZX6YLHcDas7dtqRUWc1s
- K4nBzqwlepD24hDAaAil3XJMpA16D7d8WgMP+4uiCRFqUbw/V7
- cVGiBkcTMnUHVTBLnxxrbCnm7pTJ5UVeYOKxr14e90F1Thn+GH
- 8wYbSO1U0wOI9i/BOStZxrwsj4bGazK7W9eZtqNx/xU71t7SwG
- cxahxN9z8h8A8OMF3BEipoBdte9qg+6DIQhzbA6G3uSYifYoG9
- Td5r8XyL/9ZTOBRF0Xu0=
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 1/3] kconfig: do not special-case 'MODULES' symbol
+References: <1378242287-12759-1-git-send-email-yann.morin.1998@free.fr>
+In-Reply-To: <1378242287-12759-1-git-send-email-yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 September 2013, Sören Brinkmann wrote:
-> On Wed, Sep 04, 2013 at 10:52:09PM +0200, Sebastian Hesselbarth wrote:
-> > On 09/04/2013 10:41 PM, Sören Brinkmann wrote:
-> > Anyways, having a custom .init_time gives you full control over
-> > of_clk_init and clocksource_of_init back again thanks to your
-> > suggestion.
-> > 
-> > I'll stop converting zynq and let you decide on your own ;)
+On 3.9.2013 23:04, Yann E. MORIN wrote:
+> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 > 
-> As I said, currently it's rather messy and neither solution is perfect.
-> Steffen seemed to already have looked towards syscon and regmap, which
-> are probably the right ways of making the SLCR regs available to other users.
+> Currently, the 'MODULES' symbol is hard-coded to be the default symbol
+> that enables/disables tristates, if no other symbol was declared with
+> 'option modules'.
+> 
+> While this used to be needed for the Linux kernel, we now have an
+> explicit 'option modules' attached to the 'MODULES' symbol (since
+> cset 11097a036), so we no longer need to special-case it in the
+> kconfig code.
+> 
+> Furthermore, kconfig is extensively used out of the Linux kernel, and
+> other projects may have another meaning for a symbol named 'MODULES'.
+> 
+> This patch changes the way we enable/disable tristates: if a symbol was
+> found with 'option modules' attached to it, then that symbol controls
+> enabling tristates. Otherwise, tristates are disabled, even if a symbol
+> named 'MODULES' exists.
 
-Yes, this seems fine. I suspect we will first have to find a way to have
-"early" syscon mappings, which seem to be required for a few other use
-cases as well, but are not trivial to implement in a nice way.
+Wasn't this change supposed to fix allmodconfig with KCONFIG_ALLCONFIG
+(http://lkml.org/lkml/2013/8/8/573)? Or is there still more to do?
+Because I'm still getting:
 
-> Sure, passing down the pointer is not perfect, but having two drivers
-> map the same memory region seems slightly worse to me. And it would even
-> fail for one driver if you properly used request_mem_region() and friends.
+$ touch empty
+$ make KCONFIG_ALLCONFIG=empty allmodconfig
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/kconfig/conf.o
+  SHIPPED scripts/kconfig/zconf.tab.c
+  SHIPPED scripts/kconfig/zconf.lex.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+scripts/kconfig/conf --allmodconfig Kconfig
+#
+# configuration written to .config
+#
+$ grep MODULES .config
+CONFIG_MODULES_USE_ELF_RELA=y
+# CONFIG_MODULES is not set
+$
 
-I think the two approaches are equally hacky, no need to change it now
-or rush to a better solution -- let's fix the other of_clk_init() users
-first.
-
-One suggestion though: it might be better to not use CLK_OF_DECLARE
-with of_clk_init(NULL) in cases like this but have an explicit table
-in the clk driver that does not get intermixed with the default table.
-
-	Arnd
+Michal
