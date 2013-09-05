@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935724Ab3IEKTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:19:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58518 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935590Ab3IEKS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:18:59 -0400
-Message-ID: <1378376337.1944.26.camel@joe-AO722>
-Subject: Re: [PATCH] ALSA: emu10k1: casting (void *) value returned by
- kcalloc is useless
-From: Joe Perches <joe@perches.com>
-To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Cc: perex@perex.cz, linux-kernel@vger.kernel.org
-Date: Thu, 05 Sep 2013 03:18:57 -0700
-In-Reply-To: <5228589C.2060508@cn.fujitsu.com>
-References: <52281D37.40808@cn.fujitsu.com>
-	 <1378361546.1944.8.camel@joe-AO722> <5228589C.2060508@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S964924Ab3IEKXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:23:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37962 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935550Ab3IEKXv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 06:23:51 -0400
+Date: Thu, 5 Sep 2013 12:23:52 +0200
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com,
+        tony.luck@gmail.com, grant.likely@secretlab.ca
+Subject: Re: [PATCH v3 2/5] efi: provide a generic efi_config_init()
+Message-ID: <20130905102352.GV18151@rocoto.smurfnet.nu>
+References: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
+ <1375901660-23541-3-git-send-email-leif.lindholm@linaro.org>
+ <20130902092902.GE28598@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130902092902.GE28598@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 18:10 +0800, Duan Jiong wrote:
-> 于 2013年09月05日 14:12, Joe Perches 写道:
-> > On Thu, 2013-09-05 at 13:57 +0800, Duan Jiong wrote:
-> >> From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-> >>
-> >> Casting (void *) value returned by kcalloc is useless
-> >> as mentioned in Documentation/CodingStyle, Chap 14.
-> > 
-> > __user is an important marker that is lost here.
-> > 
-> >> diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
-> > []
-> >> @@ -1183,9 +1183,8 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
-> >>  	mm_segment_t seg;
-> >>  
-> >>  	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
-> >> -	    (icode->gpr_map = (u_int32_t __user *)
-> >> -	     kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
-> >> -		     GFP_KERNEL)) == NULL ||
-> >> +	    (icode->gpr_map = kcalloc(512 + 256 + 256 + 2 * 1024,
-> >> +				sizeof(u_int32_t), GFP_KERNEL)) == NULL ||
-> >>  	    (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
-> >>  				sizeof(*controls), GFP_KERNEL)) == NULL) {
-> >>  		err = -ENOMEM;
-> > 
-> > I think this would be clearer as
-> > 
-> > 	err = -ENOMEM;
-> > 	icode = kzalloc(sizeof(*icode), GFP_KERNEL)
-> > 	if (!icode)
-> > 		goto err;
-> > 	icode->gpr_map = (__user)kcalloc(512 + 256 + 256 + 2 * 1024,
-> > 					 sizeof(u_int32_t), GFP_KERNEL);
-> > 	if (!icode->gpr_map)
-> > 		goto err;
-> > 	controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
-> > 			    sizeof(*controls), GFP_KERNEL);
-> > 	if (!controls)
-> > 		goto err;
-> > 
+On Mon, Sep 02, 2013 at 10:29:02AM +0100, Matt Fleming wrote:
+> This patch actually breaks git bisection,
+ 
+Urgh, sorry about that.
+
+> /home/build/git/efi/arch/x86/platform/efi/efi.c:581:19: error: conflicting types for ‘efi_config_init’
+> In file included from /home/build/git/efi/arch/x86/platform/efi/efi.c:33:0:
+> /home/build/git/efi/include/linux/efi.h:596:12: note: previous declaration of ‘efi_config_init’ was here
 > 
-> Maybe it should keep the original style, because i do as you said, and
-> error messages appear during compiling the kernel.
+> I've merged patches 2,3 and 4 into the following single patch so that
+> the ability to bisect isn't lost. Does it look OK? It boots fine on my
+> test machines.
 
-I think your suggested patch causes sparse errors when
-compiled with "$ make C=2 sound/pci/emu10k1/emufx.o"
+Looks fine to me, and works on the ARM port.
+I'm about to send out an updated patch set, including this squash.
 
-And sorry, I just typed my reply in the email client and
-I didn't compiled it or anything.
-
-Most likely my suggestion needs a semicolon after the kzalloc
-and (__user void *) on the kcalloc cast.
-
-cheers, Joe
-
+/
+    Leif
