@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3IEDZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 23:25:31 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15717 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3IEDZa (ORCPT
+	id S1753218Ab3IED2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:28:23 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17414 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab3IED2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 23:25:30 -0400
-Message-ID: <5227F989.10907@huawei.com>
-Date: Thu, 5 Sep 2013 11:24:57 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 4 Sep 2013 23:28:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 20:28:20 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>
+CC: <gnurou@gmail.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v5 0/5] ARM: support for Trusted Foundations secure monitor
+Date: Thu, 5 Sep 2013 12:27:55 +0900
+Message-ID: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: factor out css creation into
- create_css()
-References: <1377723829-22814-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/29 5:03, Tejun Heo wrote:
-> Hello,
-> 
-> For unified hierarchy, a css's (cgroup_subsys_state) lifetime will be
-> different from that of the associated cgroup.  css's may be created
-> and destroyed dynamically over the lifetime of a single cgroup.  The
-> previous changes decoupled css destruction from cgroup's.  This
-> patchset decouples css creation from cgroup's.
-> 
-> This patchset contains the following nine patches.
-> 
->  0001-cgroup-fix-css-leaks-on-online_css-failure.patch
->  0002-cgroup-css-iterations-and-css_from_dir-are-safe-unde.patch
->  0003-cgroup-make-for_each_subsys-useable-under-cgroup_roo.patch
->  0004-cgroup-move-css_id-commit-from-cgroup_populate_dir-t.patch
->  0005-cgroup-reorder-operations-in-cgroup_create.patch
->  0006-cgroup-combine-css-handling-loops-in-cgroup_create.patch
->  0007-cgroup-factor-out-cgroup_subsys_state-creation-into-.patch
->  0008-cgroup-implement-for_each_css.patch
->  0009-cgroup-remove-for_each_root_subsys.patch
-> 
+After several rounds of reviews, this patchset should be close to maturity. This
+fifth version gathers the Reviewed-by tags, addresses the (hopefully) last
+issues, and seeks the Acked-bys of ARM maintainers to be merged, probably
+through the Tegra tree.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+Changes since v4:
+- Added ifdefs to isolate open firmware-dependant code
+- Changed BUGS() into more appropriate calls to panic()
+- Fix hard-fail when TF support is not compiled in
+- Make Tegra documentation reference the TF binding
+- Tested extensively
+
+As there is no consensus on the matter, I have left the TF version in device
+tree as two separate nodes. Comments for or against this and references to prior
+practices regarding version handling in the device tree are welcome.
+
+Alexandre Courbot (5):
+  ARM: add basic Trusted Foundations support
+  ARM: tegra: add support for Trusted Foundations
+  ARM: tegra: split setting of CPU reset handler
+  ARM: tegra: set CPU reset handler with firmware op
+  ARM: tegra: support Trusted Foundations by default
+
+ .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
+ Documentation/devicetree/bindings/arm/tegra.txt    |  5 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/Kconfig                                   |  2 +
+ arch/arm/Makefile                                  |  1 +
+ arch/arm/configs/tegra_defconfig                   |  1 +
+ arch/arm/firmware/Kconfig                          | 25 +++++++
+ arch/arm/firmware/Makefile                         |  1 +
+ arch/arm/firmware/trusted_foundations.c            | 82 ++++++++++++++++++++++
+ arch/arm/include/asm/trusted_foundations.h         | 53 ++++++++++++++
+ arch/arm/mach-tegra/Kconfig                        |  1 +
+ arch/arm/mach-tegra/common.c                       |  2 +
+ arch/arm/mach-tegra/reset.c                        | 40 ++++++++---
+ 13 files changed, 220 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+ create mode 100644 arch/arm/firmware/Kconfig
+ create mode 100644 arch/arm/firmware/Makefile
+ create mode 100644 arch/arm/firmware/trusted_foundations.c
+ create mode 100644 arch/arm/include/asm/trusted_foundations.h
+
+-- 
+1.8.4
 
