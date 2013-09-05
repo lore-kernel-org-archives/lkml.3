@@ -1,156 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3IEEGM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 00:06:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721Ab3IEEGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 00:06:10 -0400
-Message-ID: <1378353962.3246.192.camel@ul30vt.home>
-Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on
- enabled slots
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Wed, 04 Sep 2013 22:06:02 -0600
-In-Reply-To: <1378352279.3246.183.camel@ul30vt.home>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan>
-	 <2449715.ReJj2CQeDS@vostro.rjw.lan> <1378336334.3246.158.camel@ul30vt.home>
-	 <16239518.dJxs4RVK1M@vostro.rjw.lan>
-	 <1378352279.3246.183.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753296Ab3IEEJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 00:09:55 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:40460 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3IEEJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 00:09:54 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, sachin.kamat@linaro.org
+Subject: [PATCH 1/2] regulator: core: Fix a trivial typo
+Date: Thu,  5 Sep 2013 09:22:02 +0530
+Message-Id: <1378353123-29604-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 21:37 -0600, Alex Williamson wrote:
-> On Thu, 2013-09-05 at 01:35 +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, September 04, 2013 05:12:14 PM Alex Williamson wrote:
-> > > On Thu, 2013-09-05 at 00:54 +0200, Rafael J. Wysocki wrote:
-> > > > On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
-> > > > > On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
-> > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > > 
-> > > > > > The current implementation of acpiphp_check_bridge() is pretty dumb:
-> > > > > >  - It enables a slot if it's not enabled and the slot status is
-> > > > > >    ACPI_STA_ALL.
-> > > > > >  - It disables a slot if it's enabled and the slot status is not
-> > > > > >    ACPI_STA_ALL.
-> > > > > > 
-> > > > > > This behavior is not sufficient to handle the Thunderbolt daisy
-> > > > > > chaining case properly, however, because in that case the bus
-> > > > > > behind the already enabled slot needs to be rescanned for new
-> > > > > > devices.
-> > > > > > 
-> > > > > > For this reason, modify acpiphp_check_bridge() so that slots are
-> > > > > > disabled and stopped if they are not in the ACPI_STA_ALL state.
-> > > > > > 
-> > > > > > For slots in the ACPI_STA_ALL state, devices behind them that don't
-> > > > > > respond are trimmed using a new function, trim_stale_devices(),
-> > > > > > introduced specifically for this purpose.  That function walks
-> > > > > > the given bus and checks each device on it.  If the device doesn't
-> > > > > > respond, it is assumed to be gone and is removed.
-> > > > > > 
-> > > > > > Once all of the stale devices directy behind the slot have been
-> > > > > > removed, acpiphp_check_bridge() will start looking for new devices
-> > > > > > that might have appeared on the given bus.  It will do that even if
-> > > > > > the slot is already enabled (SLOT_ENABLED is set for it).
-> > > > > > 
-> > > > > > In addition to that, make the bus check notification ignore
-> > > > > > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-> > > > > > so that devices behind the slot are re-enumerated in that case too.
-> > > > > > 
-> > > > > > This change is based on earlier patches from Kirill A Shutemov
-> > > > > > and Mika Westerberg.
-> > > > > > 
-> > > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > > > ---
-> > > > > 
-> > > > > FYI, git bisect landed on this patch as the cause of my serial console
-> > > > > dying on current upstream.  Further debugging to come...  Thanks,
-> > > > 
-> > > > Well, sorry about that.
-> > > > 
-> > > > What exactly do you mean by "dying"?
-> > > 
-> > > Sorry, I was hoping to have more details quickly, but it's been a pain
-> > > to debug.  By dying I mean serial console output suddenly stops during
-> > > kernel boot and nothing more comes out of it until after the system is
-> > > rebooted.  The problem happens when acpiphp_check_bridge() calls
-> > > enable_slot().  The serial console dies somewhere down in
-> > > acpiphp_bus_trim().  I think this is happening on the 00:1f ISA bridge,
-> > > so there's a good chance the serial ports are described as somewhere
-> > > under there.
-> > 
-> > Can you please check if that is the acpiphp_bus_trim() called by
-> > acpiphp_bus_add() or the other one called from trim_stale_devices()?
-> > 
-> > Just add a dump_stack() or WARN_ON(1) to trim_stale_devices() next to
-> > the acpiphp_bus_trim() call and see if that triggers.  I *think* it's the one
-> > in acpiphp_bus_add(), but it won't hurt to verify that.
-> 
-> Here's the call path:
-> 
-> [   16.120824]  [<ffffffff81627e6c>] dump_stack+0x55/0x76
-> [   16.125979]  [<ffffffff8162132e>] enable_slot+0x4ee/0x5e0
-> [   16.131396]  [<ffffffff813418fb>] ? trim_stale_devices+0x5b/0xf0
-> [   16.137420]  [<ffffffff81341b35>] acpiphp_check_bridge+0xd5/0x110
-> [   16.143531]  [<ffffffff81342acb>] hotplug_event+0x16b/0x260
-> [   16.149115]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> [   16.155136]  [<ffffffff81342bf0>] hotplug_event_work+0x30/0x70
-> [   16.160978]  [<ffffffff81072d3b>] process_one_work+0x1eb/0x540
-> [   16.166819]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> [   16.172836]  [<ffffffff8107353c>] worker_thread+0x11c/0x370
-> [   16.178426]  [<ffffffff81073420>] ? rescuer_thread+0x350/0x350
-> [   16.184276]  [<ffffffff8107b0ea>] kthread+0xea/0xf0
-> [   16.189165]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> [   16.195700]  [<ffffffff816395dc>] ret_from_fork+0x7c/0xb0
-> [   16.201109]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> 
-> The actual death of the serial console occurs in acpi_device_set_power()
-> called from:
-> 
-> enable_slot()
->  acpiphp_bus_add()
->   acpiphp_bus_trim()
->    acpi_bus_trim()
->     acpi_walk_namespace()
->      acpi_bus_remove()
->       acpi_device_unregister()
->        acpi_device_set_power()
-> 
-> I can't seem to get a path from the acpi devices in question there, so I
-> have no idea what's getting trimmed here.  It worries me quite a bit by
-> introducing this trimming that apparently wasn't happening before
-> though.  Thanks,
+Changed automaticall -> automatically.
 
-As suspected, the pnp.bus_id/id of the last device before the serial
-console dies is COM1/PNP0501.  I also see all of these being trimmed
-out:
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+This series is based on topic/devm branch of regulator tree.
+---
+ drivers/regulator/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- MBRD/PNP0C02
- DMAC/PNP0200
- MATH/PNP0C04
- PIC/PNP0000
- HPET/PNP0103
- RTC/PNP0B00
- SPKR/PNP0800
- TIME/PNP0100
- LNK{A-H}/PNP0C0F
-
-This seems like a bad idea.  I forgot to mention, the original
-hotplug_event is called with a device check on \_SB_.PCI0.PEX2.  The box
-where I'm seeing this is a pretty generic X58 based Nehalem workstation
-(Lenovo S20).  Thanks,
-
-Alex
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index c002b62..741c84c 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3741,7 +3741,7 @@ static void devm_rdev_release(struct device *dev, void *res)
+  *
+  * Called by regulator drivers to register a regulator.  Returns a
+  * valid pointer to struct regulator_dev on success or an ERR_PTR() on
+- * error.  The regulator will automaticall be released when the device
++ * error.  The regulator will automatically be released when the device
+  * is unbound.
+  */
+ struct regulator_dev *devm_regulator_register(struct device *dev,
+-- 
+1.7.9.5
 
