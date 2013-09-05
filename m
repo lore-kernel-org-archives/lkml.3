@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab3IERk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 13:40:26 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:51406 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab3IERkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 13:40:23 -0400
-Date: Thu, 5 Sep 2013 19:40:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130905174019.GA30435@gmail.com>
-References: <20130831023516.GI13318@ZenIV.linux.org.uk>
- <20130831024233.GJ13318@ZenIV.linux.org.uk>
- <5224E647.80303@hp.com>
- <20130903060130.GD16261@gmail.com>
- <5225FCEE.7030901@hp.com>
- <CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com>
- <CA+55aFw0jme+qK5b_VJVqoVD6cZuSjVsm-Sgjf_YkPXgMToqUA@mail.gmail.com>
- <52274943.1040005@hp.com>
- <20130905133123.GA24351@gmail.com>
- <5228C062.7030106@hp.com>
+	id S1753545Ab3IERpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 13:45:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13507 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab3IERpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 13:45:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,848,1371106800"; 
+   d="scan'208";a="398915906"
+Date: Thu, 5 Sep 2013 10:45:08 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Wang Shilong <wangshilong1991@gmail.com>, kumargauravgupta3@gmail.com,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Extend CamelCase types and ignore existing
+ CamelCase uses in a patch
+Message-ID: <20130905174508.GA5978@xanatos>
+References: <5223383f.hCMXrpqEq1AlVw9b%wangshilong1991@gmail.com>
+ <20130903155857.GA2657@xanatos>
+ <1378229121.7347.12.camel@joe-AO722>
+ <20130904155831.GB6061@xanatos>
+ <1378336086.1787.48.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5228C062.7030106@hp.com>
+In-Reply-To: <1378336086.1787.48.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Waiman Long <waiman.long@hp.com> wrote:
-
-> On 09/05/2013 09:31 AM, Ingo Molnar wrote:
-> >* Waiman Long<waiman.long@hp.com>  wrote:
-> >
-> >
-> >>The latest tty patches did work. The tty related spinlock contention
-> >>is now completely gone. The short workload can now reach over 8M JPM
-> >>which is the highest I have ever seen.
-> >>
-> >>The perf profile was:
-> >>
-> >>5.85%     reaim  reaim                 [.] mul_short
-> >>4.87%     reaim  [kernel.kallsyms]     [k] ebitmap_get_bit
-> >>4.72%     reaim  reaim                 [.] mul_int
-> >>4.71%     reaim  reaim                 [.] mul_long
-> >>2.67%     reaim  libc-2.12.so          [.] __random_r
-> >>2.64%     reaim  [kernel.kallsyms]     [k] lockref_get_not_zero
-> >>1.58%     reaim  [kernel.kallsyms]     [k] copy_user_generic_string
-> >>1.48%     reaim  [kernel.kallsyms]     [k] mls_level_isvalid
-> >>1.35%     reaim  [kernel.kallsyms]     [k] find_next_bit
-> >6%+ spent in ebitmap_get_bit() and mls_level_isvalid() looks like
-> >something worth optimizing.
-> >
-> >Is that called very often, or is it perhaps cache-bouncing for some
-> >reason?
+On Wed, Sep 04, 2013 at 04:08:06PM -0700, Joe Perches wrote:
+> (sending for 3rd time, odd dns problems today, apologies for dupes)
 > 
-> The high cycle count is due more to inefficient algorithm in the 
-> mls_level_isvalid() function than cacheline contention in the code. The 
-> attached patch should address this problem. It is in linux-next and 
-> hopefully will be merged in 3.12.
+> On Wed, 2013-09-04 at 08:58 -0700, Sarah Sharp wrote:
+> > On Tue, Sep 03, 2013 at 10:25:21AM -0700, Joe Perches wrote:
+> > > Extend the CamelCase words found to include structure members.
+> > > 
+> > > In https://lkml.org/lkml/2013/9/3/318 Sarah Sharp (mostly) wrote: 
+> > > 
+> > > "In general, if checkpatch.pl complains about a variable a patch
+> > > introduces that's CamelCase, you should pay attention to it.
+> > > Otherwise, [] ignore it."
+> > > 
+> > > So, if checking a patch, scan the original patched file if it's
+> > > available and add any preexisting CamelCase types so reuses do
+> > > not generate CamelCase messages.
+> []
+> > Thanks!  Will this mean checkpatch.pl still complains on CamelCase names
+> > if it's run against a file?  I think that's still valuable.
+> 
+> Yes.
+> 
+> First, checkpatch looks for all existing CamelCase #defines,
+> typedefs, function names and struct/union members in the
+> include path.  (it uses regexes so it's actually not at all
+> close to even good at finding those).
+> 
+> It stores all those CamelCase uses in a hash.
+> 
+> If checkpatch is scanning a patch, it'll now read the file
+> being patched for existing uses of CamelCase #defines, etc,
+> and checkpatch adds those uses to the hash.
+> 
+> If checkpatch is scanning a file, it doesn't doesn't
+> prescan the file.
+> 
+> Then, when checkpatch scans the patch or file and finds a
+> CamelCase use, it looks for that use in the hash and is
+> silent if it's there, noisy otherwise.
+> 
+> This can still report CamelCase uses in a patch if say a
+> CamelCase type is defined in a .h file in the same directory
+> or some other include path and that word is not already used
+> by the file.
 
-Great!
+Great!  Thanks for doing this Joe.
 
-If/when you happen to boot the latest & greatest kernel that has all these 
-scalability patches applied it would be nice if you could send an updated 
-profile into this thread.
-
-Thanks,
-
-	Ingo
+Sarah Sharp
