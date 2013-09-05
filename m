@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935681Ab3IEJpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:45:52 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:52367 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935617Ab3IEJo7 (ORCPT
+	id S935722Ab3IEJql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:46:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48022 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935615Ab3IEJpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:44:59 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz
-Subject: [PATCH 10/11] fuse: clean up return in fuse_dentry_revalidate()
-Date: Thu,  5 Sep 2013 11:44:43 +0200
-Message-Id: <1378374284-1484-11-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
-References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
+	Thu, 5 Sep 2013 05:45:51 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r859jc65030462, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
+Date: Thu, 5 Sep 2013 17:45:38 +0800
+Message-ID: <1378374338-11455-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-On errors unrelated to the filesystem's state (ENOMEM, ENOTCONN) return the
-error itself from ->d_revalidate() insted of returning zero (invalid).
+In some platforms, specially Thinkpad series, rts5249 won't be
+initialized properly. So we need adjust some phy parameters to
+improve the compatibility issue.
 
-Also make a common label for invalidating the dentry.  This will be used by
-the next patch.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- fs/fuse/dir.c | 26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+ drivers/mfd/rts5249.c |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 131d14b..25c6cfe 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -182,10 +182,11 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 	struct inode *inode;
- 	struct dentry *parent;
- 	struct fuse_conn *fc;
-+	int ret;
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 3b835f5..e3c6dc1 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -130,13 +130,34 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
  
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
--		return 0;
-+		goto invalid;
- 	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
- 		int err;
- 		struct fuse_entry_out outarg;
-@@ -195,20 +196,23 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
+-	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
++	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFC6C);
+ 	if (err < 0)
+ 		return err;
  
- 		/* For negative dentries, always do a fresh lookup */
- 		if (!inode)
--			return 0;
-+			goto invalid;
+ 	msleep(1);
  
-+		ret = -ECHILD;
- 		if (flags & LOOKUP_RCU)
--			return -ECHILD;
-+			goto out;
- 
- 		fc = get_fuse_conn(inode);
- 		req = fuse_get_req_nopages(fc);
-+		ret = PTR_ERR(req);
- 		if (IS_ERR(req))
--			return 0;
-+			goto out;
- 
- 		forget = fuse_alloc_forget();
- 		if (!forget) {
- 			fuse_put_request(fc, req);
--			return 0;
-+			ret = -ENOMEM;
-+			goto out;
- 		}
- 
- 		attr_version = fuse_get_attr_version(fc);
-@@ -227,7 +231,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 			struct fuse_inode *fi = get_fuse_inode(inode);
- 			if (outarg.nodeid != get_node_id(inode)) {
- 				fuse_queue_forget(fc, forget, outarg.nodeid, 1);
--				return 0;
-+				goto invalid;
- 			}
- 			spin_lock(&fc->lock);
- 			fi->nlookup++;
-@@ -235,7 +239,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 		}
- 		kfree(forget);
- 		if (err || (outarg.attr.mode ^ inode->i_mode) & S_IFMT)
--			return 0;
-+			goto invalid;
- 
- 		fuse_change_attributes(inode, &outarg.attr,
- 				       entry_attr_timeout(&outarg),
-@@ -249,7 +253,13 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 			dput(parent);
- 		}
- 	}
--	return 1;
-+	ret = 1;
-+out:
-+	return ret;
-+
-+invalid:
-+	ret = 0;
-+	goto out;
+-	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
++	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_PCR, 0xBA42);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2, 0xC56A);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4, 0x78EB);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, 0x4000);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1, 0x011F);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3, 0x78E4);
++	if (err < 0)
++		return err;
++	return rtsx_pci_write_phy_register(pcr, PHY_TUNE, 0x4FE4);
  }
  
- static int invalid_nodeid(u64 nodeid)
+ static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
 -- 
-1.8.1.4
+1.7.9.5
 
