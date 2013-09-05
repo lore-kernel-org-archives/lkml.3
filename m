@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3IENSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 09:18:21 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:59850 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3IENST (ORCPT
+	id S1752764Ab3IENTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 09:19:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45612 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751905Ab3IENTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 09:18:19 -0400
-Date: Thu, 5 Sep 2013 15:18:14 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] lockref: remove cpu_relax() again
-Message-ID: <20130905131814.GA24274@osiris>
+	Thu, 5 Sep 2013 09:19:53 -0400
+Date: Thu, 5 Sep 2013 14:19:10 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Jean Pihet <jean.pihet@newoldbits.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Michael Hudson-Doyle <michael.hudson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
+ .eh_frame is not present
+Message-ID: <20130905131910.GB22351@mudshark.cambridge.arm.com>
+References: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
+ <1378317854-25965-4-git-send-email-jean.pihet@linaro.org>
+ <20130905124508.GE9696@mudshark.cambridge.arm.com>
+ <CAORVsuW-1koTMaSMgjagBz1aJ0AtvVRiM5gs3kwO2Fuvk+DhwQ@mail.gmail.com>
+ <CAKv+Gu8u4PLVfng8ru4RFwA-+Ky0vYEP3V2=vecqndo5Z0sTJg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAKv+Gu8u4PLVfng8ru4RFwA-+Ky0vYEP3V2=vecqndo5Z0sTJg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090513-1948-0000-0000-000006347784
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d472d9d9 "lockref: Relax in cmpxchg loop" added a cpu_relax() call to the
-CMPXCHG_LOOP() macro. However to me it seems to be wrong since it is very
-likely that the next round will succeed (or the loop will be left).
-Even worse: cpu_relax() is very expensive on s390, since it means yield
-"my virtual cpu to the hypervisor". So we are talking of several 1000 cycles.
+On Thu, Sep 05, 2013 at 02:17:30PM +0100, Ard Biesheuvel wrote:
+> On 5 September 2013 15:05, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+> [..]
+> > Here are the commands I have been using:
+> >  perf record -g dwarf -- <binary to profile>
+> >  perf report --sort symbol --call-graph --stdio
+> >
+> 
+> Ah, I failed to add the 'dwarf' after -g, however, in that case, my
+> perf report segfaults:
 
-In fact some measurements show the bad impact of the cpu_relax() call on
-s390 using Linus' test case that "stats()" like mad:
+Same SEGV here.
 
-Without converting s390 to lockref:
-Total loops: 81236173
-
-After converting s390 to lockref:
-Total loops: 31896802
-
-After converting s390 to lockref but with removed cpu_relax() call:
-Total loops: 86242190
-
-So the cpu_relax() call completely contradicts the intention of
-CONFIG_CMPXCHG_LOCKREF at least on s390.
-
-*If* however the cpu_relax() makes sense on other platforms maybe we could
-add something like we have already with "arch_mutex_cpu_relax()":
-
-include/linux/mutex.h:
- #ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
- #define arch_mutex_cpu_relax()  cpu_relax()
- #endif
-
-arch/s390/include/asm/mutex.h:
- #define arch_mutex_cpu_relax()  barrier()
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- lib/lockref.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/lib/lockref.c b/lib/lockref.c
-index 9d76f40..7819c2d 100644
---- a/lib/lockref.c
-+++ b/lib/lockref.c
-@@ -19,7 +19,6 @@
- 		if (likely(old.lock_count == prev.lock_count)) {		\
- 			SUCCESS;						\
- 		}								\
--		cpu_relax();							\
- 	}									\
- } while (0)
- 
--- 
-1.8.3.4
-
+Will
