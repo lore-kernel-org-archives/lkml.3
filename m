@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3IEFVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:21:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51999 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3IEFV3 (ORCPT
+	id S1757062Ab3IEFXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:23:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57560 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab3IEFXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:21:29 -0400
-Message-ID: <522814D1.100@vlnb.net>
-Date: Wed, 04 Sep 2013 22:21:21 -0700
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE]: Emulex SCST support for 16Gb/s FC and FCoE CNAs
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:WwvVSRMUJEkWpq7dFGBqYtCAWbz1dzq2wST+6hVdrfx
- VNDio3cwQ2PjDnviTwyunZjZ+91nAw1XI8JkTXziy37592dgk/
- K64ETMxylDREh9G5ZorxYLBkLZl1FE8azVRECArACMg3RCvaGI
- fPER0p0Odt0ibkbRig+Lw/i3jceEip7FAcczfZR1S7YCdPE7qs
- T4d2R4IvyMxudgtTJ3OqSocx5u9/LFwkRw9t6cEADZyyd4+pow
- iAItO2m2j3RVnybkCc3aJy4Dj7/+fisNAAT5WE9bKTOUm0a1zN
- H7eKM1yInB+c3QZ6FI6zakOcgNvnIxRE4Iu09IijAqVr9OeSg=
- =
+	Thu, 5 Sep 2013 01:23:12 -0400
+Date: Thu, 5 Sep 2013 15:23:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20130905152308.d0a720cfb23b8b647e6558e6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm glad to announce that SCST support for 16Gb/s FC and FCoE Emulex CNAs is now
-available as part of the Emulex OneCore Storage SDK tool set based on the Emulex SLI-4
-API. Support for 16Gb/s Fibre Channel LPe16000 series and FCoE hardware using target
-mode versions of the OneConnect FCoE CNAs is included. Documented for use with
-RHEL/CentOS 6.x based distributions, ocs_fc_scst works with the stable SCST 2.2.1 as
-well as the development versions of 2.2.x and 3.0.x. The driver code and documentation
-are available on the Emulex web site at:
-http://www.emulex.com/products/onecore-storage-software-development-kit/overview.html
+--Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Registration is required on the Developer Portal, but this is free.
+Hi all,
 
-Questions regarding this driver better to ask via the Developer Portal.
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv6/sit.c between commit 3d483058c8c8 ("ipv6: wire up
+skb->encapsulation") from Linus' tree and commit 8b7ed2d91d6a
+("iptunnels: remove net arg from iptunnel_xmit()") from the net-next tree.
 
-SCST is SCSI target mode stack for Linux. SCST allows creation of sophisticated storage
-devices, which provide advanced functionality, like replication, thin provisioning,
-deduplication, high availability, automatic backup, etc. Majority of recently developed
-SAN appliances, especially higher end ones, are SCST based. It might well be that your
-favorite storage appliance running SCST in the firmware.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-More info about SCST and its modules you can find on: http://scst.sourceforge.net
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Vlad
+diff --cc net/ipv6/sit.c
+index 21b25dd,19abcc9..0000000
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@@ -886,13 -881,8 +879,13 @@@ static netdev_tx_t ipip6_tunnel_xmit(st
+  		ttl =3D iph6->hop_limit;
+  	tos =3D INET_ECN_encapsulate(tos, ipv6_get_dsfield(iph6));
+ =20
+ +	if (likely(!skb->encapsulation)) {
+ +		skb_reset_inner_headers(skb);
+ +		skb->encapsulation =3D 1;
+ +	}
+ +
+- 	err =3D iptunnel_xmit(dev_net(dev), rt, skb, fl4.saddr, fl4.daddr,
+- 			    IPPROTO_IPV6, tos, ttl, df);
++ 	err =3D iptunnel_xmit(rt, skb, fl4.saddr, fl4.daddr, IPPROTO_IPV6, tos,
++ 			    ttl, df, !net_eq(tunnel->net, dev_net(dev)));
+  	iptunnel_xmit_stats(err, &dev->stats, dev->tstats);
+  	return NETDEV_TX_OK;
+ =20
+
+--Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSKBU8AAoJEECxmPOUX5FELvkQAKBk1VIghskjnDz4tlAKIItF
+xYK2PnL47WbsD+wIMzq0hROrrCcKMolCToOsdKdEHpny8C1jbymKCnJwP4IRGXyn
+GmHDZmTeydKptaRUFtMQXcxHUyJpa+jp6jNfwCfa1pqOX1czLTIpoNXeq2tz4Y75
+GGcbuYuYd+N+NrPXJtDh7Jx1igTPQUpYp7+QXcvv1c9M7iS+ntXMnUy4kC1PaGvF
+gptvVYf/OpZmzimDiFQbpfXei3axOqqT0xwXy5XDrBEKjJSJwSLvnVOICl/9ytB2
+KHI3iSY6xCtcyfkg33W8+0Ji3j2ZbU0t/Dh3iu5KF78DVUx+/1q/ESnUDWw2E30F
+wVZ4kYnJtPFrrjfl6EJ3iRkfnZIZef3aJkrd4lNmfJGbzGN5/wgH19+DAfllezX3
+ZHWZpMQngFJiIQvAg7i6MVhDjFeVwr3fhjUTcGmXFjamHvvBiS2hd4g+qenuV4aY
+UKgdPiUINlFNmrPmMyWXDSALO5/LA8fgcjb6QBPvasqoLKkIneH8+ejY0xu+ahz9
+JF2EX4RZjhboDnDE7FcnVs7JUaTCLAaJnacfX38tSgT7/wZ293heeKJqd5QOTJlj
+cj/qCm+qIVbYH0WVTW4BHRS7lYxQqZKuDs8t/NO9Pco8voieCTl4LdVuzn7rytjB
+XbVY5neTW90EHkgYa+p4
+=1NFJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG--
