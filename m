@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab3IEUhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:37:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52132 "EHLO
+	id S1757859Ab3IEUhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:37:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52135 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab3IEU2c (ORCPT
+	with ESMTP id S1757317Ab3IEU2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:32 -0400
+	Thu, 5 Sep 2013 16:28:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 32/36] ACPI / EC: Add ASUSTEK L4R to quirk list in order to validate ECDT
-Date: Thu,  5 Sep 2013 13:28:01 -0700
-Message-Id: <20130905202706.067602382@linuxfoundation.org>
+        Mark Rusk <mark.rusk@hp.com>
+Subject: [ 33/36] drivers/misc/hpilo: Correct panic when an AUX iLO is detected
+Date: Thu,  5 Sep 2013 13:28:02 -0700
+Message-Id: <20130905202706.163391177@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,39 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Mark Rusk <Mark.Rusk@hp.com>
 
-commit 524f42fab787a9510be826ce3d736b56d454ac6d upstream.
+commit eefbc594abbb1b7e6e7eeadb65ae7c7538474210 upstream.
 
-The ECDT of ASUSTEK L4R doesn't provide correct command and data
-I/O ports.  The DSDT provides the correct information instead.
+ Using an uninitialized variable 'devnum' after 'goto out;' was causing
+ panic.  Just go ahead and return, we need to ignore AUX iLO devs.
 
-For this reason, add this machine to quirk list for ECDT validation
-and use the EC information from the DSDT.
+ Oops: 0002 [#1] SMP
+   .
+   .
+   .
+ RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
 
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=60765
-Reported-and-tested-by: Daniele Esposti <expo@expobrain.net>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Mark Rusk <mark.rusk@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/misc/hpilo.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -987,6 +987,10 @@ static struct dmi_system_id __initdata e
- 	ec_skip_dsdt_scan, "HP Folio 13", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
-+	{
-+	ec_validate_ecdt, "ASUS hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
- 	{},
- };
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pde
  
+ 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
+ 	if (pdev->subsystem_device == 0x1979)
+-		goto out;
++		return 0;
+ 
+ 	if (max_ccb > MAX_CCB)
+ 		max_ccb = MAX_CCB;
+@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
+ 	class_destroy(ilo_class);
+ }
+ 
+-MODULE_VERSION("1.4");
++MODULE_VERSION("1.4.1");
+ MODULE_ALIAS(ILO_NAME);
+ MODULE_DESCRIPTION(ILO_NAME);
+ MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
 
 
