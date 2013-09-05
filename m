@@ -1,103 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763575Ab3IEIdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 04:33:40 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47032 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763486Ab3IEIdQ (ORCPT
+	id S1763589Ab3IEIgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 04:36:12 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:33632 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1763486Ab3IEIgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 04:33:16 -0400
-Subject: [PATCH] scsi: Add printk to detect retry loop
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 05 Sep 2013 17:33:13 +0900
-Message-ID: <20130905083313.3079.44285.stgit@ltc223.sdl.hitachi.co.jp>
-In-Reply-To: <20130905083310.3079.7106.stgit@ltc223.sdl.hitachi.co.jp>
-References: <20130905083310.3079.7106.stgit@ltc223.sdl.hitachi.co.jp>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
+	Thu, 5 Sep 2013 04:36:08 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Date: Thu, 5 Sep 2013 10:35:35 +0200
+Subject: Re: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Topic: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Index: Ac6qEuVgfjaz93WATZaVcnj3LNfIaA==
+Message-ID: <52284257.5070802@st.com>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
+ <522794F1.90301@st.com> <20130905072114.GD8980@lee--X1>
+ <52283367.4070603@st.com> <20130905075953.GF8980@lee--X1>
+In-Reply-To: <20130905075953.GF8980@lee--X1>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+acceptlanguage: it-IT, en-US
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r858aIM8028776
 
-Currently, scsi error handling in scsi_decide_disposition() unconditionally
-retries on some errors. This is because retriable errors are thought to be
-temporary and the scsi device will soon recover from those errors. But there
-is no guarantee that the device is able to recover from error state
-immediately. The problem is that there is no easy way to detect retry loop in
-user space.
+Lee, I got your point. For me is ok...
 
-This patch adds printk to detect command retry loop in user space. When
-the command retry count exceeds the allowed count(scmd->allowed), the
-kernel prints messages, which can be handled in user space application.
-Here the allowed count(scmd->allowed) is currently used as finite retry
-limit count. Once retry count exceeds the allowed count on a device,
-the message is suppressed on the device to avoid too much messages
-outputted in dmesg.
-
-Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/scsi_error.c  |    3 +--
- drivers/scsi/scsi_lib.c    |   14 ++++++++++++++
- include/scsi/scsi_device.h |    1 +
- 3 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index 2150596..31d10f4 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1615,8 +1615,7 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
- 	 * the request was not marked fast fail.  Note that above,
- 	 * even if the request is marked fast fail, we still requeue
- 	 * for queue congestion conditions (QUEUE_FULL or BUSY) */
--	if ((++scmd->retries) <= scmd->allowed
--	    && !scsi_noretry_cmd(scmd)) {
-+	if (scmd->retries < scmd->allowed && !scsi_noretry_cmd(scmd)) {
- 		return NEEDS_RETRY;
- 	} else {
- 		/*
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 124392f..0198490 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1513,6 +1513,20 @@ static void scsi_softirq_done(struct request *rq)
- 		disposition = SUCCESS;
- 	}
- 			
-+	/*
-+	 * Print message if retry count exceeds allowed count.
-+	 * This message can be used by user space application to detect
-+	 * indefinite command retry loop.
-+	 */
-+	if (cmd->allowed > 0 && ++cmd->retries == cmd->allowed) {
-+		/* Once a command retry over was detected, suppress message */
-+		if (!cmd->device->retry_over) {
-+			scmd_printk(KERN_INFO, cmd,
-+				    "command retried %d times\n", cmd->allowed);
-+			scsi_print_command(cmd);
-+			cmd->device->retry_over = 1;
-+		}
-+	}
- 	scsi_log_completion(cmd, disposition);
- 
- 	switch (disposition) {
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index a44954c..8751d82 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -160,6 +160,7 @@ struct scsi_device {
- 	unsigned is_visible:1;	/* is the device visible in sysfs */
- 	unsigned wce_default_on:1;	/* Cache is ON by default */
- 	unsigned no_dif:1;	/* T10 PI (DIF) should be disabled */
-+	unsigned retry_over:1;	/* retry count exceeded allowed count */
- 
- 	atomic_t disk_events_disable_depth; /* disable depth for disk events */
- 
-
-
+Denis
+> On Thu, 05 Sep 2013, Denis CIOCCA wrote:
+>
+>>>>> Due to the MACRO used, the task of reading, understanding and maintaining
+>>>>> the LPS331AP's channel descriptor is substantially difficult. This patch
+>>>>> is based on the view that it's better to have easy to read, maintainable
+>>>>> code than to save a few lines here and there. For that reason we're
+>>>>> expanding the array so initialisation is completed in full.
+>>>> Also for this one, the channel names are general and can be shared
+>>>> between different sensors. For the channel definition it's not a problem
+>>>> for me, but I think it's not necessary adds all that code...
+>>> I'm not sure what you mean by this. Would you be kind enough to
+>>> explain it in a different way please?
+>> The channel name (in this case st_press_channels) is not only specific
+>> for one sensor but can be shared. Ok in this driver now is used only for
+>> the lps331ap but for example in accelerometer driver is used by several
+>> sensors. It's possible in the future for new pressure sensors use the
+>> same channels definition.
+> Ah yes I see what you mean. Well as you say, for the moment, as
+> they're separated, this naming convention seems the most
+> appropriate. If we add anymore devices which share the definition, we
+> can pick the best naming convention for the situation I think. For
+> instance, I like that you've split the channels up into the number of
+> bits they support in the gyro and accel cases, so something of that
+> nature could be utilised if other device support is added.
+>
+>> The channel definition is intended the switch by macro
+>> ST_SENSORS_LSM_CHANNELS to the full definition, for me is not a problem
+>> but I think it's not necessary.
+> If you are familiar with the macro I guess you could get used to
+> working with it, but coming from in as a first time reader, adding a
+> new device was pretty difficult. I had to look up the macro in the
+> header file, then have the original struct open too and cross
+> reference in 3 different places. It's made even more difficult by the
+> macro being in a different order to the original struct.
+>
+> Now I've had time to work with it, I could probably work with it as
+> well. I was just thinking about helping out any new person that comes
+> along and tries to add support for a new sensor.
+>
+>>>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>>>> ---
+>>>>>     drivers/iio/pressure/st_pressure_core.c | 45 +++++++++++++++++++++++++--------
+>>>>>     1 file changed, 34 insertions(+), 11 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+>>>>> index becfb25..7ba9299 100644
+>>>>> --- a/drivers/iio/pressure/st_pressure_core.c
+>>>>> +++ b/drivers/iio/pressure/st_pressure_core.c
+>>>>> @@ -58,16 +58,39 @@
+>>>>>     #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
+>>>>>     #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
+>>>>>     
+>>>>> -static const struct iio_chan_spec st_press_channels[] = {
+>>>>> -	ST_SENSORS_LSM_CHANNELS(IIO_PRESSURE,
+>>>>> +static const struct iio_chan_spec st_press_lsp331ap_channels[] = {
+>>>>> +	{
+>>>>> +		.type = IIO_PRESSURE,
+>>>>> +		.channel2 = IIO_NO_MOD,
+>>>>> +		.address = ST_PRESS_LPS331AP_OUT_XL_ADDR,
+>>>>> +		.scan_index = ST_SENSORS_SCAN_X,
+>>>>> +		.scan_type = {
+>>>>> +			.sign = 'u',
+>>>>> +			.realbits = 24,
+>>>>> +			.storagebits = 24,
+>>>>> +			.endianness = IIO_LE,
+>>>>> +		},
+>>>>> +		.info_mask_separate =
+>>>>>     			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+>>>>> -			ST_SENSORS_SCAN_X, 0, IIO_NO_MOD, 'u', IIO_LE, 24, 24,
+>>>>> -			ST_PRESS_LPS331AP_OUT_XL_ADDR),
+>>>>> -	ST_SENSORS_LSM_CHANNELS(IIO_TEMP,
+>>>>> -			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE) |
+>>>>> -						BIT(IIO_CHAN_INFO_OFFSET),
+>>>>> -			-1, 0, IIO_NO_MOD, 's', IIO_LE, 16, 16,
+>>>>> -			ST_TEMP_LPS331AP_OUT_L_ADDR),
+>>>>> +		.modified = 0,
+>>>>> +	},
+>>>>> +	{
+>>>>> +		.type = IIO_TEMP,
+>>>>> +		.channel2 = IIO_NO_MOD,
+>>>>> +		.address = ST_TEMP_LPS331AP_OUT_L_ADDR,
+>>>>> +		.scan_index = -1,
+>>>>> +		.scan_type = {
+>>>>> +			.sign = 'u',
+>>>>> +			.realbits = 16,
+>>>>> +			.storagebits = 16,
+>>>>> +			.endianness = IIO_LE,
+>>>>> +		},
+>>>>> +		.info_mask_separate =
+>>>>> +			BIT(IIO_CHAN_INFO_RAW) |
+>>>>> +			BIT(IIO_CHAN_INFO_SCALE) |
+>>>>> +			BIT(IIO_CHAN_INFO_OFFSET),
+>>>>> +		.modified = 0,
+>>>>> +	},
+>>>>>     	IIO_CHAN_SOFT_TIMESTAMP(1)
+>>>>>     };
+>>>>>     
+>>>>> @@ -77,7 +100,7 @@ static const struct st_sensors st_press_sensors[] = {
+>>>>>     		.sensors_supported = {
+>>>>>     			[0] = LPS331AP_PRESS_DEV_NAME,
+>>>>>     		},
+>>>>> -		.ch = (struct iio_chan_spec *)st_press_channels,
+>>>>> +		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
+>>>>>     		.odr = {
+>>>>>     			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
+>>>>>     			.mask = ST_PRESS_LPS331AP_ODR_MASK,
+>>>>> @@ -214,7 +237,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+>>>>>     	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
+>>>>>     	pdata->multiread_bit = pdata->sensor->multi_read_bit;
+>>>>>     	indio_dev->channels = pdata->sensor->ch;
+>>>>> -	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
+>>>>> +	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+>>>>>     
+>>>>>     	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+>>>>>     						&pdata->sensor->fs.fs_avl[0];
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
