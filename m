@@ -1,52 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3IEWLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 18:11:43 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51461 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3IEWLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 18:11:41 -0400
-Date: Fri, 6 Sep 2013 00:11:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] mm: allow to set overcommit ratio more precisely
-Message-ID: <20130905221140.GA29867@amd.pavel.ucw.cz>
-References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com>
- <1376925478-15506-2-git-send-email-jmarchan@redhat.com>
- <52287E66.9010107@redhat.com>
- <52289824.20000@intel.com>
- <5228999B.8010300@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5228999B.8010300@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753363Ab3IEWRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:17:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551Ab3IEWRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 18:17:34 -0400
+Message-ID: <1378419445.3246.268.camel@ul30vt.home>
+Subject: Re: Excess dmesg output from ACPIPHP on boot (was: Re: [PATCH
+ 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots)
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Thu, 05 Sep 2013 16:17:25 -0600
+In-Reply-To: <3686522.NVYmP5Gevu@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan>
+	 <1378390901.3246.233.camel@ul30vt.home> <1535359.s5bUZnSMNz@vostro.rjw.lan>
+	 <3686522.NVYmP5Gevu@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi!
-
-> >> This patch adds the new overcommit_ratio_ppm sysctl variable that
-> >> allow to set overcommit ratio with a part per million precision.
-> >> The old overcommit_ratio variable can still be used to set and read
-> >> the ratio with a 1% precision. That way, overcommit_ratio interface
-> >> isn't broken in any way that I can imagine.
-> > 
-> > Looks like a pretty sane solution.  Could you also make a Documentation/
-> > update, please?
+On Thu, 2013-09-05 at 23:39 +0200, Rafael J. Wysocki wrote:
+> On Thursday, September 05, 2013 09:44:26 PM Rafael J. Wysocki wrote:
+> > On Thursday, September 05, 2013 08:21:41 AM Alex Williamson wrote:
 > 
-> Damn! I forgot. Will do.
+> [...]
+> 
+> > > > 
+> > > > [   18.288122] pci 0000:00:00.0: no hotplug settings from platform
+> > > > [   18.288127] pcieport 0000:00:01.0: no hotplug settings from platform
+> > > > [   18.288142] pci 0000:01:00.0: no hotplug settings from platform
+> > > > [   18.288157] pci 0000:01:00.1: no hotplug settings from platform
+> > > > [   18.288162] pcieport 0000:00:03.0: no hotplug settings from platform
+> > > > [   18.288176] pci 0000:02:00.0: no hotplug settings from platform
+> > > > [   18.288190] pci 0000:02:00.1: no hotplug settings from platform
+> > > > [   18.288195] pcieport 0000:00:07.0: no hotplug settings from platform
+> > > > [   18.288209] pci 0000:03:00.0: no hotplug settings from platform
+> > > > [   18.288224] pci 0000:03:00.1: no hotplug settings from platform
+> > > > [   18.288228] pci 0000:00:14.0: no hotplug settings from platform
+> > > > [   18.288233] pci 0000:00:14.1: no hotplug settings from platform
+> > > > [   18.288237] pci 0000:00:14.2: no hotplug settings from platform
+> > > > [   18.288242] pci 0000:00:16.0: no hotplug settings from platform
+> > > > [   18.288247] pci 0000:00:16.1: no hotplug settings from platform
+> > > > [   18.288251] pci 0000:00:16.2: no hotplug settings from platform
+> > > > [   18.288256] pci 0000:00:16.3: no hotplug settings from platform
+> > > > [   18.288260] pci 0000:00:16.4: no hotplug settings from platform
+> > > > [   18.288265] pci 0000:00:16.5: no hotplug settings from platform
+> > > > [   18.288269] pci 0000:00:16.6: no hotplug settings from platform
+> > > > [   18.288274] pci 0000:00:16.7: no hotplug settings from platform
+> > > > [   18.288278] pci 0000:00:1a.0: no hotplug settings from platform
+> > > > [   18.288279] pci 0000:00:1a.0: using default PCI settings
+> > > > [   18.288292] pci 0000:00:1a.1: no hotplug settings from platform
+> > > > [   18.288293] pci 0000:00:1a.1: using default PCI settings
+> > > > [   18.288307] ehci-pci 0000:00:1a.7: no hotplug settings from platform
+> > > > [   18.288308] ehci-pci 0000:00:1a.7: using default PCI settings
+> > > > [   18.288322] pci 0000:00:1b.0: no hotplug settings from platform
+> > > > [   18.288327] pcieport 0000:00:1c.0: no hotplug settings from platform
+> > > > [   18.288332] pcieport 0000:00:1c.4: no hotplug settings from platform
+> > > > [   18.288344] pci 0000:05:00.0: no hotplug settings from platform
+> > > > [   18.288349] pci 0000:00:1d.0: no hotplug settings from platform
+> > > > [   18.288350] pci 0000:00:1d.0: using default PCI settings
+> > > > [   18.288360] pci 0000:00:1d.1: no hotplug settings from platform
+> > > > [   18.288361] pci 0000:00:1d.1: using default PCI settings
+> > > > [   18.288374] pci 0000:00:1d.2: no hotplug settings from platform
+> > > > [   18.288374] pci 0000:00:1d.2: using default PCI settings
+> > > > [   18.288387] pci 0000:00:1d.3: no hotplug settings from platform
+> > > > [   18.288387] pci 0000:00:1d.3: using default PCI settings
+> > > > 
+> > > > The boot is noticeably slower.  What's going to happen on systems that
+> > > > actually have a significant I/O topology vs my little workstation?
+> > 
+> > That depends on how many bus check/device check events they generate on boot.
+> > 
+> > My test machines don't generate them during boot at all (even the one with
+> > a Thunderbolt connector), so I don't see the messages in question during boot
+> > on any of them.  Mika doesn't see them either I suppose, or he would have told
+> > me about that before.
+> > 
+> > And let's just make it clear that it is not usual or even OK to generate bus
+> > checks or device checks during boot like this.  And since the changes in
+> > question have been in linux-next since right after the 3.11 merge window, I
+> > think that someone would have complained already had that been a common issue.
+> > 
+> > Of course, we need to deal with that somehow nevertheless. :-)
+> > 
+> > > Just to give you an idea:
+> > > 
+> > > CONFIG_HOTPLUG_PCI_ACPI=y
+> > > 
+> > > $ dmesg | wc
+> > >   5697  49935 384368
+> > > 
+> > > $ dmesg | tail --lines=1
+> > > [   53.137123] Ebtables v2.0 registered
+> > > 
+> > > -- vs --
+> > > 
+> > > # CONFIG_HOTPLUG_PCI_ACPI is not set
+> > > 
+> > > $ dmesg | wc
+> > >  1053  9176 71652
+> > > 
+> > > $dmesg | tail --lines=1
+> > > [   28.917220] Ebtables v2.0 registered
+> > > 
+> > > So it spews out 5x more output with acpiphp enabled and takes and extra
+> > > 24s to boot (nearly 2x).  Not good.
+> > 
+> > The "no hotplug settings from platform" message is from pci_configure_slot().
+> > I think the messages you're seeing are from the call to it in
+> > acpiphp_set_hpp_values() which is called by enable_slot().
+> > 
+> > There, I think, we can simply check the return value of pci_scan_slot() and
+> > if that is 0 (no new devices), we can just skip everything under the call to
+> > __pci_bus_assign_resources().
+> > 
+> > However, we can't skip the scanning of bridges, if any, because there may be
+> > new devices below them and I guess that's what takes so much time on your
+> > machine.
+> 
+> OK, one piece is missing.  We may need to evaluate _OSC after handling each
+> event to let the platform know the status.
+> 
+> Can you please check if the appended patch makes any difference (with the
+> previous fix applied, of course)?
+> 
+> If fact, it is two patches combined.  One of them optimizes enable_slot()
+> slightly and the other adds the missing _OSC evaluation.
 
-Actually... would something like overcommit_bytes be better interface? overcommit_pages?
+Better, still double the output:
 
-If system would normally allow allocating "n" pages, with overcommit
-it would allow allocating "n + overcommit_pages" pages. That seems
-like right granularity...
+$ dmesg | wc
+   2169   19047  152710
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+$ dmesg | tail --lines=1
+[   39.980918] Ebtables v2.0 registered
+
+Here's another interesting stat:
+
+$ dmesg | colrm 1 15 | sort | uniq -c | sort -nr | head --lines=25
+     73 pci 0000:00:1f.0: BAR 13: [io  0x1000-0x107f] has bogus alignment
+     73 pci 0000:00:1e.0: PCI bridge to [bus 06]
+     64 pci 0000:00:1e.0:   bridge window [mem 0x81100000-0x812fffff 64bit pref]
+     64 pci 0000:00:1e.0:   bridge window [mem 0x80f00000-0x810fffff]
+     64 pci 0000:00:1e.0:   bridge window [io  0x7000-0x7fff]
+     38 pci 0000:00:1c.4: PCI bridge to [bus 05]
+     38 pci 0000:00:1c.4:   bridge window [mem 0xf4f00000-0xf4ffffff]
+     38 pci 0000:00:1c.0: PCI bridge to [bus 04]
+     38 pci 0000:00:07.0: PCI bridge to [bus 03]
+     38 pci 0000:00:07.0:   bridge window [mem 0xf2000000-0xf40fffff]
+     38 pci 0000:00:07.0:   bridge window [mem 0xe0000000-0xf1ffffff 64bit pref]
+     38 pci 0000:00:07.0:   bridge window [io  0x4000-0x4fff]
+     38 pci 0000:00:03.0: PCI bridge to [bus 02]
+     38 pci 0000:00:03.0:   bridge window [mem 0xf4e00000-0xf4efffff]
+     38 pci 0000:00:03.0:   bridge window [mem 0xd0000000-0xdfffffff 64bit pref]
+     38 pci 0000:00:03.0:   bridge window [io  0x3000-0x3fff]
+     38 pci 0000:00:01.0: PCI bridge to [bus 01]
+     38 pci 0000:00:01.0:   bridge window [mem 0xf4100000-0xf4bfffff]
+     38 pci 0000:00:01.0:   bridge window [io  0x2000-0x2fff]
+     37 pci 0000:00:1c.4:   bridge window [mem 0x80c00000-0x80dfffff 64bit pref]
+     37 pci 0000:00:1c.4:   bridge window [io  0x6000-0x6fff]
+     37 pci 0000:00:1c.0:   bridge window [mem 0x80a00000-0x80bfffff 64bit pref]
+     37 pci 0000:00:1c.0:   bridge window [mem 0x80800000-0x809fffff]
+     37 pci 0000:00:1c.0:   bridge window [io  0x5000-0x5fff]
+     36 pci 0000:00:01.0:   bridge window [mem 0x80000000-0x807fffff 64bit pref]
+
+This is nearly the entire difference, just 25 lines repeated over and
+over.  Thanks,
+
+Alex
+
