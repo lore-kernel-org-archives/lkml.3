@@ -1,179 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763544Ab3IEIJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 04:09:27 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:40632 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763486Ab3IEIIz (ORCPT
+	id S1763550Ab3IEINP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 04:13:15 -0400
+Received: from nm17-vm4.access.bullet.mail.gq1.yahoo.com ([216.39.63.105]:33674
+	"EHLO nm17-vm4.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757821Ab3IEINM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 04:08:55 -0400
-X-AuditID: cbfee68f-b7f656d0000058e3-db-52283c152f53
-Message-id: <1378368526.2354.96.camel@kjgkr>
-Subject: [GIT PULL] f2fs updates for v3.12
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linux FS DEV, Mailing List" <linux-fsdevel@vger.kernel.org>,
-        "Linux F2FS DEV, Mailing List" 
-	<linux-f2fs-devel@lists.sourceforge.net>
-Date: Thu, 05 Sep 2013 17:08:46 +0900
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t8zI11RG40ggzkzVS0uLXK32LP3JIvF
-	5V1z2Cwe9b1ld2DxODHjN4vH7gWfmTw+b5ILYI7isklJzcksSy3St0vgythy4TtbwWGNiq9b
-	DzA2MLbKdjFyckgImEicbV3IBGGLSVy4t56ti5GLQ0hgGaPE/M1/WWCK/j69wwiRWMQocfjR
-	BKiq10BVD1aCVfEK6EjsnvWEEcQWFtCS2NrRBDSWg4NNQFti834DkLCQgKLE2/13WUFsEQEj
-	ic8vrrCCzGEWOMUosfzDL2aQBIuAqsSMd+fBTuIXEJU4vHA7WJxZQF1i0rxFzBAXKUnsbu9k
-	h4jLS2xe85YZ4gZBiR+T77GADJUQWMcusfvCFHaIoQIS3yYfYgE5SEJAVmLTAag5khIHV9xg
-	mcAoNgvJillIxs5CMnYBI/MqRtHUguSC4qT0ImO94sTc4tK8dL3k/NxNjJAo6t/BePeA9SHG
-	ZKCVE5mlRJPzgVGYVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q
-	8SFGJg5OqQbGwFnPYiKyJnw/KrbLpO/by7ZNN7f1bWRxsrkUcuPnyet/6rafqfVu1r8rqiC9
-	20PqI+NkzaXebQFmk1dNd1f5uut41OpZlc4LxDU+l4cV9SZFXXXM1ry+tX6p4EO5+Q18Ha+5
-	an02NRhdXyH7L+xHqZ9/zUk9Md6jnE/22DUb+P1LPpP5t3iSEktxRqKhFnNRcSIAZtxZJLgC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xgK6ojUaQweWjChaXFrlb7Nl7ksXi
-	8q45bBaP+t6yO7B4nJjxm8Vj94LPTB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWZsufCdreCwRsXXrQcYGxhbZbsYOTkkBEwk/j69wwhhi0lcuLeerYuRi0NI
-	YBGjxOFHE6Cc14wS8x+sZAGp4hXQkdg96wlYh7CAlsTWjiamLkYODjYBbYnN+w1AwkICihJv
-	999lBbFFBIwkPr+4wgoyh1ngFKPE8g+/mEESLAKqEjPenWcCsfkFRCUOL9wOFmcWUJeYNG8R
-	M8RFShK72zvZIeLyEpvXvGWGuEFQ4sfkeywTGAVmIWmZhaRsFpKyBYzMqxhFUwuSC4qT0nON
-	9IoTc4tL89L1kvNzNzGCY/SZ9A7GVQ0WhxgFOBiVeHgbjNWDhFgTy4orcw8xSnAwK4nwWqwE
-	CvGmJFZWpRblxxeV5qQWH2JMBvpiIrOUaHI+MH3klcQbGpuYGVkamVkYmZibkyasJM57sNU6
-	UEggPbEkNTs1tSC1CGYLEwenVANj5LrWS5pBuoyyX2vOCZxgz0j6KN0uWP7DKz2IJbh4t9Y3
-	0Yszd707tmuxk1f51hMWIgwHZJkfbXvzNPNKyWQvvVkhT3X2+a+aGSxw7kFV29IoDT/B1+yP
-	F51WFBLrlV+h7HL+Ru+8g15ByvX3j11hXXSm/N43s6ISYbXeSE8JgTeqx7nruUyUWIozEg21
-	mIuKEwGZpXuvFQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 5 Sep 2013 04:13:12 -0400
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 04:13:12 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 472282.25915.bm@omp1010.access.mail.gq1.yahoo.com
+X-YMail-OSG: HWfNYD0VM1l47I4xbAyavA.sxcLESVwg3mysiVj.0pTyn0W
+ BeQW5KxtvGKXvr5WrHIZTvH64jXslmgwwG2wquBYRiOHEp8w0GfRu.xvTRIb
+ S0hGssSS6mB3PPpf7JRmWYQy_ktz3chI1Elx9NRsNgkOCT78bZDqGRb_L.ql
+ wil9WiMZEvYy80REwNJ6.RGZ391s7iVo006qWBTm323fH6vbmxN3Ag4NWOjB
+ rOs8anbP727JtYf67tzIgyKSm.wUeU2v31aL7ijHay0Kebo_zgfRp9fyisrj
+ wu52FU2_rBix.YHlsiKhH7punQWf9a23nYl9atoA8.zbZbW763ak5OJuw8b.
+ oFFt_WnwtdprPVCT0VZ5m8E8Ro5ADtKbUaI.9GfjcVnmWEh3LcZJ1ZRPM8pQ
+ rfQsTwNqOFwZ8BhjjCqBYGUUjH7Ib_SEOU5Pu7MLhVSVBDzgF3e9ayIoyf9z
+ ZNAALcbsoEPc_B1w1KSDYyvaeaPyth.SgOys56dBF4YDWdnGytpcUHnT.4zC
+ OfEPI1QXIt5ZKETzmWIM.9Q6XnOKTT6rtzJhONCtJmjdb8Bfh
+X-Rocket-MIMEInfo: 002.001,UmVnYXJkcywKTGFycnkgV2lsbGlhbXMuIAEwAQEBAQ--
+X-RocketYMMF: webukcm
+X-Mailer: YahooMailWebService/0.8.156.576
+References: <1377686633.77887.YahooMailNeo@web5703.biz.mail.ne1.yahoo.com> <1377686674.55043.YahooMailNeo@web5706.biz.mail.ne1.yahoo.com> <1377686730.46273.YahooMailNeo@web5701.biz.mail.ne1.yahoo.com> <1377716773.11750.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com> <1377795000.28480.YahooMailNeo@web5706.biz.mail.ne1.yahoo.com> <1377946076.180.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com> <1377946196.41164.YahooMailNeo@web5701.biz.mail.ne1.yahoo.com> <1378115203.59857.YahooMailNeo@web5705.biz.mail.ne1.yahoo.com> <1378115330.35175.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com> <1378363497.16248.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com> <1378368319.8522.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
+Message-ID: <1378368411.69241.YahooMailNeo@web5702.biz.mail.ne1.yahoo.com>
+Date: Thu, 5 Sep 2013 01:06:51 -0700 (PDT)
+From: Larry Williams <dcgf11@outlook.com>
+Reply-To: Larry Williams <williamslarry007@thepub.co.za>
+Subject: Awaiting your urgent and favorable response!
+To: undisclosed recipients:;
+In-Reply-To: <1378368319.8522.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="-1206156689-1033326795-1378368411=:69241"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+---1206156689-1033326795-1378368411=:69241
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Here is the pull request on f2fs updates for v3.12.
-This patch-set includes several enhancements such as inline-xattrs, sysfs,
-proc entry, and performance improvement at worst case scenarios.
-It also includes some bug fixes.
-Thank you very much.
+Regards,=0ALarry Williams. 
+---1206156689-1033326795-1378368411=:69241
+Content-Type: application/pdf; name="Mr."
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Mr. Larry Williams..pdf"
 
-The following changes since commit 36f571e9ed0419e73d127e18aa8992ced867268c:
+JVBERi0xLjUKJeLjz9MKMSAwIG9iago8PCAKICAgL1R5cGUgL0NhdGFsb2cK
+ICAgL1BhZ2VzIDIgMCBSCiAgIC9QYWdlTGF5b3V0IC9PbmVDb2x1bW4KICAg
+L1BhZ2VNb2RlIC9Vc2VOb25lCj4+CmVuZG9iagoyIDAgb2JqCjw8IAogICAv
+VHlwZSAvUGFnZXMKICAgL0tpZHMgWzMgMCBSIF0KICAgL0NvdW50IDEKPj4K
+ZW5kb2JqCjMgMCBvYmoKPDwgCiAgIC9UeXBlIC9QYWdlCiAgIC9QYXJlbnQg
+MiAwIFIKICAgL1Jlc291cmNlcyA8PCAKICAgL1Byb2NTZXQgWy9QREYgL1Rl
+eHQgXQogICAvRm9udCA8PCAKICAgL0YxIDYgMCBSCiAgIC9GMiA5IDAgUgo+
+Pgo+PgogICAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXQogICAvQ29udGVudHMg
+NCAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwgCiAgIC9GaWx0ZXIgL0ZsYXRl
+RGVjb2RlCiAgIC9MZW5ndGggNDUwNwo+PgpzdHJlYW0KeF6tHdmO48bxfb5C
+AZJghFgy++CVp9iJbayRRWLsBkEQ54FazUib8YjjmZGzm8/IF4dd1V1d3Twk
+NQXDY4kiq6vrvpr++ebnG7Ew/zzvbqpqnReLMq/WeqFFtc6qhRDrXC6e727u
+b37obv36/c2X33Z3Z+a39/c32cL80z2areu6ruCbWNTZoizEOtOL9483/7z9
+diny2+dleds+dn8Wy5UQt2/N9zV8xAt/Xla3jblo/v1snsDrf19KdftxuSpv
+f1qKovvTfYKvjQH2QgB/vDU3frVcVbfHLT3zav60z0vllvnKQN6Yx5rFsvv+
+tXmgOTyY//y4XP5r8f77m2/eX7BXWVZrUQT7XfTByIWQEzCqbF1NgIgZpIt1
+Vc3mkK7Ng7AckC2myvEjEXwLHw+7L5bErz8CMx8NZYHSL5Yb8KU93BkIjO7v
+gBNwAX66M3yAa19cTC1VrZUM8J8ml8rXqphNLlXhWt8b9Nt9czgYKYPNmH1v
+jkZwd+Ya7lhmmUiQJ1HUa+lXG5Cl0yBKsa70JIxpCotSr3U1BiAmr1Rmtbnk
+lYVZEpZ71x5BMvaemKC29yhCVsY+mEvNenBvJ+ijpVE3tuLlFNL5WusJGDGR
+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
+dKdjW4sFRtZXKCNLBUf0zlhOlFeo8NnxcFjur0YcrNVaUXfWF5C9C2GcwBbG
+Q2itWhceBIUbZCmw5rhjFcEoOgbbtiHOx8IMqhDM0hLb6bVLq6A7wkY3YaoS
+HovzQ3YToO3bO7x038F0fW8ADyb/csnSGbzoixM/xc9rAbLCwUQzzMxabLeB
+GXhxVoa/DGhK3LJifhlTZjWVMW0Lwh8KwQMFB2sWTXXFDwPARd7mjYvI3o/a
+DHngIdo/8Lo9MIPhYoVTPBB9y6UhyOI7G4qT4Cu9i+2eLhmczNUsgxft/oFU
+bA87ejpu1j6/w1zuv4bFAaaEGSEDXRD7UmDo4Ie8OnF2osRshG1pUjTsmxxm
+yobogtbhMueZIKD0eALKOdXHcRDxvrv8YX69VVRWdYPRt++MhKJ/Z+7cK24U
+UF780jbznvKOx7T49EZLsDMz61j2teSw3Ndoole9uTvS0R2etwIdHXjH/MkF
+hYZxGr7oxfIgNIxujcOI6VRkYb0vTSDM/H4ixlYJxiDE+Or6ChUbkYv0aUaL
+8CiIGGNVXqHoI3RGiXHS/8nChQ6hVb9cCfH0FUeH7/6Hm/8DIU8BWAplbmRz
+dHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgCiAgIC9Qcm9kdWNlciA8RkVGRjAw
+NjQwMDZGMDA1MDAwNDQwMDQ2MDAyMDAwNTYwMDY1MDA3MjAwMjAwMDM3MDAy
+RTAwMzMwMDIwMDA0MjAwNzUwMDY5MDA2QzAwNjQwMDIwMDAzMzAwMzkwMDMx
+MDAyMDAwMjgwMDU3MDA2OTAwNkUwMDY0MDA2RjAwNzcwMDczMDAyMDAwNTgw
+MDUwMDAyMDAwNTAwMDcyMDA2RjAwNjYwMDY1MDA3MzAwNzMwMDY5MDA2RjAw
+NkUwMDYxMDA2QzAwMjAwMDQ1MDA2NDAwNjkwMDc0MDA2OTAwNkYwMDZFMDAy
+MDAwMjAwMDI4MDA1MzAwNTAwMDIwMDAzMjAwMjkwMDIwMDAyRDAwMjAwMDU2
+MDA2NTAwNzIwMDczMDA2OTAwNkYwMDZFMDAzQTAwMjAwMDM1MDAyRTAwMzEw
+MDJFMDAzMjAwMzYwMDMwMDAzMDAwMjAwMDI4MDA3ODAwMzgwMDM2MDAyOTAw
+Mjk+CiAgIC9DcmVhdGlvbkRhdGUgKEQ6MjAxMzA5MDMxMTE3NDUrMDInMDAn
+KQo+PgplbmRvYmoKNiAwIG9iago8PCAKICAgL1R5cGUgL0ZvbnQKICAgL1N1
+YnR5cGUgL1RydWVUeXBlCiAgIC9Gb250RGVzY3JpcHRvciA3IDAgUgogICAv
+QmFzZUZvbnQgL1RpbWVzTmV3Um9tYW5QUy1JdGFsaWNNVAogICAvRmlyc3RD
+aGFyIDAKICAgL0xhc3RDaGFyIDI1NQogICAvV2lkdGhzIDggMCBSCiAgIC9F
+bmNvZGluZyAvV2luQW5zaUVuY29kaW5nCj4+CmVuZG9iago3IDAgb2JqCjw8
+IAogICAvVHlwZSAvRm9udERlc2NyaXB0b3IKICAgL0ZvbnROYW1lIC9UaW1l
+c05ld1JvbWFuUFMtSXRhbGljTVQKICAgL0FzY2VudCA2OTQKICAgL0NhcEhl
+aWdodCA2OTQKICAgL0Rlc2NlbnQgLTIxNgogICAvRmxhZ3MgOTYKICAgL0Zv
+bnRCQm94IFstNDk4IC0zMDcgMTEyMCAxMDIzXQogICAvSXRhbGljQW5nbGUg
+LTE2CiAgIC9TdGVtViA4NwogICAvWEhlaWdodCA0NTgKPj4KZW5kb2JqCjgg
+MCBvYmoKWzc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3
+OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4
+IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3Nzgg
+MjUwIDMzMyA0MjAgNTAwIDUwMCA4MzMgNzc4IDIxNCAzMzMgMzMzIDUwMCA2
+NzUgMjUwIDMzMyAyNTAgMjc4IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUw
+MCA1MDAgNTAwIDUwMCAzMzMgMzMzIDY3NSA2NzUgNjc1IDUwMCA5MjAgNjEx
+IDYxMSA2NjcgNzIyIDYxMSA2MTEgNzIyIDcyMiAzMzMgNDQ0IDY2NyA1NTYg
+ODMzIDY2NyA3MjIgNjExIDcyMiA2MTEgNTAwIDU1NiA3MjIgNjExIDgzMyA2
+MTEgNTU2IDU1NiAzODkgMjc4IDM4OSA0MjIgNTAwIDMzMyA1MDAgNTAwIDQ0
+NCA1MDAgNDQ0IDI3OCA1MDAgNTAwIDI3OCAyNzggNDQ0IDI3OCA3MjIgNTAw
+IDUwMCA1MDAgNTAwIDM4OSAzODkgMjc4IDUwMCA0NDQgNjY3IDQ0NCA0NDQg
+Mzg5IDQwMCAyNzUgNDAwIDU0MSAzNTAgNTAwIDM1MCAzMzMgNTAwIDU1NiA4
+ODkgNTAwIDUwMCAzMzMgMTAwMCA1MDAgMzMzIDk0NCAzNTAgNTU2IDM1MCAz
+NTAgMzMzIDMzMyA1NTYgNTU2IDM1MCA1MDAgODg5IDMzMyA5ODAgMzg5IDMz
+MyA2NjcgMzUwIDM4OSA1NTYgMjUwIDM4OSA1MDAgNTAwIDUwMCA1MDAgMjc1
+IDUwMCAzMzMgNzYwIDI3NiA1MDAgNjc1IDMzMyA3NjAgNTAwIDQwMCA1NDkg
+MzAwIDMwMCAzMzMgNTc2IDUyMyAyNTAgMzMzIDMwMCAzMTAgNTAwIDc1MCA3
+NTAgNzUwIDUwMCA2MTEgNjExIDYxMSA2MTEgNjExIDYxMSA4ODkgNjY3IDYx
+MSA2MTEgNjExIDYxMSAzMzMgMzMzIDMzMyAzMzMgNzIyIDY2NyA3MjIgNzIy
+IDcyMiA3MjIgNzIyIDY3NSA3MjIgNzIyIDcyMiA3MjIgNzIyIDU1NiA2MTEg
+NTAwIDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDY2NyA0NDQgNDQ0IDQ0NCA0
+NDQgNDQ0IDI3OCAyNzggMjc4IDI3OCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUw
+MCA1MDAgNTQ5IDUwMCA1MDAgNTAwIDUwMCA1MDAgNDQ0IDUwMCA0NDQgXQpl
+bmRvYmoKOSAwIG9iago8PCAKICAgL1R5cGUgL0ZvbnQKICAgL1N1YnR5cGUg
+L1RydWVUeXBlCiAgIC9Gb250RGVzY3JpcHRvciAxMCAwIFIKICAgL0Jhc2VG
+b250IC9UaW1lc05ld1JvbWFuUFNNVAogICAvRmlyc3RDaGFyIDAKICAgL0xh
+c3RDaGFyIDI1NQogICAvV2lkdGhzIDExIDAgUgogICAvRW5jb2RpbmcgL1dp
+bkFuc2lFbmNvZGluZwo+PgplbmRvYmoKMTAgMCBvYmoKPDwgCiAgIC9UeXBl
+IC9Gb250RGVzY3JpcHRvcgogICAvRm9udE5hbWUgL1RpbWVzTmV3Um9tYW5Q
+U01UCiAgIC9Bc2NlbnQgNjkzCiAgIC9DYXBIZWlnaHQgNjkzCiAgIC9EZXNj
+ZW50IC0yMTYKICAgL0ZsYWdzIDMyCiAgIC9Gb250QkJveCBbLTU2OCAtMzA3
+IDIwMDAgMTAwN10KICAgL0l0YWxpY0FuZ2xlIDAKICAgL1N0ZW1WIDg3CiAg
+IC9YSGVpZ2h0IDQ1Nwo+PgplbmRvYmoKMTEgMCBvYmoKWzc3OCA3NzggNzc4
+IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3Nzgg
+Nzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3
+NzggNzc4IDc3OCA3NzggNzc4IDc3OCA3NzggMjUwIDMzMyA0MDggNTAwIDUw
+MCA4MzMgNzc4IDE4MCAzMzMgMzMzIDUwMCA1NjQgMjUwIDMzMyAyNTAgMjc4
+IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCAyNzgg
+Mjc4IDU2NCA1NjQgNTY0IDQ0NCA5MjEgNzIyIDY2NyA2NjcgNzIyIDYxMSA1
+NTYgNzIyIDcyMiAzMzMgMzg5IDcyMiA2MTEgODg5IDcyMiA3MjIgNTU2IDcy
+MiA2NjcgNTU2IDYxMSA3MjIgNzIyIDk0NCA3MjIgNzIyIDYxMSAzMzMgMjc4
+IDMzMyA0NjkgNTAwIDMzMyA0NDQgNTAwIDQ0NCA1MDAgNDQ0IDMzMyA1MDAg
+NTAwIDI3OCAyNzggNTAwIDI3OCA3NzggNTAwIDUwMCA1MDAgNTAwIDMzMyAz
+ODkgMjc4IDUwMCA1MDAgNzIyIDUwMCA1MDAgNDQ0IDQ4MCAyMDAgNDgwIDU0
+MSAzNTAgNTAwIDM1MCAzMzMgNTAwIDQ0NCAxMDAwIDUwMCA1MDAgMzMzIDEw
+MDAgNTU2IDMzMyA4ODkgMzUwIDYxMSAzNTAgMzUwIDMzMyAzMzMgNDQ0IDQ0
+NCAzNTAgNTAwIDEwMDAgMzMzIDk4MCAzODkgMzMzIDcyMiAzNTAgNDQ0IDcy
+MiAyNTAgMzMzIDUwMCA1MDAgNTAwIDUwMCAyMDAgNTAwIDMzMyA3NjAgMjc2
+IDUwMCA1NjQgMzMzIDc2MCA1MDAgNDAwIDU0OSAzMDAgMzAwIDMzMyA1NzYg
+NDUzIDI1MCAzMzMgMzAwIDMxMCA1MDAgNzUwIDc1MCA3NTAgNDQ0IDcyMiA3
+MjIgNzIyIDcyMiA3MjIgNzIyIDg4OSA2NjcgNjExIDYxMSA2MTEgNjExIDMz
+MyAzMzMgMzMzIDMzMyA3MjIgNzIyIDcyMiA3MjIgNzIyIDcyMiA3MjIgNTY0
+IDcyMiA3MjIgNzIyIDcyMiA3MjIgNzIyIDU1NiA1MDAgNDQ0IDQ0NCA0NDQg
+NDQ0IDQ0NCA0NDQgNjY3IDQ0NCA0NDQgNDQ0IDQ0NCA0NDQgMjc4IDI3OCAy
+NzggMjc4IDUwMCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCA1NDkgNTAwIDUw
+MCA1MDAgNTAwIDUwMCA1MDAgNTAwIDUwMCBdCmVuZG9iagp4cmVmCjAgMTIg
+CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAxNSAwMDAwMCBuIAowMDAw
+MDAwMTE5IDAwMDAwIG4gCjAwMDAwMDAxODcgMDAwMDAgbiAKMDAwMDAwMDM3
+NiAwMDAwMCBuIAowMDAwMDA0OTYzIDAwMDAwIG4gCjAwMDAwMDU0MTIgMDAw
+MDAgbiAKMDAwMDAwNTYxNSAwMDAwMCBuIAowMDAwMDA1ODQ4IDAwMDAwIG4g
+CjAwMDAwMDY4OTEgMDAwMDAgbiAKMDAwMDAwNzA4OSAwMDAwMCBuIAowMDAw
+MDA3MzE0IDAwMDAwIG4gCnRyYWlsZXIKPDwgCiAgIC9Sb290IDEgMCBSCiAg
+IC9JbmZvIDUgMCBSCiAgIC9TaXplIDEyCj4+CnN0YXJ0eHJlZgo4MzYwCiUl
+RU9GCg==
 
-  Merge tag 'firewire-fix' of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394 (2013-07-29 17:08:22 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/for-f2fs-3.12
-
-for you to fetch changes up to a26b7c8a0149ce1e3b6a10f2801aada6e447e4e7:
-
-  f2fs: optimize gc for better performance (2013-09-05 13:50:32 +0900)
-
-----------------------------------------------------------------
-f2fs updates for v3.12
-
-This patch-set includes the following major enhancement patches.
-o support inline xattrs
-o add sysfs support to control GCs explicitly
-o add proc entry to show the current segment usage information
-o improve the GC/SSR performance
-
-The other bug fixes are as follows.
-o avoid the overflow on status calculation
-o fix some error handling routines
-o fix inconsistent xattr states after power-off-recovery
-o fix incorrect xattr node offset definition
-o fix deadlock condition in fsync
-o fix the fdatasync routine for power-off-recovery
-
-----------------------------------------------------------------
-Changman Lee (1):
-      f2fs: add description for fsck.f2fs and dump.f2fs
-
-Dan Carpenter (2):
-      f2fs: remove an unneeded kfree(NULL)
-      f2fs: alloc_page() doesn't return an ERR_PTR
-
-Gu Zheng (8):
-      f2fs: add a help func F2FS_STAT() to get the f2fs_stat_info
-      f2fs: introduce help function F2FS_NODE()
-      f2fs: use seq_puts()/seq_putc() rather than seq_printf() where possible
-      f2fs: use list_for_each rather than list_for_each_safe, in remove_orphan_inode()
-      f2fs: move bio_private allocation out of f2fs_bio_alloc()
-      f2fs: clean up the needless end 'return' of void function
-      f2fs: fix a compound statement label error
-      f2fs: use strncasecmp() simplify the string comparison
-
-Jaegeuk Kim (21):
-      f2fs: recover date requested by fdatasync
-      f2fs: add proc entry to monitor current usage of segments
-      f2fs: update file name in the inode block during f2fs_rename
-      f2fs: fix i_name during f2fs_sync_file
-      f2fs: fix handling orphan inodes
-      f2fs: fix a build failure due to missing the kobject header
-      f2fs: fix the use of XATTR_NODE_OFFSET
-      f2fs: fix inconsistency between xattr node blocks and its inode
-      f2fs: introduce cur_cp_version function to reduce code size
-      f2fs: check the free space first in new_node_page
-      f2fs: should cover i_xattr_nid with its xattr node page lock
-      f2fs: fix wrong BUG_ON condition
-      f2fs: add flags for inline xattrs
-      f2fs: reserve the xattr space dynamically
-      f2fs: introduce __find_xattr for readability
-      f2fs: add the truncate_xattr_node function
-      f2fs: support the inline xattrs
-      f2fs: fix omitting to update inode page
-      f2fs: trigger GC when there are prefree segments
-      f2fs: avoid an overflow during utilization calculation
-      f2fs: merge more bios of node block writes
-
-Jin Xu (3):
-      f2fs: fix a deadlock in fsync
-      f2fs: avoid writing inode redundantly when creating a file
-      f2fs: optimize gc for better performance
-
-Namjae Jeon (3):
-      f2fs: add sysfs support for controlling the gc_thread
-      f2fs: add sysfs entries to select the gc policy
-      f2fs: remove redundant code from f2fs_write_begin
-
-Wei Yongjun (1):
-      f2fs: fix error return code in init_f2fs_fs()
-
-Zhao Hongjiang (1):
-      f2fs: fix memory leak when init f2fs filesystem fail
-
- Documentation/ABI/testing/sysfs-fs-f2fs |  26 +++
- Documentation/filesystems/f2fs.txt      |  75 ++++++++-
- fs/f2fs/checkpoint.c                    |  24 ++-
- fs/f2fs/data.c                          |  28 ++--
- fs/f2fs/debug.c                         |  34 ++--
- fs/f2fs/dir.c                           |  19 ++-
- fs/f2fs/f2fs.h                          | 106 +++++++++---
- fs/f2fs/file.c                          |  25 ++-
- fs/f2fs/gc.c                            |  58 ++++---
- fs/f2fs/gc.h                            |  38 +++--
- fs/f2fs/inode.c                         |  15 +-
- fs/f2fs/namei.c                         |  33 ++--
- fs/f2fs/node.c                          | 100 +++++++----
- fs/f2fs/node.h                          |  44 +++--
- fs/f2fs/recovery.c                      |  29 ++--
- fs/f2fs/segment.c                       |  41 +++--
- fs/f2fs/segment.h                       |   6 +-
- fs/f2fs/super.c                         | 209 ++++++++++++++++++++++-
- fs/f2fs/xattr.c                         | 289 ++++++++++++++++++++------------
- fs/f2fs/xattr.h                         |  15 +-
- include/linux/f2fs_fs.h                 |  20 ++-
- 21 files changed, 890 insertions(+), 344 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-fs-f2fs
-
--- 
-Jaegeuk Kim
-Samsung
-
+---1206156689-1033326795-1378368411=:69241--
