@@ -1,101 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab3IES3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:29:37 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:65474 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab3IES3f (ORCPT
+	id S1753722Ab3IESfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:35:13 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:56446 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3IESfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:29:35 -0400
+	Thu, 5 Sep 2013 14:35:10 -0400
+Message-ID: <5228CEDB.1090306@gmail.com>
+Date: Thu, 05 Sep 2013 13:35:07 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <52277DBF.7080104@wwwdotorg.org>
-References: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
- <1377150793-27864-4-git-send-email-mturquette@linaro.org> <2A930389-012E-45C3-93EB-6B4A41DB2EF5@codeaurora.org>
- <20130829011425.8231.78802@quantum> <39BAF1F8-41AD-4667-BF76-22BDF709415A@codeaurora.org>
- <20130830203334.10934.10011@quantum> <522110AA.7040700@wwwdotorg.org>
- <20130903232219.10934.67434@quantum> <52277DBF.7080104@wwwdotorg.org>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Thu, 5 Sep 2013 11:29:14 -0700
-Message-ID: <CAPtuhThWHP61FzDBCH5SSFx6kV7==VdF3-M=Lke+cgnrOQL7JQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] clk: dt: binding for basic multiplexer clock
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Matt Sealey <neko@bakuhatsu.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, gnurou@gmail.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH v5 1/5] ARM: add basic Trusted Foundations support
+References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com> <1378351680-14696-2-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1378351680-14696-2-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 11:36 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 09/03/2013 05:22 PM, Mike Turquette wrote:
->> Quoting Stephen Warren (2013-08-30 14:37:46)
->>> On 08/30/2013 02:33 PM, Mike Turquette wrote:
-> ...
->>>> The clock _data_ seems to always have some churn to it. Moving it out to
->>>> DT reduces that churn from Linux. My concern above is not about kernel
->>>> data size.
->>>
->>> That sounds like the opposite of what we should be doing.
->>>
->>> It's fine for kernel code/data to change; that's a natural part of
->>> development. Obviously, we should minimize churn, through thorough
->>> review, domain knowledge, etc.
->>
->> And with the "clock mapping" style bindings we'll end up changing both
->> the DT binding definition and the kernel. Not great.
->
-> What's a "clock mapping" style binding? I guess that means the style
-> where you have a single DT node that provides multiple clocks, rather
-> than one DT node per clock?
->
-> If the kernel driver changes its internal data, I don't see why that
-> would have any impact at all on the DT binding definition. We should be
-> able to use one DT binding definition with arbitrary drivers.
+On 09/04/2013 10:27 PM, Alexandre Courbot wrote:
+> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> can be invoked  using a consistent SMC-based API on all supported
+> platforms. This patch adds initial basic support for Trusted
+> Foundations using the ARM firmware API. Current features are limited
+> to the ability to boot secondary processors.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>  arch/arm/Kconfig                                   |  2 +
+>  arch/arm/Makefile                                  |  1 +
+>  arch/arm/firmware/Kconfig                          | 25 +++++++
+>  arch/arm/firmware/Makefile                         |  1 +
+>  arch/arm/firmware/trusted_foundations.c            | 82 ++++++++++++++++++++++
+>  arch/arm/include/asm/trusted_foundations.h         | 53 ++++++++++++++
+>  8 files changed, 182 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>  create mode 100644 arch/arm/firmware/Kconfig
+>  create mode 100644 arch/arm/firmware/Makefile
+>  create mode 100644 arch/arm/firmware/trusted_foundations.c
+>  create mode 100644 arch/arm/include/asm/trusted_foundations.h
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+> new file mode 100644
+> index 0000000..3954bbd
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+> @@ -0,0 +1,17 @@
+> +Trusted Foundations
+> +
+> +Boards that use the Trusted Foundations secure monitor can signal its
+> +presence by declaring a node compatible with "tl,trusted-foundations"
+> +under the root node.
+> +
+> +Required properties:
+> +- compatible : "tl,trusted-foundations"
+> +- version-major : major version number of Trusted Foundations firmware
+> +- version-minor: minor version number of Trusted Foundations firmware
+> +
+> +Example:
+> +	firmware {
+> +		compatible = "tl,trusted-foundations";
+> +		version-major = <2>;
+> +		version-minor = <8>;
+> +	};
 
-Yes, I'm referring to a single node providing multiple clocks. As an
-example see the Exynos 5420 binding:
-Documentation/devicetree/bindings/clock/exynos5420-clock.txt
+I'm wondering how we fit this in with PSCI bindings? Both are pieces of
+firmware functionality and may co-exist. There's nothing incompatible
+here, but there should be some commonality. Will future versions of
+Trusted Foundations follow the SMC calling conventions doc? What about
+armv8 support.
 
-The clock id's are stored as part of the binding definition resulting
-in a mapping scheme that can be fragile. There have already been
-patches to fix the id's assigned in the binding, which isn't supposed
-to happen because it's a stable interface. If clock phandles are
-created by individual nodes in DT then the binding definition need
-never be updated due to merge conflicts or renaming which plagues the
-mapping scenario.
+Rob
 
->
->> And I'll respond to your points below but the whole "relocate the
->> problem to DT" argument is simply not my main point. What I want to do
->> is increase the usefulness of DT by allowing register-level details into
->> the binding which can
->
-> Can you expand upon why a DT that encodes register-level details is more
-> useful? I can't see why there would be any difference in usefulness.
->
 
-Sure. The usefulness comes out of the fact that we do not need to
-maintain data synchronization across dts and clock provider drivers.
-The data lives in one place and only one place. We absolutely need a
-phandle to a clock in DT link clock consumer devices to their input
-clocks, so there is no question that should be in DT. Since we're
-already doing that, why not do away with trying to keep dts and C
-files in sync and just put all of the data in dts? It's a pure
-separation of logic and data. The Linux clock provider driver is
-purely logic and no data, which I imagine would appease the mind of
-many a computer scientist.
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 366ce9b..20d61f3 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -63,6 +63,7 @@ ste	ST-Ericsson
+>  stericsson	ST-Ericsson
+>  toumaz	Toumaz
+>  ti	Texas Instruments
+> +tl	Trusted Logic
+>  toshiba	Toshiba Corporation
+>  v3	V3 Semiconductor
+>  via	VIA Technologies, Inc.
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 43594d5..7fbe800 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1074,6 +1074,8 @@ config ARM_TIMER_SP804
+>  	select CLKSRC_MMIO
+>  	select CLKSRC_OF if OF
+>  
+> +source "arch/arm/firmware/Kconfig"
+> +
+>  source arch/arm/mm/Kconfig
+>  
+>  config ARM_NR_BANKS
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index 6fd2cea..a48de17 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -267,6 +267,7 @@ core-$(CONFIG_KVM_ARM_HOST) 	+= arch/arm/kvm/
+>  core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
+>  core-y				+= arch/arm/net/
+>  core-y				+= arch/arm/crypto/
+> +core-y				+= arch/arm/firmware/
+>  core-y				+= $(machdirs) $(platdirs)
+>  
+>  drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
+> diff --git a/arch/arm/firmware/Kconfig b/arch/arm/firmware/Kconfig
+> new file mode 100644
+> index 0000000..ccf44c8
+> --- /dev/null
+> +++ b/arch/arm/firmware/Kconfig
+> @@ -0,0 +1,25 @@
+> +config ARCH_SUPPORTS_FIRMWARE
+> +	bool
+> +
+> +config ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+> +	bool
+> +	select ARCH_SUPPORTS_FIRMWARE
+> +
+> +menu "Firmware options"
+> +	depends on ARCH_SUPPORTS_FIRMWARE
+> +
+> +config TRUSTED_FOUNDATIONS
+> +	bool "Trusted Foundations secure monitor support"
+> +	depends on ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+> +	help
+> +	  Some devices are booted with the Trusted Foundations secure monitor
+> +	  active, requiring some core operations to be performed by the secure
+> +	  monitor instead of the kernel.
+> +
+> +	  This option allows the kernel to invoke the secure monitor whenever
+> +	  required on devices using Trusted Foundations. See
+> +	  arch/arm/include/asm/trusted_foundations.h or the
+> +	  tl,trusted-foundations device tree binding documentation for details
+> +	  on how to use it.
+> +
+> +endmenu
+> diff --git a/arch/arm/firmware/Makefile b/arch/arm/firmware/Makefile
+> new file mode 100644
+> index 0000000..a71f165
+> --- /dev/null
+> +++ b/arch/arm/firmware/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_TRUSTED_FOUNDATIONS)	+= trusted_foundations.o
+> diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
+> new file mode 100644
+> index 0000000..210ef83
+> --- /dev/null
+> +++ b/arch/arm/firmware/trusted_foundations.c
+> @@ -0,0 +1,82 @@
+> +/*
+> + * Trusted Foundations support for ARM CPUs
+> + *
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/of.h>
+> +#include <asm/firmware.h>
+> +#include <asm/trusted_foundations.h>
+> +
+> +#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
+> +
+> +static void __naked tf_generic_smc(u32 type, u32 subtype, u32 arg)
+> +{
+> +	asm volatile(
+> +		".arch_extension	sec\n\t"
+> +		"stmfd	sp!, {r4 - r11, lr}\n\t"
+> +		__asmeq("%0", "r0")
+> +		__asmeq("%1", "r1")
+> +		__asmeq("%2", "r2")
+> +		"mov	r3, #0\n\t"
+> +		"mov	r4, #0\n\t"
+> +		"smc	#0\n\t"
+> +		"ldmfd	sp!, {r4 - r11, pc}"
+> +		:
+> +		: "r" (type), "r" (subtype), "r" (arg)
+> +		: "memory");
+> +}
+> +
+> +static int tf_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+> +{
+> +	tf_generic_smc(TF_SET_CPU_BOOT_ADDR_SMC, boot_addr, 0);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct firmware_ops trusted_foundations_ops = {
+> +	.set_cpu_boot_addr = tf_set_cpu_boot_addr,
+> +};
+> +
+> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd)
+> +{
+> +	/* we are not using version information for now since currently
+> +	 * supported SMCs are compatible with all TF releases */
+> +	register_firmware_ops(&trusted_foundations_ops);
+> +}
+> +
+> +#if IS_ENABLED(CONFIG_OF)
+> +
+> +void of_register_trusted_foundations(void)
+> +{
+> +	struct device_node *node;
+> +	struct trusted_foundations_platform_data pdata;
+> +	int err;
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+> +
+> +	if (!node)
+> +		return;
+> +
+> +	err = of_property_read_u32(node, "version-major", &pdata.version_major);
+> +	if (err != 0)
+> +		panic("Trusted Foundation: missing version-major property\n");
+> +	err = of_property_read_u32(node, "version-minor", &pdata.version_minor);
+> +	if (err != 0)
+> +		panic("Trusted Foundation: missing version-minor property\n");
+> +	register_trusted_foundations(&pdata);
+> +}
+> +
+> +#endif /* CONFIG_OF */
+> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
+> new file mode 100644
+> index 0000000..558f616
+> --- /dev/null
+> +++ b/arch/arm/include/asm/trusted_foundations.h
+> @@ -0,0 +1,53 @@
+> +/*
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#ifndef __ASM_ARM_TRUSTED_FOUNDATIONS_H
+> +#define __ASM_ARM_TRUSTED_FOUNDATIONS_H
+> +
+> +#include <linux/kconfig.h>
+> +
+> +struct trusted_foundations_platform_data {
+> +	unsigned int version_major;
+> +	unsigned int version_minor;
+> +};
+> +
+> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
+> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
+> +#if IS_ENABLED(CONFIG_OF)
+> +void of_register_trusted_foundations(void);
+> +#endif
+> +
+> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
+> +
+> +#include <linux/printk.h>
+> +#include <linux/of.h>
+> +#include <asm/bug.h>
+> +
+> +static inline void register_trusted_foundations(
+> +				   struct trusted_foundations_platform_data *pd)
+> +{
+> +	panic("No support for Trusted Foundations, stopping...\n");
+> +}
+> +
+> +#if IS_ENABLED(CONFIG_OF)
+> +static inline void of_register_trusted_foundations(void)
+> +{
+> +	if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
+> +		register_trusted_foundations(NULL);
+> +}
+> +#endif
+> +
+> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
+> +
+> +#endif
+> 
 
-Can you return the favor and tell me why putting register level
-details into DT is inherently a bad idea? I'll drop my case if I can
-be convinced that putting that level is detail into DT is The Wrong
-Way, but I'll need more to go on than tradition and status quo.
-
-Thanks,
-Mike
