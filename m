@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab3IEQHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 12:07:35 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60555 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab3IEQHe (ORCPT
+	id S1754405Ab3IEQJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 12:09:56 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51641 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752927Ab3IEQJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 12:07:34 -0400
-Date: Thu, 5 Sep 2013 17:07:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
-Message-ID: <20130905160729.GT13318@ZenIV.linux.org.uk>
-References: <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
- <20130905111852.GP13318@ZenIV.linux.org.uk>
- <CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
- <20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
- <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
- <20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
- <20130905132325.GQ13318@ZenIV.linux.org.uk>
- <20130905142651.GB25538@tucsk.piliscsaba.szeredi.hu>
- <20130905145613.GR13318@ZenIV.linux.org.uk>
- <CAJfpegsF=0Rm52m0qeSmXMy7nMpzy9iieEVR8TP0dox+Xzi55Q@mail.gmail.com>
+	Thu, 5 Sep 2013 12:09:54 -0400
+Date: Thu, 5 Sep 2013 17:09:05 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
+Message-ID: <20130905160905.GI11887@arm.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+ <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJfpegsF=0Rm52m0qeSmXMy7nMpzy9iieEVR8TP0dox+Xzi55Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 05:52:51PM +0200, Miklos Szeredi wrote:
-> On Thu, Sep 5, 2013 at 4:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > I'd probably just do this, and to hell with helper functions...
-> >
-> > int d_set_mounted(struct dentry *dentry)
-> > {
-> >         struct dentry *p;
-> >         int ret = 0;
-> >         write_seqlock(&rename_lock);
-> >         for (p = dentry; !IS_ROOT(p); p = p->d_parent) {
-> >                 /* Need exclusion wrt. check_submounts_and_drop() */
-> >                 spin_lock(&p->d_lock);
-> >                 if (unlikely(d_unhashed(p))) {
-> >                         spin_unlock(&p->d_lock);
-> >                         ret = -ENOENT;
-> >                         goto out;
-> >                 }
-> >                 spin_unlock(&p->d_lock);
-> >         }
-> >         spin_lock(&dentry->d_lock);
-> >         dentry->d_flags |= DCACHE_MOUNTED;
-> >         spin_unlock(&dentry->d_lock);
-> > out:
-> >         write_sequnlock(&rename_lock);
-> >         return ret;
-> > }
-> 
-> One issue with that: the dentry should be checked and marked within
-> the same d_locked region.   Because e.g. d_invalidate() relies solely
-> on d_lock for non-dir mounts and d_mountpoint() checking, no
-> rename_lock protection there.
+On Thu, Aug 29, 2013 at 07:32:32PM +0100, Stefano Stabellini wrote:
+> xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
+> and devices. On native x86 and ARMv8 is sufficient to call
+> __get_free_pages in order to get a coherent buffer, while on ARM we need
+> to call arm_dma_ops.alloc.
 
-Point...  OK, could you check if vfs.git#for-miklos looks sane now?  It should
-be at cf7543f...
+Don't bet on this for ARMv8. It's not mandated for the architecture, so
+at some point some SoC will require non-cacheable buffers for coherency.
+
+-- 
+Catalin
