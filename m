@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763505Ab3IEH5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 03:57:21 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:55201 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763476Ab3IEH5Q (ORCPT
+	id S1763519Ab3IEH5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 03:57:25 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:27994 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763506Ab3IEH5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 03:57:16 -0400
+	Thu, 5 Sep 2013 03:57:22 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         "James E.J. Bottomley" <JBottomley@parallels.com>
 CC: Gavin Shan <shangw@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Naresh Kumar Inna <naresh@chelsio.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jesper Juhl <jj@chaosbits.net>, <linux-scsi@vger.kernel.org>
-Subject: [PATCH v2 2/6] scsi/csiostor: use pcie_capability_xxx to simplify code
-Date: Thu, 5 Sep 2013 15:55:26 +0800
-Message-ID: <1378367730-25996-2-git-send-email-wangyijing@huawei.com>
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH v2 4/6] x86/pci: use pcie_cap to simplify code
+Date: Thu, 5 Sep 2013 15:55:28 +0800
+Message-ID: <1378367730-25996-4-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1378367730-25996-1-git-send-email-wangyijing@huawei.com>
 References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com>
@@ -31,65 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2: add #define for Completion Timeout Value, and use
-        pcie_capability_clear_and_set_word() instead suggested by Bjorn.
+v1->v2: use pci_bus_set_ops to replace pci_ops
+        and add a dev_info() to notify user that
+        the pci_ops was replaced suggested by Bjorn.
 
-Pcie_capability_xxx() interfaces were introduced to
-simplify code to access PCIe Cap config space. And
-because PCI core saves the PCIe Cap offset in
-set_pcie_port_type() when device is enumerated.
-So we can use pci_is_pcie() instead.
+PCI core saves PCIe Cap offset in pcie_cap,
+use pcie_cap to simplify code. Also we should
+use pci_bus_set_ops() to replace pci_ops for
+safety and add a dev_info to notify user that
+the pci_ops was replaced.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Naresh Kumar Inna <naresh@chelsio.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
 ---
- drivers/scsi/csiostor/csio_hw.c |   14 +++-----------
- include/uapi/linux/pci_regs.h   |    1 +
- 2 files changed, 4 insertions(+), 11 deletions(-)
+ arch/x86/pci/fixup.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/csiostor/csio_hw.c b/drivers/scsi/csiostor/csio_hw.c
-index 0eb35b9..07f493a 100644
---- a/drivers/scsi/csiostor/csio_hw.c
-+++ b/drivers/scsi/csiostor/csio_hw.c
-@@ -855,17 +855,9 @@ csio_hw_get_flash_params(struct csio_hw *hw)
- static void
- csio_set_pcie_completion_timeout(struct csio_hw *hw, u8 range)
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index f5809fa..edd7879 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -252,7 +252,7 @@ static struct pci_ops quirk_pcie_aspm_ops = {
+  */
+ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
  {
--	uint16_t val;
--	int pcie_cap;
--
--	if (!csio_pci_capability(hw->pdev, PCI_CAP_ID_EXP, &pcie_cap)) {
--		pci_read_config_word(hw->pdev,
--				     pcie_cap + PCI_EXP_DEVCTL2, &val);
--		val &= 0xfff0;
--		val |= range ;
--		pci_write_config_word(hw->pdev,
--				      pcie_cap + PCI_EXP_DEVCTL2, val);
--	}
-+	if (pci_is_pcie(hw->pdev))
-+		pcie_capability_clear_and_set_word(hw->pdev, PCI_EXP_DEVCTL2,
-+				PCI_EXP_DEVCTL2_COMP_TIME, range);
- }
+-	int cap_base, i;
++	int i;
+ 	struct pci_bus  *pbus;
+ 	struct pci_dev *dev;
  
- /*****************************************************************************/
-diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-index baa7852..cd74182 100644
---- a/include/uapi/linux/pci_regs.h
-+++ b/include/uapi/linux/pci_regs.h
-@@ -558,6 +558,7 @@
- #define  PCI_EXP_DEVCAP2_OBFF_MSG	0x00040000 /* New message signaling */
- #define  PCI_EXP_DEVCAP2_OBFF_WAKE	0x00080000 /* Re-use WAKE# for OBFF */
- #define PCI_EXP_DEVCTL2		40	/* Device Control 2 */
-+#define  PCI_EXP_DEVCTL2_COMP_TIME	0x0f	/* Completion Timeout Value */
- #define  PCI_EXP_DEVCTL2_ARI		0x20	/* Alternative Routing-ID */
- #define  PCI_EXP_DEVCTL2_IDO_REQ_EN	0x0100	/* Allow IDO for requests */
- #define  PCI_EXP_DEVCTL2_IDO_CMP_EN	0x0200	/* Allow IDO for completions */
+@@ -278,7 +278,7 @@ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
+ 		for (i = GET_INDEX(pdev->device, 0); i <= GET_INDEX(pdev->device, 7); ++i)
+ 			quirk_aspm_offset[i] = 0;
+ 
+-		pbus->ops = pbus->parent->ops;
++		pci_bus_set_ops(pbus, pbus->parent->ops);
+ 	} else {
+ 		/*
+ 		 * If devices are attached to the root port at power-up or
+@@ -286,13 +286,16 @@ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
+ 		 * each root port to save the register offsets and replace the
+ 		 * bus ops.
+ 		 */
+-		list_for_each_entry(dev, &pbus->devices, bus_list) {
++		list_for_each_entry(dev, &pbus->devices, bus_list)
+ 			/* There are 0 to 8 devices attached to this bus */
+-			cap_base = pci_find_capability(dev, PCI_CAP_ID_EXP);
+-			quirk_aspm_offset[GET_INDEX(pdev->device, dev->devfn)] = cap_base + 0x10;
+-		}
+-		pbus->ops = &quirk_pcie_aspm_ops;
++			quirk_aspm_offset[GET_INDEX(pdev->device, dev->devfn)] =
++				dev->pcie_cap + PCI_EXP_LNKCTL;
++
++		pci_bus_set_ops(pbus, &quirk_pcie_aspm_ops);
++		dev_info(&pbus->dev, "pci_ops is replaced by quirk_pcie_aspm_ops, "
++				"any writes to ASPM control bits will be ignored.\n");
+ 	}
++
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_MCH_PA,	pcie_rootport_aspm_quirk);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_MCH_PA1,	pcie_rootport_aspm_quirk);
 -- 
 1.7.1
 
