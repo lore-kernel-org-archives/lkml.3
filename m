@@ -1,88 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3IEFXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:23:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57560 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab3IEFXM (ORCPT
+	id S1755968Ab3IEFn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:43:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:62488 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab3IEFn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:23:12 -0400
-Date: Thu, 5 Sep 2013 15:23:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130905152308.d0a720cfb23b8b647e6558e6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG"
+	Thu, 5 Sep 2013 01:43:57 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-88-52281a1abfb3
+Date: Thu, 5 Sep 2013 14:43:57 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+Message-ID: <20130905054357.GA23597@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130905011553.GA10158@voom.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905011553.GA10158@voom.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello, David.
 
-Hi all,
+First of all, thanks for review!
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/ipv6/sit.c between commit 3d483058c8c8 ("ipv6: wire up
-skb->encapsulation") from Linus' tree and commit 8b7ed2d91d6a
-("iptunnels: remove net arg from iptunnel_xmit()") from the net-next tree.
+On Thu, Sep 05, 2013 at 11:15:53AM +1000, David Gibson wrote:
+> On Fri, Aug 09, 2013 at 06:26:37PM +0900, Joonsoo Kim wrote:
+> > If parallel fault occur, we can fail to allocate a hugepage,
+> > because many threads dequeue a hugepage to handle a fault of same address.
+> > This makes reserved pool shortage just for a little while and this cause
+> > faulting thread who can get hugepages to get a SIGBUS signal.
+> > 
+> > To solve this problem, we already have a nice solution, that is,
+> > a hugetlb_instantiation_mutex. This blocks other threads to dive into
+> > a fault handler. This solve the problem clearly, but it introduce
+> > performance degradation, because it serialize all fault handling.
+> > 
+> > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+> > performance degradation. For achieving it, at first, we should ensure that
+> > no one get a SIGBUS if there are enough hugepages.
+> > 
+> > For this purpose, if we fail to allocate a new hugepage when there is
+> > concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
+> > these threads defer to get a SIGBUS signal until there is no
+> > concurrent user, and so, we can ensure that no one get a SIGBUS if there
+> > are enough hugepages.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > index e29e28f..981c539 100644
+> > --- a/include/linux/hugetlb.h
+> > +++ b/include/linux/hugetlb.h
+> > @@ -242,6 +242,7 @@ struct hstate {
+> >  	int next_nid_to_free;
+> >  	unsigned int order;
+> >  	unsigned long mask;
+> > +	unsigned long nr_dequeue_users;
+> >  	unsigned long max_huge_pages;
+> >  	unsigned long nr_huge_pages;
+> >  	unsigned long free_huge_pages;
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 8743e5c..0501fe5 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -561,6 +561,7 @@ retry_cpuset:
+> >  		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+> >  			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+> >  			if (page) {
+> > +				h->nr_dequeue_users++;
+> 
+> So, nr_dequeue_users doesn't seem to be incremented in the
+> alloc_huge_page_node() path.  I'm not sure exactly where that's used,
+> so I'm not sure if it's a problem.
+> 
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Hmm.. I think that it isn't a problem. The point is that we want to avoid
+the race which kill the legitimate users of hugepages by out of resources.
+This allocation doesn't harm to the legitimate users.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> >  				if (!use_reserve)
+> >  					break;
+> >  
+> > @@ -577,6 +578,16 @@ retry_cpuset:
+> >  	return page;
+> >  }
+> >  
+> > +static void commit_dequeued_huge_page(struct hstate *h, bool do_dequeue)
+> > +{
+> > +	if (!do_dequeue)
+> > +		return;
+> 
+> Seems like it would be easier to do this test in the callers, but I
+> doubt it matters much.
 
-diff --cc net/ipv6/sit.c
-index 21b25dd,19abcc9..0000000
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@@ -886,13 -881,8 +879,13 @@@ static netdev_tx_t ipip6_tunnel_xmit(st
-  		ttl =3D iph6->hop_limit;
-  	tos =3D INET_ECN_encapsulate(tos, ipv6_get_dsfield(iph6));
- =20
- +	if (likely(!skb->encapsulation)) {
- +		skb_reset_inner_headers(skb);
- +		skb->encapsulation =3D 1;
- +	}
- +
-- 	err =3D iptunnel_xmit(dev_net(dev), rt, skb, fl4.saddr, fl4.daddr,
-- 			    IPPROTO_IPV6, tos, ttl, df);
-+ 	err =3D iptunnel_xmit(rt, skb, fl4.saddr, fl4.daddr, IPPROTO_IPV6, tos,
-+ 			    ttl, df, !net_eq(tunnel->net, dev_net(dev)));
-  	iptunnel_xmit_stats(err, &dev->stats, dev->tstats);
-  	return NETDEV_TX_OK;
- =20
+Yes, I will fix it.
 
---Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG
-Content-Type: application/pgp-signature
+> 
+> > +	spin_lock(&hugetlb_lock);
+> > +	h->nr_dequeue_users--;
+> > +	spin_unlock(&hugetlb_lock);
+> > +}
+> > +
+> >  static void update_and_free_page(struct hstate *h, struct page *page)
+> >  {
+> >  	int i;
+> > @@ -1110,7 +1121,9 @@ static void vma_commit_reservation(struct hstate *h,
+> >  }
+> >  
+> >  static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> > -				    unsigned long addr, int use_reserve)
+> > +				    unsigned long addr, int use_reserve,
+> > +				    unsigned long *nr_dequeue_users,
+> > +				    bool *do_dequeue)
+> >  {
+> >  	struct hugepage_subpool *spool = subpool_vma(vma);
+> >  	struct hstate *h = hstate_vma(vma);
+> > @@ -1138,8 +1151,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >  		return ERR_PTR(-ENOSPC);
+> >  	}
+> >  	spin_lock(&hugetlb_lock);
+> > +	*do_dequeue = true;
+> >  	page = dequeue_huge_page_vma(h, vma, addr, use_reserve);
+> >  	if (!page) {
+> > +		*nr_dequeue_users = h->nr_dequeue_users;
+> 
+> So, the nr_dequeue_users parameter is only initialized if !page here.
+> It's not obvious to me that the callers only use it in hat case.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Okay. I will fix it.
 
-iQIcBAEBCAAGBQJSKBU8AAoJEECxmPOUX5FELvkQAKBk1VIghskjnDz4tlAKIItF
-xYK2PnL47WbsD+wIMzq0hROrrCcKMolCToOsdKdEHpny8C1jbymKCnJwP4IRGXyn
-GmHDZmTeydKptaRUFtMQXcxHUyJpa+jp6jNfwCfa1pqOX1czLTIpoNXeq2tz4Y75
-GGcbuYuYd+N+NrPXJtDh7Jx1igTPQUpYp7+QXcvv1c9M7iS+ntXMnUy4kC1PaGvF
-gptvVYf/OpZmzimDiFQbpfXei3axOqqT0xwXy5XDrBEKjJSJwSLvnVOICl/9ytB2
-KHI3iSY6xCtcyfkg33W8+0Ji3j2ZbU0t/Dh3iu5KF78DVUx+/1q/ESnUDWw2E30F
-wVZ4kYnJtPFrrjfl6EJ3iRkfnZIZef3aJkrd4lNmfJGbzGN5/wgH19+DAfllezX3
-ZHWZpMQngFJiIQvAg7i6MVhDjFeVwr3fhjUTcGmXFjamHvvBiS2hd4g+qenuV4aY
-UKgdPiUINlFNmrPmMyWXDSALO5/LA8fgcjb6QBPvasqoLKkIneH8+ejY0xu+ahz9
-JF2EX4RZjhboDnDE7FcnVs7JUaTCLAaJnacfX38tSgT7/wZ293heeKJqd5QOTJlj
-cj/qCm+qIVbYH0WVTW4BHRS7lYxQqZKuDs8t/NO9Pco8voieCTl4LdVuzn7rytjB
-XbVY5neTW90EHkgYa+p4
-=1NFJ
------END PGP SIGNATURE-----
+> 
+> > +		*do_dequeue = false;
+> >  		spin_unlock(&hugetlb_lock);
+> >  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> >  		if (!page) {
+> 
+> I think the counter also needs to be incremented in the case where we
+> call alloc_buddy_huge_page() from alloc_huge_page().  Even though it's
+> new, it gets added to the hugepage pool at this point and could still
+> be a contended page for the last allocation, unless I'm missing
+> something.
 
---Signature=_Thu__5_Sep_2013_15_23_08_+1000_HigrxOBgWcQ2gCbG--
+Your comment has reasonable point to me, but I have a different opinion.
+
+As I already mentioned, the point is that we want to avoid the race
+which kill the legitimate users of hugepages by out of resources.
+I increase 'h->nr_dequeue_users' when the hugepage allocated by
+administrator is dequeued. It is because what the hugepage I want to
+protect from the race is the one allocated by administrator via
+kernel param or /proc interface. Administrator may already know how many
+hugepages are needed for their application so that he may set nr_hugepage
+to reasonable value. I want to guarantee that these hugepages can be used
+for his application without any race, since he assume that the application
+would work fine with these hugepages.
+
+To protect hugepages returned from alloc_buddy_huge_page() from the race
+is different for me. Although it will be added to the hugepage pool, this
+doesn't guarantee certain application's success more. If certain
+application's success depends on the race of this new hugepage, it's death
+by the race doesn't matter, since nobody assume that it works fine.
+
+
+[snip..]
+
+> Otherwise I think it looks good.
+
+Really thanks! :)
+
