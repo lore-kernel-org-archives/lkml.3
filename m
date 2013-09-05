@@ -1,54 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3IEP4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:56:42 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:49880 "EHLO extserv.mm-sol.com"
+	id S1754580Ab3IEP5C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:57:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49310 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab3IEP4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:56:40 -0400
-Message-ID: <5228A9FA.90003@mm-sol.com>
-Date: Thu, 05 Sep 2013 18:57:46 +0300
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1753893Ab3IEP5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:57:00 -0400
+Date: Thu, 5 Sep 2013 17:56:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, hare@suse.de
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20130905155657.GE19782@quack.suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz>
+ <1377072512-7986-3-git-send-email-jack@suse.cz>
+ <20130821144912.1b96c962@gandalf.local.home>
 MIME-Version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>
-CC: linux-mmc@vger.kernel.org, cjb@laptop.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Sahitya Tummala <stummala@codeaurora.org>,
-        Subhash Jadavani <subhashj@codeaurora.org>
-Subject: Re: [PATCH RFC v3] mmc: sdhci-msm: Add support for MSM chipsets
-References: <1377017077-9834-1-git-send-email-gdjakov@mm-sol.com> <521C699A.2010609@samsung.com>
-In-Reply-To: <521C699A.2010609@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821144912.1b96c962@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaehoon,
+On Wed 21-08-13 14:49:12, Steven Rostedt wrote:
+> On Wed, 21 Aug 2013 10:08:30 +0200
+> Jan Kara <jack@suse.cz> wrote:
+> 
+>   
+> >  struct irq_work {
+> >  	unsigned long flags;
+> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> > index 55fcce6..446cd81 100644
+> > --- a/kernel/irq_work.c
+> > +++ b/kernel/irq_work.c
+> > @@ -22,6 +22,9 @@
+> >  static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+> >  static DEFINE_PER_CPU(int, irq_work_raised);
+> >  
+> > +/* List of irq-work any CPU can pick up */
+> > +static LLIST_HEAD(unbound_irq_work_list);
+> > +
+> >  /*
+> >   * Claim the entry so that no one else will poke at it.
+> >   */
+> > @@ -70,12 +73,16 @@ void irq_work_queue(struct irq_work *work)
+> >  	/* Queue the entry and raise the IPI if needed. */
+> >  	preempt_disable();
+> >  
+> > -	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> > +	if (!(work->flags & __IRQ_WORK_UNBOUND))
+> > +		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> > +	else
+> > +		llist_add(&work->llnode, &unbound_irq_work_list);
+> 
+> 
+> Just for better readability I would have:
+> 
+> 	if (work->flags & __IRQ_WORK_UNBOUND)
+> 		llist_add(&work->llnode, &unbound_irq_work_list);
+> 	else
+> 		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+  OK, done.
 
-On 08/27/2013 11:55 AM, Jaehoon Chung wrote:
-> Hi Georgi,
->
-> I found the sdhci_msm_vreg_reset(). Why do you run enable->disable?
->
-> +/*
-> + * Reset vreg by ensuring it is off during probe. A call
-> + * to enable vreg is needed to balance disable vreg
-> + */
-> +static int sdhci_msm_vreg_reset(struct sdhci_msm_pltfm_data *pdata)
->
-> I think that controller didn't have responsibility to ensure whether power is enabled or not at probing time.
-> If just needed to balance vreg, then i think this function can be removed.
-> How about?
->
-> Also before using regulator_is_enabled(), i had found the hole for balancing the vreg.
+> >  
+> >  	/*
+> >  	 * If the work is not "lazy" or the tick is stopped, raise the irq
+> >  	 * work interrupt (if supported by the arch), otherwise, just wait
+> > -	 * for the next tick.
+> > +	 * for the next tick. We do this even for unbound work to make sure
+> > +	 * *some* CPU will be doing the work.
+> >  	 */
+> >  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+> >  		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> > @@ -100,28 +107,11 @@ bool irq_work_needs_cpu(void)
+> >  	return true;
+> >  }
+> >  
+> > -static void __irq_work_run(void)
+> > +static void process_irq_work_list(struct llist_node *llnode)
+> >  {
+> >  	unsigned long flags;
+> >  	struct irq_work *work;
+> > -	struct llist_head *this_list;
+> > -	struct llist_node *llnode;
+> > -
+> > -
+> > -	/*
+> > -	 * Reset the "raised" state right before we check the list because
+> > -	 * an NMI may enqueue after we find the list empty from the runner.
+> > -	 */
+> > -	__this_cpu_write(irq_work_raised, 0);
+> > -	barrier();
+> >  
+> > -	this_list = &__get_cpu_var(irq_work_list);
+> > -	if (llist_empty(this_list))
+> > -		return;
+> > -
+> > -	BUG_ON(!irqs_disabled());
+> > -
+> > -	llnode = llist_del_all(this_list);
+> >  	while (llnode != NULL) {
+> >  		work = llist_entry(llnode, struct irq_work, llnode);
+> >  
+> > @@ -146,6 +136,27 @@ static void __irq_work_run(void)
+> >  	}
+> >  }
+> >  
+> > +static void __irq_work_run(void)
+> > +{
+> > +	struct llist_head *this_list;
+> > +
+> > +	/*
+> > +	 * Reset the "raised" state right before we check the list because
+> > +	 * an NMI may enqueue after we find the list empty from the runner.
+> > +	 */
+> > +	__this_cpu_write(irq_work_raised, 0);
+> > +	barrier();
+> > +
+> > +	this_list = &__get_cpu_var(irq_work_list);
+> > +	if (llist_empty(this_list) && llist_empty(&unbound_irq_work_list))
+> > +		return;
+> > +
+> > +	BUG_ON(!irqs_disabled());
+> > +
+> > +	process_irq_work_list(llist_del_all(this_list));
+> > +	process_irq_work_list(llist_del_all(&unbound_irq_work_list));
+> 
+> OK, I'm being a bit of an micro optimization freak here, but...
+> 
+> How about moving the list_empty() and BUG_ON into the
+> process_irq_work_list() call.
+> 
+> That is,
+> 
+> 	if (list_empty(llnode))
+> 		return;
+> 
+> 	BUG_ON(!irqs_disabled());
+> 
+> That way we avoid the double xchg() that is done with the two calls to
+> llist_del_all().
+  OK, done that.
 
-Thank you! I'll remove this function.
-
-BR,
-Georgi
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
