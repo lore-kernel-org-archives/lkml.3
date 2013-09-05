@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3IEFvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450Ab3IEFvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:51:08 -0400
-Date: Thu, 5 Sep 2013 01:19:45 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+	id S1757185Ab3IEFxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:53:16 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38882 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab3IEFxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 01:53:14 -0400
+Date: Thu, 5 Sep 2013 07:53:07 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Gleb Natapov <gleb@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rmk+kernel@arm.linux.org.uk
-Subject: Re: kobject: delayed kobject release: help find buggy drivers
-Message-ID: <20130905051945.GB23209@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	rmk+kernel@arm.linux.org.uk
-References: <20130903185924.046EE660E91@gitolite.kernel.org>
- <20130903204442.GA22222@redhat.com>
- <20130903205527.GA6358@kroah.com>
- <87zjrt6tz4.fsf@rustcorp.com.au>
- <20130905041338.GA21090@redhat.com>
- <20130905045745.GA18876@kroah.com>
+        KVM list <kvm@vger.kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [GIT PULL] KVM changes for 3.12
+Message-ID: <20130905055307.GA3864@osiris>
+References: <20130903121046.GE22899@redhat.com>
+ <CA+55aFwYvhLS8onJphR0PnL5e0zyS1ki65O_fSC05TeVSw0hDg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130905045745.GA18876@kroah.com>
+In-Reply-To: <CA+55aFwYvhLS8onJphR0PnL5e0zyS1ki65O_fSC05TeVSw0hDg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090505-1948-0000-0000-00000632EAF0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 09:57:45PM -0700, Greg KH wrote:
- > On Thu, Sep 05, 2013 at 12:13:38AM -0400, Dave Jones wrote:
- > > On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
- > >  
- > >  > >> With this enabled, I get a bunch of scrolling oopses immediately after
- > >  > >> exiting the bootloader. It happens so early I can't even capture them
- > >  > >> over usb-serial, or earlyprintk=dbgp.
- > >  > >> 
- > >  > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
- > >  > >> so I can't even use that.
- > >  > >> 
- > >  > >> any ideas ?
- > >  > >
- > >  > > The first big bug found with this was with the module kobject code, and
- > >  > > a fix for that should be going in through Rusty's tree to Linus for this
- > >  > > merge window (right Rusty?)
- > >  > 
- > >  > Yep, just sent pull request.  The fix was the final commit there...
- > > 
- > > Crap, that isn't the bug I'm hitting.
- > 
- > Any chance to get a oops traceback?
+On Wed, Sep 04, 2013 at 06:08:08PM -0700, Linus Torvalds wrote:
+> On Tue, Sep 3, 2013 at 5:10 AM, Gleb Natapov <gleb@redhat.com> wrote:
+> >
+> > This pull request adds tlb_gather_mmu() caller in S390 code, but 2b047252
+> > in your tree added another parameter to the function, so the patch bellow
+> > have to be applied during merge to resolve the conflicts. The patch was
+> > used in linux-next for awhile.
+> 
+> Hmm. Fine. Except:
+> 
+> >         /* Reallocate the page tables with pgstes */
+> >         mm->context.has_pgste = 1;
+> > -       tlb_gather_mmu(&tlb, mm, 0);
+> > +       tlb_gather_mmu(&tlb, mm, 0, TASK_SIZE);
+> >         page_table_realloc(&tlb, mm, 0, TASK_SIZE);
+> >         tlb_finish_mmu(&tlb, 0, -1);
+> >         up_write(&mm->mmap_sem);
+> 
+> Realistically, the begin/end arguments to tlb_gather_mmu() and
+> tlb_finish_mmu() should match. In fact, I considered getting rid of
+> the ones to tlb_finish_mmu() because they are kind of pointless these
+> days (but didn't, because I wanted to keep the patches minimal).
+> 
+> And in your case they don't. Which implies a certain amount of confusion.
 
-Got it. (I think I was getting tracebacks from multiple cpus, hence the spewing).
-Adding a check for tainted() = infinite loop to show_backtrace() combined with boot_delay
-gave me a really long oops that I had to grab video to record.
+Actually they do match in our internal version of the merge conflict. It
+was just a copy-paste error from me when sending the merge resolution patch.
+Since the fix contained two changes lines within the same hunk it was
+hard to get right.. oh well.. :)
 
-RIP: <null>
-
-Trace:
-<IRQ>
-run_timer_softirq
-__do_softirq
-irq_exit
-smp_apic_timer_interrupt
-apic_timer_interrupt
-<EOI>
-vprintk_emit
-dev_vprintk_emit
-dev_vprint_emit
-__dev_printk
-_dev_info
-ahci_print_info
-ahci_init_one
-local_pci_probe
-pci_device_probe
-driver_probe_device
-__driver_attach
-bus_for_each_dev
-driver_attach
-bus_add_driver
-driver_register
-__pci_register_driver
-ahci_pci_driver_init
-do_one_initcall
-...
-
-	Dave
+Thanks for fixing it!
 
