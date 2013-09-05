@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012Ab3IEUkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:40:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52094 "EHLO
+	id S1758022Ab3IEUkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:40:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab3IEU2Z (ORCPT
+	with ESMTP id S1757033Ab3IEU2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Sep 2013 16:28:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Marc Kleine-Budde <mkl@blackshift.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 21/36] ath9k: Enable PLL fix only for AR9340/AR9330
-Date: Thu,  5 Sep 2013 13:27:50 -0700
-Message-Id: <20130905202704.760815731@linuxfoundation.org>
+Subject: [ 20/36] ath9k_htc: Restore skb headroom when returning skb to mac80211
+Date: Thu,  5 Sep 2013 13:27:49 -0700
+Message-Id: <20130905202704.645810329@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,39 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-commit 19c361608ce3e73f352e323262f7e0a8264be3af upstream.
+commit d2e9fc141e2aa21f4b35ee27072d84e9aa6e2ba0 upstream.
 
-The PLL hang workaround is required only for AR9330 and
-AR9340. This issue was first observed on an AP121 and the WAR
-is enabled for AR9340 also (DB120 etc.), since it uses a PLL
-design identical to AR9330. This is not required for AR9485 and AR9550.
+ath9k_htc adds padding between the 802.11 header and the payload during
+TX by moving the header. When handing the frame back to mac80211 for TX
+status handling the header is not moved back into its original position.
+This can result in a too small skb headroom when entering ath9k_htc
+again (due to a soft retransmission for example) causing an
+skb_under_panic oops.
 
-Various bugs have been reported regarding this:
+Fix this by moving the 802.11 header back into its original position
+before returning the frame to mac80211 as other drivers like rt2x00
+or ath5k do.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=997217
-https://bugzilla.redhat.com/show_bug.cgi?id=994648
-
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Reported-by: Marc Kleine-Budde <mkl@blackshift.org>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Tested-by: Marc Kleine-Budde <mkl@blackshift.org>
+Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -173,8 +173,7 @@ static void ath_restart_work(struct ath_
- {
- 	ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work, 0);
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct
+ 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
+ 	bool txok;
+ 	int slot;
++	int hdrlen, padsize;
  
--	if (AR_SREV_9340(sc->sc_ah) || AR_SREV_9485(sc->sc_ah) ||
--	    AR_SREV_9550(sc->sc_ah))
-+	if (AR_SREV_9340(sc->sc_ah) || AR_SREV_9330(sc->sc_ah))
- 		ieee80211_queue_delayed_work(sc->hw, &sc->hw_pll_work,
- 				     msecs_to_jiffies(ATH_PLL_WORK_INTERVAL));
+ 	slot = strip_drv_header(priv, skb);
+ 	if (slot < 0) {
+@@ -504,6 +505,15 @@ send_mac80211:
  
+ 	ath9k_htc_tx_clear_slot(priv, slot);
+ 
++	/* Remove padding before handing frame back to mac80211 */
++	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
++
++	padsize = hdrlen & 3;
++	if (padsize && skb->len > hdrlen + padsize) {
++		memmove(skb->data + padsize, skb->data, hdrlen);
++		skb_pull(skb, padsize);
++	}
++
+ 	/* Send status to mac80211 */
+ 	ieee80211_tx_status(priv->hw, skb);
+ }
 
 
