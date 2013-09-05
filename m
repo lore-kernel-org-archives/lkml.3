@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3IED2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 23:28:39 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17455 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab3IED2g (ORCPT
+	id S1754415Ab3IEDbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:31:32 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63539 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab3IEDbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 23:28:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Sep 2013 20:28:35 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>
-CC: <gnurou@gmail.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v5 4/5] ARM: tegra: set CPU reset handler with firmware op
-Date: Thu, 5 Sep 2013 12:27:59 +0900
-Message-ID: <1378351680-14696-5-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
-References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 4 Sep 2013 23:31:31 -0400
+Message-ID: <1378351885.16198.1.camel@phoenix>
+Subject: [PATCH] regulator: palmas: Drop regulator_unregister while using
+ devm_regulator_register
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 05 Sep 2013 11:31:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a firmware operation to set the CPU reset handler and only resort to
-doing it ourselves if there is none defined.
+Commmit af40a94aba "regulator: palmas: Use devm_regulator_register" missed
+removing a regulator_unregister() call if palmas_extreg_init falis. Fix it.
 
-This supports the booting of secondary CPUs on devices using a TrustZone
-secure monitor.
-
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- arch/arm/mach-tegra/reset.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/regulator/palmas-regulator.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index 6964117..fc9cf03 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include <asm/firmware.h>
- 
- #include "iomap.h"
- #include "irammap.h"
-@@ -65,6 +66,7 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
- 	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
- 						tegra_cpu_reset_handler_offset;
-+	int err;
- 
- 	BUG_ON(is_enabled);
- 	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-@@ -72,9 +74,18 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
- 			tegra_cpu_reset_handler_size);
- 
--	tegra_cpu_reset_handler_set(reset_address);
--
--	is_enabled = true;
-+	err = call_firmware_op(set_cpu_boot_addr, 0, reset_address);
-+	switch (err) {
-+	case -ENOSYS:
-+		tegra_cpu_reset_handler_set(reset_address);
-+		/* pass-through */
-+	case 0:
-+		is_enabled = true;
-+		break;
-+	default:
-+		pr_crit("Cannot set CPU reset handler: %d\n", err);
-+		BUG();
-+	}
- }
- 
- void __init tegra_cpu_reset_handler_init(void)
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 37b1068..825f798 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -1019,10 +1019,8 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 				else
+ 					ret = palmas_extreg_init(palmas,
+ 							id, reg_init);
+-				if (ret) {
+-					regulator_unregister(pmic->rdev[id]);
++				if (ret)
+ 					return ret;
+-				}
+ 			}
+ 		}
+ 	}
 -- 
-1.8.4
+1.8.1.2
+
+
 
