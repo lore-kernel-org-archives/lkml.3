@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab3IEToW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:44:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59296 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756925Ab3IETm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:42:58 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/6] perf session: Separate progress bar update when processing events
-Date: Thu,  5 Sep 2013 16:42:43 -0300
-Message-Id: <1378410163-2606-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378410163-2606-1-git-send-email-acme@infradead.org>
-References: <1378410163-2606-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757258Ab3IETpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:45:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5702 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158Ab3IETpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 15:45:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,849,1371106800"; 
+   d="scan'208";a="398977037"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] lockref: remove cpu_relax() again
+Thread-Topic: [PATCH] lockref: remove cpu_relax() again
+Thread-Index: AQHOqjponYZ6pHUzoUeo27Wv6BHm9pm3utOA//+oSZCAAH9VgP//mtyggAB9vgD//5CLAA==
+Date: Thu, 5 Sep 2013 19:45:16 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CDCCFA@ORSMSX106.amr.corp.intel.com>
+References: <20130905131814.GA24274@osiris>
+	<CA+55aFyZ8xLWiPcP3jcnVApQOqAvpo_fshSvGpdpW42iRutPcQ@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDC7F7@ORSMSX106.amr.corp.intel.com>
+	<CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDCC23@ORSMSX106.amr.corp.intel.com>
+ <CA+55aFw_Rovv7YTb62q5NQvucM5ks8+HXcsTOJ-oJ+kqmHop4A@mail.gmail.com>
+In-Reply-To: <CA+55aFw_Rovv7YTb62q5NQvucM5ks8+HXcsTOJ-oJ+kqmHop4A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r85JjkNf032525
 
-From: Jiri Olsa <jolsa@redhat.com>
+>> Worse still - early processor implementations actually just ignored
+>> the acquire/release and did a full fence all the time.  Unfortunately
+>> this meant a lot of badly written code that used .acq when they really
+>> wanted .rel became legacy out in the wild - so when we made a cpu
+>> that strictly did the .acq or .rel ... all that code started breaking - so
+>> we had to back-pedal and keep the "legacy" behavior of a full fence :-(
+>
+> Ugh. Can you try what happens with the weaker release-semantics
+> performance-wise for that code? Do it *just* for the lockref code..
 
-Currently when processing events in the __perf_session__process_events
-function we update a progress bar based on the file_size. During the
-same processing we update the progress bar from within
-flush_sample_queue which is based on number of samples count.
+No.  I can change the Linux code to say "cmpxchg.rel" here ... but the
+h/w will do exactly the same thing it did when I had "cmpxchg.acq".
 
-Having 2 different based updates is causing the progress bar to jump
-heavily back and forth giving not much usefull info.
-
-Fixing this by keeping only __perf_session__process_events based
-progress bar update. And turning on flush_sample_queue progress bar
-update only for final flushing.
-
-This reduces the number of time the progress bar update function is
-called and it significantly reduces the loading time for TUI, where the
-progress bar update takes quite a lot of time.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20130905091449.GC1100@krava.brq.redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 1fc0c62..476caa1 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -504,6 +504,7 @@ static int flush_sample_queue(struct perf_session *s,
- 	u64 limit = os->next_flush;
- 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
- 	unsigned idx = 0, progress_next = os->nr_samples / 16;
-+	bool show_progress = limit == ULLONG_MAX;
- 	int ret;
- 
- 	if (!tool->ordered_samples || !limit)
-@@ -526,7 +527,7 @@ static int flush_sample_queue(struct perf_session *s,
- 		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		list_add(&iter->list, &os->sample_cache);
--		if (++idx >= progress_next) {
-+		if (show_progress && (++idx >= progress_next)) {
- 			progress_next += os->nr_samples / 16;
- 			ui_progress__update(idx, os->nr_samples,
- 					    "Processing time ordered events...");
--- 
-1.8.1.4
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
