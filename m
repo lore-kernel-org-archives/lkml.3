@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab3IES5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:57:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51893 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756954Ab3IES5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:57:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,848,1371106800"; 
-   d="scan'208";a="356479649"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] lockref: remove cpu_relax() again
-Thread-Topic: [PATCH] lockref: remove cpu_relax() again
-Thread-Index: AQHOqjponYZ6pHUzoUeo27Wv6BHm9pm3utOA//+oSZCAAH9VgP//mtyg
-Date: Thu, 5 Sep 2013 18:57:08 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CDCC23@ORSMSX106.amr.corp.intel.com>
-References: <20130905131814.GA24274@osiris>
-	<CA+55aFyZ8xLWiPcP3jcnVApQOqAvpo_fshSvGpdpW42iRutPcQ@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CDC7F7@ORSMSX106.amr.corp.intel.com>
- <CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
-In-Reply-To: <CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1756231Ab3IETCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:02:31 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:36190 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab3IETCa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 15:02:30 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130905112441.0a8c81d2@samsung.com>
+References: <20130905112441.0a8c81d2@samsung.com>
+Date: Thu, 5 Sep 2013 12:02:29 -0700
+X-Google-Sender-Auth: TNIMlrYDjPyUve8DRXT_wJKviWs
+Message-ID: <CA+55aFybmupGxmnDfaYfKu2L1QyBW=EYG=jA3zBa=r1vfm+_EQ@mail.gmail.com>
+Subject: Re: [GIT PULL for v3.12-rc1] media updates
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r85IvGYu032277
 
-> Also, it strikes me that ia64 has tons of different versions of
-> cmpxchg, and the one you use by default is the one with "acquire"
-> semantics
+On Thu, Sep 5, 2013 at 7:24 AM, Mauro Carvalho Chehab
+<m.chehab@samsung.com> wrote:
+>
+> Also, a trivial conflict at s5p_mfc_dec.c and s5p_mfc_enc.c will happen as
+> a macro name got renamed from IS_MFCV6 to IS_MFCV6_PLUS.
 
-Not "tons", just two.  You can ask for "acquire" or "release" semantics,
-there is no relaxed option.
+I did an "ugly merge" when fixing that conflict up, because the stupid
+code at the conflict site did this:
 
-Worse still - early processor implementations actually just ignored
-the acquire/release and did a full fence all the time.  Unfortunately
-this meant a lot of badly written code that used .acq when they really
-wanted .rel became legacy out in the wild - so when we made a cpu
-that strictly did the .acq or .rel ... all that code started breaking - so
-we had to back-pedal and keep the "legacy" behavior of a full fence :-(
+                if (!IS_MFCV6_PLUS(dev) && (fmt->fourcc == V4L2_PIX_FMT_VP8)) {
+                        mfc_err("Not supported format.\n");
+                        return -EINVAL;
+                }
+                if (!IS_MFCV6_PLUS(dev)) {
+                        if (fmt->fourcc == V4L2_PIX_FMT_VP8) {
+                                mfc_err("Not supported format.\n");
+                                return -EINVAL;
+                        }
+                }
 
--Tony
+and there was no way I was going to fix up the code and not remove the
+idiotic duplication of the exact same test.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I have no idea why that code was duplicated with slightly different
+syntax, but my OCD couldn't let it remain when I was editing those
+lines.
+
+              Linus
