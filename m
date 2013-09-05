@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab3IEPFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:05:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49887 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab3IEPF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:05:28 -0400
-Date: Thu, 5 Sep 2013 08:05:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: devel@linuxdriverproject.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PATCH] Staging driver patches for 3.12-rc1
-Message-ID: <20130905150527.GA21185@kroah.com>
-References: <20130902235853.GD4544@kroah.com>
- <CAMuHMdXfpMJeTPb4e11_oyqH5TRtTxrUMOnL9GKdSjv3VxDFww@mail.gmail.com>
+	id S1754006Ab3IEPId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:08:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17055 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752927Ab3IEPIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:08:31 -0400
+Message-ID: <52289E6C.8090301@redhat.com>
+Date: Thu, 05 Sep 2013 11:08:28 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXfpMJeTPb4e11_oyqH5TRtTxrUMOnL9GKdSjv3VxDFww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
+References: <1378383524-27983-1-git-send-email-prarit@redhat.com> <20130905144818.GA23661@thunk.org>
+In-Reply-To: <20130905144818.GA23661@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 04:09:48PM +0200, Geert Uytterhoeven wrote:
-> On Tue, Sep 3, 2013 at 1:58 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > Here's the bit staging tree pull request for 3.12-rc1.
-> >
-> > Lots of staging driver updates, and fixes.  Lustre is finally enabled in
-> > the build, and lots of cleanup started happening in it.  There's a new
+
+
+On 09/05/2013 10:48 AM, Theodore Ts'o wrote:
+> On Thu, Sep 05, 2013 at 08:18:44AM -0400, Prarit Bhargava wrote:
+>> The current code has two exported functions, get_bytes_random() and
+>> get_bytes_random_arch().  The first function only calls the entropy
+>> store to get random data, and the second only calls the arch specific
+>> hardware random number generator.
+>>
+>> The problem is that no code is using the get_bytes_random_arch() and switching
+>> over will require a significant code change.  Even if the change is
+>> made it will be static forcing a recompile of code if/when a user has a
+>> system with a trusted random HW source.  A better thing to do is allow
+>> users to decide whether they trust their hardare random number generator.
 > 
-> Lustre fails modpost on (at least) 4 architectures due to unexported arch
-> support functions: m68k, mips, parisc and sparc64 (patches sent).
+> I fail to see the benefit of just using the hardware random number
+> generator.  We are already mixing in the hardware random number
+> generator into the /dev/random pool, and so the only thing that using
 
-Odd, what functions were not present in those arches that lustre uses
-that no other kernel code uses?
+The issue isn't userspace /dev/random as much as it is the use of
+get_random_bytes() through out the kernel.  Switching to get_random_bytes_arch()
+is a search'n'replace on the entire kernel.  If a user wants the faster random
+HW generator why shouldn't they be able to use it by default?
 
-> All 4 failures were not visible in -next due to other build failures :-(
+P.
 
-Ah, that's why it wasn't caught, thanks for doing this.
-
-greg k-h
