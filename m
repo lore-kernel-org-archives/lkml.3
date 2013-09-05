@@ -1,117 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935757Ab3IEKbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:31:40 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43204 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935703Ab3IEK3r (ORCPT
+	id S935772Ab3IEKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:31:57 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58576 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935688Ab3IEK3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:29:47 -0400
+	Thu, 5 Sep 2013 06:29:46 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 10/15] KVM: MMU: initialize the pointers in pte_list_desc properly
-Date: Thu,  5 Sep 2013 18:29:13 +0800
-Message-Id: <1378376958-27252-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v2 09/15] KVM: MMU: introduce pte-list lockless walker
+Date: Thu,  5 Sep 2013 18:29:12 +0800
+Message-Id: <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090510-4790-0000-0000-00000A28437B
+x-cbid: 13090510-1618-0000-0000-0000049321A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since pte_list_desc will be locklessly accessed we need to atomicly initialize
-its pointers so that the lockless walker can not get the partial value from the
-pointer
+The basic idea is from nulls list which uses a nulls to indicate
+whether the desc is moved to different pte-list
 
-In this patch we use the way of assigning pointer to initialize its pointers
-which is always atomic instead of using kmem_cache_zalloc
+Note, we should do bottom-up walk in the desc since we always move
+the bottom entry to the deleted position. A desc only has 3 entries
+in the current code so it is not a problem now, but the issue will
+be triggered if we expend the size of desc in the further development
+
+Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ arch/x86/kvm/mmu.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 53 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 3e1432f..fe80019 100644
+index c5f1b27..3e1432f 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -687,14 +687,15 @@ static void walk_shadow_page_lockless_end(struct kvm_vcpu *vcpu)
+@@ -975,6 +975,10 @@ static int count_spte_number(struct pte_list_desc *desc)
+ 	return first_free + desc_num * PTE_LIST_EXT;
  }
  
- static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
--				  struct kmem_cache *base_cache, int min)
-+				  struct kmem_cache *base_cache, int min,
-+				  gfp_t flags)
- {
- 	void *obj;
++#define rcu_assign_pte_list(pte_list_p, value)				\
++	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
++			(unsigned long *)(value))
++
+ /*
+  * Pte mapping structures:
+  *
+@@ -994,7 +998,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
  
- 	if (cache->nobjs >= min)
+ 	if (!*pte_list) {
+ 		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
+-		*pte_list = (unsigned long)spte;
++		rcu_assign_pte_list(pte_list, spte);
  		return 0;
- 	while (cache->nobjs < ARRAY_SIZE(cache->objects)) {
--		obj = kmem_cache_zalloc(base_cache, GFP_KERNEL);
-+		obj = kmem_cache_alloc(base_cache, flags);
- 		if (!obj)
- 			return -ENOMEM;
- 		cache->objects[cache->nobjs++] = obj;
-@@ -741,14 +742,16 @@ static int mmu_topup_memory_caches(struct kvm_vcpu *vcpu)
- 	int r;
+ 	}
  
- 	r = mmu_topup_memory_cache(&vcpu->arch.mmu_pte_list_desc_cache,
--				   pte_list_desc_cache, 8 + PTE_PREFETCH_NUM);
-+				   pte_list_desc_cache, 8 + PTE_PREFETCH_NUM,
-+				   GFP_KERNEL);
- 	if (r)
- 		goto out;
- 	r = mmu_topup_memory_cache_page(&vcpu->arch.mmu_page_cache, 8);
- 	if (r)
- 		goto out;
- 	r = mmu_topup_memory_cache(&vcpu->arch.mmu_page_header_cache,
--				   mmu_page_header_cache, 4);
-+				   mmu_page_header_cache, 4,
-+				   GFP_KERNEL | __GFP_ZERO);
- out:
- 	return r;
- }
-@@ -913,6 +916,17 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
- 	return level - 1;
+@@ -1004,7 +1008,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 		desc->sptes[0] = (u64 *)*pte_list;
+ 		desc->sptes[1] = spte;
+ 		desc_mark_nulls(pte_list, desc);
+-		*pte_list = (unsigned long)desc | 1;
++		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+ 		return 1;
+ 	}
+ 
+@@ -1017,7 +1021,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 		new_desc = mmu_alloc_pte_list_desc(vcpu);
+ 		new_desc->more = desc;
+ 		desc = new_desc;
+-		*pte_list = (unsigned long)desc | 1;
++		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+ 	}
+ 
+ 	free_pos = find_first_free(desc);
+@@ -1125,6 +1129,51 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
+ 	WARN_ON(desc_get_nulls_value(desc) != pte_list);
  }
  
-+static void pte_list_desc_ctor(void *p)
++/* The caller should hold rcu lock. */
++static void pte_list_walk_lockless(unsigned long *pte_list,
++				   pte_list_walk_fn fn)
 +{
-+	struct pte_list_desc *desc = p;
++	struct pte_list_desc *desc;
++	unsigned long pte_list_value;
 +	int i;
 +
-+	for (i = 0; i < PTE_LIST_EXT; i++)
-+		desc->sptes[i] = NULL;
++restart:
++	/*
++	 * Force the pte_list to be reloaded.
++	 *
++	 * See the comments in hlist_nulls_for_each_entry_rcu().
++	 */
++	barrier();
++	pte_list_value = *rcu_dereference(pte_list);
++	if (!pte_list_value)
++		return;
 +
-+	desc->more = NULL;
++	if (!(pte_list_value & 1))
++		return fn((u64 *)pte_list_value);
++
++	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
++	while (!desc_is_a_nulls(desc)) {
++		/*
++		 * We should do top-down walk since we always use the higher
++		 * indices to replace the deleted entry if only one desc is
++		 * used in the rmap when a spte is removed. Otherwise the
++		 * moved entry will be missed.
++		 */
++		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
++			if (desc->sptes[i])
++				fn(desc->sptes[i]);
++
++		desc = rcu_dereference(desc->more);
++
++		/* It is being initialized. */
++		if (unlikely(!desc))
++			goto restart;
++	}
++
++	if (unlikely(desc_get_nulls_value(desc) != pte_list))
++		goto restart;
 +}
 +
- static void desc_mark_nulls(unsigned long *pte_list, struct pte_list_desc *desc)
+ static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+ 				    struct kvm_memory_slot *slot)
  {
- 	unsigned long marker;
-@@ -1066,6 +1080,7 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
- 	 */
- 	if (!first_desc->sptes[1] && desc_is_a_nulls(first_desc->more)) {
- 		*pte_list = (unsigned long)first_desc->sptes[0];
-+		first_desc->sptes[0] = NULL;
- 		mmu_free_pte_list_desc(first_desc);
- 	}
- }
-@@ -4699,8 +4714,8 @@ static void mmu_destroy_caches(void)
- int kvm_mmu_module_init(void)
+@@ -4651,7 +4700,7 @@ int kvm_mmu_module_init(void)
  {
  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
--					    sizeof(struct pte_list_desc),
--					    0, SLAB_DESTROY_BY_RCU, NULL);
-+				sizeof(struct pte_list_desc),
-+				0, SLAB_DESTROY_BY_RCU, pte_list_desc_ctor);
+ 					    sizeof(struct pte_list_desc),
+-					    0, 0, NULL);
++					    0, SLAB_DESTROY_BY_RCU, NULL);
  	if (!pte_list_desc_cache)
  		goto nomem;
  
