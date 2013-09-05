@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3IEUio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:38:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52114 "EHLO
+	id S1757746Ab3IEUjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:39:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757185Ab3IEU23 (ORCPT
+	with ESMTP id S1756938Ab3IEU22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:29 -0400
+	Thu, 5 Sep 2013 16:28:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 27/36] iscsi-target: Fix iscsit_transport reference leak during NP thread reset
-Date: Thu,  5 Sep 2013 13:27:56 -0700
-Message-Id: <20130905202705.488891491@linuxfoundation.org>
+Subject: [ 26/36] iscsi-target: Fix ImmediateData=Yes failure regression in >= v3.10
+Date: Thu,  5 Sep 2013 13:27:55 -0700
+Message-Id: <20130905202705.360024790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -28,42 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit c9a03c12464c851e691e8d5b6c9deba779c512e0 upstream.
+commit 9d86a2befceb06ee83c1a588915e6d6e0abef797 upstream.
 
-This patch fixes a bug in __iscsi_target_login_thread() where an explicit
-network portal thread reset ends up leaking the iscsit_transport module
-reference, along with the associated iscsi_conn allocation.
+This patch addresses a regression bug within ImmediateData=Yes failure
+handling that ends up triggering an OOPs within >= v3.10 iscsi-target
+code.
 
-This manifests itself with iser-target where a NP reset causes the extra
-iscsit_transport reference to be taken in iscsit_conn_set_transport()
-during the reset, which prevents the ib_isert module from being unloaded
-after the NP thread shutdown has finished.
+The problem occurs when iscsit_process_scsi_cmd() does the call to
+target_put_sess_cmd(), and once again in iscsit_get_immediate_data()
+that is triggered during two different cases:
+
+ - When iscsit_sequence_cmd() returns CMDSN_LOWER_THAN_EXP, for which
+   the descriptor state will already have been set to ISTATE_REMOVE
+   by iscsit_sequence_cmd(), and
+ - When iscsi_cmd->sense_reason is set, for which iscsit_execute_cmd()
+   will have already called transport_send_check_condition_and_sense()
+   to queue the exception response.
+
+It changes iscsit_process_scsi_cmd() to drop the early call, and makes
+iscsit_get_immediate_data() call target_put_sess_cmd() from a single
+location after dumping the immediate data for the failed command.
+
+The regression was initially introduced in commit:
+
+commit 561bf15892375597ee59d473a704a3e634c4f311
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Wed Jul 3 03:58:58 2013 -0700
+
+    iscsi-target: Fix iscsit_sequence_cmd reject handling for iser
 
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_login.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -1163,12 +1163,11 @@ static int __iscsi_target_login_thread(s
- 		if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 			spin_unlock_bh(&np->np_thread_lock);
- 			complete(&np->np_restart_comp);
--			if (ret == -ENODEV) {
--				iscsit_put_transport(conn->conn_transport);
--				kfree(conn);
--				conn = NULL;
-+			iscsit_put_transport(conn->conn_transport);
-+			kfree(conn);
-+			conn = NULL;
-+			if (ret == -ENODEV)
- 				goto out;
--			}
- 			/* Get another socket */
- 			return 1;
- 		}
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1086,7 +1086,6 @@ int iscsit_process_scsi_cmd(struct iscsi
+ 		if (cmd->reject_reason)
+ 			return 0;
+ 
+-		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 1;
+ 	}
+ 	/*
+@@ -1124,14 +1123,10 @@ after_immediate_data:
+ 		 */
+ 		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd,
+ 					(unsigned char *)hdr, hdr->cmdsn);
+-		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
++		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+ 			return -1;
+-		} else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+-			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+-			return 0;
+-		}
+ 
+-		if (cmd->sense_reason) {
++		if (cmd->sense_reason || cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+ 			int rc;
+ 
+ 			rc = iscsit_dump_data_payload(cmd->conn,
 
 
