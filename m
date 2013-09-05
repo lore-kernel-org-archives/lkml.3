@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935697Ab3IEKMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:12:53 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:42613 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935552Ab3IEKMv (ORCPT
+	id S935717Ab3IEKNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:13:05 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:47911 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935552Ab3IEKNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:12:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
-References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
- <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Thu, 5 Sep 2013 12:12:10 +0200
-Message-ID: <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
-Subject: Re: doing lots of disk writes causes oom killer to kill processes
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Sep 2013 06:13:00 -0400
+Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
+ signature of snapshot
+From: joeyli <jlee@suse.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Takashi Iwai <tiwai@suse.de>
+In-Reply-To: <20130905085348.GJ28598@console-pimps.org>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+	 <1377169317-5959-12-git-send-email-jlee@suse.com>
+	 <20130905085348.GJ28598@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Sep 2013 18:13:36 +0800
+Message-ID: <1378376016.6193.71.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Hi Matt, 
 
-On 26 August 2013 15:51, Michal Suchanek <hramrach@gmail.com> wrote:
-> On 12 March 2013 03:15, Hillf Danton <dhillf@gmail.com> wrote:
->>>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
->>>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
->>>> Hello,
->>>>
->>>> I am dealing with VM disk images and performing something like wiping
->>>> free space to prepare image for compressing and storing on server or
->>>> copying it to external USB disk causes
->>>>
->>>> 1) system lockup in order of a few tens of seconds when all CPU cores
->>>> are 100% used by system and the machine is basicaly unusable
->>>>
->>>> 2) oom killer killing processes
->>>>
->>>> This all on system with 8G ram so there should be plenty space to work with.
->>>>
->>>> This happens with kernels 3.6.4 or 3.7.1
->>>>
->>>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
->>>> problem even with less ram.
->>>>
->>>> I have  vm.swappiness = 0 set for a long  time already.
->>>>
->>>>
->>>I did some testing with 3.7.1 and with swappiness as much as 75 the
->>>kernel still causes all cores to loop somewhere in system when writing
->>>lots of data to disk.
->>>
->>>With swappiness as much as 90 processes still get killed on large disk writes.
->>>
->>>Given that the max is 100 the interval in which mm works at all is
->>>going to be very narrow, less than 10% of the paramater range. This is
->>>a severe regression as is the cpu time consumed by the kernel.
->>>
->>>The io scheduler is the default cfq.
->>>
->>>If you have any idea what to try other than downgrading to an earlier
->>>unaffected kernel I would like to hear.
->>>
->> Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
->> deadlock caused by too_many_isolated())?
->>
->> Or try 3.8 and/or 3.9, additionally?
->>
->
-> Hello,
->
-> with deadline IO scheduler I experience this issue less often but it
-> still happens.
->
-> I am on 3.9.6 Debian kernel so 3.8 did not fix this problem.
->
-> Do you have some idea what to log so that useful information about the
-> lockup is gathered?
->
+First, thanks for your review!
 
-This appears to be fixed in vanilla 3.11 kernel.
+於 四，2013-09-05 於 09:53 +0100，Matt Fleming 提到：
+> On Thu, 22 Aug, at 07:01:50PM, Lee, Chun-Yi wrote:
+> > +static int efi_status_to_err(efi_status_t status)
+> > +{
+> > +	int err;
+> > +
+> > +	switch (status) {
+> > +	case EFI_INVALID_PARAMETER:
+> > +		err = -EINVAL;
+> > +		break;
+> > +	case EFI_OUT_OF_RESOURCES:
+> > +		err = -ENOSPC;
+> > +		break;
+> > +	case EFI_DEVICE_ERROR:
+> > +		err = -EIO;
+> > +		break;
+> > +	case EFI_WRITE_PROTECTED:
+> > +		err = -EROFS;
+> > +		break;
+> > +	case EFI_SECURITY_VIOLATION:
+> > +		err = -EACCES;
+> > +		break;
+> > +	case EFI_NOT_FOUND:
+> > +		err = -ENODATA;
+> > +		break;
+> > +	default:
+> > +		err = -EINVAL;
+> > +	}
+> > +
+> > +	return err;
+> > +}
+> 
+> Please don't reimplement this. Instead make the existing function
+> global.
+> 
 
-I still get short intermittent lockups and cpu usage spikes up to 20%
-on a core but nowhere near the minute+ long lockups with all cores
-100% on earlier kernels.
+OK, I will make the function to global.
 
-Thanks
+> [...]
+> 
+> > +static void *load_wake_key_data(unsigned long *datasize)
+> > +{
+> > +	u32 attr;
+> > +	void *wkey_data;
+> > +	efi_status_t status;
+> > +
+> > +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
+> > +		return ERR_PTR(-EPERM);
+> > +
+> > +	/* obtain the size */
+> > +	*datasize = 0;
+> > +	status = efi.get_variable(EFI_S4_WAKE_KEY_NAME, &EFI_HIBERNATE_GUID,
+> > +				  NULL, datasize, NULL);
+> > +	if (status != EFI_BUFFER_TOO_SMALL) {
+> > +		wkey_data = ERR_PTR(efi_status_to_err(status));
+> > +		pr_err("PM: Couldn't get wake key data size: 0x%lx\n", status);
+> > +		goto error;
+> > +	}
+> 
+> Is it safe to completely bypass the efivars interface and access
+> efi.get_variable() directly? I wouldn't have thought so, unless you can
+> guarantee that the kernel isn't going to access any of the EFI runtime
+> services while you execute this function.
+> 
 
-Michal
+This S4WakeKey is a VOLATILE variable that could not modify by
+SetVariable() at runtime. So, it's read only even through efivars. 
+
+Does it what your concern?
+
+
+Thanks a lot!
+Joey Lee
+
