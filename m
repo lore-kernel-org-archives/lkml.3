@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3IEUg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:36:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52139 "EHLO
+	id S1757965Ab3IEUhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:37:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52132 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757370Ab3IEU2d (ORCPT
+	with ESMTP id S1753092Ab3IEU2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:33 -0400
+	Thu, 5 Sep 2013 16:28:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julien Grall <julien.grall@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 34/36] xen/arm: missing put_cpu in xen_percpu_init
-Date: Thu,  5 Sep 2013 13:28:03 -0700
-Message-Id: <20130905202706.272629469@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 32/36] ACPI / EC: Add ASUSTEK L4R to quirk list in order to validate ECDT
+Date: Thu,  5 Sep 2013 13:28:01 -0700
+Message-Id: <20130905202706.067602382@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -28,36 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julien Grall <julien.grall@linaro.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 0d7febe58413884f6428143221971618fbf3a47d upstream.
+commit 524f42fab787a9510be826ce3d736b56d454ac6d upstream.
 
-When CONFIG_PREEMPT is enabled, Linux will not be able to boot and warn:
-[    4.127825] ------------[ cut here ]------------
-[    4.133376] WARNING: at init/main.c:699 do_one_initcall+0x150/0x158()
-[    4.140738] initcall xen_init_events+0x0/0x10c returned with preemption imbalance
+The ECDT of ASUSTEK L4R doesn't provide correct command and data
+I/O ports.  The DSDT provides the correct information instead.
 
-This is because xen_percpu_init uses get_cpu but doesn't have the corresponding
-put_cpu.
+For this reason, add this machine to quirk list for ECDT validation
+and use the EC information from the DSDT.
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60765
+Reported-and-tested-by: Daniele Esposti <expo@expobrain.net>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/xen/enlighten.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/ec.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -170,6 +170,7 @@ static void __init xen_percpu_init(void
- 	per_cpu(xen_vcpu, cpu) = vcpup;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -987,6 +987,10 @@ static struct dmi_system_id __initdata e
+ 	ec_skip_dsdt_scan, "HP Folio 13", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
++	{
++	ec_validate_ecdt, "ASUS hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
++	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
+ 	{},
+ };
  
- 	enable_percpu_irq(xen_events_irq, 0);
-+	put_cpu();
- }
- 
- static void xen_restart(char str, const char *cmd)
 
 
