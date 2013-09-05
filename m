@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab3IETuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:50:44 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:64799 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3IETun (ORCPT
+	id S1757477Ab3IETw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:52:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18909 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757436Ab3IETwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:50:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CDCCFA@ORSMSX106.amr.corp.intel.com>
-References: <20130905131814.GA24274@osiris>
-	<CA+55aFyZ8xLWiPcP3jcnVApQOqAvpo_fshSvGpdpW42iRutPcQ@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CDC7F7@ORSMSX106.amr.corp.intel.com>
-	<CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CDCC23@ORSMSX106.amr.corp.intel.com>
-	<CA+55aFw_Rovv7YTb62q5NQvucM5ks8+HXcsTOJ-oJ+kqmHop4A@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CDCCFA@ORSMSX106.amr.corp.intel.com>
-Date: Thu, 5 Sep 2013 12:50:42 -0700
-X-Google-Sender-Auth: nQNC9ltervEZaZ2i2FdOBLyNCc0
-Message-ID: <CA+55aFy0BZ8kL0TMgV+u1g5Rt=hBJw44+kps5RzD-s=Uo-zsLg@mail.gmail.com>
-Subject: Re: [PATCH] lockref: remove cpu_relax() again
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Sep 2013 15:52:19 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=DA-RvV7NLMYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6u4amIDVaRwA:10 a=JfrnYn6hAAAA:8 a=x_F6tXxb64mcHMiWn7gA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 5 Sep 2013 15:52:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 14/18 v2] ftrace/lockdep: Have the RCU lockdep
+ splat show what function triggered
+Message-ID: <20130905155217.03df4d45@gandalf.local.home>
+In-Reply-To: <20130905191839.GF31370@twins.programming.kicks-ass.net>
+References: <20130831051117.884125230@goodmis.org>
+	<20130831051702.766697014@goodmis.org>
+	<20130905191839.GF31370@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 12:45 PM, Luck, Tony <tony.luck@intel.com> wrote:
->
-> No.  I can change the Linux code to say "cmpxchg.rel" here ... but the
-> h/w will do exactly the same thing it did when I had "cmpxchg.acq".
+On Thu, 5 Sep 2013 21:18:39 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Oh, so when you said "So we had to back-pedal and keep the "legacy"
-behavior of a full fence", you meant the hardware design itself, not
-(as I assumed) the Linux kernel header behavior.
+> On Sat, Aug 31, 2013 at 01:11:31AM -0400, Steven Rostedt wrote:
+> > +void print_ftrace_rcu_func(int cpu)
+> > +{
+> > +	unsigned long ip = per_cpu(ftrace_rcu_func, cpu);
+> > +
+> > +	if (ip)
+> > +		printk("ftrace_rcu_func: %pS\n",
+> > +		       (void *)per_cpu(ftrace_rcu_func, cpu));
+> > +}
+> 
+> That's missing { }.
 
-Oh well. Hopefully somebody in hardware learnt how stupid it is to
-expose weak memory ordering to software. But probably not.
+Hmm, that's an interesting point. Why the  { } because I break up the
+printk for the 80 character limit?
 
-Ugh. Your four-socket machine certainly should have been able to see
-the performance improvements of not spinning.
+Although, I'm still not convinced that it needs { }, as it looks to me
+that it flows nicely without it. I can't find a place in CodingStyle
+that says { } are needed here.
 
-That said, another thing that strikes me is that you have 32 CPU
-threads, and the stupid test-program I sent out had MAX_THREADS set to
-16.  Did you change that? Becuase if not, then some of the extreme
-performance profile might be about how the threads get scheduled on
-your machine (HT threads vs full cores etc).
-
-                Linus
+-- Steve
