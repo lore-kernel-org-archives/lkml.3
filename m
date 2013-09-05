@@ -1,171 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763625Ab3IEMDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:03:45 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:41316 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763454Ab3IEMDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:03:43 -0400
+	id S1763656Ab3IEMDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:03:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39897 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763535Ab3IEMDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:03:50 -0400
+Date: Thu, 5 Sep 2013 14:03:47 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130905120347.GA13666@dhcp22.suse.cz>
+References: <20130903204850.GA1412@cmpxchg.org>
+ <20130904114523.A9F0173C@pobox.sk>
+ <20130904115741.GA28285@dhcp22.suse.cz>
+ <20130904141000.0F910EFA@pobox.sk>
+ <20130904122632.GB28285@dhcp22.suse.cz>
+ <20130905111430.CB1392B4@pobox.sk>
+ <20130905095331.GA9702@dhcp22.suse.cz>
+ <20130905121700.546B5881@pobox.sk>
+ <20130905111742.GC9702@dhcp22.suse.cz>
+ <20130905134702.C703F65B@pobox.sk>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
-References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
-	<1378374284-1484-5-git-send-email-miklos@szeredi.hu>
-	<20130905111852.GP13318@ZenIV.linux.org.uk>
-	<CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
-	<20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
-Date: Thu, 5 Sep 2013 14:03:41 +0200
-Message-ID: <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
-Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905134702.C703F65B@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 2:02 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Thu, Sep 05, 2013 at 01:32:10PM +0200, Miklos Szeredi wrote:
->> On Thu, Sep 5, 2013 at 1:18 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
->> > Something's really odd with locking here.  You are take d_lock, do one
->> > check, set flag, drop d_lock, grab rename_lock, do another check (taking
->> > and dropping d_lock in process), and, in case that check fails, grab
->> > d_lock again to clear the flag.
->> >
->> > At the very least it's a massive overkill.  Just grab rename_lock, then
->> > d_lock, then do the damn check and set the flag only on success.  Moreover,
->> > with rename_lock held, do you need d_lock on ancestors to mess with in
->> > has_unlinked_ancestor()?
->>
->> Yes, we need hard exclusion for the __d_drop() part.  rename_lock can
->> provide one if we always take it for write in
->> check_submounts_and_drop().  But if we only take it for read then
->> that's not enough.
->>
->> And we do in fact also need DCACHE_MOUNTED set *before* checking
->> ancestors.  Otherwise check_submounts_and_drop() could succeed and
->> has_unlinked_ancestor() return false, resulting in a dropped dentry
->> and a mount below it.  Though this is mostly theoretical at this
->> point.
->
-> Maybe something like this.  Has less ugly locking.  Untested.
+On Thu 05-09-13 13:47:02, azurIt wrote:
+> >On Thu 05-09-13 12:17:00, azurIt wrote:
+> >> >[...]
+> >> >> My script detected another freezed cgroup today, sending stacks. Is
+> >> >> there anything interesting?
+> >> >
+> >> >3 tasks are sleeping and waiting for somebody to take an action to
+> >> >resolve memcg OOM. The memcg oom killer is enabled for that group?  If
+> >> >yes, which task has been selected to be killed? You can find that in oom
+> >> >report in dmesg.
+> >> >
+> >> >I can see a way how this might happen. If the killed task happened to
+> >> >allocate a memory while it is exiting then it would get to the oom
+> >> >condition again without freeing any memory so nobody waiting on the
+> >> >memcg_oom_waitq gets woken. We have a report like that: 
+> >> >https://lkml.org/lkml/2013/7/31/94
+> >> >
+> >> >The issue got silent in the meantime so it is time to wake it up.
+> >> >It would be definitely good to see what happened in your case though.
+> >> >If any of the bellow tasks was the oom victim then it is very probable
+> >> >this is the same issue.
+> >> 
+> >> Here it is:
+> >> http://watchdog.sk/lkml/kern5.log
+> >
+> >$ grep "Killed process \<103[168]\>" kern5.log
+> >$
+> >
+> >So none of the sleeping tasks has been killed previously.
+> >
+> >> Processes were killed by my script
+> >
+> >OK, I am really confused now. The log contains a lot of in-kernel memcg
+> >oom killer messages:
+> >$ grep "Memory cgroup out of memory:" kern5.log | wc -l
+> >809
+> >
+> >This suggests that the oom killer is not disabled. What exactly has you
+> >script done?
+> >
+> >> at about 11:05:35.
+> >
+> >There is an oom killer striking at 11:05:35:
+> >Sep  5 11:05:35 server02 kernel: [1751856.433101] Task in /1066/uid killed as a result of limit of /1066
+> >[...]
+> >Sep  5 11:05:35 server02 kernel: [1751856.539356] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+> >Sep  5 11:05:35 server02 kernel: [1751856.539745] [ 1046]  1066  1046   228537    95491   3       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.539894] [ 1047]  1066  1047   228604    95488   6       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.540043] [ 1050]  1066  1050   228470    95452   5       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.540191] [ 1051]  1066  1051   228592    95521   6       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.540340] [ 1052]  1066  1052   228594    95546   5       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.540489] [ 1054]  1066  1054   228470    95453   5       0             0 apache2
+> >Sep  5 11:05:35 server02 kernel: [1751856.540646] Memory cgroup out of memory: Kill process 1046 (apache2) score 1000 or sacrifice child
+> >
+> >And this doesn't list any of the tasks sleeping and waiting for oom
+> >resolving so they must have been created after this OOM. Is this the
+> >same group?
+> 
+> cgroup was 1066. My script is doing this:
+> 1.) It checks memory usage of all cgroups and is searching for those whos memory usage is >= 99% of their limit.
+> 2.) If any are found, they are saved in an array of 'candidates for killing'.
+> 3.) It sleep for 30 seconds.
+> 4.) Do (1) and if any of found cgorups were also found in (2), it kills all processes inside it.
+> 5.) Clear array of saved cgroups and continue.
 
-And is missing a "goto out;"
+This is racy and doesn't really tell you anything about any group being
+frozen.
 
->
-> Thanks,
-> Miklos
->
->
-> ---
->  fs/dcache.c    |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/internal.h  |    1 +
->  fs/namespace.c |   11 +++++------
->  3 files changed, 55 insertions(+), 6 deletions(-)
->
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1159,6 +1159,55 @@ int have_submounts(struct dentry *parent
->  }
->  EXPORT_SYMBOL(have_submounts);
->
-> +static bool __has_unlinked_ancestor(struct dentry *dentry)
-> +{
-> +       struct dentry *this;
-> +
-> +       for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
-> +               int is_unhashed;
-> +
-> +               /* Need exclusion wrt. check_submounts_and_drop() */
-> +               spin_lock(&this->d_lock);
-> +               is_unhashed = d_unhashed(this);
-> +               spin_unlock(&this->d_lock);
-> +
-> +               if (is_unhashed)
-> +                       return true;
-> +       }
-> +       return false;
-> +}
-> +
-> +/*
-> + * Called by mount code to check if the mountpoint is reachable (e.g. NFS can
-> + * unhash a directory dentry and then the complete subtree can become
-> + * unreachable).
-> + */
-> +int d_set_mounted(struct dentry *dentry)
-> +{
-> +       int ret = 0;
-> +
-> +       write_seqlock(&rename_lock);
-> +       spin_lock(&dentry->d_lock);
-> +       dentry->d_flags |= DCACHE_MOUNTED;
-> +       if (!IS_ROOT(dentry)) {
-> +               ret = -ENOENT;
-> +               if (d_unhashed(dentry)) {
-> +                       dentry->d_flags &= ~DCACHE_MOUNTED;
-> +                       goto out;
-> +               }
-> +               spin_unlock(&dentry->d_lock);
-> +               if (__has_unlinked_ancestor(dentry->d_parent)) {
-> +                       spin_lock(&dentry->d_lock);
-> +                       dentry->d_flags &= ~DCACHE_MOUNTED;
-> +                       spin_unlock(&dentry->d_lock);
-> +               }
-> +               ret = 0;
-> +       }
-> +out:
-> +       write_sequnlock(&rename_lock);
-> +       return ret;
-> +}
-> +
->  /*
->   * Search the dentry child list of the specified parent,
->   * and move any unused dentries to the end of the unused
-> --- a/fs/internal.h
-> +++ b/fs/internal.h
-> @@ -126,6 +126,7 @@ extern int invalidate_inodes(struct supe
->   * dcache.c
->   */
->  extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
-> +extern int d_set_mounted(struct dentry *dentry);
->
->  /*
->   * read_write.c
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -611,6 +611,7 @@ static struct mountpoint *new_mountpoint
->  {
->         struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
->         struct mountpoint *mp;
-> +       int ret;
->
->         list_for_each_entry(mp, chain, m_hash) {
->                 if (mp->m_dentry == dentry) {
-> @@ -626,14 +627,12 @@ static struct mountpoint *new_mountpoint
->         if (!mp)
->                 return ERR_PTR(-ENOMEM);
->
-> -       spin_lock(&dentry->d_lock);
-> -       if (d_unlinked(dentry)) {
-> -               spin_unlock(&dentry->d_lock);
-> +       ret = d_set_mounted(dentry);
-> +       if (ret) {
->                 kfree(mp);
-> -               return ERR_PTR(-ENOENT);
-> +               return ERR_PTR(ret);
->         }
-> -       dentry->d_flags |= DCACHE_MOUNTED;
-> -       spin_unlock(&dentry->d_lock);
-> +
->         mp->m_dentry = dentry;
->         mp->m_count = 1;
->         list_add(&mp->m_hash, chain);
+[...]
+> But, of course, i cannot guarantee that the killed cgroup was really
+> freezed (because of bug in linux kernel), there could be some false
+> positives - for example, cgroup has 99% usage of memory, my script
+> detected it, OOM successfully resolved the problem and, after 30
+> seconds, the same cgroup has again 99% usage of it's memory and my
+> script detected it again.
+
+Exactly
+
+> This is why i'm sending stacks here, i simply cannot tell if
+> there was or wasn't a problem.
+
+On the other hand if those processes would be stuck waiting for somebody
+to resolve the OOM for a long time without any change then yes we have a
+problem.
+
+Just to be sure I got you right. You have killed all the processes from
+the group you have sent stacks for, right? If that is the case I am
+really curious about processes sitting in sleep_on_page_killable because
+those are killable by definition.
+
+> I can disable the script and wait until the problem really occurs but
+> when it happens, our services will go down.
+
+I definitely do not want to encourage you to let your services down...
+
+> Hope i was clear enough - if not, i can post the source code of that
+> script.
+
+-- 
+Michal Hocko
+SUSE Labs
