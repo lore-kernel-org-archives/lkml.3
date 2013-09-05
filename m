@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3IEWWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 18:22:40 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:60227 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab3IEWWh (ORCPT
+	id S1755313Ab3IEWWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:22:48 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:33634 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3IEWWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 18:22:37 -0400
-Date: Thu, 5 Sep 2013 18:22:36 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: ceph-devel@vger.kernel.org
-Cc: sage@inktank.com, zheng.z.yan@intel.com, dhowells@redhat.com,
-        jiayisuse@gmail.com, linux-cachefs@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] ceph: clean PgPrivate2 on returning from readpages
-Message-ID: <3a29a98a66a06a8219608432a42376a3a994786b.1378418255.git.milosz@adfin.com>
-References: <cover.1378418255.git.milosz@adfin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1378418255.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Sep 2013 18:22:44 -0400
+From: Zi Shen Lim <zishen.lim@linaro.org>
+To: alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Cc: Zi Shen Lim <zishen.lim@linaro.org>
+Subject: [PATCH] vfio: fix documentation
+Date: Thu,  5 Sep 2013 15:22:17 -0700
+Message-Id: <1378419737-4154-1-git-send-email-zishen.lim@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases the ceph readapages code code bails without filling all the pages
-already marked by fscache. When we return back to readahead code this causes
-a BUG.
-
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Signed-off-by: Zi Shen Lim <zishen.lim@linaro.org>
 ---
- fs/ceph/addr.c  |    2 ++
- fs/ceph/cache.h |    7 +++++++
- 2 files changed, 9 insertions(+)
+ Documentation/vfio.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 3a21a7c..1fda9cf 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -398,6 +398,8 @@ static int ceph_readpages(struct file *file, struct address_space *mapping,
- 		BUG_ON(rc == 0);
+diff --git a/Documentation/vfio.txt b/Documentation/vfio.txt
+index d7993dc..b9ca023 100644
+--- a/Documentation/vfio.txt
++++ b/Documentation/vfio.txt
+@@ -167,8 +167,8 @@ group and can access them as follows:
+ 	int container, group, device, i;
+ 	struct vfio_group_status group_status =
+ 					{ .argsz = sizeof(group_status) };
+-	struct vfio_iommu_x86_info iommu_info = { .argsz = sizeof(iommu_info) };
+-	struct vfio_iommu_x86_dma_map dma_map = { .argsz = sizeof(dma_map) };
++	struct vfio_iommu_type1_info iommu_info = { .argsz = sizeof(iommu_info) };
++	struct vfio_iommu_type1_dma_map dma_map = { .argsz = sizeof(dma_map) };
+ 	struct vfio_device_info device_info = { .argsz = sizeof(device_info) };
+ 
+ 	/* Create a new container */
+@@ -193,7 +193,7 @@ group and can access them as follows:
+ 	ioctl(group, VFIO_GROUP_SET_CONTAINER, &container);
+ 
+ 	/* Enable the IOMMU model we want */
+-	ioctl(container, VFIO_SET_IOMMU, VFIO_TYPE1_IOMMU)
++	ioctl(container, VFIO_SET_IOMMU, VFIO_TYPE1_IOMMU);
+ 
+ 	/* Get addition IOMMU info */
+ 	ioctl(container, VFIO_IOMMU_GET_INFO, &iommu_info);
+@@ -229,7 +229,7 @@ group and can access them as follows:
+ 
+ 		irq.index = i;
+ 
+-		ioctl(device, VFIO_DEVICE_GET_IRQ_INFO, &reg);
++		ioctl(device, VFIO_DEVICE_GET_IRQ_INFO, &irq);
+ 
+ 		/* Setup IRQs... eventfds, VFIO_DEVICE_SET_IRQS */
  	}
- out:
-+	ceph_fscache_readpages_cancel(inode, page_list);
-+
- 	dout("readpages %p file %p ret %d\n", inode, file, rc);
- 	return rc;
- }
-diff --git a/fs/ceph/cache.h b/fs/ceph/cache.h
-index 0ea95cb..fb326fd 100644
---- a/fs/ceph/cache.h
-+++ b/fs/ceph/cache.h
-@@ -58,6 +58,13 @@ static inline int ceph_release_fscache_page(struct page *page, gfp_t gfp)
- 	return fscache_maybe_release_page(ci->fscache, page, gfp);
- }
- 
-+static inline void ceph_fscache_readpages_cancel(struct inode *inode,
-+						 struct list_head *pages)
-+{
-+	struct ceph_inode_info *ci = ceph_inode(inode);
-+	return fscache_readpages_cancel(ci->fscache, pages);
-+}
-+
- #else
- 
- static inline int ceph_fscache_register(void)
 -- 
-1.7.9.5
+1.8.1.2
 
