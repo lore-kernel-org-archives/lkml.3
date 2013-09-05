@@ -1,163 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab3IEUnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:43:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33374 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757494Ab3IEUnu convert rfc822-to-8bit (ORCPT
+	id S1758127Ab3IEUoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:44:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756803Ab3IEU2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:43:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,849,1371106800"; 
-   d="scan'208";a="291348888"
-From: "Gittins, Rob" <rob.gittins@intel.com>
-To: "Zuckerman, Boris" <borisz@hp.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-CC: "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
-        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
-Thread-Topic: RFC Block Layer Extensions to Support NV-DIMMs
-Thread-Index: AQHOqjEiG+i1HpbeAE284S3pYnu+SZm3u92A//+nFVaAAJ80AP//q3YA
-Date: Thu, 5 Sep 2013 20:43:47 +0000
-Message-ID: <CE4E456A.62E4F%rob.gittins@intel.com>
-In-Reply-To: <4C30833E5CDF444D84D942543DF65BDA5804A47B@G4W3303.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.6.130613
-x-originating-ip: [10.254.70.233]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <9467CADA66A4D34BB09DB348EF8A6D0F@intel.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 5 Sep 2013 16:28:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Anand Kumar Santhanam <AnandKumar.Santhanam@pmcs.com>,
+        Jack Wang <xjtuwjp@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 09/36] SCSI: pm80xx: fix Adaptec 71605H hang
+Date: Thu,  5 Sep 2013 13:27:38 -0700
+Message-Id: <20130905202703.392961386@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
+References: <20130905202702.289738686@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Boris,
+------------------
 
-The purpose of commitpmem is to notify the hardware that data is
-ready to be made persistent.  This would mean flush any internal
-buffers and do whatever is needed in the hardware to ensure durable
-data.
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-I was trying to keep the API simple to allow the application to build
-it's own transaction mechanisms that would fit the specific app needs.
+commit 9504a923924d663e1953f872f0a828e6454a6cfc upstream.
 
-commitpmem is a device driver op since it may be very from one hardware
-and media technology to another.  Perhaps the name could be clearer.
+The IO command size is 128 bytes for these new controllers as opposed to 64
+for the old 8001 controller.
 
-Rob
+The Adaptec out-of-tree driver did this correctly. After comparing the two
+this turned out to be the crucial difference.
 
+So don't hardcode the IO command size, instead use pm8001_ha->iomb_size as
+that is the correct value for both old and new controllers.
 
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Anand Kumar Santhanam <AnandKumar.Santhanam@pmcs.com>
+Acked-by: Jack Wang <xjtuwjp@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ drivers/scsi/pm8001/pm8001_hwi.c |    4 ++--
+ drivers/scsi/pm8001/pm80xx_hwi.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-On 9/5/13 1:46 PM, "Zuckerman, Boris" <borisz@hp.com> wrote:
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -221,7 +221,7 @@ static void init_default_table_values(st
+ 	pm8001_ha->main_cfg_tbl.pm8001_tbl.fatal_err_interrupt		= 0x01;
+ 	for (i = 0; i < PM8001_MAX_INB_NUM; i++) {
+ 		pm8001_ha->inbnd_q_tbl[i].element_pri_size_cnt	=
+-			PM8001_MPI_QUEUE | (64 << 16) | (0x00<<30);
++			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x00<<30);
+ 		pm8001_ha->inbnd_q_tbl[i].upper_base_addr	=
+ 			pm8001_ha->memoryMap.region[IB + i].phys_addr_hi;
+ 		pm8001_ha->inbnd_q_tbl[i].lower_base_addr	=
+@@ -247,7 +247,7 @@ static void init_default_table_values(st
+ 	}
+ 	for (i = 0; i < PM8001_MAX_OUTB_NUM; i++) {
+ 		pm8001_ha->outbnd_q_tbl[i].element_size_cnt	=
+-			PM8001_MPI_QUEUE | (64 << 16) | (0x01<<30);
++			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x01<<30);
+ 		pm8001_ha->outbnd_q_tbl[i].upper_base_addr	=
+ 			pm8001_ha->memoryMap.region[OB + i].phys_addr_hi;
+ 		pm8001_ha->outbnd_q_tbl[i].lower_base_addr	=
+--- a/drivers/scsi/pm8001/pm80xx_hwi.c
++++ b/drivers/scsi/pm8001/pm80xx_hwi.c
+@@ -275,7 +275,7 @@ static void init_default_table_values(st
+ 
+ 	for (i = 0; i < PM8001_MAX_SPCV_INB_NUM; i++) {
+ 		pm8001_ha->inbnd_q_tbl[i].element_pri_size_cnt	=
+-			PM8001_MPI_QUEUE | (64 << 16) | (0x00<<30);
++			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x00<<30);
+ 		pm8001_ha->inbnd_q_tbl[i].upper_base_addr	=
+ 			pm8001_ha->memoryMap.region[IB + i].phys_addr_hi;
+ 		pm8001_ha->inbnd_q_tbl[i].lower_base_addr	=
+@@ -301,7 +301,7 @@ static void init_default_table_values(st
+ 	}
+ 	for (i = 0; i < PM8001_MAX_SPCV_OUTB_NUM; i++) {
+ 		pm8001_ha->outbnd_q_tbl[i].element_size_cnt	=
+-			PM8001_MPI_QUEUE | (64 << 16) | (0x01<<30);
++			PM8001_MPI_QUEUE | (pm8001_ha->iomb_size << 16) | (0x01<<30);
+ 		pm8001_ha->outbnd_q_tbl[i].upper_base_addr	=
+ 			pm8001_ha->memoryMap.region[OB + i].phys_addr_hi;
+ 		pm8001_ha->outbnd_q_tbl[i].lower_base_addr	=
 
->Hi,
->
->It's a great topic! I am glad to see this conversation happening...
->
->Let me try to open another can of worms...
->
->Persistent memory updates are more like DB transactions and less like
->flushing IO ranges.
->
->If someone offers commitpmem() functionality, someone has to assure that
->all updates before that call can be discarded on failure or on request.
->Also, the scope of updates may not be easily describable by a single
->range.
->
->Forcing users to solve that (especially failure atomicity) on their own
->by journaling, logging or other mechanism is optimistic and that cannot
->be done efficiently.
->
->So, where should we expect to have this functionality implemented? FS
->drivers, block drivers, controllers?
->
->Regards, Boris
->
->> -----Original Message-----
->> From: Linux-pmfs [mailto:linux-pmfs-bounces@lists.infradead.org] On
->>Behalf Of Jeff
->> Moyer
->> Sent: Thursday, September 05, 2013 1:16 PM
->> To: Matthew Wilcox
->> Cc: linux-pmfs@lists.infradead.org; rob.gittins@linux.intel.com; linux-
->> fsdevel@veger.org; linux-kernel@vger.kernel.org
->> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
->> 
->> Matthew Wilcox <willy@linux.intel.com> writes:
->> 
->> > On Thu, Sep 05, 2013 at 08:12:05AM -0400, Jeff Moyer wrote:
->> >> If the memory is available to be mapped into the address space of the
->> >> kernel or a user process, then I don't see why we should have a block
->> >> device at all.  I think it would make more sense to have a different
->> >> driver class for these persistent memory devices.
->> >
->> > We already have at least two block devices in the tree that provide
->> > this kind of functionality (arch/powerpc/sysdev/axonram.c and
->> > drivers/s390/block/dcssblk.c).  Looking at how they're written, it
->> > seems like implementing either of them as a block device on top of a
->> > character device that extended their functionality in the direction we
->> > want would be a pretty major bloating factor for no real benefit (not
->> > even a particularly cleaner architecture).
->> 
->> Fun examples to read, thanks for the pointers.  I'll note that neither
->>required
->> extensions to the block device operations.  ;-)  I do agree with you
->>that neither would
->> benefit from changing.
->> 
->> There are a couple of things in this proposal that cause me grief,
->>centered around the
->> commitpmem call:
->> 
->> >>    void (*commitpmem)(struct block_device *bdev, void *addr);
->> 
->> For block devices, when you want to flush something out, you submit a
->>bio with
->> REQ_FLUSH set.  Or, you could have submitted one or more I/Os with
->>REQ_FUA.
->> Here, you want to add another method to accomplish the same thing, but
->>outside of
->> the data path.  So, who would the caller of this commitpmem function
->>be?  Let's
->> assume that we have a file system layered on top of this block device.
->>Will the file
->> system need to call commitpmem in addition to sending down the
->>appropriate flags
->> with the I/Os?
->> 
->> This brings me to the other thing.  If the caller of commitpmem is a
->>persistent
->> memory-aware file system, then it seems awkward to call into a block
->>driver at all.
->> You are basically turning the block device into a sort of hybrid thing,
->>where you can
->> access stuff behind it in myriad ways.  That's the part that doesn't
->>make sense to
->> me.
->> 
->> So, that's why I suggested that maybe pmem is different from a block
->>device, but a
->> block device could certainly be layered on top of it.
->> 
->> Hopefully that clears up my concerns with the approach.
->> 
->> Cheers,
->> Jeff
->> 
->> _______________________________________________
->> Linux-pmfs mailing list
->> Linux-pmfs@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-pmfs
->
->_______________________________________________
->Linux-pmfs mailing list
->Linux-pmfs@lists.infradead.org
->http://lists.infradead.org/mailman/listinfo/linux-pmfs
 
