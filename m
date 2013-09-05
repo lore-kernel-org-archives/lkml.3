@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3IEV4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:56:16 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56218 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab3IEV4P (ORCPT
+	id S1752979Ab3IEWCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:02:10 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43886 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab3IEWCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:56:15 -0400
-Message-ID: <5228FDFC.9090700@gmail.com>
-Date: Thu, 05 Sep 2013 15:56:12 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 5 Sep 2013 18:02:07 -0400
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: more perf breakage from sample identifier
-References: <5228F92A.9020108@gmail.com>
-In-Reply-To: <5228F92A.9020108@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
+	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+Date: Fri, 6 Sep 2013 08:02:06 +1000
+Message-ID: <CAPM=9tyGiQ-yipeGHO0oOM71DnsiUdocwKXhseAMT8J00HdwCg@mail.gmail.com>
+Subject: Re: [git pull] drm tree for 3.12-rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/5/13 3:35 PM, David Ahern wrote:
-> Adrian:
+On Fri, Sep 6, 2013 at 5:18 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Sep 5, 2013 at 3:41 AM, Dave Airlie <airlied@linux.ie> wrote:
+>>
+>> i915: Haswell PC8+ support and eLLC support, HDMI 4K support, initial per-process VMA pieces,
+>>       watermark reworks, convert to generic hdmi infoframes, encoder reworking, fastboot support,
 >
-> 'perf kvm stat live' command fails on Linus' latest tree:
-> $ perf kvm stat live
-> Failed to parse sample
+> Hmm.
 >
-> git bisect points to:
+> The first time I booted this, I just got a black screen on my Haswell
+> desktop when X11 started up.  I could ctrl-alt-BS and ctrl-alt-del to
+> reboot the machine, and neither the Xorg.0.log nor the dmesg contained
+> anything interesting.
 >
-> 75562573bab35b129cfd342fc2bcf89da84a6644 is the first bad commit
-> commit 75562573bab35b129cfd342fc2bcf89da84a6644
-> Author: Adrian Hunter <adrian.hunter@intel.com>
-> Date:   Tue Aug 27 11:23:09 2013 +0300
+> I was about to try to bisect it, but decided to see how repeatable it
+> was, and it didn't happen again. But it also hasn't ever happened
+> before, so I'm a bit worried.
 >
->      perf tools: Add support for PERF_SAMPLE_IDENTIFIER
+> This is with the DP cable, which has made my other Haswell issues go away.
 >
->      Enable parsing of samples with sample format bit
-> PERF_SAMPLE_IDENTIFIER.
->      In addition, if the kernel supports it, prefer it to selecting
->      PERF_SAMPLE_ID thereby allowing non-matching sample types.
+> I'm also a bit bummed that hw acceleration of video doesn't seem to
+> work on Haswell, meaning that full-screen is now a jerky mess. I fear
+> that that is user-space libraries/X.org, but I thought I'd mention it
+> in the hope of getting a "oh, it's working for us, you'll get a fix
+> for it soon".
 >
->      Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->
->
-> perf_evlist__event2evsel() is failing. From what I can see the problem
-> is that evlist->heads is not getting populated. This command does not
-> read/write files but processes events as they come in. I have another
-> similar command that is also breaking for the same reason.
+> Because my shiny new 65W haswell is really nice and does a "make
+> allmodconfig" in half the time of my old machine, but the GPU side has
+> been something of a step backwards...
 
-That's not the problem. The hash is getting populated. The problem is a 
-bad assumption on what fields are in the sample -- like PERF_SAMPLE_IP. 
-The kvm command does not care about the IP so it is excluded:
+Welcome to new Intel HW :-P
 
-attr->sample_type &= ~PERF_SAMPLE_IP;
+So did you reboot into the new kernel from the old, maybe try reproducing
+but booting an old kernel and booting into the new one from it, it might
+be some hw state getting left set across soft reset or something,
 
-If I remove that line the command works fine.
+I'm hoping Intel guys pipe up on the other HSW issues, I only have
+one HSW laptop with an eDP panel and no external outputs on the
+Intel GPU.
 
-Since this a legitimate option to not get the IP in the sample, the 
-evsel lookup code needs to get fixed in 3.12.
-
-David
+Dave.
