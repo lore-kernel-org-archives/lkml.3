@@ -1,98 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935677Ab3IEK4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:56:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57765 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934151Ab3IEK4F (ORCPT
+	id S964881Ab3IEK4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:56:46 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:65189 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430Ab3IEK4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:56:05 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>
-Subject: [PATCH] ARM: OMAP2+: wakeupgen: AM43x adaptation
-Date: Thu, 5 Sep 2013 16:25:35 +0530
-Message-ID: <1378378535-2967-1-git-send-email-afzal@ti.com>
-X-Mailer: git-send-email 1.8.3.4
+	Thu, 5 Sep 2013 06:56:44 -0400
+Date: Thu, 5 Sep 2013 12:56:39 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [GIT PULL] perf changes for v3.12
+Message-ID: <20130905105639.GB21407@gmail.com>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFyyJpCC0EFfPpGYi+6goWbA+LZbrkFcLNW3x8xYHfKvdQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyyJpCC0EFfPpGYi+6goWbA+LZbrkFcLNW3x8xYHfKvdQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AM43x has 224 interrupts and 7 banks, make it as maximum values. Keep
-default values as earlier, if am43x is detected, update interrupts and
-banks to maximum.
 
-Also AM43x has only one cpu, ensure that clearing bitmask at wakeupgen
-is done only for the single existing cpu, existing code assumes that
-there are two cpu's.
+(Cc:-ed Frederic and Namhyung as well, it's about bad overhead in 
+tools/perf/util/hist.c.)
 
-If bitmask is cleared in wakeupgen for the nonexistent second cpu,
-an imprecise abort happens as soon as Kernel switches to user space.
-It was rootcaused by Sekhar Nori <nsekhar@ti.com>.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- arch/arm/mach-omap2/omap-wakeupgen.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+> On Tue, Sep 3, 2013 at 6:29 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > Please pull the latest perf-core-for-linus git tree from:
+> 
+> I don't think this is new at all, but I just tried to do a perf
+> record/report of "make -j64 test" on git:
+> 
+> It's a big perf.data file (1.6G), but after it has done the
+> "processing time ordered events" thing it results in:
+> 
+> ┌─Warning:───────────────────────────────────┐
+> │Processed 8672030 events and lost 71 chunks!│
+> │Check IO/CPU overload!                      │
+> │                                            │
+> │                                            │
+> │Press any key...                            │
+> └────────────────────────────────────────────┘
+> 
+> and then it just hangs using 100% CPU time. Pressing any key doesn't
+> do anything.
+> 
+> It may well still be *doing* something, and maybe it will come back
+> some day with results. But it sure doesn't show any indication that it
+> will.
+> 
+> Try this (in a current git source tree: note, by "git" I actually mean
+> git itself, not some random git repository)::
+> 
+>     perf record -g -e cycles:pp make -j64 test >& out
+>     perf report
+> 
+> maybe you can reproduce it.
 
-diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
-index 813c615..899d4946 100644
---- a/arch/arm/mach-omap2/omap-wakeupgen.c
-+++ b/arch/arm/mach-omap2/omap-wakeupgen.c
-@@ -33,8 +33,11 @@
- #include "omap4-sar-layout.h"
- #include "common.h"
- 
--#define MAX_NR_REG_BANKS	5
--#define MAX_IRQS		160
-+/* maximum value correspond to that of AM43x */
-+#define MAX_NR_REG_BANKS	7
-+#define MAX_IRQS		224
-+#define DEFAULT_NR_REG_BANKS	5
-+#define DEFAULT_IRQS		160
- #define WKG_MASK_ALL		0x00000000
- #define WKG_UNMASK_ALL		0xffffffff
- #define CPU_ENA_OFFSET		0x400
-@@ -47,8 +50,8 @@ static void __iomem *wakeupgen_base;
- static void __iomem *sar_base;
- static DEFINE_RAW_SPINLOCK(wakeupgen_lock);
- static unsigned int irq_target_cpu[MAX_IRQS];
--static unsigned int irq_banks = MAX_NR_REG_BANKS;
--static unsigned int max_irqs = MAX_IRQS;
-+static unsigned int irq_banks = DEFAULT_NR_REG_BANKS;
-+static unsigned int max_irqs = DEFAULT_IRQS;
- static unsigned int omap_secure_apis;
- 
- /*
-@@ -402,6 +405,7 @@ int __init omap_wakeupgen_init(void)
- {
- 	int i;
- 	unsigned int boot_cpu = smp_processor_id();
-+	bool am43x = soc_is_am43xx() ? true : false;
- 
- 	/* Not supported on OMAP4 ES1.0 silicon */
- 	if (omap_rev() == OMAP4430_REV_ES1_0) {
-@@ -418,12 +422,16 @@ int __init omap_wakeupgen_init(void)
- 		irq_banks = OMAP4_NR_BANKS;
- 		max_irqs = OMAP4_NR_IRQS;
- 		omap_secure_apis = 1;
-+	} else if (am43x) {
-+		irq_banks = MAX_NR_REG_BANKS;
-+		max_irqs = MAX_IRQS;
- 	}
- 
- 	/* Clear all IRQ bitmasks at wakeupGen level */
- 	for (i = 0; i < irq_banks; i++) {
- 		wakeupgen_writel(0, i, CPU0_ID);
--		wakeupgen_writel(0, i, CPU1_ID);
-+		if (!am43x)
-+			wakeupgen_writel(0, i, CPU1_ID);
- 	}
- 
- 	/*
--- 
-1.8.3.4
+I managed to reproduce it on a 32-way box via:
 
+     perf record -g make -j64 bzImage >/dev/null 2>&1
+
+It's easier to debug it without the TUI:
+
+     perf --no-pages report --stdio
+
+It turns out that even with a 400 MB perf.data the 'perf report' call will 
+eventually finish - here it ran for almost half an hour(!) on a fast box.
+
+Arnaldo, the large overhead is in hists__collapse_resort(), in particular 
+it's doing append_chain_children() 99% of the time:
+
+-  99.74%  perf  perf               [.] append_chain_children                                                         ◆
+   - append_chain_children                                                                                            ▒
+      - 99.76% merge_chain_branch                                                                                     ▒
+         - merge_chain_branch                                                                                         ▒
+            + 98.04% hists__collapse_resort                                                                           ▒
+            + 1.96% merge_chain_branch                                                                                ▒
++   0.05%  perf  perf               [.] merge_chain_branch                                                            ▒
++   0.03%  perf  libc-2.17.so       [.] _int_free                                                                     ▒
++   0.03%  perf  libc-2.17.so       [.] __libc_calloc                                                                 ▒
++   0.02%  perf  [kernel.kallsyms]  [k] account_user_time                                                             ▒
++   0.02%  perf  libc-2.17.so       [.] _int_malloc                                                                   ▒
+
+It seems to be stuck in hists__collapse_resort().
+
+In particular the overhead arises because the following loop in 
+append_chain_children():
+
+        /* lookup in childrens */
+        chain_for_each_child(rnode, root) {
+                unsigned int ret = append_chain(rnode, cursor, period);
+
+Reaches very long counts and the algorithm gets quadratic (at least). The 
+child count reaches over 100,000 entries in the end (!).
+
+I don't think the high child count in itself is anomalous: a kernel build 
+generates thousands of processes, tons of symbol ranges and tens of 
+millions of call chain entries.
+
+So I think what we need here is to speed up the lookup: put children into 
+a secondary, ->pos,len indexed range-rbtree and do a binary search instead 
+of a linear search over 100,000 child entries ... or something like that.
+
+Btw., a side note, append_chain() is a rather confusing function in 
+itself, with logic-inversion gems like:
+
+                if (!found)
+                        found = true;
+
+All that should be cleaned up as well I guess.
+
+The 'IO overload' message appears to be a separate, unrelated bug, it just 
+annoyingly does not get refreshed away in the TUI before 
+hists__collapse_resort() is called, and there's also no progress bar for 
+the hists__collapse_resort() pass, so to the user it all looks like a 
+deadlock.
+
+So there's at least two bugs here:
+
+  - the bad overhead in hists__collapse_resort()
+
+  - bad usability if hists__collapse_resort() takes more than 1 second to finish
+
+Thanks,
+
+	Ingo
