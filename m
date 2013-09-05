@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935649Ab3IEJpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:45:47 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:52237 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935609Ab3IEJo6 (ORCPT
+	id S935632Ab3IEJpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:45:44 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:38477 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935608Ab3IEJo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:44:58 -0400
+	Thu, 5 Sep 2013 05:44:57 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz
-Subject: [PATCH 08/11] sysfs: use check_submounts_and_drop()
-Date: Thu,  5 Sep 2013 11:44:41 +0200
-Message-Id: <1378374284-1484-9-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 07/11] nfs: use check_submounts_and_drop()
+Date: Thu,  5 Sep 2013 11:44:40 +0200
+Message-Id: <1378374284-1484-8-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
 References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
@@ -32,50 +32,34 @@ Non-directories can also be mounted on.  And just like directories we don't
 want these to disappear with invalidation.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- fs/sysfs/dir.c | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ fs/nfs/dir.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index e068e74..fde8856 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -297,7 +297,6 @@ static int sysfs_dentry_delete(const struct dentry *dentry)
- static int sysfs_dentry_revalidate(struct dentry *dentry, unsigned int flags)
- {
- 	struct sysfs_dirent *sd;
--	int is_dir;
- 	int type;
- 
- 	if (flags & LOOKUP_RCU)
-@@ -341,18 +340,15 @@ out_bad:
- 	 * is performed at its new name the dentry will be readded
- 	 * to the dcache hashes.
- 	 */
--	is_dir = (sysfs_type(sd) == SYSFS_DIR);
- 	mutex_unlock(&sysfs_mutex);
--	if (is_dir) {
--		/* If we have submounts we must allow the vfs caches
--		 * to lie about the state of the filesystem to prevent
--		 * leaks and other nasty things.
--		 */
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index e474ca2b..7468735 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1135,14 +1135,13 @@ out_zap_parent:
+ 	if (inode && S_ISDIR(inode->i_mode)) {
+ 		/* Purge readdir caches. */
+ 		nfs_zap_caches(inode);
+-		/* If we have submounts, don't unhash ! */
 -		if (have_submounts(dentry))
 -			goto out_valid;
+ 		if (dentry->d_flags & DCACHE_DISCONNECTED)
+ 			goto out_valid;
 -		shrink_dcache_parent(dentry);
--	}
+ 	}
 -	d_drop(dentry);
-+
-+	/* If we have submounts we must allow the vfs caches
-+	 * to lie about the state of the filesystem to prevent
-+	 * leaks and other nasty things.
-+	 */
++	/* If we have submounts, don't unhash ! */
 +	if (check_submounts_and_drop(dentry) != 0)
 +		goto out_valid;
 +
- 	return 0;
- }
- 
+ 	dput(parent);
+ 	dfprintk(LOOKUPCACHE, "NFS: %s(%s/%s) is invalid\n",
+ 			__func__, dentry->d_parent->d_name.name,
 -- 
 1.8.1.4
 
