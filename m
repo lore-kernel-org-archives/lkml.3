@@ -1,43 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935564Ab3IEJXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:23:03 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:38752 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763299Ab3IEJXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:23:01 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] MIPS: Export copy_from_user_page() (needed by lustre)
-Date: Thu,  5 Sep 2013 11:22:45 +0200
-Message-Id: <1378372965-27213-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S935558Ab3IEJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:28:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763411Ab3IEJ2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 05:28:40 -0400
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Subject: GFS2 Pre-pull patch posting (merge window)
+Date: Thu,  5 Sep 2013 10:02:06 +0100
+Message-Id: <1378371732-3947-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: "copy_from_user_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
+Hi,
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/mips/mm/init.c |    1 +
- 1 file changed, 1 insertion(+)
+This is the smallest merge window patch set for GFS2 for quite
+some time. Only one of the patches (moving gfs2_sync_meta) is
+a non-bug fix patch, although the merge ordered and writeback
+writepage patch is also a nice clean up.
 
-diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index 4e73f10..e205ef5 100644
---- a/arch/mips/mm/init.c
-+++ b/arch/mips/mm/init.c
-@@ -254,6 +254,7 @@ void copy_from_user_page(struct vm_area_struct *vma,
- 			SetPageDcacheDirty(page);
- 	}
- }
-+EXPORT_SYMBOL_GPL(copy_from_user_page);
- 
- void __init fixrange_init(unsigned long start, unsigned long end,
- 	pgd_t *pgd_base)
--- 
-1.7.9.5
+A couple of the patches are quite recently added, due to my only
+having recently returned from holiday, so I'll give them a couple
+of extra days in -next before sending the pull request.
+
+Steve.
 
