@@ -1,182 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3IEWRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 18:17:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13383 "EHLO mx1.redhat.com"
+	id S1753285Ab3IEWT4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:19:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41532 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752551Ab3IEWRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 18:17:34 -0400
-Message-ID: <1378419445.3246.268.camel@ul30vt.home>
-Subject: Re: Excess dmesg output from ACPIPHP on boot (was: Re: [PATCH
- 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots)
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Thu, 05 Sep 2013 16:17:25 -0600
-In-Reply-To: <3686522.NVYmP5Gevu@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan>
-	 <1378390901.3246.233.camel@ul30vt.home> <1535359.s5bUZnSMNz@vostro.rjw.lan>
-	 <3686522.NVYmP5Gevu@vostro.rjw.lan>
+	id S1752572Ab3IEWTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 18:19:54 -0400
+Message-ID: <1378419504.4321.194.camel@pasglop>
+Subject: Re: [RFC PATCH 0/3] irq: Fix stack overflow due to softirq called
+ on current stack
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@au1.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 06 Sep 2013 08:18:24 +1000
+In-Reply-To: <1378395204-25342-1-git-send-email-fweisbec@gmail.com>
+References: <1378330796.4321.50.camel@pasglop>
+	 <1378395204-25342-1-git-send-email-fweisbec@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 23:39 +0200, Rafael J. Wysocki wrote:
-> On Thursday, September 05, 2013 09:44:26 PM Rafael J. Wysocki wrote:
-> > On Thursday, September 05, 2013 08:21:41 AM Alex Williamson wrote:
+On Thu, 2013-09-05 at 17:33 +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
-> [...]
+> This series is a proposition to fix the crash reported here: http://lkml.kernel.org/r/1378330796.4321.50.camel%40pasglop
+> And it has the upside to also consolidate a bit the arch do_softirq overriden implementation.
 > 
-> > > > 
-> > > > [   18.288122] pci 0000:00:00.0: no hotplug settings from platform
-> > > > [   18.288127] pcieport 0000:00:01.0: no hotplug settings from platform
-> > > > [   18.288142] pci 0000:01:00.0: no hotplug settings from platform
-> > > > [   18.288157] pci 0000:01:00.1: no hotplug settings from platform
-> > > > [   18.288162] pcieport 0000:00:03.0: no hotplug settings from platform
-> > > > [   18.288176] pci 0000:02:00.0: no hotplug settings from platform
-> > > > [   18.288190] pci 0000:02:00.1: no hotplug settings from platform
-> > > > [   18.288195] pcieport 0000:00:07.0: no hotplug settings from platform
-> > > > [   18.288209] pci 0000:03:00.0: no hotplug settings from platform
-> > > > [   18.288224] pci 0000:03:00.1: no hotplug settings from platform
-> > > > [   18.288228] pci 0000:00:14.0: no hotplug settings from platform
-> > > > [   18.288233] pci 0000:00:14.1: no hotplug settings from platform
-> > > > [   18.288237] pci 0000:00:14.2: no hotplug settings from platform
-> > > > [   18.288242] pci 0000:00:16.0: no hotplug settings from platform
-> > > > [   18.288247] pci 0000:00:16.1: no hotplug settings from platform
-> > > > [   18.288251] pci 0000:00:16.2: no hotplug settings from platform
-> > > > [   18.288256] pci 0000:00:16.3: no hotplug settings from platform
-> > > > [   18.288260] pci 0000:00:16.4: no hotplug settings from platform
-> > > > [   18.288265] pci 0000:00:16.5: no hotplug settings from platform
-> > > > [   18.288269] pci 0000:00:16.6: no hotplug settings from platform
-> > > > [   18.288274] pci 0000:00:16.7: no hotplug settings from platform
-> > > > [   18.288278] pci 0000:00:1a.0: no hotplug settings from platform
-> > > > [   18.288279] pci 0000:00:1a.0: using default PCI settings
-> > > > [   18.288292] pci 0000:00:1a.1: no hotplug settings from platform
-> > > > [   18.288293] pci 0000:00:1a.1: using default PCI settings
-> > > > [   18.288307] ehci-pci 0000:00:1a.7: no hotplug settings from platform
-> > > > [   18.288308] ehci-pci 0000:00:1a.7: using default PCI settings
-> > > > [   18.288322] pci 0000:00:1b.0: no hotplug settings from platform
-> > > > [   18.288327] pcieport 0000:00:1c.0: no hotplug settings from platform
-> > > > [   18.288332] pcieport 0000:00:1c.4: no hotplug settings from platform
-> > > > [   18.288344] pci 0000:05:00.0: no hotplug settings from platform
-> > > > [   18.288349] pci 0000:00:1d.0: no hotplug settings from platform
-> > > > [   18.288350] pci 0000:00:1d.0: using default PCI settings
-> > > > [   18.288360] pci 0000:00:1d.1: no hotplug settings from platform
-> > > > [   18.288361] pci 0000:00:1d.1: using default PCI settings
-> > > > [   18.288374] pci 0000:00:1d.2: no hotplug settings from platform
-> > > > [   18.288374] pci 0000:00:1d.2: using default PCI settings
-> > > > [   18.288387] pci 0000:00:1d.3: no hotplug settings from platform
-> > > > [   18.288387] pci 0000:00:1d.3: using default PCI settings
-> > > > 
-> > > > The boot is noticeably slower.  What's going to happen on systems that
-> > > > actually have a significant I/O topology vs my little workstation?
-> > 
-> > That depends on how many bus check/device check events they generate on boot.
-> > 
-> > My test machines don't generate them during boot at all (even the one with
-> > a Thunderbolt connector), so I don't see the messages in question during boot
-> > on any of them.  Mika doesn't see them either I suppose, or he would have told
-> > me about that before.
-> > 
-> > And let's just make it clear that it is not usual or even OK to generate bus
-> > checks or device checks during boot like this.  And since the changes in
-> > question have been in linux-next since right after the 3.11 merge window, I
-> > think that someone would have complained already had that been a common issue.
-> > 
-> > Of course, we need to deal with that somehow nevertheless. :-)
-> > 
-> > > Just to give you an idea:
-> > > 
-> > > CONFIG_HOTPLUG_PCI_ACPI=y
-> > > 
-> > > $ dmesg | wc
-> > >   5697  49935 384368
-> > > 
-> > > $ dmesg | tail --lines=1
-> > > [   53.137123] Ebtables v2.0 registered
-> > > 
-> > > -- vs --
-> > > 
-> > > # CONFIG_HOTPLUG_PCI_ACPI is not set
-> > > 
-> > > $ dmesg | wc
-> > >  1053  9176 71652
-> > > 
-> > > $dmesg | tail --lines=1
-> > > [   28.917220] Ebtables v2.0 registered
-> > > 
-> > > So it spews out 5x more output with acpiphp enabled and takes and extra
-> > > 24s to boot (nearly 2x).  Not good.
-> > 
-> > The "no hotplug settings from platform" message is from pci_configure_slot().
-> > I think the messages you're seeing are from the call to it in
-> > acpiphp_set_hpp_values() which is called by enable_slot().
-> > 
-> > There, I think, we can simply check the return value of pci_scan_slot() and
-> > if that is 0 (no new devices), we can just skip everything under the call to
-> > __pci_bus_assign_resources().
-> > 
-> > However, we can't skip the scanning of bridges, if any, because there may be
-> > new devices below them and I guess that's what takes so much time on your
-> > machine.
+> Only tested in x86-64 for now.
+
+Thanks. I'm off for a few days, Paul can you give that a spin ? My
+understanding is that the crash was fairly reproduceable... which makes
+me wonder what are the chances to get RH to pick that series up for
+RHEL7...
+
+Cheers,
+Ben.
+
+> Thanks.
 > 
-> OK, one piece is missing.  We may need to evaluate _OSC after handling each
-> event to let the platform know the status.
+> Frederic Weisbecker (3):
+>   irq: Consolidate do_softirq() arch overriden implementations
+>   irq: Execute softirq on its own stack on irq exit
+>   irq: Comment on the use of inline stack for ksoftirq
 > 
-> Can you please check if the appended patch makes any difference (with the
-> previous fix applied, of course)?
+>  arch/metag/kernel/irq.c    |   56 +++++++++++++++++------------------------
+>  arch/parisc/kernel/irq.c   |   17 +-----------
+>  arch/powerpc/kernel/irq.c  |   17 +-----------
+>  arch/s390/kernel/irq.c     |   52 +++++++++++++++----------------------
+>  arch/sh/kernel/irq.c       |   60 ++++++++++++++++++-------------------------
+>  arch/sparc/kernel/irq_64.c |   31 +++++++---------------
+>  arch/x86/kernel/irq_32.c   |   34 +++++++++----------------
+>  arch/x86/kernel/irq_64.c   |   18 ++-----------
+>  include/linux/interrupt.h  |   11 ++++++++
+>  kernel/softirq.c           |   10 +++----
+>  10 files changed, 112 insertions(+), 194 deletions(-)
 > 
-> If fact, it is two patches combined.  One of them optimizes enable_slot()
-> slightly and the other adds the missing _OSC evaluation.
 
-Better, still double the output:
-
-$ dmesg | wc
-   2169   19047  152710
-
-$ dmesg | tail --lines=1
-[   39.980918] Ebtables v2.0 registered
-
-Here's another interesting stat:
-
-$ dmesg | colrm 1 15 | sort | uniq -c | sort -nr | head --lines=25
-     73 pci 0000:00:1f.0: BAR 13: [io  0x1000-0x107f] has bogus alignment
-     73 pci 0000:00:1e.0: PCI bridge to [bus 06]
-     64 pci 0000:00:1e.0:   bridge window [mem 0x81100000-0x812fffff 64bit pref]
-     64 pci 0000:00:1e.0:   bridge window [mem 0x80f00000-0x810fffff]
-     64 pci 0000:00:1e.0:   bridge window [io  0x7000-0x7fff]
-     38 pci 0000:00:1c.4: PCI bridge to [bus 05]
-     38 pci 0000:00:1c.4:   bridge window [mem 0xf4f00000-0xf4ffffff]
-     38 pci 0000:00:1c.0: PCI bridge to [bus 04]
-     38 pci 0000:00:07.0: PCI bridge to [bus 03]
-     38 pci 0000:00:07.0:   bridge window [mem 0xf2000000-0xf40fffff]
-     38 pci 0000:00:07.0:   bridge window [mem 0xe0000000-0xf1ffffff 64bit pref]
-     38 pci 0000:00:07.0:   bridge window [io  0x4000-0x4fff]
-     38 pci 0000:00:03.0: PCI bridge to [bus 02]
-     38 pci 0000:00:03.0:   bridge window [mem 0xf4e00000-0xf4efffff]
-     38 pci 0000:00:03.0:   bridge window [mem 0xd0000000-0xdfffffff 64bit pref]
-     38 pci 0000:00:03.0:   bridge window [io  0x3000-0x3fff]
-     38 pci 0000:00:01.0: PCI bridge to [bus 01]
-     38 pci 0000:00:01.0:   bridge window [mem 0xf4100000-0xf4bfffff]
-     38 pci 0000:00:01.0:   bridge window [io  0x2000-0x2fff]
-     37 pci 0000:00:1c.4:   bridge window [mem 0x80c00000-0x80dfffff 64bit pref]
-     37 pci 0000:00:1c.4:   bridge window [io  0x6000-0x6fff]
-     37 pci 0000:00:1c.0:   bridge window [mem 0x80a00000-0x80bfffff 64bit pref]
-     37 pci 0000:00:1c.0:   bridge window [mem 0x80800000-0x809fffff]
-     37 pci 0000:00:1c.0:   bridge window [io  0x5000-0x5fff]
-     36 pci 0000:00:01.0:   bridge window [mem 0x80000000-0x807fffff 64bit pref]
-
-This is nearly the entire difference, just 25 lines repeated over and
-over.  Thanks,
-
-Alex
 
