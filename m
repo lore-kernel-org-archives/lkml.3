@@ -1,68 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965131Ab3IEKFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38584 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935623Ab3IEKFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:05:49 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: [PATCH V2 net-next 2/2] tuntap: orphan frags before trying to set tx timestamp
-Date: Thu,  5 Sep 2013 17:54:00 +0800
-Message-Id: <1378374840-39130-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1378374840-39130-1-git-send-email-jasowang@redhat.com>
-References: <1378374840-39130-1-git-send-email-jasowang@redhat.com>
+	id S935639Ab3IEKIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:08:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41635 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934879Ab3IEKIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 06:08:21 -0400
+Message-ID: <1378375634.3948.10.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH RFC 0/6] ARM: OMAP2+: AM43x/AM335x prcm reset driver
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Afzal Mohammed <afzal@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Pavel Machek <pavel@ucw.cz>
+Date: Thu, 05 Sep 2013 12:07:14 +0200
+In-Reply-To: <cover.1378129416.git.afzal@ti.com>
+References: <cover.1378129416.git.afzal@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sock_tx_timestamp() will clear all zerocopy flags of skb which may lead the
-frags never to be orphaned. This will break guest to guest traffic when zerocopy
-is enabled. Fix this by orphaning the frags before trying to set tx time stamp.
+Hi Afzal,
 
-The issue were introduced by commit eda297729171fe16bf34fe5b0419dfb69060f623
-(tun: Support software transmit time stamping).
+Am Montag, den 02.09.2013, 19:41 +0530 schrieb Afzal Mohammed:
+> Hi,
+> 
+> This is an attempt to achieve reset on AM43x/AM335x based SoC's with
+> reset driver making use of the reset framework.
+> 
+> prcm node is added in device tree, which would hold reset bindings.
+> Initially node was made as a one that represents reset functionality
+> of SoC. but ended up with node for prcm (which is felt to be natural
+> choice) instead. I am a bit doubtful whether placement of prcm node in
+> root node as in this series is the right thing.
+> 
+> Reset driver gets probed for specific prcm node, the same defines
+> register details to be used for a particular SoC (using ".data" field
+> associated with ".compatible" in driver match table).
+> 
+> Another option to handle different SoC's would be to add register
+> details to DT and let the driver extract it from DT. I vaguely
+> remember seeing a thread mentioning that putting register details in
+> DT is not preferred. But open to putting register level details
+> instead in DT if that is being generally preferred. This would have
+> advantage that adding reset support for a new SoC would be easier, but
+> would have to put more thought before doing so as DT bindings should
+> not change.
+> 
+> With the approach taken here, for supporting a new SoC with new prcm
+> register details, driver would have to be updated much like the way a
+> pci based ethernet driver would have to be updated to handle a new IP
+> version that is not register level compatible with the existing ones.
+> 
+> In this series out of the three IP's (gfx, m3, pruss) that would need
+> reset support, here as a proof of concept only gfx is taken care.
+> Other's can be easily supported by adding new register data array
+> entries.
+> 
+> Two new reset API's are provided to check whether reset is ready and
+> to clear reset. This would be required in case IP needs to mix reset
+> handling procedure with power/clock managment procedure to achieve
+> proper reset and these procedures are sometimes IP specific that would
+> make it difficult to handle reset fully in pm_runtime platform support.
+> 
+> *------*
+> client IP handling s/w (DT based) should do as follows:
+> 
+> 1. Specify reset handle in the relevant DT node, for eg.
+> 
+> 	myip@deadbeef {
+> 		:
+> 		:
+> 		/* here prcm is the handle to reset binding node */
+> 		resets = <&prcm 0>;
+> 	};
+> 
+> 2. In driver, that require reset to be deasserted,
+>  (this is the sequence required for gfx on AM43x/AM335x, this would
+>   depend on requirements of the IP)
+> 
+> 	mydriver_probe(struct platform device *pdev)
+> 	{
+> 		:
+> 		:
+> 		reset_control_get(&pdev->dev, NULL);
+> 		reset_control_clear_reset();
+> 		reset_control_deassert();
+> 		pm_runtime_get_sync();
+> 		if (reset_control_is_reset() != true)
+> 			goto err;
+> 		reset_control_put();
+> 		:
+> 		:
+> 	}
+> 
+> *------*
 
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Acked-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from v1:
-- correct the comment location and style
----
- drivers/net/tun.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+if possible, I'd like to move this logic into the reset controller
+driver. Can this be reordered to enable power before deasserting the
+reset line (assuming it is initially asserted)? In this case, I'd
+suggest to just call device_reset:
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 2dddb1b..a639de8 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -749,15 +749,17 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 			  >= dev->tx_queue_len / tun->numqueues)
- 		goto drop;
- 
-+	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
-+		goto drop;
-+
- 	if (skb->sk) {
- 		sock_tx_timestamp(skb->sk, &skb_shinfo(skb)->tx_flags);
- 		sw_tx_timestamp(skb);
- 	}
- 
- 	/* Orphan the skb - required as we might hang on to it
--	 * for indefinite time. */
--	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
--		goto drop;
-+	 * for indefinite time.
-+	 */
- 	skb_orphan(skb);
- 
- 	nf_reset(skb);
--- 
-1.7.1
+	pm_runtime_get_sync(&pdev->dev);
+	ret = device_reset(&pdev->dev);
+	if (ret)
+		goto err;
+
+The ops.reset callback in the prcm driver then can handle clearing
+the reset status bit, deasserting the reset control bit, and waiting for
+the reset status bit to be set (or timing out with an error).
+
+> May be removing reset handling in hwmod can be considered by making
+> use of reset driver.
+> 
+> Or as another extreme, perhaps, other logic's in the prcm can be
+> handled by a new prcm driver and then this reset driver can be a child
+> of it.
+> 
+> Regards
+> Afzal
+> 
+> 
+> Afzal Mohammed (6):
+>   reset: is_reset and clear_reset api's
+>   doc: dt: binding: omap: am43x/am335x prcm reset
+>   reset: am43x/am335x support
+>   ARM: OMAP2+: AM43x/AM335x: have reset controller
+>   ARM: dts: AM335x: prcm node (for reset)
+>   ARM: dts: AM4372: prcm node (for reset)
+> 
+>  .../devicetree/bindings/arm/omap/prcm.txt          |  13 ++
+>  arch/arm/boot/dts/am33xx.dtsi                      |   6 +
+>  arch/arm/boot/dts/am4372.dtsi                      |   6 +
+>  arch/arm/mach-omap2/Kconfig                        |   2 +
+>  drivers/reset/Kconfig                              |  14 ++
+>  drivers/reset/Makefile                             |   1 +
+>  drivers/reset/amx3_reset.c                         | 157 +++++++++++++++++++++
+>  drivers/reset/core.c                               |  32 +++++
+>  include/linux/reset-controller.h                   |   2 +
+>  include/linux/reset.h                              |   2 +
+>  10 files changed, 235 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/omap/prcm.txt
+>  create mode 100644 drivers/reset/amx3_reset.c
+
+regards
+Philipp
 
