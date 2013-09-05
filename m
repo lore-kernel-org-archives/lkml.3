@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab3IEU2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:20 -0400
+	id S1758064Ab3IEUlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:41:50 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:52037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935Ab3IEU2R (ORCPT
+	with ESMTP id S1756956Ab3IEU2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:17 -0400
+	Thu, 5 Sep 2013 16:28:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 05/36] ALSA: opti9xx: Fix conflicting driver object name
-Date: Thu,  5 Sep 2013 13:27:34 -0700
-Message-Id: <20130905202702.956816776@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Jamie Liu <jamieliu@google.com>
+Subject: [ 15/36] workqueue: cond_resched() after processing each work item
+Date: Thu,  5 Sep 2013 13:27:44 -0700
+Message-Id: <20130905202704.079407825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -26,55 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
+commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
 
-The recent commit to delay the release of kobject triggered NULL
-dereferences of opti9xx drivers.  The cause is that all
-snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
-register the PnP card driver with the very same name, and also
-snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
-the same name, too.  When these drivers are built in, quick
-"register-release-and-re-register" actions occur, and this results in
-Oops because of the same name is assigned to the kobject.
+If !PREEMPT, a kworker running work items back to back can hog CPU.
+This becomes dangerous when a self-requeueing work item which is
+waiting for something to happen races against stop_machine.  Such
+self-requeueing work item would requeue itself indefinitely hogging
+the kworker and CPU it's running on while stop_machine would wait for
+that CPU to enter stop_machine while preventing anything else from
+happening on all other CPUs.  The two would deadlock.
 
-The fix is simply to assign individual names.  As a bonus, by using
-KBUILD_MODNAME, the patch reduces more lines than it adds.
+Jamie Liu reports that this deadlock scenario exists around
+scsi_requeue_run_queue() and libata port multiplier support, where one
+port may exclude command processing from other ports.  With the right
+timing, scsi_requeue_run_queue() can end up requeueing itself trying
+to execute an IO which is asked to be retried while another device has
+an exclusive access, which in turn can't make forward progress due to
+stop_machine.
 
-The fix is based on the suggestion by Russell King.
+Fix it by invoking cond_resched() after executing each work item.
 
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Jamie Liu <jamieliu@google.com>
+References: http://thread.gmane.org/gmane.linux.kernel/1552567
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/isa/opti9xx/opti92x-ad1848.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9x
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2188,6 +2188,15 @@ __acquires(&pool->lock)
+ 		dump_stack();
+ 	}
  
- #endif	/* CONFIG_PNP */
++	/*
++	 * The following prevents a kworker from hogging CPU on !PREEMPT
++	 * kernels, where a requeueing work item waiting for something to
++	 * happen could deadlock with stop_machine as such work item could
++	 * indefinitely requeue itself while all other CPUs are trapped in
++	 * stop_machine.
++	 */
++	cond_resched();
++
+ 	spin_lock_irq(&pool->lock);
  
--#ifdef OPTi93X
--#define DEV_NAME "opti93x"
--#else
--#define DEV_NAME "opti92x"
--#endif
-+#define DEV_NAME KBUILD_MODNAME
- 
- static char * snd_opti9xx_names[] = {
- 	"unknown",
-@@ -1168,7 +1164,7 @@ static int snd_opti9xx_pnp_resume(struct
- 
- static struct pnp_card_driver opti9xx_pnpc_driver = {
- 	.flags		= PNP_DRIVER_RES_DISABLE,
--	.name		= "opti9xx",
-+	.name		= DEV_NAME,
- 	.id_table	= snd_opti9xx_pnpids,
- 	.probe		= snd_opti9xx_pnp_probe,
- 	.remove		= snd_opti9xx_pnp_remove,
+ 	/* clear cpu intensive status */
 
 
