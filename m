@@ -1,88 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab3IEUqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:46:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60869 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757673Ab3IEUqM (ORCPT
+	id S1758187Ab3IEUqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:46:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52004 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003Ab3IEU2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:46:12 -0400
-Date: Thu, 5 Sep 2013 21:46:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130905204609.GV13318@ZenIV.linux.org.uk>
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
- <1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
- <5228E992.5050901@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5228E992.5050901@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Sep 2013 16:28:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 02/36] jfs: fix readdir cookie incompatibility with NFSv4
+Date: Thu,  5 Sep 2013 13:27:31 -0700
+Message-Id: <20130905202702.587527767@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
+References: <20130905202702.289738686@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 04:29:06PM -0400, Waiman Long wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> It is not as simple as doing a strncpy(). The pathname was built
-> from the leaf up to the root, and from the end of buffer toward the
-> beginning. As it goes through the while loop, the buffer will look
-> like:
-> 
-> "    /c"
-> "  /b/c"
-> "/a/b/c"
-> 
-> If the content of the string is unreliable, I have to do at least 2 passes:
-> 1) Locate the end of the string and determine the actual length
-> 2) Copy the whole string or byte-by-byte backward
+------------------
 
-No, you do not need anything of that kind.  All you need is
-	a) don't step out of the array (which will contain NUL at the end
-at all times, no matter what) and
-	b) generate correct output *IF* no d_move() happens while you
-do that.
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-Nothing else matters at all.  You trust the length to be correct in absense
-of d_move().  You can not trust it to match the size of ->d_name.name when
-d_move() is happening, but you can trust everything up to ->d_name.len *or*
-the first NUL, whichever happens first, to be safe to access.
+commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
 
-Again, the contents copied into the buffer needs to be valid only if d_move()
-hasn't happened; if it has, we don't give a fuck - read_seqretry() will take
-care of that.  All you need to care about in that case is not oopsing the
-damn thing.
+NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
+but jfs allows a value of 2 for a non-special entry. This incompatibility
+can result in the nfs client reporting a readdir loop.
 
-static int prepend_name(char **buffer, int *buflen, struct qstr *name)
-{
-	const char *s = ACCESS_ONCE(name->name);
-	unsigned len = ACCESS_ONCE(name->len);
-	char *p;
+This patch doesn't change the value stored internally, but adds one to
+the value exposed to the iterate method.
 
-	*buflen -= len;
-	if (*buflen < 0)
-		return -ENAMETOOLONG;
-	p = *buffer -= len;
-	while (len--) {
-		c = *s++;
-		if (!c)
-			break;
-		*p++ = c;
-	}
-        return 0;
-}
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/ctx->pos/filp->f_pos/]
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-And that's *all* - just call that under rcu_read_lock() and within
-seq = read_seqbegin(&rename_lock)/read_seqretry(&rename_lock, seq)
-loop over the whole prepend_path/path_with_deleted/__dentry_path
-thing.
+--- a/fs/jfs/jfs_dtree.c
++++ b/fs/jfs/jfs_dtree.c
+@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void
+ 
+ 		dir_index = (u32) filp->f_pos;
+ 
++		/*
++		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
++		 * the value we return to the vfs is one greater than the
++		 * one we use internally.
++		 */
++		if (dir_index)
++			dir_index--;
++
+ 		if (dir_index > 1) {
+ 			struct dir_table_slot dirtab_slot;
+ 
+@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void
+ 			if (p->header.flag & BT_INTERNAL) {
+ 				jfs_err("jfs_readdir: bad index table");
+ 				DT_PUTPAGE(mp);
+-				filp->f_pos = -1;
++				filp->f_pos = DIREND;
+ 				return 0;
+ 			}
+ 		} else {
+@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void
+ 				/*
+ 				 * self "."
+ 				 */
+-				filp->f_pos = 0;
++				filp->f_pos = 1;
+ 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
+ 					    DT_DIR))
+ 					return 0;
+@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void
+ 			/*
+ 			 * parent ".."
+ 			 */
+-			filp->f_pos = 1;
++			filp->f_pos = 2;
+ 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
+ 				return 0;
+ 
+@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void
+ 		/*
+ 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
+ 		 *
+-		 * pn = index = 0:	First entry "."
+-		 * pn = 0; index = 1:	Second entry ".."
++		 * pn = 0; index = 1:	First entry "."
++		 * pn = 0; index = 2:	Second entry ".."
+ 		 * pn > 0:		Real entries, pn=1 -> leftmost page
+ 		 * pn = index = -1:	No more entries
+ 		 */
+ 		dtpos = filp->f_pos;
+-		if (dtpos == 0) {
++		if (dtpos < 2) {
+ 			/* build "." entry */
+ 
++			filp->f_pos = 1;
+ 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
+ 				    DT_DIR))
+ 				return 0;
+-			dtoffset->index = 1;
++			dtoffset->index = 2;
+ 			filp->f_pos = dtpos;
+ 		}
+ 
+ 		if (dtoffset->pn == 0) {
+-			if (dtoffset->index == 1) {
++			if (dtoffset->index == 2) {
+ 				/* build ".." entry */
+ 
+ 				if (filldir(dirent, "..", 2, filp->f_pos,
+@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void
+ 					}
+ 					jfs_dirent->position = unique_pos++;
+ 				}
++				/*
++				 * We add 1 to the index because we may
++				 * use a value of 2 internally, and NFSv4
++				 * doesn't like that.
++				 */
++				jfs_dirent->position++;
+ 			} else {
+ 				jfs_dirent->position = dtpos;
+ 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
+
+
