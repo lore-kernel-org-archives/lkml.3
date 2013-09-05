@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3IEU2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52064 "EHLO
+	id S1757580Ab3IEU2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab3IEU2Q (ORCPT
+	with ESMTP id S1757502Ab3IEU2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:16 -0400
+	Thu, 5 Sep 2013 16:28:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, Glauber Costa <glommer@openvz.org>,
-        Joonsoo Kim <js1304@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 14/36] memcg: check that kmem_cache has memcg_params before accessing it
-Date: Thu,  5 Sep 2013 13:27:43 -0700
-Message-Id: <20130905202703.970129862@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 11/14] iwl4965: fix rfkill set state regression
+Date: Thu,  5 Sep 2013 13:28:22 -0700
+Message-Id: <20130905202615.711317335@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
-References: <20130905202702.289738686@linuxfoundation.org>
+In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
+References: <20130905202614.354156084@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 6f6b8951897e487ea6f77b90ea01f70a9c363770 upstream.
+commit b2fcc0aee58a3435566dd6d8501a0b355552f28b upstream.
 
-If the system had a few memory groups and all of them were destroyed,
-memcg_limited_groups_array_size has non-zero value, but all new caches
-are created without memcg_params, because memcg_kmem_enabled() returns
-false.
+My current 3.11 fix:
 
-We try to enumirate child caches in a few places and all of them are
-potentially dangerous.
+commit 788f7a56fce1bcb2067b62b851a086fca48a0056
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
+Date:   Thu Aug 1 12:07:55 2013 +0200
 
-For example my kernel is compiled with CONFIG_SLAB and it crashed when I
-tryed to mount a NFS share after a few experiments with kmemcg.
+    iwl4965: reset firmware after rfkill off
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-  PGD b942a067 PUD b999f067 PMD 0
-  Oops: 0000 [#1] SMP
-  Modules linked in: fscache(+) ip6table_filter ip6_tables iptable_filter ip_tables i2c_piix4 pcspkr virtio_net virtio_balloon i2c_core floppy
-  CPU: 0 PID: 357 Comm: modprobe Not tainted 3.11.0-rc7+ #59
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  task: ffff8800b9f98240 ti: ffff8800ba32e000 task.ti: ffff8800ba32e000
-  RIP: 0010:[<ffffffff8118166a>]  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-  RSP: 0018:ffff8800ba32fb70  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000006
-  RDX: 0000000000000000 RSI: ffff8800b9f98910 RDI: 0000000000000246
-  RBP: ffff8800ba32fba0 R08: 0000000000000002 R09: 0000000000000004
-  R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000010
-  R13: 0000000000000008 R14: 00000000000000d0 R15: ffff8800375d0200
-  FS:  00007f55f1378740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00007f24feba57a0 CR3: 0000000037b51000 CR4: 00000000000006f0
-  Call Trace:
-    enable_cpucache+0x49/0x100
-    setup_cpu_cache+0x215/0x280
-    __kmem_cache_create+0x2fa/0x450
-    kmem_cache_create_memcg+0x214/0x350
-    kmem_cache_create+0x2b/0x30
-    fscache_init+0x19b/0x230 [fscache]
-    do_one_initcall+0xfa/0x1b0
-    load_module+0x1c41/0x26d0
-    SyS_finit_module+0x86/0xb0
-    system_call_fastpath+0x16/0x1b
+broke rfkill notification to user-space . I missed that bug, because
+I compiled without CONFIG_RFKILL, sorry about that.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Joonsoo Kim <js1304@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slab.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/iwlegacy/4965-mac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -162,6 +162,8 @@ static inline const char *cache_name(str
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4415,9 +4415,9 @@ il4965_irq_tasklet(struct il_priv *il)
+ 			set_bit(S_RFKILL, &il->status);
+ 		} else {
+ 			clear_bit(S_RFKILL, &il->status);
+-			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
+ 			il_force_reset(il, true);
+ 		}
++		wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
  
- static inline struct kmem_cache *cache_from_memcg(struct kmem_cache *s, int idx)
- {
-+	if (!s->memcg_params)
-+		return NULL;
- 	return s->memcg_params->memcg_caches[idx];
- }
- 
+ 		handled |= CSR_INT_BIT_RF_KILL;
+ 	}
 
 
