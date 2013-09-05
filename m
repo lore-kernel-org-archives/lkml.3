@@ -1,156 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965289Ab3IEMhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:37:10 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:42315 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934668Ab3IEMhI (ORCPT
+	id S1763425Ab3IEMiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:38:51 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:47208 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762579Ab3IEMis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:37:08 -0400
-X-Greylist: delayed 3605 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 08:37:08 EDT
-From: minyard@acm.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH 4/4] BMC support for PARISC machines
-Date: Thu, 05 Sep 2013 06:36:36 -0500
-Message-id: <1378380996-4844-5-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1378380996-4844-1-git-send-email-minyard@acm.org>
-References: <1378380996-4844-1-git-send-email-minyard@acm.org>
+	Thu, 5 Sep 2013 08:38:48 -0400
+Date: Thu, 5 Sep 2013 14:39:11 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
+Message-ID: <20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
+References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
+ <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
+ <20130905111852.GP13318@ZenIV.linux.org.uk>
+ <CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
+ <20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
+ <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+This one actually has a slight chance of working.
 
-The last line of PARISC machines (C8000, RP34x0, etc.) have a BMC for
-controlling temperature, fan speed and other stuff. The BMC is connected
-via a special bus and listed in the firmware device tree. This change
-adds support for these BMCs to the IPMI driver.
+Thanks,
+Miklos
 
-Signed-off-by: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   75 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
+Subject: vfs: check unlinked ancestors before mount
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 810372c..15e4a60 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -71,6 +71,11 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
+We check submounts before doing d_drop() on a non-empty directory dentry in
+NFS (have_submounts()), but we do not exclude a racing mount.  Nor do we
+prevent mounts to be added to the disconnected subtree using relative paths
+after the d_drop().
+
+This patch fixes these issues by checking for unlinked (unhashed, non-root)
+ancestors before proceeding with the mount.  This is done after setting
+DCACHE_MOUNTED on the soon-to-be mountpoint and with the rename seqlock
+taken for write.  This ensures that the only one of
+check_submounts_and_drop() or has_unlinked_ancestor() can succeed.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: David Howells <dhowells@redhat.com>
+CC: Steven Whitehouse <swhiteho@redhat.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/dcache.c    |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/internal.h  |    1 +
+ fs/namespace.c |   11 +++++------
+ 3 files changed, 58 insertions(+), 6 deletions(-)
+
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1159,6 +1159,58 @@ int have_submounts(struct dentry *parent
+ }
+ EXPORT_SYMBOL(have_submounts);
  
-+#ifdef CONFIG_PARISC
-+#include <asm/hardware.h>	/* for register_parisc_driver() stuff */
-+#include <asm/parisc-device.h>
-+#endif
-+
- #define PFX "ipmi_si: "
- 
- /* Measure times between events in the driver. */
-@@ -298,6 +303,9 @@ static int pci_registered;
- #ifdef CONFIG_ACPI
- static int pnp_registered;
- #endif
-+#ifdef CONFIG_PARISC
-+static int parisc_registered;
-+#endif
- 
- static unsigned int kipmid_max_busy_us[SI_MAX_PARMS];
- static int num_max_busy_us;
-@@ -2699,6 +2707,62 @@ static struct platform_driver ipmi_driver = {
- 	.remove		= ipmi_remove,
- };
- 
-+#ifdef CONFIG_PARISC
-+static int ipmi_parisc_probe(struct parisc_device *dev)
++static bool __has_unlinked_ancestor(struct dentry *dentry)
 +{
-+	struct smi_info *info;
++	struct dentry *this;
 +
-+	info = smi_info_alloc();
++	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
++		int is_unhashed;
 +
-+	if (!info) {
-+		dev_err(&dev->dev,
-+			"could not allocate memory for PARISC probe\n");
-+		return -ENOMEM;
++		/* Need exclusion wrt. check_submounts_and_drop() */
++		spin_lock(&this->d_lock);
++		is_unhashed = d_unhashed(this);
++		spin_unlock(&this->d_lock);
++
++		if (is_unhashed)
++			return true;
 +	}
-+
-+	info->si_type		= SI_KCS;
-+	info->addr_source	= SI_DEVICETREE;
-+	info->io_setup		= mem_setup;
-+	info->io.addr_type	= IPMI_MEM_ADDR_SPACE;
-+	info->io.addr_data	= dev->hpa.start;
-+	info->io.regsize	= 1;
-+	info->io.regspacing	= 1;
-+	info->io.regshift	= 0;
-+	info->irq		= 0; /* no interrupt */
-+	info->irq_setup		= NULL;
-+	info->dev		= &dev->dev;
-+
-+	dev_dbg(&dev->dev, "addr 0x%lx\n", info->io.addr_data);
-+
-+	dev_set_drvdata(&dev->dev, info);
-+
-+	if (add_smi(info)) {
-+		kfree(info);
-+		return -EBUSY;
-+	}
-+
-+	return 0;
++	return false;
 +}
 +
-+static int ipmi_parisc_remove(struct parisc_device *dev)
++/*
++ * Called by mount code to set a mountpoint and check if the mountpoint is
++ * reachable (e.g. NFS can unhash a directory dentry and then the complete
++ * subtree can become unreachable).
++ *
++ * Only one of check_submounts_and_drop() and d_set_mounted() must succeed.  For
++ * this reason take rename_lock and d_lock on dentry and ancestors.
++ */
++int d_set_mounted(struct dentry *dentry)
 +{
-+	cleanup_one_si(dev_get_drvdata(&dev->dev));
-+	return 0;
++	int ret = -ENOENT;
++
++	write_seqlock(&rename_lock);
++	spin_lock(&dentry->d_lock);
++	if (d_unlinked(dentry)) {
++		spin_unlock(&dentry->d_lock);
++		goto out;
++	}
++
++	dentry->d_flags |= DCACHE_MOUNTED;
++	spin_unlock(&dentry->d_lock);
++
++	if (__has_unlinked_ancestor(dentry->d_parent)) {
++		spin_lock(&dentry->d_lock);
++		dentry->d_flags &= ~DCACHE_MOUNTED;
++		spin_unlock(&dentry->d_lock);
++		goto out;
++	}
++	ret = 0;
++out:
++	write_sequnlock(&rename_lock);
++	return ret;
 +}
 +
-+static struct parisc_device_id ipmi_parisc_tbl[] = {
-+	{ HPHW_MC, HVERSION_REV_ANY_ID, 0x004, 0xC0 },
-+	{ 0, }
-+};
-+
-+static struct parisc_driver ipmi_parisc_driver = {
-+	.name =		"ipmi",
-+	.id_table =	ipmi_parisc_tbl,
-+	.probe =	ipmi_parisc_probe,
-+	.remove =	ipmi_parisc_remove,
-+};
-+#endif /* CONFIG_PARISC */
-+
- static int wait_for_msg_done(struct smi_info *smi_info)
+ /*
+  * Search the dentry child list of the specified parent,
+  * and move any unused dentries to the end of the unused
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -126,6 +126,7 @@ extern int invalidate_inodes(struct supe
+  * dcache.c
+  */
+ extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
++extern int d_set_mounted(struct dentry *dentry);
+ 
+ /*
+  * read_write.c
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -611,6 +611,7 @@ static struct mountpoint *new_mountpoint
  {
- 	enum si_sm_result     smi_result;
-@@ -3464,6 +3528,13 @@ static int init_ipmi_si(void)
- 		spmi_find_bmc();
- #endif
+ 	struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
+ 	struct mountpoint *mp;
++	int ret;
  
-+#ifdef CONFIG_PARISC
-+	register_parisc_driver(&ipmi_parisc_driver);
-+	parisc_registered = 1;
-+	/* poking PC IO addresses will crash machine, don't do it */
-+	si_trydefaults = 0;
-+#endif
+ 	list_for_each_entry(mp, chain, m_hash) {
+ 		if (mp->m_dentry == dentry) {
+@@ -626,14 +627,12 @@ static struct mountpoint *new_mountpoint
+ 	if (!mp)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	spin_lock(&dentry->d_lock);
+-	if (d_unlinked(dentry)) {
+-		spin_unlock(&dentry->d_lock);
++	ret = d_set_mounted(dentry);
++	if (ret) {
+ 		kfree(mp);
+-		return ERR_PTR(-ENOENT);
++		return ERR_PTR(ret);
+ 	}
+-	dentry->d_flags |= DCACHE_MOUNTED;
+-	spin_unlock(&dentry->d_lock);
 +
- 	/* We prefer devices with interrupts, but in the case of a machine
- 	   with multiple BMCs we assume that there will be several instances
- 	   of a given type so if we succeed in registering a type then also
-@@ -3610,6 +3681,10 @@ static void cleanup_ipmi_si(void)
- 	if (pnp_registered)
- 		pnp_unregister_driver(&ipmi_pnp_driver);
- #endif
-+#ifdef CONFIG_PARISC
-+	if (parisc_registered)
-+		unregister_parisc_driver(&ipmi_parisc_driver);
-+#endif
- 
- 	platform_driver_unregister(&ipmi_driver);
- 
--- 
-1.7.9.5
-
+ 	mp->m_dentry = dentry;
+ 	mp->m_count = 1;
+ 	list_add(&mp->m_hash, chain);
