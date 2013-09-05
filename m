@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935632Ab3IEJpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:45:44 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:38477 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935608Ab3IEJo5 (ORCPT
+	id S965171Ab3IEJpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:45:42 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:33556 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935606Ab3IEJo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:44:57 -0400
+	Thu, 5 Sep 2013 05:44:56 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 07/11] nfs: use check_submounts_and_drop()
-Date: Thu,  5 Sep 2013 11:44:40 +0200
-Message-Id: <1378374284-1484-8-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz, Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 06/11] gfs2: use check_submounts_and_drop()
+Date: Thu,  5 Sep 2013 11:44:39 +0200
+Message-Id: <1378374284-1484-7-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
 References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
@@ -32,34 +32,31 @@ Non-directories can also be mounted on.  And just like directories we don't
 want these to disappear with invalidation.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Steven Whitehouse <swhiteho@redhat.com>
 ---
- fs/nfs/dir.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ fs/gfs2/dentry.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index e474ca2b..7468735 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1135,14 +1135,13 @@ out_zap_parent:
- 	if (inode && S_ISDIR(inode->i_mode)) {
- 		/* Purge readdir caches. */
- 		nfs_zap_caches(inode);
--		/* If we have submounts, don't unhash ! */
+diff --git a/fs/gfs2/dentry.c b/fs/gfs2/dentry.c
+index f2448ab..d3a5d4e 100644
+--- a/fs/gfs2/dentry.c
++++ b/fs/gfs2/dentry.c
+@@ -93,12 +93,9 @@ invalid_gunlock:
+ 	if (!had_lock)
+ 		gfs2_glock_dq_uninit(&d_gh);
+ invalid:
+-	if (inode && S_ISDIR(inode->i_mode)) {
 -		if (have_submounts(dentry))
--			goto out_valid;
- 		if (dentry->d_flags & DCACHE_DISCONNECTED)
- 			goto out_valid;
+-			goto valid;
 -		shrink_dcache_parent(dentry);
- 	}
+-	}
 -	d_drop(dentry);
-+	/* If we have submounts, don't unhash ! */
 +	if (check_submounts_and_drop(dentry) != 0)
-+		goto out_valid;
++		goto valid;
 +
  	dput(parent);
- 	dfprintk(LOOKUPCACHE, "NFS: %s(%s/%s) is invalid\n",
- 			__func__, dentry->d_parent->d_name.name,
+ 	return 0;
+ 
 -- 
 1.8.1.4
 
