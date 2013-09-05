@@ -1,166 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935814Ab3IELqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 07:46:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60330 "EHLO hydra.sisk.pl"
+	id S965181Ab3IELrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 07:47:07 -0400
+Received: from gmmr3.centrum.cz ([46.255.225.251]:58953 "EHLO gmmr3.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934509Ab3IELqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 07:46:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lan Tianyu <lantianyu1986@gmail.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots
-Date: Thu, 05 Sep 2013 13:57:01 +0200
-Message-ID: <81108254.GSTBHzP5cb@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAOLK0pySsrXEjbLor0v3zhbtUGx_437d0r5WAxWnufzZ+QwpCQ@mail.gmail.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1378352279.3246.183.camel@ul30vt.home> <CAOLK0pySsrXEjbLor0v3zhbtUGx_437d0r5WAxWnufzZ+QwpCQ@mail.gmail.com>
+	id S934435Ab3IELrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 07:47:05 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Thu, 05 Sep 2013 13:47:02 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904114523.A9F0173C@pobox.sk>, <20130904115741.GA28285@dhcp22.suse.cz>, <20130904141000.0F910EFA@pobox.sk>, <20130904122632.GB28285@dhcp22.suse.cz>, <20130905111430.CB1392B4@pobox.sk>, <20130905095331.GA9702@dhcp22.suse.cz>, <20130905121700.546B5881@pobox.sk> <20130905111742.GC9702@dhcp22.suse.cz>
+In-Reply-To: <20130905111742.GC9702@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-Id: <20130905134702.C703F65B@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 05, 2013 02:17:06 PM Lan Tianyu wrote:
-> 2013/9/5 Alex Williamson <alex.williamson@redhat.com>:
-> > On Thu, 2013-09-05 at 01:35 +0200, Rafael J. Wysocki wrote:
-> >> On Wednesday, September 04, 2013 05:12:14 PM Alex Williamson wrote:
-> >> > On Thu, 2013-09-05 at 00:54 +0200, Rafael J. Wysocki wrote:
-> >> > > On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
-> >> > > > On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
-> >> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > > > >
-> >> > > > > The current implementation of acpiphp_check_bridge() is pretty dumb:
-> >> > > > >  - It enables a slot if it's not enabled and the slot status is
-> >> > > > >    ACPI_STA_ALL.
-> >> > > > >  - It disables a slot if it's enabled and the slot status is not
-> >> > > > >    ACPI_STA_ALL.
-> >> > > > >
-> >> > > > > This behavior is not sufficient to handle the Thunderbolt daisy
-> >> > > > > chaining case properly, however, because in that case the bus
-> >> > > > > behind the already enabled slot needs to be rescanned for new
-> >> > > > > devices.
-> >> > > > >
-> >> > > > > For this reason, modify acpiphp_check_bridge() so that slots are
-> >> > > > > disabled and stopped if they are not in the ACPI_STA_ALL state.
-> >> > > > >
-> >> > > > > For slots in the ACPI_STA_ALL state, devices behind them that don't
-> >> > > > > respond are trimmed using a new function, trim_stale_devices(),
-> >> > > > > introduced specifically for this purpose.  That function walks
-> >> > > > > the given bus and checks each device on it.  If the device doesn't
-> >> > > > > respond, it is assumed to be gone and is removed.
-> >> > > > >
-> >> > > > > Once all of the stale devices directy behind the slot have been
-> >> > > > > removed, acpiphp_check_bridge() will start looking for new devices
-> >> > > > > that might have appeared on the given bus.  It will do that even if
-> >> > > > > the slot is already enabled (SLOT_ENABLED is set for it).
-> >> > > > >
-> >> > > > > In addition to that, make the bus check notification ignore
-> >> > > > > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-> >> > > > > so that devices behind the slot are re-enumerated in that case too.
-> >> > > > >
-> >> > > > > This change is based on earlier patches from Kirill A Shutemov
-> >> > > > > and Mika Westerberg.
-> >> > > > >
-> >> > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > > > > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> > > > > ---
-> >> > > >
-> >> > > > FYI, git bisect landed on this patch as the cause of my serial console
-> >> > > > dying on current upstream.  Further debugging to come...  Thanks,
-> >> > >
-> >> > > Well, sorry about that.
-> >> > >
-> >> > > What exactly do you mean by "dying"?
-> >> >
-> >> > Sorry, I was hoping to have more details quickly, but it's been a pain
-> >> > to debug.  By dying I mean serial console output suddenly stops during
-> >> > kernel boot and nothing more comes out of it until after the system is
-> >> > rebooted.  The problem happens when acpiphp_check_bridge() calls
-> >> > enable_slot().  The serial console dies somewhere down in
-> >> > acpiphp_bus_trim().  I think this is happening on the 00:1f ISA bridge,
-> >> > so there's a good chance the serial ports are described as somewhere
-> >> > under there.
-> >>
-> >> Can you please check if that is the acpiphp_bus_trim() called by
-> >> acpiphp_bus_add() or the other one called from trim_stale_devices()?
-> >>
-> >> Just add a dump_stack() or WARN_ON(1) to trim_stale_devices() next to
-> >> the acpiphp_bus_trim() call and see if that triggers.  I *think* it's the one
-> >> in acpiphp_bus_add(), but it won't hurt to verify that.
-> >
-> > Here's the call path:
-> >
-> > [   16.120824]  [<ffffffff81627e6c>] dump_stack+0x55/0x76
-> > [   16.125979]  [<ffffffff8162132e>] enable_slot+0x4ee/0x5e0
-> > [   16.131396]  [<ffffffff813418fb>] ? trim_stale_devices+0x5b/0xf0
-> > [   16.137420]  [<ffffffff81341b35>] acpiphp_check_bridge+0xd5/0x110
-> > [   16.143531]  [<ffffffff81342acb>] hotplug_event+0x16b/0x260
-> > [   16.149115]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> > [   16.155136]  [<ffffffff81342bf0>] hotplug_event_work+0x30/0x70
-> > [   16.160978]  [<ffffffff81072d3b>] process_one_work+0x1eb/0x540
-> > [   16.166819]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> > [   16.172836]  [<ffffffff8107353c>] worker_thread+0x11c/0x370
-> > [   16.178426]  [<ffffffff81073420>] ? rescuer_thread+0x350/0x350
-> > [   16.184276]  [<ffffffff8107b0ea>] kthread+0xea/0xf0
-> > [   16.189165]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> > [   16.195700]  [<ffffffff816395dc>] ret_from_fork+0x7c/0xb0
-> > [   16.201109]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> >
-> > The actual death of the serial console occurs in acpi_device_set_power()
-> > called from:
-> >
-> > enable_slot()
-> >  acpiphp_bus_add()
-> >   acpiphp_bus_trim()
-> >    acpi_bus_trim()
-> >     acpi_walk_namespace()
-> >      acpi_bus_remove()
-> >       acpi_device_unregister()
-> >        acpi_device_set_power()
-> >
-> > I can't seem to get a path from the acpi devices in question there, so I
-> > have no idea what's getting trimmed here.  It worries me quite a bit by
-> > introducing this trimming that apparently wasn't happening before
-> > though.  Thanks,
-> 
-> Hi Alex:
->            Could you apply the following patch and bootup with kernel param
-> "acpiphp.acpiphp_debug=1"?
->            I guess the patch can make serial port alive. It will not
-> be put into D3cold
-> during trimming. But I don't know why it doesn't work after being put
-> back to D0.
+>On Thu 05-09-13 12:17:00, azurIt wrote:
+>> >[...]
+>> >> My script detected another freezed cgroup today, sending stacks. Is
+>> >> there anything interesting?
+>> >
+>> >3 tasks are sleeping and waiting for somebody to take an action to
+>> >resolve memcg OOM. The memcg oom killer is enabled for that group?  If
+>> >yes, which task has been selected to be killed? You can find that in oom
+>> >report in dmesg.
+>> >
+>> >I can see a way how this might happen. If the killed task happened to
+>> >allocate a memory while it is exiting then it would get to the oom
+>> >condition again without freeing any memory so nobody waiting on the
+>> >memcg_oom_waitq gets woken. We have a report like that: 
+>> >https://lkml.org/lkml/2013/7/31/94
+>> >
+>> >The issue got silent in the meantime so it is time to wake it up.
+>> >It would be definitely good to see what happened in your case though.
+>> >If any of the bellow tasks was the oom victim then it is very probable
+>> >this is the same issue.
+>> 
+>> Here it is:
+>> http://watchdog.sk/lkml/kern5.log
+>
+>$ grep "Killed process \<103[168]\>" kern5.log
+>$
+>
+>So none of the sleeping tasks has been killed previously.
+>
+>> Processes were killed by my script
+>
+>OK, I am really confused now. The log contains a lot of in-kernel memcg
+>oom killer messages:
+>$ grep "Memory cgroup out of memory:" kern5.log | wc -l
+>809
+>
+>This suggests that the oom killer is not disabled. What exactly has you
+>script done?
+>
+>> at about 11:05:35.
+>
+>There is an oom killer striking at 11:05:35:
+>Sep  5 11:05:35 server02 kernel: [1751856.433101] Task in /1066/uid killed as a result of limit of /1066
+>[...]
+>Sep  5 11:05:35 server02 kernel: [1751856.539356] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+>Sep  5 11:05:35 server02 kernel: [1751856.539745] [ 1046]  1066  1046   228537    95491   3       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.539894] [ 1047]  1066  1047   228604    95488   6       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.540043] [ 1050]  1066  1050   228470    95452   5       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.540191] [ 1051]  1066  1051   228592    95521   6       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.540340] [ 1052]  1066  1052   228594    95546   5       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.540489] [ 1054]  1066  1054   228470    95453   5       0             0 apache2
+>Sep  5 11:05:35 server02 kernel: [1751856.540646] Memory cgroup out of memory: Kill process 1046 (apache2) score 1000 or sacrifice child
+>
+>And this doesn't list any of the tasks sleeping and waiting for oom
+>resolving so they must have been created after this OOM. Is this the
+>same group?
 
-Do we actually put it into D0 in acpi_bus_scan()?  I don't think so.
 
-> So please attach output of acpidump and the dmesg if it can work. Thanks.
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index e763651..359b23d 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1110,7 +1110,7 @@ static void acpi_device_unregister(struct
-> acpi_device *device)
->          * power resources the device depends on and turn off the ones that have
->          * no more references.
->          */
-> -       acpi_device_set_power(device, ACPI_STATE_D3_COLD);
-> +       //acpi_device_set_power(device, ACPI_STATE_D3_COLD);
->         device->handle = NULL;
->         put_device(&device->dev);
->  }
 
-I don't think we should do the trimming in acpiphp_bus_add() at all.
 
-Thanks,
-Rafael
+cgroup was 1066. My script is doing this:
+1.) It checks memory usage of all cgroups and is searching for those whos memory usage is >= 99% of their limit.
+2.) If any are found, they are saved in an array of 'candidates for killing'.
+3.) It sleep for 30 seconds.
+4.) Do (1) and if any of found cgorups were also found in (2), it kills all processes inside it.
+5.) Clear array of saved cgroups and continue.
+...
 
+In other words, if any cgroup has memory usage >= 99% of it's limit for more than 30 seconds, it is considered as 'freezed' and all it's processes are killed. This script is tested and was really able to resolve my original problem automatically without need of restarting the server or doing any outage of services. But, of course, i cannot guarantee that the killed cgroup was really freezed (because of bug in linux kernel), there could be some false positives - for example, cgroup has 99% usage of memory, my script detected it, OOM successfully resolved the problem and, after 30 seconds, the same cgroup has again 99% usage of it's memory and my script detected it again. This is why i'm sending stacks here, i simply cannot tell if there was or wasn't a problem. I can disable the script and wait until the problem really occurs but when it happens, our services will go down. Hope i was clear enough - if not, i can post the source code of that script.
