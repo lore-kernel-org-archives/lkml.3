@@ -1,106 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762523Ab3IEAb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 20:31:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53014 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab3IEAb1 (ORCPT
+	id S1762624Ab3IEAeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 20:34:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52157 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758175Ab3IEAeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 20:31:27 -0400
-Date: Thu, 5 Sep 2013 10:31:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Roland Dreier <roland@kernel.org>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: Re: [GIT PULL] please pull infiniband.git
-Message-Id: <20130905103116.6998495cd755f5ae2c3def78@canb.auug.org.au>
-In-Reply-To: <1378314218-28021-1-git-send-email-roland@kernel.org>
-References: <1378314218-28021-1-git-send-email-roland@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Sep_2013_10_31_16_+1000_YHieQfqkJ8.BSg=6"
+	Wed, 4 Sep 2013 20:34:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5227D150.1060502@jp.fujitsu.com>
+Date: Thu, 5 Sep 2013 09:33:20 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <lenb@kernel.org>, <rjw@sisk.pl>, <liwanp@linux.vnet.ibm.com>,
+        <tj@kernel.org>, <akpm@linux-foundation.org>, <joe@perches.com>,
+        <toshi.kani@hp.com>, <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] acpi cleanup: Use pr_{info|err}() instead of printk()
+ in arch/x86/mm/srat.c
+References: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com> <1378197941-26479-3-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1378197941-26479-3-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Sep_2013_10_31_16_+1000_YHieQfqkJ8.BSg=6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/09/03 17:45), Tang Chen wrote:
+> Use pr_{info|err}() instead of printk() in arch/x86/mm/srat.c.
+> 
+> As suggested by Joe Perches <joe@perches.com>, use pr_fmt(fmt) to simplify
+> the output format.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>   arch/x86/mm/srat.c |   32 +++++++++++++++++---------------
+>   1 files changed, 17 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+> index 1613c02..5adfcfb 100644
+> --- a/arch/x86/mm/srat.c
+> +++ b/arch/x86/mm/srat.c
+> @@ -24,6 +24,8 @@
+>   #include <asm/apic.h>
+>   #include <asm/uv/uv.h>
+>   
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>   int acpi_numa __initdata;
+>   
+>   static __init int setup_node(int pxm)
+> @@ -33,7 +35,7 @@ static __init int setup_node(int pxm)
+>   
+>   static __init void bad_srat(void)
+>   {
+> -	printk(KERN_ERR "SRAT: SRAT not used.\n");
+> +	pr_err("SRAT not used.\n");
+>   	acpi_numa = -1;
+>   }
+>   
+> @@ -71,26 +73,26 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+>   	pxm = pa->proximity_domain;
+>   	apic_id = pa->apic_id;
+>   	if (!apic->apic_id_valid(apic_id)) {
 
-Hi Linus,
+> -		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+> -			 pxm, apic_id);
+> +		pr_info("PXM %u -> X2APIC 0x%04x ignored\n",
+> +			pxm, apic_id);
 
-On Wed,  4 Sep 2013 10:03:38 -0700 Roland Dreier <roland@kernel.org> wrote:
->
-> Please pull from
->=20
->     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git t=
-ags/rdma-for-linus
+It should be one line.
 
-I am carrying the following merge fix patch for a semantic conflict
-between this tree and Dave's net-next tree:
+>   		return;
+>   	}
+>   	node = setup_node(pxm);
+>   	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> +		pr_err("Too many proximity domains %x\n", pxm);
+>   		bad_srat();
+>   		return;
+>   	}
+>   
+>   	if (apic_id >= MAX_LOCAL_APIC) {
+> -		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> +		pr_info("PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+>   		return;
+>   	}
+>   	set_apicid_to_node(apic_id, node);
+>   	node_set(node, numa_nodes_parsed);
+>   	acpi_numa = 1;
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 13 Aug 2013 13:01:49 +1000
-Subject: [PATCH] cxgb4: fix up for bond_for_each_slave API change
+> -	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+> -	       pxm, apic_id, node);
+> +	pr_info("PXM %u -> APIC 0x%04x -> Node %u\n",
+> +	        pxm, apic_id, node);
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ditto.
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/=
-ethernet/chelsio/cxgb4/cxgb4_main.c
-index 038df4b..b6ad557 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -3982,7 +3982,6 @@ static int cxgb4_inet6addr_handler(struct notifier_bl=
-ock *this,
- 	struct inet6_ifaddr *ifa =3D data;
- 	struct net_device *event_dev;
- 	int ret =3D NOTIFY_DONE;
--	int cnt;
- 	struct bonding *bond =3D netdev_priv(ifa->idev->dev);
- 	struct slave *slave;
- 	struct pci_dev *first_pdev =3D NULL;
-@@ -3996,7 +3995,7 @@ static int cxgb4_inet6addr_handler(struct notifier_bl=
-ock *this,
- 		 * in all of them only once.
- 		 */
- 		read_lock(&bond->lock);
--		bond_for_each_slave(bond, slave, cnt) {
-+		bond_for_each_slave(bond, slave) {
- 			if (!first_pdev) {
- 				ret =3D clip_add(slave->dev, ifa, event);
- 				/* If clip_add is success then only initialize
---=20
-1.8.4.rc0
+>   }
+>   
+>   /* Callback for Proximity Domain -> LAPIC mapping */
+> @@ -113,7 +115,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+>   		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
+>   	node = setup_node(pxm);
+>   	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> +		pr_err("Too many proximity domains %x\n", pxm);
+>   		bad_srat();
+>   		return;
+>   	}
+> @@ -124,15 +126,15 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+>   		apic_id = pa->apic_id;
+>   
+>   	if (apic_id >= MAX_LOCAL_APIC) {
+> -		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> +		pr_info("PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+>   		return;
+>   	}
+>   
+>   	set_apicid_to_node(apic_id, node);
+>   	node_set(node, numa_nodes_parsed);
+>   	acpi_numa = 1;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> -	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+> -	       pxm, apic_id, node);
+> +	pr_info("PXM %u -> APIC 0x%02x -> Node %u\n",
+> +	        pxm, apic_id, node);
 
---Signature=_Thu__5_Sep_2013_10_31_16_+1000_YHieQfqkJ8.BSg=6
-Content-Type: application/pgp-signature
+ditto.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+>   }
+>   
+>   /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+> @@ -157,7 +159,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+>   
+>   	node = setup_node(pxm);
+>   	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+> +		pr_err("Too many proximity domains.\n");
+>   		goto out_err_bad_srat;
+>   	}
+>   
+> @@ -166,9 +168,9 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+>   
+>   	node_set(node, numa_nodes_parsed);
+>   
 
-iQIcBAEBCAAGBQJSJ9DZAAoJEECxmPOUX5FErgAQAIr4ZdTeSK8gbK9FQ/H0Ii9Q
-STGyO3wNk2vGpE3y9L11oDqIU5fS0xKSXqNZKxfZXPE0+ZOCISFHcmo+AqFnbqnw
-CRgvDXkV4yb+ZGgc30pXE9WyYi+FqE3e868sBEOo/wISUjitP5k5GC/RQ2Nn9Trl
-9dzngMkQcsw9bauKoKuLeTtHgt7FQ5bhVm3QnfUPxoVvuJ3YJURYCnEr8x8NipVn
-I+UFvjMC/+sJj9Ih7zV8q4CkDNn4Po3/O0Dz+QIA/y/pnZYYmNgrs216snmYT6J6
-N3zHXcwcCrACXIeCPLDffs2qM9eFxeozkepBPPTxOILJRm+6xpbUPv3x6eqHYVPH
-kNRr5dsRnJw0AQbPycD7pHzPoZk6aoD/qJm+Bpi3qO8JZleqQdDHb+EqAM7vtXDZ
-dtt01SZzYHQtxDPOSWfnEXu/TbEq6gUfS+NwUmDr9d+mTMIxgdYTL8cS1mV4fmzE
-75zTQzbKdpT/W6fKSMMKixq7W4nN0xsDRZ29JMYiVI4rZiy3shVLZ1f+o5223aSj
-b/U3GYfSWDJA3/K0snfW/lRGJ0B5D/TCh8KA8VhN2yRcDT3XLE6x0XTPW8MBajjW
-OL6uZSutnlLIzL9DI6hAwTQiCjj653Xnmxhh2a/OWyur+IYXpwtpPF/3gtGLUK1p
-Lkf78AmYZMcwusm+gRcF
-=stM7
------END PGP SIGNATURE-----
+> -	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+> -	       node, pxm,
+> -	       (unsigned long long) start, (unsigned long long) end - 1);
+> +	pr_info("Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+> +	        node, pxm,
+> +	        (unsigned long long) start, (unsigned long long) end - 1);
 
---Signature=_Thu__5_Sep_2013_10_31_16_+1000_YHieQfqkJ8.BSg=6--
+It should be two lines.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   
+>   	return 0;
+>   out_err_bad_srat:
+> 
+
+
