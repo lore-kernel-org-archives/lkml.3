@@ -1,51 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763315Ab3IEGgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 02:36:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65256 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab3IEGgo (ORCPT
+	id S1757527Ab3IEGlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 02:41:20 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:15166 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab3IEGlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 02:36:44 -0400
-Message-ID: <1378362989.18435.2.camel@marge.simpson.net>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Mike Galbraith <bitbucket@online.de>
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        yinghai@kernel.org, joe.jin@oracle.com
-Date: Thu, 05 Sep 2013 08:36:29 +0200
-In-Reply-To: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
-	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-	 <20130729115701.GD3008@twins.programming.kicks-ass.net>
-	 <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+	Thu, 5 Sep 2013 02:41:19 -0400
+Message-ID: <522825E4.7080404@huawei.com>
+Date: Thu, 5 Sep 2013 14:34:12 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Jianguo Wu <wujianguo106@gmail.com>, <akpm@linux-foundation.org>,
+        <aarcange@redhat.com>, <kirill.shutemov@linux.intel.com>,
+        <mgorman@suse.de>, <xiaoguangrong@linux.vnet.ibm.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/thp: fix comments in transparent_hugepage_flags
+References: <1378301422-9468-1-git-send-email-wujianguo@huawei.com> <5227e870.ab42320a.62d4.3d12SMTPIN_ADDED_BROKEN@mx.google.com> <5227F4B6.40009@huawei.com> <20130905033704.GA18909@hacker.(null)> <52280058.5070803@huawei.com> <52280f92.e72b320a.2501.6de1SMTPIN_ADDED_BROKEN@mx.google.com>
+In-Reply-To: <52280f92.e72b320a.2501.6de1SMTPIN_ADDED_BROKEN@mx.google.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:GBdr3daxOClhAiWIClr8gmgGssWFb3FVqO1nZmZj+Mn
- QU3Q8vjtMkeEj0o0aRJOrRNOCvGAD0Kjw6XjyL7z8qRMCUAoM6
- 1drB9E0SR9DLMsYALlHkpKAWRp2dQ4TaQ3pqyBHR7uUTAMlUmf
- hD5nC/r61qbKARqXKCOFgBHaF7QDjrpeoTr4W7pYy7iafFWojF
- VG43eXifep7DlgvNCs/HzLv3yZ9EdGYrP4IkEqGYJ8UoAicJy2
- euisQgVxCUlDhmLLdHR7mtF4JTqxb0pAQPRpiSxrDIifxh1QLS
- 8NrQ3YrcBIuzryGSsks+Wu04p1fZxMGQE4FR42vGgSHIQao4+3
- sFb9p4yFg3PdiUzI1YR2G545NyR+TKceKeKqogCmWhM/LE4Kng
- hCE/pMxJNYnrA==
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-08 at 15:32 +0800, ethan.zhao wrote:
+On 2013/9/5 12:58, Wanpeng Li wrote:
 
-...
+> Hi Jianguo,
+> On Thu, Sep 05, 2013 at 11:54:00AM +0800, Jianguo Wu wrote:
+>> On 2013/9/5 11:37, Wanpeng Li wrote:
+>>
+>>> On Thu, Sep 05, 2013 at 11:04:22AM +0800, Jianguo Wu wrote:
+>>>> Hi Wanpeng,
+>>>>
+>>>> On 2013/9/5 10:11, Wanpeng Li wrote:
+>>>>
+>>>>> Hi Jianguo,
+>>>>> On Wed, Sep 04, 2013 at 09:30:22PM +0800, Jianguo Wu wrote:
+>>>>>> Since commit d39d33c332(thp: enable direct defrag), defrag is enable
+>>>>>> for all transparent hugepage page faults by default, not only in
+>>>>>> MADV_HUGEPAGE regions.
+>>>>>>
+>>>>>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>>>>>> ---
+>>>>>> mm/huge_memory.c | 6 ++----
+>>>>>> 1 file changed, 2 insertions(+), 4 deletions(-)
+>>>>>>
+>>>>>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+>>>>>> index a92012a..abf047e 100644
+>>>>>> --- a/mm/huge_memory.c
+>>>>>> +++ b/mm/huge_memory.c
+>>>>>> @@ -28,10 +28,8 @@
+>>>>>>
+>>>>>> /*
+>>>>>>  * By default transparent hugepage support is enabled for all mappings
+>>>>>
+>>>>> This is also stale. TRANSPARENT_HUGEPAGE_ALWAYS is not configured by default in
+>>>>> order that avoid to risk increase the memory footprint of applications w/o a 
+>>>>> guaranteed benefit.
+>>>>>
+>>>>
+>>>> Right, how about this:
+>>>>
+>>>> By default transparent hugepage support is disabled in order that avoid to risk
+>>>
+>>> I don't think it's disabled. TRANSPARENT_HUGEPAGE_MADVISE is configured
+>>> by default.
+>>>
+>>
+>> Hi Wanpeng,
+>>
+>> We have TRANSPARENT_HUGEPAGE and TRANSPARENT_HUGEPAGE_ALWAYS/TRANSPARENT_HUGEPAGE_MADVISE,
+>> TRANSPARENT_HUGEPAGE_ALWAYS or TRANSPARENT_HUGEPAGE_MADVISE is configured only if TRANSPARENT_HUGEPAGE
+>> is configured.
+>>
+>> By default, TRANSPARENT_HUGEPAGE=n, and TRANSPARENT_HUGEPAGE_ALWAYS is configured when TRANSPARENT_HUGEPAGE=y.
+>>
+>> commit 13ece886d9(thp: transparent hugepage config choice):
+>>
+>> config TRANSPARENT_HUGEPAGE
+>> -       bool "Transparent Hugepage Support" if EMBEDDED
+>> +       bool "Transparent Hugepage Support"
+>>        depends on X86 && MMU
+>> -       default y
+>>
+>> +choice
+>> +       prompt "Transparent Hugepage Support sysfs defaults"
+>> +       depends on TRANSPARENT_HUGEPAGE
+>> +       default TRANSPARENT_HUGEPAGE_ALWAYS
+>>
+> 
+> mmotm tree:
+> 
+> grep 'TRANSPARENT_HUGEPAGE' .config
+> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+> CONFIG_TRANSPARENT_HUGEPAGE=y
+> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
+> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
+> 
+> distro:
+> 
+> grep 'TRANSPARENT_HUGEPAGE' config-3.8.0-26-generic 
+> CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+> CONFIG_TRANSPARENT_HUGEPAGE=y
+> # CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
+> CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
+> 
 
-> That is great improvement, So it is worth to merge.
+Hi Wanpeng,
 
-It didn't swim upstream for some reason.
+I'm a little confused, at mm/Kconfig, TRANSPARENT_HUGEPAGE is not configured by default.
 
--Mike
+and in x86_64, linus tree:
+
+$make defconfig
+$grep 'TRANSPARENT_HUGEPAGE' .config
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+
+Do i misunderstand something here？
+
+Thanks
+
+> 
+>> Thanks,
+>> Jianguo Wu
+>>
+>>> Regards,
+>>> Wanpeng Li 
+>>>
+>>>> increase the memory footprint of applications w/o a guaranteed benefit, and
+>>>> khugepaged scans all mappings when transparent hugepage enabled.
+>>>> Defrag is invoked by khugepaged hugepage allocations and by page faults for all
+>>>> hugepage allocations.
+>>>>
+>>>> Thanks,
+>>>> Jianguo Wu
+>>>>
+>>>>> Regards,
+>>>>> Wanpeng Li 
+>>>>>
+>>>>>> - * and khugepaged scans all mappings. Defrag is only invoked by
+>>>>>> - * khugepaged hugepage allocations and by page faults inside
+>>>>>> - * MADV_HUGEPAGE regions to avoid the risk of slowing down short lived
+>>>>>> - * allocations.
+>>>>>> + * and khugepaged scans all mappings. Defrag is invoked by khugepaged
+>>>>>> + * hugepage allocations and by page faults for all hugepage allocations.
+>>>>>>  */
+>>>>>> unsigned long transparent_hugepage_flags __read_mostly =
+>>>>>> #ifdef CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+>>>>>> -- 
+>>>>>> 1.8.1.2
+>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>>>>> see: http://www.linux-mm.org/ .
+>>>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>>>
+>>>>> --
+>>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>>>> see: http://www.linux-mm.org/ .
+>>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>>>
+>>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>> .
+>>>
+>>
+>>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+
 
