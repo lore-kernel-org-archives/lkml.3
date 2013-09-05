@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab3IEOWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:22:11 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16671 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab3IEOWH (ORCPT
+	id S1753477Ab3IEOY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:24:28 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:58507 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752210Ab3IEOY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:22:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Sep 2013 07:19:14 -0700
-Message-ID: <522897FD.2030509@nvidia.com>
-Date: Thu, 5 Sep 2013 20:11:01 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 5 Sep 2013 10:24:26 -0400
+Date: Thu, 5 Sep 2013 14:24:25 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Will Deacon <will.deacon@arm.com>
+cc: Tejun Heo <tj@kernel.org>,
+        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
+In-Reply-To: <20130905130359.GA22351@mudshark.cambridge.arm.com>
+Message-ID: <00000140ee828138-3328099b-149e-433d-8262-0a481806ca85-000000@email.amazonses.com>
+References: <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com> <20130904093335.GA8007@mudshark.cambridge.arm.com> <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com> <20130904142324.GD3643@mudshark.cambridge.arm.com>
+ <00000140e97747d2-ee164a4d-d692-409a-a919-083eff3a41ca-000000@email.amazonses.com> <20130904174624.GB5599@mudshark.cambridge.arm.com> <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com> <20130904182113.GD5599@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1309041324530.26497@gentwo.org> <00000140eac4f5fc-9f8c86db-05dd-496f-abf8-63ca3667574f-000000@email.amazonses.com> <20130905130359.GA22351@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: Mark Brown <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
-Subject: Re: [PATCH V4] regulator: palmas: add support for external control
- of rails
-References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com> <20130823095841.GG25263@sirena.org.uk>
-In-Reply-To: <20130823095841.GG25263@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.05-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Thu, 5 Sep 2013, Will Deacon wrote:
 
-On Friday 23 August 2013 03:28 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
+> >
+> >  	if (el == DBG_ACTIVE_EL1 &&
+> > -	    local_dec_and_test(this_cpu_ptr(&kde_ref_count)))
+> > +	    this_cpu_dec_return(kde_ref_count))
+> >  		disable &= ~DBG_MDSCR_KDE;
 >
-> On Wed, Aug 21, 2013 at 04:18:16PM +0530, Laxman Dewangan wrote:
->> Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
->> by register programming through I2C communication as well as it can be
->> enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
-> Acked-by: Mark Brown <broonie@linaro.org>
->
+> Almost! I think we just need an '== 0' check on the result from the
+> decrement, since local_dec_and_test is simply a way to check that we've
+> decremented to zero, so this patch would otherwise invert the meaning.
 
-Can you please take this in your tree as dependent patch is already in 
-your tree?
-
-Thanks,
-Laxman
+Ok can you take it from here and modify it? I have no build and test
+environment set up for ARM.
 
