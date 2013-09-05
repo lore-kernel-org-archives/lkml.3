@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab3IESqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:46:15 -0400
-Received: from smtp3.primus.ca ([209.216.129.203]:59095 "EHLO
-	mail-07.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753245Ab3IESqN (ORCPT
+	id S1756917Ab3IESsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:48:19 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63571 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755547Ab3IESsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:46:13 -0400
-X-Greylist: delayed 1248 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 14:46:13 EDT
-Message-ID: <5228CC9C.9020300@bell.net>
-Date: Thu, 05 Sep 2013 14:25:32 -0400
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 5 Sep 2013 14:48:17 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] parisc: Export flush_cache_page() (needed by lustre)
-References: <1378373595-29471-1-git-send-email-geert@linux-m68k.org> <1378396919.2142.5.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1378396919.2142.5.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated: danglin-lux@magma.ca - i216-58-24-141.cybersurf.com ([192.168.0.181]) [216.58.24.141]
+In-Reply-To: <521C0F07.6030102@schaufler-ca.com>
+References: <20130806063002.GF2280@outflux.net>
+	<520177E8.5080906@schaufler-ca.com>
+	<CAGXu5jL6dtB0F7fPh17pyhD22q0Q9Nn=wxbPf5AMYsrJuTvvJA@mail.gmail.com>
+	<521C0F07.6030102@schaufler-ca.com>
+Date: Thu, 5 Sep 2013 11:48:16 -0700
+X-Google-Sender-Auth: 1QkftlM5W1qFJW_HwXaeqoTCoNQ
+Message-ID: <CAGXu5jJmJu5Ram_x51kk2eoFOrS-v7SWernXUM_azdXdxzMLVA@mail.gmail.com>
+Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
+From: Kees Cook <keescook@chromium.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/5/2013 12:01 PM, James Bottomley wrote:
-> On Thu, 2013-09-05 at 11:33 +0200, Geert Uytterhoeven wrote:
->> ERROR: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>   arch/parisc/kernel/cache.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
->> index c035673..b521c0a 100644
->> --- a/arch/parisc/kernel/cache.c
->> +++ b/arch/parisc/kernel/cache.c
->> @@ -602,6 +602,7 @@ flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr, unsigned long
->>   		__flush_cache_page(vma, vmaddr, PFN_PHYS(pfn));
->>   	}
->>   }
->> +EXPORT_SYMBOL_GPL(flush_cache_page);
-> This is an internal API: no architecture exports this.  Whoever is
-> trying to use it needs to use the correct API, so this is the wrong
-> patch.
+On Mon, Aug 26, 2013 at 7:29 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 8/6/2013 3:36 PM, Kees Cook wrote:
+>> On Tue, Aug 6, 2013 at 3:25 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>> On 8/5/2013 11:30 PM, Kees Cook wrote:
+>>>> On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>> The /proc/*/attr interfaces are given to one LSM. This can be
+>>>>> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
+>>>>> have been created in /proc/*/attr so that each LSM has its own
+>>>>> named interfaces. The name of the presenting LSM can be read from
+>>>> For me, this is one problem that was bothering me, but it was a cosmetic
+>>>> one that I'd mentioned before: I really disliked the /proc/$pid/attr
+>>>> interface being named "$lsm.$file". I feel it's important to build
+>>>> directories in attr/ for each LSM. So, I spent time to figure out a way to
+>>>> do this. This patch changes the interface to /proc/$pid/attr/$lsm/$file
+>>>> instead, which I feel has a much more appealing organizational structure.
+>>> I will confess that the reason I went with <lsm>.current instead of
+>>> <lsm>/current was that the former was easier to implement.
+>> Yeah, that's totally fine. It wasn't very obvious (to me) how to
+>> implement this initially, so no problem at all. I'm glad there was
+>> something more than bug fixes I could contribute to this series. :)
 >
-There is a declaration for it in arch/parisc/include/asm/cacheflush.h.  
-There are a bunch
-of callers in mm.  The interface in documented in 
-Documentation/cachetlb.txt.  We currently
-use it in copy_to_user_page and copy_from_user_page.
+> Oh dear. I'm rebasing for 3.12 and the macros don't generate compiling
+> code any longer. It seems that, among other things, readdir is no longer
+> a member of file_operations.
 
-Dave
+Looks like f0c3b5093addc8bfe9fe3a5b01acb7ec7969eafa is what touched
+fs/proc/base.c and it should just need a few tweaks from "readdir"
+becoming "iterate", and the prototype changing.
+
+So it should just require bump the macros a little. Let's see if gmail
+eats my paste...
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 4c80ffd..f670349 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2358,17 +2358,17 @@ static const struct file_operations proc_pid_attr_operat
+ };
+
+ #define LSM_DIR_OPS(LSM) \
+-static int proc_##LSM##_attr_dir_readdir(struct file * filp, \
+-                            void * dirent, filldir_t filldir) \
++static int proc_##LSM##_attr_dir_iterate(struct file * filp, \
++                            struct dir_context *ctx) \
+ { \
+-       return proc_pident_readdir(filp, dirent, filldir, \
++       return proc_pident_readdir(filp, ctx, \
+                                   LSM##_attr_dir_stuff, \
+                                   ARRAY_SIZE(LSM##_attr_dir_stuff)); \
+ } \
+ \
+ static const struct file_operations proc_##LSM##_attr_dir_ops = { \
+        .read           = generic_read_dir, \
+-       .readdir        = proc_##LSM##_attr_dir_readdir, \
++       .iterate        = proc_##LSM##_attr_dir_iterate, \
+        .llseek         = default_llseek, \
+ }; \
+ \
+
+
+Do you have the rest of the series already ported to 3.12?
+
+-Kees
 
 -- 
-John David Anglin    dave.anglin@bell.net
-
+Kees Cook
+Chrome OS Security
