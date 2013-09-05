@@ -1,152 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3IEP5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:57:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49310 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab3IEP5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:57:00 -0400
-Date: Thu, 5 Sep 2013 17:56:57 +0200
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, hare@suse.de
-Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
- on any cpu
-Message-ID: <20130905155657.GE19782@quack.suse.cz>
-References: <1377072512-7986-1-git-send-email-jack@suse.cz>
- <1377072512-7986-3-git-send-email-jack@suse.cz>
- <20130821144912.1b96c962@gandalf.local.home>
+	id S1754833Ab3IEP5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:57:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43909 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3IEP5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:57:30 -0400
+Message-ID: <5228A99D.4020702@ti.com>
+Date: Thu, 5 Sep 2013 21:26:13 +0530
+From: Afzal Mohammed <afzal@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821144912.1b96c962@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH RFC 0/6] ARM: OMAP2+: AM43x/AM335x prcm reset driver
+References: <cover.1378129416.git.afzal@ti.com> <1378375634.3948.10.camel@pizza.hi.pengutronix.de>
+In-Reply-To: <1378375634.3948.10.camel@pizza.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-08-13 14:49:12, Steven Rostedt wrote:
-> On Wed, 21 Aug 2013 10:08:30 +0200
-> Jan Kara <jack@suse.cz> wrote:
-> 
->   
-> >  struct irq_work {
-> >  	unsigned long flags;
-> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> > index 55fcce6..446cd81 100644
-> > --- a/kernel/irq_work.c
-> > +++ b/kernel/irq_work.c
-> > @@ -22,6 +22,9 @@
-> >  static DEFINE_PER_CPU(struct llist_head, irq_work_list);
-> >  static DEFINE_PER_CPU(int, irq_work_raised);
-> >  
-> > +/* List of irq-work any CPU can pick up */
-> > +static LLIST_HEAD(unbound_irq_work_list);
-> > +
-> >  /*
-> >   * Claim the entry so that no one else will poke at it.
-> >   */
-> > @@ -70,12 +73,16 @@ void irq_work_queue(struct irq_work *work)
-> >  	/* Queue the entry and raise the IPI if needed. */
-> >  	preempt_disable();
-> >  
-> > -	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-> > +	if (!(work->flags & __IRQ_WORK_UNBOUND))
-> > +		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-> > +	else
-> > +		llist_add(&work->llnode, &unbound_irq_work_list);
-> 
-> 
-> Just for better readability I would have:
-> 
-> 	if (work->flags & __IRQ_WORK_UNBOUND)
-> 		llist_add(&work->llnode, &unbound_irq_work_list);
-> 	else
-> 		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-  OK, done.
+Hi Philipp,
 
-> >  
-> >  	/*
-> >  	 * If the work is not "lazy" or the tick is stopped, raise the irq
-> >  	 * work interrupt (if supported by the arch), otherwise, just wait
-> > -	 * for the next tick.
-> > +	 * for the next tick. We do this even for unbound work to make sure
-> > +	 * *some* CPU will be doing the work.
-> >  	 */
-> >  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
-> >  		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> > @@ -100,28 +107,11 @@ bool irq_work_needs_cpu(void)
-> >  	return true;
-> >  }
-> >  
-> > -static void __irq_work_run(void)
-> > +static void process_irq_work_list(struct llist_node *llnode)
-> >  {
-> >  	unsigned long flags;
-> >  	struct irq_work *work;
-> > -	struct llist_head *this_list;
-> > -	struct llist_node *llnode;
-> > -
-> > -
-> > -	/*
-> > -	 * Reset the "raised" state right before we check the list because
-> > -	 * an NMI may enqueue after we find the list empty from the runner.
-> > -	 */
-> > -	__this_cpu_write(irq_work_raised, 0);
-> > -	barrier();
-> >  
-> > -	this_list = &__get_cpu_var(irq_work_list);
-> > -	if (llist_empty(this_list))
-> > -		return;
-> > -
-> > -	BUG_ON(!irqs_disabled());
-> > -
-> > -	llnode = llist_del_all(this_list);
-> >  	while (llnode != NULL) {
-> >  		work = llist_entry(llnode, struct irq_work, llnode);
-> >  
-> > @@ -146,6 +136,27 @@ static void __irq_work_run(void)
-> >  	}
-> >  }
-> >  
-> > +static void __irq_work_run(void)
-> > +{
-> > +	struct llist_head *this_list;
-> > +
-> > +	/*
-> > +	 * Reset the "raised" state right before we check the list because
-> > +	 * an NMI may enqueue after we find the list empty from the runner.
-> > +	 */
-> > +	__this_cpu_write(irq_work_raised, 0);
-> > +	barrier();
-> > +
-> > +	this_list = &__get_cpu_var(irq_work_list);
-> > +	if (llist_empty(this_list) && llist_empty(&unbound_irq_work_list))
-> > +		return;
-> > +
-> > +	BUG_ON(!irqs_disabled());
-> > +
-> > +	process_irq_work_list(llist_del_all(this_list));
-> > +	process_irq_work_list(llist_del_all(&unbound_irq_work_list));
-> 
-> OK, I'm being a bit of an micro optimization freak here, but...
-> 
-> How about moving the list_empty() and BUG_ON into the
-> process_irq_work_list() call.
-> 
-> That is,
-> 
-> 	if (list_empty(llnode))
-> 		return;
-> 
-> 	BUG_ON(!irqs_disabled());
-> 
-> That way we avoid the double xchg() that is done with the two calls to
-> llist_del_all().
-  OK, done that.
+On Thursday 05 September 2013 03:37 PM, Philipp Zabel wrote:
+> Am Montag, den 02.09.2013, 19:41 +0530 schrieb Afzal Mohammed:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>> Two new reset API's are provided to check whether reset is ready and
+>> to clear reset. This would be required in case IP needs to mix reset
+>> handling procedure with power/clock managment procedure to achieve
+>> proper reset and these procedures are sometimes IP specific that would
+>> make it difficult to handle reset fully in pm_runtime platform support.
+
+>> client IP handling s/w (DT based) should do as follows:
+
+>> 2. In driver, that require reset to be deasserted,
+>>  (this is the sequence required for gfx on AM43x/AM335x, this would
+>>   depend on requirements of the IP)
+>>
+>> 	mydriver_probe(struct platform device *pdev)
+>> 	{
+>> 		:
+>> 		:
+>> 		reset_control_get(&pdev->dev, NULL);
+>> 		reset_control_clear_reset();
+>> 		reset_control_deassert();
+>> 		pm_runtime_get_sync();
+>> 		if (reset_control_is_reset() != true)
+>> 			goto err;
+>> 		reset_control_put();
+>> 		:
+>> 		:
+>> 	}
+
+> if possible, I'd like to move this logic into the reset controller
+> driver. Can this be reordered to enable power before deasserting the
+> reset line (assuming it is initially asserted)? In this case, I'd
+> suggest to just call device_reset:
+> 
+> 	pm_runtime_get_sync(&pdev->dev);
+> 	ret = device_reset(&pdev->dev);
+> 	if (ret)
+> 		goto err;
+> 
+> The ops.reset callback in the prcm driver then can handle clearing
+> the reset status bit, deasserting the reset control bit, and waiting for
+> the reset status bit to be set (or timing out with an error).
+
+I too would have loved to have it in such a clean way and was initially
+proceeding in that direction, but there is an issue specific to OMAP
+family SoC's, which was required to be taken care of (even though
+present use case for AM335x/AM43x would work [as it does not have
+hardware supervised clockdomain mode] with a small change in platform
+level power management support code - a generic one shared with other
+OMAP family SoC's)
+
+For a module to be reset, clock domain to which the module clock belongs
+should be set to software supervised mode. During "pm_runtime_get_sync",
+in OMAP platform level handling code, it first put clockdomain into
+software supervised mode, enables clock to module, and once module is
+ready, module will be put to hardware supervised mode. In hardware
+supervised mode, reset may not happen.
+
+So if device_reset() is done after pm_runtime_get_sync(), reset may not
+happen as by the time device_reset() is called, clockdomain would be in
+hardware supervised mode. But in other case, as reset is already
+deasserted when pm_runtime_get_sync() is called, module would be reset
+as it first puts to software supervised mode.
+
+And device reset would happen only upon enabling clock to module (if
+reset was deasserted) by pm_runtime_get_sync(), so reset status has to
+be checked after pm call, preventing us having device_reset() before
+pm_runtime_get_sync(), or else in that case we have to sacrifice on
+reset status checking (which may not be reliable)
+
+Another alternative would have been to integrate this reset handling in
+low level power management code thus hiding all reset handling from
+driver, but as far as I know the reset sequence to be done is sometimes
+IP specific, preventing it.
+
+Regards
+Afzal
