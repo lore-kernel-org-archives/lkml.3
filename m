@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3IEOuZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:50:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49957 "EHLO mx1.redhat.com"
+	id S1753176Ab3IEOxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:53:37 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55099 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab3IEOuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:50:24 -0400
-Date: Thu, 5 Sep 2013 10:50:13 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: adi@drcomp.erfurt.thur.de
-Subject: Re: ALSA: hdspm - AES32: Enable TCO/Sync-In in
- snd_hdspm_put_sync_ref()
-Message-ID: <20130905145013.GC15894@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	adi@drcomp.erfurt.thur.de
-References: <20130905013837.9F84A660DA9@gitolite.kernel.org>
+	id S1752354Ab3IEOxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 10:53:36 -0400
+Date: Thu, 5 Sep 2013 10:53:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ext4: cache all of an extent tree's leaf block upon reading
+Message-ID: <20130905145334.GB23661@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130905013848.42DD7660EE1@gitolite.kernel.org>
+ <20130905143749.GA15894@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130905013837.9F84A660DA9@gitolite.kernel.org>
+In-Reply-To: <20130905143749.GA15894@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 01:38:37AM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=2d60fc7f7d3d79e5646646bb34811961f19d111a
- > Commit:     2d60fc7f7d3d79e5646646bb34811961f19d111a
- > Parent:     dbae4a0c8d8794df1a6bd7e644ed94b915f46f7e
- > Author:     Adrian Knoth <adi@drcomp.erfurt.thur.de>
- > AuthorDate: Fri Jul 5 11:28:15 2013 +0200
- > Committer:  Takashi Iwai <tiwai@suse.de>
- > CommitDate: Fri Jul 5 14:52:42 2013 +0200
- > 
- >     ALSA: hdspm - AES32: Enable TCO/Sync-In in snd_hdspm_put_sync_ref()
- 
- >  static int hdspm_autosync_ref(struct hdspm *hdspm)
- >  {
-  ...
- > +		unsigned int syncref = (status >> HDSPM_AES32_syncref_bit) & 0xF;
- > +		if ((syncref >= HDSPM_AES32_AUTOSYNC_FROM_WORD) &&
- > +				(syncref <= HDSPM_AES32_AUTOSYNC_FROM_SYNC_IN)) {
- >  			return syncref;
- > +		}
+On Thu, Sep 05, 2013 at 10:37:49AM -0400, Dave Jones wrote:
+>  > +void ext4_es_cache_extent(struct inode *inode, ext4_lblk_t lblk,
+>  > +			  ext4_lblk_t len, ext4_fsblk_t pblk,
+>  > +			  unsigned int status)
+>  > +{
+>  > +	struct extent_status *es;
+>  > +	struct extent_status newes;
+>  > +	ext4_lblk_t end = lblk + len - 1;
+>  > +
+>  > +	newes.es_lblk = lblk;
+>  > +	newes.es_len = len;
+>  > +	ext4_es_store_pblock(&newes, pblk);
+> 
+> 
+> ext4_es_store_pblock or's the pblk with the existing contents of the struct member.
+> (albeit masked with ES_MASK)
+> 
+> Should there be a 
+> 
+> 	newes.es_pblk = 0;
+> 
+> up there too ?
 
-Because syncref is unsigned, the first part of that if always evaluates true.
-(it will always be >0)
+The next line after ext4_es_store_pblock() is:
 
-	Dave
+        ext4_es_store_status(&newes, status);
 
+This will set remaining ES_WRITTEN | ES_UNWRITTEN... bits.
+
+So the only reason to add a line explicitly setting es_pblk to zero
+would be to suppress a warning from some insufficiently smart static
+code analysis tool.  I didn't see a warning from gcc, but it's
+possible that this is something which is causing Coverity or some
+other code scanner heartburn.
+
+Cheers,
+
+					- Ted
