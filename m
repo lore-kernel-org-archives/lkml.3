@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3IEWWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 18:22:48 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:33634 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab3IEWWo (ORCPT
+	id S1755618Ab3IEWWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:22:54 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:56294 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab3IEWWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 18:22:44 -0400
-From: Zi Shen Lim <zishen.lim@linaro.org>
-To: alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Cc: Zi Shen Lim <zishen.lim@linaro.org>
-Subject: [PATCH] vfio: fix documentation
-Date: Thu,  5 Sep 2013 15:22:17 -0700
-Message-Id: <1378419737-4154-1-git-send-email-zishen.lim@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 5 Sep 2013 18:22:50 -0400
+Date: Thu, 5 Sep 2013 18:22:49 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: ceph-devel@vger.kernel.org
+Cc: sage@inktank.com, zheng.z.yan@intel.com, dhowells@redhat.com,
+        jiayisuse@gmail.com, linux-cachefs@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/8] ceph: ceph_readpage_to_fscache didn't check if marked
+Message-ID: <0df1c53e0a04f0358496d31c54d691651d04a1e1.1378418255.git.milosz@adfin.com>
+References: <cover.1378418255.git.milosz@adfin.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1378418255.git.milosz@adfin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Zi Shen Lim <zishen.lim@linaro.org>
----
- Documentation/vfio.txt | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Previously ceph_readpage_to_fscache did not call if page was marked as cached
+before calling fscache_write_page resulting in a BUG inside of fscache.
 
-diff --git a/Documentation/vfio.txt b/Documentation/vfio.txt
-index d7993dc..b9ca023 100644
---- a/Documentation/vfio.txt
-+++ b/Documentation/vfio.txt
-@@ -167,8 +167,8 @@ group and can access them as follows:
- 	int container, group, device, i;
- 	struct vfio_group_status group_status =
- 					{ .argsz = sizeof(group_status) };
--	struct vfio_iommu_x86_info iommu_info = { .argsz = sizeof(iommu_info) };
--	struct vfio_iommu_x86_dma_map dma_map = { .argsz = sizeof(dma_map) };
-+	struct vfio_iommu_type1_info iommu_info = { .argsz = sizeof(iommu_info) };
-+	struct vfio_iommu_type1_dma_map dma_map = { .argsz = sizeof(dma_map) };
- 	struct vfio_device_info device_info = { .argsz = sizeof(device_info) };
+FS-Cache: Assertion failed
+------------[ cut here ]------------
+kernel BUG at fs/fscache/page.c:874!
+invalid opcode: 0000 [#1] SMP
+Call Trace:
+ [<ffffffffa02e6566>] __ceph_readpage_to_fscache+0x66/0x80 [ceph]
+ [<ffffffffa02caf84>] readpage_nounlock+0x124/0x210 [ceph]
+ [<ffffffffa02cb08d>] ceph_readpage+0x1d/0x40 [ceph]
+ [<ffffffff81126db6>] generic_file_aio_read+0x1f6/0x700
+ [<ffffffffa02c6fcc>] ceph_aio_read+0x5fc/0xab0 [ceph]
+
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+---
+ fs/ceph/cache.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fs/ceph/cache.c b/fs/ceph/cache.c
+index 5c413ec..c737ae9 100644
+--- a/fs/ceph/cache.c
++++ b/fs/ceph/cache.c
+@@ -311,6 +311,9 @@ void ceph_readpage_to_fscache(struct inode *inode, struct page *page)
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	int ret;
  
- 	/* Create a new container */
-@@ -193,7 +193,7 @@ group and can access them as follows:
- 	ioctl(group, VFIO_GROUP_SET_CONTAINER, &container);
++	if (!PageFsCache(page))
++		return;
++
+ 	if (!cache_valid(ci))
+ 		return;
  
- 	/* Enable the IOMMU model we want */
--	ioctl(container, VFIO_SET_IOMMU, VFIO_TYPE1_IOMMU)
-+	ioctl(container, VFIO_SET_IOMMU, VFIO_TYPE1_IOMMU);
- 
- 	/* Get addition IOMMU info */
- 	ioctl(container, VFIO_IOMMU_GET_INFO, &iommu_info);
-@@ -229,7 +229,7 @@ group and can access them as follows:
- 
- 		irq.index = i;
- 
--		ioctl(device, VFIO_DEVICE_GET_IRQ_INFO, &reg);
-+		ioctl(device, VFIO_DEVICE_GET_IRQ_INFO, &irq);
- 
- 		/* Setup IRQs... eventfds, VFIO_DEVICE_SET_IRQS */
- 	}
 -- 
-1.8.1.2
+1.7.9.5
 
