@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3IEELo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 00:11:44 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:58886 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3IEELn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 00:11:43 -0400
+	id S1753467Ab3IEEOB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 00:14:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab3IEEOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 00:14:00 -0400
+Date: Thu, 5 Sep 2013 00:13:38 -0400
+From: Dave Jones <davej@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rmk+kernel@arm.linux.org.uk
+Subject: Re: kobject: delayed kobject release: help find buggy drivers
+Message-ID: <20130905041338.GA21090@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	rmk+kernel@arm.linux.org.uk
+References: <20130903185924.046EE660E91@gitolite.kernel.org>
+ <20130903204442.GA22222@redhat.com>
+ <20130903205527.GA6358@kroah.com>
+ <87zjrt6tz4.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <1378351885.16198.1.camel@phoenix>
-References: <1378351885.16198.1.camel@phoenix>
-Date: Thu, 5 Sep 2013 09:41:42 +0530
-Message-ID: <CAK9yfHzq8FymG+_oQj22gwBEgqWQvwLsw6KTOTiZSzZ0+K7DtA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: palmas: Drop regulator_unregister while using devm_regulator_register
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjrt6tz4.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
+ 
+ > >> With this enabled, I get a bunch of scrolling oopses immediately after
+ > >> exiting the bootloader. It happens so early I can't even capture them
+ > >> over usb-serial, or earlyprintk=dbgp.
+ > >> 
+ > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
+ > >> so I can't even use that.
+ > >> 
+ > >> any ideas ?
+ > >
+ > > The first big bug found with this was with the module kobject code, and
+ > > a fix for that should be going in through Rusty's tree to Linus for this
+ > > merge window (right Rusty?)
+ > 
+ > Yep, just sent pull request.  The fix was the final commit there...
 
-On 5 September 2013 09:01, Axel Lin <axel.lin@ingics.com> wrote:
-> Commmit af40a94aba "regulator: palmas: Use devm_regulator_register" missed
-> removing a regulator_unregister() call if palmas_extreg_init falis. Fix it.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Crap, that isn't the bug I'm hitting.
 
-I was about to do it. Thanks for doing :)
+	Dave
 
-Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
-
--- 
-With warm regards,
-Sachin
