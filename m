@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3IEQgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 12:36:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33551 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3IEQgb convert rfc822-to-8bit (ORCPT
+	id S1753657Ab3IEQhI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 12:37:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17282 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3IEQhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 12:36:31 -0400
-Date: Thu, 05 Sep 2013 12:36:26 -0400 (EDT)
-Message-Id: <20130905.123626.1950323953517801491.davem@davemloft.net>
-To: linus.luessing@web.de
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        stephen@networkplumber.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, amwang@redhat.com,
-        linux@baker-net.org.uk
-Subject: Re: bride: IPv6 multicast snooping enhancements
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1378253619-23918-1-git-send-email-linus.luessing@web.de>
-References: <1378253619-23918-1-git-send-email-linus.luessing@web.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Sep 2013 09:36:31 -0700 (PDT)
+	Thu, 5 Sep 2013 12:37:06 -0400
+Date: Thu, 5 Sep 2013 19:36:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Avi <avi.kp.137@gmail.com>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: drivers/staging/bcm/InterfaceMisc.c-checkpatch
+ cleanup-(foo*)->(foo *)
+Message-ID: <20130905163658.GP6329@mwanda>
+References: <20130905155154.GA7535@avi-VPCCW15FG>
+ <20130905163216.GO6329@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905163216.GO6329@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
-Date: Wed,  4 Sep 2013 02:13:37 +0200
+On Thu, Sep 05, 2013 at 07:32:16PM +0300, Dan Carpenter wrote:
+> Please send this instead of as an attachment.
 
-> Here are two, small feature changes I would like to submit to increase
-> the usefulness of the multicast snooping of the bridge code.
-> 
-> The first patch is an unaltered one I had submitted before, but since it
-> got no feedback I'm resubmitting it here for net-next. With the recently
-> added patch to disable snooping if there is no querier (b00589af + 248ba8ec05
-> + 8d50af4fb), it should be a safe choice now (without these, patch 1/2 would
-> have introduced another potential for lost IPv6 multicast packets).
-> 
-> Both conceptually and also with some testing and fuzzing, I couldn't spot
-> any more causes for potential packet loss. And since the multicast snooping
-> code has now been tried by various people, I think it should be a safe
-> choice to apply the multicast snooping not only for IPv6 multicast packets
-> with a scope greater than link-local, but also for packets of exactly this
-> scope. The IPv6 standard mandates MLD reports for link-local multicast, too,
-> so we can safely snoop them as well (in contrast to IPv4 link-local).
+Send this *inline* I meant.
 
-Both patches applied, thanks!
+regards,
+dan carpenter
+
