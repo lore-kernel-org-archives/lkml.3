@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763561Ab3IEIXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 04:23:44 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:51336 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763390Ab3IEIXl (ORCPT
+	id S1763530Ab3IEIdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 04:33:19 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57131 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab3IEIdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 04:23:41 -0400
-Subject: Re: [PATCH V3 11/11] Add option to automatically enforce module
- signatures when in Secure Boot mode
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        keescook@chromium.org, hpa@zytor.com
-In-Reply-To: <1378252218-18798-12-git-send-email-matthew.garrett@nebula.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-12-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Sep 2013 16:24:28 +0800
-Message-ID: <1378369468.6193.3.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 5 Sep 2013 04:33:15 -0400
+Subject: [PATCH] scsi: Add printk to detect retry loop
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
+From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 05 Sep 2013 17:33:11 +0900
+Message-ID: <20130905083310.3079.7106.stgit@ltc223.sdl.hitachi.co.jp>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2013-09-03 於 19:50 -0400，Matthew Garrett 提到：
-> UEFI Secure Boot provides a mechanism for ensuring that the firmware will
-> only load signed bootloaders and kernels. Certain use cases may also
-> require that all kernel modules also be signed. Add a configuration option
-> that enforces this automatically when enabled.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  Documentation/x86/zero-page.txt       |  2 ++
->  arch/x86/Kconfig                      | 10 ++++++++++
->  arch/x86/boot/compressed/eboot.c      | 36 +++++++++++++++++++++++++++++++++++
->  arch/x86/include/uapi/asm/bootparam.h |  3 ++-
->  arch/x86/kernel/setup.c               |  6 ++++++
->  include/linux/module.h                |  6 ++++++
->  kernel/module.c                       |  7 +++++++
->  7 files changed, 69 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-> index 199f453..ec38acf 100644
-> --- a/Documentation/x86/zero-page.txt
-> +++ b/Documentation/x86/zero-page.txt
-> @@ -30,6 +30,8 @@ Offset	Proto	Name		Meaning
->  1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
->  1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
->  				(below)
-> +1EB/001	ALL     kbd_status      Numlock is enabled
-> +1EC/001	ALL     secure_boot	Secure boot is enabled in the firmware
->  1EF/001	ALL	sentinel	Used to detect broken bootloaders
->  290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
->  2D0/A00	ALL	e820_map	E820 memory map table
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index b32ebf9..6a6c19b 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1581,6 +1581,16 @@ config EFI_STUB
->  
->  	  See Documentation/x86/efi-stub.txt for more information.
->  
-> +config EFI_SECURE_BOOT_SIG_ENFORCE
-> +        def_bool n
+Hello,
 
-Maybe need add "select MODULE_SIG" to here for auto enable kernel module
-signature check when user select this option?
+This patch is to avoid indefinite command retry loop.
+The previous RFC patch is here:
+http://marc.info/?t=137690537600002&r=1&w=3
 
-> +	prompt "Force module signing when UEFI Secure Boot is enabled"
-> +	---help---
-> +	  UEFI Secure Boot provides a mechanism for ensuring that the
-> +	  firmware will only load signed bootloaders and kernels. Certain
-> +	  use cases may also require that all kernel modules also be signed.
-> +	  Say Y here to automatically enable module signature enforcement
-> +	  when a system boots with UEFI Secure Boot enabled.
+In the previous discuss, James says that once retry loop is detected,
+whether or not to panic(offline) should be decided by user, and not in
+scsi subsystem. So we need a way to detect retry loop and report it to
+user space.
 
-Thanks a lot!
-Joey Lee
+This patch adds printk to detect command retry loop in user space. When
+the command retry count exceeds the allowed count(scmd->allowed), the
+kernel prints messages, which can be handled in user space application.
+Here the allowed count(scmd->allowed) is currently used as finite retry
+limit count. Once retry count exceeds the allowed count on a device,
+the message is suppressed on the device to avoid too much messages
+outputted in dmesg.
+
+
+---
+
+Eiichi Tsukata (1):
+      scsi: Add printk to detect retry loop
+
+
+ drivers/scsi/scsi_error.c  |    3 +--
+ drivers/scsi/scsi_lib.c    |   14 ++++++++++++++
+ include/scsi/scsi_device.h |    1 +
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+-- 
+Eiichi Tsukata
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: eiichi.tsukata.xh@hitachi.com
 
