@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3IEOJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:09:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45374 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3IEOJt (ORCPT
+	id S1752935Ab3IEOMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:12:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53445 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab3IEOMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:09:49 -0400
+	Thu, 5 Sep 2013 10:12:17 -0400
+Message-ID: <5228913A.50807@kernel.dk>
+Date: Thu, 05 Sep 2013 08:12:10 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130902235853.GD4544@kroah.com>
-References: <20130902235853.GD4544@kroah.com>
-Date: Thu, 5 Sep 2013 16:09:48 +0200
-X-Google-Sender-Auth: NxAkMC1Ny9eNdyKXYKYJ6y6lcNM
-Message-ID: <CAMuHMdXfpMJeTPb4e11_oyqH5TRtTxrUMOnL9GKdSjv3VxDFww@mail.gmail.com>
-Subject: Re: [GIT PATCH] Staging driver patches for 3.12-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: OS Engineering <osengineering@stec-inc.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devel@linuxdriverproject.org, Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Amit Phansalkar <aphansalkar@stec-inc.com>
+Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad> <x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com> <26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad> <x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x4938pjbhqk.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 3, 2013 at 1:58 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> Here's the bit staging tree pull request for 3.12-rc1.
->
-> Lots of staging driver updates, and fixes.  Lustre is finally enabled in
-> the build, and lots of cleanup started happening in it.  There's a new
+On 09/05/2013 06:00 AM, Jeff Moyer wrote:
+> OS Engineering <osengineering@stec-inc.com> writes:
+> 
+>> Hi Jeff,
+>>
+>> Thank you for reviewing the patch.
+> 
+> No problem.  Jens, any objection to queueing this up for 3.12?
 
-Lustre fails modpost on (at least) 4 architectures due to unexported arch
-support functions: m68k, mips, parisc and sparc64 (patches sent).
-All 4 failures were not visible in -next due to other build failures :-(
+I'll give it a look-over, but usually I'm pretty lax when it comes to
+new drivers. So no, I'd be surprised if we can't queue this up for 3.12.
 
-Interestingly, m68k-allmodconfig _succeeded_ on kissb
-(http://kisskb.ellerman.id.au/kisskb/buildresult/9458139/), while the
-corresponding sparc64 build failed
-(http://kisskb.ellerman.id.au/kisskb/buildresult/9458166/).
-I have no idea why the m68k build didn't fail there...
+-- 
+Jens Axboe
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
