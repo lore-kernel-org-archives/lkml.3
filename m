@@ -1,97 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935515Ab3IECf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 22:35:59 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:31486 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761658Ab3IECf4 (ORCPT
+	id S935526Ab3IECj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 22:39:59 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55696 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756542Ab3IECj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 22:35:56 -0400
-Message-ID: <5227EDFC.2010403@hp.com>
-Date: Wed, 04 Sep 2013 22:35:40 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-References: <5220F090.5050908@hp.com> <20130830194059.GC13318@ZenIV.linux.org.uk> <5220F811.9060902@hp.com> <20130830202608.GD13318@ZenIV.linux.org.uk> <52210225.60805@hp.com> <20130830204852.GE13318@ZenIV.linux.org.uk> <52214EBC.90100@hp.com> <20130831023516.GI13318@ZenIV.linux.org.uk> <20130831024233.GJ13318@ZenIV.linux.org.uk> <5224E647.80303@hp.com> <20130903060130.GD16261@gmail.com> <5225FCEE.7030901@hp.com> <CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com> <CA+55aFw0jme+qK5b_VJVqoVD6cZuSjVsm-Sgjf_YkPXgMToqUA@mail.gmail.com> <52274943.1040005@hp.com> <CA+55aFyY-KEvqYze56Vw4wiznEBaxjRqHFT6aVxbu_U3k66BdQ@mail.gmail.com> <5227892B.7030906@hp.com> <CA+55aFy9hywXPhAu8JVSW=a4=2ctFTvQttf+x06mo3f6_4-g3w@mail.gmail.com>
-In-Reply-To: <CA+55aFy9hywXPhAu8JVSW=a4=2ctFTvQttf+x06mo3f6_4-g3w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Sep 2013 22:39:57 -0400
+X-AuditID: cbfee68f-b7f656d0000058e3-0a-5227eefb23b7
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Milo Kim'" <milo.kim@ti.com>,
+        "'Daniel Jeong'" <gshark.jeong@gmail.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 0/6] backlight updates for 3.12-rc1
+Date: Thu, 05 Sep 2013 11:39:55 +0900
+Message-id: <002101cea9e1$34a38330$9dea8990$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6p4TRpKe++09SiQwq9N1m2ivIIow==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zfd3f79SDDD69trCYs34Nm8Xk3V2s
+	FpcXXgISu+awWSz/tY7FYveup6wObB47Z91l9zgx4zeLx575P1g9+rasYvQ4fmM7k8fnTXIB
+	bFFcNimpOZllqUX6dglcGRv67rAVbJWtOLxsBmMD43aRLkZODgkBE4llS6azQ9hiEhfurWfr
+	YuTiEBJYxihx+MgLZpiiW3d/s0MkpjNK7Lm6D8r5xSixZOlFJpAqNgE1iS9fDgMlODhEBPQl
+	2lo0QGqYBbYySmz+uJsVpEZYwFhixeRORhCbRUBVoqt7GZjNK2ArsaTnKJQtKPFj8j0WEJtZ
+	QEti/c7jTBC2vMTmNW+ZQeZLCKhLPPqrCxIWEdCTuLbzN1SJiMS+F+8YQfZKCFxil9j+BuQd
+	kF0CEt8mH2KB6JWV2HQA6jFJiYMrbrBMYBSbhWTzLCSbZyHZPAvJigWMLKsYRVMLkguKk9KL
+	jPWKE3OLS/PS9ZLzczcxQuKxfwfj3QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJqbGRuaUZ
+	acJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhjTVdPuZvQ5LFm4+H6thaagac+b
+	xo2Lph9r2bkzJMLsb0nR/aVxJi+LLxecY54o4P555eFN8zXZW65/mWjjVKa/SU934VzOn8xi
+	JYHr5GSrQhL1jp1YviP8N9sqt5bFDWEb3mjs7VWU513lmq38sme3i39X4IW//2dXzNr06+vV
+	pKfRveIf+dqVWIozEg21mIuKEwGS7mRY3QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd3f79SDDNa8N7aYs34Nm8Xk3V2s
+	FpcXXgISu+awWSz/tY7FYveup6wObB47Z91l9zgx4zeLx575P1g9+rasYvQ4fmM7k8fnTXIB
+	bFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QHco
+	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDM29N1hK9gqW3F42QzGBsbt
+	Il2MnBwSAiYSt+7+ZoewxSQu3FvP1sXIxSEkMJ1RYs/VfewQzi9GiSVLLzKBVLEJqEl8+XIY
+	KMHBISKgL9HWogFSwyywlVFi88fdrCA1wgLGEismdzKC2CwCqhJd3cvAbF4BW4klPUehbEGJ
+	H5PvsYDYzAJaEut3HmeCsOUlNq95ywwyX0JAXeLRX12QsIiAnsS1nb+hSkQk9r14xziBUWAW
+	kkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/szqR2MKxssDjEK
+	cDAq8fA2GKsHCbEmlhVX5h5ilOBgVhLhtVgJFOJNSaysSi3Kjy8qzUktPsSYDPToRGYp0eR8
+	YCLKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbG87PY9vxr
+	Fm2qalJU3rWn0aJ9av0NN4k/n6IZ8zZ6meRcNA0XerxXcH312kiWIocic9tj725f+KrXfvuM
+	zd+sle66NfXvw7xmVl+w4DhkMblwT8cuvouT76z8knFsZ/zUVtlPMvFKszi/Vx7uTYthnMF2
+	Z4VlN89alR3CuWcXzVf//cSxfX6JEktxRqKhFnNRcSIAn5JK7zoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 05:34 PM, Linus Torvalds wrote:
-> On Wed, Sep 4, 2013 at 12:25 PM, Waiman Long<waiman.long@hp.com>  wrote:
->> Yes, the perf profile was taking from an 80-core machine. There isn't any
->> scalability issue hiding for the short workload on an 80-core machine.
->>
->> However, I am certain that more may pop up when running in an even larger
->> machine like the prototype 240-core machine that our team has been testing
->> on.
-> Sure. Please let us know, I think it's going to be interesting to see
-> what that shows.
->
-> SGI certainly did much larger machines, but their primary target
-> tended to be all user space, so they had things like "tons of
-> concurrent page faults in the same process" rather than filename
-> lookup or the tty layer.
->
->                  Linus
+Hi Andrew,
 
-I think SGI is more focus on compute-intensive workload. HP is more 
-focus on high-end commercial workload like SAP HANA. Below was a sample 
-perf profile of the high-systime workload on a 240-core prototype 
-machine (HT off) with 3.10-rc1 kernel with my lockref and seqlock patches:
+This is the backlight updates for 3.12-rc1.
+Please add these patches to mm-tree.
 
-      9.61%    3382925          swapper  [kernel.kallsyms]         [k] 
-_raw_spin_lock
-                        |--59.90%-- rcu_process_callbacks
-                        |--19.41%-- load_balance
-                        |--9.58%-- rcu_accelerate_cbs
-                        |--6.70%-- tick_do_update_jiffies64
-                        |--1.46%-- scheduler_tick
-                        |--1.17%-- sched_rt_period_timer
-                        |--0.56%-- perf_adjust_freq_unthr_context
-                         --1.21%-- [...]
+Best regards,
+Jingoo Han
 
-      6.34%         99            reaim  [kernel.kallsyms]         [k] 
-_raw_spin_lock
-                          |--73.96%-- load_balance
-                          |--11.98%-- rcu_process_callbacks
-                          |--2.21%-- __mutex_lock_slowpath
-                          |--2.02%-- rcu_accelerate_cbs
-                          |--1.95%-- wake_up_new_task
-                          |--1.70%-- scheduler_tick
-                          |--1.67%-- xfs_alloc_log_agf
-                          |--1.24%-- task_rq_lock
-                          |--1.15%-- try_to_wake_up
-                           --2.12%-- [...]
+----------------------------------------------------------------
+backlight updates for 3.12-rc1
 
-      5.39%          2            reaim  [kernel.kallsyms]         [k] 
-_raw_spin_lock_irqsave
-                          |--95.08%-- rwsem_wake
-                          |--1.80%-- rcu_process_callbacks
-                          |--1.03%-- prepare_to_wait
-                          |--0.59%-- __wake_up
-                           --1.50%-- [...]
+- LP855x: Add LP8555 support
+- LM3630 is changed to LM3630A
+- Fix sparse warnings: ld9040, lm3639 and lp8788
 
-      2.28%          1            reaim  [kernel.kallsyms]         [k] 
-_raw_spin_lock_irq
-                          |--90.56%-- rwsem_down_write_failed
-                          |--9.25%-- __schedule
-                           --0.19%-- [...]
+----------------------------------------------------------------
 
-Longman
+Daniel Jeong (1):
+      backlight: lm3630: apply chip revision
+
+Jingoo Han (4):
+      backlight: ld9040: Staticize local variable gamma_table
+      backlight: lm3639: Don't mix different enum types
+      backlight: lp8788: Staticize 'default_bl_config'
+      backlight: use dev_get_platdata()
+
+Milo Kim (1):
+      backlight: lp855x_bl: support new LP8555 device
+
+ Documentation/backlight/lp855x-driver.txt          |    5 +-
+ .../devicetree/bindings/video/backlight/lp855x.txt |   29 +-
+ drivers/video/backlight/88pm860x_bl.c              |    2 +-
+ drivers/video/backlight/Kconfig                    |   10 +-
+ drivers/video/backlight/Makefile                   |    2 +-
+ drivers/video/backlight/aat2870_bl.c               |    2 +-
+ drivers/video/backlight/adp5520_bl.c               |    2 +-
+ drivers/video/backlight/adp8860_bl.c               |    6 +-
+ drivers/video/backlight/adp8870_bl.c               |    6 +-
+ drivers/video/backlight/ams369fg06.c               |    2 +-
+ drivers/video/backlight/atmel-pwm-bl.c             |    2 +-
+ drivers/video/backlight/bd6107.c                   |    2 +-
+ drivers/video/backlight/corgi_lcd.c                |    2 +-
+ drivers/video/backlight/da903x_bl.c                |    2 +-
+ drivers/video/backlight/generic_bl.c               |    2 +-
+ drivers/video/backlight/gpio_backlight.c           |    3 +-
+ drivers/video/backlight/ili9320.c                  |    2 +-
+ drivers/video/backlight/kb3886_bl.c                |    2 +-
+ drivers/video/backlight/l4f00242t03.c              |    6 +-
+ drivers/video/backlight/ld9040.c                   |    2 +-
+ drivers/video/backlight/ld9040_gamma.h             |    4 +-
+ drivers/video/backlight/lm3533_bl.c                |    2 +-
+ drivers/video/backlight/lm3630_bl.c                |  475 -------------------
+ drivers/video/backlight/lm3630a_bl.c               |  483 ++++++++++++++++++++
+ drivers/video/backlight/lm3639_bl.c                |   13 +-
+ drivers/video/backlight/lms283gf05.c               |    4 +-
+ drivers/video/backlight/lms501kf03.c               |    2 +-
+ drivers/video/backlight/lp855x_bl.c                |   21 +-
+ drivers/video/backlight/lp8788_bl.c                |    2 +-
+ drivers/video/backlight/lv5207lp.c                 |    2 +-
+ drivers/video/backlight/omap1_bl.c                 |    2 +-
+ drivers/video/backlight/pcf50633-backlight.c       |    2 +-
+ drivers/video/backlight/platform_lcd.c             |    2 +-
+ drivers/video/backlight/pwm_bl.c                   |    2 +-
+ drivers/video/backlight/s6e63m0.c                  |    2 +-
+ drivers/video/backlight/tdo24m.c                   |    2 +-
+ drivers/video/backlight/tosa_bl.c                  |    2 +-
+ drivers/video/backlight/tps65217_bl.c              |    5 +-
+ drivers/video/backlight/wm831x_bl.c                |    8 +-
+ include/linux/platform_data/lm3630_bl.h            |   57 ---
+ include/linux/platform_data/lm3630a_bl.h           |   65 +++
+ include/linux/platform_data/lp855x.h               |   19 +
+ 42 files changed, 673 insertions(+), 594 deletions(-)
+ delete mode 100644 drivers/video/backlight/lm3630_bl.c
+ create mode 100644 drivers/video/backlight/lm3630a_bl.c
+ delete mode 100644 include/linux/platform_data/lm3630_bl.h
+ create mode 100644 include/linux/platform_data/lm3630a_bl.h
+
+
