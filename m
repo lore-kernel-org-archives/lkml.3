@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3IEOek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:34:40 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:57212 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3IEOei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:34:38 -0400
-Date: Thu, 5 Sep 2013 15:34:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
-Subject: Re: [PATCH V4] regulator: palmas: add support for external control
- of rails
-Message-ID: <20130905143431.GI8980@lee--X1>
-References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com>
- <20130823095841.GG25263@sirena.org.uk>
- <522897FD.2030509@nvidia.com>
+	id S1753293Ab3IEOh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:37:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab3IEOh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 10:37:58 -0400
+Date: Thu, 5 Sep 2013 10:37:49 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: tytso@mit.edu
+Subject: Re: ext4: cache all of an extent tree's leaf block upon reading
+Message-ID: <20130905143749.GA15894@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	tytso@mit.edu
+References: <20130905013848.42DD7660EE1@gitolite.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <522897FD.2030509@nvidia.com>
+In-Reply-To: <20130905013848.42DD7660EE1@gitolite.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Sep 2013, Laxman Dewangan wrote:
-> On Friday 23 August 2013 03:28 PM, Mark Brown wrote:
-> >* PGP Signed by an unknown key
-> >
-> >On Wed, Aug 21, 2013 at 04:18:16PM +0530, Laxman Dewangan wrote:
-> >>Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
-> >>by register programming through I2C communication as well as it can be
-> >>enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
-> >Acked-by: Mark Brown <broonie@linaro.org>
-> >
-> 
-> Can you please take this in your tree as dependent patch is already
-> in your tree?
+On Thu, Sep 05, 2013 at 01:38:48AM +0000, Linux Kernel wrote:
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=107a7bd31ac003e42c0f966aa8e5b26947de6024
+ > Commit:     107a7bd31ac003e42c0f966aa8e5b26947de6024
+ > Parent:     3be78c73179c9347bdc0a92b2898063bd2300ff7
+ > Author:     Theodore Ts'o <tytso@mit.edu>
+ > AuthorDate: Fri Aug 16 21:23:41 2013 -0400
+ > Committer:  Theodore Ts'o <tytso@mit.edu>
+ > CommitDate: Fri Aug 16 21:23:41 2013 -0400
+ > 
+ >     ext4: cache all of an extent tree's leaf block upon reading
+ 
 
-It won't go in until v3.12 now, but I have applied the patch.
+ > + * ext4_es_cache_extent() inserts information into the extent status
+ > + * tree if and only if there isn't information about the range in
+ > + * question already.
+ > + */
+ > +void ext4_es_cache_extent(struct inode *inode, ext4_lblk_t lblk,
+ > +			  ext4_lblk_t len, ext4_fsblk_t pblk,
+ > +			  unsigned int status)
+ > +{
+ > +	struct extent_status *es;
+ > +	struct extent_status newes;
+ > +	ext4_lblk_t end = lblk + len - 1;
+ > +
+ > +	newes.es_lblk = lblk;
+ > +	newes.es_len = len;
+ > +	ext4_es_store_pblock(&newes, pblk);
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+ext4_es_store_pblock or's the pblk with the existing contents of the struct member.
+(albeit masked with ES_MASK)
+
+Should there be a 
+
+	newes.es_pblk = 0;
+
+up there too ?
+
+It seems like if the stack happened to contain any of ES_WRITTEN | ES_UNWRITTEN | ES_DELAYED | ES_HOLE
+then it could leak through into the new extent status.
+
+	Dave
+
