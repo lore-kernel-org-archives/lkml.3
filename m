@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762440Ab3IEBG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 21:06:28 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:57239 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab3IEBG0 (ORCPT
+	id S1762709Ab3IEBIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 21:08:11 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:61880 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742Ab3IEBIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 21:06:26 -0400
-X-Spam-Score: -100.9
-Message-ID: <5227D8D2.4020600@asianux.com>
-Date: Thu, 05 Sep 2013 09:05:22 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 4 Sep 2013 21:08:09 -0400
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>, Joe Perches <joe@perches.com>,
-        "'Jiri Kosina'" <trivial@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH trivial v2] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood> <520209FA.70409@asianux.com> <5202FEC3.4010408@asianux.com> <52145F5C.9090907@asianux.com> <521739B3.9050001@asianux.com> <52257A3E.7040001@asianux.com> <5227D472.1010100@asianux.com>
-In-Reply-To: <5227D472.1010100@asianux.com>
+In-Reply-To: <20130903121046.GE22899@redhat.com>
+References: <20130903121046.GE22899@redhat.com>
+Date: Wed, 4 Sep 2013 18:08:08 -0700
+X-Google-Sender-Auth: U9WveM8J_VJzzeY9mmF9dqp9QDo
+Message-ID: <CA+55aFwYvhLS8onJphR0PnL5e0zyS1ki65O_fSC05TeVSw0hDg@mail.gmail.com>
+Subject: Re: [GIT PULL] KVM changes for 3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 3, 2013 at 5:10 AM, Gleb Natapov <gleb@redhat.com> wrote:
+>
+> This pull request adds tlb_gather_mmu() caller in S390 code, but 2b047252
+> in your tree added another parameter to the function, so the patch bellow
+> have to be applied during merge to resolve the conflicts. The patch was
+> used in linux-next for awhile.
 
-Oh, sorry the patch subject should be changed too. I will send patch v3.
+Hmm. Fine. Except:
 
-On 09/05/2013 08:46 AM, Chen Gang wrote:
-> "include/uapi/" is the whole Linux kernel API, it is important enough
-> to get more global explanations by comments.
-> 
-> In "include/uapi/Kbuild", "Makefile..." and "non-arch..." comments are
-> meaningless for current 'Kbuild', so delete them.
-> 
-> And add more explanations for "include/uapi/" in "include/uapi/Kbuild",
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  include/uapi/Kbuild |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
-> index 81d2106..287e8d0 100644
-> --- a/include/uapi/Kbuild
-> +++ b/include/uapi/Kbuild
-> @@ -1,7 +1,8 @@
->  # UAPI Header export list
-> -# Top-level Makefile calls into asm-$(ARCH)
-> -# List only non-arch directories below
-> -
-> +#
-> +# UAPI means "Userspace API" which will be installed to "/usr/include".
-> +# Except "linux/", the other current level directories are for compatibility.
-> +# It will not accept the new additional current level directories or files.
->  
->  header-y += asm-generic/
->  header-y += linux/
-> 
+>         /* Reallocate the page tables with pgstes */
+>         mm->context.has_pgste = 1;
+> -       tlb_gather_mmu(&tlb, mm, 0);
+> +       tlb_gather_mmu(&tlb, mm, 0, TASK_SIZE);
+>         page_table_realloc(&tlb, mm, 0, TASK_SIZE);
+>         tlb_finish_mmu(&tlb, 0, -1);
+>         up_write(&mm->mmap_sem);
 
+Realistically, the begin/end arguments to tlb_gather_mmu() and
+tlb_finish_mmu() should match. In fact, I considered getting rid of
+the ones to tlb_finish_mmu() because they are kind of pointless these
+days (but didn't, because I wanted to keep the patches minimal).
 
--- 
-Chen Gang
+And in your case they don't. Which implies a certain amount of confusion.
+
+It looks like it's not really a full-mm invalidate (it's not the final
+TLB flush before getting rid of the VM), so I think "0, TASK_SIZE" is
+correct. I just think I'm going to also change that tlb_finish_mmu()
+to have the same "0, TASK_SIZE" range, so that it's all consistent.
+
+It appears that s390 doesn't actually care about the range to
+tlb_finish_mmu(), so this is pretty academic, but I thought I'd
+mention it so that it doesn't come as a surprise that my merge
+resolution looks different from your suggested one.
+
+              Linus
