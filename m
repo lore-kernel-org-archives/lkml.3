@@ -1,72 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3IEEJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 00:09:58 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39122 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3IEEJ4 (ORCPT
+	id S1755291Ab3IEELo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 00:11:44 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:58886 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab3IEELn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 00:09:56 -0400
+	Thu, 5 Sep 2013 00:11:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1378351885.16198.1.camel@phoenix>
+References: <1378351885.16198.1.camel@phoenix>
+Date: Thu, 5 Sep 2013 09:41:42 +0530
+Message-ID: <CAK9yfHzq8FymG+_oQj22gwBEgqWQvwLsw6KTOTiZSzZ0+K7DtA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: palmas: Drop regulator_unregister while using devm_regulator_register
 From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, sachin.kamat@linaro.org
-Subject: [PATCH 2/2] regulator: Remove redundant NULL assignment
-Date: Thu,  5 Sep 2013 09:22:03 +0530
-Message-Id: <1378353123-29604-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378353123-29604-1-git-send-email-sachin.kamat@linaro.org>
-References: <1378353123-29604-1-git-send-email-sachin.kamat@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NULL assignment corrupts the error pointer and is not
-necessary.
+Hi Axel,
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/regulator/max77686.c |    1 -
- drivers/regulator/max77693.c |    1 -
- drivers/regulator/max8997.c  |    1 -
- 3 files changed, 3 deletions(-)
+On 5 September 2013 09:01, Axel Lin <axel.lin@ingics.com> wrote:
+> Commmit af40a94aba "regulator: palmas: Use devm_regulator_register" missed
+> removing a regulator_unregister() call if palmas_extreg_init falis. Fix it.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index de5b30e..ae001cc 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -483,7 +483,6 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 		if (IS_ERR(max77686->rdev[i])) {
- 			dev_err(&pdev->dev,
- 				"regulator init failed for %d\n", i);
--			max77686->rdev[i] = NULL;
- 			return PTR_ERR(max77686->rdev[i]);
- 		}
- 	}
-diff --git a/drivers/regulator/max77693.c b/drivers/regulator/max77693.c
-index 2054ae1..feb20bf 100644
---- a/drivers/regulator/max77693.c
-+++ b/drivers/regulator/max77693.c
-@@ -271,7 +271,6 @@ static int max77693_pmic_probe(struct platform_device *pdev)
- 		if (IS_ERR(max77693_pmic->rdev[i])) {
- 			dev_err(max77693_pmic->dev,
- 				"Failed to initialize regulator-%d\n", id);
--			max77693_pmic->rdev[i] = NULL;
- 			return PTR_ERR(max77693_pmic->rdev[i]);
- 		}
- 	}
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 059e8ed..bcd2488 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -1209,7 +1209,6 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 		if (IS_ERR(rdev[i])) {
- 			dev_err(max8997->dev, "regulator init failed for %d\n",
- 					id);
--			rdev[i] = NULL;
- 			return PTR_ERR(rdev[i]);
- 		}
- 	}
+I was about to do it. Thanks for doing :)
+
+Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+
 -- 
-1.7.9.5
-
+With warm regards,
+Sachin
