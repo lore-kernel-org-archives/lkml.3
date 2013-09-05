@@ -1,165 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762269Ab3IEMmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:42:50 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:38197 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab3IEMmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:42:49 -0400
-Date: Thu, 5 Sep 2013 14:42:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.12
-Message-ID: <20130905124242.GB20519@somewhere>
-References: <20130903132933.GA24955@gmail.com>
- <CA+55aFyyJpCC0EFfPpGYi+6goWbA+LZbrkFcLNW3x8xYHfKvdQ@mail.gmail.com>
- <20130905105639.GB21407@gmail.com>
+	id S935699Ab3IEMn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:43:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41305 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757780Ab3IEMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:43:56 -0400
+Date: Thu, 5 Sep 2013 14:43:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: azurIt <azurit@pobox.sk>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130905124352.GB13666@dhcp22.suse.cz>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <20130803170831.GB23319@cmpxchg.org>
+ <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
+ <20130903204850.GA1412@cmpxchg.org>
+ <20130904101852.58E70042@pobox.sk>
+ <20130905115430.GB856@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130905105639.GB21407@gmail.com>
+In-Reply-To: <20130905115430.GB856@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 12:56:39PM +0200, Ingo Molnar wrote:
+On Thu 05-09-13 07:54:30, Johannes Weiner wrote:
+> On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
+> > Ok, i see this message several times in my syslog logs, one of them
+> > is also for this unremovable cgroup (but maybe all of them cannot
+> > be removed, should i try?). Example of the log is here (don't know
+> > where exactly it starts and ends so here is the full kernel log):
+> > http://watchdog.sk/lkml/oom_syslog.gz
 > 
-> (Cc:-ed Frederic and Namhyung as well, it's about bad overhead in 
-> tools/perf/util/hist.c.)
+> There is an unfinished OOM invocation here:
 > 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>   Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
+>   Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
+>   Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
+>   Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
+>   Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
+>   Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
+>   Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
+>   Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
+>   Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
+>   Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
+>   Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
+>   Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
 > 
-> > On Tue, Sep 3, 2013 at 6:29 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > > Please pull the latest perf-core-for-linus git tree from:
-> > 
-> > I don't think this is new at all, but I just tried to do a perf
-> > record/report of "make -j64 test" on git:
-> > 
-> > It's a big perf.data file (1.6G), but after it has done the
-> > "processing time ordered events" thing it results in:
-> > 
-> > ┌─Warning:───────────────────────────────────┐
-> > │Processed 8672030 events and lost 71 chunks!│
-> > │Check IO/CPU overload!                      │
-> > │                                            │
-> > │                                            │
-> > │Press any key...                            │
-> > └────────────────────────────────────────────┘
-> > 
-> > and then it just hangs using 100% CPU time. Pressing any key doesn't
-> > do anything.
-> > 
-> > It may well still be *doing* something, and maybe it will come back
-> > some day with results. But it sure doesn't show any indication that it
-> > will.
-> > 
-> > Try this (in a current git source tree: note, by "git" I actually mean
-> > git itself, not some random git repository)::
-> > 
-> >     perf record -g -e cycles:pp make -j64 test >& out
-> >     perf report
-> > 
-> > maybe you can reproduce it.
-> 
-> I managed to reproduce it on a 32-way box via:
-> 
->      perf record -g make -j64 bzImage >/dev/null 2>&1
-> 
-> It's easier to debug it without the TUI:
-> 
->      perf --no-pages report --stdio
-> 
-> It turns out that even with a 400 MB perf.data the 'perf report' call will 
-> eventually finish - here it ran for almost half an hour(!) on a fast box.
-> 
-> Arnaldo, the large overhead is in hists__collapse_resort(), in particular 
-> it's doing append_chain_children() 99% of the time:
-> 
-> -  99.74%  perf  perf               [.] append_chain_children                                                         ◆
->    - append_chain_children                                                                                            ▒
->       - 99.76% merge_chain_branch                                                                                     ▒
->          - merge_chain_branch                                                                                         ▒
->             + 98.04% hists__collapse_resort                                                                           ▒
->             + 1.96% merge_chain_branch                                                                                ▒
-> +   0.05%  perf  perf               [.] merge_chain_branch                                                            ▒
-> +   0.03%  perf  libc-2.17.so       [.] _int_free                                                                     ▒
-> +   0.03%  perf  libc-2.17.so       [.] __libc_calloc                                                                 ▒
-> +   0.02%  perf  [kernel.kallsyms]  [k] account_user_time                                                             ▒
-> +   0.02%  perf  libc-2.17.so       [.] _int_malloc                                                                   ▒
-> 
-> It seems to be stuck in hists__collapse_resort().
-> 
-> In particular the overhead arises because the following loop in 
-> append_chain_children():
-> 
->         /* lookup in childrens */
->         chain_for_each_child(rnode, root) {
->                 unsigned int ret = append_chain(rnode, cursor, period);
-> 
-> Reaches very long counts and the algorithm gets quadratic (at least). The 
-> child count reaches over 100,000 entries in the end (!).
-> 
-> I don't think the high child count in itself is anomalous: a kernel build 
-> generates thousands of processes, tons of symbol ranges and tens of 
-> millions of call chain entries.
-> 
-> So I think what we need here is to speed up the lookup: put children into 
-> a secondary, ->pos,len indexed range-rbtree and do a binary search instead 
-> of a linear search over 100,000 child entries ... or something like that.
+> __getblk() has this weird loop where it tries to instantiate the page,
+> frees memory on failure, then retries.  If the memcg goes OOM, the OOM
+> path might be entered multiple times and each time leak the memcg
+> reference of the respective previous OOM invocation.
 
-You're right it's worth trying.
+Very well spotted, Johannes!
 
-At least it might give better results for such high scale callchain trees.
-I'll see what I can come up with.
-
+> There are a few more find_or_create() sites that do not propagate an
+> error and it's incredibly hard to find out whether they are even taken
+> during a page fault.  It's not practical to annotate them all with
+> memcg OOM toggles, so let's just catch all OOM contexts at the end of
+> handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
+> this like an error.
 > 
-> Btw., a side note, append_chain() is a rather confusing function in 
-> itself, with logic-inversion gems like:
+> azur, here is a patch on top of your modified 3.2.  Note that Michal
+> might be onto something and we are looking at multiple issues here,
+> but the log excert above suggests this fix is required either way.
 > 
->                 if (!found)
->                         found = true;
-
-The check is pointless yeah, I'll remove that.
-
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: memcg: handle non-error OOM situations more gracefully
 > 
-> All that should be cleaned up as well I guess.
+> Many places that can trigger a memcg OOM situation return gracefully
+> and don't propagate VM_FAULT_OOM up the fault stack.
 > 
-> The 'IO overload' message appears to be a separate, unrelated bug, it just 
-> annoyingly does not get refreshed away in the TUI before 
-> hists__collapse_resort() is called, and there's also no progress bar for 
-> the hists__collapse_resort() pass, so to the user it all looks like a 
-> deadlock.
+> It's not practical to annotate all of them to disable the memcg OOM
+> killer.  Instead, just clean up any set OOM state without warning in
+> case the fault is not returning VM_FAULT_OOM.
 > 
-> So there's at least two bugs here:
+> Also fail charges immediately when the current task already is in an
+> OOM context.  Otherwise, the previous context gets overwritten and the
+> memcg reference is leaked.
+
+This is getting way more trickier than I've expected and hoped for. The
+above should work although I cannot say I love it. I am afraid we do not
+have many choices left without polluting the every single place which
+can charge, though :/
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+I guess this should be correct but I have to think about it some more.
+
+Two minor comments bellow.
+
+> ---
+>  include/linux/memcontrol.h | 40 ++++++----------------------------------
+>  include/linux/sched.h      |  3 ---
+>  mm/filemap.c               | 11 +----------
+>  mm/memcontrol.c            | 15 ++++++++-------
+>  mm/memory.c                |  8 ++------
+>  mm/oom_kill.c              |  2 +-
+>  6 files changed, 18 insertions(+), 61 deletions(-)
 > 
->   - the bad overhead in hists__collapse_resort()
-> 
->   - bad usability if hists__collapse_resort() takes more than 1 second to finish
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index b113c0f..7c43903 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -120,39 +120,16 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+>  extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+>  					struct task_struct *p);
+>  
+> -/**
+> - * mem_cgroup_toggle_oom - toggle the memcg OOM killer for the current task
+> - * @new: true to enable, false to disable
+> - *
+> - * Toggle whether a failed memcg charge should invoke the OOM killer
+> - * or just return -ENOMEM.  Returns the previous toggle state.
+> - *
+> - * NOTE: Any path that enables the OOM killer before charging must
+> - *       call mem_cgroup_oom_synchronize() afterward to finalize the
+> - *       OOM handling and clean up.
+> - */
+> -static inline bool mem_cgroup_toggle_oom(bool new)
+> -{
+> -	bool old;
+> -
+> -	old = current->memcg_oom.may_oom;
+> -	current->memcg_oom.may_oom = new;
+> -
+> -	return old;
+> -}
 
-Also IIUC, collapsing/merging hists is only used for comm hists merging, due to
-set_task_comm after exec.
+I will not miss this guy.
 
-Perhaps we can do better to anticipate the comm of a process based on tid/pid, fork
-and comm events? This way we can avoid late collapses/merges. In the best case we
-could get rid of collapses entirely and that would be some nice fresh air for util/hist.c
+[...]
+> diff --git a/mm/memory.c b/mm/memory.c
+> index cdbe41b..cdad471 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -57,7 +57,6 @@
+>  #include <linux/swapops.h>
+>  #include <linux/elf.h>
+>  #include <linux/gfp.h>
+> -#include <linux/stacktrace.h>
+>  
+>  #include <asm/io.h>
+>  #include <asm/pgalloc.h>
+> @@ -3521,11 +3520,8 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	if (flags & FAULT_FLAG_USER)
+>  		mem_cgroup_disable_oom();
+>  
+> -	if (WARN_ON(task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM))) {
+> -		printk("Fixing unhandled memcg OOM context set up from:\n");
+> -		print_stack_trace(&current->memcg_oom.trace, 0);
+> -		mem_cgroup_oom_synchronize();
+> -	}
+> +	if (task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM))
+> +		mem_cgroup_oom_synchronize(false);
 
-And ideally, the comm should be associated to a lifetime as a thread can change
-its comm anytime.
+This deserves a fat comment /me thinks
 
-At least we should be able to limit collapses significantly.
-I can try to make callchains more scalable, but collapsing is a heavy weight operation
-for them in any case.
-
-> Thanks,
-> 
-> 	Ingo
+[...]
+-- 
+Michal Hocko
+SUSE Labs
