@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3IEUdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:33:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52195 "EHLO
+	id S1757541Ab3IEU2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab3IEU2p (ORCPT
+	with ESMTP id S1757498Ab3IEU2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:45 -0400
+	Thu, 5 Sep 2013 16:28:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
-        Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 09/14] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
-Date: Thu,  5 Sep 2013 13:28:20 -0700
-Message-Id: <20130905202615.503113715@linuxfoundation.org>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 01/14] jfs: fix readdir cookie incompatibility with NFSv4
+Date: Thu,  5 Sep 2013 13:28:12 -0700
+Message-Id: <20130905202614.586973579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
 References: <20130905202614.354156084@linuxfoundation.org>
@@ -28,50 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
+commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
 
-Some architectures, such as ARM-32 do not return the same base address
-when you call kmap_atomic() twice on the same page.
-This causes problems for the memmove() call in the XDR helper routine
-"_shift_data_right_pages()", since it defeats the detection of
-overlapping memory ranges, and has been seen to corrupt memory.
+NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
+but jfs allows a value of 2 for a non-special entry. This incompatibility
+can result in the nfs client reporting a readdir loop.
 
-The fix is to distinguish between the case where we're doing an
-inter-page copy or not. In the former case of we know that the memory
-ranges cannot possibly overlap, so we can additionally micro-optimise
-by replacing memmove() with memcpy().
+This patch doesn't change the value stored internally, but adds one to
+the value exposed to the iterate method.
 
-Reported-by: Mark Young <MYoung@nvidia.com>
-Reported-by: Matt Craighead <mcraighead@nvidia.com>
-Cc: Bruce Fields <bfields@fieldses.org>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Matt Craighead <mcraighead@nvidia.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/ctx->pos/filp->f_pos/]
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/sunrpc/xdr.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
---- a/net/sunrpc/xdr.c
-+++ b/net/sunrpc/xdr.c
-@@ -233,10 +233,13 @@ _shift_data_right_pages(struct page **pa
- 		pgfrom_base -= copy;
+--- a/fs/jfs/jfs_dtree.c
++++ b/fs/jfs/jfs_dtree.c
+@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void
  
- 		vto = kmap_atomic(*pgto);
--		vfrom = kmap_atomic(*pgfrom);
--		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
-+		if (*pgto != *pgfrom) {
-+			vfrom = kmap_atomic(*pgfrom);
-+			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
-+			kunmap_atomic(vfrom);
-+		} else
-+			memmove(vto + pgto_base, vto + pgfrom_base, copy);
- 		flush_dcache_page(*pgto);
--		kunmap_atomic(vfrom);
- 		kunmap_atomic(vto);
+ 		dir_index = (u32) filp->f_pos;
  
- 	} while ((len -= copy) != 0);
++		/*
++		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
++		 * the value we return to the vfs is one greater than the
++		 * one we use internally.
++		 */
++		if (dir_index)
++			dir_index--;
++
+ 		if (dir_index > 1) {
+ 			struct dir_table_slot dirtab_slot;
+ 
+@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void
+ 			if (p->header.flag & BT_INTERNAL) {
+ 				jfs_err("jfs_readdir: bad index table");
+ 				DT_PUTPAGE(mp);
+-				filp->f_pos = -1;
++				filp->f_pos = DIREND;
+ 				return 0;
+ 			}
+ 		} else {
+@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void
+ 				/*
+ 				 * self "."
+ 				 */
+-				filp->f_pos = 0;
++				filp->f_pos = 1;
+ 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
+ 					    DT_DIR))
+ 					return 0;
+@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void
+ 			/*
+ 			 * parent ".."
+ 			 */
+-			filp->f_pos = 1;
++			filp->f_pos = 2;
+ 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
+ 				return 0;
+ 
+@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void
+ 		/*
+ 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
+ 		 *
+-		 * pn = index = 0:	First entry "."
+-		 * pn = 0; index = 1:	Second entry ".."
++		 * pn = 0; index = 1:	First entry "."
++		 * pn = 0; index = 2:	Second entry ".."
+ 		 * pn > 0:		Real entries, pn=1 -> leftmost page
+ 		 * pn = index = -1:	No more entries
+ 		 */
+ 		dtpos = filp->f_pos;
+-		if (dtpos == 0) {
++		if (dtpos < 2) {
+ 			/* build "." entry */
+ 
++			filp->f_pos = 1;
+ 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
+ 				    DT_DIR))
+ 				return 0;
+-			dtoffset->index = 1;
++			dtoffset->index = 2;
+ 			filp->f_pos = dtpos;
+ 		}
+ 
+ 		if (dtoffset->pn == 0) {
+-			if (dtoffset->index == 1) {
++			if (dtoffset->index == 2) {
+ 				/* build ".." entry */
+ 
+ 				if (filldir(dirent, "..", 2, filp->f_pos,
+@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void
+ 					}
+ 					jfs_dirent->position = unique_pos++;
+ 				}
++				/*
++				 * We add 1 to the index because we may
++				 * use a value of 2 internally, and NFSv4
++				 * doesn't like that.
++				 */
++				jfs_dirent->position++;
+ 			} else {
+ 				jfs_dirent->position = dtpos;
+ 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
 
 
