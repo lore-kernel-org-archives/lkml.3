@@ -1,142 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3IEU1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:27:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29279 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3IEU1x (ORCPT
+	id S1756394Ab3IEU2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51998 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab3IEU2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:27:53 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=DA-RvV7NLMYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6u4amIDVaRwA:10 a=JfrnYn6hAAAA:8 a=VTRQp1l0jkDh5ajDjggA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 5 Sep 2013 16:27:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH 14/18 v2] ftrace/lockdep: Have the RCU lockdep
- splat show what function triggered
-Message-ID: <20130905162752.236107ba@gandalf.local.home>
-In-Reply-To: <20130905193553.GG31370@twins.programming.kicks-ass.net>
-References: <20130831051117.884125230@goodmis.org>
-	<20130831051702.766697014@goodmis.org>
-	<20130905193553.GG31370@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Sep 2013 16:28:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 01/36] drm/nouveau/mc: fix race condition between constructor and request_irq()
+Date: Thu,  5 Sep 2013 13:27:30 -0700
+Message-Id: <20130905202702.463603327@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
+References: <20130905202702.289738686@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Sep 2013 21:35:53 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> On Sat, Aug 31, 2013 at 01:11:31AM -0400, Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Why put RHT in there? Surely greg and jonathan know you work for them?
-> :-)
-> 
+------------------
 
-It has nothing to do with Greg or Jonathan. Even though I think they
-both told me the same thing. It has to do with anyone looking at a git
-commit, and they will know that my work on this commit was sponsored by
-Red Hat. Has nothing to do with those silly stat numbers that come out
-every release ;-)
+From: Ben Skeggs <bskeggs@redhat.com>
+
+commit 6ff8c76a566f823d796359a6c1d76b7668f1e34d upstream.
+
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/nouveau/core/include/subdev/mc.h |    7 ++++---
+ drivers/gpu/drm/nouveau/core/subdev/mc/base.c    |    6 +++++-
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv04.c    |    3 +--
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv44.c    |    3 +--
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c    |    3 +--
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c    |    3 +--
+ drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c    |    3 +--
+ 7 files changed, 14 insertions(+), 14 deletions(-)
+
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/mc.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/mc.h
+@@ -20,8 +20,8 @@ nouveau_mc(void *obj)
+ 	return (void *)nv_device(obj)->subdev[NVDEV_SUBDEV_MC];
+ }
+ 
+-#define nouveau_mc_create(p,e,o,d)                                             \
+-	nouveau_mc_create_((p), (e), (o), sizeof(**d), (void **)d)
++#define nouveau_mc_create(p,e,o,m,d)                                           \
++	nouveau_mc_create_((p), (e), (o), (m), sizeof(**d), (void **)d)
+ #define nouveau_mc_destroy(p) ({                                               \
+ 	struct nouveau_mc *pmc = (p); _nouveau_mc_dtor(nv_object(pmc));        \
+ })
+@@ -33,7 +33,8 @@ nouveau_mc(void *obj)
+ })
+ 
+ int  nouveau_mc_create_(struct nouveau_object *, struct nouveau_object *,
+-			struct nouveau_oclass *, int, void **);
++			struct nouveau_oclass *, const struct nouveau_mc_intr *,
++			int, void **);
+ void _nouveau_mc_dtor(struct nouveau_object *);
+ int  _nouveau_mc_init(struct nouveau_object *);
+ int  _nouveau_mc_fini(struct nouveau_object *, bool);
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+@@ -80,7 +80,9 @@ _nouveau_mc_dtor(struct nouveau_object *
+ 
+ int
+ nouveau_mc_create_(struct nouveau_object *parent, struct nouveau_object *engine,
+-		   struct nouveau_oclass *oclass, int length, void **pobject)
++		   struct nouveau_oclass *oclass,
++		   const struct nouveau_mc_intr *intr_map,
++		   int length, void **pobject)
+ {
+ 	struct nouveau_device *device = nv_device(parent);
+ 	struct nouveau_mc *pmc;
+@@ -92,6 +94,8 @@ nouveau_mc_create_(struct nouveau_object
+ 	if (ret)
+ 		return ret;
+ 
++	pmc->intr_map = intr_map;
++
+ 	ret = request_irq(device->pdev->irq, nouveau_mc_intr,
+ 			  IRQF_SHARED, "nouveau", pmc);
+ 	if (ret < 0)
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv04.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv04.c
+@@ -50,12 +50,11 @@ nv04_mc_ctor(struct nouveau_object *pare
+ 	struct nv04_mc_priv *priv;
+ 	int ret;
+ 
+-	ret = nouveau_mc_create(parent, engine, oclass, &priv);
++	ret = nouveau_mc_create(parent, engine, oclass, nv04_mc_intr, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	priv->base.intr_map = nv04_mc_intr;
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv44.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv44.c
+@@ -36,12 +36,11 @@ nv44_mc_ctor(struct nouveau_object *pare
+ 	struct nv44_mc_priv *priv;
+ 	int ret;
+ 
+-	ret = nouveau_mc_create(parent, engine, oclass, &priv);
++	ret = nouveau_mc_create(parent, engine, oclass, nv04_mc_intr, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	priv->base.intr_map = nv04_mc_intr;
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
+@@ -52,12 +52,11 @@ nv50_mc_ctor(struct nouveau_object *pare
+ 	struct nv50_mc_priv *priv;
+ 	int ret;
+ 
+-	ret = nouveau_mc_create(parent, engine, oclass, &priv);
++	ret = nouveau_mc_create(parent, engine, oclass, nv50_mc_intr, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	priv->base.intr_map = nv50_mc_intr;
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
+@@ -54,12 +54,11 @@ nv98_mc_ctor(struct nouveau_object *pare
+ 	struct nv98_mc_priv *priv;
+ 	int ret;
+ 
+-	ret = nouveau_mc_create(parent, engine, oclass, &priv);
++	ret = nouveau_mc_create(parent, engine, oclass, nv98_mc_intr, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	priv->base.intr_map = nv98_mc_intr;
+ 	return 0;
+ }
+ 
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
+@@ -56,12 +56,11 @@ nvc0_mc_ctor(struct nouveau_object *pare
+ 	struct nvc0_mc_priv *priv;
+ 	int ret;
+ 
+-	ret = nouveau_mc_create(parent, engine, oclass, &priv);
++	ret = nouveau_mc_create(parent, engine, oclass, nvc0_mc_intr, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	priv->base.intr_map = nvc0_mc_intr;
+ 	return 0;
+ }
+ 
 
 
-
-> > When the RCU lockdep splat hits because of the unsafe RCU checker,
-> > the backtrace does not always show the culprit. But the culprit was
-> > passed to the unsafe RCU checker.
-> > 
-> > Save the ip of the function being traced in a per_cpu variable, and
-> > when the RCU lockdep detects a problem, it can also print out what
-> > function was being traced if it was caused by the unsafe RCU checker.
-> 
-> So the below is an example of why this_cpu_* is utter shite, what
-> ensures the code there isn't preemptible.
-
-No disagreements with me about the utter shite, but what ensures it is
-what is hidden from the patch. If I expand the code a little, I get
-this:
-
-        preempt_disable_notrace();
-
-        if (this_cpu_read(ftrace_rcu_running))
-                goto out;
-
-        if (WARN_ONCE(ftrace_rcu_unsafe(ip),
-                      "UNSAFE RCU function called %pS",
-                      (void *)ip))
-                goto out;
-
-        this_cpu_write(ftrace_rcu_running, 1);
-        this_cpu_write(ftrace_rcu_func, ip);
-
-        /* Should trigger a RCU splat if called from unsafe RCU
-        function */ rcu_read_lock();
-        rcu_read_unlock();
-        this_cpu_write(ftrace_rcu_func, 0);
-
-        this_cpu_write(ftrace_rcu_running, 0);
- out:
-        preempt_enable_notrace();
-
-
-
-> 
-> That said, I suppose you've thought about that and there's something
-> obvious from the callpath but I can't be bothered to go hunt through the
-> series if the changelog can't be bothered to clarify such things.
-> 
-> > @@ -592,9 +604,11 @@ ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
-> >  		      (void *)ip))
-> >  		goto out;
-> >  
-> > +	this_cpu_write(ftrace_rcu_func, ip);
-> >  	/* Should trigger a RCU splat if called from unsafe RCU function */
-> >  	rcu_read_lock();
-> >  	rcu_read_unlock();
-> > +	this_cpu_write(ftrace_rcu_func, 0);
-> >  
-> >  	trace_clear_recursion(bit);
-> >   out:
-> 
-> I suppose this is all ok. I haven't read the entire series and I'm not
-> going to during my vacation.
-> 
-> One quick question though, why do we have to mark functions and can't
-> rely on the state RCU already keeps? Surely RCU knows when its 'enabled'
-> and thus safe to use RCU -- if only for debuggin.
-
-Funny you should say that. I just recently asked Paul about this very
-topic. It may make most of this patch series moot.
-
-> 
-> For instance that scheduler_ipi() call can happen in either state, do we
-> really have to disallow it always?
-
-Nope! The one thing I fear with this method is, is the inconsistency of
-seeing the scheduler_ipi() traced, and not seeing it. I predict getting
-nasty bug reports from people telling me that the tracer is broken.
-
-"why don't I see scheduler_ipi() traced here! I see it here!!!! The
-tracer is shite!"
-
-> 
-> Anyway, I suppose ACK on both these patches you asked me to look at, not
-> particularly harmful it seems, just not something I feel I've got me
-> head round atm.
-
-Thanks for taking some of your PTO out to do this! Although, it may all
-be in vain if I go the RCU state route. I wont need either of these
-patches then.
-
--- Steve
