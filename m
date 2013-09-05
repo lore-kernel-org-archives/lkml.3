@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3IENE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 09:04:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45388 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab3IENE0 (ORCPT
+	id S1752811Ab3IENF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 09:05:59 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:53856 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab3IENF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 09:04:26 -0400
-Date: Thu, 5 Sep 2013 14:03:59 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
-Message-ID: <20130905130359.GA22351@mudshark.cambridge.arm.com>
-References: <00000140e4440576-ae4236ee-3073-4f94-b569-d17396e57513-000000@email.amazonses.com>
- <20130904093335.GA8007@mudshark.cambridge.arm.com>
- <00000140e9557be9-1523eeab-c0f6-45a0-881c-9336a8a6cf85-000000@email.amazonses.com>
- <20130904142324.GD3643@mudshark.cambridge.arm.com>
- <00000140e97747d2-ee164a4d-d692-409a-a919-083eff3a41ca-000000@email.amazonses.com>
- <20130904174624.GB5599@mudshark.cambridge.arm.com>
- <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com>
- <20130904182113.GD5599@mudshark.cambridge.arm.com>
- <alpine.DEB.2.02.1309041324530.26497@gentwo.org>
- <00000140eac4f5fc-9f8c86db-05dd-496f-abf8-63ca3667574f-000000@email.amazonses.com>
+	Thu, 5 Sep 2013 09:05:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140eac4f5fc-9f8c86db-05dd-496f-abf8-63ca3667574f-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [81.245.33.28]
+In-Reply-To: <20130905124508.GE9696@mudshark.cambridge.arm.com>
+References: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
+	<1378317854-25965-4-git-send-email-jean.pihet@linaro.org>
+	<20130905124508.GE9696@mudshark.cambridge.arm.com>
+Date: Thu, 5 Sep 2013 15:05:57 +0200
+Message-ID: <CAORVsuW-1koTMaSMgjagBz1aJ0AtvVRiM5gs3kwO2Fuvk+DhwQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
+ .eh_frame is not present
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Michael Hudson-Doyle <michael.hudson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again Christoph,
+Hi Will,
 
-On Wed, Sep 04, 2013 at 09:58:31PM +0100, Christoph Lameter wrote:
-> Here is a patch to be applied after the earlier one to convert the local_t
-> use to this_cpu. Not sure if I got the local_dec_and_test conversion
-> right.
 
-[...]
+On Thu, Sep 5, 2013 at 2:45 PM, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> [adding Michael, since I know he was interested in this]
+>
+> On Wed, Sep 04, 2013 at 07:04:14PM +0100, Jean Pihet wrote:
+>> On ARM the debug info is not present in the .eh_frame sections but
+>> instead in .debug_frame.
+>> Use libunwind to load and parse the debug info.
+>
+> How have you tested this? Regardless of whether or not I apply this patch, I
+> get the same (broken/truncated) callchains for userspace in perf report.
+Here are the commands I have been using:
+ perf record -g dwarf -- <binary to profile>
+ perf report --sort symbol --call-graph --stdio
 
-> @@ -118,11 +117,11 @@ void disable_debug_monitors(enum debug_e
-> 
->  	WARN_ON(preemptible());
-> 
-> -	if (local_dec_and_test(this_cpu_ptr(&mde_ref_count)))
-> +	if (this_cpu_dec_return(mde_ref_count))
->  		disable = ~DBG_MDSCR_MDE;
-> 
->  	if (el == DBG_ACTIVE_EL1 &&
-> -	    local_dec_and_test(this_cpu_ptr(&kde_ref_count)))
-> +	    this_cpu_dec_return(kde_ref_count))
->  		disable &= ~DBG_MDSCR_KDE;
+>
+> E.g. the following stupid program (built with -O0 -g):
+>
+> --->8
+>
+> void bar(void)
+> {
+>         int i;
+>         for (i = 0; i < 1000000; ++i)
+>                 asm volatile("nop" ::: "memory");
+> }
+>
+> void foo(void)
+> {
+>         bar();
+> }
+>
+>
+> int main(void)
+> {
+>         foo();
+>         return 0;
+> }
+>
+> 8<---
+>
+> Gives me an incomplete callchain:
+>
+> # Overhead   Command      Shared Object                           Symbol
+> # ........  ........  .................  ...............................
+> #
+>      0.00%  unwindme  unwindme           [.] bar
+>             |
+>             --- bar
+I get the following with a simple stupid program with a long call chain:
+     0.57%  stress_bt  stress_bt          [.] foo_115
+            |
+            --- foo_115
+                foo_114
+                foo_113
+...
+                foo_92
+                bar
+                doit
+                main
+                __libc_start_main
 
-Almost! I think we just need an '== 0' check on the result from the
-decrement, since local_dec_and_test is simply a way to check that we've
-decremented to zero, so this patch would otherwise invert the meaning.
+Things to check:
+- compile the binaries and libraries with -g (-dbg flavor of libs are
+usually ok),
+- use -g dwarf in perf record
 
-Will
+
+> This is the same with or without your patch.
+>
+> Will
+
+Thanks for testing!
+Jean
+
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
