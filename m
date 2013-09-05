@@ -1,149 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965319Ab3IEKc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:32:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52906 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935669Ab3IEK3o (ORCPT
+	id S965338Ab3IEKdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:33:20 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:41368 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935623Ab3IEK3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:29:44 -0400
+	Thu, 5 Sep 2013 06:29:43 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 08/15] KVM: MMU: introduce nulls desc
-Date: Thu,  5 Sep 2013 18:29:11 +0800
-Message-Id: <1378376958-27252-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v2 07/15] KVM: MMU: redesign the algorithm of pte_list
+Date: Thu,  5 Sep 2013 18:29:10 +0800
+Message-Id: <1378376958-27252-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090510-8256-0000-0000-000009190EA0
+x-cbid: 13090510-5564-0000-0000-000009927E78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It likes nulls list and we use the pte-list as the nulls which can help us to
-detect whether the "desc" is moved to anther rmap then we can re-walk the rmap
-if that happened
+Change the algorithm to:
+1) always add new desc to the first desc (pointed by parent_ptes/rmap)
+   that is good to implement rcu-nulls-list-like lockless rmap
+   walking
 
-kvm->slots_lock is held when we do lockless walking that prevents rmap
-is reused (free rmap need to hold that lock) so that we can not see the same
-nulls used on different rmaps
+2) always move the entry in the first desc to the the position we want
+   to remove when delete a spte in the parent_ptes/rmap （backward-move).
+   It is good for us to implement lockless rmap walk since in the current
+   code, when a spte is deleted from the "desc", another spte in the last
+   "desc" will be moved to this position to replace the deleted one. If the
+   deleted one has been accessed and we do not access the replaced one, the
+   replaced one is missed when we do lockless walk.
+   To fix this case, we do not backward move the spte, instead, we forward
+   move the entry: when a spte is deleted, we move the entry in the first
+   desc to that position
+
+Both of these also can reduce cache miss
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 35 +++++++++++++++++++++++++++++------
- 1 file changed, 29 insertions(+), 6 deletions(-)
+ arch/x86/kvm/mmu.c | 180 ++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 123 insertions(+), 57 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 08fb4e2..c5f1b27 100644
+index 8ea54d9..08fb4e2 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -913,6 +913,24 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+@@ -913,6 +913,50 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
  	return level - 1;
  }
  
-+static void desc_mark_nulls(unsigned long *pte_list, struct pte_list_desc *desc)
++static int __find_first_free(struct pte_list_desc *desc)
 +{
-+	unsigned long marker;
++	int i;
 +
-+	marker = (unsigned long)pte_list | 1UL;
-+	desc->more = (struct pte_list_desc *)marker;
++	for (i = 0; i < PTE_LIST_EXT; i++)
++		if (!desc->sptes[i])
++			break;
++	return i;
 +}
 +
-+static bool desc_is_a_nulls(struct pte_list_desc *desc)
++static int find_first_free(struct pte_list_desc *desc)
 +{
-+	return (unsigned long)desc & 1;
++	int free = __find_first_free(desc);
++
++	WARN_ON(free >= PTE_LIST_EXT);
++	return free;
 +}
 +
-+static unsigned long *desc_get_nulls_value(struct pte_list_desc *desc)
++static int find_last_used(struct pte_list_desc *desc)
 +{
-+	return (unsigned long *)((unsigned long)desc & ~1);
++	int used = __find_first_free(desc) - 1;
++
++	WARN_ON(used < 0 || used >= PTE_LIST_EXT);
++	return used;
 +}
 +
- static int __find_first_free(struct pte_list_desc *desc)
++/*
++ * TODO: we can encode the desc number into the rmap/parent_ptes
++ * since at least 10 physical/virtual address bits are reserved
++ * on x86. It is worthwhile if it shows that the desc walking is
++ * a performance issue.
++ */
++static int count_spte_number(struct pte_list_desc *desc)
++{
++	int first_free, desc_num;
++
++	first_free = __find_first_free(desc);
++
++	for (desc_num = 0; desc->more; desc = desc->more)
++		desc_num++;
++
++	return first_free + desc_num * PTE_LIST_EXT;
++}
++
+ /*
+  * Pte mapping structures:
+  *
+@@ -923,99 +967,121 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+  *
+  * Returns the number of pte entries before the spte was added or zero if
+  * the spte was not added.
+- *
+  */
+ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 			unsigned long *pte_list)
  {
- 	int i;
-@@ -951,7 +969,7 @@ static int count_spte_number(struct pte_list_desc *desc)
+ 	struct pte_list_desc *desc;
+-	int i, count = 0;
++	int free_pos;
  
- 	first_free = __find_first_free(desc);
- 
--	for (desc_num = 0; desc->more; desc = desc->more)
-+	for (desc_num = 0; !desc_is_a_nulls(desc->more); desc = desc->more)
- 		desc_num++;
- 
- 	return first_free + desc_num * PTE_LIST_EXT;
-@@ -985,6 +1003,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 	if (!*pte_list) {
+ 		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
+ 		*pte_list = (unsigned long)spte;
+-	} else if (!(*pte_list & 1)) {
++		return 0;
++	}
++
++	if (!(*pte_list & 1)) {
+ 		rmap_printk("pte_list_add: %p %llx 1->many\n", spte, *spte);
  		desc = mmu_alloc_pte_list_desc(vcpu);
  		desc->sptes[0] = (u64 *)*pte_list;
  		desc->sptes[1] = spte;
-+		desc_mark_nulls(pte_list, desc);
  		*pte_list = (unsigned long)desc | 1;
- 		return 1;
+-		++count;
+-	} else {
+-		rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
+-		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
+-		while (desc->sptes[PTE_LIST_EXT-1] && desc->more) {
+-			desc = desc->more;
+-			count += PTE_LIST_EXT;
+-		}
+-		if (desc->sptes[PTE_LIST_EXT-1]) {
+-			count += PTE_LIST_EXT;
+-			desc->more = mmu_alloc_pte_list_desc(vcpu);
+-			desc = desc->more;
+-		}
+-		for (i = 0; desc->sptes[i]; ++i)
+-			++count;
+-		desc->sptes[i] = spte;
++		return 1;
  	}
-@@ -1030,7 +1049,7 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
- 		/*
- 		 * Only one entry existing but still use a desc to store it?
- 		 */
--		WARN_ON(!next_desc);
-+		WARN_ON(desc_is_a_nulls(next_desc));
+-	return count;
++
++	rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
++	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
++
++	/* No empty entry in the desc. */
++	if (desc->sptes[PTE_LIST_EXT - 1]) {
++		struct pte_list_desc *new_desc;
++		new_desc = mmu_alloc_pte_list_desc(vcpu);
++		new_desc->more = desc;
++		desc = new_desc;
++		*pte_list = (unsigned long)desc | 1;
++	}
++
++	free_pos = find_first_free(desc);
++	desc->sptes[free_pos] = spte;
++	return count_spte_number(desc) - 1;
+ }
  
- 		mmu_free_pte_list_desc(first_desc);
- 		*pte_list = (unsigned long)next_desc | 1ul;
-@@ -1041,7 +1060,7 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
- 	 * Only one entry in this desc, move the entry to the head
- 	 * then the desc can be freed.
- 	 */
--	if (!first_desc->sptes[1] && !first_desc->more) {
-+	if (!first_desc->sptes[1] && desc_is_a_nulls(first_desc->more)) {
- 		*pte_list = (unsigned long)first_desc->sptes[0];
- 		mmu_free_pte_list_desc(first_desc);
- 	}
-@@ -1070,7 +1089,7 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+ static void
+-pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
+-			   int i, struct pte_list_desc *prev_desc)
++pte_list_desc_remove_entry(unsigned long *pte_list,
++			   struct pte_list_desc *desc, int i)
+ {
+-	int j;
++	struct pte_list_desc *first_desc;
++	int last_used;
  
- 	rmap_printk("pte_list_remove:  %p many->many\n", spte);
- 	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
--	while (desc) {
-+	while (!desc_is_a_nulls(desc)) {
- 		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
- 			if (desc->sptes[i] == spte) {
- 				pte_list_desc_remove_entry(pte_list,
-@@ -1097,11 +1116,13 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
- 		return fn((u64 *)*pte_list);
+-	for (j = PTE_LIST_EXT - 1; !desc->sptes[j] && j > i; --j)
+-		;
+-	desc->sptes[i] = desc->sptes[j];
+-	desc->sptes[j] = NULL;
+-	if (j != 0)
++	first_desc = (struct pte_list_desc *)(*pte_list & ~1ul);
++	last_used = find_last_used(first_desc);
++
++	/*
++	 * Move the entry from the first desc to this position we want
++	 * to remove.
++	 */
++	desc->sptes[i] = first_desc->sptes[last_used];
++	first_desc->sptes[last_used] = NULL;
++
++	/* No valid entry in this desc, we can free this desc now. */
++	if (!first_desc->sptes[0]) {
++		struct pte_list_desc *next_desc = first_desc->more;
++
++		/*
++		 * Only one entry existing but still use a desc to store it?
++		 */
++		WARN_ON(!next_desc);
++
++		mmu_free_pte_list_desc(first_desc);
++		*pte_list = (unsigned long)next_desc | 1ul;
+ 		return;
+-	if (!prev_desc && !desc->more)
+-		*pte_list = (unsigned long)desc->sptes[0];
+-	else
+-		if (prev_desc)
+-			prev_desc->more = desc->more;
+-		else
+-			*pte_list = (unsigned long)desc->more | 1;
+-	mmu_free_pte_list_desc(desc);
++	}
++
++	/*
++	 * Only one entry in this desc, move the entry to the head
++	 * then the desc can be freed.
++	 */
++	if (!first_desc->sptes[1] && !first_desc->more) {
++		*pte_list = (unsigned long)first_desc->sptes[0];
++		mmu_free_pte_list_desc(first_desc);
++	}
+ }
  
- 	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
--	while (desc) {
-+	while (!desc_is_a_nulls(desc)) {
- 		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
- 			fn(desc->sptes[i]);
- 		desc = desc->more;
+ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+ {
+ 	struct pte_list_desc *desc;
+-	struct pte_list_desc *prev_desc;
+ 	int i;
+ 
+ 	if (!*pte_list) {
+-		printk(KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
++		pr_err("pte_list_remove: %p 0->BUG\n", spte);
+ 		BUG();
+-	} else if (!(*pte_list & 1)) {
++		return;
++	}
++
++	if (!(*pte_list & 1)) {
+ 		rmap_printk("pte_list_remove:  %p 1->0\n", spte);
+ 		if ((u64 *)*pte_list != spte) {
+-			printk(KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
++			pr_err("pte_list_remove:  %p 1->BUG\n", spte);
+ 			BUG();
+ 		}
+ 		*pte_list = 0;
+-	} else {
+-		rmap_printk("pte_list_remove:  %p many->many\n", spte);
+-		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
+-		prev_desc = NULL;
+-		while (desc) {
+-			for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
+-				if (desc->sptes[i] == spte) {
+-					pte_list_desc_remove_entry(pte_list,
+-							       desc, i,
+-							       prev_desc);
+-					return;
+-				}
+-			prev_desc = desc;
+-			desc = desc->more;
+-		}
+-		pr_err("pte_list_remove: %p many->many\n", spte);
+-		BUG();
++		return;
  	}
 +
-+	WARN_ON(desc_get_nulls_value(desc) != pte_list);
++	rmap_printk("pte_list_remove:  %p many->many\n", spte);
++	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
++	while (desc) {
++		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
++			if (desc->sptes[i] == spte) {
++				pte_list_desc_remove_entry(pte_list,
++							       desc, i);
++				return;
++			}
++		desc = desc->more;
++	}
++
++	pr_err("pte_list_remove: %p many->many\n", spte);
++	BUG();
  }
  
- static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
-@@ -1184,6 +1205,7 @@ static u64 *rmap_get_first(unsigned long rmap, struct rmap_iterator *iter)
- 
- 	iter->desc = (struct pte_list_desc *)(rmap & ~1ul);
- 	iter->pos = 0;
-+	WARN_ON(desc_is_a_nulls(iter->desc));
- 	return iter->desc->sptes[iter->pos];
- }
- 
-@@ -1204,7 +1226,8 @@ static u64 *rmap_get_next(struct rmap_iterator *iter)
- 				return sptep;
- 		}
- 
--		iter->desc = iter->desc->more;
-+		iter->desc = desc_is_a_nulls(iter->desc->more) ?
-+				NULL : iter->desc->more;
- 
- 		if (iter->desc) {
- 			iter->pos = 0;
+ typedef void (*pte_list_walk_fn) (u64 *spte);
 -- 
 1.8.1.4
 
