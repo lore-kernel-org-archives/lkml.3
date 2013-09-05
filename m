@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab3IEUmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:42:17 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:48347 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab3IEUmN (ORCPT
+	id S1758072Ab3IEUmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:42:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52064 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756948Ab3IEU2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:42:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <5228E992.5050901@hp.com>
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
-	<1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
-	<5228E992.5050901@hp.com>
-Date: Thu, 5 Sep 2013 13:42:12 -0700
-X-Google-Sender-Auth: 6QA7_vSs3LLBDkJda0Pwrme0Oko
-Message-ID: <CA+55aFzx4YHY3e5AH0U5AkAQSc8pZyC35jBP4t2jpbi8NHM18g@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Sep 2013 16:28:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeremy Moles <cubicool@gmail.com>, Imre Deak <imre.deak@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 17/36] drm/i915: ivb: fix edp voltage swing reg val
+Date: Thu,  5 Sep 2013 13:27:46 -0700
+Message-Id: <20130905202704.291448302@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
+References: <20130905202702.289738686@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 1:29 PM, Waiman Long <waiman.long@hp.com> wrote:
->
-> It is not as simple as doing a strncpy().
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Yes it damn well is.
+------------------
 
-Stop the f*cking stupid arguments, and instead listen to what I say.
+From: Imre Deak <imre.deak@intel.com>
 
-Here. Let me bold-face the most important part for you, so that you
-don't miss it in all the other crap:
+commit 77fa4cbd5fa389e28419bbe8ac491b5fdd54840d upstream.
 
-   MAKE prepend() JUST USE "strncpy()" INSTEAD OF "memcpy()".
+Fix the typo introduced in
 
-Nothing else. Seriously. Your "you can't do it because we copy
-backwards" arguments are pure and utter garbage, exactly BECAUSE YOU
-DON'T CHANGE ANY OF THAT. You can actually use the unreliable length
-variable BUT YOU MUST STILL STOP AT A ZERO.
+commit 1a2eb4604b85c5efb343da8a4dcf41288fcfca85
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Nov 16 16:26:07 2011 -0800
 
-Get it?
+    drm/i915: Hook up Ivybridge eDP
 
-You're complicating the whole thing for no good reason. I'm telling
-you (and HAVE BEEN telling you multiple times) that you cannot use
-"memcpy()" because the length may not be reliable, so you need to
-check for zero in the middle and stop early. All your arguments have
-been totally pointless, because you don't seem to see that simple and
-fundamental issue. You don't change ANYTHING else. But you damn well
-not do a "memcpy", you do something that stops when it hits a NUL
-character.
+This fixes eDP link-training failures and cases where all voltage swing
+/pre-emphasis levels were tried and failed during clock recovery and -
+as a fallback - we go on to do channel equalization with the last voltage
+swing/pre-emphasis level which will succeed. Both issues can lead to a
+blank screen.
 
-We call that function "strncpy()". I'd actually prefer to write it out
-by hand (because somebody could implement "strncpy()" as a
-questionable function that accesses past the NUL as long as it's
-within the 'n'), and because I think we might want to do that
-word-at-a-time version of it, but for a first approximation, just do
-that one-liner version.
+v2:
+- improve commit message
 
-Don't do anything else. Don't do locking. Don't do memchr. Just make
-sure that you stop at a NUL character, and don't trust the length,
-because the length may not match the pointer. That's was always ALL
-you needed to do.
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64880
+Tested-by: Jeremy Moles <cubicool@gmail.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-              Linus
+---
+ drivers/gpu/drm/i915/i915_reg.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -4246,7 +4246,7 @@
+ #define EDP_LINK_TRAIN_600MV_0DB_IVB		(0x30 <<22)
+ #define EDP_LINK_TRAIN_600MV_3_5DB_IVB		(0x36 <<22)
+ #define EDP_LINK_TRAIN_800MV_0DB_IVB		(0x38 <<22)
+-#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x33 <<22)
++#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x3e <<22)
+ 
+ /* legacy values */
+ #define EDP_LINK_TRAIN_500MV_0DB_IVB		(0x00 <<22)
+
+
