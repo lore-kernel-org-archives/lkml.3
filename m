@@ -1,209 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763331Ab3IEGw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 02:52:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53636 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763267Ab3IEGw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 02:52:27 -0400
-Message-ID: <52282A25.8010904@ti.com>
-Date: Thu, 5 Sep 2013 09:52:21 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1763283Ab3IEGz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 02:55:56 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:62304 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757158Ab3IEGzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 02:55:54 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-fe-52282af8d8de
+Date: Thu, 5 Sep 2013 15:55:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
+ of a slab
+Message-ID: <20130905065552.GA6384@lge.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
+ <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
+ <20130904083305.GC16355@lge.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [GIT PULL] OMAP fbdev changes for 3.12
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="T331xTlq3hWU4CL2cuC7KUKGvLuta5eBP"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130904083305.GC16355@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---T331xTlq3hWU4CL2cuC7KUKGvLuta5eBP
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 04, 2013 at 05:33:05PM +0900, Joonsoo Kim wrote:
+> On Tue, Sep 03, 2013 at 02:15:42PM +0000, Christoph Lameter wrote:
+> > On Mon, 2 Sep 2013, Joonsoo Kim wrote:
+> > 
+> > > This patchset implements byte sized indexes for the freelist of a slab.
+> > >
+> > > Currently, the freelist of a slab consist of unsigned int sized indexes.
+> > > Most of slabs have less number of objects than 256, so much space is wasted.
+> > > To reduce this overhead, this patchset implements byte sized indexes for
+> > > the freelist of a slab. With it, we can save 3 bytes for each objects.
+> > >
+> > > This introduce one likely branch to functions used for setting/getting
+> > > objects to/from the freelist, but we may get more benefits from
+> > > this change.
+> > >
+> > > Below is some numbers of 'cat /proc/slabinfo' related to my previous posting
+> > > and this patchset.
+> > 
+> > You  may also want to run some performance tests. The cache footprint
+> > should also be reduced with this patchset and therefore performance should
+> > be better.
+> 
+> Yes, I did a hackbench test today, but I'm not ready for posting it.
+> The performance is improved for my previous posting and futher improvement is
+> founded by this patchset. Perhaps I will post it tomorrow.
+> 
 
-Hi Linus,
+Here are the results from both patchsets on my 4 cpus machine.
 
-Here are the OMAP specific fbdev changes for 3.12.
+* Before *
 
-I've got this pull request separate from the main fbdev pull request, as =
-this
-contains a bunch of OMAP board file changes and thus could possibly be
-rejected in case of bad conflicts.
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
 
-The removal of the old display drivers depend on the board file changes, =
-so
-Tony Lindgren suggested taking them together via fbdev tree. These are in=
+       238,309,671 cache-misses                                                  ( +-  0.40% )
 
-linux-next, and also Tony didn't see any conflicts with any of the branch=
-es he
-had, so they should go in clean.
+      12.010172090 seconds time elapsed                                          ( +-  0.21% )
 
- Tomi
+* After my previous posting *
 
-The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305=
-fb:
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
 
-  Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
+       229,945,138 cache-misses                                                  ( +-  0.23% )
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-3.12-omap-legacy-removal
-
-for you to fetch changes up to 9560dc1059222d059d494a64e5da4c54d23838da:
-
-  OMAPDSS: rename omap_dss_device's 'device' field to 'dst' (2013-08-30 0=
-8:51:11 +0300)
-
-----------------------------------------------------------------
-OMAP specific fbdev changes for 3.12:
-
-* Change the OMAP board files to use the new OMAP display drivers
-* Remove all the old drivers, and the related auxiliary code.
-
-----------------------------------------------------------------
-Tomi Valkeinen (35):
-      ARM: OMAP2+: Remove legacy DSS initialization for omap4
-      ARM: OMAP2+: Add selected display drivers to omap2plus_defconfig
-      ARM: OMAP: dss-common: use new display drivers
-      ARM: OMAP: 4430SDP: remove picodlp device data
-      ARM: OMAP: overo: use new display drivers
-      ARM: OMAP: rx51: use new display drivers
-      ARM: OMAP: beagle: use new display drivers
-      ARM: OMAP: devkit8000: use new display drivers
-      ARM: OMAP: 2430SDP: use new display drivers
-      ARM: OMAP: LDP: use new display drivers
-      ARM: OMAP: omap3stalker: use new display drivers
-      ARM: OMAP: igep0020: use new display drivers
-      ARM: OMAP: cm-t35: use new display drivers
-      ARM: OMAP: H4: use new display drivers
-      ARM: OMAP: 3430SDP: use new display drivers
-      ARM: OMAP: OMAP3EVM: use new display drivers
-      ARM: OMAP: Pandora: use new display drivers
-      ARM: OMAP: Zoom: use new display drivers
-      ARM: OMAP: AM3517EVM: use new display drivers
-      ARM: OMAP2+: Remove old display drivers from omap2plus_defconfig
-      OMAPDSS: RFBI: Mark RFBI as broken
-      OMAPDSS: remove omap_dss_device->channel field
-      OMAPDSS: fix DPI and SDI device ids
-      OMAPDSS: SDI: change regulator handling
-      OMAPDSS: DPI: change regulator handling
-      OMAPDSS: remove all old panel drivers
-      OMAPDSS: DPI: remove code related to old panel model
-      OMAPDSS: HDMI: remove code related to old panel model
-      OMAPDSS: DSI: remove code related to old panel model
-      OMAPDSS: SDI: remove code related to old panel model
-      OMAPDSS: VENC: remove code related to old panel model
-      OMAPDSS: RFBI: remove code related to old panel model
-      OMAPDSS: DSS: remove legacy dss bus support
-      OMAPDSS: rename omap_dss_device's 'output' to 'src'
-      OMAPDSS: rename omap_dss_device's 'device' field to 'dst'
-
- arch/arm/configs/omap2plus_defconfig               |   12 +-
- arch/arm/mach-omap2/board-2430sdp.c                |   57 +-
- arch/arm/mach-omap2/board-3430sdp.c                |   83 +-
- arch/arm/mach-omap2/board-am3517evm.c              |  113 +-
- arch/arm/mach-omap2/board-cm-t35.c                 |  100 +-
- arch/arm/mach-omap2/board-devkit8000.c             |   96 +-
- arch/arm/mach-omap2/board-h4.c                     |   48 +-
- arch/arm/mach-omap2/board-igep0020.c               |   36 +-
- arch/arm/mach-omap2/board-ldp.c                    |   68 +-
- arch/arm/mach-omap2/board-omap3beagle.c            |   56 +-
- arch/arm/mach-omap2/board-omap3evm.c               |   87 +-
- arch/arm/mach-omap2/board-omap3pandora.c           |   48 +-
- arch/arm/mach-omap2/board-omap3stalker.c           |   61 +-
- arch/arm/mach-omap2/board-overo.c                  |  160 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c       |   12 +
- arch/arm/mach-omap2/board-rx51-video.c             |   35 +-
- arch/arm/mach-omap2/board-zoom-display.c           |   30 +-
- arch/arm/mach-omap2/display.c                      |    4 +-
- arch/arm/mach-omap2/dss-common.c                   |  244 ++-
- arch/arm/mach-omap2/dss-common.h                   |    2 -
- drivers/gpu/drm/omapdrm/omap_encoder.c             |    2 +-
- drivers/video/omap2/Kconfig                        |    1 -
- drivers/video/omap2/Makefile                       |    1 -
- drivers/video/omap2/displays-new/encoder-tfp410.c  |   14 +-
- .../video/omap2/displays-new/encoder-tpd12s015.c   |   14 +-
- drivers/video/omap2/displays/Kconfig               |   75 -
- drivers/video/omap2/displays/Makefile              |   11 -
- drivers/video/omap2/displays/panel-acx565akm.c     |  798 ----------
- drivers/video/omap2/displays/panel-generic-dpi.c   |  744 ----------
- .../omap2/displays/panel-lgphilips-lb035q02.c      |  262 ----
- drivers/video/omap2/displays/panel-n8x0.c          |  616 --------
- .../omap2/displays/panel-nec-nl8048hl11-01b.c      |  290 ----
- drivers/video/omap2/displays/panel-picodlp.c       |  559 -------
- drivers/video/omap2/displays/panel-picodlp.h       |  288 ----
- .../video/omap2/displays/panel-sharp-ls037v7dw01.c |  198 ---
- drivers/video/omap2/displays/panel-taal.c          | 1551 --------------=
-------
- drivers/video/omap2/displays/panel-tfp410.c        |  353 -----
- .../video/omap2/displays/panel-tpo-td043mtea1.c    |  596 --------
- drivers/video/omap2/dss/Kconfig                    |    1 +
- drivers/video/omap2/dss/Makefile                   |    5 +-
- drivers/video/omap2/dss/apply.c                    |    4 +-
- drivers/video/omap2/dss/core.c                     |  324 +---
- drivers/video/omap2/dss/dpi.c                      |  121 +-
- drivers/video/omap2/dss/dsi.c                      |  275 +---
- drivers/video/omap2/dss/dss.h                      |   45 -
- drivers/video/omap2/dss/hdmi.c                     |  307 +---
- drivers/video/omap2/dss/hdmi_panel.c               |  414 ------
- drivers/video/omap2/dss/output.c                   |   22 +-
- drivers/video/omap2/dss/rfbi.c                     |  135 +-
- drivers/video/omap2/dss/sdi.c                      |  119 +-
- drivers/video/omap2/dss/venc.c                     |  122 +-
- include/video/omap-panel-data.h                    |  118 --
- include/video/omapdss.h                            |  106 +-
- 53 files changed, 973 insertions(+), 8870 deletions(-)
- delete mode 100644 drivers/video/omap2/displays/Kconfig
- delete mode 100644 drivers/video/omap2/displays/Makefile
- delete mode 100644 drivers/video/omap2/displays/panel-acx565akm.c
- delete mode 100644 drivers/video/omap2/displays/panel-generic-dpi.c
- delete mode 100644 drivers/video/omap2/displays/panel-lgphilips-lb035q02=
-=2Ec
- delete mode 100644 drivers/video/omap2/displays/panel-n8x0.c
- delete mode 100644 drivers/video/omap2/displays/panel-nec-nl8048hl11-01b=
-=2Ec
- delete mode 100644 drivers/video/omap2/displays/panel-picodlp.c
- delete mode 100644 drivers/video/omap2/displays/panel-picodlp.h
- delete mode 100644 drivers/video/omap2/displays/panel-sharp-ls037v7dw01.=
-c
- delete mode 100644 drivers/video/omap2/displays/panel-taal.c
- delete mode 100644 drivers/video/omap2/displays/panel-tfp410.c
- delete mode 100644 drivers/video/omap2/displays/panel-tpo-td043mtea1.c
- delete mode 100644 drivers/video/omap2/dss/hdmi_panel.c
+      11.627897174 seconds time elapsed                                          ( +-  0.14% )
 
 
---T331xTlq3hWU4CL2cuC7KUKGvLuta5eBP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+* After my previous posting + this patchset *
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
 
-iQIcBAEBAgAGBQJSKColAAoJEPo9qoy8lh71hZEQAJFz3yqJLik+DAXrMQj7wwit
-uYVQCG1eUgkMFGTzdioiOkN7ksKopFuHp5J3P+wDM9peR6ZHv2DKVlKE/gzSQj4y
-D3YcESBZW3I+ePnzLO616xTsS3nMx4D4OznZcoSewrdOvOdJzqe/79J8dCYj5oYX
-x9OvkZoq7JsYVyIK325u4qG2e20B9HAE+oHdUo5d8UCnElgUeDZXNcyXjhwvChFk
-9s9cMWbizqO/XoAVZjkX+jiA2DSzgdzaXwGRxGVE52a+upXDg1nfRIrBSzwQXkjq
-3hd+fr17GpidcDZCXomZ8OKD5a6J+TSi9ITgI1IlKkXu2t+a5WXDBKftd9S2dfVz
-S65bfGmGaGmuSlb66Q4AjOjRoIUa7nZGM0cbjTNUF+EEv94K1PRJEZ2eLJwlLxJ6
-6jjdVNwIQfjsiQBYmXnc33J+f8GSq5rFZfaQ4rQFfnrPT9y15IE1ZX8aS7J4Cfge
-kzpzLAGGWiFPIDGvPUmnM1dqnkL3KiPpZYiegIwDiSKY1a/c5JlzxADpUR5AGCyj
-CUAA0H5xrBP74dIqIVDqgzA8sEI1VEmvnr7QGzxpCgi04IyiikAej0Eh1Oxeqmuf
-nAkTuLMCu8G8S2Z8SyreWiPliwZqnw6LbjcRxZFbtmNk3KbezWJraFWSIGuDACNF
-4SIxhIgATRyrXs8tqFok
-=HPrX
------END PGP SIGNATURE-----
+       218,640,472 cache-misses                                                  ( +-  0.42% )
 
---T331xTlq3hWU4CL2cuC7KUKGvLuta5eBP--
+      11.504999837 seconds time elapsed                                          ( +-  0.21% )
+
+
+
+cache-misses are reduced whenever applying each patchset, roughly 5% respectively.
+And elapsed times are also improved by 3.1% and 4.2% to baseline, respectively.
+
+I think that all patchsets deserve to be merged, since it reduces memory usage and
+also improves performance. :)
+
+Thanks.
