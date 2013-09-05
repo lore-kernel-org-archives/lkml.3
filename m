@@ -1,130 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab3IEHVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 03:21:24 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:44329 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757190Ab3IEHVV (ORCPT
+	id S1763318Ab3IEHWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 03:22:35 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1954 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190Ab3IEHWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 03:21:21 -0400
-Date: Thu, 5 Sep 2013 08:21:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis CIOCCA <denis.ciocca@st.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 06/11] iio: pressure-core: st: Expand and rename
- LPS331AP's channel descriptor
-Message-ID: <20130905072114.GD8980@lee--X1>
-References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
- <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
- <522794F1.90301@st.com>
+	Thu, 5 Sep 2013 03:22:34 -0400
+Message-ID: <5228310A.20106@huawei.com>
+Date: Thu, 5 Sep 2013 15:21:46 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <522794F1.90301@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Anil Gurumurthy <agurumur@brocade.com>,
+        Vijaya Mohan Guvva <vmohan@brocade.com>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 1/7] scsi/bfa: use pcie_capability_xxx to simplify code
+References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com> <20130903233438.GB24733@google.com>
+In-Reply-To: <20130903233438.GB24733@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Sep 2013, Denis CIOCCA wrote:
+>> @@ -794,10 +793,8 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
+>>  			break;
+>>  		}
+>>  
+>> -		pcie_cap_reg = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+>> -		if (mask != 0xffff && pcie_cap_reg) {
+>> -			pcie_cap_reg += 0x08;
+>> -			pci_read_config_word(pdev, pcie_cap_reg, &pcie_dev_ctl);
+>> +		if (mask != 0xffff && pci_is_pcie(pdev)) {
+> 
+> Please move the pci_is_pcie() test up to the
+> "if (pcie_mas_read_reqsz ..." statement.  There's no point in doing
+> the switch statement if this isn't a PCIe device.
 
-> > Due to the MACRO used, the task of reading, understanding and maintaining
-> > the LPS331AP's channel descriptor is substantially difficult. This patch
-> > is based on the view that it's better to have easy to read, maintainable
-> > code than to save a few lines here and there. For that reason we're
-> > expanding the array so initialisation is completed in full.
-> Also for this one, the channel names are general and can be shared 
-> between different sensors. For the channel definition it's not a problem 
-> for me, but I think it's not necessary adds all that code...
+Right, will update.
 
-I'm not sure what you mean by this. Would you be kind enough to
-explain it in a different way please?
+> 
+>> +			pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &pcie_dev_ctl);
+>>  			if ((pcie_dev_ctl & 0x7000) != mask) {
+>>  				printk(KERN_WARNING "BFA[%s]: "
+>>  				"pcie_max_read_request_size is %d, "
+>> @@ -806,7 +803,7 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
+>>  				pcie_max_read_reqsz);
+>>  
+>>  				pcie_dev_ctl &= ~0x7000;
+>> -				pci_write_config_word(pdev, pcie_cap_reg,
+>> +				pcie_capability_write_word(pdev, PCI_EXP_DEVCTL,
+>>  						pcie_dev_ctl | mask);
+> 
+> Please rework this to use pcie_set_readrq() instead of writing
+> the capability directly.  If we write the capability directly, we
+> risk writing a value that is incompatible with the MPS
+> configuration done by the PCI core.
 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >   drivers/iio/pressure/st_pressure_core.c | 45 +++++++++++++++++++++++++--------
-> >   1 file changed, 34 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-> > index becfb25..7ba9299 100644
-> > --- a/drivers/iio/pressure/st_pressure_core.c
-> > +++ b/drivers/iio/pressure/st_pressure_core.c
-> > @@ -58,16 +58,39 @@
-> >   #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
-> >   #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
-> >   
-> > -static const struct iio_chan_spec st_press_channels[] = {
-> > -	ST_SENSORS_LSM_CHANNELS(IIO_PRESSURE,
-> > +static const struct iio_chan_spec st_press_lsp331ap_channels[] = {
-> > +	{
-> > +		.type = IIO_PRESSURE,
-> > +		.channel2 = IIO_NO_MOD,
-> > +		.address = ST_PRESS_LPS331AP_OUT_XL_ADDR,
-> > +		.scan_index = ST_SENSORS_SCAN_X,
-> > +		.scan_type = {
-> > +			.sign = 'u',
-> > +			.realbits = 24,
-> > +			.storagebits = 24,
-> > +			.endianness = IIO_LE,
-> > +		},
-> > +		.info_mask_separate =
-> >   			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
-> > -			ST_SENSORS_SCAN_X, 0, IIO_NO_MOD, 'u', IIO_LE, 24, 24,
-> > -			ST_PRESS_LPS331AP_OUT_XL_ADDR),
-> > -	ST_SENSORS_LSM_CHANNELS(IIO_TEMP,
-> > -			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE) |
-> > -						BIT(IIO_CHAN_INFO_OFFSET),
-> > -			-1, 0, IIO_NO_MOD, 's', IIO_LE, 16, 16,
-> > -			ST_TEMP_LPS331AP_OUT_L_ADDR),
-> > +		.modified = 0,
-> > +	},
-> > +	{
-> > +		.type = IIO_TEMP,
-> > +		.channel2 = IIO_NO_MOD,
-> > +		.address = ST_TEMP_LPS331AP_OUT_L_ADDR,
-> > +		.scan_index = -1,
-> > +		.scan_type = {
-> > +			.sign = 'u',
-> > +			.realbits = 16,
-> > +			.storagebits = 16,
-> > +			.endianness = IIO_LE,
-> > +		},
-> > +		.info_mask_separate =
-> > +			BIT(IIO_CHAN_INFO_RAW) |
-> > +			BIT(IIO_CHAN_INFO_SCALE) |
-> > +			BIT(IIO_CHAN_INFO_OFFSET),
-> > +		.modified = 0,
-> > +	},
-> >   	IIO_CHAN_SOFT_TIMESTAMP(1)
-> >   };
-> >   
-> > @@ -77,7 +100,7 @@ static const struct st_sensors st_press_sensors[] = {
-> >   		.sensors_supported = {
-> >   			[0] = LPS331AP_PRESS_DEV_NAME,
-> >   		},
-> > -		.ch = (struct iio_chan_spec *)st_press_channels,
-> > +		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
-> >   		.odr = {
-> >   			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
-> >   			.mask = ST_PRESS_LPS331AP_ODR_MASK,
-> > @@ -214,7 +237,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
-> >   	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
-> >   	pdata->multiread_bit = pdata->sensor->multi_read_bit;
-> >   	indio_dev->channels = pdata->sensor->ch;
-> > -	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
-> > +	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
-> >   
-> >   	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
-> >   						&pdata->sensor->fs.fs_avl[0];
+Ah, this code is Long-winded, use pcie_set_readrq()/pcie_get_readrq() can simplify
+this code much.
+
+Thanks!
+Yijing.
+
+> 
+>>  			}
+>>  		}
+>> -- 
+>> 1.7.1
+>>
+>>
+> 
+> .
+> 
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks!
+Yijing
+
