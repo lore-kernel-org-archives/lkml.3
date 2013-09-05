@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab3IETDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:03:39 -0400
-Received: from imap.thunk.org ([74.207.234.97]:55215 "EHLO imap.thunk.org"
+	id S1755554Ab3IETIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:08:39 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55218 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab3IETDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:03:37 -0400
-Date: Thu, 5 Sep 2013 15:03:34 -0400
+	id S1752581Ab3IETIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 15:08:38 -0400
+Date: Thu, 5 Sep 2013 15:08:37 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
-Message-ID: <20130905190334.GC23661@thunk.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ext4: cache all of an extent tree's leaf block upon reading
+Message-ID: <20130905190837.GD23661@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
-References: <1378383524-27983-1-git-send-email-prarit@redhat.com>
- <20130905144818.GA23661@thunk.org>
- <52289E6C.8090301@redhat.com>
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130905013848.42DD7660EE1@gitolite.kernel.org>
+ <20130905143749.GA15894@redhat.com>
+ <20130905145334.GB23661@thunk.org>
+ <20130905151457.GA24177@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52289E6C.8090301@redhat.com>
+In-Reply-To: <20130905151457.GA24177@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -29,19 +31,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 11:08:28AM -0400, Prarit Bhargava wrote:
+On Thu, Sep 05, 2013 at 11:14:57AM -0400, Dave Jones wrote:
+>  > So the only reason to add a line explicitly setting es_pblk to zero
+>  > would be to suppress a warning from some insufficiently smart static
+>  > code analysis tool.  I didn't see a warning from gcc, but it's
+>  > possible that this is something which is causing Coverity or some
+>  > other code scanner heartburn.
 > 
-> The issue isn't userspace /dev/random as much as it is the use of
-> get_random_bytes() through out the kernel.  Switching to get_random_bytes_arch()
-> is a search'n'replace on the entire kernel.  If a user wants the faster random
-> HW generator why shouldn't they be able to use it by default?
+> Yep, that's what picked it up.  I'll add a 'not a bug' annotation to stop
+> it getting flagged again.  This was the only ext* issue that Coverity
+> picked up from yesterdays merge btw, which I guess is good news ;)
 
-Where is the speed of the random number generator a bottleneck?
+Indeed.
 
-In general, adding knobs when users can make what might be potentially
-the wrong chance is very dangerous.  There is a reason why there
-aren't convenient knobs to allow users to select the use of the MD4
-checksum, "because it might be faster, why shouldn't the user be
-allowed to shoot themselves in the foot"?
+Hmm...  I could add a new inline function
+"ext4_es_store_pblock_status()" which sets both parts of the es_pblk
+word at once, and which doesn't depend looking at its original value
+at all.  I doubt we would never measure a difference in performance,
+but in theory it would be more efficient.  And if it eliminates a
+potential static code analysis complaint, maybe the two justifications
+is good enough to add the new function.
 
-					- Ted
+Thanks for checking the coverity results!!
+
+						- Ted
