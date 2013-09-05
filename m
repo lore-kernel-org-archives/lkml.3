@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab3IEUk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:40:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52084 "EHLO
+	id S1758043Ab3IEUlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:41:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019Ab3IEU2Y (ORCPT
+	with ESMTP id S1757003Ab3IEU2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:24 -0400
+	Thu, 5 Sep 2013 16:28:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Hansen <dave.hansen@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 19/36] x86/mm: Fix boot crash with DEBUG_PAGE_ALLOC=y and more than 512G RAM
-Date: Thu,  5 Sep 2013 13:27:48 -0700
-Message-Id: <20130905202704.537893512@linuxfoundation.org>
+        Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
+        Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 18/36] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+Date: Thu,  5 Sep 2013 13:27:47 -0700
+Message-Id: <20130905202704.414509377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,67 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 527bf129f9a780e11b251cf2467dc30118a57d16 upstream.
+commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
 
-Dave Hansen reported that systems between 500G and 600G RAM
-crash early if DEBUG_PAGEALLOC is selected.
+Some architectures, such as ARM-32 do not return the same base address
+when you call kmap_atomic() twice on the same page.
+This causes problems for the memmove() call in the XDR helper routine
+"_shift_data_right_pages()", since it defeats the detection of
+overlapping memory ranges, and has been seen to corrupt memory.
 
- > [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
- > [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
- > [    0.000000] BRK [0x02086000, 0x02086fff] PGTABLE
- > [    0.000000] BRK [0x02087000, 0x02087fff] PGTABLE
- > [    0.000000] BRK [0x02088000, 0x02088fff] PGTABLE
- > [    0.000000] init_memory_mapping: [mem 0xe80ee00000-0xe80effffff]
- > [    0.000000]  [mem 0xe80ee00000-0xe80effffff] page 4k
- > [    0.000000] BRK [0x02089000, 0x02089fff] PGTABLE
- > [    0.000000] BRK [0x0208a000, 0x0208afff] PGTABLE
- > [    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
+The fix is to distinguish between the case where we're doing an
+inter-page copy or not. In the former case of we know that the memory
+ranges cannot possibly overlap, so we can additionally micro-optimise
+by replacing memmove() with memcpy().
 
-It turns out that we missed increasing needed pages in BRK to
-mapping initial 2M and [0,1M) when we switched to use the #PF
-handler to set memory mappings:
-
- > commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
- > Author: H. Peter Anvin <hpa@zytor.com>
- > Date:   Thu Jan 24 12:19:52 2013 -0800
- >
- >     x86, 64bit: Use a #PF handler to materialize early mappings on demand
-
-Before that, we had the maping from [0,512M) in head_64.S, and we
-can spare two pages [0-1M).  After that change, we can not reuse
-pages anymore.
-
-When we have more than 512M ram, we need an extra page for pgd page
-with [512G, 1024g).
-
-Increase pages in BRK for page table to solve the boot crash.
-
-Reported-by: Dave Hansen <dave.hansen@intel.com>
-Bisected-by: Dave Hansen <dave.hansen@intel.com>
-Tested-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1376351004-4015-1-git-send-email-yinghai@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Mark Young <MYoung@nvidia.com>
+Reported-by: Matt Craighead <mcraighead@nvidia.com>
+Cc: Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Matt Craighead <mcraighead@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sunrpc/xdr.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -78,8 +78,8 @@ __ref void *alloc_low_pages(unsigned int
- 	return __va(pfn << PAGE_SHIFT);
- }
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pa
+ 		pgfrom_base -= copy;
  
--/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
--#define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
-+/* need 3 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
-+#define INIT_PGT_BUF_SIZE	(6 * PAGE_SIZE)
- RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
- void  __init early_alloc_pgt_buf(void)
- {
+ 		vto = kmap_atomic(*pgto);
+-		vfrom = kmap_atomic(*pgfrom);
+-		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
++		if (*pgto != *pgfrom) {
++			vfrom = kmap_atomic(*pgfrom);
++			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
++			kunmap_atomic(vfrom);
++		} else
++			memmove(vto + pgto_base, vto + pgfrom_base, copy);
+ 		flush_dcache_page(*pgto);
+-		kunmap_atomic(vfrom);
+ 		kunmap_atomic(vto);
+ 
+ 	} while ((len -= copy) != 0);
 
 
