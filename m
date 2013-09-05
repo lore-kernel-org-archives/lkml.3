@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab3IETwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:52:46 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46264 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3IETwo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:52:44 -0400
-Date: Thu, 5 Sep 2013 12:52:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH] rcu: Is it safe to enter an RCU read-side critical section?
-Message-ID: <20130905195234.GA20555@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1755037Ab3IET4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:56:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3781 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752633Ab3IET4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 15:56:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,849,1371106800"; 
+   d="scan'208";a="374074804"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] lockref: remove cpu_relax() again
+Thread-Topic: [PATCH] lockref: remove cpu_relax() again
+Thread-Index: AQHOqjponYZ6pHUzoUeo27Wv6BHm9pm3utOA//+oSZCAAH9VgP//mtyggAB9vgD//5CLAAAO9roAAA6RDoA=
+Date: Thu, 5 Sep 2013 19:56:39 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CDCDB2@ORSMSX106.amr.corp.intel.com>
+References: <20130905131814.GA24274@osiris>
+	<CA+55aFyZ8xLWiPcP3jcnVApQOqAvpo_fshSvGpdpW42iRutPcQ@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDC7F7@ORSMSX106.amr.corp.intel.com>
+	<CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDCC23@ORSMSX106.amr.corp.intel.com>
+	<CA+55aFw_Rovv7YTb62q5NQvucM5ks8+HXcsTOJ-oJ+kqmHop4A@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDCCFA@ORSMSX106.amr.corp.intel.com>
+ <CA+55aFy0BZ8kL0TMgV+u1g5Rt=hBJw44+kps5RzD-s=Uo-zsLg@mail.gmail.com>
+In-Reply-To: <CA+55aFy0BZ8kL0TMgV+u1g5Rt=hBJw44+kps5RzD-s=Uo-zsLg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090519-1542-0000-0000-0000012B1BE9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r85JukHD032628
 
-There is currently no way for kernel code to determine whether it
-is safe to enter an RCU read-side critical section, in other words,
-whether or not RCU is paying attention to the currently running CPU.
-Given the large and increasing quantity of code shared by the idle loop
-and non-idle code, the this shortcoming is becoming increasingly painful.
+> That said, another thing that strikes me is that you have 32 CPU
+> threads, and the stupid test-program I sent out had MAX_THREADS set to
+> 16.  Did you change that? Becuase if not, then some of the extreme
+> performance profile might be about how the threads get scheduled on
+> your machine (HT threads vs full cores etc).
 
-This commit therefore adds rcu_watching_this_cpu(), which returns true
-if it is safe to enter an RCU read-side critical section on the currently
-running CPU.  This function is quite fast, using only a __this_cpu_read().
-However, the caller must disable preemption.
+I'll try to get new numbers with 32 threads[*] - but even if they look good, I'd
+be upset about the 16 thread case being worse with the cmpxchg/no-cpu-relax
+case than the original code.
 
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+-Tony
 
- include/linux/rcupdate.h |    1 +
- kernel/rcutree.c         |   12 ++++++++++++
- 2 files changed, 13 insertions(+)
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 15d33d9..1c7112c 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -225,6 +225,7 @@ extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
- extern void rcu_irq_enter(void);
- extern void rcu_irq_exit(void);
-+extern bool rcu_watching_this_cpu(void);
- 
- #ifdef CONFIG_RCU_USER_QS
- extern void rcu_user_enter(void);
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a06d172..7b8fcee 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -710,6 +710,18 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
- #endif /* #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU) */
- 
- /**
-+ * rcu_watching_this_cpu - are RCU read-side critical sections safe?
-+ *
-+ * Return true if RCU is watching the running CPU, which means that this
-+ * CPU can safely enter RCU read-side critical sections.  The caller must
-+ * have at least disabled preemption.
-+ */
-+bool rcu_watching_this_cpu(void)
-+{
-+	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
-+}
-+
-+/**
-  * rcu_is_cpu_rrupt_from_idle - see if idle or immediately interrupted from idle
-  *
-  * If the current CPU is idle or running at a first-level (not nested)
-
+[*] probably not till tomorrow
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
