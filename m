@@ -1,142 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935766Ab3IEMSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:18:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934668Ab3IEMSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:18:52 -0400
-From: Prarit Bhargava <prarit@redhat.com>
+	id S935809Ab3IEMWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:22:06 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:49955 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab3IEMWE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:22:04 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] random, Add user configurable get_bytes_random()
-Date: Thu,  5 Sep 2013 08:18:44 -0400
-Message-Id: <1378383524-27983-1-git-send-email-prarit@redhat.com>
+Cc: stable@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH v2] KVM: mmu: allow page tables to be in read-only slots
+Date: Thu,  5 Sep 2013 14:21:53 +0200
+Message-Id: <1378383714-9723-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code has two exported functions, get_bytes_random() and
-get_bytes_random_arch().  The first function only calls the entropy
-store to get random data, and the second only calls the arch specific
-hardware random number generator.
+Page tables in a read-only memory slot will currently cause a triple
+fault when running with shadow paging, because the page walker uses
+gfn_to_hva and it fails on such a slot.
 
-The problem is that no code is using the get_bytes_random_arch() and switching
-over will require a significant code change.  Even if the change is
-made it will be static forcing a recompile of code if/when a user has a
-system with a trusted random HW source.  A better thing to do is allow
-users to decide whether they trust their hardare random number generator.
+TianoCore uses such a page table.  The idea is that, on real hardware,
+the firmware can already run in 64-bit flat mode when setting up the
+memory controller.  Real hardware seems to be fine with that as long as
+the accessed/dirty bits are set.  Thus, this patch saves whether the
+slot is readonly, and later checks it when updating the accessed and
+dirty bits.
 
-This patchset adds a kernel parameter, hw_random_bytes, and a kernel config
-option, CONFIG_HW_RANDOM_BYTES, which allows the enabling and disabling
-of the hardware random number generator at boot time and at compile time.
-This will allow distributions to decide if they want to use the hardware
-random number generator while allowing individual users to enable or
-disable generator.
+Note that this scenario is not supported by NPT at all, as explained by
+comments in the code.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: stable@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- Documentation/kernel-parameters.txt |    5 +++++
- drivers/char/Kconfig                |    8 ++++++++
- drivers/char/random.c               |   37 +++++++++++++++++++++++++++--------
- 3 files changed, 42 insertions(+), 8 deletions(-)
+ arch/x86/kvm/paging_tmpl.h | 20 +++++++++++++++++++-
+ include/linux/kvm_host.h   |  1 +
+ virt/kvm/kvm_main.c        | 14 +++++++++-----
+ 3 files changed, 29 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 31a9e51..310663c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1029,6 +1029,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			       If specified, z/VM IUCV HVC accepts connections
- 			       from listed z/VM user IDs only.
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 0433301..aa18aca 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -99,6 +99,7 @@ struct guest_walker {
+ 	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
+ 	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
+ 	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
++	bool pte_writable[PT_MAX_FULL_LEVELS];
+ 	unsigned pt_access;
+ 	unsigned pte_access;
+ 	gfn_t gfn;
+@@ -235,6 +236,22 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
+ 		if (pte == orig_pte)
+ 			continue;
  
-+	hw_random_bytes=  [HW] Enable/Disable use of arch specific hardware
-+			       random number generator in calls to
-+			       get_random_bytes()
-+			       Format: 0 (disable/default) | 1 (enable)
++		/*
++		 * If the slot is read-only, simply do not process the accessed
++		 * and dirty bits.  This is the correct thing to do if the slot
++		 * is ROM, and page tables in read-as-ROM/write-as-MMIO slots
++		 * are only supported if the accessed and dirty bits are already
++		 * set in the ROM (so that MMIO writes are never needed).
++		 *
++		 * Note that NPT does not allow this at all and faults, since
++		 * it always wants nested page table entries for the guest
++		 * page tables to be writable.  And EPT works but will simply
++		 * overwrite the read-only memory to set the accessed and dirty
++		 * bits.
++		 */
++		if (unlikely(!walker->pte_writable[level - 1]))
++			continue;
 +
- 	hwthread_map=	[METAG] Comma-separated list of Linux cpu id to
- 			        hardware thread id mappings.
- 				Format: <cpu>:<hwthread>
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 1421997..1de2a0d 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -235,6 +235,14 @@ config NWFLASH
- 	  If you're not sure, say N.
+ 		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
+ 		if (ret)
+ 			return ret;
+@@ -309,7 +326,8 @@ retry_walk:
+ 			goto error;
+ 		real_gfn = gpa_to_gfn(real_gfn);
  
- source "drivers/char/hw_random/Kconfig"
-+config HW_RANDOM_BYTES
-+	bool "Enable Hardware Random Number Generator for get_random_bytes()"
-+	default "n"
-+	help
-+	  Some architectures provide a default hardware random number
-+	  generator.  By default, get_random_bytes() does not use this
-+	  generator to provide data.  Setting this to "y" switches
-+	  get_random_bytes() to use the hardware random number generator.
+-		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
++		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
++					    &walker->pte_writable[walker->level - 1]);
+ 		if (unlikely(kvm_is_error_hva(host_addr)))
+ 			goto error;
  
- config NVRAM
- 	tristate "/dev/nvram support"
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 0d91fe5..44ab100 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1049,19 +1049,27 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- }
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ca645a0..22f9cdf 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -533,6 +533,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
++unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable);
+ unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
+ void kvm_release_page_clean(struct page *page);
+ void kvm_release_page_dirty(struct page *page);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index f7e4334..418d037 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1078,11 +1078,15 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
  
  /*
-- * This function is the exported kernel interface.  It returns some
-- * number of good random numbers, suitable for key generation, seeding
-- * TCP sequence numbers, etc.  It does not use the hw random number
-- * generator, if available; use get_random_bytes_arch() for that.
-+ * Setting of hw_random_bytes will force get_random_bytes() to use the
-+ * arch-specific hardware random number generator.
+- * The hva returned by this function is only allowed to be read.
+- * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
++ * If writable is set to false, the hva returned by this function is only
++ * allowed to be read.
   */
--void get_random_bytes(void *buf, int nbytes)
-+#ifdef CONFIG_HW_RANDOM_BYTES
-+static int hw_random_bytes = 1;
-+#else
-+static int hw_random_bytes = 0;
-+#endif
-+static __init int set_hw_random_bytes(char *s)
+-static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
++unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable)
  {
--	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+	get_option(&s, &hw_random_bytes);
-+	if (hw_random_bytes)
-+		pr_info("get_random_bytes() using HW RNG\n");
-+	else
-+		pr_info("get_random_bytes() not using HW RNG\n");
-+	return 0;
++	struct kvm_memory_slot *slot = gfn_to_memslot(kvm, gfn);
++	if (writable)
++		*writable = !memslot_is_readonly(slot);
++
+ 	return __gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL, false);
  }
--EXPORT_SYMBOL(get_random_bytes);
-+__setup("hw_random_bytes=", set_hw_random_bytes);
  
- /*
-- * This function will use the architecture-specific hardware random
-+ * This function will always use the architecture-specific hardware random
-  * number generator if it is available.  The arch-specific hw RNG will
-  * almost certainly be faster than what we can do in software, but it
-  * is impossible to verify that it is implemented securely (as
-@@ -1092,6 +1100,19 @@ void get_random_bytes_arch(void *buf, int nbytes)
- }
- EXPORT_SYMBOL(get_random_bytes_arch);
+@@ -1450,7 +1454,7 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
+ 	int r;
+ 	unsigned long addr;
  
-+/*
-+ * This function is the well-known exported kernel interface.  It returns some
-+ * number of good random numbers, suitable for key generation, seeding
-+ * TCP sequence numbers, etc.
-+ */
-+void get_random_bytes(void *buf, int nbytes)
-+{
-+	if (hw_random_bytes)
-+		get_random_bytes_arch(buf, nbytes);
-+	else
-+		extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+}
-+EXPORT_SYMBOL(get_random_bytes);
+-	addr = gfn_to_hva_read(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn, NULL);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+ 	r = kvm_read_hva(data, (void __user *)addr + offset, len);
+@@ -1488,7 +1492,7 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
+ 	gfn_t gfn = gpa >> PAGE_SHIFT;
+ 	int offset = offset_in_page(gpa);
  
- /*
-  * init_std_data - initialize pool with system data
+-	addr = gfn_to_hva_read(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn, NULL);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+ 	pagefault_disable();
 -- 
-1.7.9.3
+1.8.3.1
 
