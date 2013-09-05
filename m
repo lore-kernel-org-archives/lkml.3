@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3IESUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:20:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57989 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab3IESUf (ORCPT
+	id S1753594Ab3IESYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:24:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37765 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab3IESYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:20:35 -0400
-Message-ID: <5228CB51.6010501@infradead.org>
-Date: Thu, 05 Sep 2013 11:20:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] kernel-doc: Update script to find more "Return:" sections
-References: <1378254868.7347.40.camel@joe-AO722>
-In-Reply-To: <1378254868.7347.40.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Sep 2013 14:24:39 -0400
+Date: Thu, 05 Sep 2013 14:24:36 -0400 (EDT)
+Message-Id: <20130905.142436.685399325201245026.davem@davemloft.net>
+To: Vineet.Gupta1@synopsys.com
+Cc: netdev@vger.kernel.org, Alexey.Brodkin@synopsys.com, romieu@fr.zoreil.com,
+        linux-kernel@vger.kernel.org, arc-linux-dev@synopsys.com
+Subject: Re: [PATCH] ethernet/arc/arc_emac: optimize the Tx/Tx-reclaim
+ paths a bit
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1378299791-24598-1-git-send-email-vgupta@synopsys.com>
+References: <1378299791-24598-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 05 Sep 2013 11:24:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/13 17:34, Joe Perches wrote:
-> Many kernel-doc return description sections headers
-> use variants of the "Return:" section prefix.
-> 
-> (some or maybe even most of these aren't in
->  kernel-doc sections, but many are)
-> 
-> $ git grep -E -i "^\s*\*\s*return[s]?:"| \
->   cut -f2- -d":" | awk '{print $1 $2}' | \
->   sort | uniq -c
->     121 *return:
->     838 *Return:
->     778 *RETURN:
->     191 *returns:
->    1965 *Returns:
->     603 *RETURNS:
-> 
-> Rather than change all of the variants to the
-> canonical "Return:", adapt the script to accept
-> case insensitive "Return:" and "Returns:"
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> I don't know that this actually works.
-> It does seem right though.
-> 
-> Randy?  Rob?  Can you test this please?
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Date: Wed, 4 Sep 2013 18:33:11 +0530
 
-Works for me.  Thanks.
-
-Tested-by: Randy Dunlap <rdunlap@infradead.org>
-
-
+> This came out of staring at code due to recent performance fix.
 > 
->  scripts/kernel-doc | 1 +
->  1 file changed, 1 insertion(+)
+> * TX BD reclaim can call netif_wake_queue() once, outside the loop if
+>   one/more BDs were freed, NO need to do this each iteration.
 > 
-> diff --git a/scripts/kernel-doc b/scripts/kernel-doc
-> index 4305b2f..2b96411 100755
-> --- a/scripts/kernel-doc
-> +++ b/scripts/kernel-doc
-> @@ -418,6 +418,7 @@ sub dump_section {
->  	$parameterdescs{$name} = $contents;
->  	$sectcheck = $sectcheck . $name . " ";
->      } else {
-> +	$name = "Return" if $name =~ /^return[s]?$/i;
->  #	print STDERR "other section '$name' = '$contents'\n";
->  	if (defined($sections{$name}) && ($sections{$name} ne "")) {
->  		print STDERR "Error(${file}:$.): duplicate section name '$name'\n";
+> * TX need not look at next BD to stop the netif queue. It rather be done
+>   in the next tx call, when it actually fails as the queue seldom gets
+>   full but the check nevertheless needs to be done for each packet Tx.
+>   Profiled this under heavy traffic (big tar file cp, LMBench betworking
+>   tests) and saw not a single hit to that code.
 > 
-> 
-> --
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 
+You should keep the check in the transmit queueing code as a BUG check,
+almost every driver has code of the form (using NIU as an example):
 
+	if (niu_tx_avail(rp) <= (skb_shinfo(skb)->nr_frags + 1)) {
+		netif_tx_stop_queue(txq);
+		dev_err(np->device, "%s: BUG! Tx ring full when queue awake!\n", dev->name);
+		rp->tx_errors++;
+		return NETDEV_TX_BUSY;
+	}
 
--- 
-~Randy
+and arc_emac should too.
+
+Otherwise queue management bugs are incredibly hard to diagnose.
+
+I'm not applying this patch.
