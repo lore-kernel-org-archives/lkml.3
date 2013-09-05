@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab3IEWvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 18:51:31 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:38861 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979Ab3IEWuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 18:50:35 -0400
-Message-Id: <20130905225034.036339770@asylum.americas.sgi.com>
-References: <20130905225032.879120272@asylum.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Thu, 05 Sep 2013 17:50:39 -0500
-From: Mike Travis <travis@sgi.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] KGDB/KDB: add new system NMI entry code to KDB
-Content-Disposition: inline; filename=kdb-add-system-nmi.patch
+	id S1755793Ab3IEWvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 18:51:52 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:49906 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab3IEWvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 18:51:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130905153243.43d0346e@jbarnes-desktop>
+References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
+	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+	<20130905153243.43d0346e@jbarnes-desktop>
+Date: Thu, 5 Sep 2013 15:51:48 -0700
+X-Google-Sender-Auth: 9ZpaBZbE-XFJ4UlV0jOI-AO1uck
+Message-ID: <CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
+Subject: Re: [git pull] drm tree for 3.12-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "Beauchesne, Gwenole" <gwenole.beauchesne@intel.com>,
+        Sean V Kelley <sean.v.kelley@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new "KDB_REASON" code (KDB_REASON_SYSTEM_NMI).  This
-is purely cosmetic to distinguish it from the other various reasons that
-NMI may occur and are usually after an error occurred.  Also the dumping
-of registers is not done to more closely match what is displayed when KDB
-is entered manually via the sysreq 'g' key.
+On Thu, Sep 5, 2013 at 3:32 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Thu, 5 Sep 2013 12:18:32 -0700
+>>
+>> The first time I booted this, I just got a black screen on my Haswell
+>> desktop when X11 started up.  I could ctrl-alt-BS and ctrl-alt-del to
+>> reboot the machine, and neither the Xorg.0.log nor the dmesg contained
+>> anything interesting.
+>
+> Did the console come back after ctl-alt-bs?  Or was it just a blind
+> reboot?  Troubling that it doesn't happen again...
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Reviewed-by: Hedi Berriche <hberrich@sgi.com>
----
- include/linux/kdb.h             |    1 +
- include/linux/kgdb.h            |    1 +
- kernel/debug/debug_core.c       |    5 +++++
- kernel/debug/kdb/kdb_debugger.c |    5 ++++-
- kernel/debug/kdb/kdb_main.c     |    3 +++
- 5 files changed, 14 insertions(+), 1 deletion(-)
+Blind reboot.
 
---- linux.orig/include/linux/kdb.h
-+++ linux/include/linux/kdb.h
-@@ -109,6 +109,7 @@ typedef enum {
- 	KDB_REASON_RECURSE,	/* Recursive entry to kdb;
- 				 * regs probably valid */
- 	KDB_REASON_SSTEP,	/* Single Step trap. - regs valid */
-+	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
- } kdb_reason_t;
- 
- extern int kdb_trap_printk;
---- linux.orig/include/linux/kgdb.h
-+++ linux/include/linux/kgdb.h
-@@ -52,6 +52,7 @@ extern int kgdb_connected;
- extern int kgdb_io_module_registered;
- 
- extern atomic_t			kgdb_setting_breakpoint;
-+extern atomic_t			kgdb_system_nmi;
- extern atomic_t			kgdb_cpu_doing_single_step;
- 
- extern struct task_struct	*kgdb_usethread;
---- linux.orig/kernel/debug/debug_core.c
-+++ linux/kernel/debug/debug_core.c
-@@ -125,6 +125,7 @@ static atomic_t			masters_in_kgdb;
- static atomic_t			slaves_in_kgdb;
- static atomic_t			kgdb_break_tasklet_var;
- atomic_t			kgdb_setting_breakpoint;
-+atomic_t			kgdb_system_nmi;
- 
- struct task_struct		*kgdb_usethread;
- struct task_struct		*kgdb_contthread;
-@@ -760,7 +761,11 @@ int kgdb_nmicallin(int cpu, int trapnr,
- 
- 		/* Indicate there are slaves waiting */
- 		kgdb_info[cpu].send_ready = send_ready;
-+
-+		/* Use new reason code "SYSTEM_NMI" */
-+		atomic_inc(&kgdb_system_nmi);
- 		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+		atomic_dec(&kgdb_system_nmi);
- 		kgdb_do_roundup = save_kgdb_do_roundup;
- 		kgdb_info[cpu].send_ready = NULL;
- 
---- linux.orig/kernel/debug/kdb/kdb_debugger.c
-+++ linux/kernel/debug/kdb/kdb_debugger.c
-@@ -69,7 +69,10 @@ int kdb_stub(struct kgdb_state *ks)
- 	if (atomic_read(&kgdb_setting_breakpoint))
- 		reason = KDB_REASON_KEYBOARD;
- 
--	if (in_nmi())
-+	if (atomic_read(&kgdb_system_nmi))
-+		reason = KDB_REASON_SYSTEM_NMI;
-+
-+	else if (in_nmi())
- 		reason = KDB_REASON_NMI;
- 
- 	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
---- linux.orig/kernel/debug/kdb/kdb_main.c
-+++ linux/kernel/debug/kdb/kdb_main.c
-@@ -1200,6 +1200,9 @@ static int kdb_local(kdb_reason_t reason
- 			   instruction_pointer(regs));
- 		kdb_dumpregs(regs);
- 		break;
-+	case KDB_REASON_SYSTEM_NMI:
-+		kdb_printf("due to System NonMaskable Interrupt\n");
-+		break;
- 	case KDB_REASON_NMI:
- 		kdb_printf("due to NonMaskable Interrupt @ "
- 			   kdb_machreg_fmt "\n",
+And Dave's theory that it is a "boot from old kernel to show the
+problem in case it's some missing hw setup" is a good one, but doesn't
+match my experience: I did boot the old kernel in between (to see what
+went wrong), so both the working and nonworking setups were from
+warm-booting from an old kernel..
 
--- 
+I've booted a few times since (it's the merge window, so I boot fairly
+frequently), and it hasn't happened again...
+
+Looking more closely at the log-file, I notice that the
+
+> AFAIK we have libva support out there for HSW.  The trick is getting
+> your stack to actually use it.  Gwenole or Sean may be able to help.
+>
+>> Because my shiny new 65W haswell is really nice and does a "make
+>> allmodconfig" in half the time of my old machine, but the GPU side has
+>> been something of a step backwards...
+>
+> Well we definitely don't want that...
+
+There's another thing I've noticed with Haswell - while putting the
+screen to sleep works fine with DP, it comes back with odd corruption.
+Pressing enter to get the actual password prompt correctly repaints
+things, so it's not always noticeable - but using something else than
+the enter key to wake things up seems to show it consistently (also
+happens with "xset dpms force off", you don't have to wait for
+locking)
+
+Of course, this may be old user-land, again. It's current F19, the
+intel module says "compiled for 1.14.2, module version = 2.21.12".
+
+Maybe the problem I had with HDMI/DVI was just a different expression
+of this same bug.
+
+             Linus
