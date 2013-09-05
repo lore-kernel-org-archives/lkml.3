@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab3IEUjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:39:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52101 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757118Ab3IEU20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755002Ab3IEU20 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Sep 2013 16:28:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52056 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab3IEU2Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 16:28:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>, Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 23/36] mac80211: add a flag to indicate CCK support for HT clients
-Date: Thu,  5 Sep 2013 13:27:52 -0700
-Message-Id: <20130905202704.983113071@linuxfoundation.org>
+        Russ Anderson <rja@sgi.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/36] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+Date: Thu,  5 Sep 2013 13:27:42 -0700
+Message-Id: <20130905202703.849982014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,88 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Russ Anderson <rja@sgi.com>
 
-commit 2dfca312a91631311c1cf7c090246cc8103de038 upstream.
+commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
 
-brcm80211 cannot handle sending frames with CCK rates as part of an
-A-MPDU session. Other drivers may have issues too. Set the flag in all
-drivers that have been tested with CCK rates.
+"cat /sys/devices/system/memory/memory*/removable" crashed the system.
 
-This fixes a reported brcmsmac regression introduced in
-commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
-"mac80211/minstrel_ht: fix cck rate sampling"
+The problem is that show_mem_removable() is passing a
+bad pfn to is_mem_section_removable(), which causes
 
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+    if (!node_online(page_to_nid(page)))
+
+to blow up.  Why is it passing in a bad pfn?
+
+The reason is that show_mem_removable() will loop sections_per_block
+times.  sections_per_block is 16, but mem->section_count is 8,
+indicating holes in this memory block.  Checking that the memory section
+is present before checking to see if the memory section is removable
+fixes the problem.
+
+   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
+   0
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   BUG: unable to handle kernel paging request at ffffea00c3200000
+   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   PGD 83ffd4067 PUD 37bdfce067 PMD 0
+   Oops: 0000 [#1] SMP
+   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
+   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
+   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
+   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
+   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
+   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
+   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
+   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
+   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
+   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
+   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
+   Call Trace:
+     show_mem_removable+0x41/0x70
+     dev_attr_show+0x2a/0x60
+     sysfs_read_file+0xf7/0x1c0
+     vfs_read+0xc8/0x130
+     SyS_read+0x5d/0xa0
+     system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/init.c    |    3 ++-
- drivers/net/wireless/ath/carl9170/main.c |    3 ++-
- drivers/net/wireless/rt2x00/rt2800lib.c  |    3 ++-
- include/net/mac80211.h                   |    1 +
- net/mac80211/rc80211_minstrel_ht.c       |    3 +++
- 5 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/base/memory.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -767,7 +767,8 @@ void ath9k_set_hw_capab(struct ath_softc
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
--		IEEE80211_HW_SUPPORTS_RC_TABLE;
-+		IEEE80211_HW_SUPPORTS_RC_TABLE |
-+		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -152,6 +152,8 @@ static ssize_t show_mem_removable(struct
+ 		container_of(dev, struct memory_block, dev);
  
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT)
- 		 hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -1857,7 +1857,8 @@ void *carl9170_alloc(size_t priv_size)
- 		     IEEE80211_HW_SUPPORTS_PS |
- 		     IEEE80211_HW_PS_NULLFUNC_STACK |
- 		     IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
--		     IEEE80211_HW_SIGNAL_DBM;
-+		     IEEE80211_HW_SIGNAL_DBM |
-+		     IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
- 	if (!modparam_noht) {
- 		/*
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -5912,7 +5912,8 @@ static int rt2800_probe_hw_mode(struct r
- 	    IEEE80211_HW_SUPPORTS_PS |
- 	    IEEE80211_HW_PS_NULLFUNC_STACK |
- 	    IEEE80211_HW_AMPDU_AGGREGATION |
--	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
-+	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
-+	    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
- 	/*
- 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1484,6 +1484,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_SUPPORTS_RC_TABLE			= 1<<24,
- 	IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF		= 1<<25,
- 	IEEE80211_HW_TIMING_BEACON_ONLY			= 1<<26,
-+	IEEE80211_HW_SUPPORTS_HT_CCK_RATES		= 1<<27,
- };
- 
- /**
---- a/net/mac80211/rc80211_minstrel_ht.c
-+++ b/net/mac80211/rc80211_minstrel_ht.c
-@@ -828,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
- 	if (sband->band != IEEE80211_BAND_2GHZ)
- 		return;
- 
-+	if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
-+		return;
-+
- 	mi->cck_supported = 0;
- 	mi->cck_supported_short = 0;
- 	for (i = 0; i < 4; i++) {
+ 	for (i = 0; i < sections_per_block; i++) {
++		if (!present_section_nr(mem->start_section_nr + i))
++			continue;
+ 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+ 	}
 
 
