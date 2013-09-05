@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763534Ab3IEH6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 03:58:40 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:56153 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763222Ab3IEH6i (ORCPT
+	id S1763548Ab3IEH7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 03:59:19 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28874 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757361Ab3IEH7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 03:58:38 -0400
-Message-ID: <5228397B.9000502@huawei.com>
-Date: Thu, 5 Sep 2013 15:57:47 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 5 Sep 2013 03:59:17 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Gavin Shan <shangw@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, <linux-driver@qlogic.com>,
+        <linux-scsi@vger.kernel.org>
+Subject: [PATCH v2 6/6] scsi/qla2xxx: use pcie_is_pcie() to simplify code
+Date: Thu, 5 Sep 2013 15:55:30 +0800
+Message-ID: <1378367730-25996-6-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1378367730-25996-1-git-send-email-wangyijing@huawei.com>
+References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        <kirill.shutemov@linux.intel.com>, Mel Gorman <mgorman@suse.de>,
-        <xiaoguangrong@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] mm/thp: fix stale comments of transparent_hugepage_flags
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- *v1 -> v2: also update the stale comments about default transparent
-hugepage support pointed by Wanpeng Li.
+Use pci_is_pcie() instead of pci_find_capability
+to simplify code.
 
-Since commit 13ece886d9(thp: transparent hugepage config choice),
-transparent hugepage support is disabled by default, and
-TRANSPARENT_HUGEPAGE_ALWAYS is configured when TRANSPARENT_HUGEPAGE=y.
-
-And since commit d39d33c332(thp: enable direct defrag), defrag is
-enable for all transparent hugepage page faults by default, not only in
-MADV_HUGEPAGE regions.
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: linux-driver@qlogic.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- mm/huge_memory.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/scsi/qla2xxx/qla_mr.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a92012a..0e42a70 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -26,12 +26,12 @@
- #include <asm/pgalloc.h>
- #include "internal.h"
+diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
+index 2482975..5494d27 100644
+--- a/drivers/scsi/qla2xxx/qla_mr.c
++++ b/drivers/scsi/qla2xxx/qla_mr.c
+@@ -507,7 +507,7 @@ qlafx00_pci_config(scsi_qla_host_t *vha)
+ 	pci_write_config_word(ha->pdev, PCI_COMMAND, w);
  
--/*
-- * By default transparent hugepage support is enabled for all mappings
-- * and khugepaged scans all mappings. Defrag is only invoked by
-- * khugepaged hugepage allocations and by page faults inside
-- * MADV_HUGEPAGE regions to avoid the risk of slowing down short lived
-- * allocations.
-+/* By default transparent hugepage support is disabled in order that avoid
-+ * to risk increase the memory footprint of applications without a guaranteed
-+ * benefit. When transparent hugepage support is enabled, is for all mappings,
-+ * and khugepaged scans all mappings.
-+ * Defrag is invoked by khugepaged hugepage allocations and by page faults
-+ * for all hugepage allocations.
-  */
- unsigned long transparent_hugepage_flags __read_mostly =
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+ 	/* PCIe -- adjust Maximum Read Request Size (2048). */
+-	if (pci_find_capability(ha->pdev, PCI_CAP_ID_EXP))
++	if (pci_is_pcie(ha->pdev))
+ 		pcie_set_readrq(ha->pdev, 2048);
+ 
+ 	ha->chip_revision = ha->pdev->revision;
+@@ -660,10 +660,8 @@ char *
+ qlafx00_pci_info_str(struct scsi_qla_host *vha, char *str)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
+-	int pcie_reg;
+ 
+-	pcie_reg = pci_find_capability(ha->pdev, PCI_CAP_ID_EXP);
+-	if (pcie_reg) {
++	if (pci_is_pcie(ha->pdev)) {
+ 		strcpy(str, "PCIe iSA");
+ 		return str;
+ 	}
 -- 
 1.7.1
 
