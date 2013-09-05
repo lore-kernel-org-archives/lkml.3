@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965315Ab3IEMwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:52:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41347 "EHLO mx1.redhat.com"
+	id S965335Ab3IEMwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:52:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28514 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965262Ab3IEMv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:51:57 -0400
-Date: Thu, 5 Sep 2013 14:53:47 +0200
+	id S935636Ab3IEMwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:52:23 -0400
+Date: Thu, 5 Sep 2013 14:54:17 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v2 4/6] AHCI: Conserve interrupts with
- pci_enable_msi_block_part() interface
-Message-ID: <cb77da9322a63c609dc5aa49aa57c9706bf37a24.1378383792.git.agordeev@redhat.com>
+Subject: [PATCH v2 5/6] AHCI: Check MRSM bit when multiple MSIs enabled
+Message-ID: <4bc31d6ccf3f84399b977fe8ed4fe77aadfa1c79.1378383792.git.agordeev@redhat.com>
 References: <cover.1378383792.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,91 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the new pci_enable_msi_block_part() interface
-and conserve on othewise wasted interrupt resources for 10
-of 16 unused MSI vectors on Intel chipsets.
+Do not trust the hardware and always check if MSI
+Revert to Single Message mode was enforced. Fall
+back to the single MSI mode in case it did. Not
+doing so might screw up the interrupt handling.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/ata/ahci.c |   46 +++++++++++++++++++++++++++-------------------
- 1 files changed, 27 insertions(+), 19 deletions(-)
+ drivers/ata/ahci.c |   16 ++++++++++++++++
+ drivers/ata/ahci.h |    1 +
+ 2 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index db4380d..a6bb618 100644
+index a6bb618..af5d535 100644
 --- a/drivers/ata/ahci.c
 +++ b/drivers/ata/ahci.c
-@@ -1091,26 +1091,34 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
+@@ -1091,6 +1091,14 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
  {}
  #endif
  
--int ahci_init_interrupts(struct pci_dev *pdev, struct ahci_host_priv *hpriv)
-+int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
-+			 struct ahci_host_priv *hpriv)
++static int ahci_get_mrsm(struct ahci_host_priv *hpriv)
++{
++	void __iomem *mmio = hpriv->mmio;
++	u32 ctl = readl(mmio + HOST_CTL);
++
++	return (ctl & HOST_MRSM);
++}
++
+ int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
+ 			 struct ahci_host_priv *hpriv)
  {
- 	int rc;
- 	unsigned int maxvec;
- 
--	if (!(hpriv->flags & AHCI_HFLAG_NO_MSI)) {
--		rc = pci_enable_msi_block_auto(pdev, &maxvec);
--		if (rc > 0) {
--			if ((rc == maxvec) || (rc == 1))
--				return rc;
--			/*
--			 * Assume that advantage of multipe MSIs is negated,
--			 * so fallback to single MSI mode to save resources
--			 */
--			pci_disable_msi(pdev);
--			if (!pci_enable_msi(pdev))
--				return 1;
--		}
--	}
-+	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
-+		goto intx;
-+
-+	maxvec = pci_get_msi_cap(pdev);
-+	if (maxvec < 0)
-+		goto intx;
-+	if (maxvec < n_ports)
-+		goto single_msi;
-+
-+	rc = pci_enable_msi_block_part(pdev, n_ports, maxvec);
-+	if (rc < 0)
-+		goto intx;
-+	if (rc)
-+		goto single_msi;
-+
-+	return maxvec;
- 
-+single_msi:
-+	if (!pci_enable_msi(pdev))
+@@ -1111,6 +1119,14 @@ int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
+ 		goto intx;
+ 	if (rc)
+ 		goto single_msi;
++	if (maxvec == 1)
 +		return 1;
 +
-+intx:
- 	pci_intx(pdev, 1);
- 	return 0;
- }
-@@ -1277,10 +1285,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
++	if (ahci_get_mrsm(hpriv)) {
++		pci_disable_msi(pdev);
++		printk(KERN_INFO "ahci: MRSM is on, fallback to single MSI\n");
++		goto single_msi;
++	}
  
- 	hpriv->mmio = pcim_iomap_table(pdev)[ahci_pci_bar];
+ 	return maxvec;
  
--	n_msis = ahci_init_interrupts(pdev, hpriv);
--	if (n_msis > 1)
--		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
--
- 	/* save initial config */
- 	ahci_pci_save_initial_config(pdev, hpriv);
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 1145637..19bc846 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -91,6 +91,7 @@ enum {
+ 	/* HOST_CTL bits */
+ 	HOST_RESET		= (1 << 0),  /* reset controller; self-clear */
+ 	HOST_IRQ_EN		= (1 << 1),  /* global IRQ enable */
++	HOST_MRSM		= (1 << 2),  /* MSI Revert to Single Message */
+ 	HOST_AHCI_EN		= (1 << 31), /* AHCI enabled */
  
-@@ -1327,6 +1331,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
-+	n_msis = ahci_init_interrupts(pdev, n_ports, hpriv);
-+	if (n_msis > 1)
-+		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
- 	if (!host)
- 		return -ENOMEM;
+ 	/* HOST_CAP bits */
 -- 
 1.7.7.6
 
