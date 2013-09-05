@@ -1,99 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab3IEUnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:43:32 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:36851 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab3IEUn2 (ORCPT
+	id S1758119Ab3IEUnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:43:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33374 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757494Ab3IEUnu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:43:28 -0400
-Message-ID: <5228ECE2.8070306@hp.com>
-Date: Thu, 05 Sep 2013 16:43:14 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 5 Sep 2013 16:43:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,849,1371106800"; 
+   d="scan'208";a="291348888"
+From: "Gittins, Rob" <rob.gittins@intel.com>
+To: "Zuckerman, Boris" <borisz@hp.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+CC: "linux-pmfs@lists.infradead.org" <linux-pmfs@lists.infradead.org>,
+        "rob.gittins@linux.intel.com" <rob.gittins@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Topic: RFC Block Layer Extensions to Support NV-DIMMs
+Thread-Index: AQHOqjEiG+i1HpbeAE284S3pYnu+SZm3u92A//+nFVaAAJ80AP//q3YA
+Date: Thu, 5 Sep 2013 20:43:47 +0000
+Message-ID: <CE4E456A.62E4F%rob.gittins@intel.com>
+In-Reply-To: <4C30833E5CDF444D84D942543DF65BDA5804A47B@G4W3303.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.6.130613
+x-originating-ip: [10.254.70.233]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <9467CADA66A4D34BB09DB348EF8A6D0F@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com> <1378407316-59852-2-git-send-email-Waiman.Long@hp.com> <20130905200401.GU13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130905200401.GU13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 04:04 PM, Al Viro wrote:
-> On Thu, Sep 05, 2013 at 02:55:16PM -0400, Waiman Long wrote:
->> +	const char *dname = ACCESS_ONCE(dentry->d_name.name);
->> +	u32 dlen = dentry->d_name.len;
->> +	int error;
->> +
->> +	if (likely(dname == (const char *)dentry->d_iname)) {
->> +		/*
->> +		 * Internal dname, the string memory is valid as long
->> +		 * as its length is not over the limit.
->> +		 */
->> +		if (unlikely(dlen>  sizeof(dentry->d_iname)))
->> +			return -EINVAL;
->> +	} else if (!dname)
->> +		return -EINVAL;
-> Can't happen.
->> +	else {
->> +		const char *ptr;
->> +		u32 len;
->> +
->> +		/*
->> +		 * External dname, need to fetch name pointer and length
->> +		 * again under d_lock to get a consistent set and avoid
->> +		 * racing with d_move() which will take d_lock before
->> +		 * acting on the dentries.
->> +		 */
->> +		spin_lock(&dentry->d_lock);
->> +		dname = dentry->d_name.name;
->> +		dlen  = dentry->d_name.len;
->> +		spin_unlock(&dentry->d_lock);
->> +
->> +		if (unlikely(!dname || !dlen))
->> +			return -EINVAL;
-> Can't happen.
+
+Hi Boris,
+
+The purpose of commitpmem is to notify the hardware that data is
+ready to be made persistent.  This would mean flush any internal
+buffers and do whatever is needed in the hardware to ensure durable
+data.
+
+I was trying to keep the API simple to allow the application to build
+it's own transaction mechanisms that would fit the specific app needs.
+
+commitpmem is a device driver op since it may be very from one hardware
+and media technology to another.  Perhaps the name could be clearer.
+
+Rob
+
+
+
+
+On 9/5/13 1:46 PM, "Zuckerman, Boris" <borisz@hp.com> wrote:
+
+>Hi,
 >
->> +		/*
->> +		 * As the length and the content of the string may not be
->> +		 * valid, need to scan the string and return EINVAL if there
->> +		 * is embedded null byte within the length of the string.
->> +		 */
->> +		for (ptr = dname, len = dlen; len; len--, ptr++) {
->> +			if (*ptr == '\0')
->> +				return -EINVAL;
-> Egads...  First of all, this is completely pointless - if you've grabbed
-> ->d_name.name and ->d_name.len under ->d_lock, you don't *need* that crap.
-> At all.  The whole point of that exercise is to avoid taking ->d_lock;
-> _that_ is where the "read byte by byte until you hit NUL" comes from.
-> And if you do that, you can bloody well just go ahead and store them in
-> the target array *as* *you* *go*.  No reason to bother with memcpy()
-> afterwards.
+>It's a great topic! I am glad to see this conversation happening...
+>
+>Let me try to open another can of worms...
+>
+>Persistent memory updates are more like DB transactions and less like
+>flushing IO ranges.
+>
+>If someone offers commitpmem() functionality, someone has to assure that
+>all updates before that call can be discarded on failure or on request.
+>Also, the scope of updates may not be easily describable by a single
+>range.
+>
+>Forcing users to solve that (especially failure atomicity) on their own
+>by journaling, logging or other mechanism is optimistic and that cannot
+>be done efficiently.
+>
+>So, where should we expect to have this functionality implemented? FS
+>drivers, block drivers, controllers?
+>
+>Regards, Boris
+>
+>> -----Original Message-----
+>> From: Linux-pmfs [mailto:linux-pmfs-bounces@lists.infradead.org] On
+>>Behalf Of Jeff
+>> Moyer
+>> Sent: Thursday, September 05, 2013 1:16 PM
+>> To: Matthew Wilcox
+>> Cc: linux-pmfs@lists.infradead.org; rob.gittins@linux.intel.com; linux-
+>> fsdevel@veger.org; linux-kernel@vger.kernel.org
+>> Subject: Re: RFC Block Layer Extensions to Support NV-DIMMs
+>> 
+>> Matthew Wilcox <willy@linux.intel.com> writes:
+>> 
+>> > On Thu, Sep 05, 2013 at 08:12:05AM -0400, Jeff Moyer wrote:
+>> >> If the memory is available to be mapped into the address space of the
+>> >> kernel or a user process, then I don't see why we should have a block
+>> >> device at all.  I think it would make more sense to have a different
+>> >> driver class for these persistent memory devices.
+>> >
+>> > We already have at least two block devices in the tree that provide
+>> > this kind of functionality (arch/powerpc/sysdev/axonram.c and
+>> > drivers/s390/block/dcssblk.c).  Looking at how they're written, it
+>> > seems like implementing either of them as a block device on top of a
+>> > character device that extended their functionality in the direction we
+>> > want would be a pretty major bloating factor for no real benefit (not
+>> > even a particularly cleaner architecture).
+>> 
+>> Fun examples to read, thanks for the pointers.  I'll note that neither
+>>required
+>> extensions to the block device operations.  ;-)  I do agree with you
+>>that neither would
+>> benefit from changing.
+>> 
+>> There are a couple of things in this proposal that cause me grief,
+>>centered around the
+>> commitpmem call:
+>> 
+>> >>    void (*commitpmem)(struct block_device *bdev, void *addr);
+>> 
+>> For block devices, when you want to flush something out, you submit a
+>>bio with
+>> REQ_FLUSH set.  Or, you could have submitted one or more I/Os with
+>>REQ_FUA.
+>> Here, you want to add another method to accomplish the same thing, but
+>>outside of
+>> the data path.  So, who would the caller of this commitpmem function
+>>be?  Let's
+>> assume that we have a file system layered on top of this block device.
+>>Will the file
+>> system need to call commitpmem in addition to sending down the
+>>appropriate flags
+>> with the I/Os?
+>> 
+>> This brings me to the other thing.  If the caller of commitpmem is a
+>>persistent
+>> memory-aware file system, then it seems awkward to call into a block
+>>driver at all.
+>> You are basically turning the block device into a sort of hybrid thing,
+>>where you can
+>> access stuff behind it in myriad ways.  That's the part that doesn't
+>>make sense to
+>> me.
+>> 
+>> So, that's why I suggested that maybe pmem is different from a block
+>>device, but a
+>> block device could certainly be layered on top of it.
+>> 
+>> Hopefully that clears up my concerns with the approach.
+>> 
+>> Cheers,
+>> Jeff
+>> 
+>> _______________________________________________
+>> Linux-pmfs mailing list
+>> Linux-pmfs@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-pmfs
+>
+>_______________________________________________
+>Linux-pmfs mailing list
+>Linux-pmfs@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-pmfs
 
-That is what I thought too. I am just not totally sure about it. So yes, 
-I can scrap all these additional check.
-
-As the internal dname buffer is at least 32 bytes, most dentries will 
-use the internal buffer instead of allocating from kmem. IOW, the d_lock 
-taking code path is unlikely to be used.
-
-> Damnit, just grab len and name (no ->d_lock, etc.).  Check if you've got
-> enough space in the buffer, treat "not enough" as an overflow.  Then
-> proceed to copy the damn thing over there (starting at *buffer -= len)
-> byte by byte, stopping when you've copied len bytes *or* when the byte you've
-> got happens to be NUL.  Don't bother with EINVAL, etc. - just return to
-> caller and let rename_lock logics take care of the races.  That's it - nothing
-> more is needed.
-
-OK, I will do that.
-
--Longman
