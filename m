@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab3IETnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:43:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59282 "EHLO
+	id S1757248Ab3IEToW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:44:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59296 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab3IETmz (ORCPT
+	with ESMTP id S1756925Ab3IETm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:42:55 -0400
+	Thu, 5 Sep 2013 15:42:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/6] perf evlist: Fix parsing with no sample_id_all bit set
-Date: Thu,  5 Sep 2013 16:42:40 -0300
-Message-Id: <1378410163-2606-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/6] perf session: Separate progress bar update when processing events
+Date: Thu,  5 Sep 2013 16:42:43 -0300
+Message-Id: <1378410163-2606-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378410163-2606-1-git-send-email-acme@infradead.org>
 References: <1378410163-2606-1-git-send-email-acme@infradead.org>
@@ -29,64 +28,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The perf_evlist__event2evsel() is changed to handle non-sample events
-(such as mmap events) that have no id sample appended i.e. when
-sample_id_all is not set.
+Currently when processing events in the __perf_session__process_events
+function we update a progress bar based on the file_size. During the
+same processing we update the progress bar from within
+flush_sample_queue which is based on number of samples count.
 
-Note that such events have a fixed format, so that the selected event
-(evsel) they are associated with is immaterial.
+Having 2 different based updates is causing the progress bar to jump
+heavily back and forth giving not much usefull info.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
+Fixing this by keeping only __perf_session__process_events based
+progress bar update. And turning on flush_sample_queue progress bar
+update only for final flushing.
+
+This reduces the number of time the progress bar update function is
+called and it significantly reduces the loading time for TUI, where the
+progress bar update takes quite a lot of time.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1378325897-3840-3-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/20130905091449.GC1100@krava.brq.redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ tools/perf/util/session.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b8727ae..7101283 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -446,20 +446,25 @@ static int perf_evlist__event2id(struct perf_evlist *evlist,
- static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist *evlist,
- 						   union perf_event *event)
- {
-+	struct perf_evsel *first = perf_evlist__first(evlist);
- 	struct hlist_head *head;
- 	struct perf_sample_id *sid;
- 	int hash;
- 	u64 id;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 1fc0c62..476caa1 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -504,6 +504,7 @@ static int flush_sample_queue(struct perf_session *s,
+ 	u64 limit = os->next_flush;
+ 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
+ 	unsigned idx = 0, progress_next = os->nr_samples / 16;
++	bool show_progress = limit == ULLONG_MAX;
+ 	int ret;
  
- 	if (evlist->nr_entries == 1)
--		return perf_evlist__first(evlist);
-+		return first;
-+
-+	if (!first->attr.sample_id_all &&
-+	    event->header.type != PERF_RECORD_SAMPLE)
-+		return first;
- 
- 	if (perf_evlist__event2id(evlist, event, &id))
- 		return NULL;
- 
- 	/* Synthesized events have an id of zero */
- 	if (!id)
--		return perf_evlist__first(evlist);
-+		return first;
- 
- 	hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
- 	head = &evlist->heads[hash];
+ 	if (!tool->ordered_samples || !limit)
+@@ -526,7 +527,7 @@ static int flush_sample_queue(struct perf_session *s,
+ 		os->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+ 		list_add(&iter->list, &os->sample_cache);
+-		if (++idx >= progress_next) {
++		if (show_progress && (++idx >= progress_next)) {
+ 			progress_next += os->nr_samples / 16;
+ 			ui_progress__update(idx, os->nr_samples,
+ 					    "Processing time ordered events...");
 -- 
 1.8.1.4
 
