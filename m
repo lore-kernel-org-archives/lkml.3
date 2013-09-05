@@ -1,152 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965213Ab3IEK3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:29:51 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36492 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935730Ab3IEK3s (ORCPT
+	id S965232Ab3IEK35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:29:57 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58600 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965216Ab3IEK3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:29:48 -0400
+	Thu, 5 Sep 2013 06:29:52 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 12/15] KVM: MMU: allow locklessly access shadow page table out of vcpu thread
-Date: Thu,  5 Sep 2013 18:29:15 +0800
-Message-Id: <1378376958-27252-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v2 15/15] KVM: MMU: use rcu functions to access the pointer
+Date: Thu,  5 Sep 2013 18:29:18 +0800
+Message-Id: <1378376958-27252-16-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090510-6102-0000-0000-00000421C1A0
+x-cbid: 13090510-0260-0000-0000-000003936B34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is easy if the handler is in the vcpu context, in that case we can use
-walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() that
-disable interrupt to stop shadow page being freed. But we are on the ioctl
-context and the paths we are optimizing for have heavy workload, disabling
-interrupt is not good for the system performance
-
-We add a indicator into kvm struct (kvm->arch.rcu_free_shadow_page), then
-use call_rcu() to free the shadow page if that indicator is set. Set/Clear the
-indicator are protected by slot-lock, so it need not be atomic and does not
-hurt the performance and the scalability
+Use rcu_assign_pointer() to update all the pointer in desc
+and use rcu_dereference() to lockless read the pointer
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h |  6 +++++-
- arch/x86/kvm/mmu.c              | 32 ++++++++++++++++++++++++++++++++
- arch/x86/kvm/mmu.h              | 22 ++++++++++++++++++++++
- 3 files changed, 59 insertions(+), 1 deletion(-)
+ arch/x86/kvm/mmu.c | 46 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 28 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c76ff74..8e4ca0d 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -226,7 +226,10 @@ struct kvm_mmu_page {
- 	/* The page is obsolete if mmu_valid_gen != kvm->arch.mmu_valid_gen.  */
- 	unsigned long mmu_valid_gen;
- 
--	DECLARE_BITMAP(unsync_child_bitmap, 512);
-+	union {
-+		DECLARE_BITMAP(unsync_child_bitmap, 512);
-+		struct rcu_head rcu;
-+	};
- 
- #ifdef CONFIG_X86_32
- 	/*
-@@ -554,6 +557,7 @@ struct kvm_arch {
- 	 */
- 	struct list_head active_mmu_pages;
- 	struct list_head zapped_obsolete_pages;
-+	bool rcu_free_shadow_page;
- 
- 	struct list_head assigned_dev_head;
- 	struct iommu_domain *iommu_domain;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 2bf450a..f551fc7 100644
+index f3f17a0..808c2d9 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -2355,6 +2355,30 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
- 	return ret;
+@@ -927,12 +927,23 @@ static void pte_list_desc_ctor(void *p)
+ 	desc->more = NULL;
  }
  
-+static void kvm_mmu_isolate_pages(struct list_head *invalid_list)
-+{
-+	struct kvm_mmu_page *sp;
++#define rcu_assign_pte_list(pte_list_p, value)				\
++	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
++			  (unsigned long *)(value))
 +
-+	list_for_each_entry(sp, invalid_list, link)
-+		kvm_mmu_isolate_page(sp);
-+}
++#define rcu_assign_desc_more(morep, value)				\
++	rcu_assign_pointer(*(unsigned long __rcu **)&morep,		\
++			  (unsigned long *)value)
 +
-+static void free_pages_rcu(struct rcu_head *head)
-+{
-+	struct kvm_mmu_page *next, *sp;
++#define rcu_assign_spte(sptep, value)					\
++	rcu_assign_pointer(*(u64 __rcu **)&sptep, (u64 *)value)
 +
-+	sp = container_of(head, struct kvm_mmu_page, rcu);
-+	while (sp) {
-+		if (!list_empty(&sp->link))
-+			next = list_first_entry(&sp->link,
-+					      struct kvm_mmu_page, link);
-+		else
-+			next = NULL;
-+		kvm_mmu_free_page(sp);
-+		sp = next;
-+	}
-+}
-+
- static void kvm_mmu_commit_zap_page(struct kvm *kvm,
- 				    struct list_head *invalid_list)
+ static void desc_mark_nulls(unsigned long *pte_list, struct pte_list_desc *desc)
  {
-@@ -2375,6 +2399,14 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
- 	 */
- 	kvm_flush_remote_tlbs(kvm);
+ 	unsigned long marker;
  
-+	if (kvm->arch.rcu_free_shadow_page) {
-+		kvm_mmu_isolate_pages(invalid_list);
-+		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
-+		list_del_init(invalid_list);
-+		call_rcu(&sp->rcu, free_pages_rcu);
-+		return;
-+	}
-+
- 	list_for_each_entry_safe(sp, nsp, invalid_list, link) {
- 		WARN_ON(!sp->role.invalid || sp->root_count);
- 		kvm_mmu_isolate_page(sp);
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index 77e044a..61217f3 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -117,4 +117,26 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+ 	marker = (unsigned long)pte_list | 1UL;
+-	desc->more = (struct pte_list_desc *)marker;
++	rcu_assign_desc_more(desc->more, (struct pte_list_desc *)marker);
  }
  
- void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm);
+ static bool desc_is_a_nulls(struct pte_list_desc *desc)
+@@ -989,10 +1000,6 @@ static int count_spte_number(struct pte_list_desc *desc)
+ 	return first_free + desc_num * PTE_LIST_EXT;
+ }
+ 
+-#define rcu_assign_pte_list(pte_list_p, value)				\
+-	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
+-			(unsigned long *)(value))
+-
+ /*
+  * Pte mapping structures:
+  *
+@@ -1019,8 +1026,8 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 	if (!(*pte_list & 1)) {
+ 		rmap_printk("pte_list_add: %p %llx 1->many\n", spte, *spte);
+ 		desc = mmu_alloc_pte_list_desc(vcpu);
+-		desc->sptes[0] = (u64 *)*pte_list;
+-		desc->sptes[1] = spte;
++		rcu_assign_spte(desc->sptes[0], *pte_list);
++		rcu_assign_spte(desc->sptes[1], spte);
+ 		desc_mark_nulls(pte_list, desc);
+ 		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+ 		return 1;
+@@ -1033,13 +1040,13 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+ 	if (desc->sptes[PTE_LIST_EXT - 1]) {
+ 		struct pte_list_desc *new_desc;
+ 		new_desc = mmu_alloc_pte_list_desc(vcpu);
+-		new_desc->more = desc;
++		rcu_assign_desc_more(new_desc->more, desc);
+ 		desc = new_desc;
+ 		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+ 	}
+ 
+ 	free_pos = find_first_free(desc);
+-	desc->sptes[free_pos] = spte;
++	rcu_assign_spte(desc->sptes[free_pos], spte);
+ 	return count_spte_number(desc) - 1;
+ }
+ 
+@@ -1057,8 +1064,8 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
+ 	 * Move the entry from the first desc to this position we want
+ 	 * to remove.
+ 	 */
+-	desc->sptes[i] = first_desc->sptes[last_used];
+-	first_desc->sptes[last_used] = NULL;
++	rcu_assign_spte(desc->sptes[i], first_desc->sptes[last_used]);
++	rcu_assign_spte(first_desc->sptes[last_used], NULL);
+ 
+ 	/* No valid entry in this desc, we can free this desc now. */
+ 	if (!first_desc->sptes[0]) {
+@@ -1070,7 +1077,7 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
+ 		WARN_ON(desc_is_a_nulls(next_desc));
+ 
+ 		mmu_free_pte_list_desc(first_desc);
+-		*pte_list = (unsigned long)next_desc | 1ul;
++		rcu_assign_pte_list(pte_list, (unsigned long)next_desc | 1ul);
+ 		return;
+ 	}
+ 
+@@ -1079,8 +1086,8 @@ pte_list_desc_remove_entry(unsigned long *pte_list,
+ 	 * then the desc can be freed.
+ 	 */
+ 	if (!first_desc->sptes[1] && desc_is_a_nulls(first_desc->more)) {
+-		*pte_list = (unsigned long)first_desc->sptes[0];
+-		first_desc->sptes[0] = NULL;
++		rcu_assign_pte_list(pte_list, first_desc->sptes[0]);
++		rcu_assign_spte(first_desc->sptes[0], NULL);
+ 		mmu_free_pte_list_desc(first_desc);
+ 	}
+ }
+@@ -1102,7 +1109,7 @@ static void pte_list_remove(u64 *spte, unsigned long *pte_list)
+ 			pr_err("pte_list_remove:  %p 1->BUG\n", spte);
+ 			BUG();
+ 		}
+-		*pte_list = 0;
++		rcu_assign_pte_list(pte_list, 0);
+ 		return;
+ 	}
+ 
+@@ -1174,9 +1181,12 @@ restart:
+ 		 * used in the rmap when a spte is removed. Otherwise the
+ 		 * moved entry will be missed.
+ 		 */
+-		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
+-			if (desc->sptes[i])
+-				fn(desc->sptes[i]);
++		for (i = PTE_LIST_EXT - 1; i >= 0; i--) {
++			u64 *sptep = rcu_dereference(desc->sptes[i]);
 +
-+/*
-+ * The caller should ensure that these two functions should be
-+ * serially called.
-+ */
-+static inline void kvm_mmu_rcu_free_page_begin(struct kvm *kvm)
-+{
-+	rcu_read_lock();
-+
-+	kvm->arch.rcu_free_shadow_page = true;
-+	/* Set the indicator before access shadow page. */
-+	smp_mb();
-+}
-+
-+static inline void kvm_mmu_rcu_free_page_end(struct kvm *kvm)
-+{
-+	/* Make sure that access shadow page has finished. */
-+	smp_mb();
-+	kvm->arch.rcu_free_shadow_page = false;
-+
-+	rcu_read_unlock();
-+}
- #endif
++			if (sptep)
++				fn(sptep);
++		}
+ 
+ 		desc = rcu_dereference(desc->more);
+ 
 -- 
 1.8.1.4
 
