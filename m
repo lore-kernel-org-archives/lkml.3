@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935847Ab3IEM07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:26:59 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:42848 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935713Ab3IEM06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:26:58 -0400
-Message-ID: <5228786E.1030501@huawei.com>
-Date: Thu, 5 Sep 2013 20:26:22 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S965203Ab3IEMdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:33:47 -0400
+Received: from gmmr5.centrum.cz ([46.255.225.250]:60002 "EHLO gmmr5.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756066Ab3IEMdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 08:33:46 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Thu, 05 Sep 2013 14:33:43 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130903204850.GA1412@cmpxchg.org>, <20130904114523.A9F0173C@pobox.sk>, <20130904115741.GA28285@dhcp22.suse.cz>, <20130904141000.0F910EFA@pobox.sk>, <20130904122632.GB28285@dhcp22.suse.cz>, <20130905111430.CB1392B4@pobox.sk>, <20130905095331.GA9702@dhcp22.suse.cz>, <20130905121700.546B5881@pobox.sk>, <20130905111742.GC9702@dhcp22.suse.cz>, <20130905134702.C703F65B@pobox.sk> <20130905120347.GA13666@dhcp22.suse.cz>
+In-Reply-To: <20130905120347.GA13666@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-To: <benh@kernel.crashing.org>, <rob@landley.net>
-CC: <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH] doc: fix some typos in documentation
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Message-Id: <20130905143343.AF56A889@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some typos in Documentation/IRQ-domain.txt/email-clients.txt/io-mapping.txt
+>On Thu 05-09-13 13:47:02, azurIt wrote:
+>> >On Thu 05-09-13 12:17:00, azurIt wrote:
+>> >> >[...]
+>> >> >> My script detected another freezed cgroup today, sending stacks. Is
+>> >> >> there anything interesting?
+>> >> >
+>> >> >3 tasks are sleeping and waiting for somebody to take an action to
+>> >> >resolve memcg OOM. The memcg oom killer is enabled for that group?  If
+>> >> >yes, which task has been selected to be killed? You can find that in oom
+>> >> >report in dmesg.
+>> >> >
+>> >> >I can see a way how this might happen. If the killed task happened to
+>> >> >allocate a memory while it is exiting then it would get to the oom
+>> >> >condition again without freeing any memory so nobody waiting on the
+>> >> >memcg_oom_waitq gets woken. We have a report like that: 
+>> >> >https://lkml.org/lkml/2013/7/31/94
+>> >> >
+>> >> >The issue got silent in the meantime so it is time to wake it up.
+>> >> >It would be definitely good to see what happened in your case though.
+>> >> >If any of the bellow tasks was the oom victim then it is very probable
+>> >> >this is the same issue.
+>> >> 
+>> >> Here it is:
+>> >> http://watchdog.sk/lkml/kern5.log
+>> >
+>> >$ grep "Killed process \<103[168]\>" kern5.log
+>> >$
+>> >
+>> >So none of the sleeping tasks has been killed previously.
+>> >
+>> >> Processes were killed by my script
+>> >
+>> >OK, I am really confused now. The log contains a lot of in-kernel memcg
+>> >oom killer messages:
+>> >$ grep "Memory cgroup out of memory:" kern5.log | wc -l
+>> >809
+>> >
+>> >This suggests that the oom killer is not disabled. What exactly has you
+>> >script done?
+>> >
+>> >> at about 11:05:35.
+>> >
+>> >There is an oom killer striking at 11:05:35:
+>> >Sep  5 11:05:35 server02 kernel: [1751856.433101] Task in /1066/uid killed as a result of limit of /1066
+>> >[...]
+>> >Sep  5 11:05:35 server02 kernel: [1751856.539356] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+>> >Sep  5 11:05:35 server02 kernel: [1751856.539745] [ 1046]  1066  1046   228537    95491   3       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.539894] [ 1047]  1066  1047   228604    95488   6       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.540043] [ 1050]  1066  1050   228470    95452   5       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.540191] [ 1051]  1066  1051   228592    95521   6       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.540340] [ 1052]  1066  1052   228594    95546   5       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.540489] [ 1054]  1066  1054   228470    95453   5       0             0 apache2
+>> >Sep  5 11:05:35 server02 kernel: [1751856.540646] Memory cgroup out of memory: Kill process 1046 (apache2) score 1000 or sacrifice child
+>> >
+>> >And this doesn't list any of the tasks sleeping and waiting for oom
+>> >resolving so they must have been created after this OOM. Is this the
+>> >same group?
+>> 
+>> cgroup was 1066. My script is doing this:
+>> 1.) It checks memory usage of all cgroups and is searching for those whos memory usage is >= 99% of their limit.
+>> 2.) If any are found, they are saved in an array of 'candidates for killing'.
+>> 3.) It sleep for 30 seconds.
+>> 4.) Do (1) and if any of found cgorups were also found in (2), it kills all processes inside it.
+>> 5.) Clear array of saved cgroups and continue.
+>
+>This is racy and doesn't really tell you anything about any group being
+>frozen.
+>
+>[...]
+>> But, of course, i cannot guarantee that the killed cgroup was really
+>> freezed (because of bug in linux kernel), there could be some false
+>> positives - for example, cgroup has 99% usage of memory, my script
+>> detected it, OOM successfully resolved the problem and, after 30
+>> seconds, the same cgroup has again 99% usage of it's memory and my
+>> script detected it again.
+>
+>Exactly
+>
+>> This is why i'm sending stacks here, i simply cannot tell if
+>> there was or wasn't a problem.
+>
+>On the other hand if those processes would be stuck waiting for somebody
+>to resolve the OOM for a long time without any change then yes we have a
+>problem.
+>
+>Just to be sure I got you right. You have killed all the processes from
+>the group you have sent stacks for, right? If that is the case I am
+>really curious about processes sitting in sleep_on_page_killable because
+>those are killable by definition.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- Documentation/IRQ-domain.txt    |    4 ++--
- Documentation/email-clients.txt |    2 +-
- Documentation/io-mapping.txt    |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-index 9bc9594..5a8b8ed 100644
---- a/Documentation/IRQ-domain.txt
-+++ b/Documentation/IRQ-domain.txt
-@@ -97,7 +97,7 @@ hwirq number.  The disadvantage is that hwirq to IRQ number lookup is
- dependent on how many entries are in the table.
- 
- Very few drivers should need this mapping.  At the moment, powerpc
--iseries is the only user.
-+series is the only user.
- 
- ==== No Map ===-
- irq_domain_add_nomap()
-@@ -141,7 +141,7 @@ will use a legacy domain only if an IRQ range is supplied by the
- system and will otherwise use a linear domain mapping. The semantics
- of this call are such that if an IRQ range is specified then
- descriptors will be allocated on-the-fly for it, and if no range is
--specified it will fall through to irq_domain_add_linear() which meand
-+specified it will fall through to irq_domain_add_linear() which means
- *no* irq descriptors will be allocated.
- 
- A typical use case for simple domains is where an irqchip provider
-diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
-index 860c29a..e9f5dac 100644
---- a/Documentation/email-clients.txt
-+++ b/Documentation/email-clients.txt
-@@ -104,7 +104,7 @@ Then from the "Message" menu item, select insert file and choose your patch.
- As an added bonus you can customise the message creation toolbar menu
- and put the "insert file" icon there.
- 
--Make the the composer window wide enough so that no lines wrap. As of
-+Make the composer window wide enough so that no lines wrap. As of
- KMail 1.13.5 (KDE 4.5.4), KMail will apply word wrapping when sending
- the email if the lines wrap in the composer window. Having word wrapping
- disabled in the Options menu isn't enough. Thus, if your patch has very
-diff --git a/Documentation/io-mapping.txt b/Documentation/io-mapping.txt
-index 473e43b..5ca7842 100644
---- a/Documentation/io-mapping.txt
-+++ b/Documentation/io-mapping.txt
-@@ -38,7 +38,7 @@ maps are more efficient:
- 
- 	void io_mapping_unmap_atomic(void *vaddr)
- 
--		'vaddr' must be the the value returned by the last
-+		'vaddr' must be the value returned by the last
- 		io_mapping_map_atomic_wc call. This unmaps the specified
- 		page and allows the task to sleep once again.
- 
--- 
-1.7.1
+Yes, my script killed all of that processes right after taking stack. Here is part of the code (python):
+http://pastebin.com/WryGKxyF
+
+Function get_tasks() is reading pids from 'tasks' file of a cgroup and returning them in list (array).
 
 
+azur
