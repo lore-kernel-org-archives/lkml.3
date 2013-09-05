@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab3IEVcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:32:53 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:33983 "EHLO hydra.sisk.pl"
+	id S1756520Ab3IEVeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 17:34:44 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33987 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab3IEVcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:32:51 -0400
+	id S1750721Ab3IEVem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 17:34:42 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lan Tianyu <lantianyu1986@gmail.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots
-Date: Thu, 05 Sep 2013 23:43:45 +0200
-Message-ID: <2124824.h5mdeQjI6H@vostro.rjw.lan>
+Subject: Re: Excess dmesg output from ACPIPHP on boot (was: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots)
+Date: Thu, 05 Sep 2013 23:45:36 +0200
+Message-ID: <7744833.u92ooshbvU@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAOLK0pyRY0iXt2JN42onPLn7LG8O7R7i3FaKVL7xS63uCg+7kw@mail.gmail.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <81108254.GSTBHzP5cb@vostro.rjw.lan> <CAOLK0pyRY0iXt2JN42onPLn7LG8O7R7i3FaKVL7xS63uCg+7kw@mail.gmail.com>
+In-Reply-To: <3686522.NVYmP5Gevu@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1535359.s5bUZnSMNz@vostro.rjw.lan> <3686522.NVYmP5Gevu@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,130 +28,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 05, 2013 09:11:51 AM Lan Tianyu wrote:
-> 2013/9/5 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Thursday, September 05, 2013 02:17:06 PM Lan Tianyu wrote:
-> >> 2013/9/5 Alex Williamson <alex.williamson@redhat.com>:
-> >> > On Thu, 2013-09-05 at 01:35 +0200, Rafael J. Wysocki wrote:
-> >> >> On Wednesday, September 04, 2013 05:12:14 PM Alex Williamson wrote:
-> >> >> > On Thu, 2013-09-05 at 00:54 +0200, Rafael J. Wysocki wrote:
-> >> >> > > On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
-> >> >> > > > On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
-> >> >> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> > > > >
-> >> >> > > > > The current implementation of acpiphp_check_bridge() is pretty dumb:
-> >> >> > > > >  - It enables a slot if it's not enabled and the slot status is
-> >> >> > > > >    ACPI_STA_ALL.
-> >> >> > > > >  - It disables a slot if it's enabled and the slot status is not
-> >> >> > > > >    ACPI_STA_ALL.
-> >> >> > > > >
-> >> >> > > > > This behavior is not sufficient to handle the Thunderbolt daisy
-> >> >> > > > > chaining case properly, however, because in that case the bus
-> >> >> > > > > behind the already enabled slot needs to be rescanned for new
-> >> >> > > > > devices.
-> >> >> > > > >
-> >> >> > > > > For this reason, modify acpiphp_check_bridge() so that slots are
-> >> >> > > > > disabled and stopped if they are not in the ACPI_STA_ALL state.
-> >> >> > > > >
-> >> >> > > > > For slots in the ACPI_STA_ALL state, devices behind them that don't
-> >> >> > > > > respond are trimmed using a new function, trim_stale_devices(),
-> >> >> > > > > introduced specifically for this purpose.  That function walks
-> >> >> > > > > the given bus and checks each device on it.  If the device doesn't
-> >> >> > > > > respond, it is assumed to be gone and is removed.
-> >> >> > > > >
-> >> >> > > > > Once all of the stale devices directy behind the slot have been
-> >> >> > > > > removed, acpiphp_check_bridge() will start looking for new devices
-> >> >> > > > > that might have appeared on the given bus.  It will do that even if
-> >> >> > > > > the slot is already enabled (SLOT_ENABLED is set for it).
-> >> >> > > > >
-> >> >> > > > > In addition to that, make the bus check notification ignore
-> >> >> > > > > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-> >> >> > > > > so that devices behind the slot are re-enumerated in that case too.
-> >> >> > > > >
-> >> >> > > > > This change is based on earlier patches from Kirill A Shutemov
-> >> >> > > > > and Mika Westerberg.
-> >> >> > > > >
-> >> >> > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> > > > > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> >> > > > > ---
-> >> >> > > >
-> >> >> > > > FYI, git bisect landed on this patch as the cause of my serial console
-> >> >> > > > dying on current upstream.  Further debugging to come...  Thanks,
-> >> >> > >
-> >> >> > > Well, sorry about that.
-> >> >> > >
-> >> >> > > What exactly do you mean by "dying"?
-> >> >> >
-> >> >> > Sorry, I was hoping to have more details quickly, but it's been a pain
-> >> >> > to debug.  By dying I mean serial console output suddenly stops during
-> >> >> > kernel boot and nothing more comes out of it until after the system is
-> >> >> > rebooted.  The problem happens when acpiphp_check_bridge() calls
-> >> >> > enable_slot().  The serial console dies somewhere down in
-> >> >> > acpiphp_bus_trim().  I think this is happening on the 00:1f ISA bridge,
-> >> >> > so there's a good chance the serial ports are described as somewhere
-> >> >> > under there.
-> >> >>
-> >> >> Can you please check if that is the acpiphp_bus_trim() called by
-> >> >> acpiphp_bus_add() or the other one called from trim_stale_devices()?
-> >> >>
-> >> >> Just add a dump_stack() or WARN_ON(1) to trim_stale_devices() next to
-> >> >> the acpiphp_bus_trim() call and see if that triggers.  I *think* it's the one
-> >> >> in acpiphp_bus_add(), but it won't hurt to verify that.
-> >> >
-> >> > Here's the call path:
-> >> >
-> >> > [   16.120824]  [<ffffffff81627e6c>] dump_stack+0x55/0x76
-> >> > [   16.125979]  [<ffffffff8162132e>] enable_slot+0x4ee/0x5e0
-> >> > [   16.131396]  [<ffffffff813418fb>] ? trim_stale_devices+0x5b/0xf0
-> >> > [   16.137420]  [<ffffffff81341b35>] acpiphp_check_bridge+0xd5/0x110
-> >> > [   16.143531]  [<ffffffff81342acb>] hotplug_event+0x16b/0x260
-> >> > [   16.149115]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> >> > [   16.155136]  [<ffffffff81342bf0>] hotplug_event_work+0x30/0x70
-> >> > [   16.160978]  [<ffffffff81072d3b>] process_one_work+0x1eb/0x540
-> >> > [   16.166819]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
-> >> > [   16.172836]  [<ffffffff8107353c>] worker_thread+0x11c/0x370
-> >> > [   16.178426]  [<ffffffff81073420>] ? rescuer_thread+0x350/0x350
-> >> > [   16.184276]  [<ffffffff8107b0ea>] kthread+0xea/0xf0
-> >> > [   16.189165]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> >> > [   16.195700]  [<ffffffff816395dc>] ret_from_fork+0x7c/0xb0
-> >> > [   16.201109]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
-> >> >
-> >> > The actual death of the serial console occurs in acpi_device_set_power()
-> >> > called from:
-> >> >
-> >> > enable_slot()
-> >> >  acpiphp_bus_add()
-> >> >   acpiphp_bus_trim()
-> >> >    acpi_bus_trim()
-> >> >     acpi_walk_namespace()
-> >> >      acpi_bus_remove()
-> >> >       acpi_device_unregister()
-> >> >        acpi_device_set_power()
-> >> >
-> >> > I can't seem to get a path from the acpi devices in question there, so I
-> >> > have no idea what's getting trimmed here.  It worries me quite a bit by
-> >> > introducing this trimming that apparently wasn't happening before
-> >> > though.  Thanks,
-> >>
-> >> Hi Alex:
-> >>            Could you apply the following patch and bootup with kernel param
-> >> "acpiphp.acpiphp_debug=1"?
-> >>            I guess the patch can make serial port alive. It will not
-> >> be put into D3cold
-> >> during trimming. But I don't know why it doesn't work after being put
-> >> back to D0.
-> >
-> > Do we actually put it into D0 in acpi_bus_scan()?  I don't think so.
-> >
+On Thursday, September 05, 2013 11:39:07 PM Rafael J. Wysocki wrote:
+> On Thursday, September 05, 2013 09:44:26 PM Rafael J. Wysocki wrote:
+> > On Thursday, September 05, 2013 08:21:41 AM Alex Williamson wrote:
 > 
-> Hi Rafael:
->          I mean the code in the acpiphp_bus_add(). After trimming and acpi
-> bus scan handle, the device will be put back to D0 if acpi_bus_get_device()
-> return acpi device. So I thought the serial port is put back to D0.
+> [...]
+> 
+> > > > 
+> > > > [   18.288122] pci 0000:00:00.0: no hotplug settings from platform
+> > > > [   18.288127] pcieport 0000:00:01.0: no hotplug settings from platform
+> > > > [   18.288142] pci 0000:01:00.0: no hotplug settings from platform
+> > > > [   18.288157] pci 0000:01:00.1: no hotplug settings from platform
+> > > > [   18.288162] pcieport 0000:00:03.0: no hotplug settings from platform
+> > > > [   18.288176] pci 0000:02:00.0: no hotplug settings from platform
+> > > > [   18.288190] pci 0000:02:00.1: no hotplug settings from platform
+> > > > [   18.288195] pcieport 0000:00:07.0: no hotplug settings from platform
+> > > > [   18.288209] pci 0000:03:00.0: no hotplug settings from platform
+> > > > [   18.288224] pci 0000:03:00.1: no hotplug settings from platform
+> > > > [   18.288228] pci 0000:00:14.0: no hotplug settings from platform
+> > > > [   18.288233] pci 0000:00:14.1: no hotplug settings from platform
+> > > > [   18.288237] pci 0000:00:14.2: no hotplug settings from platform
+> > > > [   18.288242] pci 0000:00:16.0: no hotplug settings from platform
+> > > > [   18.288247] pci 0000:00:16.1: no hotplug settings from platform
+> > > > [   18.288251] pci 0000:00:16.2: no hotplug settings from platform
+> > > > [   18.288256] pci 0000:00:16.3: no hotplug settings from platform
+> > > > [   18.288260] pci 0000:00:16.4: no hotplug settings from platform
+> > > > [   18.288265] pci 0000:00:16.5: no hotplug settings from platform
+> > > > [   18.288269] pci 0000:00:16.6: no hotplug settings from platform
+> > > > [   18.288274] pci 0000:00:16.7: no hotplug settings from platform
+> > > > [   18.288278] pci 0000:00:1a.0: no hotplug settings from platform
+> > > > [   18.288279] pci 0000:00:1a.0: using default PCI settings
+> > > > [   18.288292] pci 0000:00:1a.1: no hotplug settings from platform
+> > > > [   18.288293] pci 0000:00:1a.1: using default PCI settings
+> > > > [   18.288307] ehci-pci 0000:00:1a.7: no hotplug settings from platform
+> > > > [   18.288308] ehci-pci 0000:00:1a.7: using default PCI settings
+> > > > [   18.288322] pci 0000:00:1b.0: no hotplug settings from platform
+> > > > [   18.288327] pcieport 0000:00:1c.0: no hotplug settings from platform
+> > > > [   18.288332] pcieport 0000:00:1c.4: no hotplug settings from platform
+> > > > [   18.288344] pci 0000:05:00.0: no hotplug settings from platform
+> > > > [   18.288349] pci 0000:00:1d.0: no hotplug settings from platform
+> > > > [   18.288350] pci 0000:00:1d.0: using default PCI settings
+> > > > [   18.288360] pci 0000:00:1d.1: no hotplug settings from platform
+> > > > [   18.288361] pci 0000:00:1d.1: using default PCI settings
+> > > > [   18.288374] pci 0000:00:1d.2: no hotplug settings from platform
+> > > > [   18.288374] pci 0000:00:1d.2: using default PCI settings
+> > > > [   18.288387] pci 0000:00:1d.3: no hotplug settings from platform
+> > > > [   18.288387] pci 0000:00:1d.3: using default PCI settings
+> > > > 
+> > > > The boot is noticeably slower.  What's going to happen on systems that
+> > > > actually have a significant I/O topology vs my little workstation?
+> > 
+> > That depends on how many bus check/device check events they generate on boot.
+> > 
+> > My test machines don't generate them during boot at all (even the one with
+> > a Thunderbolt connector), so I don't see the messages in question during boot
+> > on any of them.  Mika doesn't see them either I suppose, or he would have told
+> > me about that before.
+> > 
+> > And let's just make it clear that it is not usual or even OK to generate bus
+> > checks or device checks during boot like this.  And since the changes in
+> > question have been in linux-next since right after the 3.11 merge window, I
+> > think that someone would have complained already had that been a common issue.
+> > 
+> > Of course, we need to deal with that somehow nevertheless. :-)
+> > 
+> > > Just to give you an idea:
+> > > 
+> > > CONFIG_HOTPLUG_PCI_ACPI=y
+> > > 
+> > > $ dmesg | wc
+> > >   5697  49935 384368
+> > > 
+> > > $ dmesg | tail --lines=1
+> > > [   53.137123] Ebtables v2.0 registered
+> > > 
+> > > -- vs --
+> > > 
+> > > # CONFIG_HOTPLUG_PCI_ACPI is not set
+> > > 
+> > > $ dmesg | wc
+> > >  1053  9176 71652
+> > > 
+> > > $dmesg | tail --lines=1
+> > > [   28.917220] Ebtables v2.0 registered
+> > > 
+> > > So it spews out 5x more output with acpiphp enabled and takes and extra
+> > > 24s to boot (nearly 2x).  Not good.
+> > 
+> > The "no hotplug settings from platform" message is from pci_configure_slot().
+> > I think the messages you're seeing are from the call to it in
+> > acpiphp_set_hpp_values() which is called by enable_slot().
+> > 
+> > There, I think, we can simply check the return value of pci_scan_slot() and
+> > if that is 0 (no new devices), we can just skip everything under the call to
+> > __pci_bus_assign_resources().
+> > 
+> > However, we can't skip the scanning of bridges, if any, because there may be
+> > new devices below them and I guess that's what takes so much time on your
+> > machine.
+> 
+> OK, one piece is missing.  We may need to evaluate _OSC after handling each
+> event to let the platform know the status.
 
-*The* device corresponding to handle will be put into D0.  Any devices below it
-whose ACPI device objects may also be added by acpi_bus_scan() - not necessarily.
+s/_OSC/_OST/
+
+> Can you please check if the appended patch makes any difference (with the
+> previous fix applied, of course)?
+> 
+> If fact, it is two patches combined.  One of them optimizes enable_slot()
+> slightly and the other adds the missing _OSC evaluation.
+
+s/_OSC/_OST/ (What the heck?)
+
+But the patch should be OK. :-)
 
 Thanks,
 Rafael
 
+
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c |   35 +++++++++++++++++++++++++++--------
+>  1 file changed, 27 insertions(+), 8 deletions(-)
+> 
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -542,12 +542,12 @@ static void __ref enable_slot(struct acp
+>  	struct acpiphp_func *func;
+>  	int max, pass;
+>  	LIST_HEAD(add_list);
+> +	int nr_found;
+>  
+>  	list_for_each_entry(func, &slot->funcs, sibling)
+>  		acpiphp_bus_add(func_to_handle(func));
+>  
+> -	pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
+> -
+> +	nr_found = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
+>  	max = acpiphp_max_busnr(bus);
+>  	for (pass = 0; pass < 2; pass++) {
+>  		list_for_each_entry(dev, &bus->devices, bus_list) {
+> @@ -566,8 +566,11 @@ static void __ref enable_slot(struct acp
+>  			}
+>  		}
+>  	}
+> -
+>  	__pci_bus_assign_resources(bus, &add_list, NULL);
+> +	/* Nothing more to do here if there are no new devices on this bus. */
+> +	if (!nr_found && (slot->flags & SLOT_ENABLED))
+> +		return;
+> +
+>  	acpiphp_sanitize_bus(bus);
+>  	acpiphp_set_hpp_values(bus);
+>  	acpiphp_set_acpi_region(slot);
+> @@ -867,6 +870,8 @@ static void hotplug_event_work(struct wo
+>  	hotplug_event(hp_work->handle, hp_work->type, context);
+>  
+>  	acpi_scan_lock_release();
+> +	acpi_evaluate_hotplug_ost(hp_work->handle, hp_work->type,
+> +				  ACPI_OST_SC_SUCCESS, NULL);
+>  	kfree(hp_work); /* allocated in handle_hotplug_event() */
+>  	put_bridge(context->func.parent);
+>  }
+> @@ -882,12 +887,16 @@ static void hotplug_event_work(struct wo
+>  static void handle_hotplug_event(acpi_handle handle, u32 type, void *data)
+>  {
+>  	struct acpiphp_context *context;
+> +	u32 ost_code;
+>  
+>  	switch (type) {
+>  	case ACPI_NOTIFY_BUS_CHECK:
+>  	case ACPI_NOTIFY_DEVICE_CHECK:
+> +		ost_code = ACPI_OST_SC_INSERT_IN_PROGRESS;
+> +		goto work;
+>  	case ACPI_NOTIFY_EJECT_REQUEST:
+> -		break;
+> +		ost_code = ACPI_OST_SC_EJECT_IN_PROGRESS;
+> +		goto work;
+>  
+>  	case ACPI_NOTIFY_DEVICE_WAKE:
+>  		return;
+> @@ -895,30 +904,40 @@ static void handle_hotplug_event(acpi_ha
+>  	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
+>  		acpi_handle_err(handle, "Device cannot be configured due "
+>  				"to a frequency mismatch\n");
+> -		return;
+> +		break;
+>  
+>  	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
+>  		acpi_handle_err(handle, "Device cannot be configured due "
+>  				"to a bus mode mismatch\n");
+> -		return;
+> +		break;
+>  
+>  	case ACPI_NOTIFY_POWER_FAULT:
+>  		acpi_handle_err(handle, "Device has suffered a power fault\n");
+> -		return;
+> +		break;
+>  
+>  	default:
+>  		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
+> -		return;
+> +		break;
+>  	}
+>  
+> + err:
+> +	ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> +	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+> +	return;
+> +
+> + work:
+>  	mutex_lock(&acpiphp_context_lock);
+>  	context = acpiphp_get_context(handle);
+>  	if (context) {
+>  		get_bridge(context->func.parent);
+>  		acpiphp_put_context(context);
+> +		acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+>  		alloc_acpi_hp_work(handle, type, context, hotplug_event_work);
+> +		mutex_unlock(&acpiphp_context_lock);
+> +		return;
+>  	}
+>  	mutex_unlock(&acpiphp_context_lock);
+> +	goto err;
+>  }
+>  
+>  /*
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
