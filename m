@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3IEDTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 23:19:38 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:53485 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3IEDTh (ORCPT
+	id S1752817Ab3IEDZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:25:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15717 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3IEDZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 23:19:37 -0400
-Subject: Re: [PATCH V3 09/11] uswsusp: Disable when module loading is
- restricted
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        keescook@chromium.org, hpa@zytor.com
-In-Reply-To: <1378252218-18798-10-git-send-email-matthew.garrett@nebula.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-10-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Sep 2013 11:20:26 +0800
-Message-ID: <1378351226.6380.84.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 4 Sep 2013 23:25:30 -0400
+Message-ID: <5227F989.10907@huawei.com>
+Date: Thu, 5 Sep 2013 11:24:57 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: factor out css creation into
+ create_css()
+References: <1377723829-22814-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1377723829-22814-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2013-09-03 於 19:50 -0400，Matthew Garrett 提到：
-> uswsusp allows a user process to dump and then restore kernel state, which
-> makes it possible to avoid module loading restrictions. Prevent this when
-> any restrictions have been imposed on loading modules.
+On 2013/8/29 5:03, Tejun Heo wrote:
+> Hello,
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
-
-> ---
->  kernel/power/user.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> For unified hierarchy, a css's (cgroup_subsys_state) lifetime will be
+> different from that of the associated cgroup.  css's may be created
+> and destroyed dynamically over the lifetime of a single cgroup.  The
+> previous changes decoupled css destruction from cgroup's.  This
+> patchset decouples css creation from cgroup's.
 > 
-> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> index 4ed81e7..15cb72f 100644
-> --- a/kernel/power/user.c
-> +++ b/kernel/power/user.c
-> @@ -24,6 +24,7 @@
->  #include <linux/console.h>
->  #include <linux/cpu.h>
->  #include <linux/freezer.h>
-> +#include <linux/module.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -48,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
->  	struct snapshot_data *data;
->  	int error;
->  
-> +	if (secure_modules())
-> +		return -EPERM;
-> +
->  	lock_system_sleep();
->  
->  	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+> This patchset contains the following nine patches.
+> 
+>  0001-cgroup-fix-css-leaks-on-online_css-failure.patch
+>  0002-cgroup-css-iterations-and-css_from_dir-are-safe-unde.patch
+>  0003-cgroup-make-for_each_subsys-useable-under-cgroup_roo.patch
+>  0004-cgroup-move-css_id-commit-from-cgroup_populate_dir-t.patch
+>  0005-cgroup-reorder-operations-in-cgroup_create.patch
+>  0006-cgroup-combine-css-handling-loops-in-cgroup_create.patch
+>  0007-cgroup-factor-out-cgroup_subsys_state-creation-into-.patch
+>  0008-cgroup-implement-for_each_css.patch
+>  0009-cgroup-remove-for_each_root_subsys.patch
+> 
 
-Thanks
-Joey Lee
-
+Acked-by: Li Zefan <lizefan@huawei.com>
 
