@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800Ab3IEXOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 19:14:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832Ab3IEXOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 19:14:33 -0400
-Message-ID: <1378422869.3246.282.camel@ul30vt.home>
-Subject: Re: linux-next: back merge of Linus' tree into the vfio tree
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 05 Sep 2013 17:14:29 -0600
-In-Reply-To: <20130906090826.947212e7d5383837bff881f5@canb.auug.org.au>
-References: <20130906090826.947212e7d5383837bff881f5@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753858Ab3IEXUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 19:20:01 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:38983 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab3IEXT7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 19:19:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
+	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+	<20130905153243.43d0346e@jbarnes-desktop>
+	<CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
+Date: Thu, 5 Sep 2013 16:19:58 -0700
+X-Google-Sender-Auth: bzhTQ2Tfjs9okvDTRSh3IlAFp30
+Message-ID: <CA+55aFwOme_LD6qqmzdEQ6AXiK8My7PWU1y5VV2tLgkO1HU7xg@mail.gmail.com>
+Subject: Re: [git pull] drm tree for 3.12-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "Beauchesne, Gwenole" <gwenole.beauchesne@intel.com>,
+        Sean V Kelley <sean.v.kelley@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-06 at 09:08 +1000, Stephen Rothwell wrote:
-> Hi Alex,
-> 
-> I noticed that you have back merged Linus' tree into yours.  Linus
-> usually takes a dim view of that - especially when there is no
-> explanation in the merge commit message.  i.e. you shouldn't to that
-> unless you really need to - and then you should explain why you did it.
+On Thu, Sep 5, 2013 at 3:51 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I've booted a few times since (it's the merge window, so I boot fairly
+> frequently), and it hasn't happened again...
 
-Hmm, I was hoping that wouldn't be a problem, especially with no
-conflicts in the merge.  I did it because the first commit after the
-merge in my next tree depends on PCI changes that have already been
-merged by Linus.  Re-basing is an even bigger sin and I felt it better
-to do a merge than ask for two pulls or add an unbuild-able commit to my
-next tree.  How do you suggest that I resolve this?  Thanks,
+.. and of course, after I say that, on the very next boot it then
+happened three times in a row until it magically didn't happen.
 
-Alex
+So I've decided I'm going to try to bisect this after all. I've done
+enough pulls for today anyway, I guess. Let's see if I can bisect it
+by just trying to boot many times each try.
 
-
-
+                Linus
