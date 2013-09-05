@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3IEOsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:48:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56939 "EHLO mx1.redhat.com"
+	id S1753684Ab3IEOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:48:25 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55094 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab3IEOsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:48:00 -0400
-Message-ID: <5228999B.8010300@redhat.com>
-Date: Thu, 05 Sep 2013 16:47:55 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751968Ab3IEOsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 10:48:23 -0400
+Date: Thu, 5 Sep 2013 10:48:18 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
+Message-ID: <20130905144818.GA23661@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
+References: <1378383524-27983-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] mm: allow to set overcommit ratio more precisely
-References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com> <52287E66.9010107@redhat.com> <52289824.20000@intel.com>
-In-Reply-To: <52289824.20000@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378383524-27983-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 04:41 PM, Dave Hansen wrote:
-> On 09/05/2013 05:51 AM, Jerome Marchand wrote:
->> This patch adds the new overcommit_ratio_ppm sysctl variable that
->> allow to set overcommit ratio with a part per million precision.
->> The old overcommit_ratio variable can still be used to set and read
->> the ratio with a 1% precision. That way, overcommit_ratio interface
->> isn't broken in any way that I can imagine.
+On Thu, Sep 05, 2013 at 08:18:44AM -0400, Prarit Bhargava wrote:
+> The current code has two exported functions, get_bytes_random() and
+> get_bytes_random_arch().  The first function only calls the entropy
+> store to get random data, and the second only calls the arch specific
+> hardware random number generator.
 > 
-> Looks like a pretty sane solution.  Could you also make a Documentation/
-> update, please?
+> The problem is that no code is using the get_bytes_random_arch() and switching
+> over will require a significant code change.  Even if the change is
+> made it will be static forcing a recompile of code if/when a user has a
+> system with a trusted random HW source.  A better thing to do is allow
+> users to decide whether they trust their hardare random number generator.
 
-Damn! I forgot. Will do.
+I fail to see the benefit of just using the hardware random number
+generator.  We are already mixing in the hardware random number
+generator into the /dev/random pool, and so the only thing that using
+only the HW source is to make the kernel more vulnerable to an attack
+where the NSA leans on a few Intel employee and forces/bribes them to
+make a change such that the last step in the RDRAND's AES whitening
+step is changed to use a counter plus a AES key known by the NSA.
 
-Thanks
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
+     		       	 	      - Ted
