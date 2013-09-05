@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab3IEGex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 02:34:53 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64521 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757036Ab3IEGev (ORCPT
+	id S1763315Ab3IEGgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 02:36:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65256 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757461Ab3IEGgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 02:34:51 -0400
-Message-ID: <522825E3.9050806@huawei.com>
-Date: Thu, 5 Sep 2013 14:34:11 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH 4/7] x86/pci: use pcie_cap to simplify code
-References: <1378193715-25328-1-git-send-email-wangyijing@huawei.com> <1378193715-25328-4-git-send-email-wangyijing@huawei.com> <20130904025940.GD24733@google.com>
-In-Reply-To: <20130904025940.GD24733@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 5 Sep 2013 02:36:44 -0400
+Message-ID: <1378362989.18435.2.camel@marge.simpson.net>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Mike Galbraith <bitbucket@online.de>
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
+        yinghai@kernel.org, joe.jin@oracle.com
+Date: Thu, 05 Sep 2013 08:36:29 +0200
+In-Reply-To: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
+	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
+	 <20130729115701.GD3008@twins.programming.kicks-ass.net>
+	 <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:GBdr3daxOClhAiWIClr8gmgGssWFb3FVqO1nZmZj+Mn
+ QU3Q8vjtMkeEj0o0aRJOrRNOCvGAD0Kjw6XjyL7z8qRMCUAoM6
+ 1drB9E0SR9DLMsYALlHkpKAWRp2dQ4TaQ3pqyBHR7uUTAMlUmf
+ hD5nC/r61qbKARqXKCOFgBHaF7QDjrpeoTr4W7pYy7iafFWojF
+ VG43eXifep7DlgvNCs/HzLv3yZ9EdGYrP4IkEqGYJ8UoAicJy2
+ euisQgVxCUlDhmLLdHR7mtF4JTqxb0pAQPRpiSxrDIifxh1QLS
+ 8NrQ3YrcBIuzryGSsks+Wu04p1fZxMGQE4FR42vGgSHIQao4+3
+ sFb9p4yFg3PdiUzI1YR2G545NyR+TKceKeKqogCmWhM/LE4Kng
+ hCE/pMxJNYnrA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/4 10:59, Bjorn Helgaas wrote:
-> On Tue, Sep 03, 2013 at 03:35:12PM +0800, Yijing Wang wrote:
->> PCI core saves PCIe Cap offset in pcie_cap,
->> use pcie_cap to simplify code.
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  arch/x86/pci/fixup.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
->> index f5809fa..ee8330d 100644
->> --- a/arch/x86/pci/fixup.c
->> +++ b/arch/x86/pci/fixup.c
->> @@ -288,7 +288,7 @@ static void pcie_rootport_aspm_quirk(struct pci_dev *pdev)
->>  		 */
->>  		list_for_each_entry(dev, &pbus->devices, bus_list) {
->>  			/* There are 0 to 8 devices attached to this bus */
->> -			cap_base = pci_find_capability(dev, PCI_CAP_ID_EXP);
->> +			cap_base = dev->pcie_cap;
->>  			quirk_aspm_offset[GET_INDEX(pdev->device, dev->devfn)] = cap_base + 0x10;
-> 
-> This should use PCI_EXP_LNKCTL instead of "0x10".
-> 
->>  		}
->>  		pbus->ops = &quirk_pcie_aspm_ops;
+On Thu, 2013-08-08 at 15:32 +0800, ethan.zhao wrote:
 
-Hi Bjorn,
-   Thanks for your review and comments!
+...
 
-> 
-> This quirk replaces the config accessors with ones that silently ignore
-> writes to ASPM control bits.  That really warrants at least a dev_info()
-> note here, and we should be using pci_bus_set_ops().
+> That is great improvement, So it is worth to merge.
 
-Good idea, I will update it, thanks!
+It didn't swim upstream for some reason.
 
-> 
-> Even that is a little bit dubious because I don't think this is really
-> safe -- what happens if this quirk replaces the ops, then somebody
-> else replaces the ops again?  aer_inject.c at least keeps track of
-> the old ops and seems to fall back to them, but it seems fragile to
-> depend on every caller of pci_bus_set_ops() to do the right thing
-> there.
-> 
-> But this is beyond the scope of your patch, so if you just
-> add a dev_info() note and use pci_bus_set_ops(), that should be
-> enough for now.
-> 
-> 
-
-
--- 
-Thanks!
-Yijing
+-Mike
 
