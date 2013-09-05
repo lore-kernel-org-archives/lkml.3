@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab3IEPhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:37:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40453 "EHLO mail.zytor.com"
+	id S1754049Ab3IEPis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34575 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455Ab3IEPhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:37:07 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1378353524.13193.26.camel@x230>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com> <1378252218-18798-4-git-send-email-matthew.garrett@nebula.com> <5227FFE8.5050102@zytor.com> <1378353524.13193.26.camel@x230>
+	id S1752206Ab3IEPiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:38:46 -0400
+Date: Thu, 5 Sep 2013 17:40:42 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
+        linux-ide@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
+Message-ID: <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
+References: <cover.1378383792.git.agordeev@redhat.com>
+ <c5ff8fbf905a3df2b75369da725ab5ebf31544ff.1378383792.git.agordeev@redhat.com>
+ <20130905130902.GA26314@htj.dyndns.org>
+ <20130905150259.GA30984@dhcp-26-207.brq.redhat.com>
+ <20130905150442.GA24148@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH V3 03/11] x86: Lock down IO port access when module security is enabled
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 05 Sep 2013 08:36:51 -0700
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Message-ID: <69eec644-f26f-410c-bb76-0b7695dde65c@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905150442.GA24148@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sigh.  That capability really is fscked up.
+On Thu, Sep 05, 2013 at 11:04:42AM -0400, Tejun Heo wrote:
+> The thing is, do we even have cases where arch code returns positive
+> return to indicate possible partial allocation?  If not, the whole
+> interface is convoluted for no good reason and we can just make
+> everything return 0 or -errno, which is a lot simpler.  No?
 
-Matthew Garrett <matthew.garrett@nebula.com> wrote:
->On Wed, 2013-09-04 at 20:52 -0700, H. Peter Anvin wrote:
->> On 09/03/2013 04:50 PM, Matthew Garrett wrote:
->> > IO port access would permit users to gain access to PCI
->configuration
->> > registers, which in turn (on a lot of hardware) give access to MMIO
->register
->> > space. This would potentially permit root to trigger arbitrary DMA,
->so lock
->> > it down by default.
->> > 
->> > Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
->> 
->> Seriously... just deny CAP_SYS_RAWIO to any system in secure mode.
->
->No. CAP_SYS_RAWIO blocks things that we don't want blocked (x86
->microcode updates, various disk ioctls, *device firmware uploads* and a
->few others) - the semantics just don't match. We could relax those
->permissions, but then we'd potentially break someone else's security
->considerations.
+As I mentioned in my other note, at least PPC has a concept of MSI quota,
+so exceeding it would be the very case, I believe.
+
+> Thanks.
+> 
+> -- 
+> tejun
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
