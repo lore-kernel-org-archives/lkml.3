@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab3IEU2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52233 "EHLO
+	id S1757645Ab3IEU26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab3IEU2v (ORCPT
+	with ESMTP id S1757626Ab3IEU2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:51 -0400
+	Thu, 5 Sep 2013 16:28:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russ Anderson <rja@sgi.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 3/7] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
-Date: Thu,  5 Sep 2013 13:28:36 -0700
-Message-Id: <20130905202758.024741883@linuxfoundation.org>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 1/7] jfs: fix readdir cookie incompatibility with NFSv4
+Date: Thu,  5 Sep 2013 13:28:34 -0700
+Message-Id: <20130905202757.816133396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202757.642048278@linuxfoundation.org>
 References: <20130905202757.642048278@linuxfoundation.org>
@@ -31,88 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Anderson <rja@sgi.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
+commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
 
-"cat /sys/devices/system/memory/memory*/removable" crashed the system.
+NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
+but jfs allows a value of 2 for a non-special entry. This incompatibility
+can result in the nfs client reporting a readdir loop.
 
-The problem is that show_mem_removable() is passing a
-bad pfn to is_mem_section_removable(), which causes
+This patch doesn't change the value stored internally, but adds one to
+the value exposed to the iterate method.
 
-    if (!node_online(page_to_nid(page)))
-
-to blow up.  Why is it passing in a bad pfn?
-
-The reason is that show_mem_removable() will loop sections_per_block
-times.  sections_per_block is 16, but mem->section_count is 8,
-indicating holes in this memory block.  Checking that the memory section
-is present before checking to see if the memory section is removable
-fixes the problem.
-
-   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
-   0
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   BUG: unable to handle kernel paging request at ffffea00c3200000
-   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   PGD 83ffd4067 PUD 37bdfce067 PMD 0
-   Oops: 0000 [#1] SMP
-   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
-   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
-   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
-   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
-   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
-   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
-   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
-   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
-   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
-   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
-   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
-   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
-   Call Trace:
-     show_mem_removable+0x41/0x70
-     dev_attr_show+0x2a/0x60
-     sysfs_read_file+0xf7/0x1c0
-     vfs_read+0xc8/0x130
-     SyS_read+0x5d/0xa0
-     system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/ctx->pos/filp->f_pos/]
+Tested-by: Christian Kujau <lists@nerdbynature.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/base/memory.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -172,6 +172,8 @@ static ssize_t show_mem_removable(struct
- 		container_of(dev, struct memory_block, sysdev);
+--- a/fs/jfs/jfs_dtree.c
++++ b/fs/jfs/jfs_dtree.c
+@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void
  
- 	for (i = 0; i < sections_per_block; i++) {
-+		if (!present_section_nr(mem->start_section_nr + i))
-+			continue;
- 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
+ 		dir_index = (u32) filp->f_pos;
+ 
++		/*
++		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
++		 * the value we return to the vfs is one greater than the
++		 * one we use internally.
++		 */
++		if (dir_index)
++			dir_index--;
++
+ 		if (dir_index > 1) {
+ 			struct dir_table_slot dirtab_slot;
+ 
+@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void
+ 			if (p->header.flag & BT_INTERNAL) {
+ 				jfs_err("jfs_readdir: bad index table");
+ 				DT_PUTPAGE(mp);
+-				filp->f_pos = -1;
++				filp->f_pos = DIREND;
+ 				return 0;
+ 			}
+ 		} else {
+@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void
+ 				/*
+ 				 * self "."
+ 				 */
+-				filp->f_pos = 0;
++				filp->f_pos = 1;
+ 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
+ 					    DT_DIR))
+ 					return 0;
+@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void
+ 			/*
+ 			 * parent ".."
+ 			 */
+-			filp->f_pos = 1;
++			filp->f_pos = 2;
+ 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
+ 				return 0;
+ 
+@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void
+ 		/*
+ 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
+ 		 *
+-		 * pn = index = 0:	First entry "."
+-		 * pn = 0; index = 1:	Second entry ".."
++		 * pn = 0; index = 1:	First entry "."
++		 * pn = 0; index = 2:	Second entry ".."
+ 		 * pn > 0:		Real entries, pn=1 -> leftmost page
+ 		 * pn = index = -1:	No more entries
+ 		 */
+ 		dtpos = filp->f_pos;
+-		if (dtpos == 0) {
++		if (dtpos < 2) {
+ 			/* build "." entry */
+ 
++			filp->f_pos = 1;
+ 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
+ 				    DT_DIR))
+ 				return 0;
+-			dtoffset->index = 1;
++			dtoffset->index = 2;
+ 			filp->f_pos = dtpos;
+ 		}
+ 
+ 		if (dtoffset->pn == 0) {
+-			if (dtoffset->index == 1) {
++			if (dtoffset->index == 2) {
+ 				/* build ".." entry */
+ 
+ 				if (filldir(dirent, "..", 2, filp->f_pos,
+@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void
+ 					}
+ 					jfs_dirent->position = unique_pos++;
+ 				}
++				/*
++				 * We add 1 to the index because we may
++				 * use a value of 2 internally, and NFSv4
++				 * doesn't like that.
++				 */
++				jfs_dirent->position++;
+ 			} else {
+ 				jfs_dirent->position = dtpos;
+ 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
 
 
