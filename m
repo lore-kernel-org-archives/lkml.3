@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935518Ab3IEDHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 23:07:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:3875 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762253Ab3IEDHO (ORCPT
+	id S935554Ab3IEDIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:08:42 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:51660 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762253Ab3IEDIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 23:07:14 -0400
-Message-ID: <5227F4B6.40009@huawei.com>
-Date: Thu, 5 Sep 2013 11:04:22 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 4 Sep 2013 23:08:41 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Jianguo Wu <wujianguo106@gmail.com>, <akpm@linux-foundation.org>,
-        <aarcange@redhat.com>, <kirill.shutemov@linux.intel.com>,
-        <mgorman@suse.de>, <xiaoguangrong@linux.vnet.ibm.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/thp: fix comments in transparent_hugepage_flags
-References: <1378301422-9468-1-git-send-email-wujianguo@huawei.com> <5227e870.ab42320a.62d4.3d12SMTPIN_ADDED_BROKEN@mx.google.com>
-In-Reply-To: <5227e870.ab42320a.62d4.3d12SMTPIN_ADDED_BROKEN@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+In-Reply-To: <002201cea9e1$5e99da40$1bcd8ec0$%han@samsung.com>
+References: <002101cea9e1$34a38330$9dea8990$%han@samsung.com>
+	<002201cea9e1$5e99da40$1bcd8ec0$%han@samsung.com>
+Date: Thu, 5 Sep 2013 08:38:40 +0530
+Message-ID: <CAK9yfHxR6nfEcCVxviD_=-ffNkcrazM8nWZRTFt2jOJuvaaSjA@mail.gmail.com>
+Subject: Re: [PATCH 1/6] backlight: lp855x_bl: support new LP8555 device
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Milo Kim <milo.kim@ti.com>,
+        Daniel Jeong <gshark.jeong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wanpeng,
+Hi Jingoo,
 
-On 2013/9/5 10:11, Wanpeng Li wrote:
+On 5 September 2013 08:11, Jingoo Han <jg1.han@samsung.com> wrote:
+> LP8555 is one of LP855x family device.
+> This device needs pre_init_device() and post_init_device() driver structure.
+> It's same as LP8557, so the device configuration code is shared with LP8557.
+> Backlight outputs are generated from dual DC-DC boost converters.
+> It's configurable EPROM settings which are defined in the platform data.
+>
+> Driver documentation and device tree bindings are updated.
+>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
 
-> Hi Jianguo,
-> On Wed, Sep 04, 2013 at 09:30:22PM +0800, Jianguo Wu wrote:
->> Since commit d39d33c332(thp: enable direct defrag), defrag is enable
->> for all transparent hugepage page faults by default, not only in
->> MADV_HUGEPAGE regions.
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> ---
->> mm/huge_memory.c | 6 ++----
->> 1 file changed, 2 insertions(+), 4 deletions(-)
->>
->> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->> index a92012a..abf047e 100644
->> --- a/mm/huge_memory.c
->> +++ b/mm/huge_memory.c
->> @@ -28,10 +28,8 @@
->>
->> /*
->>  * By default transparent hugepage support is enabled for all mappings
-> 
-> This is also stale. TRANSPARENT_HUGEPAGE_ALWAYS is not configured by default in
-> order that avoid to risk increase the memory footprint of applications w/o a 
-> guaranteed benefit.
-> 
-
-Right, how about this:
-
-By default transparent hugepage support is disabled in order that avoid to risk
-increase the memory footprint of applications w/o a guaranteed benefit, and
-khugepaged scans all mappings when transparent hugepage enabled.
-Defrag is invoked by khugepaged hugepage allocations and by page faults for all
-hugepage allocations.
-
-Thanks,
-Jianguo Wu
-
-> Regards,
-> Wanpeng Li 
-> 
->> - * and khugepaged scans all mappings. Defrag is only invoked by
->> - * khugepaged hugepage allocations and by page faults inside
->> - * MADV_HUGEPAGE regions to avoid the risk of slowing down short lived
->> - * allocations.
->> + * and khugepaged scans all mappings. Defrag is invoked by khugepaged
->> + * hugepage allocations and by page faults for all hugepage allocations.
->>  */
->> unsigned long transparent_hugepage_flags __read_mostly =
->> #ifdef CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
->> -- 
->> 1.8.1.2
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-
-
-
+Looks like the author information is lost for this patch and patch 2
+(atleast it does not match
+whatever is mentioned in the cover letter). Please check.
+-- 
+With warm regards,
+Sachin
