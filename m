@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab3IETCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:02:31 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:36190 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab3IETCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:02:30 -0400
+	id S1756934Ab3IETDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:03:39 -0400
+Received: from imap.thunk.org ([74.207.234.97]:55215 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab3IETDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 15:03:37 -0400
+Date: Thu, 5 Sep 2013 15:03:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
+Message-ID: <20130905190334.GC23661@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
+References: <1378383524-27983-1-git-send-email-prarit@redhat.com>
+ <20130905144818.GA23661@thunk.org>
+ <52289E6C.8090301@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130905112441.0a8c81d2@samsung.com>
-References: <20130905112441.0a8c81d2@samsung.com>
-Date: Thu, 5 Sep 2013 12:02:29 -0700
-X-Google-Sender-Auth: TNIMlrYDjPyUve8DRXT_wJKviWs
-Message-ID: <CA+55aFybmupGxmnDfaYfKu2L1QyBW=EYG=jA3zBa=r1vfm+_EQ@mail.gmail.com>
-Subject: Re: [GIT PULL for v3.12-rc1] media updates
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52289E6C.8090301@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 7:24 AM, Mauro Carvalho Chehab
-<m.chehab@samsung.com> wrote:
->
-> Also, a trivial conflict at s5p_mfc_dec.c and s5p_mfc_enc.c will happen as
-> a macro name got renamed from IS_MFCV6 to IS_MFCV6_PLUS.
+On Thu, Sep 05, 2013 at 11:08:28AM -0400, Prarit Bhargava wrote:
+> 
+> The issue isn't userspace /dev/random as much as it is the use of
+> get_random_bytes() through out the kernel.  Switching to get_random_bytes_arch()
+> is a search'n'replace on the entire kernel.  If a user wants the faster random
+> HW generator why shouldn't they be able to use it by default?
 
-I did an "ugly merge" when fixing that conflict up, because the stupid
-code at the conflict site did this:
+Where is the speed of the random number generator a bottleneck?
 
-                if (!IS_MFCV6_PLUS(dev) && (fmt->fourcc == V4L2_PIX_FMT_VP8)) {
-                        mfc_err("Not supported format.\n");
-                        return -EINVAL;
-                }
-                if (!IS_MFCV6_PLUS(dev)) {
-                        if (fmt->fourcc == V4L2_PIX_FMT_VP8) {
-                                mfc_err("Not supported format.\n");
-                                return -EINVAL;
-                        }
-                }
+In general, adding knobs when users can make what might be potentially
+the wrong chance is very dangerous.  There is a reason why there
+aren't convenient knobs to allow users to select the use of the MD4
+checksum, "because it might be faster, why shouldn't the user be
+allowed to shoot themselves in the foot"?
 
-and there was no way I was going to fix up the code and not remove the
-idiotic duplication of the exact same test.
-
-I have no idea why that code was duplicated with slightly different
-syntax, but my OCD couldn't let it remain when I was editing those
-lines.
-
-              Linus
+					- Ted
