@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3IEUkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:40:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52088 "EHLO
+	id S1758033Ab3IEUk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:40:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab3IEU2Z (ORCPT
+	with ESMTP id S1757019Ab3IEU2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:25 -0400
+	Thu, 5 Sep 2013 16:28:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@blackshift.org>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 20/36] ath9k_htc: Restore skb headroom when returning skb to mac80211
-Date: Thu,  5 Sep 2013 13:27:49 -0700
-Message-Id: <20130905202704.645810329@linuxfoundation.org>
+        Dave Hansen <dave.hansen@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 19/36] x86/mm: Fix boot crash with DEBUG_PAGE_ALLOC=y and more than 512G RAM
+Date: Thu,  5 Sep 2013 13:27:48 -0700
+Message-Id: <20130905202704.537893512@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -28,57 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helmut Schaa <helmut.schaa@googlemail.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit d2e9fc141e2aa21f4b35ee27072d84e9aa6e2ba0 upstream.
+commit 527bf129f9a780e11b251cf2467dc30118a57d16 upstream.
 
-ath9k_htc adds padding between the 802.11 header and the payload during
-TX by moving the header. When handing the frame back to mac80211 for TX
-status handling the header is not moved back into its original position.
-This can result in a too small skb headroom when entering ath9k_htc
-again (due to a soft retransmission for example) causing an
-skb_under_panic oops.
+Dave Hansen reported that systems between 500G and 600G RAM
+crash early if DEBUG_PAGEALLOC is selected.
 
-Fix this by moving the 802.11 header back into its original position
-before returning the frame to mac80211 as other drivers like rt2x00
-or ath5k do.
+ > [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+ > [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+ > [    0.000000] BRK [0x02086000, 0x02086fff] PGTABLE
+ > [    0.000000] BRK [0x02087000, 0x02087fff] PGTABLE
+ > [    0.000000] BRK [0x02088000, 0x02088fff] PGTABLE
+ > [    0.000000] init_memory_mapping: [mem 0xe80ee00000-0xe80effffff]
+ > [    0.000000]  [mem 0xe80ee00000-0xe80effffff] page 4k
+ > [    0.000000] BRK [0x02089000, 0x02089fff] PGTABLE
+ > [    0.000000] BRK [0x0208a000, 0x0208afff] PGTABLE
+ > [    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
 
-Reported-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Tested-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+It turns out that we missed increasing needed pages in BRK to
+mapping initial 2M and [0,1M) when we switched to use the #PF
+handler to set memory mappings:
+
+ > commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
+ > Author: H. Peter Anvin <hpa@zytor.com>
+ > Date:   Thu Jan 24 12:19:52 2013 -0800
+ >
+ >     x86, 64bit: Use a #PF handler to materialize early mappings on demand
+
+Before that, we had the maping from [0,512M) in head_64.S, and we
+can spare two pages [0-1M).  After that change, we can not reuse
+pages anymore.
+
+When we have more than 512M ram, we need an extra page for pgd page
+with [512G, 1024g).
+
+Increase pages in BRK for page table to solve the boot crash.
+
+Reported-by: Dave Hansen <dave.hansen@intel.com>
+Bisected-by: Dave Hansen <dave.hansen@intel.com>
+Tested-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1376351004-4015-1-git-send-email-yinghai@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/mm/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct
- 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
- 	bool txok;
- 	int slot;
-+	int hdrlen, padsize;
- 
- 	slot = strip_drv_header(priv, skb);
- 	if (slot < 0) {
-@@ -504,6 +505,15 @@ send_mac80211:
- 
- 	ath9k_htc_tx_clear_slot(priv, slot);
- 
-+	/* Remove padding before handing frame back to mac80211 */
-+	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-+
-+	padsize = hdrlen & 3;
-+	if (padsize && skb->len > hdrlen + padsize) {
-+		memmove(skb->data + padsize, skb->data, hdrlen);
-+		skb_pull(skb, padsize);
-+	}
-+
- 	/* Send status to mac80211 */
- 	ieee80211_tx_status(priv->hw, skb);
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -78,8 +78,8 @@ __ref void *alloc_low_pages(unsigned int
+ 	return __va(pfn << PAGE_SHIFT);
  }
+ 
+-/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+-#define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
++/* need 3 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
++#define INIT_PGT_BUF_SIZE	(6 * PAGE_SIZE)
+ RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
+ void  __init early_alloc_pgt_buf(void)
+ {
 
 
