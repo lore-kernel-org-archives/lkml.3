@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3IEU2P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:28:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52017 "EHLO
+	id S1757020Ab3IEU2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab3IEU2L (ORCPT
+	with ESMTP id S1756460Ab3IEU2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:11 -0400
+	Thu, 5 Sep 2013 16:28:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 06/36] powerpc: Work around gcc miscompilation of __pa() on 64-bit
-Date: Thu,  5 Sep 2013 13:27:35 -0700
-Message-Id: <20130905202703.073763667@linuxfoundation.org>
+        Andrey Vagin <avagin@openvz.org>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>, Glauber Costa <glommer@openvz.org>,
+        Joonsoo Kim <js1304@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 14/36] memcg: check that kmem_cache has memcg_params before accessing it
+Date: Thu,  5 Sep 2013 13:27:43 -0700
+Message-Id: <20130905202703.970129862@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,67 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit bdbc29c19b2633b1d9c52638fb732bcde7a2031a upstream.
+commit 6f6b8951897e487ea6f77b90ea01f70a9c363770 upstream.
 
-On 64-bit, __pa(&static_var) gets miscompiled by recent versions of
-gcc as something like:
+If the system had a few memory groups and all of them were destroyed,
+memcg_limited_groups_array_size has non-zero value, but all new caches
+are created without memcg_params, because memcg_kmem_enabled() returns
+false.
 
-        addis 3,2,.LANCHOR1+4611686018427387904@toc@ha
-        addi 3,3,.LANCHOR1+4611686018427387904@toc@l
+We try to enumirate child caches in a few places and all of them are
+potentially dangerous.
 
-This ends up effectively ignoring the offset, since its bottom 32 bits
-are zero, and means that the result of __pa() still has 0xC in the top
-nibble.  This happens with gcc 4.8.1, at least.
+For example my kernel is compiled with CONFIG_SLAB and it crashed when I
+tryed to mount a NFS share after a few experiments with kmemcg.
 
-To work around this, for 64-bit we make __pa() use an AND operator,
-and for symmetry, we make __va() use an OR operator.  Using an AND
-operator rather than a subtraction ends up with slightly shorter code
-since it can be done with a single clrldi instruction, whereas it
-takes three instructions to form the constant (-PAGE_OFFSET) and add
-it on.  (Note that MEMORY_START is always 0 on 64-bit.)
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
+  PGD b942a067 PUD b999f067 PMD 0
+  Oops: 0000 [#1] SMP
+  Modules linked in: fscache(+) ip6table_filter ip6_tables iptable_filter ip_tables i2c_piix4 pcspkr virtio_net virtio_balloon i2c_core floppy
+  CPU: 0 PID: 357 Comm: modprobe Not tainted 3.11.0-rc7+ #59
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  task: ffff8800b9f98240 ti: ffff8800ba32e000 task.ti: ffff8800ba32e000
+  RIP: 0010:[<ffffffff8118166a>]  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
+  RSP: 0018:ffff8800ba32fb70  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000006
+  RDX: 0000000000000000 RSI: ffff8800b9f98910 RDI: 0000000000000246
+  RBP: ffff8800ba32fba0 R08: 0000000000000002 R09: 0000000000000004
+  R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000010
+  R13: 0000000000000008 R14: 00000000000000d0 R15: ffff8800375d0200
+  FS:  00007f55f1378740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00007f24feba57a0 CR3: 0000000037b51000 CR4: 00000000000006f0
+  Call Trace:
+    enable_cpucache+0x49/0x100
+    setup_cpu_cache+0x215/0x280
+    __kmem_cache_create+0x2fa/0x450
+    kmem_cache_create_memcg+0x214/0x350
+    kmem_cache_create+0x2b/0x30
+    fscache_init+0x19b/0x230 [fscache]
+    do_one_initcall+0xfa/0x1b0
+    load_module+0x1c41/0x26d0
+    SyS_finit_module+0x86/0xb0
+    system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Joonsoo Kim <js1304@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/Kconfig            |    1 +
- arch/powerpc/include/asm/page.h |   10 ++++++++++
- 2 files changed, 11 insertions(+)
+ mm/slab.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -986,6 +986,7 @@ config RELOCATABLE
- 	  must live at a different physical address than the primary
- 	  kernel.
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -162,6 +162,8 @@ static inline const char *cache_name(str
  
-+# This value must have zeroes in the bottom 60 bits otherwise lots will break
- config PAGE_OFFSET
- 	hex
- 	default "0xc000000000000000"
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -211,9 +211,19 @@ extern long long virt_phys_offset;
- #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + VIRT_PHYS_OFFSET))
- #define __pa(x) ((unsigned long)(x) - VIRT_PHYS_OFFSET)
- #else
-+#ifdef CONFIG_PPC64
-+/*
-+ * gcc miscompiles (unsigned long)(&static_var) - PAGE_OFFSET
-+ * with -mcmodel=medium, so we use & and | instead of - and + on 64-bit.
-+ */
-+#define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) | PAGE_OFFSET))
-+#define __pa(x) ((unsigned long)(x) & 0x0fffffffffffffffUL)
-+
-+#else /* 32-bit, non book E */
- #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + PAGE_OFFSET - MEMORY_START))
- #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
- #endif
-+#endif
+ static inline struct kmem_cache *cache_from_memcg(struct kmem_cache *s, int idx)
+ {
++	if (!s->memcg_params)
++		return NULL;
+ 	return s->memcg_params->memcg_caches[idx];
+ }
  
- /*
-  * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
 
 
