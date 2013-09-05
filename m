@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3IEFqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:46:43 -0400
-Received: from smtp2.stec-inc.com ([68.225.24.15]:42908 "EHLO
-	smtp2.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab3IEFql convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:46:41 -0400
-X-Greylist: delayed 890 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Sep 2013 01:46:41 EDT
-X-ASG-Debug-ID: 1378360189-401163f40001-xx1T2L
-X-Barracuda-Envelope-From: osengineering@stec-inc.com
-From: OS Engineering <osengineering@stec-inc.com>
-X-Barracuda-Apparent-Source-IP: fe80::30dd:fd5:3d97:5f13
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        Akhil Bhansali <abhansali@stec-inc.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Amit Phansalkar <aphansalkar@stec-inc.com>
-Subject: RE: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
-Thread-Topic: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
-X-ASG-Orig-Subj: RE: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
-Thread-Index: Ac6lfYb9h7EXiNWKSmiiNkzvW8LqcgABiNrIAR1IiTY=
-Date: Thu, 5 Sep 2013 05:31:05 +0000
-Message-ID: <26D762E250385C4D8E9D6EC3C8E47DC11E6FE729@sambx4.stec-inc.ad>
-References: <26D762E250385C4D8E9D6EC3C8E47DC11E6FCF20@sambx4.stec-inc.ad>,<x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49vc2nnwp5.fsf@segfault.boston.devel.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [14.140.125.250]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756919Ab3IEFvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:51:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755450Ab3IEFvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 01:51:08 -0400
+Date: Thu, 5 Sep 2013 01:19:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rmk+kernel@arm.linux.org.uk
+Subject: Re: kobject: delayed kobject release: help find buggy drivers
+Message-ID: <20130905051945.GB23209@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	rmk+kernel@arm.linux.org.uk
+References: <20130903185924.046EE660E91@gitolite.kernel.org>
+ <20130903204442.GA22222@redhat.com>
+ <20130903205527.GA6358@kroah.com>
+ <87zjrt6tz4.fsf@rustcorp.com.au>
+ <20130905041338.GA21090@redhat.com>
+ <20130905045745.GA18876@kroah.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: sacas02.stec-inc.ad[172.17.3.1]
-X-Barracuda-Start-Time: 1378360189
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://saspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140355
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905045745.GA18876@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+On Wed, Sep 04, 2013 at 09:57:45PM -0700, Greg KH wrote:
+ > On Thu, Sep 05, 2013 at 12:13:38AM -0400, Dave Jones wrote:
+ > > On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
+ > >  
+ > >  > >> With this enabled, I get a bunch of scrolling oopses immediately after
+ > >  > >> exiting the bootloader. It happens so early I can't even capture them
+ > >  > >> over usb-serial, or earlyprintk=dbgp.
+ > >  > >> 
+ > >  > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
+ > >  > >> so I can't even use that.
+ > >  > >> 
+ > >  > >> any ideas ?
+ > >  > >
+ > >  > > The first big bug found with this was with the module kobject code, and
+ > >  > > a fix for that should be going in through Rusty's tree to Linus for this
+ > >  > > merge window (right Rusty?)
+ > >  > 
+ > >  > Yep, just sent pull request.  The fix was the final commit there...
+ > > 
+ > > Crap, that isn't the bug I'm hitting.
+ > 
+ > Any chance to get a oops traceback?
 
-Thank you for reviewing the patch.
+Got it. (I think I was getting tracebacks from multiple cpus, hence the spewing).
+Adding a check for tainted() = infinite loop to show_backtrace() combined with boot_delay
+gave me a really long oops that I had to grab video to record.
 
-Regards,
-Akhil
-________________________________________
-From: Jeff Moyer [jmoyer@redhat.com]
-Sent: Friday, August 30, 2013 6:18 AM
-To: OS Engineering
-Cc: linux-kernel@vger.kernel.org; axboe@kernel.dk; Akhil Bhansali; Ramprasad Chinthekindi; Amit Phansalkar
-Subject: Re: [PATCH] block: Device driver for sTec's PCIe Kronos Card.
+RIP: <null>
 
-OS Engineering <osengineering@stec-inc.com> writes:
+Trace:
+<IRQ>
+run_timer_softirq
+__do_softirq
+irq_exit
+smp_apic_timer_interrupt
+apic_timer_interrupt
+<EOI>
+vprintk_emit
+dev_vprintk_emit
+dev_vprint_emit
+__dev_printk
+_dev_info
+ahci_print_info
+ahci_init_one
+local_pci_probe
+pci_device_probe
+driver_probe_device
+__driver_attach
+bus_for_each_dev
+driver_attach
+bus_add_driver
+driver_register
+__pci_register_driver
+ahci_pci_driver_init
+do_one_initcall
+...
 
-> Hello All,
->
-> We are submitting device driver for sTec's PCIe flash card named "Kronos" for inclusion in linux kernel.
->
-> Thanks.
-> Akhil Bhansali.
-> --
-> From 3861f12cd99a9b1ba561296790ec482a75eeacd1 Mon Sep 17 00:00:00 2001
-> From: Akhil Bhansali <abhansali@stec-inc.com>
-> Date: Fri, 30 Aug 2013 11:32:49 +0530
-> Subject: [PATCH] Patch for pcie device driver from sTec Inc.
->
-> This patch adds "skd", a driver for sTec's PCIe flash cards named
-> Kronos.
-> Signed-off-by: Akhil Bhansali <abhansali@stec-inc.com>
-> Signed-off-by: Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>
+	Dave
 
-This looks good to me.  It's nice to see another open source PCIe SSD
-driver submitted!
-
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
