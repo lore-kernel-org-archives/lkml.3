@@ -1,148 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935809Ab3IEMWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:22:06 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:49955 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3IEMWE (ORCPT
+	id S935835Ab3IEMW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:22:26 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:44314 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab3IEMWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:22:04 -0400
+	Thu, 5 Sep 2013 08:22:05 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH v2] KVM: mmu: allow page tables to be in read-only slots
-Date: Thu,  5 Sep 2013 14:21:53 +0200
-Message-Id: <1378383714-9723-1-git-send-email-pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH] KVM: x86: prevent setting unsupported XSAVE states
+Date: Thu,  5 Sep 2013 14:21:54 +0200
+Message-Id: <1378383714-9723-2-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page tables in a read-only memory slot will currently cause a triple
-fault when running with shadow paging, because the page walker uses
-gfn_to_hva and it fails on such a slot.
+A guest can still attempt to save and restore XSAVE states even if they
+have been masked in CPUID leaf 0Dh.  This usually is not visible to
+the guest, but is still wrong: "Any attempt to set a reserved bit (as
+determined by the contents of EAX and EDX after executing CPUID with
+EAX=0DH, ECX= 0H) in XCR0 for a given processor will result in a #GP
+exception".
 
-TianoCore uses such a page table.  The idea is that, on real hardware,
-the firmware can already run in 64-bit flat mode when setting up the
-memory controller.  Real hardware seems to be fine with that as long as
-the accessed/dirty bits are set.  Thus, this patch saves whether the
-slot is readonly, and later checks it when updating the accessed and
-dirty bits.
+The patch also performs the same checks as __kvm_set_xcr in KVM_SET_XSAVE.
+This catches migration from newer to older kernel/processor before the
+guest starts running.
 
-Note that this scenario is not supported by NPT at all, as explained by
-comments in the code.
-
-Cc: stable@vger.kernel.org
 Cc: kvm@vger.kernel.org
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/paging_tmpl.h | 20 +++++++++++++++++++-
- include/linux/kvm_host.h   |  1 +
- virt/kvm/kvm_main.c        | 14 +++++++++-----
- 3 files changed, 29 insertions(+), 6 deletions(-)
+ arch/x86/kvm/cpuid.c |  2 +-
+ arch/x86/kvm/x86.c   | 10 ++++++++--
+ arch/x86/kvm/x86.h   |  1 +
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 0433301..aa18aca 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -99,6 +99,7 @@ struct guest_walker {
- 	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
- 	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
- 	pt_element_t __user *ptep_user[PT_MAX_FULL_LEVELS];
-+	bool pte_writable[PT_MAX_FULL_LEVELS];
- 	unsigned pt_access;
- 	unsigned pte_access;
- 	gfn_t gfn;
-@@ -235,6 +236,22 @@ static int FNAME(update_accessed_dirty_bits)(struct kvm_vcpu *vcpu,
- 		if (pte == orig_pte)
- 			continue;
- 
-+		/*
-+		 * If the slot is read-only, simply do not process the accessed
-+		 * and dirty bits.  This is the correct thing to do if the slot
-+		 * is ROM, and page tables in read-as-ROM/write-as-MMIO slots
-+		 * are only supported if the accessed and dirty bits are already
-+		 * set in the ROM (so that MMIO writes are never needed).
-+		 *
-+		 * Note that NPT does not allow this at all and faults, since
-+		 * it always wants nested page table entries for the guest
-+		 * page tables to be writable.  And EPT works but will simply
-+		 * overwrite the read-only memory to set the accessed and dirty
-+		 * bits.
-+		 */
-+		if (unlikely(!walker->pte_writable[level - 1]))
-+			continue;
-+
- 		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index, orig_pte, pte);
- 		if (ret)
- 			return ret;
-@@ -309,7 +326,8 @@ retry_walk:
- 			goto error;
- 		real_gfn = gpa_to_gfn(real_gfn);
- 
--		host_addr = gfn_to_hva(vcpu->kvm, real_gfn);
-+		host_addr = gfn_to_hva_read(vcpu->kvm, real_gfn,
-+					    &walker->pte_writable[walker->level - 1]);
- 		if (unlikely(kvm_is_error_hva(host_addr)))
- 			goto error;
- 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ca645a0..22f9cdf 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -533,6 +533,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
- 
- struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn);
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn);
-+unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable);
- unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
- void kvm_release_page_clean(struct page *page);
- void kvm_release_page_dirty(struct page *page);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index f7e4334..418d037 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1078,11 +1078,15 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- EXPORT_SYMBOL_GPL(gfn_to_hva);
- 
- /*
-- * The hva returned by this function is only allowed to be read.
-- * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
-+ * If writable is set to false, the hva returned by this function is only
-+ * allowed to be read.
-  */
--static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
-+unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn, bool *writable)
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index a20ecb5..d7c465d 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -182,7 +182,7 @@ static bool supported_xcr0_bit(unsigned bit)
  {
-+	struct kvm_memory_slot *slot = gfn_to_memslot(kvm, gfn);
-+	if (writable)
-+		*writable = !memslot_is_readonly(slot);
-+
- 	return __gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL, false);
+ 	u64 mask = ((u64)1 << bit);
+ 
+-	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
++	return mask & KVM_SUPPORTED_XCR0 & host_xcr0;
  }
  
-@@ -1450,7 +1454,7 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
- 	int r;
- 	unsigned long addr;
+ #define F(x) bit(X86_FEATURE_##x)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 3625798..801a882 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -586,6 +586,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ 		return 1;
+ 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+ 		return 1;
++	if (xcr0 & ~KVM_SUPPORTED_XCR0)
++		return 1;
+ 	if (xcr0 & ~host_xcr0)
+ 		return 1;
+ 	kvm_put_guest_xcr0(vcpu);
+@@ -2980,10 +2982,14 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
+ 	u64 xstate_bv =
+ 		*(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)];
  
--	addr = gfn_to_hva_read(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn, NULL);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
- 	r = kvm_read_hva(data, (void __user *)addr + offset, len);
-@@ -1488,7 +1492,7 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
- 	gfn_t gfn = gpa >> PAGE_SHIFT;
- 	int offset = offset_in_page(gpa);
+-	if (cpu_has_xsave)
++	if (cpu_has_xsave) {
++		if (xstate_bv & ~KVM_SUPPORTED_XCR0)
++			return -EINVAL;
++		if (xstate_bv & ~host_xcr0)
++			return -EINVAL;
+ 		memcpy(&vcpu->arch.guest_fpu.state->xsave,
+ 			guest_xsave->region, xstate_size);
+-	else {
++	} else {
+ 		if (xstate_bv & ~XSTATE_FPSSE)
+ 			return -EINVAL;
+ 		memcpy(&vcpu->arch.guest_fpu.state->fxsave,
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index e224f7a..587fb9e 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -122,6 +122,7 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
+ 	gva_t addr, void *val, unsigned int bytes,
+ 	struct x86_exception *exception);
  
--	addr = gfn_to_hva_read(kvm, gfn);
-+	addr = gfn_to_hva_read(kvm, gfn, NULL);
- 	if (kvm_is_error_hva(addr))
- 		return -EFAULT;
- 	pagefault_disable();
++#define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+ extern u64 host_xcr0;
+ 
+ extern struct static_key kvm_no_apic_vcpu;
 -- 
 1.8.3.1
 
