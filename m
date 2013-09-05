@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3IEQCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 12:02:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46691 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752710Ab3IEQCB (ORCPT
+	id S1753893Ab3IEQG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 12:06:26 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54602 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752250Ab3IEQGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 12:02:01 -0400
-Message-ID: <1378396919.2142.5.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] parisc: Export flush_cache_page() (needed by lustre)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 05 Sep 2013 09:01:59 -0700
-In-Reply-To: <1378373595-29471-1-git-send-email-geert@linux-m68k.org>
-References: <1378373595-29471-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Sep 2013 12:06:25 -0400
+Date: Thu, 5 Sep 2013 17:05:36 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v5 03/13] arm64: define DMA_ERROR_CODE
+Message-ID: <20130905160536.GH11887@arm.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+ <1377801154-29215-3-git-send-email-stefano.stabellini@eu.citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377801154-29215-3-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 11:33 +0200, Geert Uytterhoeven wrote:
-> ERROR: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Thu, Aug 29, 2013 at 07:32:24PM +0100, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: catalin.marinas@arm.com
+> CC: will.deacon@arm.com
 > ---
->  arch/parisc/kernel/cache.c |    1 +
->  1 file changed, 1 insertion(+)
+>  arch/arm64/include/asm/dma-mapping.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
-> index c035673..b521c0a 100644
-> --- a/arch/parisc/kernel/cache.c
-> +++ b/arch/parisc/kernel/cache.c
-> @@ -602,6 +602,7 @@ flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr, unsigned long
->  		__flush_cache_page(vma, vmaddr, PFN_PHYS(pfn));
->  	}
->  }
-> +EXPORT_SYMBOL_GPL(flush_cache_page);
+> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+> index 8d18100..c2cb8a0 100644
+> --- a/arch/arm64/include/asm/dma-mapping.h
+> +++ b/arch/arm64/include/asm/dma-mapping.h
+> @@ -25,6 +25,7 @@
+>  
+>  #define ARCH_HAS_DMA_GET_REQUIRED_MASK
+>  
+> +#define DMA_ERROR_CODE	(~0)
 
-This is an internal API: no architecture exports this.  Whoever is
-trying to use it needs to use the correct API, so this is the wrong
-patch.
+I wonder why this isn't more generic. It looks like most (all?)
+architectures define it in the same way.
 
-James
-
-
+-- 
+Catalin
