@@ -1,430 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965411Ab3IEKg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:36:58 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52837 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965245Ab3IEKg2 (ORCPT
+	id S935662Ab3IEKhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:37:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57872 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab3IEKhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:36:28 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        matt.fleming@intel.com, tony.luck@gmail.com, grant.likely@secretlab.ca,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH v4 2/3] efi: x86: ia64: provide a generic efi_config_init()
-Date: Thu,  5 Sep 2013 11:34:54 +0100
-Message-Id: <1378377295-32758-3-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1378377295-32758-1-git-send-email-leif.lindholm@linaro.org>
-References: <1378377295-32758-1-git-send-email-leif.lindholm@linaro.org>
+	Thu, 5 Sep 2013 06:37:35 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: [3.5.y.z extended stable] Linux 3.5.7.21
+Date: Thu,  5 Sep 2013 11:37:30 +0100
+Message-Id: <1378377451-17297-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common to (U)EFI support on all platforms is the global "efi" data
-structure, and the code that parses the System Table to locate
-addresses to populate that structure with.
+I am announcing the release of the Linux 3.5.7.21 kernel.
 
-This patch adds both of these to the global EFI driver code and
-removes the local definition of the global "efi" data structure from
-the x86 and ia64 code.
+The updated 3.5.y tree can be found at: 
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.5.y
+and can be browsed at:
+  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.5.y;a=shortlog
 
-Squashed into one big patch to avoid breaking bisection.
+The diff from v3.5.7.20 is posted as a follow-up to this email.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/ia64/kernel/efi.c      |   54 +++++-----------------
- arch/x86/platform/efi/efi.c |   96 ++++----------------------------------
- drivers/firmware/efi/efi.c  |  108 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h         |    7 +++
- 4 files changed, 134 insertions(+), 131 deletions(-)
+The 3.5.y extended stable tree is maintained by the Ubuntu Kernel Team.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
-index 51bce59..da5b462 100644
---- a/arch/ia64/kernel/efi.c
-+++ b/arch/ia64/kernel/efi.c
-@@ -44,10 +44,15 @@
- 
- #define EFI_DEBUG	0
- 
-+static __initdata unsigned long palo_phys;
-+
-+static __initdata efi_config_table_type_t arch_tables[] = {
-+	{PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID, "PALO", &palo_phys},
-+	{NULL_GUID, NULL, 0},
-+};
-+
- extern efi_status_t efi_call_phys (void *, ...);
- 
--struct efi efi;
--EXPORT_SYMBOL(efi);
- static efi_runtime_services_t *runtime;
- static u64 mem_limit = ~0UL, max_addr = ~0UL, min_addr = 0UL;
- 
-@@ -423,9 +428,9 @@ static u8 __init palo_checksum(u8 *buffer, u32 length)
-  * Parse and handle PALO table which is published at:
-  * http://www.dig64.org/home/DIG64_PALO_R1_0.pdf
-  */
--static void __init handle_palo(unsigned long palo_phys)
-+static void __init handle_palo(unsigned long phys_addr)
- {
--	struct palo_table *palo = __va(palo_phys);
-+	struct palo_table *palo = __va(phys_addr);
- 	u8  checksum;
- 
- 	if (strncmp(palo->signature, PALO_SIG, sizeof(PALO_SIG) - 1)) {
-@@ -467,12 +472,10 @@ void __init
- efi_init (void)
- {
- 	void *efi_map_start, *efi_map_end;
--	efi_config_table_t *config_tables;
- 	efi_char16_t *c16;
- 	u64 efi_desc_size;
- 	char *cp, vendor[100] = "unknown";
- 	int i;
--	unsigned long palo_phys;
- 
- 	/*
- 	 * It's too early to be able to use the standard kernel command line
-@@ -514,8 +517,6 @@ efi_init (void)
- 		       efi.systab->hdr.revision >> 16,
- 		       efi.systab->hdr.revision & 0xffff);
- 
--	config_tables = __va(efi.systab->tables);
--
- 	/* Show what we know for posterity */
- 	c16 = __va(efi.systab->fw_vendor);
- 	if (c16) {
-@@ -528,43 +529,10 @@ efi_init (void)
- 	       efi.systab->hdr.revision >> 16,
- 	       efi.systab->hdr.revision & 0xffff, vendor);
- 
--	efi.mps        = EFI_INVALID_TABLE_ADDR;
--	efi.acpi       = EFI_INVALID_TABLE_ADDR;
--	efi.acpi20     = EFI_INVALID_TABLE_ADDR;
--	efi.smbios     = EFI_INVALID_TABLE_ADDR;
--	efi.sal_systab = EFI_INVALID_TABLE_ADDR;
--	efi.boot_info  = EFI_INVALID_TABLE_ADDR;
--	efi.hcdp       = EFI_INVALID_TABLE_ADDR;
--	efi.uga        = EFI_INVALID_TABLE_ADDR;
--
- 	palo_phys      = EFI_INVALID_TABLE_ADDR;
- 
--	for (i = 0; i < (int) efi.systab->nr_tables; i++) {
--		if (efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID) == 0) {
--			efi.mps = config_tables[i].table;
--			printk(" MPS=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, ACPI_20_TABLE_GUID) == 0) {
--			efi.acpi20 = config_tables[i].table;
--			printk(" ACPI 2.0=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, ACPI_TABLE_GUID) == 0) {
--			efi.acpi = config_tables[i].table;
--			printk(" ACPI=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, SMBIOS_TABLE_GUID) == 0) {
--			efi.smbios = config_tables[i].table;
--			printk(" SMBIOS=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, SAL_SYSTEM_TABLE_GUID) == 0) {
--			efi.sal_systab = config_tables[i].table;
--			printk(" SALsystab=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, HCDP_TABLE_GUID) == 0) {
--			efi.hcdp = config_tables[i].table;
--			printk(" HCDP=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid,
--			 PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID) == 0) {
--			palo_phys = config_tables[i].table;
--			printk(" PALO=0x%lx", config_tables[i].table);
--		}
--	}
--	printk("\n");
-+	if (efi_config_init(arch_tables) != 0)
-+		return;
- 
- 	if (palo_phys != EFI_INVALID_TABLE_ADDR)
- 		handle_palo(palo_phys);
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 90f6ed1..ed2be58 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -60,19 +60,6 @@
- 
- static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
- 
--struct efi __read_mostly efi = {
--	.mps        = EFI_INVALID_TABLE_ADDR,
--	.acpi       = EFI_INVALID_TABLE_ADDR,
--	.acpi20     = EFI_INVALID_TABLE_ADDR,
--	.smbios     = EFI_INVALID_TABLE_ADDR,
--	.sal_systab = EFI_INVALID_TABLE_ADDR,
--	.boot_info  = EFI_INVALID_TABLE_ADDR,
--	.hcdp       = EFI_INVALID_TABLE_ADDR,
--	.uga        = EFI_INVALID_TABLE_ADDR,
--	.uv_systab  = EFI_INVALID_TABLE_ADDR,
--};
--EXPORT_SYMBOL(efi);
--
- struct efi_memory_map memmap;
- 
- static struct efi efi_phys __initdata;
-@@ -80,6 +67,13 @@ static efi_system_table_t efi_systab __initdata;
- 
- unsigned long x86_efi_facility;
- 
-+static __initdata efi_config_table_type_t arch_tables[] = {
-+#ifdef CONFIG_X86_UV
-+	{UV_SYSTEM_TABLE_GUID, "UVsystab", &efi.uv_systab},
-+#endif
-+	{NULL_GUID, NULL, 0},
-+};
-+
- /*
-  * Returns 1 if 'facility' is enabled, 0 otherwise.
-  */
-@@ -578,80 +572,6 @@ static int __init efi_systab_init(void *phys)
- 	return 0;
- }
- 
--static int __init efi_config_init(u64 tables, int nr_tables)
--{
--	void *config_tables, *tablep;
--	int i, sz;
--
--	if (efi_enabled(EFI_64BIT))
--		sz = sizeof(efi_config_table_64_t);
--	else
--		sz = sizeof(efi_config_table_32_t);
--
--	/*
--	 * Let's see what config tables the firmware passed to us.
--	 */
--	config_tables = early_ioremap(tables, nr_tables * sz);
--	if (config_tables == NULL) {
--		pr_err("Could not map Configuration table!\n");
--		return -ENOMEM;
--	}
--
--	tablep = config_tables;
--	pr_info("");
--	for (i = 0; i < efi.systab->nr_tables; i++) {
--		efi_guid_t guid;
--		unsigned long table;
--
--		if (efi_enabled(EFI_64BIT)) {
--			u64 table64;
--			guid = ((efi_config_table_64_t *)tablep)->guid;
--			table64 = ((efi_config_table_64_t *)tablep)->table;
--			table = table64;
--#ifdef CONFIG_X86_32
--			if (table64 >> 32) {
--				pr_cont("\n");
--				pr_err("Table located above 4GB, disabling EFI.\n");
--				early_iounmap(config_tables,
--					      efi.systab->nr_tables * sz);
--				return -EINVAL;
--			}
--#endif
--		} else {
--			guid = ((efi_config_table_32_t *)tablep)->guid;
--			table = ((efi_config_table_32_t *)tablep)->table;
--		}
--		if (!efi_guidcmp(guid, MPS_TABLE_GUID)) {
--			efi.mps = table;
--			pr_cont(" MPS=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, ACPI_20_TABLE_GUID)) {
--			efi.acpi20 = table;
--			pr_cont(" ACPI 2.0=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, ACPI_TABLE_GUID)) {
--			efi.acpi = table;
--			pr_cont(" ACPI=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID)) {
--			efi.smbios = table;
--			pr_cont(" SMBIOS=0x%lx ", table);
--#ifdef CONFIG_X86_UV
--		} else if (!efi_guidcmp(guid, UV_SYSTEM_TABLE_GUID)) {
--			efi.uv_systab = table;
--			pr_cont(" UVsystab=0x%lx ", table);
--#endif
--		} else if (!efi_guidcmp(guid, HCDP_TABLE_GUID)) {
--			efi.hcdp = table;
--			pr_cont(" HCDP=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, UGA_IO_PROTOCOL_GUID)) {
--			efi.uga = table;
--			pr_cont(" UGA=0x%lx ", table);
--		}
--		tablep += sz;
--	}
--	pr_cont("\n");
--	early_iounmap(config_tables, efi.systab->nr_tables * sz);
--	return 0;
--}
--
- static int __init efi_runtime_init(void)
- {
- 	efi_runtime_services_t *runtime;
-@@ -745,7 +665,7 @@ void __init efi_init(void)
- 		efi.systab->hdr.revision >> 16,
- 		efi.systab->hdr.revision & 0xffff, vendor);
- 
--	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables))
-+	if (efi_config_init(arch_tables))
- 		return;
- 
- 	set_bit(EFI_CONFIG_TABLES, &x86_efi_facility);
-diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 5145fa3..e1010d4 100644
---- a/drivers/firmware/efi/efi.c
-+++ b/drivers/firmware/efi/efi.c
-@@ -13,11 +13,27 @@
-  * This file is released under the GPLv2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kobject.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/efi.h>
-+#include <linux/io.h>
-+
-+struct efi __read_mostly efi = {
-+	.mps        = EFI_INVALID_TABLE_ADDR,
-+	.acpi       = EFI_INVALID_TABLE_ADDR,
-+	.acpi20     = EFI_INVALID_TABLE_ADDR,
-+	.smbios     = EFI_INVALID_TABLE_ADDR,
-+	.sal_systab = EFI_INVALID_TABLE_ADDR,
-+	.boot_info  = EFI_INVALID_TABLE_ADDR,
-+	.hcdp       = EFI_INVALID_TABLE_ADDR,
-+	.uga        = EFI_INVALID_TABLE_ADDR,
-+	.uv_systab  = EFI_INVALID_TABLE_ADDR,
-+};
-+EXPORT_SYMBOL(efi);
- 
- static struct kobject *efi_kobj;
- static struct kobject *efivars_kobj;
-@@ -132,3 +148,95 @@ err_put:
- }
- 
- subsys_initcall(efisubsys_init);
-+
-+
-+static __initdata efi_config_table_type_t common_tables[] = {
-+	{ACPI_20_TABLE_GUID, "ACPI 2.0", &efi.acpi20},
-+	{ACPI_TABLE_GUID, "ACPI", &efi.acpi},
-+	{HCDP_TABLE_GUID, "HCDP", &efi.hcdp},
-+	{MPS_TABLE_GUID, "MPS", &efi.mps},
-+	{SAL_SYSTEM_TABLE_GUID, "SALsystab", &efi.sal_systab},
-+	{SMBIOS_TABLE_GUID, "SMBIOS", &efi.smbios},
-+	{UGA_IO_PROTOCOL_GUID, "UGA", &efi.uga},
-+	{NULL_GUID, NULL, 0},
-+};
-+
-+static __init int match_config_table(efi_guid_t *guid,
-+				     unsigned long table,
-+				     efi_config_table_type_t *table_types)
-+{
-+	u8 str[EFI_VARIABLE_GUID_LEN + 1];
-+	int i;
-+
-+	if (table_types) {
-+		efi_guid_unparse(guid, str);
-+
-+		for (i = 0; efi_guidcmp(table_types[i].guid, NULL_GUID); i++) {
-+			efi_guid_unparse(&table_types[i].guid, str);
-+
-+			if (!efi_guidcmp(*guid, table_types[i].guid)) {
-+				*(table_types[i].ptr) = table;
-+				pr_cont(" %s=0x%lx ",
-+					table_types[i].name, table);
-+				return 1;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int __init efi_config_init(efi_config_table_type_t *arch_tables)
-+{
-+	void *config_tables, *tablep;
-+	int i, sz;
-+
-+	if (efi_enabled(EFI_64BIT))
-+		sz = sizeof(efi_config_table_64_t);
-+	else
-+		sz = sizeof(efi_config_table_32_t);
-+
-+	/*
-+	 * Let's see what config tables the firmware passed to us.
-+	 */
-+	config_tables = early_memremap(efi.systab->tables,
-+				       efi.systab->nr_tables * sz);
-+	if (config_tables == NULL) {
-+		pr_err("Could not map Configuration table!\n");
-+		return -ENOMEM;
-+	}
-+
-+	tablep = config_tables;
-+	pr_info("");
-+	for (i = 0; i < efi.systab->nr_tables; i++) {
-+		efi_guid_t guid;
-+		unsigned long table;
-+
-+		if (efi_enabled(EFI_64BIT)) {
-+			u64 table64;
-+			guid = ((efi_config_table_64_t *)tablep)->guid;
-+			table64 = ((efi_config_table_64_t *)tablep)->table;
-+			table = table64;
-+#ifndef CONFIG_64BIT
-+			if (table64 >> 32) {
-+				pr_cont("\n");
-+				pr_err("Table located above 4GB, disabling EFI.\n");
-+				early_iounmap(config_tables,
-+					       efi.systab->nr_tables * sz);
-+				return -EINVAL;
-+			}
-+#endif
-+		} else {
-+			guid = ((efi_config_table_32_t *)tablep)->guid;
-+			table = ((efi_config_table_32_t *)tablep)->table;
-+		}
-+
-+		if (!match_config_table(&guid, table, common_tables))
-+			match_config_table(&guid, table, arch_tables);
-+
-+		tablep += sz;
-+	}
-+	pr_cont("\n");
-+	early_iounmap(config_tables, efi.systab->nr_tables * sz);
-+	return 0;
-+}
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 5f8f176..09d9e42 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -404,6 +404,12 @@ typedef struct {
- 	unsigned long table;
- } efi_config_table_t;
- 
-+typedef struct {
-+	efi_guid_t guid;
-+	const char *name;
-+	unsigned long *ptr;
-+} efi_config_table_type_t;
-+
- #define EFI_SYSTEM_TABLE_SIGNATURE ((u64)0x5453595320494249ULL)
- 
- #define EFI_2_30_SYSTEM_TABLE_REVISION  ((2 << 16) | (30))
-@@ -587,6 +593,7 @@ static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned lon
- }
- #endif
- extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
-+extern int efi_config_init(efi_config_table_type_t *arch_tables);
- extern u64 efi_get_iobase (void);
- extern u32 efi_mem_type (unsigned long phys_addr);
- extern u64 efi_mem_attributes (unsigned long phys_addr);
+ -Luis
+
 -- 
-1.7.10.4
+ Makefile                                      |  2 +-
+ arch/alpha/Makefile                           |  2 +-
+ arch/arm/boot/dts/at91sam9n12ek.dts           |  4 +-
+ arch/arm/kernel/perf_event.c                  | 10 +++-
+ arch/arm/mach-davinci/board-dm355-leopard.c   |  1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c      |  1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c      |  1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c     |  1 +
+ arch/arm/mm/Kconfig                           |  9 ++--
+ arch/m68k/emu/natfeat.c                       | 23 +++++++--
+ arch/m68k/include/asm/div64.h                 |  9 ++--
+ arch/microblaze/configs/mmu_defconfig         | 52 +++++++++++++------
+ arch/microblaze/configs/nommu_defconfig       | 73 ++++++++++++++++-----------
+ arch/mips/Kconfig                             |  2 +-
+ arch/mips/include/asm/io.h                    |  5 ++
+ arch/mips/include/asm/page.h                  | 15 +++---
+ arch/powerpc/Kconfig                          |  1 +
+ arch/powerpc/include/asm/page.h               | 10 ++++
+ arch/powerpc/kernel/lparcfg.c                 | 23 ++++-----
+ arch/x86/kernel/sys_x86_64.c                  |  2 +-
+ arch/x86/mm/mmap.c                            |  6 ++-
+ arch/x86/xen/setup.c                          | 22 ++++++++
+ arch/xtensa/kernel/Makefile                   |  1 +
+ drivers/ata/libata-pmp.c                      | 12 ++---
+ drivers/ata/sata_fsl.c                        |  5 +-
+ drivers/base/memory.c                         |  2 +
+ drivers/bluetooth/ath3k.c                     |  2 +
+ drivers/bluetooth/btusb.c                     |  1 +
+ drivers/firmware/efivars.c                    | 27 ++++++++++
+ drivers/gpu/drm/i915/i915_reg.h               |  2 +
+ drivers/gpu/drm/i915/intel_lvds.c             |  8 +--
+ drivers/gpu/drm/i915/intel_ringbuffer.c       | 12 +++++
+ drivers/net/can/usb/peak_usb/pcan_usb.c       |  2 +-
+ drivers/net/wireless/hostap/hostap_ioctl.c    |  4 +-
+ drivers/net/wireless/iwlegacy/4965-mac.c      | 16 +++---
+ drivers/net/wireless/iwlegacy/common.c        |  1 +
+ drivers/net/wireless/iwlwifi/iwl-mac80211.c   |  5 +-
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c | 10 ++--
+ drivers/net/wireless/zd1201.c                 |  4 +-
+ drivers/of/fdt.c                              |  2 +
+ drivers/s390/scsi/zfcp_erp.c                  | 29 ++++++++---
+ drivers/s390/scsi/zfcp_qdio.c                 |  8 +--
+ drivers/tty/hvc/hvsi_lib.c                    |  4 +-
+ drivers/tty/serial/mxs-auart.c                |  2 +-
+ drivers/usb/core/quirks.c                     |  6 +++
+ drivers/usb/misc/adutux.c                     |  2 +-
+ drivers/usb/serial/keyspan.c                  |  2 +-
+ drivers/usb/serial/mos7720.c                  | 21 +++++---
+ drivers/usb/serial/mos7840.c                  |  2 +-
+ drivers/usb/serial/ti_usb_3410_5052.c         |  9 ++--
+ drivers/usb/serial/usb_wwan.c                 | 20 ++++----
+ drivers/usb/wusbcore/wa-xfer.c                |  9 +++-
+ drivers/xen/events.c                          |  2 +-
+ fs/ext4/ext4_jbd2.c                           |  8 +--
+ fs/jfs/jfs_dtree.c                            | 31 +++++++++---
+ fs/nilfs2/segbuf.c                            |  5 +-
+ fs/proc/task_mmu.c                            |  8 +--
+ include/linux/mm_types.h                      |  1 +
+ include/linux/wait.h                          | 58 +++++++++++++++++++++
+ kernel/workqueue.c                            | 25 +++++++--
+ mm/nommu.c                                    | 10 ++++
+ net/key/af_key.c                              |  1 +
+ sound/oss/Kconfig                             |  1 +
+ sound/soc/codecs/cs42l52.c                    |  2 +-
+ sound/usb/6fire/midi.c                        | 16 +++++-
+ sound/usb/6fire/midi.h                        |  6 +--
+ sound/usb/6fire/pcm.c                         | 41 ++++++++++++++-
+ sound/usb/6fire/pcm.h                         |  2 +-
+ sound/usb/mixer.c                             |  7 ++-
+ 69 files changed, 533 insertions(+), 195 deletions(-)
+
+AceLan Kao (1):
+      Bluetooth: Add support for Atheros [0cf3:3121]
+
+Andreas Schwab (1):
+      m68k: Truncate base in do_div()
+
+Anthony Foiani (1):
+      sata_fsl: save irqs while coalescing
+
+Benjamin Herrenschmidt (1):
+      powerpc: Don't Oops when accessing /proc/powerpc/lparcfg without hypervisor
+
+Brian Austin (1):
+      ASoC: cs42l52: Reorder Min/Max and update to SX_TLV for Beep Volume
+
+Chris Wilson (1):
+      drm/i915: Invalidate TLBs for the rings after a reset
+
+Dan Carpenter (1):
+      Hostap: copying wrong data prism2_ioctl_giwaplist()
+
+Daniel Vetter (1):
+      drm/i915/lvds: ditch ->prepare special case
+
+Dave Kleikamp (1):
+      jfs: fix readdir cookie incompatibility with NFSv4
+
+David Vrabel (2):
+      xen/events: initialize local per-cpu mask for all possible events
+      x86/xen: do not identity map UNUSABLE regions in the machine E820
+
+Emmanuel Grumbach (1):
+      iwlwifi: pcie: disable L1 Active after pci_enable_device
+
+Eugene Surovegin (1):
+      powerpc/hvsi: Increase handshake timeout from 200ms to 400ms.
+
+Geert Uytterhoeven (1):
+      m68k/atari: ARAnyM - Fix NatFeat module support
+
+Jan Kara (1):
+      jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
+
+Johan Hovold (5):
+      USB: mos7840: fix big-endian probe
+      USB: adutux: fix big-endian device-type reporting
+      USB: ti_usb_3410_5052: fix big-endian firmware handling
+      USB: mos7720: fix broken control requests
+      USB: keyspan: fix null-deref at disconnect and release
+
+Jussi Kivilinna (1):
+      zd1201: do not use stack as URB transfer_buffer
+
+Lai Jiangshan (1):
+      workqueue: fix possible stall on try_to_grab_pending() of a delayed work item
+
+Linus Torvalds (1):
+      vm: add no-mmu vm_iomap_memory() stub
+
+Luis Henriques (1):
+      Linux 3.5.7.21
+
+Markos Chandras (1):
+      MIPS: Expose missing pci_io{map,unmap} declarations
+
+Martin Peschke (2):
+      [SCSI] zfcp: fix lock imbalance by reworking request queue locking
+      [SCSI] zfcp: fix schedule-inside-lock in scsi_device list loops
+
+Matt Burtch (1):
+      USB-Serial: Fix error handling of usb_wwan
+
+Matt Fleming (1):
+      efivars: explicitly calculate length of VariableName
+
+Max Filippov (1):
+      xtensa: fix linker script transformation for .text.unlikely
+
+Michal Simek (1):
+      microblaze: Update microblaze defconfigs
+
+Nicolas Dichtel (1):
+      af_key: initialize satype in key_notify_policy_flush()
+
+Nicolas Ferre (1):
+      ARM: at91/DT: fix at91sam9n12ek memory node
+
+Nicolas Pitre (1):
+      ARM: 7816/1: CONFIG_KUSER_HELPERS: fix help text
+
+Oliver Neukum (1):
+      usb: add two quirky touchscreen
+
+Paul Bolle (1):
+      sound: Fix make allmodconfig on MIPS correctly
+
+Paul Mackerras (1):
+      powerpc: Work around gcc miscompilation of __pa() on 64-bit
+
+Radu Caragea (1):
+      x86 get_unmapped_area: Access mmap_legacy_base through mm_struct member
+
+Ralf Baechle (1):
+      MIPS: Rewrite pfn_valid to work in modules, too.
+
+Russ Anderson (1):
+      drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+
+Sekhar Nori (1):
+      ARM: davinci: nand: specify ecc strength
+
+Stanislaw Gruszka (3):
+      iwl4965: set power mode early
+      iwl4965: reset firmware after rfkill off
+      iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
+
+Stephane Grosjean (1):
+      can: pcan_usb: fix wrong memcpy() bytes length
+
+Stephen Boyd (1):
+      ARM: 7810/1: perf: Fix array out of bounds access in armpmu_map_hw_event()
+
+Takashi Iwai (1):
+      sound: Fix make allmodconfig on MIPS
+
+Terry Suereth (1):
+      libata: apply behavioral quirks to sil3826 PMP
+
+Thomas Pugliese (1):
+      wusbcore: fix kernel panic when disconnecting a wireless USB->serial device
+
+Torstein Hegge (1):
+      ALSA: usb: Parse UAC2 extension unit like for UAC1
+
+Torsten Schenk (2):
+      ALSA: 6fire: make buffers DMA-able (pcm)
+      ALSA: 6fire: make buffers DMA-able (midi)
+
+Vyacheslav Dubeyko (2):
+      nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
+      nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
+
+Will Deacon (2):
+      ARM: 7809/1: perf: fix event validation for software group leaders
+      alpha: makefile: don't enforce small data model for kernel builds
+
+Wladislav Wiebe (1):
+      of: fdt: fix memory initialization for expanded DT
+
+Wolfram Sang (1):
+      serial: mxs: fix buffer overflow
+
+yonghua zheng (1):
+      fs/proc/task_mmu.c: fix buffer overflow in add_page_map()
 
