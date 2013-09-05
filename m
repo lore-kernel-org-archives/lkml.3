@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763323Ab3IEHZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 03:25:50 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:18330 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab3IEHZs (ORCPT
+	id S1763375Ab3IEH0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 03:26:39 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:51993 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757461Ab3IEH0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 03:25:48 -0400
-Date: Thu, 5 Sep 2013 09:25:36 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: rebase of the jdelvare-hwmon quilt series
-Message-ID: <20130905092536.44dbe86a@endymion.delvare>
-In-Reply-To: <20130905101903.0198dbbfdf9e9172fb9b55b2@canb.auug.org.au>
-References: <20130905101903.0198dbbfdf9e9172fb9b55b2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	Thu, 5 Sep 2013 03:26:37 -0400
+Message-ID: <1378365995.4058.18.camel@linux-fkkt.site>
+Subject: Re: [PATCH 4/5] uas: add dead request list
+From: Oliver Neukum <oliver@neukum.org>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: linux-usb@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "open list:USB ATTACHED SCSI" <linux-scsi@vger.kernel.org>,
+        "open list:USB MASS STORAGE..." 
+	<usb-storage@lists.one-eyed-alien.net>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Thu, 05 Sep 2013 09:26:35 +0200
+In-Reply-To: <1378121129-32594-5-git-send-email-kraxel@redhat.com>
+References: <1378121129-32594-1-git-send-email-kraxel@redhat.com>
+	 <1378121129-32594-5-git-send-email-kraxel@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.4 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, 2013-09-02 at 13:25 +0200, Gerd Hoffmann wrote:
+> +static void uas_zap_dead(struct uas_dev_info *devinfo)
+> +{
+> +       struct uas_cmd_info *cmdinfo;
+> +       struct uas_cmd_info *temp;
+> +       struct list_head list;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irq(&uas_lists_lock);
+> +       list_replace_init(&uas_dead_list, &list);
+> +       spin_unlock_irq(&uas_lists_lock);
 
-On Thu, 5 Sep 2013 10:19:03 +1000, Stephen Rothwell wrote:
-> Why did you bother rebasing the jdelvare-hwmon quilt series?  None of the
-> patches changed (not that that even matters).
+This looks like a window for a race.
 
-I'm not "rebasing". Rebasing is a git thing, and I'm using quilt, not
-git, to feed linux-next. Until the patches hit Linus' tree, I am not
-maintaining a tree, I am maintaining a patch set on top of a moving
-tree. I only use git to send my pull request to Linus to make things
-easier for him.
+> +       spin_lock_irqsave(&devinfo->lock, flags);
+> +       list_for_each_entry_safe(cmdinfo, temp, &list, dead) {
+> +  
 
-What you see is just how quilt works. That's nothing to worry about.
-I've been working that way for over 6 years. I am curious why you
-started yelling at me about this 3 months ago when it has proven to
-work just fine for 6 years. You asked me to tag what my quilt series
-was based on, and I did. You asked me to get my patches in linux-next
-ASAP so that they get more testing, and I do.
+What happens if list entries are on the private list, when
+the function is called for another device? It looks to me like
+the di==devinfo test could put them back on the list although
+they would need to be canceled.
 
-Last time, you mentioned a problem with testing results being lost when
-I "rebase" my quilt series". I don't quite think it's true for hwmon
-patches as the subsystem is pretty much self-contained (the things I am
-working on at least) plus I do built-test and to some extent run-test
-the patches continuously, so I am confident my approach isn't breaking
-bisectability.
+	Regards
+		Oliver
 
-But I have heard you nevertheless and already slightly changed my
-process. I will no longer be "rebasing" during the merge window, i.e.
-the first pull request I send during the merge window, which contains
-the patches that have been waiting or have been added since the
-previous merge window, will now be based on the just-released .0
-kernel, rather than the current pre-rc1 state of Linus' tree at the
-time I issue the pull request. Hopefully this should address your "test
-results are lost" concern.
 
-I don't think there's much more I can offer. I have to work with a
-relatively recent tree so I have to "rebase" from times to times
-anyway. At least once per development cycle, right? And I don't think
-it would be very reasonable to stay on -rc1 all the time. That's why I
-follow upstream development between -rc1 and final, and will only stop
-doing so between final and -rc1. Staying with .0 wouldn't be reasonable
-either, there's a reason why we maintain stable kernels trees. I don't
-think you want developers to base their work on the previous stable
-kernel, right?
-
-You see, I don't want to make your life harder or anything. It's just
-that your request doesn't make sense to me. "Don't rebase" is not
-something I can do much with, as I do have to follow upstream
-development and rebase at some point in time anyway. If you propose a
-complete workflow which is better than what I do today, I'll be happy
-to consider switching to it. But just telling me to skip one mandatory
-step in my current workflow is simply not helping, sorry.
-
--- 
-Jean Delvare
