@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab3IEEzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 00:55:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46059 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab3IEEzG (ORCPT
+	id S1755532Ab3IEE7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 00:59:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56949 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab3IEE7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 00:55:06 -0400
-Date: Wed, 4 Sep 2013 21:57:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rmk+kernel@arm.linux.org.uk
-Subject: Re: kobject: delayed kobject release: help find buggy drivers
-Message-ID: <20130905045745.GA18876@kroah.com>
-References: <20130903185924.046EE660E91@gitolite.kernel.org>
- <20130903204442.GA22222@redhat.com>
- <20130903205527.GA6358@kroah.com>
- <87zjrt6tz4.fsf@rustcorp.com.au>
- <20130905041338.GA21090@redhat.com>
+	Thu, 5 Sep 2013 00:59:54 -0400
+Message-ID: <52280FC7.30302@hitachi.com>
+Date: Thu, 05 Sep 2013 13:59:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905041338.GA21090@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hemant <hkshaw@linux.vnet.ibm.com>
+Cc: Mark Wielaard <mjw@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org
+Subject: Re: Re: [RFC PATCH 0/2] Perf support to SDT markers
+References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903082503.GA20732@gmail.com> <5225A937.2050507@hitachi.com> <5225E2C5.3080001@linux.vnet.ibm.com>  <87a9jtt72j.fsf@sejong.aot.lge.com> <1378283148.4321.16.camel@bordewijk.wildebeest.org> <5226F1B6.3000801@hitachi.com> <5227770E.3060106@linux.vnet.ibm.com>
+In-Reply-To: <5227770E.3060106@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 12:13:38AM -0400, Dave Jones wrote:
-> On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
->  
->  > >> With this enabled, I get a bunch of scrolling oopses immediately after
->  > >> exiting the bootloader. It happens so early I can't even capture them
->  > >> over usb-serial, or earlyprintk=dbgp.
->  > >> 
->  > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
->  > >> so I can't even use that.
->  > >> 
->  > >> any ideas ?
->  > >
->  > > The first big bug found with this was with the module kobject code, and
->  > > a fix for that should be going in through Rusty's tree to Linus for this
->  > > merge window (right Rusty?)
->  > 
->  > Yep, just sent pull request.  The fix was the final commit there...
+(2013/09/05 3:08), Hemant wrote:
+> On 09/04/2013 02:09 PM, Masami Hiramatsu wrote:
+>> (2013/09/04 17:25), Mark Wielaard wrote:
+>>> On Wed, 2013-09-04 at 15:49 +0900, Namhyung Kim wrote:
+>>>> On Tue, 03 Sep 2013 18:53:17 +0530, Hemant wrote:
+>>>>> On 09/03/2013 02:47 PM, Masami Hiramatsu wrote:
+>>>>>> Indeed, and also I'd like to know what versions of SDT this support,
+>>>>>> and where we can see the technical document of that. As far as I know,
+>>>>>> the previous(?) SDT implementation also involves ugly semaphores.
+>>>>>> Have that already gone?
+>>>> It seems it's not. I see the SDT v3 document still mentions semaphores.
+>>> It mentions them, but should normally not be used. They are there for
+>>> dtrace (source) compatibility. And you don't have to use them.
+>>>
+>>> Since normally a SDT probe marker is just a NOP it doesn't have any
+>>> overhead. But if you want to add complicated arguments that you would
+>>> normally not generate in your code, then you might want to add a
+>>> semaphore. That way you can have probes with a bit more overhead that
+>>> still have zero overhead when not being probed.
+>>>
+>>> Note that if you use the normal DTRACE_PROBE macros no semaphore will be
+>>> inserted. And you can opt to not support probes that have a semaphore in
+>>> perf if you think that is easier (just check the semaphore link-time
+>>> address for the probe, it should normally be zero). Just warn: "No way I
+>>> am going to probe something that might have a little extra overhead! I
+>>> am no debugger..." :)
+>> OK, I see. And in that case, we'd better filter out the markers which
+>> use a semaphore when list it up, since we can not enable it.
+>>
+>> Thank you,
+>>
+>>
 > 
-> Crap, that isn't the bug I'm hitting.
+> But isn't it a better idea to handle semaphores, because there can be 
+> many important markers using semaphores and people may still want to 
+> probe on them?
 
-Any chance to get a oops traceback?
+Yeah, I didn't mean that all markers with semaphore keep disabled forever.
+Instead, I meant that should not be for the first step. And in the first step,
+we'd better support only markers without semaphore, and to avoid confusing
+users, it should list only probable markers at this point.
 
-greg k-h
+I agree that we need to continue discussing how we handle those semaphores.
+
+Thank you!
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
