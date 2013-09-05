@@ -1,180 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab3IEVaB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:30:01 -0400
-Received: from fieldses.org ([174.143.236.118]:60007 "EHLO fieldses.org"
+	id S1755085Ab3IEVcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 17:32:53 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33983 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755177Ab3IEVaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:30:00 -0400
-Date: Thu, 5 Sep 2013 17:29:54 -0400
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk,
-        bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        raven@themaw.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mszeredi@suse.cz
-Subject: Re: [PATCH 08/10] fuse: use d_materialise_unique()
-Message-ID: <20130905212954.GC24805@fieldses.org>
-References: <1378303556-7220-1-git-send-email-miklos@szeredi.hu>
- <1378303556-7220-9-git-send-email-miklos@szeredi.hu>
+	id S1751616Ab3IEVcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 17:32:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lan Tianyu <lantianyu1986@gmail.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots
+Date: Thu, 05 Sep 2013 23:43:45 +0200
+Message-ID: <2124824.h5mdeQjI6H@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAOLK0pyRY0iXt2JN42onPLn7LG8O7R7i3FaKVL7xS63uCg+7kw@mail.gmail.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <81108254.GSTBHzP5cb@vostro.rjw.lan> <CAOLK0pyRY0iXt2JN42onPLn7LG8O7R7i3FaKVL7xS63uCg+7kw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378303556-7220-9-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 04:05:54PM +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On Thursday, September 05, 2013 09:11:51 AM Lan Tianyu wrote:
+> 2013/9/5 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Thursday, September 05, 2013 02:17:06 PM Lan Tianyu wrote:
+> >> 2013/9/5 Alex Williamson <alex.williamson@redhat.com>:
+> >> > On Thu, 2013-09-05 at 01:35 +0200, Rafael J. Wysocki wrote:
+> >> >> On Wednesday, September 04, 2013 05:12:14 PM Alex Williamson wrote:
+> >> >> > On Thu, 2013-09-05 at 00:54 +0200, Rafael J. Wysocki wrote:
+> >> >> > > On Wednesday, September 04, 2013 02:36:34 PM Alex Williamson wrote:
+> >> >> > > > On Thu, 2013-07-18 at 01:32 +0200, Rafael J. Wysocki wrote:
+> >> >> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> >> > > > >
+> >> >> > > > > The current implementation of acpiphp_check_bridge() is pretty dumb:
+> >> >> > > > >  - It enables a slot if it's not enabled and the slot status is
+> >> >> > > > >    ACPI_STA_ALL.
+> >> >> > > > >  - It disables a slot if it's enabled and the slot status is not
+> >> >> > > > >    ACPI_STA_ALL.
+> >> >> > > > >
+> >> >> > > > > This behavior is not sufficient to handle the Thunderbolt daisy
+> >> >> > > > > chaining case properly, however, because in that case the bus
+> >> >> > > > > behind the already enabled slot needs to be rescanned for new
+> >> >> > > > > devices.
+> >> >> > > > >
+> >> >> > > > > For this reason, modify acpiphp_check_bridge() so that slots are
+> >> >> > > > > disabled and stopped if they are not in the ACPI_STA_ALL state.
+> >> >> > > > >
+> >> >> > > > > For slots in the ACPI_STA_ALL state, devices behind them that don't
+> >> >> > > > > respond are trimmed using a new function, trim_stale_devices(),
+> >> >> > > > > introduced specifically for this purpose.  That function walks
+> >> >> > > > > the given bus and checks each device on it.  If the device doesn't
+> >> >> > > > > respond, it is assumed to be gone and is removed.
+> >> >> > > > >
+> >> >> > > > > Once all of the stale devices directy behind the slot have been
+> >> >> > > > > removed, acpiphp_check_bridge() will start looking for new devices
+> >> >> > > > > that might have appeared on the given bus.  It will do that even if
+> >> >> > > > > the slot is already enabled (SLOT_ENABLED is set for it).
+> >> >> > > > >
+> >> >> > > > > In addition to that, make the bus check notification ignore
+> >> >> > > > > SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
+> >> >> > > > > so that devices behind the slot are re-enumerated in that case too.
+> >> >> > > > >
+> >> >> > > > > This change is based on earlier patches from Kirill A Shutemov
+> >> >> > > > > and Mika Westerberg.
+> >> >> > > > >
+> >> >> > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> >> > > > > Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> >> > > > > ---
+> >> >> > > >
+> >> >> > > > FYI, git bisect landed on this patch as the cause of my serial console
+> >> >> > > > dying on current upstream.  Further debugging to come...  Thanks,
+> >> >> > >
+> >> >> > > Well, sorry about that.
+> >> >> > >
+> >> >> > > What exactly do you mean by "dying"?
+> >> >> >
+> >> >> > Sorry, I was hoping to have more details quickly, but it's been a pain
+> >> >> > to debug.  By dying I mean serial console output suddenly stops during
+> >> >> > kernel boot and nothing more comes out of it until after the system is
+> >> >> > rebooted.  The problem happens when acpiphp_check_bridge() calls
+> >> >> > enable_slot().  The serial console dies somewhere down in
+> >> >> > acpiphp_bus_trim().  I think this is happening on the 00:1f ISA bridge,
+> >> >> > so there's a good chance the serial ports are described as somewhere
+> >> >> > under there.
+> >> >>
+> >> >> Can you please check if that is the acpiphp_bus_trim() called by
+> >> >> acpiphp_bus_add() or the other one called from trim_stale_devices()?
+> >> >>
+> >> >> Just add a dump_stack() or WARN_ON(1) to trim_stale_devices() next to
+> >> >> the acpiphp_bus_trim() call and see if that triggers.  I *think* it's the one
+> >> >> in acpiphp_bus_add(), but it won't hurt to verify that.
+> >> >
+> >> > Here's the call path:
+> >> >
+> >> > [   16.120824]  [<ffffffff81627e6c>] dump_stack+0x55/0x76
+> >> > [   16.125979]  [<ffffffff8162132e>] enable_slot+0x4ee/0x5e0
+> >> > [   16.131396]  [<ffffffff813418fb>] ? trim_stale_devices+0x5b/0xf0
+> >> > [   16.137420]  [<ffffffff81341b35>] acpiphp_check_bridge+0xd5/0x110
+> >> > [   16.143531]  [<ffffffff81342acb>] hotplug_event+0x16b/0x260
+> >> > [   16.149115]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
+> >> > [   16.155136]  [<ffffffff81342bf0>] hotplug_event_work+0x30/0x70
+> >> > [   16.160978]  [<ffffffff81072d3b>] process_one_work+0x1eb/0x540
+> >> > [   16.166819]  [<ffffffff81072cd9>] ? process_one_work+0x189/0x540
+> >> > [   16.172836]  [<ffffffff8107353c>] worker_thread+0x11c/0x370
+> >> > [   16.178426]  [<ffffffff81073420>] ? rescuer_thread+0x350/0x350
+> >> > [   16.184276]  [<ffffffff8107b0ea>] kthread+0xea/0xf0
+> >> > [   16.189165]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
+> >> > [   16.195700]  [<ffffffff816395dc>] ret_from_fork+0x7c/0xb0
+> >> > [   16.201109]  [<ffffffff8107b000>] ? kthread_create_on_node+0x160/0x160
+> >> >
+> >> > The actual death of the serial console occurs in acpi_device_set_power()
+> >> > called from:
+> >> >
+> >> > enable_slot()
+> >> >  acpiphp_bus_add()
+> >> >   acpiphp_bus_trim()
+> >> >    acpi_bus_trim()
+> >> >     acpi_walk_namespace()
+> >> >      acpi_bus_remove()
+> >> >       acpi_device_unregister()
+> >> >        acpi_device_set_power()
+> >> >
+> >> > I can't seem to get a path from the acpi devices in question there, so I
+> >> > have no idea what's getting trimmed here.  It worries me quite a bit by
+> >> > introducing this trimming that apparently wasn't happening before
+> >> > though.  Thanks,
+> >>
+> >> Hi Alex:
+> >>            Could you apply the following patch and bootup with kernel param
+> >> "acpiphp.acpiphp_debug=1"?
+> >>            I guess the patch can make serial port alive. It will not
+> >> be put into D3cold
+> >> during trimming. But I don't know why it doesn't work after being put
+> >> back to D0.
+> >
+> > Do we actually put it into D0 in acpi_bus_scan()?  I don't think so.
+> >
 > 
-> Use d_materialise_unique() instead of d_splice_alias().  This allows dentry
-> subtrees to be moved to a new place if there moved, even if something is
-> referencing a dentry in the subtree (open fd, cwd, etc..).
-> 
-> This will also allow us to drop a subtree if it is found to be replaced by
-> something else.  In this case the disconnected subtree can later be
-> reconnected to its new location.
-> 
-> d_materialise_unique() ensures that a directory entry only ever has one
-> alias.  We keep fc->inst_mutex around the calls for d_materialise_unique()
-> on directories to prevent a race with mkdir "stealing" the inode.
+> Hi Rafael:
+>          I mean the code in the acpiphp_bus_add(). After trimming and acpi
+> bus scan handle, the device will be put back to D0 if acpi_bus_get_device()
+> return acpi device. So I thought the serial port is put back to D0.
 
-One worry I have with d_materialise_unique is the
+*The* device corresponding to handle will be put into D0.  Any devices below it
+whose ACPI device objects may also be added by acpi_bus_scan() - not necessarily.
 
-	anon->d_flags &= ~DCACHE_DISCONNECTED
+Thanks,
+Rafael
 
-at the end of __d_materialise_dentry.  The export code depends on
-DCACHE_DISCONNECTED not being cleared until it's verified that the
-dentry is connected all the way back up to the root of the filesystem,
-and it looks like this can clear DCACHE_DISCONNECTED sooner than that.
-This hasn't been an issue since all the exportable filesystems use
-d_splice_alias().
-
-I think maybe this is just a bug and we could safely delete that line.
-
---b.
-
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/fuse/dir.c | 69 ++++++++++++++++++++++-------------------------------------
->  1 file changed, 26 insertions(+), 43 deletions(-)
-> 
-> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> index 72a5d5b..131d14b 100644
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@ -267,26 +267,6 @@ int fuse_valid_type(int m)
->  		S_ISBLK(m) || S_ISFIFO(m) || S_ISSOCK(m);
->  }
->  
-> -/*
-> - * Add a directory inode to a dentry, ensuring that no other dentry
-> - * refers to this inode.  Called with fc->inst_mutex.
-> - */
-> -static struct dentry *fuse_d_add_directory(struct dentry *entry,
-> -					   struct inode *inode)
-> -{
-> -	struct dentry *alias = d_find_alias(inode);
-> -	if (alias && !(alias->d_flags & DCACHE_DISCONNECTED)) {
-> -		/* This tries to shrink the subtree below alias */
-> -		fuse_invalidate_entry(alias);
-> -		dput(alias);
-> -		if (!hlist_empty(&inode->i_dentry))
-> -			return ERR_PTR(-EBUSY);
-> -	} else {
-> -		dput(alias);
-> -	}
-> -	return d_splice_alias(inode, entry);
-> -}
-> -
->  int fuse_lookup_name(struct super_block *sb, u64 nodeid, struct qstr *name,
->  		     struct fuse_entry_out *outarg, struct inode **inode)
->  {
-> @@ -345,6 +325,24 @@ int fuse_lookup_name(struct super_block *sb, u64 nodeid, struct qstr *name,
->  	return err;
->  }
->  
-> +static struct dentry *fuse_materialise_dentry(struct dentry *dentry,
-> +					      struct inode *inode)
-> +{
-> +	struct dentry *newent;
-> +
-> +	if (inode && S_ISDIR(inode->i_mode)) {
-> +		struct fuse_conn *fc = get_fuse_conn(inode);
-> +
-> +		mutex_lock(&fc->inst_mutex);
-> +		newent = d_materialise_unique(dentry, inode);
-> +		mutex_unlock(&fc->inst_mutex);
-> +	} else {
-> +		newent = d_materialise_unique(dentry, inode);
-> +	}
-> +
-> +	return newent;
-> +}
-> +
->  static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
->  				  unsigned int flags)
->  {
-> @@ -352,7 +350,6 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
->  	struct fuse_entry_out outarg;
->  	struct inode *inode;
->  	struct dentry *newent;
-> -	struct fuse_conn *fc = get_fuse_conn(dir);
->  	bool outarg_valid = true;
->  
->  	err = fuse_lookup_name(dir->i_sb, get_node_id(dir), &entry->d_name,
-> @@ -368,16 +365,10 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
->  	if (inode && get_node_id(inode) == FUSE_ROOT_ID)
->  		goto out_iput;
->  
-> -	if (inode && S_ISDIR(inode->i_mode)) {
-> -		mutex_lock(&fc->inst_mutex);
-> -		newent = fuse_d_add_directory(entry, inode);
-> -		mutex_unlock(&fc->inst_mutex);
-> -		err = PTR_ERR(newent);
-> -		if (IS_ERR(newent))
-> -			goto out_iput;
-> -	} else {
-> -		newent = d_splice_alias(inode, entry);
-> -	}
-> +	newent = fuse_materialise_dentry(entry, inode);
-> +	err = PTR_ERR(newent);
-> +	if (IS_ERR(newent))
-> +		goto out_err;
->  
->  	entry = newent ? newent : entry;
->  	if (outarg_valid)
-> @@ -1275,18 +1266,10 @@ static int fuse_direntplus_link(struct file *file,
->  	if (!inode)
->  		goto out;
->  
-> -	if (S_ISDIR(inode->i_mode)) {
-> -		mutex_lock(&fc->inst_mutex);
-> -		alias = fuse_d_add_directory(dentry, inode);
-> -		mutex_unlock(&fc->inst_mutex);
-> -		err = PTR_ERR(alias);
-> -		if (IS_ERR(alias)) {
-> -			iput(inode);
-> -			goto out;
-> -		}
-> -	} else {
-> -		alias = d_splice_alias(inode, dentry);
-> -	}
-> +	alias = fuse_materialise_dentry(dentry, inode);
-> +	err = PTR_ERR(alias);
-> +	if (IS_ERR(alias))
-> +		goto out;
->  
->  	if (alias) {
->  		dput(dentry);
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
