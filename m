@@ -1,167 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763425Ab3IEMiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 08:38:51 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:47208 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762579Ab3IEMis (ORCPT
+	id S1762269Ab3IEMmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 08:42:50 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:38197 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab3IEMmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 08:38:48 -0400
-Date: Thu, 5 Sep 2013 14:39:11 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
-Message-ID: <20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
-References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
- <1378374284-1484-5-git-send-email-miklos@szeredi.hu>
- <20130905111852.GP13318@ZenIV.linux.org.uk>
- <CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
- <20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
- <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
+	Thu, 5 Sep 2013 08:42:49 -0400
+Date: Thu, 5 Sep 2013 14:42:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf changes for v3.12
+Message-ID: <20130905124242.GB20519@somewhere>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFyyJpCC0EFfPpGYi+6goWbA+LZbrkFcLNW3x8xYHfKvdQ@mail.gmail.com>
+ <20130905105639.GB21407@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130905105639.GB21407@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one actually has a slight chance of working.
+On Thu, Sep 05, 2013 at 12:56:39PM +0200, Ingo Molnar wrote:
+> 
+> (Cc:-ed Frederic and Namhyung as well, it's about bad overhead in 
+> tools/perf/util/hist.c.)
+> 
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Tue, Sep 3, 2013 at 6:29 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > >
+> > > Please pull the latest perf-core-for-linus git tree from:
+> > 
+> > I don't think this is new at all, but I just tried to do a perf
+> > record/report of "make -j64 test" on git:
+> > 
+> > It's a big perf.data file (1.6G), but after it has done the
+> > "processing time ordered events" thing it results in:
+> > 
+> > ┌─Warning:───────────────────────────────────┐
+> > │Processed 8672030 events and lost 71 chunks!│
+> > │Check IO/CPU overload!                      │
+> > │                                            │
+> > │                                            │
+> > │Press any key...                            │
+> > └────────────────────────────────────────────┘
+> > 
+> > and then it just hangs using 100% CPU time. Pressing any key doesn't
+> > do anything.
+> > 
+> > It may well still be *doing* something, and maybe it will come back
+> > some day with results. But it sure doesn't show any indication that it
+> > will.
+> > 
+> > Try this (in a current git source tree: note, by "git" I actually mean
+> > git itself, not some random git repository)::
+> > 
+> >     perf record -g -e cycles:pp make -j64 test >& out
+> >     perf report
+> > 
+> > maybe you can reproduce it.
+> 
+> I managed to reproduce it on a 32-way box via:
+> 
+>      perf record -g make -j64 bzImage >/dev/null 2>&1
+> 
+> It's easier to debug it without the TUI:
+> 
+>      perf --no-pages report --stdio
+> 
+> It turns out that even with a 400 MB perf.data the 'perf report' call will 
+> eventually finish - here it ran for almost half an hour(!) on a fast box.
+> 
+> Arnaldo, the large overhead is in hists__collapse_resort(), in particular 
+> it's doing append_chain_children() 99% of the time:
+> 
+> -  99.74%  perf  perf               [.] append_chain_children                                                         ◆
+>    - append_chain_children                                                                                            ▒
+>       - 99.76% merge_chain_branch                                                                                     ▒
+>          - merge_chain_branch                                                                                         ▒
+>             + 98.04% hists__collapse_resort                                                                           ▒
+>             + 1.96% merge_chain_branch                                                                                ▒
+> +   0.05%  perf  perf               [.] merge_chain_branch                                                            ▒
+> +   0.03%  perf  libc-2.17.so       [.] _int_free                                                                     ▒
+> +   0.03%  perf  libc-2.17.so       [.] __libc_calloc                                                                 ▒
+> +   0.02%  perf  [kernel.kallsyms]  [k] account_user_time                                                             ▒
+> +   0.02%  perf  libc-2.17.so       [.] _int_malloc                                                                   ▒
+> 
+> It seems to be stuck in hists__collapse_resort().
+> 
+> In particular the overhead arises because the following loop in 
+> append_chain_children():
+> 
+>         /* lookup in childrens */
+>         chain_for_each_child(rnode, root) {
+>                 unsigned int ret = append_chain(rnode, cursor, period);
+> 
+> Reaches very long counts and the algorithm gets quadratic (at least). The 
+> child count reaches over 100,000 entries in the end (!).
+> 
+> I don't think the high child count in itself is anomalous: a kernel build 
+> generates thousands of processes, tons of symbol ranges and tens of 
+> millions of call chain entries.
+> 
+> So I think what we need here is to speed up the lookup: put children into 
+> a secondary, ->pos,len indexed range-rbtree and do a binary search instead 
+> of a linear search over 100,000 child entries ... or something like that.
 
-Thanks,
-Miklos
+You're right it's worth trying.
 
----
-Subject: vfs: check unlinked ancestors before mount
-From: Miklos Szeredi <mszeredi@suse.cz>
+At least it might give better results for such high scale callchain trees.
+I'll see what I can come up with.
 
-We check submounts before doing d_drop() on a non-empty directory dentry in
-NFS (have_submounts()), but we do not exclude a racing mount.  Nor do we
-prevent mounts to be added to the disconnected subtree using relative paths
-after the d_drop().
+> 
+> Btw., a side note, append_chain() is a rather confusing function in 
+> itself, with logic-inversion gems like:
+> 
+>                 if (!found)
+>                         found = true;
 
-This patch fixes these issues by checking for unlinked (unhashed, non-root)
-ancestors before proceeding with the mount.  This is done after setting
-DCACHE_MOUNTED on the soon-to-be mountpoint and with the rename seqlock
-taken for write.  This ensures that the only one of
-check_submounts_and_drop() or has_unlinked_ancestor() can succeed.
+The check is pointless yeah, I'll remove that.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: David Howells <dhowells@redhat.com>
-CC: Steven Whitehouse <swhiteho@redhat.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/dcache.c    |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/internal.h  |    1 +
- fs/namespace.c |   11 +++++------
- 3 files changed, 58 insertions(+), 6 deletions(-)
+> 
+> All that should be cleaned up as well I guess.
+> 
+> The 'IO overload' message appears to be a separate, unrelated bug, it just 
+> annoyingly does not get refreshed away in the TUI before 
+> hists__collapse_resort() is called, and there's also no progress bar for 
+> the hists__collapse_resort() pass, so to the user it all looks like a 
+> deadlock.
+> 
+> So there's at least two bugs here:
+> 
+>   - the bad overhead in hists__collapse_resort()
+> 
+>   - bad usability if hists__collapse_resort() takes more than 1 second to finish
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1159,6 +1159,58 @@ int have_submounts(struct dentry *parent
- }
- EXPORT_SYMBOL(have_submounts);
- 
-+static bool __has_unlinked_ancestor(struct dentry *dentry)
-+{
-+	struct dentry *this;
-+
-+	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
-+		int is_unhashed;
-+
-+		/* Need exclusion wrt. check_submounts_and_drop() */
-+		spin_lock(&this->d_lock);
-+		is_unhashed = d_unhashed(this);
-+		spin_unlock(&this->d_lock);
-+
-+		if (is_unhashed)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+/*
-+ * Called by mount code to set a mountpoint and check if the mountpoint is
-+ * reachable (e.g. NFS can unhash a directory dentry and then the complete
-+ * subtree can become unreachable).
-+ *
-+ * Only one of check_submounts_and_drop() and d_set_mounted() must succeed.  For
-+ * this reason take rename_lock and d_lock on dentry and ancestors.
-+ */
-+int d_set_mounted(struct dentry *dentry)
-+{
-+	int ret = -ENOENT;
-+
-+	write_seqlock(&rename_lock);
-+	spin_lock(&dentry->d_lock);
-+	if (d_unlinked(dentry)) {
-+		spin_unlock(&dentry->d_lock);
-+		goto out;
-+	}
-+
-+	dentry->d_flags |= DCACHE_MOUNTED;
-+	spin_unlock(&dentry->d_lock);
-+
-+	if (__has_unlinked_ancestor(dentry->d_parent)) {
-+		spin_lock(&dentry->d_lock);
-+		dentry->d_flags &= ~DCACHE_MOUNTED;
-+		spin_unlock(&dentry->d_lock);
-+		goto out;
-+	}
-+	ret = 0;
-+out:
-+	write_sequnlock(&rename_lock);
-+	return ret;
-+}
-+
- /*
-  * Search the dentry child list of the specified parent,
-  * and move any unused dentries to the end of the unused
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -126,6 +126,7 @@ extern int invalidate_inodes(struct supe
-  * dcache.c
-  */
- extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
-+extern int d_set_mounted(struct dentry *dentry);
- 
- /*
-  * read_write.c
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -611,6 +611,7 @@ static struct mountpoint *new_mountpoint
- {
- 	struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
- 	struct mountpoint *mp;
-+	int ret;
- 
- 	list_for_each_entry(mp, chain, m_hash) {
- 		if (mp->m_dentry == dentry) {
-@@ -626,14 +627,12 @@ static struct mountpoint *new_mountpoint
- 	if (!mp)
- 		return ERR_PTR(-ENOMEM);
- 
--	spin_lock(&dentry->d_lock);
--	if (d_unlinked(dentry)) {
--		spin_unlock(&dentry->d_lock);
-+	ret = d_set_mounted(dentry);
-+	if (ret) {
- 		kfree(mp);
--		return ERR_PTR(-ENOENT);
-+		return ERR_PTR(ret);
- 	}
--	dentry->d_flags |= DCACHE_MOUNTED;
--	spin_unlock(&dentry->d_lock);
-+
- 	mp->m_dentry = dentry;
- 	mp->m_count = 1;
- 	list_add(&mp->m_hash, chain);
+Also IIUC, collapsing/merging hists is only used for comm hists merging, due to
+set_task_comm after exec.
+
+Perhaps we can do better to anticipate the comm of a process based on tid/pid, fork
+and comm events? This way we can avoid late collapses/merges. In the best case we
+could get rid of collapses entirely and that would be some nice fresh air for util/hist.c
+
+And ideally, the comm should be associated to a lifetime as a thread can change
+its comm anytime.
+
+At least we should be able to limit collapses significantly.
+I can try to make callchains more scalable, but collapsing is a heavy weight operation
+for them in any case.
+
+> Thanks,
+> 
+> 	Ingo
