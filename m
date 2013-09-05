@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab3IERiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 13:38:22 -0400
-Received: from alerce.vps.bitfolk.com ([85.119.82.134]:56912 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab3IERiV (ORCPT
+	id S1753708Ab3IERk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 13:40:26 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:51406 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab3IERkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 13:38:21 -0400
-Date: Thu, 5 Sep 2013 18:35:39 +0100
-From: Rodrigo Campos <rodrigo@sdfg.com.ar>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Clarify error when running "perf lock record"
-Message-ID: <20130905173538.GB31659@sdfg.com.ar>
-References: <1378369936-26473-1-git-send-email-rodrigo@sdfg.com.ar>
- <52289536.3070504@gmail.com>
+	Thu, 5 Sep 2013 13:40:23 -0400
+Date: Thu, 5 Sep 2013 19:40:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130905174019.GA30435@gmail.com>
+References: <20130831023516.GI13318@ZenIV.linux.org.uk>
+ <20130831024233.GJ13318@ZenIV.linux.org.uk>
+ <5224E647.80303@hp.com>
+ <20130903060130.GD16261@gmail.com>
+ <5225FCEE.7030901@hp.com>
+ <CA+55aFyNmLt9GeR5XyxOs7aGLwH3EBCB+K9D6uGBef3FziP2-A@mail.gmail.com>
+ <CA+55aFw0jme+qK5b_VJVqoVD6cZuSjVsm-Sgjf_YkPXgMToqUA@mail.gmail.com>
+ <52274943.1040005@hp.com>
+ <20130905133123.GA24351@gmail.com>
+ <5228C062.7030106@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52289536.3070504@gmail.com>
+In-Reply-To: <5228C062.7030106@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 08:29:10AM -0600, David Ahern wrote:
-> On 9/5/13 2:32 AM, Rodrigo Campos wrote:
-> >If you have the config options enabled in your kernel, you still need to be root
-> >to run perf lock. And is kind of misleading when you have that options enabled
-> >and the error says that they might not be.
+
+* Waiman Long <waiman.long@hp.com> wrote:
+
+> On 09/05/2013 09:31 AM, Ingo Molnar wrote:
+> >* Waiman Long<waiman.long@hp.com>  wrote:
 > >
-> >So, this patch just adds to the error that it should be run as root. Although we
-> >can probably check if it's running as root or not, adding it to the error
-> >message is really simple and should be enough.
 > >
-> >Signed-off-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-> >---
-> >Please keep me in Cc: since I'm not subscribed
-> >---
-> >  tools/perf/builtin-lock.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>The latest tty patches did work. The tty related spinlock contention
+> >>is now completely gone. The short workload can now reach over 8M JPM
+> >>which is the highest I have ever seen.
+> >>
+> >>The perf profile was:
+> >>
+> >>5.85%     reaim  reaim                 [.] mul_short
+> >>4.87%     reaim  [kernel.kallsyms]     [k] ebitmap_get_bit
+> >>4.72%     reaim  reaim                 [.] mul_int
+> >>4.71%     reaim  reaim                 [.] mul_long
+> >>2.67%     reaim  libc-2.12.so          [.] __random_r
+> >>2.64%     reaim  [kernel.kallsyms]     [k] lockref_get_not_zero
+> >>1.58%     reaim  [kernel.kallsyms]     [k] copy_user_generic_string
+> >>1.48%     reaim  [kernel.kallsyms]     [k] mls_level_isvalid
+> >>1.35%     reaim  [kernel.kallsyms]     [k] find_next_bit
+> >6%+ spent in ebitmap_get_bit() and mls_level_isvalid() looks like
+> >something worth optimizing.
 > >
-> >diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> >index 76543a4..f07b318 100644
-> >--- a/tools/perf/builtin-lock.c
-> >+++ b/tools/perf/builtin-lock.c
-> >@@ -886,8 +886,8 @@ static int __cmd_record(int argc, const char **argv)
-> >  	for (i = 0; i < ARRAY_SIZE(lock_tracepoints); i++) {
-> >  		if (!is_valid_tracepoint(lock_tracepoints[i].name)) {
-> >  				pr_err("tracepoint %s is not enabled. "
-> >-				       "Are CONFIG_LOCKDEP and CONFIG_LOCK_STAT enabled?\n",
-> >-				       lock_tracepoints[i].name);
-> >+				       "Are CONFIG_LOCKDEP and CONFIG_LOCK_STAT enabled "
-> >+				       "and running as root?\n", lock_tracepoints[i].name);
-> >  				return 1;
-> >  		}
-> >  	}
-> >
+> >Is that called very often, or is it perhaps cache-bouncing for some
+> >reason?
 > 
-> you can run perf-lock as non-root with certain settings. It would be
+> The high cycle count is due more to inefficient algorithm in the 
+> mls_level_isvalid() function than cacheline contention in the code. The 
+> attached patch should address this problem. It is in linux-next and 
+> hopefully will be merged in 3.12.
 
-Ohh, I didn't know. Sorry.
+Great!
 
-> better to discriminate debugfs access errors (insufficient
-> privilege). That means improving is_valid_tracepoint and handling
-> the errors in perf-lock.
-
-IMHO suggesting to check the privileges should be enough for most cases and is
-simpler that checking all that. I mean, for me it's not worth the effort, but
-maybe I'm too lazy. Probably it's quite simple too... :-)
-
-
-
+If/when you happen to boot the latest & greatest kernel that has all these 
+scalability patches applied it would be nice if you could send an updated 
+profile into this thread.
 
 Thanks,
-Rodrigo
+
+	Ingo
