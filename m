@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab3IEUnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:43:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52037 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab3IEU2O (ORCPT
+	id S1757612Ab3IEUnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:43:32 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:36851 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757497Ab3IEUn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Zimmer <nzimmer@sgi.com>,
-        Holger Hans Peter Freyther <holger@freyther.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Berke Durak <berke.durak@xiphos.com>, Jeff Layton <jlayton@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/36] timer_list: correct the iterator for timer_list
-Date: Thu,  5 Sep 2013 13:27:40 -0700
-Message-Id: <20130905202703.614988660@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
-References: <20130905202702.289738686@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 5 Sep 2013 16:43:28 -0400
+Message-ID: <5228ECE2.8070306@hp.com>
+Date: Thu, 05 Sep 2013 16:43:14 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com> <1378407316-59852-2-git-send-email-Waiman.Long@hp.com> <20130905200401.GU13318@ZenIV.linux.org.uk>
+In-Reply-To: <20130905200401.GU13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/05/2013 04:04 PM, Al Viro wrote:
+> On Thu, Sep 05, 2013 at 02:55:16PM -0400, Waiman Long wrote:
+>> +	const char *dname = ACCESS_ONCE(dentry->d_name.name);
+>> +	u32 dlen = dentry->d_name.len;
+>> +	int error;
+>> +
+>> +	if (likely(dname == (const char *)dentry->d_iname)) {
+>> +		/*
+>> +		 * Internal dname, the string memory is valid as long
+>> +		 * as its length is not over the limit.
+>> +		 */
+>> +		if (unlikely(dlen>  sizeof(dentry->d_iname)))
+>> +			return -EINVAL;
+>> +	} else if (!dname)
+>> +		return -EINVAL;
+> Can't happen.
+>> +	else {
+>> +		const char *ptr;
+>> +		u32 len;
+>> +
+>> +		/*
+>> +		 * External dname, need to fetch name pointer and length
+>> +		 * again under d_lock to get a consistent set and avoid
+>> +		 * racing with d_move() which will take d_lock before
+>> +		 * acting on the dentries.
+>> +		 */
+>> +		spin_lock(&dentry->d_lock);
+>> +		dname = dentry->d_name.name;
+>> +		dlen  = dentry->d_name.len;
+>> +		spin_unlock(&dentry->d_lock);
+>> +
+>> +		if (unlikely(!dname || !dlen))
+>> +			return -EINVAL;
+> Can't happen.
+>
+>> +		/*
+>> +		 * As the length and the content of the string may not be
+>> +		 * valid, need to scan the string and return EINVAL if there
+>> +		 * is embedded null byte within the length of the string.
+>> +		 */
+>> +		for (ptr = dname, len = dlen; len; len--, ptr++) {
+>> +			if (*ptr == '\0')
+>> +				return -EINVAL;
+> Egads...  First of all, this is completely pointless - if you've grabbed
+> ->d_name.name and ->d_name.len under ->d_lock, you don't *need* that crap.
+> At all.  The whole point of that exercise is to avoid taking ->d_lock;
+> _that_ is where the "read byte by byte until you hit NUL" comes from.
+> And if you do that, you can bloody well just go ahead and store them in
+> the target array *as* *you* *go*.  No reason to bother with memcpy()
+> afterwards.
 
-------------------
+That is what I thought too. I am just not totally sure about it. So yes, 
+I can scrap all these additional check.
 
-From: Nathan Zimmer <nzimmer@sgi.com>
+As the internal dname buffer is at least 32 bytes, most dentries will 
+use the internal buffer instead of allocating from kmem. IOW, the d_lock 
+taking code path is unlikely to be used.
 
-commit 84a78a6504f5c5394a8e558702e5b54131f01d14 upstream.
+> Damnit, just grab len and name (no ->d_lock, etc.).  Check if you've got
+> enough space in the buffer, treat "not enough" as an overflow.  Then
+> proceed to copy the damn thing over there (starting at *buffer -= len)
+> byte by byte, stopping when you've copied len bytes *or* when the byte you've
+> got happens to be NUL.  Don't bother with EINVAL, etc. - just return to
+> caller and let rename_lock logics take care of the races.  That's it - nothing
+> more is needed.
 
-Correct an issue with /proc/timer_list reported by Holger.
+OK, I will do that.
 
-When reading from the proc file with a sufficiently small buffer, 2k so
-not really that small, there was one could get hung trying to read the
-file a chunk at a time.
-
-The timer_list_start function failed to account for the possibility that
-the offset was adjusted outside the timer_list_next.
-
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
-Reported-by: Holger Hans Peter Freyther <holger@freyther.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Berke Durak <berke.durak@xiphos.com>
-Cc: Jeff Layton <jlayton@redhat.com>
-Tested-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/timer_list.c |   41 ++++++++++++++++++++++++-----------------
- 1 file changed, 24 insertions(+), 17 deletions(-)
-
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -265,10 +265,9 @@ static inline void timer_list_header(str
- static int timer_list_show(struct seq_file *m, void *v)
- {
- 	struct timer_list_iter *iter = v;
--	u64 now = ktime_to_ns(ktime_get());
- 
- 	if (iter->cpu == -1 && !iter->second_pass)
--		timer_list_header(m, now);
-+		timer_list_header(m, iter->now);
- 	else if (!iter->second_pass)
- 		print_cpu(m, iter->cpu, iter->now);
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
-@@ -298,33 +297,41 @@ void sysrq_timer_list_show(void)
- 	return;
- }
- 
--static void *timer_list_start(struct seq_file *file, loff_t *offset)
-+static void *move_iter(struct timer_list_iter *iter, loff_t offset)
- {
--	struct timer_list_iter *iter = file->private;
--
--	if (!*offset) {
--		iter->cpu = -1;
--		iter->now = ktime_to_ns(ktime_get());
--	} else if (iter->cpu >= nr_cpu_ids) {
-+	for (; offset; offset--) {
-+		iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
-+		if (iter->cpu >= nr_cpu_ids) {
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
--		if (!iter->second_pass) {
--			iter->cpu = -1;
--			iter->second_pass = true;
--		} else
--			return NULL;
-+			if (!iter->second_pass) {
-+				iter->cpu = -1;
-+				iter->second_pass = true;
-+			} else
-+				return NULL;
- #else
--		return NULL;
-+			return NULL;
- #endif
-+		}
- 	}
- 	return iter;
- }
- 
-+static void *timer_list_start(struct seq_file *file, loff_t *offset)
-+{
-+	struct timer_list_iter *iter = file->private;
-+
-+	if (!*offset)
-+		iter->now = ktime_to_ns(ktime_get());
-+	iter->cpu = -1;
-+	iter->second_pass = false;
-+	return move_iter(iter, *offset);
-+}
-+
- static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
- {
- 	struct timer_list_iter *iter = file->private;
--	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
- 	++*offset;
--	return timer_list_start(file, offset);
-+	return move_iter(iter, 1);
- }
- 
- static void timer_list_stop(struct seq_file *seq, void *v)
-
-
+-Longman
