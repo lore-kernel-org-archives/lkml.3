@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3IENlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 09:41:47 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45578 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3IENlq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 09:41:46 -0400
-Date: Thu, 05 Sep 2013 08:41:43 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Remove support for score architecture
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Lennox Wu <lennox.wu@gmail.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-In-Reply-To: <1377914435-24206-1-git-send-email-linux@roeck-us.net> (from
-	linux@roeck-us.net on Fri Aug 30 21:00:35 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1378388503.1985.7@driftwood>
+	id S1752846Ab3IENmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 09:42:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab3IENmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 09:42:38 -0400
+Date: Thu, 5 Sep 2013 14:51:39 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Jan Beulich <JBeulich@suse.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH v2 0/6] AHCI: Conserve interrupts with
+ pci_enable_msi_block_part() interface
+Message-ID: <cover.1378383792.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2013 09:00:35 PM, Guenter Roeck wrote:
-> The web site associated with the score architecture in MAINTAINERS
-> is non-functional and available for sale. The last Ack from one
-> of the maintainers was in December 2012. The main maintainer's last
-> commit was in 2011. The last maintainer pull request was early 2011.
-> 
-> Cc: Lennox Wu <lennox.wu@gmail.com>
-> Cc: Chen Liqin <liqin.chen@sunplusct.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> More housekeeping.
-> 
-> Maybe this removal request is a bit early, but architecture support  
-> seems
-> to have vanished entirely. At the very least this puts interested  
-> parties
-> (if there are any) on notice.
+This series is aimed to conserve on othewise wasted interrupt
+resources for 10 of 16 unused MSI vectors for AHCI devices on
+Intel chipsets.
 
-I note that if qemu system emulation supports an obscurish platform,  
-the rest of us can regression test it. If qemu doesn't support it, we  
-can't.
+Changes from v1:
+	- roundup_pow_of_two() and is_power_of_2() functions used
+	- patch 2/6 generic pci_get_msi_cap() interface introduced
+	- patch 4/6 MMC reg. value used to initialize multiple MSIs;
+		    Fallback to single MSI mode is simplified
+	- patch 5/6 sanity check for MRSM bit added
 
-(I'm looking at you, Hexagon.)
+Alexander Gordeev (6):
+  1/6 PCI/MSI: Introduce pci_enable_msi_block_part() interface
+  2/6 PCI/MSI: Factor out pci_get_msi_cap() interface
+  3/6 MSI/x86: Support pci_enable_msi_block_part() interface
+  4/6 AHCI: Conserve interrupts with pci_enable_msi_block_part() interface
+  5/6 AHCI: Check MRSM bit when multiple MSIs enabled
+  6/6 PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
 
-Rob
+ Documentation/PCI/MSI-HOWTO.txt |   68 ++++++++++++++++-------
+ arch/mips/pci/msi-octeon.c      |    2 +-
+ arch/powerpc/kernel/msi.c       |    4 +-
+ arch/s390/pci/pci.c             |    2 +-
+ arch/x86/include/asm/pci.h      |    8 ++-
+ arch/x86/include/asm/x86_init.h |    3 +-
+ arch/x86/kernel/apic/io_apic.c  |    3 +-
+ drivers/ata/ahci.c              |   60 ++++++++++++++------
+ drivers/ata/ahci.h              |    1 +
+ drivers/iommu/irq_remapping.c   |   14 +++---
+ drivers/pci/msi.c               |  115 ++++++++++++++++++++++-----------------
+ include/linux/msi.h             |    5 +-
+ include/linux/pci.h             |   13 ++++-
+ 13 files changed, 188 insertions(+), 110 deletions(-)
+
+-- 
+1.7.7.6
+
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
