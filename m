@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3IEVLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:11:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab3IEVLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:11:39 -0400
-Date: Thu, 5 Sep 2013 17:11:13 -0400
-From: Dave Jones <davej@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kobject: delayed kobject release: help find buggy drivers
-Message-ID: <20130905211113.GA22201@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20130903185924.046EE660E91@gitolite.kernel.org>
- <20130903204442.GA22222@redhat.com>
- <20130903205527.GA6358@kroah.com>
- <87zjrt6tz4.fsf@rustcorp.com.au>
- <20130905041338.GA21090@redhat.com>
- <20130905045745.GA18876@kroah.com>
- <20130905051945.GB23209@redhat.com>
- <20130905173540.GK6617@n2100.arm.linux.org.uk>
- <20130905192917.GA9339@redhat.com>
+	id S1755566Ab3IEVZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 17:25:05 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:2896 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab3IEVZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 17:25:02 -0400
+Message-ID: <5228A1AB.2030308@hp.com>
+Date: Thu, 05 Sep 2013 15:22:19 +0000
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905192917.GA9339@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Dilger <adilger@dilger.ca>
+CC: T Makphaibulchoke <tmac@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@groups.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <FDD6EB21-7C40-4F4D-904C-8514535CC7C3@dilger.ca>
+In-Reply-To: <FDD6EB21-7C40-4F4D-904C-8514535CC7C3@dilger.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 03:29:17PM -0400, Dave Jones wrote:
- > On Thu, Sep 05, 2013 at 06:35:40PM +0100, Russell King - ARM Linux wrote:
- >  
- >  > Dave - thanks for your patience and effort in trying to track this down.
- >  > Hopefully the patch below will make it easier.
- >  
- > I'm not sure if this is happening because I enabled DEBUG_KOBJECT this time around
- > or not, but now I'm seeing a different trace. (same hang though)
- > 
- > serial8250: ttyS0 at I/O 0x3f8 (ieq =4, base_baud = 115200) is 16550A
- > Oops
- > RIP: kobject_release
- > trace:
- > 
- > kobject_put
- > cdev_del
- > tty_unregister_device
- > uart_remove_one_port
- > serial8250_register_8250_port
- > pciserial_init_ports
- > pciserial_init_one
- > local_pci_probe
- > pci_device_probe
- > driver_probe_device
- > __driver_attach
- > ? __device_attach
- > bus_for_each_dev
- > driver_attach
- > bus_add_driver
- > ? early_serial_setup
- > driver_register
- > ? early_serial_setup
- > __pci_register_driver
- > serial_pci_driver_init
- > do_one_initcall
- > 
- > 
- > Trying without serial console next..
+On 09/04/2013 08:00 PM, Andreas Dilger wrote:
+> 
+> In the past, I've raised the question of whether mbcache is even
+> useful on real-world systems.  Essentially, this is providing a
+> "deduplication" service for ext2/3/4 xattr blocks that are identical.
+> The question is how often this is actually the case in modern use?
+> The original design was for allowing external ACL blocks to be
+> shared between inodes, at a time when ACLs where pretty much the
+> only xattrs stored on inodes.
+> 
+> The question now is whether there are common uses where all of the
+> xattrs stored on multiple inodes are identical?  If that is not the
+> case, mbcache is just adding overhead and should just be disabled
+> entirely instead of just adding less overhead.
+> 
+> There aren't good statistics on the hit rate for mbcache, but it
+> might be possible to generate some with systemtap or similar to
+> see how often ext4_xattr_cache_find() returns NULL vs. non-NULL.
+> 
+> Cheers, Andreas
+> 
 
-rebuilt with all serial turned off.
+Looks like it's a bit harder to disable mbcache than I thought. I ended up adding code to collect the statics.
 
-no luck, then it oopses somewhere else. I'm suspecting something isn't
-right with that debug patch, as the next trace is also in kobject_release
+With selinux enabled, for new_fserver workload of aim7, there are a total of 0x7e05420100000000 ext4_xattr_cache_find() calls that result in a hit and 0xc100000000000000 calls that are not.  The number does not seem to favor the complete disabling of mbcache in this case.
 
-	Dave
+Thanks,
+Mak.
+
+
