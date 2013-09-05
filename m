@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab3IEVyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:54:17 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:45220 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab3IEVyP (ORCPT
+	id S1753252Ab3IEV4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 17:56:16 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56218 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab3IEV4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:54:15 -0400
+	Thu, 5 Sep 2013 17:56:15 -0400
+Message-ID: <5228FDFC.9090700@gmail.com>
+Date: Thu, 05 Sep 2013 15:56:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpEa2hMPZmvpg1SOqK2d-NZrenwumSU4B4pmqqsWh+e0g@mail.gmail.com>
-References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-	<CAPDyKFpEa2hMPZmvpg1SOqK2d-NZrenwumSU4B4pmqqsWh+e0g@mail.gmail.com>
-Date: Thu, 5 Sep 2013 14:54:14 -0700
-Message-ID: <CAME+o4m8GM40wUHmiw5-2xWtSn2VmUTVv9kbc-SdqP12a9wLHQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, San Mehat <san@google.com>,
-        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: more perf breakage from sample identifier
+References: <5228F92A.9020108@gmail.com>
+In-Reply-To: <5228F92A.9020108@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
-Thanks for reviewing this, it was very helpful!
+On 9/5/13 3:35 PM, David Ahern wrote:
+> Adrian:
+>
+> 'perf kvm stat live' command fails on Linus' latest tree:
+> $ perf kvm stat live
+> Failed to parse sample
+>
+> git bisect points to:
+>
+> 75562573bab35b129cfd342fc2bcf89da84a6644 is the first bad commit
+> commit 75562573bab35b129cfd342fc2bcf89da84a6644
+> Author: Adrian Hunter <adrian.hunter@intel.com>
+> Date:   Tue Aug 27 11:23:09 2013 +0300
+>
+>      perf tools: Add support for PERF_SAMPLE_IDENTIFIER
+>
+>      Enable parsing of samples with sample format bit
+> PERF_SAMPLE_IDENTIFIER.
+>      In addition, if the kernel supports it, prefer it to selecting
+>      PERF_SAMPLE_ID thereby allowing non-matching sample types.
+>
+>      Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>
+>
+> perf_evlist__event2evsel() is failing. From what I can see the problem
+> is that evlist->heads is not getting populated. This command does not
+> read/write files but processes events as they come in. I have another
+> similar command that is also breaking for the same reason.
 
-> 1. mmc_detect_change does obviously not have to be run the same number
-> of times as the mmc_rescan function. In other words, the calls to
-> __pm_stay_awake is not paired with __pm_relay, I suppose this does not
-> matter?
-It shouldn't, since a single __pm_relax() would cancel all previous
-calls to __pm_stay_awake() on the same wakeup source. What is
-important is that mmc_rescan() is scheduled after __pm_stay_awake() to
-make sure wakeup source is released.
+That's not the problem. The hash is getting populated. The problem is a 
+bad assumption on what fields are in the sample -- like PERF_SAMPLE_IP. 
+The kvm command does not care about the IP so it is excluded:
 
-> 2. mmc_detect_change can for example be called while the device
-> suspend sequence is progressing. At this point the rescan work is
-> disabled, thus __pm_relax will not be called, until the next rescan
-> work as executed which is after the complete resume cycle
-> (mmc_pm_notify:PM_POST_SUSPEND). Is that an issue?
-If started, mmc_detect_change() should run uninterrupted to call
-__pm_stay_awake(), which should abort any previous suspend requests.
-The abort sequence should restart the rescan work, so __pm_relax()
-eventually gets called.
+attr->sample_type &= ~PERF_SAMPLE_IP;
 
->>         /* If there is a non-removable card registered, only scan once */
->> -       if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered)
->> +       if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered) {
->> +               __pm_relax(host->ws);
->
-> By calling __pm_relax here, this indicates to me that is seems like
-> you might have prevented, even for a very small timeslot, with a
-> MMC_CAP_NONREMOVABLE card/host from the system to suspend.
->
-> For sure, you must not prevent the suspend even for small timeslots,
-> when MMC_CAP_NONREMOVABLE is set.
-I agree. It appears that the corresponding __pm_stay_awake() is
-indiscriminately called on system resume regardless of card type, so
-this needs to be fixed.
+If I remove that line the command works fine.
 
->>         mmc_release_host(host);
->>
->>   out:
->> -       if (host->caps & MMC_CAP_NEEDS_POLL)
->> +       if (extend_wakeup)
->> +               /* extra 1/2 second should be enough, hopefully */
->> +               __pm_wakeup_event(host->ws, MSEC_PER_SEC/2);
->> +       else
->> +               __pm_relax(host->ws);
->> +
->> +       if (host->caps & MMC_CAP_NEEDS_POLL) {
->> +               __pm_stay_awake(host->ws);
->
-> This does not make sense.
->
-> So when using polling mode to detect card insert/remove, you will
-> prevent suspend forever? Maybe I missed a point somewhere?
->
->>                 mmc_schedule_delayed_work(&host->detect, HZ);
->> +       }
->>  }
-You are right, and I find it interesting that the same wake_lock()
-call exists in the Android kernel. Would someone from the Android team
-be able to comment?
+Since this a legitimate option to not get the IP in the sample, the 
+evsel lookup code needs to get fixed in 3.12.
 
->>         /* clear pm flags now and let card drivers set them as needed */
->> @@ -2628,7 +2645,8 @@ int mmc_suspend_host(struct mmc_host *host)
->>  {
->
-> This function has become deprecated. You need to rebase this patch and
-> please do not add some new code in here.
->
-If suspend is now initiated from the bus level, will there be a
-host-level suspend/resume function at all? I need to know where this
-code should move in the next revision of patch...
-
-Regards, Zoran
+David
