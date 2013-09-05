@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab3IES4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 14:56:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60699 "EHLO comal.ext.ti.com"
+	id S1756977Ab3IES5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 14:57:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51893 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab3IES4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 14:56:51 -0400
-Date: Thu, 5 Sep 2013 13:55:57 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>
-Subject: Re: Restrict AM335x PHY driver to only be built on !ARM when
- COMPILE_TEST is set.
-Message-ID: <20130905185557.GD9325@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130903185917.BC7BD660DE3@gitolite.kernel.org>
- <20130903213552.GD2247@redhat.com>
+	id S1756954Ab3IES5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 14:57:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,848,1371106800"; 
+   d="scan'208";a="356479649"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] lockref: remove cpu_relax() again
+Thread-Topic: [PATCH] lockref: remove cpu_relax() again
+Thread-Index: AQHOqjponYZ6pHUzoUeo27Wv6BHm9pm3utOA//+oSZCAAH9VgP//mtyg
+Date: Thu, 5 Sep 2013 18:57:08 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CDCC23@ORSMSX106.amr.corp.intel.com>
+References: <20130905131814.GA24274@osiris>
+	<CA+55aFyZ8xLWiPcP3jcnVApQOqAvpo_fshSvGpdpW42iRutPcQ@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CDC7F7@ORSMSX106.amr.corp.intel.com>
+ <CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
+In-Reply-To: <CA+55aFyevZQG5pEz-iJF6MFEMpwJD=biB-x852ki0spOM293Sg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4loEm8vkm2dPEmEM"
-Content-Disposition: inline
-In-Reply-To: <20130903213552.GD2247@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r85IvGYu032277
 
---4loEm8vkm2dPEmEM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Also, it strikes me that ia64 has tons of different versions of
+> cmpxchg, and the one you use by default is the one with "acquire"
+> semantics
 
-On Tue, Sep 03, 2013 at 05:35:52PM -0400, Dave Jones wrote:
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Not "tons", just two.  You can ask for "acquire" or "release" semantics,
+there is no relaxed option.
 
-you *really* need a commit log here. Also, Cc linux-usb for anyhing
-under drivers/usb/
+Worse still - early processor implementations actually just ignored
+the acquire/release and did a full fence all the time.  Unfortunately
+this meant a lot of badly written code that used .acq when they really
+wanted .rel became legacy out in the wild - so when we made a cpu
+that strictly did the .acq or .rel ... all that code started breaking - so
+we had to back-pedal and keep the "legacy" behavior of a full fence :-(
 
---=20
-balbi
+-Tony
 
---4loEm8vkm2dPEmEM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSKNO9AAoJEIaOsuA1yqREbFYP/A3idQVLNNoFcnkJjFkqtxII
-tRim/nDlbI1X7ceoJqj4Qv0MN9nimJfAlHg8SVtw4lbEGPENVCu5GVL09Ux4lrBK
-Fft+rS7E2ZksQEGSN+MKDNh59GxDwyIKj5Pgf+rfUYU6GKs2EHtxZLMaAapiY+0J
-m14bWBvJo+oUdrM/V5oUrjCxpGbTCE0CkjryuUthRaj0JJRMmwg+SomLLp1IDFaq
-uuHPkHCjyMXMFewOijZDtp35WGpZJq6zxw+ToMI89v5qrCioQUrvRYaQtB+bPRXo
-gmdXVMBOyXNq50plKvaB4qFbRzxoLrZFGsg6a557QEQmwdk177zwiVHwJ/5q7ysI
-dFEnfT8yMek1FaNULFHOZhuIoWnAY7ZrwiU7LpD+aPaI2lXM8evvYhmwuvKe4H7x
-QaRxA8jxOEDpEYFu8d6AN6VY1nagkzaBHX3zKVLi0u0xgugBR6ogSjFSozBs+6eR
-OkctlXtlFOSb8HIb/pywKazuziBlAs2CDDn5oSsq4KXCP8/eePnmhB8vd57MLVb1
-qvZgNj6fduf+q5r1a0BhNXXNg6a/M9fOpUxDkEvE0OvS/ymCQ+D5Qs6ZnoD+3nbC
-9FCNSmtVecHRJieVNeQsQu6JSlzdJNSoOuM/f/uPDxCqktK1uHDpbwi5x0svh7ik
-SLYgUrl2JWdsGFaYZebA
-=GenR
------END PGP SIGNATURE-----
-
---4loEm8vkm2dPEmEM--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
