@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3IEUez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:34:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52169 "EHLO
+	id S1757500Ab3IEU2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52127 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510Ab3IEU2l (ORCPT
+	with ESMTP id S1752412Ab3IEU2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:41 -0400
+	Thu, 5 Sep 2013 16:28:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eugene Surovegin <surovegin@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 04/14] powerpc/hvsi: Increase handshake timeout from 200ms to 400ms.
-Date: Thu,  5 Sep 2013 13:28:15 -0700
-Message-Id: <20130905202614.921504590@linuxfoundation.org>
+        Wei Hu <wei@aristanetworks.com>, Clemens Ladisch <clemens@ladisch.de>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 31/36] hwmon: (k10temp) Add support for Fam16h (Kabini)
+Date: Thu,  5 Sep 2013 13:28:00 -0700
+Message-Id: <20130905202705.944345168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130905202614.354156084@linuxfoundation.org>
-References: <20130905202614.354156084@linuxfoundation.org>
+In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
+References: <20130905202702.289738686@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eugene Surovegin <ebs@ebshome.net>
+From: Wei Hu <wei@aristanetworks.com>
 
-commit d220980b701d838560a70de691b53be007e99e78 upstream.
+commit 30b146d1cb5e7560192057098eb705118bd5511f upstream.
 
-This solves a problem observed in kexec'ed kernel where 200ms timeout is
-too short and bootconsole fails to initialize. Console did eventually
-become workable but much later into the boot process.
+The temperature reporting interface stays the same, so we just
+add the PCI-ID to the list.
 
-Observed timeout was around 260ms, but I decided to make it a little bigger
-for more reliability.
+Verified on AMD Olive Hill.
 
-This has been tested on Power7 machine with Petitboot as a primary
-bootloader and PowerNV firmware.
-
-Signed-off-by: Eugene Surovegin <surovegin@google.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Wei Hu <wei@aristanetworks.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/hvc/hvsi_lib.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/hwmon/k10temp |    1 +
+ drivers/hwmon/Kconfig       |    4 ++--
+ drivers/hwmon/k10temp.c     |    3 ++-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/hvc/hvsi_lib.c
-+++ b/drivers/tty/hvc/hvsi_lib.c
-@@ -341,8 +341,8 @@ void hvsilib_establish(struct hvsi_priv
+--- a/Documentation/hwmon/k10temp
++++ b/Documentation/hwmon/k10temp
+@@ -12,6 +12,7 @@ Supported chips:
+ * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
+ * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
+ * AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity"
++* AMD Family 16h processors: "Kabini"
  
- 	pr_devel("HVSI@%x:   ... waiting handshake\n", pv->termno);
+   Prefix: 'k10temp'
+   Addresses scanned: PCI space
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -296,8 +296,8 @@ config SENSORS_K10TEMP
+ 	  If you say yes here you get support for the temperature
+ 	  sensor(s) inside your CPU. Supported are later revisions of
+ 	  the AMD Family 10h and all revisions of the AMD Family 11h,
+-	  12h (Llano), 14h (Brazos) and 15h (Bulldozer/Trinity)
+-	  microarchitectures.
++	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity) and
++	  16h (Kabini) microarchitectures.
  
--	/* Try for up to 200s */
--	for (timeout = 0; timeout < 20; timeout++) {
-+	/* Try for up to 400ms */
-+	for (timeout = 0; timeout < 40; timeout++) {
- 		if (pv->established)
- 			goto established;
- 		if (!hvsi_get_packet(pv))
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called k10temp.
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -1,5 +1,5 @@
+ /*
+- * k10temp.c - AMD Family 10h/11h/12h/14h/15h processor hardware monitoring
++ * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h processor hardware monitoring
+  *
+  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
+  *
+@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(pci, k10temp_id_table);
 
 
