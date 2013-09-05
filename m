@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab3IEPId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:08:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752927Ab3IEPIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:08:31 -0400
-Message-ID: <52289E6C.8090301@redhat.com>
-Date: Thu, 05 Sep 2013 11:08:28 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753920Ab3IEPKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:10:37 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:54702 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab3IEPKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:10:36 -0400
+Date: Thu, 5 Sep 2013 17:10:35 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, acme@infradead.org, jolsa@redhat.com,
+        eranian@google.com
+Subject: Re: perf, x86: Add parts of the remaining haswell PMU functionality
+Message-ID: <20130905151034.GP19750@two.firstfloor.org>
+References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
+ <20130902065512.GA29060@gmail.com>
+ <20130905131502.GA26387@gmail.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
-References: <1378383524-27983-1-git-send-email-prarit@redhat.com> <20130905144818.GA23661@thunk.org>
-In-Reply-To: <20130905144818.GA23661@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905131502.GA26387@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 09/05/2013 10:48 AM, Theodore Ts'o wrote:
-> On Thu, Sep 05, 2013 at 08:18:44AM -0400, Prarit Bhargava wrote:
->> The current code has two exported functions, get_bytes_random() and
->> get_bytes_random_arch().  The first function only calls the entropy
->> store to get random data, and the second only calls the arch specific
->> hardware random number generator.
->>
->> The problem is that no code is using the get_bytes_random_arch() and switching
->> over will require a significant code change.  Even if the change is
->> made it will be static forcing a recompile of code if/when a user has a
->> system with a trusted random HW source.  A better thing to do is allow
->> users to decide whether they trust their hardare random number generator.
+On Thu, Sep 05, 2013 at 03:15:02PM +0200, Ingo Molnar wrote:
 > 
-> I fail to see the benefit of just using the hardware random number
-> generator.  We are already mixing in the hardware random number
-> generator into the /dev/random pool, and so the only thing that using
+> * Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > One thing I'm not seeing in the current Haswell code is the config set 
+> > up for PERF_COUNT_HW_STALLED_CYCLES_FRONTEND/BACKEND. Both SB and IB has 
+> > them configured.
+> 
+> Ping? Consider this a regression report.
 
-The issue isn't userspace /dev/random as much as it is the use of
-get_random_bytes() through out the kernel.  Switching to get_random_bytes_arch()
-is a search'n'replace on the entire kernel.  If a user wants the faster random
-HW generator why shouldn't they be able to use it by default?
+AFAIK they don't work. You only get the correct answer
+in some situations, but in others it either overestimates
+frontend or underestimates backend badly.
 
-P.
+The correct way is to implement it like TopDown level 1,
+but I don't know how to put that into the kernel.
 
+http://software.intel.com/en-us/articles/how-to-tune-applications-using-a-top-down-characterization-of-microarchitectural-issues
+
+It requires running 4 counters and computing some equations.
+
+My toplev tool in http://github.com/andikleen/pmu-tools
+has a implementation on top of perf.
+
+I could put it into perf stat if you want, but it would
+be somewhat Intel specific.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
