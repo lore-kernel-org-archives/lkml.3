@@ -1,172 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3IEVGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 17:06:47 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59268 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab3IEVGp (ORCPT
+	id S1756478Ab3IEVHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 17:07:41 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:58520 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab3IEVHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 17:06:45 -0400
-Date: Thu, 5 Sep 2013 14:05:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130905210537.GA1662@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130905162558.6f13add0@gandalf.local.home>
- <20130905205959.GN3966@linux.vnet.ibm.com>
+	Thu, 5 Sep 2013 17:07:37 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Date: Thu, 05 Sep 2013 14:07:29 -0700
+Message-ID: <87mwnrht9q.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905205959.GN3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090521-9332-0000-0000-00000151A684
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19dCbzVCpV8zMUHNobaGkcDP1Q+/vvtUuo=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [GIT PULL] namespace chnages for 3.12
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 01:59:59PM -0700, Paul E. McKenney wrote:
-> On Thu, Sep 05, 2013 at 04:25:58PM -0400, Steven Rostedt wrote:
-> > On Thu, 5 Sep 2013 12:52:34 -0700
-> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > There is currently no way for kernel code to determine whether it
-> > > is safe to enter an RCU read-side critical section, in other words,
-> > > whether or not RCU is paying attention to the currently running CPU.
-> > > Given the large and increasing quantity of code shared by the idle loop
-> > > and non-idle code, the this shortcoming is becoming increasingly painful.
-> > > 
-> > > This commit therefore adds rcu_watching_this_cpu(), which returns true
-> > > if it is safe to enter an RCU read-side critical section on the currently
-> > > running CPU.  This function is quite fast, using only a __this_cpu_read().
-> > > However, the caller must disable preemption.
-> > > 
-> > > Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > Thanks Paul!
-> > 
-> > > 
-> > >  include/linux/rcupdate.h |    1 +
-> > >  kernel/rcutree.c         |   12 ++++++++++++
-> > >  2 files changed, 13 insertions(+)
-> > > 
-> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > > index 15d33d9..1c7112c 100644
-> > > --- a/include/linux/rcupdate.h
-> > > +++ b/include/linux/rcupdate.h
-> > > @@ -225,6 +225,7 @@ extern void rcu_idle_enter(void);
-> > >  extern void rcu_idle_exit(void);
-> > >  extern void rcu_irq_enter(void);
-> > >  extern void rcu_irq_exit(void);
-> > > +extern bool rcu_watching_this_cpu(void);
-> > >  
-> > >  #ifdef CONFIG_RCU_USER_QS
-> > >  extern void rcu_user_enter(void);
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index a06d172..7b8fcee 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > 
-> > Don't we also need a rcutiny version too? Otherwise I'm guessing that
-> > it wont compile if I use it with rcutiny (even if it always returns
-> > true).
-> 
-> Yep, there needs to be an rcutiny version, and it must work in the
-> same way.  So what I currently have is that the rcutiny version is under
-> CONFIG_RCU_TRACE.  This will require some Kconfig monkeying somewhere
-> to select CONFIG_RCU_TRACE if CONFIG_SMP and tracing is enabled.
-> 
-> Just trying to keep rcutiny tiny...
 
-And here is the updated patch, for whatever it is worth.
+Linus,
 
-							Thanx, Paul
-------------------------------------------------------------------------
+Please pull the for-linus git tree from:
 
-rcu: Is it safe to enter an RCU read-side critical section?
+   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
 
-There is currently no way for kernel code to determine whether it
-is safe to enter an RCU read-side critical section, in other words,
-whether or not RCU is paying attention to the currently running CPU.
-Given the large and increasing quantity of code shared by the idle loop
-and non-idle code, the this shortcoming is becoming increasingly painful.
+   HEAD: c7b96acf1456ef127fef461fcfedb54b81fecfbb userns:  Kill nsown_capable it makes the wrong thing easy
 
-This commit therefore adds rcu_watching_this_cpu(), which returns true
-if it is safe to enter an RCU read-side critical section on the currently
-running CPU.  This function is quite fast, using only a __this_cpu_read().
-However, the caller must disable preemption.
+   This tree is against v3.11-rc1
 
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This is an assorted mishmash of small cleanups, enhancements and bug
+fixes.  The major theme is user namespace mount restrictions.
+nsown_capable is killed as it encourages not thinking about details that
+need to be considered.  A very hard to hit pid namespace exiting bug was
+finally tracked and fixed.  A couple of cleanups to the basic namespace
+infrastructure.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 15d33d9..7c024fd 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -225,6 +225,9 @@ extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
- extern void rcu_irq_enter(void);
- extern void rcu_irq_exit(void);
-+#if defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)
-+extern bool rcu_watching_this_cpu(void);
-+#endif /* #if defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) */
- 
- #ifdef CONFIG_RCU_USER_QS
- extern void rcu_user_enter(void);
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 7e3b0d6..fce820f 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -189,6 +189,17 @@ EXPORT_SYMBOL(rcu_is_cpu_idle);
- 
- #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- 
-+#ifdef CONFIG_RCU_TRACE
-+/*
-+ * Test whether the current CPU can safely enter RCU read-side critical
-+ * sections.  The caller must at least have disabled interrupts.
-+ */
-+bool rcu_watching_this_cpu(void)
-+{
-+	return !!rcu_dynticks_nesting;
-+}
-+#endif /* #ifdef CONFIG_RCU_TRACE */
-+
- /*
-  * Test whether the current CPU was interrupted from idle.  Nested
-  * interrupts don't count, we must be running at the first interrupt
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a06d172..7b8fcee 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -710,6 +710,18 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
- #endif /* #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU) */
- 
- /**
-+ * rcu_watching_this_cpu - are RCU read-side critical sections safe?
-+ *
-+ * Return true if RCU is watching the running CPU, which means that this
-+ * CPU can safely enter RCU read-side critical sections.  The caller must
-+ * have at least disabled preemption.
-+ */
-+bool rcu_watching_this_cpu(void)
-+{
-+	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
-+}
-+
-+/**
-  * rcu_is_cpu_rrupt_from_idle - see if idle or immediately interrupted from idle
-  *
-  * If the current CPU is idle or running at a first-level (not nested)
+Finally there is an enhancement that makes per user namespace
+capabilities usable as capabilities, and an enhancement that allows the
+per userns root to nice other processes in the user namespace.
 
+Eric W. Biederman (10):
+      vfs: Lock in place mounts from more privileged users
+      proc: Restrict mounting the proc filesystem
+      vfs: Don't copy mount bind mounts of /proc/<pid>/ns/mnt between namespaces
+      userns: Better restrictions on when proc and sysfs can be mounted
+      sysfs: Restrict mounting sysfs
+      pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
+      namespaces: Simplify copy_namespaces so it is clear what is going on.
+      userns: Allow PR_CAPBSET_DROP in a user namespace.
+      pidns: Don't have unshare(CLONE_NEWPID) imply CLONE_THREAD
+      userns:  Kill nsown_capable it makes the wrong thing easy
+
+Raphael S.Carvalho (1):
+      kernel/nsproxy.c: Improving a snippet of code.
+
+Serge Hallyn (1):
+      capabilities: allow nice if we are privileged
+
+ fs/namespace.c                 |  121 +++++++++++++++++++++++++++++++---------
+ fs/open.c                      |    2 +-
+ fs/pnode.h                     |    5 +-
+ fs/proc/root.c                 |    6 ++-
+ fs/sysfs/mount.c               |   11 +++-
+ include/linux/capability.h     |    1 -
+ include/linux/fs.h             |    1 +
+ include/linux/kobject_ns.h     |    2 +
+ include/linux/mount.h          |    1 +
+ include/linux/user_namespace.h |    4 -
+ ipc/namespace.c                |    2 +-
+ kernel/capability.c            |   12 ----
+ kernel/fork.c                  |    5 --
+ kernel/groups.c                |    2 +-
+ kernel/nsproxy.c               |   36 ++++--------
+ kernel/pid.c                   |    1 +
+ kernel/pid_namespace.c         |    2 +-
+ kernel/sys.c                   |   20 +++---
+ kernel/uid16.c                 |    2 +-
+ kernel/user.c                  |    2 -
+ kernel/user_namespace.c        |    2 -
+ kernel/utsname.c               |    2 +-
+ lib/kobject.c                  |   15 +++++
+ net/core/net-sysfs.c           |    8 +++
+ net/core/net_namespace.c       |    2 +-
+ net/core/scm.c                 |    4 +-
+ security/commoncap.c           |   10 ++--
+ 27 files changed, 177 insertions(+), 104 deletions(-)
