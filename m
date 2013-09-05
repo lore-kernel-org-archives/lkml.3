@@ -1,257 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3IEXhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 19:37:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34258 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab3IEXhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 19:37:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: Excess dmesg output from ACPIPHP on boot (was: Re: [PATCH 25/30] ACPI / hotplug / PCI: Check for new devices on enabled slots)
-Date: Fri, 06 Sep 2013 01:48:38 +0200
-Message-ID: <22234577.eFycb7UY1F@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378423918.3246.286.camel@ul30vt.home>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1599165.8kjc3DtEzc@vostro.rjw.lan> <1378423918.3246.286.camel@ul30vt.home>
+	id S1754006Ab3IEXib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 19:38:31 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48982 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3IEXi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 19:38:29 -0400
+Message-ID: <522915ED.7050106@ozlabs.ru>
+Date: Fri, 06 Sep 2013 09:38:21 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
+References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru> <1377679841-3822-1-git-send-email-aik@ozlabs.ru> <20130901120609.GJ22899@redhat.com> <52240295.7050608@ozlabs.ru> <20130903105315.GY22899@redhat.com> <522607D8.4070408@ozlabs.ru> <20130905181010.GE13021@redhat.com>
+In-Reply-To: <20130905181010.GE13021@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 05, 2013 05:31:58 PM Alex Williamson wrote:
-> On Fri, 2013-09-06 at 01:36 +0200, Rafael J. Wysocki wrote:
-> > On Thursday, September 05, 2013 05:08:03 PM Alex Williamson wrote:
-> > > On Fri, 2013-09-06 at 00:40 +0200, Rafael J. Wysocki wrote:
-> > > > On Thursday, September 05, 2013 04:17:25 PM Alex Williamson wrote:
-> > > > > On Thu, 2013-09-05 at 23:39 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Thursday, September 05, 2013 09:44:26 PM Rafael J. Wysocki wrote:
-> > > > > > > On Thursday, September 05, 2013 08:21:41 AM Alex Williamson wrote:
-> > > > > > 
-> > > > > > [...]
-> > > > > > 
-> > > > > > > > > 
-> > > > > > > > > [   18.288122] pci 0000:00:00.0: no hotplug settings from platform
-> > > > > > > > > [   18.288127] pcieport 0000:00:01.0: no hotplug settings from platform
-> > > > > > > > > [   18.288142] pci 0000:01:00.0: no hotplug settings from platform
-> > > > > > > > > [   18.288157] pci 0000:01:00.1: no hotplug settings from platform
-> > > > > > > > > [   18.288162] pcieport 0000:00:03.0: no hotplug settings from platform
-> > > > > > > > > [   18.288176] pci 0000:02:00.0: no hotplug settings from platform
-> > > > > > > > > [   18.288190] pci 0000:02:00.1: no hotplug settings from platform
-> > > > > > > > > [   18.288195] pcieport 0000:00:07.0: no hotplug settings from platform
-> > > > > > > > > [   18.288209] pci 0000:03:00.0: no hotplug settings from platform
-> > > > > > > > > [   18.288224] pci 0000:03:00.1: no hotplug settings from platform
-> > > > > > > > > [   18.288228] pci 0000:00:14.0: no hotplug settings from platform
-> > > > > > > > > [   18.288233] pci 0000:00:14.1: no hotplug settings from platform
-> > > > > > > > > [   18.288237] pci 0000:00:14.2: no hotplug settings from platform
-> > > > > > > > > [   18.288242] pci 0000:00:16.0: no hotplug settings from platform
-> > > > > > > > > [   18.288247] pci 0000:00:16.1: no hotplug settings from platform
-> > > > > > > > > [   18.288251] pci 0000:00:16.2: no hotplug settings from platform
-> > > > > > > > > [   18.288256] pci 0000:00:16.3: no hotplug settings from platform
-> > > > > > > > > [   18.288260] pci 0000:00:16.4: no hotplug settings from platform
-> > > > > > > > > [   18.288265] pci 0000:00:16.5: no hotplug settings from platform
-> > > > > > > > > [   18.288269] pci 0000:00:16.6: no hotplug settings from platform
-> > > > > > > > > [   18.288274] pci 0000:00:16.7: no hotplug settings from platform
-> > > > > > > > > [   18.288278] pci 0000:00:1a.0: no hotplug settings from platform
-> > > > > > > > > [   18.288279] pci 0000:00:1a.0: using default PCI settings
-> > > > > > > > > [   18.288292] pci 0000:00:1a.1: no hotplug settings from platform
-> > > > > > > > > [   18.288293] pci 0000:00:1a.1: using default PCI settings
-> > > > > > > > > [   18.288307] ehci-pci 0000:00:1a.7: no hotplug settings from platform
-> > > > > > > > > [   18.288308] ehci-pci 0000:00:1a.7: using default PCI settings
-> > > > > > > > > [   18.288322] pci 0000:00:1b.0: no hotplug settings from platform
-> > > > > > > > > [   18.288327] pcieport 0000:00:1c.0: no hotplug settings from platform
-> > > > > > > > > [   18.288332] pcieport 0000:00:1c.4: no hotplug settings from platform
-> > > > > > > > > [   18.288344] pci 0000:05:00.0: no hotplug settings from platform
-> > > > > > > > > [   18.288349] pci 0000:00:1d.0: no hotplug settings from platform
-> > > > > > > > > [   18.288350] pci 0000:00:1d.0: using default PCI settings
-> > > > > > > > > [   18.288360] pci 0000:00:1d.1: no hotplug settings from platform
-> > > > > > > > > [   18.288361] pci 0000:00:1d.1: using default PCI settings
-> > > > > > > > > [   18.288374] pci 0000:00:1d.2: no hotplug settings from platform
-> > > > > > > > > [   18.288374] pci 0000:00:1d.2: using default PCI settings
-> > > > > > > > > [   18.288387] pci 0000:00:1d.3: no hotplug settings from platform
-> > > > > > > > > [   18.288387] pci 0000:00:1d.3: using default PCI settings
-> > > > > > > > > 
-> > > > > > > > > The boot is noticeably slower.  What's going to happen on systems that
-> > > > > > > > > actually have a significant I/O topology vs my little workstation?
-> > > > > > > 
-> > > > > > > That depends on how many bus check/device check events they generate on boot.
-> > > > > > > 
-> > > > > > > My test machines don't generate them during boot at all (even the one with
-> > > > > > > a Thunderbolt connector), so I don't see the messages in question during boot
-> > > > > > > on any of them.  Mika doesn't see them either I suppose, or he would have told
-> > > > > > > me about that before.
-> > > > > > > 
-> > > > > > > And let's just make it clear that it is not usual or even OK to generate bus
-> > > > > > > checks or device checks during boot like this.  And since the changes in
-> > > > > > > question have been in linux-next since right after the 3.11 merge window, I
-> > > > > > > think that someone would have complained already had that been a common issue.
-> > > > > > > 
-> > > > > > > Of course, we need to deal with that somehow nevertheless. :-)
-> > > > > > > 
-> > > > > > > > Just to give you an idea:
-> > > > > > > > 
-> > > > > > > > CONFIG_HOTPLUG_PCI_ACPI=y
-> > > > > > > > 
-> > > > > > > > $ dmesg | wc
-> > > > > > > >   5697  49935 384368
-> > > > > > > > 
-> > > > > > > > $ dmesg | tail --lines=1
-> > > > > > > > [   53.137123] Ebtables v2.0 registered
-> > > > > > > > 
-> > > > > > > > -- vs --
-> > > > > > > > 
-> > > > > > > > # CONFIG_HOTPLUG_PCI_ACPI is not set
-> > > > > > > > 
-> > > > > > > > $ dmesg | wc
-> > > > > > > >  1053  9176 71652
-> > > > > > > > 
-> > > > > > > > $dmesg | tail --lines=1
-> > > > > > > > [   28.917220] Ebtables v2.0 registered
-> > > > > > > > 
-> > > > > > > > So it spews out 5x more output with acpiphp enabled and takes and extra
-> > > > > > > > 24s to boot (nearly 2x).  Not good.
-> > > > > > > 
-> > > > > > > The "no hotplug settings from platform" message is from pci_configure_slot().
-> > > > > > > I think the messages you're seeing are from the call to it in
-> > > > > > > acpiphp_set_hpp_values() which is called by enable_slot().
-> > > > > > > 
-> > > > > > > There, I think, we can simply check the return value of pci_scan_slot() and
-> > > > > > > if that is 0 (no new devices), we can just skip everything under the call to
-> > > > > > > __pci_bus_assign_resources().
-> > > > > > > 
-> > > > > > > However, we can't skip the scanning of bridges, if any, because there may be
-> > > > > > > new devices below them and I guess that's what takes so much time on your
-> > > > > > > machine.
-> > > > > > 
-> > > > > > OK, one piece is missing.  We may need to evaluate _OSC after handling each
-> > > > > > event to let the platform know the status.
-> > > > > > 
-> > > > > > Can you please check if the appended patch makes any difference (with the
-> > > > > > previous fix applied, of course)?
-> > > > > > 
-> > > > > > If fact, it is two patches combined.  One of them optimizes enable_slot()
-> > > > > > slightly and the other adds the missing _OSC evaluation.
-> > > > > 
-> > > > > Better, still double the output:
-> > > > > 
-> > > > > $ dmesg | wc
-> > > > >    2169   19047  152710
-> > > > 
-> > > > I see.
-> > > > 
-> > > > What about the timing?
-> > > 
-> > > ~40s below vs ~29s for acpiphp config'd out above.
-> > 
-> > Well, that's better than before.
-> > 
-> > I'll prepare "official" patches with the last changes then too.
-> > 
-> > > > > $ dmesg | tail --lines=1
-> > > > > [   39.980918] Ebtables v2.0 registered
-> > > > > 
-> > > > > Here's another interesting stat:
-> > > > > 
-> > > > > $ dmesg | colrm 1 15 | sort | uniq -c | sort -nr | head --lines=25
-> > > > >      73 pci 0000:00:1f.0: BAR 13: [io  0x1000-0x107f] has bogus alignment
-> > > > >      73 pci 0000:00:1e.0: PCI bridge to [bus 06]
-> > > > >      64 pci 0000:00:1e.0:   bridge window [mem 0x81100000-0x812fffff 64bit pref]
-> > > > >      64 pci 0000:00:1e.0:   bridge window [mem 0x80f00000-0x810fffff]
-> > > > >      64 pci 0000:00:1e.0:   bridge window [io  0x7000-0x7fff]
-> > > > >      38 pci 0000:00:1c.4: PCI bridge to [bus 05]
-> > > > >      38 pci 0000:00:1c.4:   bridge window [mem 0xf4f00000-0xf4ffffff]
-> > > > >      38 pci 0000:00:1c.0: PCI bridge to [bus 04]
-> > > > >      38 pci 0000:00:07.0: PCI bridge to [bus 03]
-> > > > >      38 pci 0000:00:07.0:   bridge window [mem 0xf2000000-0xf40fffff]
-> > > > >      38 pci 0000:00:07.0:   bridge window [mem 0xe0000000-0xf1ffffff 64bit pref]
-> > > > >      38 pci 0000:00:07.0:   bridge window [io  0x4000-0x4fff]
-> > > > >      38 pci 0000:00:03.0: PCI bridge to [bus 02]
-> > > > >      38 pci 0000:00:03.0:   bridge window [mem 0xf4e00000-0xf4efffff]
-> > > > >      38 pci 0000:00:03.0:   bridge window [mem 0xd0000000-0xdfffffff 64bit pref]
-> > > > >      38 pci 0000:00:03.0:   bridge window [io  0x3000-0x3fff]
-> > > > >      38 pci 0000:00:01.0: PCI bridge to [bus 01]
-> > > > >      38 pci 0000:00:01.0:   bridge window [mem 0xf4100000-0xf4bfffff]
-> > > > >      38 pci 0000:00:01.0:   bridge window [io  0x2000-0x2fff]
-> > > > >      37 pci 0000:00:1c.4:   bridge window [mem 0x80c00000-0x80dfffff 64bit pref]
-> > > > >      37 pci 0000:00:1c.4:   bridge window [io  0x6000-0x6fff]
-> > > > >      37 pci 0000:00:1c.0:   bridge window [mem 0x80a00000-0x80bfffff 64bit pref]
-> > > > >      37 pci 0000:00:1c.0:   bridge window [mem 0x80800000-0x809fffff]
-> > > > >      37 pci 0000:00:1c.0:   bridge window [io  0x5000-0x5fff]
-> > > > >      36 pci 0000:00:01.0:   bridge window [mem 0x80000000-0x807fffff 64bit pref]
-> > > > > 
-> > > > > This is nearly the entire difference, just 25 lines repeated over and
-> > > > > over.
-> > 
-> > Can you check how many times the lines above are repeated?
-> 
-> The line count is pre-pended to each line.  73 times for the first two
-> line, etc.
+On 09/06/2013 04:10 AM, Gleb Natapov wrote:
+> On Wed, Sep 04, 2013 at 02:01:28AM +1000, Alexey Kardashevskiy wrote:
+>> On 09/03/2013 08:53 PM, Gleb Natapov wrote:
+>>> On Mon, Sep 02, 2013 at 01:14:29PM +1000, Alexey Kardashevskiy wrote:
+>>>> On 09/01/2013 10:06 PM, Gleb Natapov wrote:
+>>>>> On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
+>>>>>> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
+>>>>>> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
+>>>>>> them to user space which saves time on switching to user space and back.
+>>>>>>
+>>>>>> Both real and virtual modes are supported. The kernel tries to
+>>>>>> handle a TCE request in the real mode, if fails it passes the request
+>>>>>> to the virtual mode to complete the operation. If it a virtual mode
+>>>>>> handler fails, the request is passed to user space.
+>>>>>>
+>>>>>> The first user of this is VFIO on POWER. Trampolines to the VFIO external
+>>>>>> user API functions are required for this patch.
+>>>>>>
+>>>>>> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
+>>>>>> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
+>>>>>> of map/unmap requests. The device supports a single attribute which is
+>>>>>> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
+>>>>>> establishes the connection between KVM and VFIO.
+>>>>>>
+>>>>>> Tests show that this patch increases transmission speed from 220MB/s
+>>>>>> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+>>>>>>
+>>>>>> Signed-off-by: Paul Mackerras <paulus@samba.org>
+>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>>>
+>>>>>> ---
+>>>>>>
+>>>>>> Changes:
+>>>>>> v9:
+>>>>>> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
+>>>>>> KVM device
+>>>>>> * release_spapr_tce_table() is not shared between different TCE types
+>>>>>> * reduced the patch size by moving VFIO external API
+>>>>>> trampolines to separate patche
+>>>>>> * moved documentation from Documentation/virtual/kvm/api.txt to
+>>>>>> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>>>
+>>>>>> v8:
+>>>>>> * fixed warnings from check_patch.pl
+>>>>>>
+>>>>>> 2013/07/11:
+>>>>>> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
+>>>>>> for KVM_BOOK3S_64
+>>>>>> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
+>>>>>> for this here but the next patch for hugepages support will use it more.
+>>>>>>
+>>>>>> 2013/07/06:
+>>>>>> * added realmode arch_spin_lock to protect TCE table from races
+>>>>>> in real and virtual modes
+>>>>>> * POWERPC IOMMU API is changed to support real mode
+>>>>>> * iommu_take_ownership and iommu_release_ownership are protected by
+>>>>>> iommu_table's locks
+>>>>>> * VFIO external user API use rewritten
+>>>>>> * multiple small fixes
+>>>>>>
+>>>>>> 2013/06/27:
+>>>>>> * tce_list page is referenced now in order to protect it from accident
+>>>>>> invalidation during H_PUT_TCE_INDIRECT execution
+>>>>>> * added use of the external user VFIO API
+>>>>>>
+>>>>>> 2013/06/05:
+>>>>>> * changed capability number
+>>>>>> * changed ioctl number
+>>>>>> * update the doc article number
+>>>>>>
+>>>>>> 2013/05/20:
+>>>>>> * removed get_user() from real mode handlers
+>>>>>> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
+>>>>>> translated TCEs, tries realmode_get_page() on those and if it fails, it
+>>>>>> passes control over the virtual mode handler which tries to finish
+>>>>>> the request handling
+>>>>>> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
+>>>>>> on a page
+>>>>>> * The only reason to pass the request to user mode now is when the user mode
+>>>>>> did not register TCE table in the kernel, in all other cases the virtual mode
+>>>>>> handler is expected to do the job
+>>>>>> ---
+>>>>>>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
+>>>>>>  arch/powerpc/include/asm/kvm_host.h                |   4 +
+>>>>>>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
+>>>>>>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
+>>>>>>  arch/powerpc/kvm/powerpc.c                         |   1 +
+>>>>>>  include/linux/kvm_host.h                           |   1 +
+>>>>>>  virt/kvm/kvm_main.c                                |   5 +
+>>>>>>  7 files changed, 477 insertions(+), 3 deletions(-)
+>>>>>>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>>>
+>>>>>> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>>> new file mode 100644
+>>>>>> index 0000000..4bc8fc3
+>>>>>> --- /dev/null
+>>>>>> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+>>>>>> @@ -0,0 +1,37 @@
+>>>>>> +SPAPR TCE IOMMU device
+>>>>>> +
+>>>>>> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
+>>>>>> +Architectures: powerpc
+>>>>>> +
+>>>>>> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
+>>>>>> +
+>>>>>> +Groups:
+>>>>>> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
+>>>>>> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
+>>>>>> +
+>>>>>> +This is completely made up device which provides API to link
+>>>>>> +logical bus number (LIOBN) and IOMMU group. The user space has
+>>>>>> +to create a new SPAPR TCE IOMMU device per a logical bus.
+>>>>>> +
+>>>>> Why not have one device that can handle multimple links?
+>>>>
+>>>>
+>>>> I can do that. If I make it so, it won't even look as a device at all, just
+>>>> some weird interface to KVM but ok. What bothers me is it is just a
+>>> May be I do not understand usage pattern here. Why do you feel that device
+>>> that can handle multiple links is worse than device per link? How many logical
+>>> buses is there usually? How often they created/destroyed? I am not insisting
+>>> on the change, just trying to understand why you do not like it.
+>>
+>>
+>> Is it usually one PCI host bus adapter per IOMMU group which is usually
+>> one PCI card or 2-3 cards if it is a legacy PCI-X, and they are created
+>> when QEMU-KVM starts. Not many. And they live till KVM ends.
+>>
+>> My point is why would I want to put all links to one device? It all is just
+>> a matter of taste and nothing more. Or I am missing something but I do not
+>> see what. If it is all about making thing to be kosher/halal/orthodox, then
+>> I have more stuff to do, like reworking the emulated TCEs. But if is it for
+>> (I do not know, just guessing) performance or something like that - then
+>> I'll fix it, I just need to know what I am fixing.
+>>
+> Each device creates an fd, if you can have a lot of them eventually this
+> will be a bottleneck. You are saying this is not the case, so lets go
+> with proposed interface.
 
-Too late, too tired.  Sorry.
 
-Hmm, there's kind of too many of them given the number of notifications.
-Interesting.
+Did you decide not to answer the email which Ben sent yesterday or you just
+did not see it? Just checking :)
 
-OK, I'll look deeper into things tomorrow, maybe I'll find some clues.
 
-> > > > 
-> > > > Well, this is the bridge sizing I talked about previously.  We still get
-> > > > apparently spurious bus check/device check events and they trigger bridge
-> > > > scans.
-> > > > 
-> > > > I'm not sure what to do about that and I wonder whether or not this is
-> > > > reproducible on any other machines you can test.
-> > > 
-> > > I can try it on a couple other systems, but probably not until tomorrow.
-> > 
-> > Tomorrow (or even later) works just fine for me. :-)
-> > 
-> > > > Can you please change dbg() to pr_info() under ACPI_NOTIFY_BUS_CHECK and
-> > > > ACPI_NOTIFY_DEVICE_CHECK in hotplug_event() (acpiphp_glue.c), grep the boot
-> > > > dmesg log for "check notify" and send the result?  I'm wondering what's
-> > > > going on there.
-> > > 
-> > > $ dmesg | grep "check notify"
-> > > [    1.633228] hotplug_event: Device check notify on \_SB_.PCI0.PEX2
-> > > [    2.472004] hotplug_event: Device check notify on \_SB_.PCI0.PEX3
-> > > [    2.477288] hotplug_event: Device check notify on \_SB_.PCI0.PEX4
-> > > [    2.482571] hotplug_event: Device check notify on \_SB_.PCI0.PEX5
-> > > [    2.482579] hotplug_event: Device check notify on \_SB_.PCI0.PEX6
-> > > [    8.204953] hotplug_event: Device check notify on \_SB_.PCI0.PEX2
-> > > [    8.209632] hotplug_event: Device check notify on \_SB_.PCI0.PEX3
-> > > [    8.214272] hotplug_event: Device check notify on \_SB_.PCI0.PEX4
-> > > [    8.218894] hotplug_event: Device check notify on \_SB_.PCI0.PEX5
-> > > [    8.218901] hotplug_event: Device check notify on \_SB_.PCI0.PEX6
-> > 
-> > So I guess the PEXn things are PCIe ports and we get two notifications
-> > for each of them, so everything below them gets rescanned.
-> > 
-> > I've just talked to Bjorn about that and we don't seem to have a good idea
-> > how to handle this.  The notifies shouldn't be there, but we kind of have
-> > to handle them.
-> > 
-> > I guess we could suppress the output from repeated bridge scans.  Alternatively,
-> > we could just blacklist this particular system somehow if the problem is
-> > specific to it.
-> 
-> Can't we determine that nothing has changed and avoid re-printing?
 
-I suppose so, but that's not going to be a simple modification, because the
-output is from somewhat deep in the stack.
-
-> I have a hard time believing this system is all that unique.
-
-Yes, it is quite likely that there are more systems like that.
-
-Thanks,
-Rafael
-
+-- 
+Alexey
