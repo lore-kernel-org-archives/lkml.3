@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3IEFM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:12:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:44508 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754844Ab3IEFM6 (ORCPT
+	id S1756117Ab3IEFTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:19:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36366 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab3IEFTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:12:58 -0400
-From: Libin <huawei.libin@huawei.com>
-To: <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <wangyijing@huawei.com>,
-        <guohanjun@huawei.com>, <wujianguo@huawei.com>
-Subject: [PATCH] workqueue: fix ordered workqueue in multi NUMA nodes platform
-Date: Thu, 5 Sep 2013 13:10:44 +0800
-Message-ID: <1378357844-15632-1-git-send-email-huawei.libin@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+	Thu, 5 Sep 2013 01:19:48 -0400
+Date: Thu, 5 Sep 2013 15:19:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20130905151933.10e0558611271fdd2133a790@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In platform with multi NUMA nodes, there is no ordering guarantee
-with the workqueue created by calling alloc_ordered_workqueue().
+--Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add member ordered_pwq in structure workqueue_struct, used to hold
-the first choice of pwq, in order to avoid breaking its ordering
-guarantee under enqueueing work in different NUMA nodes.
+Hi all,
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
----
- kernel/workqueue.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+Today's linux-next merge of the net-next tree got a conflict in
+net/bridge/br_multicast.c between commit 2d98c29b6fb3 ("net: bridge:
+convert MLDv2 Query MRC into msecs_to_jiffies for max_delay") from Linus'
+tree and commit e3f5b17047de ("net: ipv6: mld: get rid of MLDV2_MRC and
+simplify calculation") from the net-next tree.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 29b7985..42c6c29 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -249,6 +249,7 @@ struct workqueue_struct {
- 
- 	struct workqueue_attrs	*unbound_attrs;	/* WQ: only for unbound wqs */
- 	struct pool_workqueue	*dfl_pwq;	/* WQ: only for unbound wqs */
-+	struct pool_workqueue   *ordered_pwq;   /* WQ: only for ordered wqs */
- 
- #ifdef CONFIG_SYSFS
- 	struct wq_device	*wq_dev;	/* I: for sysfs interface */
-@@ -1326,10 +1327,19 @@ retry:
- 
- 	/* pwq which will be used unless @work is executing elsewhere */
- 	if (!(wq->flags & WQ_UNBOUND))
--		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
--	else
--		pwq = unbound_pwq_by_node(wq, cpu_to_node(cpu));
-+	    pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
-+	else {
-+	    pwq = unbound_pwq_by_node(wq, cpu_to_node(cpu));
-+	    if (wq->flags & __WQ_ORDERED) {
-+		mutex_lock(&wq->mutex);
-+		if (wq->ordered_pwq == NULL)
-+		    wq->ordered_pwq = pwq;
-+		else
-+		    pwq = wq->ordered_pwq;
-+		mutex_unlock(&wq->mutex);
-+	    }
- 
-+	}
- 	/*
- 	 * If @work was previously on a different pool, it might still be
- 	 * running there, in which case the work needs to be queued on that
--- 
-1.8.2.1
+I just used the net-next tree version and can carry the fix as necessary
+(no action is required).
 
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSKBRpAAoJEECxmPOUX5FEihEQAImLN7KDS6lMlkHq63OURAxh
+5U7rO0xdhRavO95aVyYb/tWnLfxTqtpahz/eeC4tXT6k+2ob2n+4bqw3gOsRRcef
+l0LzhuR8SQiOtJrGB1q4rW3aqPknpqUExsDIykqSzGULL6WlgNj1gVZ2vy9WBJZq
+wXTLFadqtlGvtv7MG+g39SvGRSfKuM1Cemg9WXmPKUxf7Kc2IB823LP9Wz9QSQKo
+qdhUE1E4RrJlhmLICIXtFKoDwsSa0EdQk8VTRp6Nkz73GJjskO0DIrMYBdQkupFK
+OHPBnq/NLDQ7+9qgJbPYFHT82q59xvKD5Y9ywQLmp8OsrsC5Myc7FB+Jkz3LITu8
+uYG7hX/8WPpFip3J67Q7gX4wCSdSQBvCGbxfTPYoepO1cJA5h9OjzeLOQTSvJAVj
++a/Htw8CX8S6LdYuTAsVNt4lfDleK68M+sl6X8Ym6KM/M3dX66P4g489mcYRbPuL
+nolKuQRwIg9GjzRDYfLALxp9qXPBhyTO4unLveh5pjoi6uw40vCloPp+wlY1xBc6
+81zfN4wLvShIqs2WzBK72bqsQgnrYacAmj3hzaBKHNIo9Uz+4Mf5vN/ysvhcOkrt
+4jTcz7v7JrrCIj7kBo/BXb1XrNrstRBHRK1wALSx1AuUOJGoeqXNcUpH4LEI1kqN
+d7QNpmAcILJSzdGRnMqv
+=JPi8
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Sep_2013_15_19_33_+1000_0aXG4jR=Ax4=t2Fl--
