@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3IEPqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:46:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60517 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754223Ab3IEPq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:46:26 -0400
-Date: Thu, 5 Sep 2013 16:46:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs pile 1 (of many small ones this time ;-/)
-Message-ID: <20130905154624.GS13318@ZenIV.linux.org.uk>
+	id S1754525Ab3IEPrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:47:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754361Ab3IEPrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:47:22 -0400
+Date: Thu, 5 Sep 2013 11:47:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rmk+kernel@arm.linux.org.uk
+Subject: Re: kobject: delayed kobject release: help find buggy drivers
+Message-ID: <20130905154700.GD24177@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	rmk+kernel@arm.linux.org.uk
+References: <20130903185924.046EE660E91@gitolite.kernel.org>
+ <20130903204442.GA22222@redhat.com>
+ <20130903205527.GA6358@kroah.com>
+ <87zjrt6tz4.fsf@rustcorp.com.au>
+ <20130905041338.GA21090@redhat.com>
+ <20130905045745.GA18876@kroah.com>
+ <20130905051945.GB23209@redhat.com>
+ <20130905153457.GA27954@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130905153457.GA27954@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, this merge window it'll have a be a lot of small piles - my
-fault, actually, for not keeping #for-next in anything that would resemble
-a sane shape ;-/  This pile: assorted fixes (the first 3 are -stable fodder,
-IMO) and cleanups + %pd/%pD formats (dentry/file pathname, up to 4 last
-components) + several long-standing patches from various folks.  There
-definitely will be a lot more (starting with Miklos' check_submount_and_drop()
-series).  There's one trivial conflict in fs/dcache.c (lockref changes
-affecting a context line), other than that this one should merge clean...
+On Thu, Sep 05, 2013 at 08:34:57AM -0700, Greg KH wrote:
+ 
+ > > Trace:
+ > > <IRQ>
+ > > run_timer_softirq
+ > > __do_softirq
+ > > irq_exit
+ > > smp_apic_timer_interrupt
+ > > apic_timer_interrupt
+ > > <EOI>
+ > > vprintk_emit
+ > > dev_vprintk_emit
+ > > dev_vprint_emit
+ > > __dev_printk
+ > > _dev_info
+ > > ahci_print_info
+ > > ahci_init_one
+ > > local_pci_probe
+ > > pci_device_probe
+ > > driver_probe_device
+ > > __driver_attach
+ > > bus_for_each_dev
+ > > driver_attach
+ > > bus_add_driver
+ > > driver_register
+ > > __pci_register_driver
+ > > ahci_pci_driver_init
+ > 
+ > So we are loading a ahci driver here.  Any hint as to which
+ > driver/device this is?  Is it a device that fails for this driver, and
+ > then falls back to another more "specific" one?
 
-Please, pull from the usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+It's "ahci.ko" (though it's built in).
+For a boring onboard intel sata controller...
+00:1f.2 SATA controller: Intel Corporation 8 Series/C220 Series Chipset Family 6-port SATA Controller 1 [AHCI mode] (rev 04)
 
-Shortlog:
-Al Viro (22):
-      shm_mnt is as longterm as it gets, TYVM...
-      nfsd: racy access to ->d_name in nsfd4_encode_path()
-      only regular files with FMODE_WRITE need to be on s_files
-      constify touch_atime()
-      coh901318: don't open-code simple_read_from_buffer()
-      don't bother passing sb to oprofile_create_files()
-      oprofile: don't bother with passing superblock to ->create_files()
-      don't bother with passing superblock to oprofile_create_stats_files()
-      oprofilefs_mkdir() doesn't need superblock argument
-      oprofilefs_create_...() do not need superblock argument
-      oprofile: get rid of pointless forward declarations of struct super_block
-      don't pass superblock to hypfs_vm_create_files()
-      don't pass superblock to hypfs_diag_create_files
-      don't pass superblock to hypfs_{mkdir,create*}
-      ibmasmfs: don't bother passing superblock when not needed
-      git simplify nilfs check for busy subtree
-      switch copy_module_from_fd() to fdget
-      switch epoll_ctl() to fdget
-      switch fchmod() to fdget
-      powerpc kvm: use fdget
-      kvm eventfd: switch to fdget
-      add formats for dentry/file pathnames
+ 
+When I disable the debug option, usually it looks like..
 
-Christoph Hellwig (2):
-      direct-io: Implement generic deferred AIO completions
-      direct-io: Handle O_(D)SYNC AIO
+[    6.382970] ahci 0000:00:1f.2: version 3.0
+[    6.384753] ahci 0000:00:1f.2: irq 43 for MSI/MSI-X
+[    6.385039] ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 6 ports 6 Gbps 0x6 impl SATA mode
+[    6.385067] ahci 0000:00:1f.2: flags: 64bit ncq pm led clo pio slum part ems apst 
+[    6.385101] ahci 0000:00:1f.2: setting latency timer to 64
+[    6.402536] scsi0 : ahci
+[    6.403669] scsi1 : ahci
+[    6.404208] scsi2 : ahci
+[    6.404756] scsi3 : ahci
+[    6.405342] scsi4 : ahci
+[    6.405951] scsi5 : ahci
+[    6.406345] ata1: DUMMY
+[    6.406364] ata2: SATA max UDMA/133 abar m2048@0xc043b000 port 0xc043b180 irq 43
+[    6.406393] ata3: SATA max UDMA/133 abar m2048@0xc043b000 port 0xc043b200 irq 43
+[    6.406416] ata4: DUMMY
+[    6.406427] ata5: DUMMY
+[    6.406438] ata6: DUMMY
 
-Jeff Layton (1):
-      vfs: allow umount to handle mountpoints without revalidating them
+	Dave
 
-Yan, Zheng (1):
-      vfs: call d_op->d_prune() before unhashing dentry
-
-Diffstat:
- Documentation/printk-formats.txt     |    9 ++
- arch/alpha/oprofile/common.c         |   22 ++--
- arch/avr32/oprofile/op_model_avr32.c |   17 ++--
- arch/mips/oprofile/common.c          |   20 ++--
- arch/powerpc/kvm/powerpc.c           |   20 ++--
- arch/powerpc/oprofile/common.c       |   28 +++---
- arch/s390/hypfs/hypfs.h              |   13 +--
- arch/s390/hypfs/hypfs_diag.c         |   50 +++++-----
- arch/s390/hypfs/hypfs_vm.c           |   65 ++++++------
- arch/s390/hypfs/inode.c              |   36 +++----
- arch/s390/oprofile/init.c            |   35 +++----
- arch/x86/oprofile/nmi_int.c          |   18 ++--
- arch/x86/oprofile/op_model_amd.c     |   24 +++---
- drivers/dma/coh901318.c              |   26 +----
- drivers/misc/ibmasm/ibmasmfs.c       |   26 +++---
- drivers/oprofile/oprof.h             |    3 +-
- drivers/oprofile/oprofile_files.c    |   26 +++---
- drivers/oprofile/oprofile_perf.c     |   16 ++--
- drivers/oprofile/oprofile_stats.c    |   24 +++---
- drivers/oprofile/oprofile_stats.h    |    3 +-
- drivers/oprofile/oprofilefs.c        |   44 ++++-----
- fs/block_dev.c                       |    2 +-
- fs/btrfs/file.c                      |    2 +-
- fs/cifs/file.c                       |    2 +-
- fs/dcache.c                          |   13 ++-
- fs/direct-io.c                       |  126 +++++++++++++++++++-----
- fs/eventpoll.c                       |   31 +++---
- fs/ext4/ext4.h                       |   11 --
- fs/ext4/file.c                       |    2 +-
- fs/ext4/inode.c                      |   28 ++----
- fs/ext4/page-io.c                    |   30 ++-----
- fs/ext4/super.c                      |   16 ---
- fs/file_table.c                      |    6 +-
- fs/inode.c                           |    2 +-
- fs/namei.c                           |  182 ++++++++++++++++++++++++++++++++++
- fs/namespace.c                       |    2 +-
- fs/nfsd/nfs4xdr.c                    |   14 ++-
- fs/nilfs2/super.c                    |   26 ++----
- fs/ocfs2/aops.c                      |    8 +--
- fs/open.c                            |   11 +-
- fs/super.c                           |   18 ++--
- fs/xfs/xfs_aops.c                    |   28 +-----
- fs/xfs/xfs_aops.h                    |    3 -
- include/linux/buffer_head.h          |    2 +
- include/linux/fs.h                   |    9 +-
- include/linux/namei.h                |    1 +
- include/linux/oprofile.h             |   16 ++--
- kernel/module.c                      |   13 +--
- lib/vsprintf.c                       |   82 +++++++++++++++
- mm/filemap.c                         |    2 +-
- mm/shmem.c                           |    7 +-
- virt/kvm/eventfd.c                   |   20 ++--
- 52 files changed, 738 insertions(+), 502 deletions(-)
