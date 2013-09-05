@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab3IEUhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:37:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52135 "EHLO
+	id S1757257Ab3IEU23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52098 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab3IEU2d (ORCPT
+	with ESMTP id S1757111Ab3IEU20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:33 -0400
+	Thu, 5 Sep 2013 16:28:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rusk <mark.rusk@hp.com>
-Subject: [ 33/36] drivers/misc/hpilo: Correct panic when an AUX iLO is detected
-Date: Thu,  5 Sep 2013 13:28:02 -0700
-Message-Id: <20130905202706.163391177@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 22/36] mac80211: add missing channel context release
+Date: Thu,  5 Sep 2013 13:27:51 -0700
+Message-Id: <20130905202704.866242124@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -26,45 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rusk <Mark.Rusk@hp.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit eefbc594abbb1b7e6e7eeadb65ae7c7538474210 upstream.
+commit 2a3ba63c235fdcd37f6451bdf4a0c7865a3930cf upstream.
 
- Using an uninitialized variable 'devnum' after 'goto out;' was causing
- panic.  Just go ahead and return, we need to ignore AUX iLO devs.
+IBSS needs to release the channel context when leaving
+but I evidently missed that. Fix it.
 
- Oops: 0002 [#1] SMP
-   .
-   .
-   .
- RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
-
-Signed-off-by: Mark Rusk <mark.rusk@hp.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/hpilo.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/ibss.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pde
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1166,6 +1166,7 @@ int ieee80211_ibss_leave(struct ieee8021
+ 	clear_bit(SDATA_STATE_OFFCHANNEL_BEACON_STOPPED, &sdata->state);
+ 	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON_ENABLED |
+ 						BSS_CHANGED_IBSS);
++	ieee80211_vif_release_channel(sdata);
+ 	synchronize_rcu();
+ 	kfree(presp);
  
- 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
- 	if (pdev->subsystem_device == 0x1979)
--		goto out;
-+		return 0;
- 
- 	if (max_ccb > MAX_CCB)
- 		max_ccb = MAX_CCB;
-@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
- 	class_destroy(ilo_class);
- }
- 
--MODULE_VERSION("1.4");
-+MODULE_VERSION("1.4.1");
- MODULE_ALIAS(ILO_NAME);
- MODULE_DESCRIPTION(ILO_NAME);
- MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
 
 
