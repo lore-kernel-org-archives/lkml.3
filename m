@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3IEPwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:52:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843Ab3IEPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:52:50 -0400
-Message-ID: <5228A8D2.9030506@redhat.com>
-Date: Thu, 05 Sep 2013 17:52:50 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1754779Ab3IEPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:52:58 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:38451 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718Ab3IEPwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:52:53 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2] kvm: fix a bug and remove a redundancy in async_pf
-References: <1378326744-24434-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1378326744-24434-1-git-send-email-rkrcmar@redhat.com>
-X-Enigmail-Version: 1.5.2
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <20130905145613.GR13318@ZenIV.linux.org.uk>
+References: <1378374284-1484-1-git-send-email-miklos@szeredi.hu>
+	<1378374284-1484-5-git-send-email-miklos@szeredi.hu>
+	<20130905111852.GP13318@ZenIV.linux.org.uk>
+	<CAJfpeguzpkw3SYm6kBP-acLSHTgYLXMFRZDf2T0U4aowYhfQdA@mail.gmail.com>
+	<20130905120230.GA21170@tucsk.piliscsaba.szeredi.hu>
+	<CAJfpegtXQebPEQqw8ESmM-Bp0QgCefmRwoNeJNtN-_bV35b-pw@mail.gmail.com>
+	<20130905123911.GA25538@tucsk.piliscsaba.szeredi.hu>
+	<20130905132325.GQ13318@ZenIV.linux.org.uk>
+	<20130905142651.GB25538@tucsk.piliscsaba.szeredi.hu>
+	<20130905145613.GR13318@ZenIV.linux.org.uk>
+Date: Thu, 5 Sep 2013 17:52:51 +0200
+Message-ID: <CAJfpegsF=0Rm52m0qeSmXMy7nMpzy9iieEVR8TP0dox+Xzi55Q@mail.gmail.com>
+Subject: Re: [PATCH 04/11] vfs: check unlinked ancestors before mount
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2013 22:32, Radim Krčmář ha scritto:
-> I did not reproduce the bug fixed in [1/2], but there are not that many
-> reasons why we could not unload a module, so the spot is quite obvious.
-> 
-> 
-> Radim Krčmář (2):
->   kvm: free resources after canceling async_pf
->   kvm: remove .done from struct kvm_async_pf
-> 
->  include/linux/kvm_host.h | 1 -
->  virt/kvm/async_pf.c      | 8 ++++----
->  2 files changed, 4 insertions(+), 5 deletions(-)
-> 
+On Thu, Sep 5, 2013 at 4:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> I'd probably just do this, and to hell with helper functions...
+>
+> int d_set_mounted(struct dentry *dentry)
+> {
+>         struct dentry *p;
+>         int ret = 0;
+>         write_seqlock(&rename_lock);
+>         for (p = dentry; !IS_ROOT(p); p = p->d_parent) {
+>                 /* Need exclusion wrt. check_submounts_and_drop() */
+>                 spin_lock(&p->d_lock);
+>                 if (unlikely(d_unhashed(p))) {
+>                         spin_unlock(&p->d_lock);
+>                         ret = -ENOENT;
+>                         goto out;
+>                 }
+>                 spin_unlock(&p->d_lock);
+>         }
+>         spin_lock(&dentry->d_lock);
+>         dentry->d_flags |= DCACHE_MOUNTED;
+>         spin_unlock(&dentry->d_lock);
+> out:
+>         write_sequnlock(&rename_lock);
+>         return ret;
+> }
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+One issue with that: the dentry should be checked and marked within
+the same d_locked region.   Because e.g. d_invalidate() relies solely
+on d_lock for non-dir mounts and d_mountpoint() checking, no
+rename_lock protection there.
+
+Thanks,
+Miklos
