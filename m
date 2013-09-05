@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728Ab3IEXAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 19:00:10 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:35103 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621Ab3IEXAH (ORCPT
+	id S1758793Ab3IEXBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 19:01:30 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:61576 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757974Ab3IEXB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 19:00:07 -0400
-Date: Thu, 5 Sep 2013 16:00:06 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Milosz Tanski <milosz@adfin.com>
-cc: ceph-devel@vger.kernel.org, zheng.z.yan@intel.com, dhowells@redhat.com,
-        jiayisuse@gmail.com, linux-cachefs@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] ceph: fscache support & upstream changes
-In-Reply-To: <cover.1378418255.git.milosz@adfin.com>
-Message-ID: <alpine.DEB.2.00.1309051555250.1073@cobra.newdream.net>
-References: <cover.1378418255.git.milosz@adfin.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 5 Sep 2013 19:01:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
+	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+	<20130905153243.43d0346e@jbarnes-desktop>
+	<CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
+Date: Thu, 5 Sep 2013 16:01:26 -0700
+X-Google-Sender-Auth: DC8jWYSokUDAtMpP87iz6Fwfrjc
+Message-ID: <CA+55aFwSYzK6KDojF6j3CvjkfXABUTibRmws70UMrhOiA5LN-w@mail.gmail.com>
+Subject: Re: [git pull] drm tree for 3.12-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "Beauchesne, Gwenole" <gwenole.beauchesne@intel.com>,
+        Sean V Kelley <sean.v.kelley@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Sep 2013, Milosz Tanski wrote:
-> Hey gang I think this should be final revision of these changes. The changes 
-> are:
-> 
->  * David rewrote the cookie validity check (that originally was written by
->    Hongyi Jia). You might have seen some emails flying about doing it the
->    right way.
->  * I added crash fix when for Ceph filesystems mounted with nofsc (default)
->    when fscache is compiled into Ceph. Previously it would crash trying to
->    enqueue invalidate checks in the work queue because we didn't initialize
->    if the mount had fscache disabled.
-> 
-> I've tested both changes on my cluster. You can get get these changes from my
-> branch in bitbucket. It contains the upstream wip-fscache branch rebased with
-> David's rewrite of Hongyi Jia's changes.
-> 
-> The branch is located at.
-> 
->   https://bitbucket.org/adfin/linux-fs.git in the wip-fscahce branch
-> 
-> Finally, David requested that this patchset go through the Ceph tree. The tree
-> should have all the proper sign off from David. I also CC'ed him so he can give
-> his final okay.
-> 
-> Best,
->  - Milosz
+On Thu, Sep 5, 2013 at 3:51 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Looking more closely at the log-file, I notice that the
 
-I've pulled this into ceph-client.git master.  If this looks good to you, 
-David, I'll send it all to Linus (along with the current set of RBD fixes, 
-once they are ready).
+oops, pressed the send-button a bit too early..
 
-Thanks!
-sage
+Anyway, looking more closely at the log-file, I notice that while it
+has zero errors, it does seem to end just where a successful log-file
+has the EDID information (for the second time).
 
+But that may be normal and not indicate anything wrong with EDID at
+all - looking at the timestamps that second EDID probe may happen when
+you log in, and I obviously never logged in due to being all blind.
 
-> 
-> David Howells (2):
->   FS-Cache: Add interface to check consistency of a cached object
->   CacheFiles: Implement interface to check cache consistency
-> 
-> Milosz Tanski (6):
->   fscache: Netfs function for cleanup post readpages
->   ceph: use fscache as a local presisent cache
->   ceph: clean PgPrivate2 on returning from readpages
->   ceph: ceph_readpage_to_fscache didn't check if marked
->   ceph: page still marked private_2
->   ceph: Do not do invalidate if the filesystem is mounted nofsc
-> 
->  Documentation/filesystems/caching/backend-api.txt |    9 +
->  Documentation/filesystems/caching/netfs-api.txt   |   35 +-
->  fs/cachefiles/interface.c                         |   26 ++
->  fs/cachefiles/internal.h                          |    1 +
->  fs/cachefiles/xattr.c                             |   36 ++
->  fs/ceph/Kconfig                                   |    9 +
->  fs/ceph/Makefile                                  |    1 +
->  fs/ceph/addr.c                                    |   40 ++-
->  fs/ceph/cache.c                                   |  400 +++++++++++++++++++++
->  fs/ceph/cache.h                                   |  157 ++++++++
->  fs/ceph/caps.c                                    |   19 +-
->  fs/ceph/file.c                                    |   17 +
->  fs/ceph/inode.c                                   |   14 +-
->  fs/ceph/super.c                                   |   35 +-
->  fs/ceph/super.h                                   |   16 +
->  fs/fscache/cookie.c                               |   69 ++++
->  fs/fscache/internal.h                             |    6 +
->  fs/fscache/page.c                                 |   71 ++--
->  include/linux/fscache-cache.h                     |    4 +
->  include/linux/fscache.h                           |   42 +++
->  20 files changed, 965 insertions(+), 42 deletions(-)
->  create mode 100644 fs/ceph/cache.c
->  create mode 100644 fs/ceph/cache.h
-> 
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+        Linus
