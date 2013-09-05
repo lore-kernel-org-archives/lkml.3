@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221Ab3IEKsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:48:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21666 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3IEKsg (ORCPT
+	id S935677Ab3IEK4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:56:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57765 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934151Ab3IEK4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:48:36 -0400
-Date: Thu, 5 Sep 2013 13:48:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: wei_wang@realsil.com.cn
-Cc: sameo@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, rogerable@realtek.com,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
-Message-ID: <20130905104820.GL6329@mwanda>
-References: <1378374338-11455-1-git-send-email-wei_wang@realsil.com.cn>
+	Thu, 5 Sep 2013 06:56:05 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>
+Subject: [PATCH] ARM: OMAP2+: wakeupgen: AM43x adaptation
+Date: Thu, 5 Sep 2013 16:25:35 +0530
+Message-ID: <1378378535-2967-1-git-send-email-afzal@ti.com>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378374338-11455-1-git-send-email-wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 05:45:38PM +0800, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> In some platforms, specially Thinkpad series, rts5249 won't be
-> initialized properly. So we need adjust some phy parameters to
-> improve the compatibility issue.
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-> ---
->  drivers/mfd/rts5249.c |   25 +++++++++++++++++++++++--
->  1 file changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-> index 3b835f5..e3c6dc1 100644
-> --- a/drivers/mfd/rts5249.c
-> +++ b/drivers/mfd/rts5249.c
-> @@ -130,13 +130,34 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
->  {
->  	int err;
->  
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
-> +	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFC6C);
+AM43x has 224 interrupts and 7 banks, make it as maximum values. Keep
+default values as earlier, if am43x is detected, update interrupts and
+banks to maximum.
 
+Also AM43x has only one cpu, ensure that clearing bitmask at wakeupgen
+is done only for the single existing cpu, existing code assumes that
+there are two cpu's.
 
-How are we supposed to review this change?  What happened to 0xFE46?
-What are all these magic numbers?  I understand that this fixes an issue
-for think pads but does it break something else?
+If bitmask is cleared in wakeupgen for the nonexistent second cpu,
+an imprecise abort happens as soon as Kernel switches to user space.
+It was rootcaused by Sekhar Nori <nsekhar@ti.com>.
 
-regards,
-dan carpenter
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ arch/arm/mach-omap2/omap-wakeupgen.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
+index 813c615..899d4946 100644
+--- a/arch/arm/mach-omap2/omap-wakeupgen.c
++++ b/arch/arm/mach-omap2/omap-wakeupgen.c
+@@ -33,8 +33,11 @@
+ #include "omap4-sar-layout.h"
+ #include "common.h"
+ 
+-#define MAX_NR_REG_BANKS	5
+-#define MAX_IRQS		160
++/* maximum value correspond to that of AM43x */
++#define MAX_NR_REG_BANKS	7
++#define MAX_IRQS		224
++#define DEFAULT_NR_REG_BANKS	5
++#define DEFAULT_IRQS		160
+ #define WKG_MASK_ALL		0x00000000
+ #define WKG_UNMASK_ALL		0xffffffff
+ #define CPU_ENA_OFFSET		0x400
+@@ -47,8 +50,8 @@ static void __iomem *wakeupgen_base;
+ static void __iomem *sar_base;
+ static DEFINE_RAW_SPINLOCK(wakeupgen_lock);
+ static unsigned int irq_target_cpu[MAX_IRQS];
+-static unsigned int irq_banks = MAX_NR_REG_BANKS;
+-static unsigned int max_irqs = MAX_IRQS;
++static unsigned int irq_banks = DEFAULT_NR_REG_BANKS;
++static unsigned int max_irqs = DEFAULT_IRQS;
+ static unsigned int omap_secure_apis;
+ 
+ /*
+@@ -402,6 +405,7 @@ int __init omap_wakeupgen_init(void)
+ {
+ 	int i;
+ 	unsigned int boot_cpu = smp_processor_id();
++	bool am43x = soc_is_am43xx() ? true : false;
+ 
+ 	/* Not supported on OMAP4 ES1.0 silicon */
+ 	if (omap_rev() == OMAP4430_REV_ES1_0) {
+@@ -418,12 +422,16 @@ int __init omap_wakeupgen_init(void)
+ 		irq_banks = OMAP4_NR_BANKS;
+ 		max_irqs = OMAP4_NR_IRQS;
+ 		omap_secure_apis = 1;
++	} else if (am43x) {
++		irq_banks = MAX_NR_REG_BANKS;
++		max_irqs = MAX_IRQS;
+ 	}
+ 
+ 	/* Clear all IRQ bitmasks at wakeupGen level */
+ 	for (i = 0; i < irq_banks; i++) {
+ 		wakeupgen_writel(0, i, CPU0_ID);
+-		wakeupgen_writel(0, i, CPU1_ID);
++		if (!am43x)
++			wakeupgen_writel(0, i, CPU1_ID);
+ 	}
+ 
+ 	/*
+-- 
+1.8.3.4
 
