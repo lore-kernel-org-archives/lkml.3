@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab3IEUlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:41:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52080 "EHLO
+	id S1756987Ab3IEU2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:28:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab3IEU2X (ORCPT
+	with ESMTP id S1756935Ab3IEU2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:23 -0400
+	Thu, 5 Sep 2013 16:28:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
-        Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 18/36] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
-Date: Thu,  5 Sep 2013 13:27:47 -0700
-Message-Id: <20130905202704.414509377@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 05/36] ALSA: opti9xx: Fix conflicting driver object name
+Date: Thu,  5 Sep 2013 13:27:34 -0700
+Message-Id: <20130905202702.956816776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -28,50 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
+commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
 
-Some architectures, such as ARM-32 do not return the same base address
-when you call kmap_atomic() twice on the same page.
-This causes problems for the memmove() call in the XDR helper routine
-"_shift_data_right_pages()", since it defeats the detection of
-overlapping memory ranges, and has been seen to corrupt memory.
+The recent commit to delay the release of kobject triggered NULL
+dereferences of opti9xx drivers.  The cause is that all
+snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
+register the PnP card driver with the very same name, and also
+snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
+the same name, too.  When these drivers are built in, quick
+"register-release-and-re-register" actions occur, and this results in
+Oops because of the same name is assigned to the kobject.
 
-The fix is to distinguish between the case where we're doing an
-inter-page copy or not. In the former case of we know that the memory
-ranges cannot possibly overlap, so we can additionally micro-optimise
-by replacing memmove() with memcpy().
+The fix is simply to assign individual names.  As a bonus, by using
+KBUILD_MODNAME, the patch reduces more lines than it adds.
 
-Reported-by: Mark Young <MYoung@nvidia.com>
-Reported-by: Matt Craighead <mcraighead@nvidia.com>
-Cc: Bruce Fields <bfields@fieldses.org>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Matt Craighead <mcraighead@nvidia.com>
+The fix is based on the suggestion by Russell King.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xdr.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/isa/opti9xx/opti92x-ad1848.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/net/sunrpc/xdr.c
-+++ b/net/sunrpc/xdr.c
-@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pa
- 		pgfrom_base -= copy;
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9x
  
- 		vto = kmap_atomic(*pgto);
--		vfrom = kmap_atomic(*pgfrom);
--		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
-+		if (*pgto != *pgfrom) {
-+			vfrom = kmap_atomic(*pgfrom);
-+			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
-+			kunmap_atomic(vfrom);
-+		} else
-+			memmove(vto + pgto_base, vto + pgfrom_base, copy);
- 		flush_dcache_page(*pgto);
--		kunmap_atomic(vfrom);
- 		kunmap_atomic(vto);
+ #endif	/* CONFIG_PNP */
  
- 	} while ((len -= copy) != 0);
+-#ifdef OPTi93X
+-#define DEV_NAME "opti93x"
+-#else
+-#define DEV_NAME "opti92x"
+-#endif
++#define DEV_NAME KBUILD_MODNAME
+ 
+ static char * snd_opti9xx_names[] = {
+ 	"unknown",
+@@ -1168,7 +1164,7 @@ static int snd_opti9xx_pnp_resume(struct
+ 
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+-	.name		= "opti9xx",
++	.name		= DEV_NAME,
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= snd_opti9xx_pnp_remove,
 
 
