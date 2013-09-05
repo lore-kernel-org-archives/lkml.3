@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965238Ab3IELr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 07:47:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22080 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965199Ab3IELr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 07:47:26 -0400
-Date: Thu, 5 Sep 2013 14:47:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
-        sameo@linux.intel.com, rogerable@realtek.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
-Message-ID: <20130905114711.GM6329@mwanda>
-References: <1378374338-11455-1-git-send-email-wei_wang@realsil.com.cn>
- <20130905104820.GL6329@mwanda>
- <52286822.9090402@realsil.com.cn>
+	id S935819Ab3IELsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 07:48:51 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:60349 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934435Ab3IELst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 07:48:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, lenb@kernel.org,
+        liwanp@linux.vnet.ibm.com, tj@kernel.org, akpm@linux-foundation.org,
+        joe@perches.com, toshi.kani@hp.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] acpi: Fix and cleanup in acpi.
+Date: Thu, 05 Sep 2013 13:59:41 +0200
+Message-ID: <1718213.EiNcXEP20Z@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5227E4E4.9050705@cn.fujitsu.com>
+References: <1378197941-26479-1-git-send-email-tangchen@cn.fujitsu.com> <17694789.JU3fWJ8s3q@vostro.rjw.lan> <5227E4E4.9050705@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52286822.9090402@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 07:16:50PM +0800, wwang wrote:
-> 于 2013年09月05日 18:48, Dan Carpenter 写道:
-> >On Thu, Sep 05, 2013 at 05:45:38PM +0800, wei_wang@realsil.com.cn wrote:
-> >>From: Wei WANG <wei_wang@realsil.com.cn>
+On Thursday, September 05, 2013 09:56:52 AM Tang Chen wrote:
+> On 09/05/2013 07:50 AM, Rafael J. Wysocki wrote:
+> > On Tuesday, September 03, 2013 04:45:37 PM Tang Chen wrote:
+> >> This patch-set fix the following problems:
 > >>
-> >>In some platforms, specially Thinkpad series, rts5249 won't be
-> >>initialized properly. So we need adjust some phy parameters to
-> >>improve the compatibility issue.
+> >> 1. Kill useless function save_add_info() which will block us from using
+> >>     numa when MEMORY_HOTPLUG is not configured.
+> >> 2. acpi_table_parse() didn't check if @id is NULL.
+> >> 3. Fix incorrect comment in acpi_table_parse(), and return -ENOENT if a
+> >>     table is not found.
 > >>
-> >>Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-> >>---
-> >>  drivers/mfd/rts5249.c |   25 +++++++++++++++++++++++--
-> >>  1 file changed, 23 insertions(+), 2 deletions(-)
+> >> And also did some cleanup.
 > >>
-> >>diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-> >>index 3b835f5..e3c6dc1 100644
-> >>--- a/drivers/mfd/rts5249.c
-> >>+++ b/drivers/mfd/rts5249.c
-> >>@@ -130,13 +130,34 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
-> >>  {
-> >>  	int err;
-> >>-	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
-> >>+	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFC6C);
+> >> change log v1 ->  v2:
+> >> 1. Use pr_fmt() to simply the SRAT message.
+> >>     Suggested by Joe Perches<joe@perches.com>
+> >> 2. Improve the log in patch 4, and change the return value of the stub of
+> >>     acpi_table_parse() in linux/acpi.h
+> >>     Suggested by Toshi Kani<toshi.kani@hp.com>
+> >> 3. Merge the two pr_{info|err} patches into one.
+> >> 4. Remove on of the patch that has been merged by Rafael.
+> >>
+> >> Tang Chen (4):
+> >>    acpi, numa, mem_hotplug: Kill save_add_info().
+> >>    acpi cleanup: Use pr_{info|err}() instead of printk() in
+> >>      arch/x86/mm/srat.c
+> >>    acpi: Check if @id is NULL in acpi_table_parse()
+> >>    acpi: Return -ENOENT in acpi_table_parse() and fix wrong comment.
 > >
-> >How are we supposed to review this change?  What happened to 0xFE46?
-> >What are all these magic numbers?  I understand that this fixes an issue
-> >for think pads but does it break something else?
+> > Thanks for the patches!
 > >
-> >regards,
-> >dan carpenter
-> >
-> >.
-> >
-> Hi Dan:
+> > Peter, any objections against [1-2/4]?  If not, I'll queue them up for 3.13.
 > 
-> These numbers are used to configure the parameters of our internal
-> analog circuit. Those new values have been tested for quite a long
-> time with our Windows driver. So it's guaranteed and won't break
-> other platforms.
+> Hi Rafael,
 > 
+> Thanks for the checking. As Ishimatu has sent some comments for patch 2, 
+> I'd like
+> to send a v3 patch-set soon. Please queue the coming v3 patches.
 
-Give them human readable names so we at least have some idea about what
-they are trying to do.
+Sure, thanks.
 
-regards,
-dan carpenter
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
