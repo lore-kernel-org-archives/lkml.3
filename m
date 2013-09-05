@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab3IETfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 15:35:09 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:40295 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab3IETfH (ORCPT
+	id S1757152Ab3IETgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 15:36:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59161 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab3IETgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 15:35:07 -0400
+	Thu, 5 Sep 2013 15:36:03 -0400
+Date: Thu, 5 Sep 2013 21:35:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH 14/18 v2] ftrace/lockdep: Have the RCU lockdep splat
+ show what function triggered
+Message-ID: <20130905193553.GG31370@twins.programming.kicks-ass.net>
+References: <20130831051117.884125230@goodmis.org>
+ <20130831051702.766697014@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
-	<1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
-Date: Thu, 5 Sep 2013 12:35:06 -0700
-X-Google-Sender-Auth: xH5HtlnTAbadWhkWgADQQkBIftQ
-Message-ID: <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130831051702.766697014@goodmis.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 11:55 AM, Waiman Long <Waiman.Long@hp.com> wrote:
-> +static int prepend_name(char **buffer, int *buflen, struct dentry *dentry)
->  {
-> -       return prepend(buffer, buflen, name->name, name->len);
-> +       /*
-> +        * With RCU path tracing, it may race with rename. Use
-> +        * ACCESS_ONCE() to make sure that it is either the old or
-> +        * the new name pointer. The length does not really matter as
-> +        * the sequence number check will eventually catch any ongoing
-> +        * rename operation.
-> +        */
-> +       const char *dname = ACCESS_ONCE(dentry->d_name.name);
-> +       u32 dlen = dentry->d_name.len;
-> +       int error;
-> +
-> +       if (likely(dname == (const char *)dentry->d_iname)) {
-> +               /*
-> +                * Internal dname, the string memory is valid as long
-> +                * as its length is not over the limit.
-> +                */
-> +               if (unlikely(dlen > sizeof(dentry->d_iname)))
-> +                       return -EINVAL;
-> +       } else if (!dname)
-> +               return -EINVAL;
-> +       else {
-> +               const char *ptr;
-> +               u32 len;
-> +
-> +               /*
-> +                * External dname, need to fetch name pointer and length
-> +                * again under d_lock to get a consistent set and avoid
-> +                * racing with d_move() which will take d_lock before
-> +                * acting on the dentries.
-> +                */
-> +               spin_lock(&dentry->d_lock);
-> +               dname = dentry->d_name.name;
-> +               dlen  = dentry->d_name.len;
-> +               spin_unlock(&dentry->d_lock);
-> +
-> +               if (unlikely(!dname || !dlen))
-> +                       return -EINVAL;
-> +               /*
-> +                * As the length and the content of the string may not be
-> +                * valid, need to scan the string and return EINVAL if there
-> +                * is embedded null byte within the length of the string.
-> +                */
-> +               for (ptr = dname, len = dlen; len; len--, ptr++) {
-> +                       if (*ptr == '\0')
-> +                               return -EINVAL;
-> +               }
-> +       }
-> +       error = prepend(buffer, buflen, dname, dlen);
+On Sat, Aug 31, 2013 at 01:11:31AM -0400, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-No. Stop all these stupid games.
+Why put RHT in there? Surely greg and jonathan know you work for them?
+:-)
 
-No d_lock, no trying to make d_name/d_len consistent.
+> When the RCU lockdep splat hits because of the unsafe RCU checker,
+> the backtrace does not always show the culprit. But the culprit was
+> passed to the unsafe RCU checker.
+> 
+> Save the ip of the function being traced in a per_cpu variable, and
+> when the RCU lockdep detects a problem, it can also print out what
+> function was being traced if it was caused by the unsafe RCU checker.
 
-No "compare d_name against d_iname".
+So the below is an example of why this_cpu_* is utter shite, what
+ensures the code there isn't preemptible.
 
-No EINVAL.
+That said, I suppose you've thought about that and there's something
+obvious from the callpath but I can't be bothered to go hunt through the
+series if the changelog can't be bothered to clarify such things.
 
-No idiotic racy "let's fetch each byte one-by one and test them
-against NUL", which is just racy and stupid.
+> @@ -592,9 +604,11 @@ ftrace_unsafe_callback(unsigned long ip, unsigned long parent_ip,
+>  		      (void *)ip))
+>  		goto out;
+>  
+> +	this_cpu_write(ftrace_rcu_func, ip);
+>  	/* Should trigger a RCU splat if called from unsafe RCU function */
+>  	rcu_read_lock();
+>  	rcu_read_unlock();
+> +	this_cpu_write(ftrace_rcu_func, 0);
+>  
+>  	trace_clear_recursion(bit);
+>   out:
 
-Just do what I told you to do: *copy* the name one byte at a time, and
-stop copying if you hit NUL. IOW, make prepend() just use "strncpy()"
-instead of "memcpy()". You don't even need to check the end result -
-if it's bogus, the sequence count will fix it.
+I suppose this is all ok. I haven't read the entire series and I'm not
+going to during my vacation.
 
-No special cases. No games. No crap. Just make "prepend()" able to
-handle the special case of "oops, the name length didn't match, but we
-must not ever go past the end of the buffer".
+One quick question though, why do we have to mark functions and can't
+rely on the state RCU already keeps? Surely RCU knows when its 'enabled'
+and thus safe to use RCU -- if only for debuggin.
 
-We can optimize strncpy() to use word accesses if it ends up ever
-being a performance issue. I suspect it never even shows up, but it's
-not hard to do if if does.
+For instance that scheduler_ipi() call can happen in either state, do we
+really have to disallow it always?
 
-            Linus
+Anyway, I suppose ACK on both these patches you asked me to look at, not
+particularly harmful it seems, just not something I feel I've got me
+head round atm.
