@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935517Ab3IECwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 22:52:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19266 "EHLO mx1.redhat.com"
+	id S1763195Ab3IECy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 22:54:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39300 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762415Ab3IECv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 22:51:59 -0400
-Date: Wed, 4 Sep 2013 22:51:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: m.chehab@samsung.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: add missing braces in drxd_hard.c:DRXD_init
-Message-ID: <20130905025148.GA12062@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, m.chehab@samsung.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1759510Ab3IECyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Sep 2013 22:54:55 -0400
+Message-ID: <5227F274.9040506@redhat.com>
+Date: Thu, 05 Sep 2013 10:54:44 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/6] vhost_net: determine whether or not to use zerocopy
+ at one time
+References: <1378111261-14826-1-git-send-email-jasowang@redhat.com> <1378111261-14826-5-git-send-email-jasowang@redhat.com> <20130904115929.GA9393@redhat.com>
+In-Reply-To: <20130904115929.GA9393@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
+On 09/04/2013 07:59 PM, Michael S. Tsirkin wrote:
+> On Mon, Sep 02, 2013 at 04:40:59PM +0800, Jason Wang wrote:
+>> Currently, even if the packet length is smaller than VHOST_GOODCOPY_LEN, if
+>> upend_idx != done_idx we still set zcopy_used to true and rollback this choice
+>> later. This could be avoided by determining zerocopy once by checking all
+>> conditions at one time before.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/vhost/net.c |   47 ++++++++++++++++++++---------------------------
+>>  1 files changed, 20 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index 8a6dd0d..3f89dea 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -404,43 +404,36 @@ static void handle_tx(struct vhost_net *net)
+>>  			       iov_length(nvq->hdr, s), hdr_size);
+>>  			break;
+>>  		}
+>> -		zcopy_used = zcopy && (len >= VHOST_GOODCOPY_LEN ||
+>> -				       nvq->upend_idx != nvq->done_idx);
+>> +
+>> +		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+>> +				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+>> +				      nvq->done_idx
+> Thinking about this, this looks strange.
+> The original idea was that once we start doing zcopy, we keep
+> using the heads ring even for short packets until no zcopy is outstanding.
 
-diff --git a/drivers/media/dvb-frontends/drxd_hard.c b/drivers/media/dvb-frontends/drxd_hard.c
-index 9a213479..a1a3421 100644
---- a/drivers/media/dvb-frontends/drxd_hard.c
-+++ b/drivers/media/dvb-frontends/drxd_hard.c
-@@ -2692,11 +2692,11 @@ static int DRXD_init(struct drxd_state *state, const u8 *fw, u32 fw_size)
- 		status = EnableAndResetMB(state);
- 		if (status < 0)
- 			break;
--		if (state->type_A)
-+		if (state->type_A) {
- 			status = ResetCEFR(state);
- 			if (status < 0)
- 				break;
--
-+		}
- 		if (fw) {
- 			status = DownloadMicrocode(state, fw, fw_size);
- 			if (status < 0)
+What's the reason for keep using the heads ring?
+>
+> What's the logic behind (nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx
+> here?
+
+Because we initialize both upend_idx and done_idx to zero, so upend_idx
+!= done_idx could not be used to check whether or not the heads ring
+were full.
+>> +				   && vhost_net_tx_select_zcopy(net);
+>>  
+>>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+>>  		if (zcopy_used) {
+>> +			struct ubuf_info *ubuf;
+>> +			ubuf = nvq->ubuf_info + nvq->upend_idx;
+>> +
+>>  			vq->heads[nvq->upend_idx].id = head;
+>> -			if (!vhost_net_tx_select_zcopy(net) ||
+>> -			    len < VHOST_GOODCOPY_LEN) {
+>> -				/* copy don't need to wait for DMA done */
+>> -				vq->heads[nvq->upend_idx].len =
+>> -							VHOST_DMA_DONE_LEN;
+>> -				msg.msg_control = NULL;
+>> -				msg.msg_controllen = 0;
+>> -				ubufs = NULL;
+>> -			} else {
+>> -				struct ubuf_info *ubuf;
+>> -				ubuf = nvq->ubuf_info + nvq->upend_idx;
+>> -
+>> -				vq->heads[nvq->upend_idx].len =
+>> -					VHOST_DMA_IN_PROGRESS;
+>> -				ubuf->callback = vhost_zerocopy_callback;
+>> -				ubuf->ctx = nvq->ubufs;
+>> -				ubuf->desc = nvq->upend_idx;
+>> -				msg.msg_control = ubuf;
+>> -				msg.msg_controllen = sizeof(ubuf);
+>> -				ubufs = nvq->ubufs;
+>> -				kref_get(&ubufs->kref);
+>> -			}
+>> +			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
+>> +			ubuf->callback = vhost_zerocopy_callback;
+>> +			ubuf->ctx = nvq->ubufs;
+>> +			ubuf->desc = nvq->upend_idx;
+>> +			msg.msg_control = ubuf;
+>> +			msg.msg_controllen = sizeof(ubuf);
+>> +			ubufs = nvq->ubufs;
+>> +			kref_get(&ubufs->kref);
+>>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+>> -		} else
+>> +		} else {
+>>  			msg.msg_control = NULL;
+>> +			ubufs = NULL;
+>> +		}
+>>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+>>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+>>  		if (unlikely(err < 0)) {
+>>  			if (zcopy_used) {
+>> -				if (ubufs)
+>> -					vhost_net_ubuf_put(ubufs);
+>> +				vhost_net_ubuf_put(ubufs);
+>>  				nvq->upend_idx = ((unsigned)nvq->upend_idx - 1)
+>>  					% UIO_MAXIOV;
+>>  			}
+>> -- 
+>> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
