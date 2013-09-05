@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935705Ab3IELDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 07:03:43 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:53408 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934094Ab3IELDl (ORCPT
+	id S935688Ab3IELJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 07:09:57 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62768 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934153Ab3IELJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 07:03:41 -0400
-Date: Thu, 5 Sep 2013 13:03:35 +0200
+	Thu, 5 Sep 2013 07:09:55 -0400
+Date: Thu, 5 Sep 2013 13:09:52 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20130905110335.GA23020@gmail.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: [GIT PULL] cputime fix
+Message-ID: <20130905110952.GA23323@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,65 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-urgent-for-linus git tree from:
+Please pull the latest timers-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-   HEAD: 4488e09b4582c3d9cae1601351e26584e208d877 x86, doc: Add an entry in MAINTAINERS for arch/x86/kernel/cpu/vmware.c
+   HEAD: 5a8e01f8fa51f5cbce8f37acc050eb2319d12956 sched/cputime: Do not scale when utime == 0
 
-Fix for the annoying paravirt.o build warning under allmodconfig, and a 
-MAINTAINERS file update.
-
-out-of-topic modifications in x86-urgent-for-linus:
----------------------------------------------------
-MAINTAINERS                        # 4488e09: x86, doc: Add an entry in MAINTAI
+This fixes a longer-standing cputime accounting bug that Stanislaw Gruszka 
+finally managed to track down.
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Alok Kataria (1):
-      x86, doc: Add an entry in MAINTAINERS for arch/x86/kernel/cpu/vmware.c
-
-H. Peter Anvin (1):
-      x86, paravirt: Remove duplicate definition for DEF_NATIVE
+Stanislaw Gruszka (1):
+      sched/cputime: Do not scale when utime == 0
 
 
- MAINTAINERS                | 6 ++++++
- arch/x86/kernel/paravirt.c | 5 -----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ kernel/sched/cputime.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index defc053..fba8134 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9016,6 +9016,12 @@ F:	drivers/staging/vme/
- F:	drivers/vme/
- F:	include/linux/vme*
- 
-+VMWARE HYPERVISOR INTERFACE
-+M:	Alok Kataria <akataria@vmware.com>
-+L:	virtualization@lists.linux-foundation.org
-+S:	Supported
-+F:	arch/x86/kernel/cpu/vmware.c
-+
- VMWARE VMXNET3 ETHERNET DRIVER
- M:	Shreyas Bhatewara <sbhatewara@vmware.com>
- M:	"VMware, Inc." <pv-drivers@vmware.com>
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 884aa40..1b10af8 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -62,11 +62,6 @@ void __init default_banner(void)
- 	       pv_info.name);
- }
- 
--/* Simple instruction patching code. */
--#define DEF_NATIVE(ops, name, code)					\
--	extern const char start_##ops##_##name[], end_##ops##_##name[];	\
--	asm("start_" #ops "_" #name ": " code "; end_" #ops "_" #name ":")
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index c1d7493..5b03f5b 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -551,10 +551,7 @@ static void cputime_adjust(struct task_cputime *curr,
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+ {
+-	cputime_t rtime, stime, utime, total;
 -
- /* Undefined instruction for dealing with missing ops pointers. */
- static const unsigned char ud2a[] = { 0x0f, 0x0b };
+-	stime = curr->stime;
+-	total = stime + curr->utime;
++	cputime_t rtime, stime, utime;
  
+ 	/*
+ 	 * Tick based cputime accounting depend on random scheduling
+@@ -576,13 +573,19 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	if (prev->stime + prev->utime >= rtime)
+ 		goto out;
+ 
+-	if (total) {
++	stime = curr->stime;
++	utime = curr->utime;
++
++	if (utime == 0) {
++		stime = rtime;
++	} else if (stime == 0) {
++		utime = rtime;
++	} else {
++		cputime_t total = stime + utime;
++
+ 		stime = scale_stime((__force u64)stime,
+ 				    (__force u64)rtime, (__force u64)total);
+ 		utime = rtime - stime;
+-	} else {
+-		stime = rtime;
+-		utime = 0;
+ 	}
+ 
+ 	/*
