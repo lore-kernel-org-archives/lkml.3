@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3IEOd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 10:33:58 -0400
-Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:58986 "EHLO
-	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752345Ab3IEOd5 (ORCPT
+	id S1753871Ab3IEOek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 10:34:40 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:57212 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab3IEOei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 10:33:57 -0400
-Date: Thu, 5 Sep 2013 14:33:56 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
- of a slab
-In-Reply-To: <20130905065552.GA6384@lge.com>
-Message-ID: <00000140ee8b386a-f9b8a845-58db-482e-8c63-20fb24404dc8-000000@email.amazonses.com>
-References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com> <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com> <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com> <20130904083305.GC16355@lge.com>
- <20130905065552.GA6384@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 5 Sep 2013 10:34:38 -0400
+Date: Thu, 5 Sep 2013 15:34:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
+Subject: Re: [PATCH V4] regulator: palmas: add support for external control
+ of rails
+Message-ID: <20130905143431.GI8980@lee--X1>
+References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com>
+ <20130823095841.GG25263@sirena.org.uk>
+ <522897FD.2030509@nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.05-54.240.9.99
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <522897FD.2030509@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Sep 2013, Joonsoo Kim wrote:
+On Thu, 05 Sep 2013, Laxman Dewangan wrote:
+> On Friday 23 August 2013 03:28 PM, Mark Brown wrote:
+> >* PGP Signed by an unknown key
+> >
+> >On Wed, Aug 21, 2013 at 04:18:16PM +0530, Laxman Dewangan wrote:
+> >>Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
+> >>by register programming through I2C communication as well as it can be
+> >>enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
+> >Acked-by: Mark Brown <broonie@linaro.org>
+> >
+> 
+> Can you please take this in your tree as dependent patch is already
+> in your tree?
 
-> I think that all patchsets deserve to be merged, since it reduces memory usage and
-> also improves performance. :)
+It won't go in until v3.12 now, but I have applied the patch.
 
-Could you clean things up etc and the repost the patchset? This time do
-*not* do this as a response to an earlier email but start the patchset
-with new thread id. I think some people are not seeing this patchset.
-
-There is a tool called "quilt" that can help you send the patchset.
-
-	quilt mail
-
-Tools for git to do the same also exist.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
