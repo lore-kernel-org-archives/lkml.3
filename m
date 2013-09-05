@@ -1,159 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965383Ab3IEKe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 06:34:28 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:41342 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965181Ab3IEK3j (ORCPT
+	id S965227Ab3IEKgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 06:36:19 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:59392 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935607Ab3IEKgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 06:29:39 -0400
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-To: gleb@redhat.com
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 03/15] KVM: MMU: lazily drop large spte
-Date: Thu,  5 Sep 2013 18:29:06 +0800
-Message-Id: <1378376958-27252-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090510-5564-0000-0000-000009927E65
+	Thu, 5 Sep 2013 06:36:17 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        matt.fleming@intel.com, tony.luck@gmail.com, grant.likely@secretlab.ca,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v4 0/3] Make commonly useful UEFI functions common
+Date: Thu,  5 Sep 2013 11:34:52 +0100
+Message-Id: <1378377295-32758-1-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kvm zaps the large spte if write-protected is needed, the later
-read can fault on that spte. Actually, we can make the large spte readonly
-instead of making them un-present, the page fault caused by read access can
-be avoided
+This set breaks out some common code from x86/ia64 EFI support
+code and puts it into drivers/firmware/efi.
 
-The idea is from Avi:
-| As I mentioned before, write-protecting a large spte is a good idea,
-| since it moves some work from protect-time to fault-time, so it reduces
-| jitter.  This removes the need for the return value.
+First it takes the definition of the global "efi" data structure
+and moves it into global efi.c. Then it implements a common version
+of efi_config_init().
 
-This version has fixed the issue reported in 6b73a9606, the reason of that
-issue is that fast_page_fault() directly sets the readonly large spte to
-writable but only dirty the first page into the dirty-bitmap that means
-other pages are missed. Fixed it by only the normal sptes (on the
-PT_PAGE_TABLE_LEVEL level) can be fast fixed
+Secondly it breaks the efi_lookup_mapped_addr() function out of x86
+and places it in global efi.c, for shared use with future ARM
+patches.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c | 36 ++++++++++++++++++++----------------
- arch/x86/kvm/x86.c |  8 ++++++--
- 2 files changed, 26 insertions(+), 18 deletions(-)
+IA64 code compile tested only.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 869f1db..88107ee 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1177,8 +1177,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
- 
- /*
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-- * spte writ-protection is caused by protecting shadow page table.
-- * @flush indicates whether tlb need be flushed.
-+ * spte write-protection is caused by protecting shadow page table.
-  *
-  * Note: write protection is difference between drity logging and spte
-  * protection:
-@@ -1187,10 +1186,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  * - for spte protection, the spte can be writable only after unsync-ing
-  *   shadow page.
-  *
-- * Return true if the spte is dropped.
-+ * Return true if tlb need be flushed.
-  */
--static bool
--spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
- {
- 	u64 spte = *sptep;
- 
-@@ -1200,17 +1198,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
- 
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
- 
--	if (__drop_large_spte(kvm, sptep)) {
--		*flush |= true;
--		return true;
--	}
--
- 	if (pt_protect)
- 		spte &= ~SPTE_MMU_WRITEABLE;
- 	spte = spte & ~PT_WRITABLE_MASK;
- 
--	*flush |= mmu_spte_update(sptep, spte);
--	return false;
-+	return mmu_spte_update(sptep, spte);
- }
- 
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-@@ -1222,11 +1214,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
- 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
- 
-+		flush |= spte_write_protect(kvm, sptep, pt_protect);
- 		sptep = rmap_get_next(&iter);
- 	}
- 
-@@ -2675,6 +2664,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			break;
- 		}
- 
-+		drop_large_spte(vcpu, iterator.sptep);
-+
- 		if (!is_shadow_present_pte(*iterator.sptep)) {
- 			u64 base_addr = iterator.addr;
- 
-@@ -2876,6 +2867,19 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
- 		goto exit;
- 
- 	/*
-+	 * Do not fix write-permission on the large spte since we only dirty
-+	 * the first page into the dirty-bitmap in fast_pf_fix_direct_spte()
-+	 * that means other pages are missed if its slot is dirty-logged.
-+	 *
-+	 * Instead, we let the slow page fault path create a normal spte to
-+	 * fix the access.
-+	 *
-+	 * See the comments in kvm_arch_commit_memory_region().
-+	 */
-+	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
-+		goto exit;
-+
-+	/*
- 	 * Currently, fast page fault only works for direct mapping since
- 	 * the gfn is not stable for indirect shadow page.
- 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index e5ca72a..6ad0c07 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7208,8 +7208,12 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
- 	/*
- 	 * Write protect all pages for dirty logging.
--	 * Existing largepage mappings are destroyed here and new ones will
--	 * not be created until the end of the logging.
-+	 *
-+	 * All the sptes including the large sptes which point to this
-+	 * slot are set to readonly. We can not create any new large
-+	 * spte on this slot until the end of the logging.
-+	 *
-+	 * See the comments in fast_page_fault().
- 	 */
- 	if ((change != KVM_MR_DELETE) && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
- 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
+Leif Lindholm (3):
+  ia64: add early_memremap() alias for early_ioremap()
+  efi: x86: ia64: provide a generic efi_config_init()
+  efi: x86: make efi_lookup_mapped_addr() a common function
+
+ arch/ia64/include/asm/io.h  |    1 +
+ arch/ia64/kernel/efi.c      |   54 ++++-------------
+ arch/x86/platform/efi/efi.c |  126 ++++----------------------------------
+ drivers/firmware/efi/efi.c  |  140 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/efi.h         |    8 +++
+ 5 files changed, 170 insertions(+), 159 deletions(-)
+
 -- 
-1.8.1.4
+1.7.10.4
 
