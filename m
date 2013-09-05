@@ -1,212 +1,1118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763631Ab3IEJ45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 05:56:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35485 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763559Ab3IEJ4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 05:56:55 -0400
-Date: Thu, 5 Sep 2013 11:56:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: memcg creates an unkillable task in 3.11-rc2
-Message-ID: <20130905095653.GB9702@dhcp22.suse.cz>
-References: <20130729095109.GB4678@dhcp22.suse.cz>
- <20130729161026.GD22605@mtj.dyndns.org>
- <87r4eh70yg.fsf@xmission.com>
- <51F71DE2.4020102@huawei.com>
- <87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
- <20130730123120.GA15847@dhcp22.suse.cz>
- <874nbc3sx1.fsf@tw-ebiederman.twitter.com>
- <20130731073726.GC30514@dhcp22.suse.cz>
- <87zjt2tm9f.fsf@xmission.com>
- <20130801090620.GA5198@dhcp22.suse.cz>
+	id S935578Ab3IEJ6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 05:58:16 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:56407
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1763532Ab3IEJ6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 05:58:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Jingchang Lu <b35083@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <djbw@fb.com>, <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Jingchang Lu <b35083@freescale.com>,
+        Alison Wang <b18965@freescale.com>
+Subject: [PATCH v5 3/3] dma: Add Freescale eDMA engine driver support
+Date: Thu, 5 Sep 2013 17:55:02 +0800
+Message-ID: <1378374902-16512-1-git-send-email-b35083@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801090620.GA5198@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that this one fell though the cracks?
+Add Freescale enhanced direct memory(eDMA) controller support.
+The eDMA controller deploys DMAMUXs routing DMA request sources(slot)
+to eDMA channels.
+This module can be found on Vybrid and LS-1 SoCs.
 
-On Thu 01-08-13 11:06:20, Michal Hocko wrote:
-> On Wed 31-07-13 15:09:16, Eric W. Biederman wrote:
-> > Michal Hocko <mhocko@suse.cz> writes:
-> > 
-> > > [I am CCing David here as well]
-> > >
-> > > On Tue 30-07-13 09:37:46, Eric W. Biederman wrote:
-> > >> Michal Hocko <mhocko@suse.cz> writes:
-> > >> 
-> > >> > On Tue 30-07-13 01:19:31, Eric W. Biederman wrote:
-> > >> > [...]
-> > >> >> Hmm. Looking farther I see what is going on. And it has nothing to do
-> > >> >> with the freezer. (I have commented out that code and reproduced it
-> > >> >> without the freezer to be doubly certain).
-> > >> >> 
-> > >> >> 
-> > >> >> On the exit path exit_robust_list is triggering a page fault to fault a
-> > >> >> page back in.  Which since we have no memory causes the exit path
-> > >> >> to get stuck in mem_cgroup_handle_oom.
-> > >> >
-> > >> > Hmm, interesting. I assume the exit is caused by the SIGKILL, right?
-> > >> > If yes, then why it hasn't coughed early in __mem_cgroup_try_charge
-> > >> 
-> > >> Interesting question.  This isn't the primary thread but we do send
-> > >> SIGKILL to the secondary threads as well.
-> > >> 
-> > >> We definitely need those checks on both paths making my change valid.
-> > >> 
-> > >> Oh. Duh!  This is after we act on SIGKILL so SIGKILL is no longer
-> > >> pending.
-> > >
-> > > Very well spotted Eric! What do you think about the following patch?
-> > > I would have to check since when the exit path could trigger the fault
-> > > but I guess this is worth stable backport.
-> > 
-> > It doesn't have a prayer of working.
-> 
-> So it hasn't passed your test?
-> 
-> > You leave open the race of a fatal signal being received before we go to
-> > sleep.
-> 
-> If a fatal signal is received before we're going to sleep then
-> schedule() should keep it on the runqueue, no?
-> 
-> static void __sched __schedule(void)
-> {
-> [...]
->         if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
->                 if (unlikely(signal_pending_state(prev->state, prev))) {
->                         prev->state = TASK_RUNNING;
->                 } else {
-> 
-> so it should get a timeslice eventually, mem_cgroup_handle_oom sees
-> fatal_signal_pending and sets TIF_MEMDIE, bypass the charge, get to
-> signal handling, start exiting, fault in, get to charge and bail out in
-> __mem_cgroup_try_charge because it sees TIF_MEMDIE.
-> 
-> Or what am I missing?
-> 
-> > You don't handle a task that has processed the fatal signal and is in
-> > PF_EXITING.  Which is what I experienced.
-> > 
-> > From earlier comments about my code not being early enough I thought I
-> > was going to see a patch in __mem_cgroup_try_change so that the bypass
-> > case will kick in also for tasks in PF_EXITING.
-> 
-> This shouldn't be necessary because TIF_MEMDIE was set for the killed
-> task.  I was playing with PF_EXITING there as well but TIF_MEMDIE sounds
-> like a more appropriate solution.
-> 
-> > You change actually addresses things later in the code path than mine
-> > does.
-> > 
-> > I do like your summary of the problem.
-> > 
-> > Eric
-> > 
-> > > ---
-> > > From 411408558f2858328ea25e69567e9a53a8314032 Mon Sep 17 00:00:00 2001
-> > > From: Michal Hocko <mhocko@suse.cz>
-> > > Date: Wed, 31 Jul 2013 08:48:54 +0200
-> > > Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
-> > >
-> > > Eric has reported that he can see task(s) stuck in memcg OOM handler
-> > > regularly. The only way out is to
-> > > 	echo 0 > $GROUP/memory.oom_controll
-> > >
-> > > His usecase is:
-> > > - Setup a hierarchy with memory and the freezer
-> > >   (disable kernel oom and have a process watch for oom).
-> > > - In that memory cgroup add a process with one thread per cpu.
-> > > - In one thread slowly allocate once per second I think it is 16M of ram
-> > >   and mlock and dirty it (just to force the pages into ram and stay there).
-> > > - When oom is achieved loop:
-> > >   * attempt to freeze all of the tasks.
-> > >   * if frozen send every task SIGKILL, unfreeze, remove the directory in
-> > >     cgroupfs.
-> > >
-> > > Eric has then pinpointed the issue to be memcg specific.
-> > >
-> > > All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
-> > > Those that have received fatal signal will bypass the charge and should
-> > > continue on their way out. The tricky part is that that exit path might
-> > > trigger a page fault (e.g. exit_robust_list) thus the memcg charge
-> > > while its memcg is still under OOM because nobody has released any
-> > > charges. Unlike with the in-kernel OOM handler the exiting task doesn't
-> > > get TIF_MEMDIE set so it doesn't shortcut charges and falls to the
-> > > memcg OOM again without any way out of it as there are no fatal signals
-> > > pending anymore.
-> > >
-> > > This patch sets the TIF_MEMDIE flag pro actively in mem_cgroup_handle_oom
-> > > if the memcg is disabled after the task is woken up with fatal signal
-> > > pending. This means that any further charges will be bypassed early in
-> > > __mem_cgroup_try_charge and the task will have chance to exit finally.
-> > >
-> > > Strictly speaking we might mark also a task which hasn't been killed by
-> > > userspace OOM handler but this is not harmful as the task is going away
-> > > anyway and under-oom group would like to see it go as soon as possible.
-> > >
-> > > Reported-by: Eric W. Biederman <ebiederm@xmission.com>
-> > > Debugged-by: Eric W. Biederman <ebiederm@xmission.com>
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > ---
-> > >  mm/memcontrol.c | 13 ++++++++++++-
-> > >  1 file changed, 12 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index d12ca6f..d4103b0 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -2235,8 +2235,19 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
-> > >  
-> > >  	mem_cgroup_unmark_under_oom(memcg);
-> > >  
-> > > -	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
-> > > +	if (test_thread_flag(TIF_MEMDIE))
-> > >  		return false;
-> > > +
-> > > +	/*
-> > > +	 * Userspace OOM killer might have killed this task but
-> > > +	 * there is no way it could have set TIF_MEMDIE as well
-> > > +	 * so we have to set it manually.
-> > > +	 */
-> > > +	if (fatal_signal_pending(current)) {
-> > > +		if (memcg->oom_kill_disable)
-> > > +			set_thread_flag(TIF_MEMDIE);
-> > > +		return false;
-> > > +	}
-> > >  	/* Give chance to dying process */
-> > >  	schedule_timeout_uninterruptible(1);
-> > >  	return true;
-> > > -- 
-> > > 1.8.3.2
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Alison Wang <b18965@freescale.com>
+Signed-off-by: Jingchang Lu <b35083@freescale.com>
+---
+changes in v5:
+  config slave_id when dmaengine_slave_config intead of channel request.
+  adding residue calculation and dma pause/resume device control.
 
+changes in v4:
+  using exact compatible string in binding document.
+
+changes in v3:
+  handle all pending interrupt one time.
+  add protect lock on dma transfer complete handling.
+  change desc and tcd alloc flag to GFP_NOWAIT.
+  add sanity check and error messages.
+
+changes in v2:
+  using generic dma-channels property instead of fsl,dma-channel.
+  rename the binding document to fsl-edma.txt.
+
+ Documentation/devicetree/bindings/dma/fsl-edma.txt |  84 ++
+ drivers/dma/Kconfig                                |  10 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/fsl-edma.c                             | 925 +++++++++++++++++++++
+ 4 files changed, 1020 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
+ create mode 100644 drivers/dma/fsl-edma.c
+
+diff --git a/Documentation/devicetree/bindings/dma/fsl-edma.txt b/Documentation/devicetree/bindings/dma/fsl-edma.txt
+new file mode 100644
+index 0000000..60a8cb2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/fsl-edma.txt
+@@ -0,0 +1,84 @@
++* Freescale enhanced Direct Memory Access(eDMA) Controller
++
++The eDMA engine deploys DMAMUXs routing request sources(slot) to
++eDMA controller channels.
++
++* eDMA Controller
++Required properties:
++- compatible :
++  - "fsl,vf610-edma" for eDMA used similar to that on Vybrid vf610 SoC
++- reg : Should contain eDMA registers location and length
++- interrupts : Should contain eDMA interrupt
++- interrupt-names : Should be "edma-tx" for tx interrupt and
++  "edma-err" for err interrupt
++- #dma-cells : Must be <2>.
++  The first cell specifies the DMAMUX ID. Specific request source
++  can only be routed by specific DMAMUXs.
++  the second cell specifies the request source(slot) ID.
++  See include/dt-bindings/dma/<soc>-edma.h for all the supported
++  request source IDs.
++- dma-channels : Number of channels supported by the controller
++- fsl,dma-mux : Phandle of the DMAMUXs deployed by the controller
++
++
++* DMAMUX
++Required properties:
++- reg : Should contain DMAMUX registers location and length
++- fsl,dmamux-id : DMAMUX ID. DMAMUX IDs are unique in each eDMA controller.
++  inside one eDMA controller, specific request source can only be routed by
++  one of its DMAMUXs.
++  However Specific request source may be routed to different eDMA controller,
++  thus all the DMAMUXs sharing a the same request sources have the same ID.
++- clocks : Phandle of the clock used by the DMAMUX
++- clock-names : The clock names
++
++Below is the eDMA controller and DMAMUX association, and DMAMUX IDs assignment
++On Vybrid vf610 SoC, DMAMUX0 and DMAMU3 share the same request source group,
++and DMAMUX1 and DMAMU2 share the same request source group.
++
++eDMA controller		DMAMUXs		DMAMUX ID
++-------------------------------------------------
++eDMA0			DMAMUX0		0
++			DMAMUX1		1
++
++eDMA1			DMAMUX2		1
++			DMAMUX3		0
++
++Examples:
++
++edma0: dma-controller@40018000 {
++	#dma-cells = <2>;
++	compatible = "fsl,vf610-edma";
++	reg = <0x40018000 0x2000>;
++	interrupts = <0 8 0x04>, <0 9 0x04>;
++	interrupt-names = "edma-tx", "edma-err";
++	dma-channels = <32>;
++	fsl,edma-mux = <&dmamux0>, <&dmamux1>;
++};
++
++dmamux0: dmamux@40024000 {
++	reg = <0x40024000 0x1000>;
++	fsl,dmamux-id = <0>;
++	clocks = <&clks VF610_CLK_DMAMUX0>;
++	clock-names = "dmamux";
++};
++
++
++* DMA clients
++DMA client drivers that uses the DMA function must use the format described
++in the dma.txt file, using a three-cell specifier for each channel: a phandle
++plus two integer cells as described above.
++
++Examples:
++
++sai2: sai@40031000 {
++	compatible = "fsl,vf610-sai";
++	reg = <0x40031000 0x1000>;
++	interrupts = <0 86 0x04>;
++	clocks = <&clks VF610_CLK_SAI2>;
++	clock-names = "sai";
++	dma-names = "tx", "rx";
++	dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
++		<&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
++	status = "disabled";
++};
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 526ec77..7d7604d 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -317,6 +317,16 @@ config K3_DMA
+ 	  Support the DMA engine for Hisilicon K3 platform
+ 	  devices.
+ 
++config FSL_EDMA
++	tristate "Freescale eDMA engine support"
++	depends on OF
++	select DMA_ENGINE
++	select DMA_VIRTUAL_CHANNELS
++	help
++	  Support the Freescale eDMA engine with DMAMUXs managing route
++	  between request sources(slot) and eDMA engine channels.
++	  This module can be found on Freescale Vybrid and LS-1 SoCs.
++
+ config DMA_ENGINE
+ 	bool
+ 
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index cb5a77a..bb50311 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -41,3 +41,4 @@ obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
+ obj-$(CONFIG_DMA_JZ4740) += dma-jz4740.o
+ obj-$(CONFIG_K3_DMA) += k3dma.o
+ obj-$(CONFIG_TI_CPPI41) += cppi41.o
++obj-$(CONFIG_FSL_EDMA) += fsl-edma.o
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+new file mode 100644
+index 0000000..ce94455
+--- /dev/null
++++ b/drivers/dma/fsl-edma.c
+@@ -0,0 +1,925 @@
++/*
++ * drivers/dma/fsl-edma.c
++ *
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * Driver for the Freescale eDMA engine with DMAMUXs managing route between
++ * request sources(slot) and eDMA engine channels, this module can be found
++ * on some Vybrid and Layerscape SoCs.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/clk.h>
++#include <linux/spinlock.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_dma.h>
++#include <linux/dmapool.h>
++
++#include "virt-dma.h"
++
++#define EDMA_CR			0x00
++#define EDMA_ES			0x04
++#define EDMA_ERQ		0x0C
++#define EDMA_EEI		0x14
++#define EDMA_SERQ		0x1B
++#define EDMA_CERQ		0x1A
++#define EDMA_SEEI		0x19
++#define EDMA_CEEI		0x18
++#define EDMA_CINT		0x1F
++#define EDMA_CERR		0x1E
++#define EDMA_SSRT		0x1D
++#define EDMA_CDNE		0x1C
++#define EDMA_INTR		0x24
++#define EDMA_ERR		0x2C
++
++#define EDMA_TCD_SADDR(x)	(0x1000 + 32 * (x))
++#define EDMA_TCD_SOFF(x)	(0x1004 + 32 * (x))
++#define EDMA_TCD_ATTR(x)	(0x1006 + 32 * (x))
++#define EDMA_TCD_NBYTES(x)	(0x1008 + 32 * (x))
++#define EDMA_TCD_SLAST(x)	(0x100C + 32 * (x))
++#define EDMA_TCD_DADDR(x)	(0x1010 + 32 * (x))
++#define EDMA_TCD_DOFF(x)	(0x1014 + 32 * (x))
++#define EDMA_TCD_CITER_ELINK(x)	(0x1016 + 32 * (x))
++#define EDMA_TCD_CITER(x)	(0x1016 + 32 * (x))
++#define EDMA_TCD_DLAST_SGA(x)	(0x1018 + 32 * (x))
++#define EDMA_TCD_CSR(x)		(0x101C + 32 * (x))
++#define EDMA_TCD_BITER_ELINK(x)	(0x101E + 32 * (x))
++#define EDMA_TCD_BITER(x)	(0x101E + 32 * (x))
++
++#define EDMA_CR_EDBG		BIT(1)
++#define EDMA_CR_ERCA		BIT(2)
++#define EDMA_CR_ERGA		BIT(3)
++#define EDMA_CR_HOE		BIT(4)
++#define EDMA_CR_HALT		BIT(5)
++#define EDMA_CR_CLM		BIT(6)
++#define EDMA_CR_EMLM		BIT(7)
++#define EDMA_CR_ECX		BIT(16)
++#define EDMA_CR_CX		BIT(17)
++
++#define EDMA_SEEI_SEEI(x)	((x) & 0x1F)
++#define EDMA_CEEI_CEEI(x)	((x) & 0x1F)
++#define EDMA_CINT_CINT(x)	((x) & 0x1F)
++#define EDMA_CERR_CERR(x)	((x) & 0x1F)
++
++#define EDMA_TCD_ATTR_DSIZE(x)		(((x) & 0x0007))
++#define EDMA_TCD_ATTR_DMOD(x)		(((x) & 0x001F) << 3)
++#define EDMA_TCD_ATTR_SSIZE(x)		(((x) & 0x0007) << 8)
++#define EDMA_TCD_ATTR_SMOD(x)		(((x) & 0x001F) << 11)
++#define EDMA_TCD_ATTR_SSIZE_8BIT	(0x0000)
++#define EDMA_TCD_ATTR_SSIZE_16BIT	(0x0100)
++#define EDMA_TCD_ATTR_SSIZE_32BIT	(0x0200)
++#define EDMA_TCD_ATTR_SSIZE_64BIT	(0x0300)
++#define EDMA_TCD_ATTR_SSIZE_32BYTE	(0x0500)
++#define EDMA_TCD_ATTR_DSIZE_8BIT	(0x0000)
++#define EDMA_TCD_ATTR_DSIZE_16BIT	(0x0001)
++#define EDMA_TCD_ATTR_DSIZE_32BIT	(0x0002)
++#define EDMA_TCD_ATTR_DSIZE_64BIT	(0x0003)
++#define EDMA_TCD_ATTR_DSIZE_32BYTE	(0x0005)
++
++#define EDMA_TCD_CITER_MASK		0x7FFF
++#define EDMA_TCD_BITER_MASK		0x7FFF
++
++#define EDMA_TCD_SOFF_SOFF(x)		(x)
++#define EDMA_TCD_NBYTES_NBYTES(x)	(x)
++#define EDMA_TCD_SLAST_SLAST(x)		(x)
++#define EDMA_TCD_DADDR_DADDR(x)		(x)
++#define EDMA_TCD_CITER_CITER(x)		((x) & 0x7FFF)
++#define EDMA_TCD_DOFF_DOFF(x)		(x)
++#define EDMA_TCD_DLAST_SGA_DLAST_SGA(x)	(x)
++#define EDMA_TCD_BITER_BITER(x)		((x) & 0x7FFF)
++
++#define EDMA_TCD_CSR_START		BIT(0)
++#define EDMA_TCD_CSR_INT_MAJOR		BIT(1)
++#define EDMA_TCD_CSR_INT_HALF		BIT(2)
++#define EDMA_TCD_CSR_D_REQ		BIT(3)
++#define EDMA_TCD_CSR_E_SG		BIT(4)
++#define EDMA_TCD_CSR_E_LINK		BIT(5)
++#define EDMA_TCD_CSR_ACTIVE		BIT(6)
++#define EDMA_TCD_CSR_DONE		BIT(7)
++
++#define EDMAMUX_CHCFG_DIS		0x0
++#define EDMAMUX_CHCFG_ENBL		0x80
++#define EDMAMUX_CHCFG_SOURCE(n)		((n) & 0x3F)
++
++struct fsl_edma_hw_tcd {
++	u32	saddr;
++	u16	soff;
++	u16	attr;
++	u32	nbytes;
++	u32	slast;
++	u32	daddr;
++	u16	doff;
++	u16	citer;
++	u32	dlast_sga;
++	u16	csr;
++	u16	biter;
++} __packed;
++
++struct fsl_edma_sw_tcd {
++	dma_addr_t			ptcd;
++	struct fsl_edma_hw_tcd		*vtcd;
++};
++
++struct fsl_edma_slave_config {
++	enum dma_transfer_direction	dir;
++	enum dma_slave_buswidth		addr_width;
++	u32				dev_addr;
++	u32				burst;
++	u32				attr;
++	u32				slave_id;
++};
++
++struct fsl_edma_dmamux {
++	void __iomem			*membase;
++	struct clk			*clk;
++	u32				mux_id;
++};
++
++struct fsl_edma_chan {
++	struct virt_dma_chan		vchan;
++	enum dma_status			status;
++	struct fsl_edma_engine		*edma;
++	struct fsl_edma_dmamux		*edmamux;
++	struct fsl_edma_desc		*edesc;
++
++	struct fsl_edma_slave_config	fsc;
++	struct dma_pool			*tcd_pool;
++};
++
++struct fsl_edma_desc {
++	struct virt_dma_desc		vdesc;
++	struct fsl_edma_chan		*echan;
++	bool				iscyclic;
++	unsigned int			n_tcds;
++	struct fsl_edma_sw_tcd		tcd[];
++};
++
++struct fsl_edma_irq {
++	int	txirq;
++	int	errirq;
++};
++
++struct fsl_edma_engine {
++	struct dma_device	dma_dev;
++	void __iomem		*membase;
++	u32			n_chans;
++	u32			n_muxes;
++	struct fsl_edma_dmamux	*edmamux;
++	struct fsl_edma_irq	edmairq;
++	struct fsl_edma_chan	chans[];
++};
++
++static inline struct fsl_edma_chan *to_fsl_edma_chan(struct dma_chan *chan)
++{
++	return container_of(chan, struct fsl_edma_chan, vchan.chan);
++}
++
++static inline struct fsl_edma_desc *to_fsl_edma_desc(struct virt_dma_desc *vd)
++{
++	return container_of(vd, struct fsl_edma_desc, vdesc);
++}
++
++static inline void fsl_edma_enable_request(struct fsl_edma_chan *fsl_chan)
++{
++	void __iomem *addr = fsl_chan->edma->membase;
++	u32 ch = fsl_chan->vchan.chan.chan_id;
++
++	writeb(EDMA_SEEI_SEEI(ch), addr + EDMA_SEEI);
++	writeb(ch, addr + EDMA_SERQ);
++}
++
++static inline void fsl_edma_disable_request(struct fsl_edma_chan *fsl_chan)
++{
++	void __iomem *addr = fsl_chan->edma->membase;
++	u32 ch = fsl_chan->vchan.chan.chan_id;
++
++	writeb(ch, addr + EDMA_CERQ);
++	writeb(EDMA_CEEI_CEEI(ch), addr + EDMA_CEEI);
++}
++
++static inline void fsl_edmamux_enable_chan(struct fsl_edma_chan *fsl_chan,
++		unsigned int slot)
++{
++	void __iomem *mux_addr = fsl_chan->edmamux->membase;
++	unsigned chans_per_mux, ch;
++
++	chans_per_mux = fsl_chan->edma->n_chans / fsl_chan->edma->n_muxes;
++	ch = fsl_chan->vchan.chan.chan_id % chans_per_mux;
++
++	fsl_chan->fsc.slave_id = slot;
++	writeb(EDMAMUX_CHCFG_ENBL | EDMAMUX_CHCFG_SOURCE(slot), mux_addr + ch);
++}
++
++static inline void fsl_edmamux_disable_chan(struct fsl_edma_chan *fsl_chan)
++{
++	void __iomem *mux_addr = fsl_chan->edmamux->membase;
++	unsigned chans_per_mux, ch;
++
++	chans_per_mux = fsl_chan->edma->n_chans / fsl_chan->edma->n_muxes;
++	ch = fsl_chan->vchan.chan.chan_id % chans_per_mux;
++
++	fsl_chan->fsc.slave_id = 0;
++	writeb(EDMAMUX_CHCFG_DIS, mux_addr + ch);
++}
++
++static unsigned int fsl_edma_get_tcd_attr(enum dma_slave_buswidth addr_width)
++{
++	switch (addr_width) {
++	case 1:
++		return EDMA_TCD_ATTR_SSIZE_8BIT | EDMA_TCD_ATTR_DSIZE_8BIT;
++	case 2:
++		return EDMA_TCD_ATTR_SSIZE_16BIT | EDMA_TCD_ATTR_DSIZE_16BIT;
++	case 4:
++		return EDMA_TCD_ATTR_SSIZE_32BIT | EDMA_TCD_ATTR_DSIZE_32BIT;
++	case 8:
++		return EDMA_TCD_ATTR_SSIZE_64BIT | EDMA_TCD_ATTR_DSIZE_64BIT;
++	default:
++		return EDMA_TCD_ATTR_SSIZE_32BIT | EDMA_TCD_ATTR_DSIZE_32BIT;
++	}
++}
++
++static void fsl_edma_free_desc(struct virt_dma_desc *vdesc)
++{
++	struct fsl_edma_desc *fsl_desc;
++	int i;
++
++	fsl_desc = to_fsl_edma_desc(vdesc);
++	for (i = 0; i < fsl_desc->n_tcds; i++)
++			dma_pool_free(fsl_desc->echan->tcd_pool,
++					fsl_desc->tcd[i].vtcd,
++					fsl_desc->tcd[i].ptcd);
++	kfree(fsl_desc);
++}
++
++static int fsl_edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
++		unsigned long arg)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	struct dma_slave_config *cfg = (void *)arg;
++
++	switch (cmd) {
++	case DMA_TERMINATE_ALL:
++		fsl_edma_disable_request(fsl_chan);
++		fsl_chan->edesc = NULL;
++		vchan_free_chan_resources(&fsl_chan->vchan);
++		return 0;
++
++	case DMA_SLAVE_CONFIG:
++		fsl_chan->fsc.dir = cfg->direction;
++		if (cfg->direction == DMA_DEV_TO_MEM) {
++			fsl_chan->fsc.dev_addr = cfg->src_addr;
++			fsl_chan->fsc.addr_width = cfg->src_addr_width;
++			fsl_chan->fsc.burst = cfg->src_maxburst;
++			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
++		} else if (cfg->direction == DMA_MEM_TO_DEV) {
++			fsl_chan->fsc.dev_addr = cfg->dst_addr;
++			fsl_chan->fsc.addr_width = cfg->dst_addr_width;
++			fsl_chan->fsc.burst = cfg->dst_maxburst;
++			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
++		} else {
++			return -EINVAL;
++		}
++
++		if (!cfg->slave_id) {
++			return -EINVAL;
++		} else if (fsl_chan->fsc.slave_id != cfg->slave_id) {
++			fsl_edmamux_disable_chan(fsl_chan);
++			fsl_edmamux_enable_chan(fsl_chan, cfg->slave_id);
++		}
++		return 0;
++
++	case DMA_PAUSE:
++		if (fsl_chan->edesc)
++			fsl_edma_disable_request(fsl_chan);
++		return 0;
++
++	case DMA_RESUME:
++		if (fsl_chan->edesc)
++			fsl_edma_enable_request(fsl_chan);
++		return 0;
++
++	default:
++		return -ENXIO;
++	}
++}
++
++static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
++		struct virt_dma_desc *vdesc, bool in_progress)
++{
++	struct fsl_edma_desc *edesc = fsl_chan->edesc;
++	void __iomem *addr = fsl_chan->edma->membase;
++	u32 ch = fsl_chan->vchan.chan.chan_id;
++	enum dma_transfer_direction dir = fsl_chan->fsc.dir;
++	dma_addr_t cur_addr, dma_addr;
++	size_t len, size;
++	int i;
++
++	/* calculate the total size in this desc */
++	for (len = i = 0; i < fsl_chan->edesc->n_tcds; i++)
++		len += edesc->tcd[i].vtcd->nbytes * edesc->tcd[i].vtcd->biter;
++
++	if (!in_progress)
++		return len;
++
++	if (dir == DMA_MEM_TO_DEV)
++		cur_addr = readl(addr + EDMA_TCD_SADDR(ch));
++	else
++		cur_addr = readl(addr + EDMA_TCD_DADDR(ch));
++
++	/* figure out the finished and calculate the residue */
++	for (i = 0; i < fsl_chan->edesc->n_tcds; i++) {
++		size = edesc->tcd[i].vtcd->nbytes * edesc->tcd[i].vtcd->biter;
++		if (dir == DMA_MEM_TO_DEV)
++			dma_addr = edesc->tcd[i].vtcd->saddr;
++		else
++			dma_addr = edesc->tcd[i].vtcd->daddr;
++
++		if (cur_addr > dma_addr && cur_addr < dma_addr + size)
++			size = cur_addr - dma_addr;
++		len -= size;
++	}
++
++	return len;
++}
++
++static enum dma_status fsl_edma_tx_status(struct dma_chan *chan,
++		dma_cookie_t cookie, struct dma_tx_state *txstate)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	struct virt_dma_desc *vdesc;
++	enum dma_status status;
++	unsigned long flags;
++
++	if (fsl_chan->status == DMA_ERROR)
++		status = DMA_ERROR;
++	else
++		status = dma_cookie_status(chan, cookie, txstate);
++
++	if (status == DMA_SUCCESS || !txstate)
++		return status;
++
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	vdesc = vchan_find_desc(&fsl_chan->vchan, cookie);
++	if (fsl_chan->edesc && cookie == fsl_chan->edesc->vdesc.tx.cookie)
++		txstate->residue = fsl_edma_desc_residue(fsl_chan, vdesc, 1);
++	else if (vdesc)
++		txstate->residue = fsl_edma_desc_residue(fsl_chan, vdesc, 0);
++	else
++		txstate->residue = 0;
++
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++
++	return status;
++}
++
++static void fsl_edma_set_tcd_params(struct fsl_edma_chan *fsl_chan,
++		u32 src, u32 dst, u16 attr, u16 soff, u32 nbytes,
++		u32 slast, u16 citer, u16 biter, u32 doff, u32 dlast_sga,
++		u16 csr)
++{
++	void __iomem *addr = fsl_chan->edma->membase;
++	u32 ch = fsl_chan->vchan.chan.chan_id;
++
++	writew(0, addr + EDMA_TCD_CSR(ch));
++	writel(src, addr + EDMA_TCD_SADDR(ch));
++	writel(dst, addr + EDMA_TCD_DADDR(ch));
++	writew(attr, addr + EDMA_TCD_ATTR(ch));
++	writew(EDMA_TCD_SOFF_SOFF(soff), addr + EDMA_TCD_SOFF(ch));
++	writel(EDMA_TCD_NBYTES_NBYTES(nbytes), addr + EDMA_TCD_NBYTES(ch));
++	writel(EDMA_TCD_SLAST_SLAST(slast), addr + EDMA_TCD_SLAST(ch));
++	writew(EDMA_TCD_CITER_CITER(citer), addr + EDMA_TCD_CITER(ch));
++	writew(EDMA_TCD_BITER_BITER(biter), addr + EDMA_TCD_BITER(ch));
++	writew(EDMA_TCD_DOFF_DOFF(doff), addr + EDMA_TCD_DOFF(ch));
++	writel(EDMA_TCD_DLAST_SGA_DLAST_SGA(dlast_sga),
++					addr + EDMA_TCD_DLAST_SGA(ch));
++	writew(csr, addr + EDMA_TCD_CSR(ch));
++}
++
++static void fill_tcd_params(struct fsl_edma_hw_tcd *tcd, u32 src, u32 dst,
++		u16 attr, u16 soff, u32 nbytes, u32 slast, u16 citer,
++		u16 biter, u16 doff, u32 dlast_sga, bool major_int,
++		bool disable_req, bool enable_sg)
++{
++	tcd->saddr = src;
++	tcd->attr = attr;
++	tcd->soff = soff;
++	tcd->nbytes = nbytes;
++	tcd->slast = slast;
++	tcd->daddr = dst;
++	tcd->citer = citer;
++	tcd->doff = doff;
++	tcd->dlast_sga = dlast_sga;
++	tcd->biter = biter;
++	tcd->csr = 0;
++	if (major_int)
++		tcd->csr |= EDMA_TCD_CSR_INT_MAJOR;
++
++	if (disable_req)
++		tcd->csr |= EDMA_TCD_CSR_D_REQ;
++
++	if (enable_sg)
++		tcd->csr |= EDMA_TCD_CSR_E_SG;
++}
++
++static struct fsl_edma_desc *fsl_edma_alloc_desc(struct fsl_edma_chan *fsl_chan,
++		int sg_len)
++{
++	struct fsl_edma_desc *fsl_desc;
++	int i;
++
++	fsl_desc = kzalloc(sizeof(*fsl_desc) + sizeof(struct fsl_edma_sw_tcd) * sg_len,
++				GFP_NOWAIT);
++	if (!fsl_desc)
++		return NULL;
++
++	fsl_desc->echan = fsl_chan;
++	fsl_desc->n_tcds = sg_len;
++	for (i = 0; i < sg_len; i++) {
++		fsl_desc->tcd[i].vtcd = dma_pool_alloc(fsl_chan->tcd_pool,
++					GFP_NOWAIT, &fsl_desc->tcd[i].ptcd);
++		if (!fsl_desc->tcd[i].vtcd)
++			goto free_on_err;
++	}
++	return fsl_desc;
++
++free_on_err:
++	while (--i >= 0)
++		dma_pool_free(fsl_chan->tcd_pool, fsl_desc->tcd[i].vtcd,
++				fsl_desc->tcd[i].ptcd);
++	kfree(fsl_desc);
++	return NULL;
++}
++
++static struct dma_async_tx_descriptor *fsl_edma_prep_dma_cyclic(
++		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
++		size_t period_len, enum dma_transfer_direction direction,
++		unsigned long flags, void *context)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	struct fsl_edma_desc *fsl_desc;
++	dma_addr_t dma_buf_next;
++	int sg_len, i;
++	u32 src_addr, dst_addr, last_sg, nbytes;
++	u16 soff, doff, iter;
++
++	if (!is_slave_direction(fsl_chan->fsc.dir))
++		return NULL;
++
++	sg_len = buf_len / period_len;
++	fsl_desc = fsl_edma_alloc_desc(fsl_chan, sg_len);
++	if (!fsl_desc)
++		return NULL;
++	fsl_desc->iscyclic = true;
++
++	dma_buf_next = dma_addr;
++	nbytes = fsl_chan->fsc.addr_width * fsl_chan->fsc.burst;
++	iter = period_len / nbytes;
++	for (i = 0; i < sg_len; i++) {
++		if (dma_buf_next >= dma_addr + buf_len)
++			dma_buf_next = dma_addr;
++
++		/* get next sg's physical address */
++		last_sg = fsl_desc->tcd[(i + 1) % sg_len].ptcd;
++
++		if (fsl_chan->fsc.dir == DMA_MEM_TO_DEV) {
++			src_addr = dma_buf_next;
++			dst_addr = fsl_chan->fsc.dev_addr;
++			soff = fsl_chan->fsc.addr_width;
++			doff = 0;
++		} else {
++			src_addr = fsl_chan->fsc.dev_addr;
++			dst_addr = dma_buf_next;
++			soff = 0;
++			doff = fsl_chan->fsc.addr_width;
++		}
++
++		fill_tcd_params(fsl_desc->tcd[i].vtcd, src_addr, dst_addr,
++				fsl_chan->fsc.attr, soff, nbytes, 0,
++				iter, iter, doff, last_sg, true, false, true);
++		dma_buf_next += period_len;
++	}
++
++	return vchan_tx_prep(&fsl_chan->vchan, &fsl_desc->vdesc, flags);
++}
++
++static struct dma_async_tx_descriptor *fsl_edma_prep_slave_sg(
++		struct dma_chan *chan, struct scatterlist *sgl,
++		unsigned int sg_len, enum dma_transfer_direction direction,
++		unsigned long flags, void *context)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	struct fsl_edma_desc *fsl_desc;
++	struct scatterlist *sg;
++	u32 src_addr, dst_addr, last_sg, nbytes;
++	u16 soff, doff, iter;
++	int i;
++
++	if (!is_slave_direction(fsl_chan->fsc.dir))
++		return NULL;
++
++	fsl_desc = fsl_edma_alloc_desc(fsl_chan, sg_len);
++	if (!fsl_desc)
++		return NULL;
++	fsl_desc->iscyclic = false;
++
++	nbytes = fsl_chan->fsc.addr_width * fsl_chan->fsc.burst;
++	for_each_sg(sgl, sg, sg_len, i) {
++		/* get next sg's physical address */
++		last_sg = fsl_desc->tcd[(i + 1) % sg_len].ptcd;
++
++		if (fsl_chan->fsc.dir == DMA_MEM_TO_DEV) {
++			src_addr = sg_dma_address(sg);
++			dst_addr = fsl_chan->fsc.dev_addr;
++			soff = fsl_chan->fsc.addr_width;
++			doff = 0;
++		} else {
++			src_addr = fsl_chan->fsc.dev_addr;
++			dst_addr = sg_dma_address(sg);
++			soff = 0;
++			doff = fsl_chan->fsc.addr_width;
++		}
++
++		iter = sg_dma_len(sg) / nbytes;
++		if (i < sg_len - 1) {
++			last_sg = fsl_desc->tcd[(i + 1)].ptcd;
++			fill_tcd_params(fsl_desc->tcd[i].vtcd, src_addr,
++				dst_addr, fsl_chan->fsc.attr, soff, nbytes, 0,
++				iter, iter, doff, last_sg, false, false, true);
++		} else {
++			last_sg = 0;
++			fill_tcd_params(fsl_desc->tcd[i].vtcd, src_addr,
++				dst_addr, fsl_chan->fsc.attr, soff, nbytes, 0,
++				iter, iter, doff, last_sg, true, true, false);
++		}
++	}
++
++	return vchan_tx_prep(&fsl_chan->vchan, &fsl_desc->vdesc, flags);
++}
++
++static void fsl_edma_xfer_desc(struct fsl_edma_chan *fsl_chan)
++{
++	struct fsl_edma_hw_tcd *tcd;
++	struct virt_dma_desc *vdesc;
++
++	vdesc = vchan_next_desc(&fsl_chan->vchan);
++	if (!vdesc)
++		return;
++	fsl_chan->edesc = to_fsl_edma_desc(vdesc);
++	tcd = fsl_chan->edesc->tcd[0].vtcd;
++	fsl_edma_set_tcd_params(fsl_chan, tcd->saddr, tcd->daddr, tcd->attr,
++			tcd->soff, tcd->nbytes, tcd->slast, tcd->citer,
++			tcd->biter, tcd->doff, tcd->dlast_sga, tcd->csr);
++	fsl_edma_enable_request(fsl_chan);
++	fsl_chan->status = DMA_IN_PROGRESS;
++}
++
++static irqreturn_t fsl_edma_irq_handler(int irq, void *dev_id)
++{
++	struct fsl_edma_engine *fsl_edma = dev_id;
++	unsigned int intr, ch;
++	void __iomem *base_addr;
++	struct fsl_edma_chan *fsl_chan;
++
++	base_addr = fsl_edma->membase;
++
++	intr = readl(base_addr + EDMA_INTR);
++	if (!intr)
++		return IRQ_NONE;
++
++	for (ch = 0; ch < fsl_edma->n_chans; ch++) {
++		if (intr & (0x1 << ch)) {
++			writeb(EDMA_CINT_CINT(ch), base_addr + EDMA_CINT);
++
++			fsl_chan = &fsl_edma->chans[ch];
++
++			spin_lock(&fsl_chan->vchan.lock);
++			if (!fsl_chan->edesc->iscyclic) {
++				list_del(&fsl_chan->edesc->vdesc.node);
++				vchan_cookie_complete(&fsl_chan->edesc->vdesc);
++				fsl_chan->edesc = NULL;
++				fsl_chan->status = DMA_SUCCESS;
++			} else {
++				vchan_cyclic_callback(&fsl_chan->edesc->vdesc);
++			}
++
++			if (!fsl_chan->edesc)
++				fsl_edma_xfer_desc(fsl_chan);
++
++			spin_unlock(&fsl_chan->vchan.lock);
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t fsl_edma_err_handler(int irq, void *dev_id)
++{
++	struct fsl_edma_engine *fsl_edma = dev_id;
++	unsigned int err, ch;
++
++	err = readl(fsl_edma->membase + EDMA_ERR);
++	if (!err)
++		return IRQ_NONE;
++
++	for (ch = 0; ch < fsl_edma->n_chans; ch++) {
++		if (err & (0x1 << ch)) {
++			fsl_edma_disable_request(&fsl_edma->chans[ch]);
++			writeb(EDMA_CERR_CERR(ch), fsl_edma->membase + EDMA_CERR);
++			fsl_edma->chans[ch].status = DMA_ERROR;
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++static void fsl_edma_issue_pending(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
++
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++
++	if (vchan_issue_pending(&fsl_chan->vchan) && !fsl_chan->edesc)
++		fsl_edma_xfer_desc(fsl_chan);
++
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++}
++
++static bool fsl_edma_filter_fn(struct dma_chan *chan, void *mux_id)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++
++	if (fsl_chan->edmamux->mux_id != (u32)mux_id)
++		return false;
++
++	return true;
++}
++
++static struct dma_chan *fsl_edma_xlate(struct of_phandle_args *dma_spec,
++		struct of_dma *ofdma)
++{
++	dma_cap_mask_t mask;
++	u32 mux_id;
++
++	if (dma_spec->args_count != 2)
++		return NULL;
++
++	mux_id = dma_spec->args[0];
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++	dma_cap_set(DMA_CYCLIC, mask);
++	return dma_request_channel(mask, fsl_edma_filter_fn, (void *)mux_id);
++}
++
++static int fsl_edma_alloc_chan_resources(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++
++	fsl_chan->tcd_pool = dma_pool_create("tcd_pool", chan->device->dev,
++				sizeof(struct fsl_edma_hw_tcd),
++				32, 0);
++	return 0;
++}
++
++static void fsl_edma_free_chan_resources(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++
++	fsl_edma_disable_request(fsl_chan);
++	fsl_edmamux_disable_chan(fsl_chan);
++	fsl_chan->edesc = NULL;
++	vchan_free_chan_resources(&fsl_chan->vchan);
++	dma_pool_destroy(fsl_chan->tcd_pool);
++	fsl_chan->tcd_pool = NULL;
++}
++
++static int
++fsl_init_edmamux(struct platform_device *pdev, struct fsl_edma_engine *fsl_edma)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct fsl_edma_dmamux *fsl_edmamux;
++	struct device_node *phandle;
++	const void *prop;
++	struct resource res;
++	int len, n_muxes, chans_per_mux, ch_off;
++	int i, j;
++	int ret;
++
++	prop = of_get_property(np, "fsl,dma-mux", &len);
++	if (!prop) {
++		dev_err(&pdev->dev, "Can't get DMAMUX.\n");
++		return -EINVAL;
++	}
++
++	n_muxes = len / sizeof(u32);
++	chans_per_mux = fsl_edma->n_chans / n_muxes;
++	fsl_edmamux = devm_kzalloc(&pdev->dev,
++			sizeof(struct fsl_edma_dmamux) * n_muxes, GFP_KERNEL);
++	if (!fsl_edmamux)
++		return -ENOMEM;
++
++	fsl_edma->n_muxes = 0;
++	fsl_edma->edmamux = fsl_edmamux;
++	for (i = 0; i < n_muxes; i++) {
++		phandle = of_parse_phandle(np, "fsl,dma-mux", i);
++		ret = of_address_to_resource(phandle, 0, &res);
++		if (ret)
++			return ret;
++		fsl_edmamux->membase = devm_ioremap_resource(&pdev->dev, &res);
++		if (IS_ERR(fsl_edmamux->membase))
++			return PTR_ERR(fsl_edmamux->membase);
++
++		fsl_edmamux->clk = of_clk_get(phandle, 0);
++		if (IS_ERR(fsl_edmamux->clk)) {
++			dev_err(&pdev->dev, "Missing DMAMUX clock.\n");
++			return PTR_ERR(fsl_edmamux->clk);
++		}
++
++		ret = clk_prepare_enable(fsl_edmamux->clk);
++		if (ret) {
++			dev_err(&pdev->dev, "DMAMUX clk enable failed.\n");
++			return ret;
++		}
++
++		ret = of_property_read_u32_index(phandle, "fsl,dmamux-id", 0,
++				&fsl_edmamux->mux_id);
++		if (ret) {
++			dev_err(&pdev->dev, "Can't get dmamux-id.\n");
++			return ret;
++		}
++
++		ch_off = fsl_edma->n_muxes * chans_per_mux;
++		for (j = 0; j < chans_per_mux; j++)
++			fsl_edma->chans[ch_off + j].edmamux = fsl_edmamux;
++
++		fsl_edmamux++;
++		fsl_edma->n_muxes++;
++	}
++	return 0;
++}
++
++static int
++fsl_edma_init_irq(struct platform_device *pdev, struct fsl_edma_engine *fsl_edma)
++{
++	int ret;
++
++	fsl_edma->edmairq.txirq = platform_get_irq_byname(pdev, "edma-tx");
++	if (fsl_edma->edmairq.txirq < 0) {
++		dev_err(&pdev->dev, "Can't get edma-tx irq.\n");
++		return fsl_edma->edmairq.txirq;
++	}
++
++	ret = devm_request_irq(&pdev->dev, fsl_edma->edmairq.txirq,
++			fsl_edma_irq_handler, IRQF_SHARED, "eDMA tx", fsl_edma);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't register eDMA tx IRQ.\n");
++		return  ret;
++	}
++
++	fsl_edma->edmairq.errirq = platform_get_irq_byname(pdev, "edma-err");
++	if (fsl_edma->edmairq.errirq < 0) {
++		dev_err(&pdev->dev, "Can't get edma-err irq.\n");
++		return fsl_edma->edmairq.errirq;
++	}
++
++	ret = devm_request_irq(&pdev->dev, fsl_edma->edmairq.errirq,
++			fsl_edma_err_handler, IRQF_SHARED, "eDMA err", fsl_edma);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't register eDMA err IRQ.\n");
++		return  ret;
++	}
++
++	return 0;
++}
++
++static int fsl_edma_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct fsl_edma_engine *fsl_edma;
++	struct fsl_edma_chan *fsl_chan;
++	struct resource *res;
++	int len, chans;
++	int ret, i;
++
++	ret = of_property_read_u32_index(np, "dma-channels", 0, &chans);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't get dma-channels.\n");
++		return ret;
++	}
++
++	len = sizeof(*fsl_edma) + sizeof(*fsl_chan) * chans;
++	fsl_edma = devm_kzalloc(&pdev->dev, len, GFP_KERNEL);
++	if (!fsl_edma)
++		return -ENOMEM;
++
++	fsl_edma->n_chans = chans;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	fsl_edma->membase = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(fsl_edma->membase))
++		return PTR_ERR(fsl_edma->membase);
++
++	ret = fsl_init_edmamux(pdev, fsl_edma);
++	if (ret)
++		return ret;
++
++	ret = fsl_edma_init_irq(pdev, fsl_edma);
++	if (ret)
++		return ret;
++
++	INIT_LIST_HEAD(&fsl_edma->dma_dev.channels);
++	for (i = 0; i < fsl_edma->n_chans; i++) {
++		struct fsl_edma_chan *fsl_chan = &fsl_edma->chans[i];
++
++		fsl_chan->edma = fsl_edma;
++
++		fsl_chan->vchan.desc_free = fsl_edma_free_desc;
++		vchan_init(&fsl_chan->vchan, &fsl_edma->dma_dev);
++
++		writew(0x0, fsl_edma->membase + EDMA_TCD_CSR(i));
++		fsl_edmamux_disable_chan(fsl_chan);
++	}
++
++	dma_cap_set(DMA_SLAVE, fsl_edma->dma_dev.cap_mask);
++	dma_cap_set(DMA_CYCLIC, fsl_edma->dma_dev.cap_mask);
++
++	fsl_edma->dma_dev.dev = &pdev->dev;
++	fsl_edma->dma_dev.device_alloc_chan_resources
++		= fsl_edma_alloc_chan_resources;
++	fsl_edma->dma_dev.device_free_chan_resources
++		= fsl_edma_free_chan_resources;
++	fsl_edma->dma_dev.device_tx_status = fsl_edma_tx_status;
++	fsl_edma->dma_dev.device_prep_slave_sg = fsl_edma_prep_slave_sg;
++	fsl_edma->dma_dev.device_prep_dma_cyclic = fsl_edma_prep_dma_cyclic;
++	fsl_edma->dma_dev.device_control = fsl_edma_control;
++	fsl_edma->dma_dev.device_issue_pending = fsl_edma_issue_pending;
++
++	platform_set_drvdata(pdev, fsl_edma);
++
++	ret = dma_async_device_register(&fsl_edma->dma_dev);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't register Freescale eDMA engine.\n");
++		return ret;
++	}
++
++	ret = of_dma_controller_register(np, fsl_edma_xlate, fsl_edma);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't register Freescale eDMA of_dma.\n");
++		dma_async_device_unregister(&fsl_edma->dma_dev);
++		return ret;
++	}
++
++	/* enable round robin arbitration */
++	writel(EDMA_CR_ERGA | EDMA_CR_ERCA, fsl_edma->membase + EDMA_CR);
++
++	return 0;
++}
++
++static int fsl_edma_remove(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct fsl_edma_engine *fsl_edma = platform_get_drvdata(pdev);
++	int i;
++
++	of_dma_controller_free(np);
++	dma_async_device_unregister(&fsl_edma->dma_dev);
++
++	for (i = 0; i < fsl_edma->n_muxes; i++) {
++		clk_disable_unprepare(fsl_edma->edmamux[i].clk);
++		clk_put(fsl_edma->edmamux[i].clk);
++	}
++
++	return 0;
++}
++
++static const struct of_device_id fsl_edma_dt_ids[] = {
++	{ .compatible = "fsl,vf610-edma", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, fsl_edma_dt_ids);
++
++static struct platform_driver fsl_edma_driver = {
++	.driver		= {
++		.name	= "fsl-edma",
++		.owner  = THIS_MODULE,
++		.of_match_table = fsl_edma_dt_ids,
++	},
++	.probe          = fsl_edma_probe,
++	.remove		= fsl_edma_remove,
++};
++
++module_platform_driver(fsl_edma_driver);
++
++MODULE_ALIAS("platform:fsl-edma");
++MODULE_DESCRIPTION("Freescale eDMA engine driver");
++MODULE_LICENSE("GPL v2");
 -- 
-Michal Hocko
-SUSE Labs
+1.8.0
+
+
