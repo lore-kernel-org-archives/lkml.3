@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763180Ab3IEHce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 03:32:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53083 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab3IEHcc (ORCPT
+	id S1763396Ab3IEHcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 03:32:41 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:50141 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757831Ab3IEHci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 03:32:32 -0400
-Date: Thu, 5 Sep 2013 17:32:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad commits in the drivers-x86 tree
-Message-Id: <20130905173222.946719639b05b3b4b3f9b8fd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Sep_2013_17_32_22_+1000_.9fwO6jY.PErX+Ng"
+	Thu, 5 Sep 2013 03:32:38 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Date: Thu, 5 Sep 2013 09:31:51 +0200
+Subject: Re: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Topic: [PATCH 06/11] iio: pressure-core: st: Expand and rename
+ LPS331AP's channel descriptor
+Thread-Index: Ac6qCf4IMbnUel47S1i+varWs8vSHQ==
+Message-ID: <52283367.4070603@st.com>
+References: <1378287103-21765-1-git-send-email-lee.jones@linaro.org>
+ <1378287103-21765-7-git-send-email-lee.jones@linaro.org>
+ <522794F1.90301@st.com> <20130905072114.GD8980@lee--X1>
+In-Reply-To: <20130905072114.GD8980@lee--X1>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r857WsdX028360
 
---Signature=_Thu__5_Sep_2013_17_32_22_+1000_.9fwO6jY.PErX+Ng
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Matthew,
+>>> Due to the MACRO used, the task of reading, understanding and maintaining
+>>> the LPS331AP's channel descriptor is substantially difficult. This patch
+>>> is based on the view that it's better to have easy to read, maintainable
+>>> code than to save a few lines here and there. For that reason we're
+>>> expanding the array so initialisation is completed in full.
+>> Also for this one, the channel names are general and can be shared
+>> between different sensors. For the channel definition it's not a problem
+>> for me, but I think it's not necessary adds all that code...
+> I'm not sure what you mean by this. Would you be kind enough to
+> explain it in a different way please?
+The channel name (in this case st_press_channels) is not only specific 
+for one sensor but can be shared. Ok in this driver now is used only for 
+the lps331ap but for example in accelerometer driver is used by several 
+sensors. It's possible in the future for new pressure sensors use the 
+same channels definition.
+The channel definition is intended the switch by macro 
+ST_SENSORS_LSM_CHANNELS to the full definition, for me is not a problem 
+but I think it's not necessary.
 
-Unfortunately, it looks like you cherry-picked (or somehow) managed to
-get copies of quite a few commits from Linus' tree into your tree.  Maybe
-a failed rebase?  This has been causing conflicts in linux-next for the
-past couple of days and I am sure that Linus will not want to pull your
-tree in its current state.
+Denis
 
-I suggest that you reset it to the state it was in the day before
-yesterday (commit 41c8bd1c75ef8e85) and try again.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__5_Sep_2013_17_32_22_+1000_.9fwO6jY.PErX+Ng
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSKDOKAAoJEECxmPOUX5FEwcwP/0BnVGb0GybMD+46MA4ucepe
-Ahl2RWTPY94myU6is/8IXCgQpAKgwU3V9wPAUUh4QXwEdnT+/PB5wAQIgATXDgYN
-Vu8SB/4HO0uLYw3idgg8q27TXwpjKo2b7dUvbKIDdlnVlknWjQbnzcTXrYE+4tQG
-0IUF/Ymc8yOJmjijWVIuNpV074KOwPOZViGLKcjXYaio5jjZp1ENENFYVOpC9fic
-2DlZVpAVq1I+7HD/L0KxwVZIVcY3ObH63l9Db+pyiF0TPLKqQ7rNn6+SWiDeizfC
-yovsqzsI/vWPvxnVPZbkKrQZM9LkiS9FxcFmgqrNIBKocadjp7UtVZOQprnIPjdF
-f4PsQjn078GZW8nTBjbKJySof5G7VHR0lCBONJzby/4KTRu+CjUvnB31efP88IJa
-vgg5hgM20fWCGUh0ZUJ7ugodY5h14ttoGgua8cNuSy8PTvUvT2Y2XGOkU/lhQNPS
-ekKX7tVXTK51dSj5+lqK2vUmOdN7Iw1SZ8J5l4/oPl2Yg6ulcv4ZAynUBtJ5Ih8S
-NFj8pAoghgdFbvGSp5dtVV7yInvnpJ5sBp25nW9fUXZ4vkXzYf6u8qrJFXv3fc8d
-kJcjPbJBaf3QduftIDOsC1eM3hQfRO6T6gNmkWfmKz56fxYH84ZdGWO9Zb17PCCe
-7gF0DX2v9oZQXWGgMrDO
-=vbNz
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Sep_2013_17_32_22_+1000_.9fwO6jY.PErX+Ng--
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>    drivers/iio/pressure/st_pressure_core.c | 45 +++++++++++++++++++++++++--------
+>>>    1 file changed, 34 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+>>> index becfb25..7ba9299 100644
+>>> --- a/drivers/iio/pressure/st_pressure_core.c
+>>> +++ b/drivers/iio/pressure/st_pressure_core.c
+>>> @@ -58,16 +58,39 @@
+>>>    #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
+>>>    #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
+>>>    
+>>> -static const struct iio_chan_spec st_press_channels[] = {
+>>> -	ST_SENSORS_LSM_CHANNELS(IIO_PRESSURE,
+>>> +static const struct iio_chan_spec st_press_lsp331ap_channels[] = {
+>>> +	{
+>>> +		.type = IIO_PRESSURE,
+>>> +		.channel2 = IIO_NO_MOD,
+>>> +		.address = ST_PRESS_LPS331AP_OUT_XL_ADDR,
+>>> +		.scan_index = ST_SENSORS_SCAN_X,
+>>> +		.scan_type = {
+>>> +			.sign = 'u',
+>>> +			.realbits = 24,
+>>> +			.storagebits = 24,
+>>> +			.endianness = IIO_LE,
+>>> +		},
+>>> +		.info_mask_separate =
+>>>    			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+>>> -			ST_SENSORS_SCAN_X, 0, IIO_NO_MOD, 'u', IIO_LE, 24, 24,
+>>> -			ST_PRESS_LPS331AP_OUT_XL_ADDR),
+>>> -	ST_SENSORS_LSM_CHANNELS(IIO_TEMP,
+>>> -			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE) |
+>>> -						BIT(IIO_CHAN_INFO_OFFSET),
+>>> -			-1, 0, IIO_NO_MOD, 's', IIO_LE, 16, 16,
+>>> -			ST_TEMP_LPS331AP_OUT_L_ADDR),
+>>> +		.modified = 0,
+>>> +	},
+>>> +	{
+>>> +		.type = IIO_TEMP,
+>>> +		.channel2 = IIO_NO_MOD,
+>>> +		.address = ST_TEMP_LPS331AP_OUT_L_ADDR,
+>>> +		.scan_index = -1,
+>>> +		.scan_type = {
+>>> +			.sign = 'u',
+>>> +			.realbits = 16,
+>>> +			.storagebits = 16,
+>>> +			.endianness = IIO_LE,
+>>> +		},
+>>> +		.info_mask_separate =
+>>> +			BIT(IIO_CHAN_INFO_RAW) |
+>>> +			BIT(IIO_CHAN_INFO_SCALE) |
+>>> +			BIT(IIO_CHAN_INFO_OFFSET),
+>>> +		.modified = 0,
+>>> +	},
+>>>    	IIO_CHAN_SOFT_TIMESTAMP(1)
+>>>    };
+>>>    
+>>> @@ -77,7 +100,7 @@ static const struct st_sensors st_press_sensors[] = {
+>>>    		.sensors_supported = {
+>>>    			[0] = LPS331AP_PRESS_DEV_NAME,
+>>>    		},
+>>> -		.ch = (struct iio_chan_spec *)st_press_channels,
+>>> +		.ch = (struct iio_chan_spec *)st_press_lsp331ap_channels,
+>>>    		.odr = {
+>>>    			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
+>>>    			.mask = ST_PRESS_LPS331AP_ODR_MASK,
+>>> @@ -214,7 +237,7 @@ int st_press_common_probe(struct iio_dev *indio_dev)
+>>>    	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
+>>>    	pdata->multiread_bit = pdata->sensor->multi_read_bit;
+>>>    	indio_dev->channels = pdata->sensor->ch;
+>>> -	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
+>>> +	indio_dev->num_channels = ARRAY_SIZE(st_press_lsp331ap_channels);
+>>>    
+>>>    	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+>>>    						&pdata->sensor->fs.fs_avl[0];
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
