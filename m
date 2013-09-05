@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab3IEUgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:36:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52147 "EHLO
+	id S1757943Ab3IEUgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:36:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757249Ab3IEU2f (ORCPT
+	with ESMTP id S1757441Ab3IEU2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:28:35 -0400
+	Thu, 5 Sep 2013 16:28:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jander <david@protonic.nl>, Mark Brown <broonie@linaro.org>,
-        Zhouping Liu <zliu@redhat.com>
-Subject: [ 36/36] regmap: rbtree: Fix overlapping rbnodes.
-Date: Thu,  5 Sep 2013 13:28:05 -0700
-Message-Id: <20130905202706.478614170@linuxfoundation.org>
+        Tomas Molota <tomas.molota@lightstorm.sk>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 25/36] target: Fix trailing ASCII space usage in INQUIRY vendor+model
+Date: Thu,  5 Sep 2013 13:27:54 -0700
+Message-Id: <20130905202705.216316838@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130905202702.289738686@linuxfoundation.org>
 References: <20130905202702.289738686@linuxfoundation.org>
@@ -27,38 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jander <david@protonic.nl>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 4e67fb5f5e336250db944921e3c68057d6203034 upstream.
+commit ee60bddba5a5f23e39598195d944aa0eb2d455e5 upstream.
 
-Avoid overlapping register regions by making the initial blklen of a new
-node 1. If a register write occurs to a yet uncached register, that is
-lower than but near an existing node's base_reg, a new node is created
-and it's blklen is set to an arbitrary value (sizeof(*rbnode)). That may
-cause this node to overlap with another node. Those nodes should be merged,
-but this merge doesn't happen yet, so this patch at least makes the initial
-blklen small enough to avoid hitting the wrong node, which may otherwise
-lead to severe breakage.
+This patch fixes spc_emulate_inquiry_std() to add trailing ASCII
+spaces for INQUIRY vendor + model fields following SPC-4 text:
 
-Signed-off-by: David Jander <david@protonic.nl>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
+  "ASCII data fields described as being left-aligned shall have any
+   unused bytes at the end of the field (i.e., highest offset) and
+   the unused bytes shall be filled with ASCII space characters (20h)."
+
+This addresses a problem with Falconstor NSS multipathing.
+
+Reported-by: Tomas Molota <tomas.molota@lightstorm.sk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regcache-rbtree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_spc.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -362,7 +362,7 @@ static int regcache_rbtree_write(struct
- 		rbnode = kzalloc(sizeof *rbnode, GFP_KERNEL);
- 		if (!rbnode)
- 			return -ENOMEM;
--		rbnode->blklen = sizeof(*rbnode);
-+		rbnode->blklen = 1;
- 		rbnode->base_reg = reg;
- 		rbnode->block = kmalloc(rbnode->blklen * map->cache_word_size,
- 					GFP_KERNEL);
+--- a/drivers/target/target_core_spc.c
++++ b/drivers/target/target_core_spc.c
+@@ -97,9 +97,12 @@ spc_emulate_inquiry_std(struct se_cmd *c
+ 
+ 	buf[7] = 0x2; /* CmdQue=1 */
+ 
+-	snprintf(&buf[8], 8, "LIO-ORG");
+-	snprintf(&buf[16], 16, "%s", dev->t10_wwn.model);
+-	snprintf(&buf[32], 4, "%s", dev->t10_wwn.revision);
++	memcpy(&buf[8], "LIO-ORG ", 8);
++	memset(&buf[16], 0x20, 16);
++	memcpy(&buf[16], dev->t10_wwn.model,
++	       min_t(size_t, strlen(dev->t10_wwn.model), 16));
++	memcpy(&buf[32], dev->t10_wwn.revision,
++	       min_t(size_t, strlen(dev->t10_wwn.revision), 4));
+ 	buf[4] = 31; /* Set additional length to 31 */
+ 
+ 	return 0;
 
 
