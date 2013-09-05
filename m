@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935562Ab3IEDAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 23:00:19 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57881 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab3IEDAQ (ORCPT
+	id S1763247Ab3IEDCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:02:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57818 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762147Ab3IEDCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 23:00:16 -0400
-From: Chenggang Qin <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] perf core: remove short name compare in dsos__find()
-Date: Thu,  5 Sep 2013 10:59:35 +0800
-Message-Id: <1378349975-3333-2-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378349975-3333-1-git-send-email-chenggang.qin@gmail.com>
-References: <1378349975-3333-1-git-send-email-chenggang.qin@gmail.com>
+	Wed, 4 Sep 2013 23:02:13 -0400
+Date: Thu, 5 Sep 2013 13:02:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
+Subject: linux-next: manual merge of the vfs tree with the aio-direct tree
+Message-Id: <20130905130209.39efbc35d4601cab4e981281@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Sep_2013_13_02_09_+1000_qPdG.uP/m7sZXzrX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
+--Signature=_Thu__5_Sep_2013_13_02_09_+1000_qPdG.uP/m7sZXzrX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If the list traversal is avoided by the last patch, the short name compare in
-dsos__find() is unnecessary. The purpose of short name compare is only to find
-the dso of vdso. If the vdso can be found by a pointor, the short name compare
-can be removed.
-Thanks
+Hi Al,
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+Today's linux-next merge of the vfs tree got a conflict in fs/direct-io.c
+between commit 8f2a7fbb9b10 ("dio: add bio_vec support to
+__blockdev_direct_IO()") from the aio-direct tree and commit 7b7a8665edd8
+("direct-io: Implement generic deferred AIO completions") from the vfs
+tree.
 
----
- tools/perf/util/dso.c |   10 ++--------
- tools/perf/util/dso.h |    3 +--
- 2 files changed, 3 insertions(+), 10 deletions(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index c4374f0..6f7d5a9 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -513,16 +513,10 @@ void dsos__add(struct list_head *head, struct dso *dso)
- 	list_add_tail(&dso->node, head);
- }
- 
--struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
-+struct dso *dsos__find(struct list_head *head, const char *name)
- {
- 	struct dso *pos;
- 
--	if (cmp_short) {
--		list_for_each_entry(pos, head, node)
--			if (strcmp(pos->short_name, name) == 0)
--				return pos;
--		return NULL;
--	}
- 	list_for_each_entry(pos, head, node)
- 		if (strcmp(pos->long_name, name) == 0)
- 			return pos;
-@@ -531,7 +525,7 @@ struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
- 
- struct dso *__dsos__findnew(struct list_head *head, const char *name)
- {
--	struct dso *dso = dsos__find(head, name, false);
-+	struct dso *dso = dsos__find(head, name);
- 
- 	if (!dso) {
- 		dso = dso__new(name);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d51aaf2..450199a 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -133,8 +133,7 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 				const char *short_name, int dso_type);
- 
- void dsos__add(struct list_head *head, struct dso *dso);
--struct dso *dsos__find(struct list_head *head, const char *name,
--		       bool cmp_short);
-+struct dso *dsos__find(struct list_head *head, const char *name);
- struct dso *__dsos__findnew(struct list_head *head, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
- 
--- 
-1.7.8.rc2.5.g815b
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc fs/direct-io.c
+index 75a3989,1782023..0000000
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@@ -127,7 -127,7 +127,8 @@@ struct dio=20
+  	spinlock_t bio_lock;		/* protects BIO fields below */
+  	int page_errors;		/* errno from get_user_pages() */
+  	int is_async;			/* is IO async ? */
+ +	int should_dirty;		/* should we mark read pages dirty? */
++ 	bool defer_completion;		/* defer AIO completion to workqueue? */
+  	int io_error;			/* IO error in completion path */
+  	unsigned long refcount;		/* direct_io_worker() and bios */
+  	struct bio *bio_list;		/* singly linked via bi_private */
+
+--Signature=_Thu__5_Sep_2013_13_02_09_+1000_qPdG.uP/m7sZXzrX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSJ/QxAAoJEECxmPOUX5FEIIgP/RyDQqP2rkvbY+bAOjzovMtf
+XmH9WneYNZDwiSo1HEU3ZBp6PIMpOXwE5bSJQgRNZ860mF2BEGXNBlW7SL4i88Nq
+K3j5hbeX9DE1DKpnEOrLVZDvnAf+SGG+SanxvEV4C7nyR4dmJxh6eRH5dEWfjEQz
+zrVSgu6hEF7qp9Soib+A0h+QFGSeOR9QDcgvNmIwvILAqHHhDg3FY1K8EIkB4WDF
+3tt8yNE5+5RqehigaUJ8dAmrYg/XaYlH0oI3dmgXLul8S3UDYcUT2hAQEDZwfe0i
+jZWsl4Lx82v1bjUjNh2xD5P+BSQ+H7ZD0G0ntudyt1RhHB0jrjQMsDmGNPJfgczG
+Dg0MYpiRgB1l6ACOtatAUTEZzs6DgXqUOpBjVujBjsy1gqE72pSuYQTt1Hph6gLU
+ZQ7fdQiTqiYUTnHGPzUydRtBXzXRlnU9CIlaGS1PEtFGqtUTAUlAdn0AEP1Hx3Wi
+coPLvCMpAMu5GJTTbWKOI5X8T4tqhXWbHBx2BHeRgz+5IB48+VcMBIehRnPElTcx
+TO3grDWp+diRZZuzXT+gaT158JXlltpsmr6gsMmkFgIs0t1wtQmWDYJbzD3JUPgH
+bIsorlfQALcIMrNyqZ0APNa8/WKQVLcFR7eIi0/2KAB1DZYpb5p3ysbNtIVKPoE/
+atZcfOxTCqIjeSIALhWp
+=fGwO
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Sep_2013_13_02_09_+1000_qPdG.uP/m7sZXzrX--
