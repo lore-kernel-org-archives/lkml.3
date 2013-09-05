@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab3IEFAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 01:00:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab3IEFAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 01:00:54 -0400
-Date: Thu, 5 Sep 2013 01:00:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rmk+kernel@arm.linux.org.uk
-Subject: Re: kobject: delayed kobject release: help find buggy drivers
-Message-ID: <20130905050031.GA23209@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	rmk+kernel@arm.linux.org.uk
-References: <20130903185924.046EE660E91@gitolite.kernel.org>
- <20130903204442.GA22222@redhat.com>
- <20130903205527.GA6358@kroah.com>
- <87zjrt6tz4.fsf@rustcorp.com.au>
- <20130905041338.GA21090@redhat.com>
- <20130905045745.GA18876@kroah.com>
+	id S1756422Ab3IEFBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 01:01:42 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:50441 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab3IEFBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 01:01:41 -0400
+Message-ID: <52281024.20309@synopsys.com>
+Date: Thu, 5 Sep 2013 10:31:24 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905045745.GA18876@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 32/35] arc: Replace __get_cpu_var uses
+References: <20130828193457.140443630@linux.com> <00000140c6781cab-d0df0392-b65b-4213-8be0-1e4a04f67fb2-000000@email.amazonses.com> <C2D7FE5348E1B147BCA15975FBA23075140F60@IN01WEMBXA.internal.synopsys.com> <00000140caf51d3b-0c5ebca6-f4a7-49b8-94c8-fc8b0bde04b8-000000@email.amazonses.com> <5226E55A.3000705@synopsys.com> <00000140e952bc1f-25743208-6728-4ded-b110-9ded0321f723-000000@email.amazonses.com>
+In-Reply-To: <00000140e952bc1f-25743208-6728-4ded-b110-9ded0321f723-000000@email.amazonses.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 09:57:45PM -0700, Greg KH wrote:
- > On Thu, Sep 05, 2013 at 12:13:38AM -0400, Dave Jones wrote:
- > > On Wed, Sep 04, 2013 at 02:53:11PM +0930, Rusty Russell wrote:
- > >  
- > >  > >> With this enabled, I get a bunch of scrolling oopses immediately after
- > >  > >> exiting the bootloader. It happens so early I can't even capture them
- > >  > >> over usb-serial, or earlyprintk=dbgp.
- > >  > >> 
- > >  > >> And for whatever reason, the printk path while oopsing ignores boot_delay parameter,
- > >  > >> so I can't even use that.
- > >  > >> 
- > >  > >> any ideas ?
- > >  > >
- > >  > > The first big bug found with this was with the module kobject code, and
- > >  > > a fix for that should be going in through Rusty's tree to Linus for this
- > >  > > merge window (right Rusty?)
- > >  > 
- > >  > Yep, just sent pull request.  The fix was the final commit there...
- > > 
- > > Crap, that isn't the bug I'm hitting.
- > 
- > Any chance to get a oops traceback?
+On 09/04/2013 07:44 PM, Christoph Lameter wrote:
+> On Wed, 4 Sep 2013, Vineet Gupta wrote:
+> 
+>> Considering other discussions on this thread, shall I drop this from my for-curr
+>> for this merge window ? I don't see any other arch changes to that effect in
+>> latest linux-next.
+> 
+> The required fix of the macros was merged yesterday into upstream.
+> 
 
-Trying to figure out where to stick a while (1) to stop it scrolling away.
-The end of dump_stack apparently wasn't enough.
+Yes I do see the macro fix in mainline but no discussions related to missing
+preemption debug checks after NAK from Peter/Ingo.
 
-	Dave
+I'm gonna move this one out of my 3.12 merge window queue to my for-next - so not
+dropping it (you can rest assured) but it doesn't look merge ready too. OK ?
 
+-Vineet
