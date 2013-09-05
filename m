@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935542Ab3IEC72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Sep 2013 22:59:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46844 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3IEC71 (ORCPT
+	id S935548Ab3IEDAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Sep 2013 23:00:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57376 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762415Ab3IEDAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Sep 2013 22:59:27 -0400
-Date: Thu, 5 Sep 2013 12:59:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Waiman Long <Waiman.Long@hp.com>,
-        Linus <torvalds@linux-foundation.org>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: linux-next: manual merge of the vfs tree with Linus' tree
-Message-Id: <20130905125924.7010902154740d512679367f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Sep_2013_12_59_24_+1000_ndXY2G6=vp7+964Z"
+	Wed, 4 Sep 2013 23:00:01 -0400
+From: Chenggang Qin <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] perf core: avoid traverse dsos list while find vdso
+Date: Thu,  5 Sep 2013 10:59:34 +0800
+Message-Id: <1378349975-3333-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Sep_2013_12_59_24_+1000_ndXY2G6=vp7+964Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-Hi Al,
+Vdso is only one in a system. It is not necessory to traverse the
+macine->user_dsos list while finding the dso of vdso.
+The flag vdso_found should be replaced by a pointor that point to the dso of
+vdso. If the pointer is NULL, dso of vdso have not been created. Else, the
+pointor can be returned directly in function vdso__dso_findnew().
+The list traversing can be avoided by this method.
+Thanks.
 
-Today's linux-next merge of the vfs tree got a conflict in fs/dcache.c
-between commit 98474236f72e ("vfs: make the dentry cache use the lockref
-infrastructure") from Linus' tree and commit 590fb51f1cf9 ("vfs: call
-d_op->d_prune() before unhashing dentry") from the vfs tree.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+---
+ tools/perf/util/vdso.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index 3915982..8022ef0 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -13,7 +13,7 @@
+ #include "symbol.h"
+ #include "linux/string.h"
+ 
+-static bool vdso_found;
++static struct dso *vdso_dso = NULL;
+ static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
+ 
+ static int find_vdso_map(void **start, void **end)
+@@ -55,9 +55,6 @@ static char *get_file(void)
+ 	size_t size;
+ 	int fd;
+ 
+-	if (vdso_found)
+-		return vdso_file;
+-
+ 	if (find_vdso_map(&start, &end))
+ 		return NULL;
+ 
+@@ -79,33 +76,30 @@ static char *get_file(void)
+  out:
+ 	free(buf);
+ 
+-	vdso_found = (vdso != NULL);
+ 	return vdso;
+ }
+ 
+ void vdso__exit(void)
+ {
+-	if (vdso_found)
++	if (vdso_dso)
+ 		unlink(vdso_file);
+ }
+ 
+ struct dso *vdso__dso_findnew(struct list_head *head)
+ {
+-	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, true);
+-
+-	if (!dso) {
++	if (!vdso_dso) {
+ 		char *file;
+ 
+ 		file = get_file();
+ 		if (!file)
+ 			return NULL;
+ 
+-		dso = dso__new(VDSO__MAP_NAME);
+-		if (dso != NULL) {
+-			dsos__add(head, dso);
+-			dso__set_long_name(dso, file);
++		vdso_dso = dso__new(VDSO__MAP_NAME);
++		if (vdso_dso != NULL) {
++			dsos__add(head, vdso_dso);
++			dso__set_long_name(vdso_dso, file);
+ 		}
+ 	}
+ 
+-	return dso;
++	return vdso_dso;
+ }
+-- 
+1.7.8.rc2.5.g815b
 
-diff --cc fs/dcache.c
-index 96655f4,2e5f9ca..0000000
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@@ -726,7 -718,15 +726,15 @@@ restart
-  	spin_lock(&inode->i_lock);
-  	hlist_for_each_entry(dentry, &inode->i_dentry, d_alias) {
-  		spin_lock(&dentry->d_lock);
- -		if (!dentry->d_count) {
- +		if (!dentry->d_lockref.count) {
-+ 			/*
-+ 			 * inform the fs via d_prune that this dentry
-+ 			 * is about to be unhashed and destroyed.
-+ 			 */
-+ 			if ((dentry->d_flags & DCACHE_OP_PRUNE) &&
-+ 			    !d_unhashed(dentry))
-+ 				dentry->d_op->d_prune(dentry);
-+=20
-  			__dget_dlock(dentry);
-  			__d_drop(dentry);
-  			spin_unlock(&dentry->d_lock);
-
---Signature=_Thu__5_Sep_2013_12_59_24_+1000_ndXY2G6=vp7+964Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSJ/ONAAoJEECxmPOUX5FE3zIP/iRrkn9MIQstQi0FCyu7ANF7
-oqnV6pWpfhiKaRdVCedIGl8Fi6eaapANXB/uLfaUWMqVEb8pLZLWoguHBMx+zr1E
-FQL2+9X3f13NHPb269QEgZTIR4SYrDOfFEy7Qla3K+WQ1OA7rd1cLoszO8wc06gK
-UERkEKPFN1Knb/xKoYuIWehJu4lGpIB2bMHbC2NCgli07i89BNmZ+WVdu0eM7ize
-ZECRJRneU9RAcOpFO5M5FdaNo7vdPg5ZHx9z1Qo/AJVUZ5fIGNRD9FB4PwykUd5M
-YggTSlbEwFp8uNNeYJIk68o8kRwa2uGL/sKBSGGOxfMsxdKm/J0jCOun8EzXTC6y
-AIKybO+VLpfMfiQlkmd22l8cJ61aULnHwSGp+p1+WXMgyFJ94jGcD7DEqzcpJHln
-DjKAP2EHCPeEZUttqQUgl5USpTKNIQYB2ylb4v7uFPxweLuUzE/TbX9hDIUPAveI
-dopgyGd3yZOS2b2YearLDTczKZef5yZvRKBydAZ1sOkXXa2OaK9U1XiTOEL66a2N
-GX9MLKP76v7rFNwknQHV2P9nccU3X33jIeqHTYfgjGJwtB9Jsxk4rzRkNc+4J4af
-mqrkS+231+Ayyr0pxN0jKU1oEkdRAjtgdDM98pZrzZD+w4ca7PQf13OUKOl0xZLH
-9REok6k5bpsDxrpB7fDd
-=/qVV
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Sep_2013_12_59_24_+1000_ndXY2G6=vp7+964Z--
