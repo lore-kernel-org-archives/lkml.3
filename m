@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763540Ab3IEItz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 04:49:55 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:43099 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab3IEItw (ORCPT
+	id S1763578Ab3IEIyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 04:54:00 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37151 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762639Ab3IEIxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 04:49:52 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Li Wei <wei.g.li@intel.com>, Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <tao.peng@emc.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] staging/lustre: Correct default for LUSTRE_TRANSLATE_ERRNOS
-Date: Thu,  5 Sep 2013 10:49:01 +0200
-Message-Id: <1378370941-4493-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 5 Sep 2013 04:53:55 -0400
+Date: Thu, 5 Sep 2013 09:53:48 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
+ signature of snapshot
+Message-ID: <20130905085348.GJ28598@console-pimps.org>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+ <1377169317-5959-12-git-send-email-jlee@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377169317-5959-12-git-send-email-jlee@suse.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LUSTRE_TRANSLATE_ERRNOS is never enabled, a "true" is not a valid value.
-Use "default y" instead of "default true" to fix this.
+On Thu, 22 Aug, at 07:01:50PM, Lee, Chun-Yi wrote:
+> +static int efi_status_to_err(efi_status_t status)
+> +{
+> +	int err;
+> +
+> +	switch (status) {
+> +	case EFI_INVALID_PARAMETER:
+> +		err = -EINVAL;
+> +		break;
+> +	case EFI_OUT_OF_RESOURCES:
+> +		err = -ENOSPC;
+> +		break;
+> +	case EFI_DEVICE_ERROR:
+> +		err = -EIO;
+> +		break;
+> +	case EFI_WRITE_PROTECTED:
+> +		err = -EROFS;
+> +		break;
+> +	case EFI_SECURITY_VIOLATION:
+> +		err = -EACCES;
+> +		break;
+> +	case EFI_NOT_FOUND:
+> +		err = -ENODATA;
+> +		break;
+> +	default:
+> +		err = -EINVAL;
+> +	}
+> +
+> +	return err;
+> +}
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/staging/lustre/lustre/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please don't reimplement this. Instead make the existing function
+global.
 
-diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-index 4e898e4..e44965b 100644
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -52,7 +52,7 @@ config LUSTRE_DEBUG_EXPENSIVE_CHECK
- config LUSTRE_TRANSLATE_ERRNOS
- 	bool
- 	depends on LUSTRE_FS && !X86
--	default true
-+	default y
- 
- config LUSTRE_LLITE_LLOOP
- 	bool "Lustre virtual block device"
+[...]
+
+> +static void *load_wake_key_data(unsigned long *datasize)
+> +{
+> +	u32 attr;
+> +	void *wkey_data;
+> +	efi_status_t status;
+> +
+> +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
+> +		return ERR_PTR(-EPERM);
+> +
+> +	/* obtain the size */
+> +	*datasize = 0;
+> +	status = efi.get_variable(EFI_S4_WAKE_KEY_NAME, &EFI_HIBERNATE_GUID,
+> +				  NULL, datasize, NULL);
+> +	if (status != EFI_BUFFER_TOO_SMALL) {
+> +		wkey_data = ERR_PTR(efi_status_to_err(status));
+> +		pr_err("PM: Couldn't get wake key data size: 0x%lx\n", status);
+> +		goto error;
+> +	}
+
+Is it safe to completely bypass the efivars interface and access
+efi.get_variable() directly? I wouldn't have thought so, unless you can
+guarantee that the kernel isn't going to access any of the EFI runtime
+services while you execute this function.
+
 -- 
-1.7.9.5
-
+Matt Fleming, Intel Open Source Technology Center
