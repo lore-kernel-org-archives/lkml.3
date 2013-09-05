@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab3IEU3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 16:29:23 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:25544 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757676Ab3IEU3U (ORCPT
+	id S1757737Ab3IEU3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 16:29:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52247 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757618Ab3IEU2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 16:29:20 -0400
-Message-ID: <5228E992.5050901@hp.com>
-Date: Thu, 05 Sep 2013 16:29:06 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com> <1378407316-59852-2-git-send-email-Waiman.Long@hp.com> <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
-In-Reply-To: <CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Sep 2013 16:28:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tomas Molota <tomas.molota@lightstorm.sk>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 6/7] target: Fix trailing ASCII space usage in INQUIRY vendor+model
+Date: Thu,  5 Sep 2013 13:28:39 -0700
+Message-Id: <20130905202758.355249110@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130905202757.642048278@linuxfoundation.org>
+References: <20130905202757.642048278@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 03:35 PM, Linus Torvalds wrote:
-> No. Stop all these stupid games.
->
-> No d_lock, no trying to make d_name/d_len consistent.
->
-> No "compare d_name against d_iname".
->
-> No EINVAL.
->
-> No idiotic racy "let's fetch each byte one-by one and test them
-> against NUL", which is just racy and stupid.
->
-> Just do what I told you to do: *copy* the name one byte at a time, and
-> stop copying if you hit NUL. IOW, make prepend() just use "strncpy()"
-> instead of "memcpy()". You don't even need to check the end result -
-> if it's bogus, the sequence count will fix it.
->
-> No special cases. No games. No crap. Just make "prepend()" able to
-> handle the special case of "oops, the name length didn't match, but we
-> must not ever go past the end of the buffer".
->
-> We can optimize strncpy() to use word accesses if it ends up ever
-> being a performance issue. I suspect it never even shows up, but it's
-> not hard to do if if does.
->
->              Linus
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-It is not as simple as doing a strncpy(). The pathname was built from 
-the leaf up to the root, and from the end of buffer toward the 
-beginning. As it goes through the while loop, the buffer will look like:
+------------------
 
-"    /c"
-"  /b/c"
-"/a/b/c"
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-If the content of the string is unreliable, I have to do at least 2 passes:
-1) Locate the end of the string and determine the actual length
-2) Copy the whole string or byte-by-byte backward
+commit ee60bddba5a5f23e39598195d944aa0eb2d455e5 upstream.
 
-That is why I am looking for the null byte. Using strncpy() alone won't 
-work. However, if the actual length doesn't match that of the dlen, the 
-name string will be invalid and there is no point in proceeding any further.
+This patch fixes spc_emulate_inquiry_std() to add trailing ASCII
+spaces for INQUIRY vendor + model fields following SPC-4 text:
 
-I also consider the possible, but unlikely, scenario that during a 
-rename operation, a short old name could be freed and replaced by a long 
-new name. The old name could then be allocated to another user filling 
-it up with non-NULL byte. If the buffer happen to be the end of 
-valid-to-invalid memory page boundary, the code may step over to an 
-invalid address by looking for the null byte. The current code probably 
-won't free the buffer while the RCU lock is being hold, but future code 
-change may make this assumption not valid. Blindly taking the d_lock may 
-be too expensive as the original code does. That is why I come up with 
-the internal vs. external dname check and take the lock only for 
-external dname for safety.
+  "ASCII data fields described as being left-aligned shall have any
+   unused bytes at the end of the field (i.e., highest offset) and
+   the unused bytes shall be filled with ASCII space characters (20h)."
 
-I can change the code to do just locating the end of string and copying 
-it backward, but not using strncpy().
+This addresses a problem with Falconstor NSS multipathing.
 
--Longman
+Reported-by: Tomas Molota <tomas.molota@lightstorm.sk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/target/target_core_cdb.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -117,11 +117,12 @@ target_emulate_inquiry_std(struct se_cmd
+ 		return 0;
+ 	}
+ 
+-	snprintf((unsigned char *)&buf[8], 8, "LIO-ORG");
+-	snprintf((unsigned char *)&buf[16], 16, "%s",
+-		 &DEV_T10_WWN(dev)->model[0]);
+-	snprintf((unsigned char *)&buf[32], 4, "%s",
+-		 &DEV_T10_WWN(dev)->revision[0]);
++	memcpy(&buf[8], "LIO-ORG ", 8);
++	memset(&buf[16], 0x20, 16);
++	memcpy(&buf[16], dev->se_sub_dev->t10_wwn.model,
++	       min_t(size_t, strlen(dev->se_sub_dev->t10_wwn.model), 16));
++	memcpy(&buf[32], dev->se_sub_dev->t10_wwn.revision,
++	       min_t(size_t, strlen(dev->se_sub_dev->t10_wwn.revision), 4));
+ 	buf[4] = 31; /* Set additional length to 31 */
+ 	return 0;
+ }
+
+
