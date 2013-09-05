@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3IEPPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 11:15:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab3IEPPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 11:15:06 -0400
-Date: Thu, 5 Sep 2013 11:14:57 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ext4: cache all of an extent tree's leaf block upon reading
-Message-ID: <20130905151457.GA24177@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Theodore Ts'o <tytso@mit.edu>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20130905013848.42DD7660EE1@gitolite.kernel.org>
- <20130905143749.GA15894@redhat.com>
- <20130905145334.GB23661@thunk.org>
+	id S1753852Ab3IEPT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 11:19:59 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:44887 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab3IEPT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 11:19:58 -0400
+Message-ID: <5228A11B.2020808@linaro.org>
+Date: Thu, 05 Sep 2013 11:19:55 -0400
+From: Matt Porter <matt.porter@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905145334.GB23661@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma/Kconfig: Make TI_EDMA select TI_PRIV_EDMA
+References: <20130904133203.GB12834@hansolo.jdub.homelinux.org>
+In-Reply-To: <20130904133203.GB12834@hansolo.jdub.homelinux.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 10:53:34AM -0400, Theodore Ts'o wrote:
+On 09/04/2013 09:32 AM, Josh Boyer wrote:
+> The TI_EDMA driver unconditionally calls functions provided by the
+> TI_PRIV_EDMA code, but it doesn't force that to be built-in.  If that isn't
+> otherwise enabled somewhere, you can get build errors like:
+>
+> linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:593: undefined reference to `edma_free_slot'
+> drivers/built-in.o: In function `edma_terminate_all':
+> linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:169: undefined reference to `edma_stop'
+> drivers/built-in.o: In function `edma_execute':
+> linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:122: undefined reference to `edma_write_slot'
+> linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:149: undefined reference to `edma_link'
+> linux-3.12.0-0.rc0.git1.1.fc21.armv7hl/drivers/dma/edma.c:152: undefined reference to `edma_start'
+>
+> Make TI_EDMA select TI_PRIV_EDMA to avoid this.
+>
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> ---
+>   drivers/dma/Kconfig | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index daa4da2..825374b 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -198,6 +198,7 @@ config TI_EDMA
+>   	depends on ARCH_DAVINCI || ARCH_OMAP
+>   	select DMA_ENGINE
+>   	select DMA_VIRTUAL_CHANNELS
+> +	select TI_PRIV_EDMA
+>   	default n
+>   	help
+>   	  Enable support for the TI EDMA controller. This DMA
+>
 
- > > ext4_es_store_pblock or's the pblk with the existing contents of the struct member.
- > > (albeit masked with ES_MASK)
- > > 
- > > Should there be a 
- > > 
- > > 	newes.es_pblk = 0;
- > > 
- > > up there too ?
- > 
- > The next line after ext4_es_store_pblock() is:
- > 
- >         ext4_es_store_status(&newes, status);
- > 
- > This will set remaining ES_WRITTEN | ES_UNWRITTEN... bits.
- > 
- > So the only reason to add a line explicitly setting es_pblk to zero
- > would be to suppress a warning from some insufficiently smart static
- > code analysis tool.  I didn't see a warning from gcc, but it's
- > possible that this is something which is causing Coverity or some
- > other code scanner heartburn.
+Looks good, thanks for addressing this.
 
-Yep, that's what picked it up.  I'll add a 'not a bug' annotation to stop
-it getting flagged again.  This was the only ext* issue that Coverity
-picked up from yesterdays merge btw, which I guess is good news ;)
-
-	Dave
-
+Acked-by: Matt Porter <matt.porter@linaro.org>
