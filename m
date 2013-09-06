@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750952Ab3IFRuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:50:14 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:57738 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab3IFRuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:50:13 -0400
+	id S1751066Ab3IFRvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:51:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab3IFRvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 13:51:31 -0400
+Date: Fri, 6 Sep 2013 19:51:18 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        peter.oberparleiter@de.ibm.com, linux-arch@vger.kernel.org,
+        arnd@arndb.de, mgahagan@redhat.com, agospoda@redhat.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2 4/4] kernel: add support for init_array constructors
+Message-ID: <20130906175118.GB2332@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
+ <1378305776-3644-5-git-send-email-fhrbata@redhat.com>
+ <87vc2e66kr.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvziE4dp1UOoSKqeUcPUwv8V2eT1hVgC6tbsfkHUSkS4rg@mail.gmail.com>
-References: <20130905212834.605408a4@gandalf.local.home>
-	<20130906013455.GA10073@redhat.com>
-	<20130905214455.101c6347@gandalf.local.home>
-	<20130906014859.GB10073@redhat.com>
-	<20130905215154.74c55e9a@gandalf.local.home>
-	<20130906035827.GA13446@redhat.com>
-	<20130906093252.02c748f5@gandalf.local.home>
-	<20130906141852.GA18708@redhat.com>
-	<20130906102413.2e52d337@gandalf.local.home>
-	<20130906144113.GC25882@merlin.infradead.org>
-	<20130906152221.GA29715@redhat.com>
-	<20130906113439.5e2692bd@gandalf.local.home>
-	<CA+5PVA4axYkrb=jCHAuW_W4rzrKtEaBDLtx5TMcCKS9oH0VFqA@mail.gmail.com>
-	<20130906120736.6ef58106@gandalf.local.home>
-	<CA+5PVA6=jbzzjHJcE=CE6Eu+YtOCU+VN8ttraxL_pzQauRrSXA@mail.gmail.com>
-	<CAFLxGvziE4dp1UOoSKqeUcPUwv8V2eT1hVgC6tbsfkHUSkS4rg@mail.gmail.com>
-Date: Fri, 6 Sep 2013 13:50:12 -0400
-Message-ID: <CA+5PVA4Nb_idYVj0eG3OXM_x8jK47oko8csYV6DfjCZmJHn-sw@mail.gmail.com>
-Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
-From: Josh Boyer <jwboyer@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Kyle McMartin <kyle@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc2e66kr.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 12:40 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Fri, Sep 6, 2013 at 6:12 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> On Fri, Sep 6, 2013 at 12:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>> On Fri, 6 Sep 2013 11:46:13 -0400
->>> Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>>
->>>
->>>> > Fedora should really look into defaulting to syslinux.
->>>>
->>>> Doesn't support all the usecases we have, and it's not multi-arch.
->>>> Grub2 has warts, but it's all around more flexible.
->>>
->>> We should be working on making syslinux work for all cases then.
->>
->> Is there something stopping you? :)  More specifically, I don't think
->> syslinux will ever support e.g. powerpc or ARM (Aarch64) so it doesn't
->> seem like a general purpose solution.  I could be wrong.
->
-> Is there a list of use cases which are missing in syslinux?
+On Fri, Sep 06, 2013 at 11:43:08AM +0930, Rusty Russell wrote:
+> Frantisek Hrbata <fhrbata@redhat.com> writes:
+> > This adds the .init_array section as yet another section with constructors. This
+> > is needed because gcc could add __gcov_init calls to .init_array or .ctors
+> > section, depending on gcc version.
+> >
+> > v2: - reuse mod->ctors for .init_array section for modules, because gcc uses
+> >       .ctors or .init_array, but not both at the same time
+> >
+> > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> 
+> Might be nice to document which gcc version changed this, so people can
+> choose whether to cherry-pick this change?
 
-The aforementioned lack of non-x86 architecture support is probably
-the biggest one from a Fedora perspective.  However, I don't really
-think that's something that will be _added_ to syslinux, so it kind of
-makes discussing the rest irrelevant for us.
+Thank you for pointing this out. As per gcc git this was introduced by commit
+ef1da80 and released in 4.7 version.
 
-My original reply was as to why Fedora doesn't just switch.  If there
-are bootloaders that people want to use instead of grub2, then go for
-it.  I have no ties to any of them.
+$ git describe --contains ef1da80
+gcc-4_7_0-release~4358
 
-josh
+Do you want me to post v3 with this info included in the descrition?
+
+> 
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+Many thanks
+
+> 
+> > ---
+> >  include/asm-generic/vmlinux.lds.h | 1 +
+> >  kernel/module.c                   | 3 +++
+> >  2 files changed, 4 insertions(+)
+> >
+> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> > index 69732d2..c55d8d9 100644
+> > --- a/include/asm-generic/vmlinux.lds.h
+> > +++ b/include/asm-generic/vmlinux.lds.h
+> > @@ -468,6 +468,7 @@
+> >  #define KERNEL_CTORS()	. = ALIGN(8);			   \
+> >  			VMLINUX_SYMBOL(__ctors_start) = .; \
+> >  			*(.ctors)			   \
+> > +			*(.init_array)			   \
+> >  			VMLINUX_SYMBOL(__ctors_end) = .;
+> >  #else
+> >  #define KERNEL_CTORS()
+> > diff --git a/kernel/module.c b/kernel/module.c
+> > index 2069158..bbbd953 100644
+> > --- a/kernel/module.c
+> > +++ b/kernel/module.c
+> > @@ -2760,6 +2760,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
+> >  #ifdef CONFIG_CONSTRUCTORS
+> >  	mod->ctors = section_objs(info, ".ctors",
+> >  				  sizeof(*mod->ctors), &mod->num_ctors);
+> > +	if (!mod->ctors)
+> > +		mod->ctors = section_objs(info, ".init_array",
+> > +				sizeof(*mod->ctors), &mod->num_ctors);
+> >  #endif
+> >  
+> >  #ifdef CONFIG_TRACEPOINTS
+> > -- 
+> > 1.8.3.1
+
+-- 
+Frantisek Hrbata
