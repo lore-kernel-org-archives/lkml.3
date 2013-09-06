@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab3IFO2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:28:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49960 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3IFO2P convert rfc822-to-8bit (ORCPT
+	id S1752322Ab3IFOjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:39:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44694 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab3IFOjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:28:15 -0400
-Subject: Re: [PATCHv2 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Fri, 6 Sep 2013 10:39:19 -0400
+Date: Fri, 6 Sep 2013 10:39:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: david.vrabel@citrix.com, xen-devel <xen-devel@lists.xenproject.org>,
+        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen/p2m: Export set_phys_to_machine.
+Message-ID: <20130906143909.GC5140@phenom.dumpdata.com>
+References: <1378476042-4821-1-git-send-email-konrad.wilk@oracle.com>
+ <5229FD6A02000078000F119C@nat28.tlf.novell.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1378425890-4225-1-git-send-email-rvaswani@codeaurora.org>
-Date: Fri, 6 Sep 2013 09:28:14 -0500
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <97899226-465A-4B78-9FFD-B6B14136420B@codeaurora.org>
-References: <1378425890-4225-1-git-send-email-rvaswani@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <5229FD6A02000078000F119C@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 06, 2013 at 03:06:02PM +0100, Jan Beulich wrote:
+> >>> On 06.09.13 at 16:00, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > We have already exported 'get_phys_to_machine' and there are
+> > third-party drivers that depend on this other symbol. As such
+> > lets make this balanced and also export this symbol.
+> 
+> I tend to disagree: Allowing external modules read access to some
+> internal state is quite different from also allowing them to alter it.
 
-On Sep 5, 2013, at 7:04 PM, Rohit Vaswani wrote:
+I am not following you. We have drivers in the kernel that do
+this now. For example xen-netfront uses set_phys_to_machine.
 
-> diff --git a/arch/arm/boot/dts/msm8974-db.dts b/arch/arm/boot/dts/msm8974-db.dts
-> new file mode 100644
-> index 0000000..74106a8
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/msm8974-db.dts
-> @@ -0,0 +1,7 @@
-> +/include/ "msm8974.dtsi"
-> +
-> +/ {
-> +	model = "Qualcomm MSM8974 Dragonboard";
-> +	compatible = "qcom,msm8974-db", "qcom,msm8974";
-> +};
-> +
-> diff --git a/arch/arm/boot/dts/msm8974.dtsi b/arch/arm/boot/dts/msm8974.dtsi
-> new file mode 100644
-> index 0000000..aa3bb2f
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/msm8974.dtsi
-> @@ -0,0 +1,30 @@
-> +/dts-v1/;
-> +
-> +/include/ "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Qualcomm MSM8974";
-> +	compatible = "qcom,msm8974";
-> +	interrupt-parent = <&intc>;
-> +
-> +	soc: soc { };
-> +};
-> +
-> +&soc {
+Oddly it can be built as a module.  I am wondering how it actually
+works without this EXPORT symbol.
 
-We should probably have:
-
-        #address-cells = <1>;
-        #size-cells = <1>;
-        ranges;
-        compatible = "simple-bus"; 
-
-> +	intc: interrupt-controller@f9000000 {
-> +		compatible = "qcom,msm-qgic2";
-> +		interrupt-controller;
-> +		#interrupt-cells = <3>;
-> +		reg = < 0xf9000000 0x1000 >,
-> +		      < 0xf9002000 0x1000 >;
-> +	};
-> +
-
-Let's be consistent on white space around < >
-
-> +	timer {
-> +		compatible = "arm,armv7-timer";
-> +		interrupts = <1 2 0xf08>,
-> +			     <1 3 0xf08>,
-> +			     <1 4 0xf08>,
-> +			     <1 1 0xf08>;
-> +		clock-frequency = <19200000>;
-> +	};
-
-
-
-> +};
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+> 
+> Jan
+> 
+> > Reported-by: Yuval Shaia <yuval.shaia@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/p2m.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> > index 0d4ec35..cdb96bc 100644
+> > --- a/arch/x86/xen/p2m.c
+> > +++ b/arch/x86/xen/p2m.c
+> > @@ -847,6 +847,7 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> >  
+> >  	return true;
+> >  }
+> > +EXPORT_SYMBOL_GPL(set_phys_to_machine);
+> >  
+> >  #define M2P_OVERRIDE_HASH_SHIFT	10
+> >  #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
+> > -- 
+> > 1.8.3.1
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org 
+> > http://lists.xen.org/xen-devel 
+> 
+> 
+> 
