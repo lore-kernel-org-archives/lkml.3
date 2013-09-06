@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab3IFR6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:58:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64778 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab3IFR6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:58:22 -0400
-Date: Fri, 6 Sep 2013 10:58:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/14] 3.4.61-stable review
-Message-ID: <20130906175817.GA17955@roeck-us.net>
-References: <20130905202614.354156084@linuxfoundation.org>
- <20130905225628.GB1358@roeck-us.net>
- <20130906163948.GB17541@kroah.com>
+	id S1750850Ab3IFR4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:56:16 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34888 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727Ab3IFR4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 13:56:15 -0400
+Date: Fri, 6 Sep 2013 10:56:01 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130906175601.GA7714@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <20130906113320.46b2ea3e@gandalf.local.home>
+ <20130906164016.GB2706@somewhere>
+ <20130906125238.3c5ef919@gandalf.local.home>
+ <20130906170006.GC2706@somewhere>
+ <20130906131631.6a0a192d@gandalf.local.home>
+ <20130906175238.GV3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130906163948.GB17541@kroah.com>
+In-Reply-To: <20130906175238.GV3966@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090617-0320-0000-0000-000000EB007C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 09:39:48AM -0700, Greg Kroah-Hartman wrote:
-> On Thu, Sep 05, 2013 at 03:56:28PM -0700, Guenter Roeck wrote:
-> > On Thu, Sep 05, 2013 at 01:28:11PM -0700, Greg Kroah-Hartman wrote:
-> > > This is the start of the stable review cycle for the 3.4.61 release.
-> > > There are 14 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
+On Fri, Sep 06, 2013 at 10:52:38AM -0700, Paul E. McKenney wrote:
+> On Fri, Sep 06, 2013 at 01:16:31PM -0400, Steven Rostedt wrote:
+> > On Fri, 6 Sep 2013 19:00:08 +0200
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > On Fri, Sep 06, 2013 at 12:52:38PM -0400, Steven Rostedt wrote:
+> > > > On Fri, 6 Sep 2013 18:40:18 +0200
+> > > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > >  
+> > > > > > I can't use plain preempt_disable() in function tracing.
+> > > > > > 
+> > > > > > Also, since it's a misnomer to say the cpu is idle in NO_HZ_FULL when
+> > > > > > we are coming from userspace, can we rename that?
+> > > > > > 
+> > > > > > Perhaps we can also have a __rcu_is_cpu_tracking() (or whatever), with
+> > > > > > the "__" appended that does not do the preempt disable.
+> > > > > 
+> > > > > rcu_is_cpu_eqs() is probably better. It refers to other related "eqs" naming
+> > > > > in RCU APIs.
+> > > > 
+> > > > But that will just confuse the heck out of people. When I see "eqs" I
+> > > > equate that with "equals". What does the rcu cpu equal?
 > > > 
-> > > Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
-> > > Anything received after that time might be too late.
-> > > 
-> > > The whole patch series can be found in one patch at:
-> > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
-> > > and the diffstat can be found below.
+> > > It's "extended quiescent state". There is already rcu_eqs_enter() and rcu_eqs_exit().
+> > > You're right, may be we can rename that to avoid confusion with "equals". I don't mind much.
+> > > I'm happy as long as the reader rcu_is_cpu_foo() and the writers rcu_foo_enter() and
+> > > rcu_foo_exit() have consistant naming.
 > > > 
 > > 
-> > buildbot says:
-> >         total: 93 pass: 80 skipped: 8 fail: 5
-> > This matches the test results for the previous release.
+> > What exactly does "extended quiescent state" mean? (Note, that's a
+> > rhetorical question)
 > 
-> Hm, did we ever figure out how to fix those 5 failures?  Or have we just
-> given up on them for now (which is fine by me.)
+> In which case my rhetorical (and therefore useless) answer has to be
+> "it is a quiescent state that is extended".  ;-)
 > 
-I concluded that the failues are too complex for me to fix,
-and/or there are too many failures.
+> Sorry, couldn't resist...
+> 
+> > I wonder if we should change "rcu_cpu_ignore()" for "rcu_eqs_enter()"
+> > and "rcu_cpu_heed()" for "rcu_eqs_exit()", as IMHO that's much more
+> > straight forward to understand than trying to wrap you head around what
+> > a quiescent state is, and why we are entering it or exiting it.
+> > 
+> > It also flat out explains to people that rcu is not processing that
+> > current CPU, and things like rcu_read_lock() should not be used.
+> > 
+> > Then we can say "rcu_cpu_is_ignored()" for things like
+> > "rcu_is_cpu_eqs()".
+> 
+> Currently, none of RCU's _eqs functions are exported, so they have
+> the potential to confuse only people working on the RCU implementation
+> itself, who had better understand what "eqs" means.
+> 
+> But I do count your vote against "eqs" appearing in the name of any
+> function exported by RCU.
+> 
+> How about if I made rcu_is_cpu_idle() be as follows?
+> 
+> int rcu_is_cpu_idle(void)
+> {
+> 	int ret;
+> 
+> 	ret = (atomic_read(&per_cpu(rcu_dynticks.dynticks,
+> 				    raw_smp_processor_id())) & 0x1) == 0;
+> 	return ret;
+> }
+> 
+> This should allow existing uses to function properly and should allow
+> you to use it as well.
 
-Of course, if someone else wants to give it a try, here are the logs:
+Never mind, I remember why this doesn't work...  The problem is that the
+offset is calculated on one CPU, the task is preempted, the original CPU
+goes idle, the task starts running on some other CPU, and then lockdep
+complains about the CPU entering an RCU read-side critical section on
+an idle CPU.
 
-alpha-allmodconfig
-	http://server.roeck-us.net:8010/builders/stable-queue-alpha-3.4/builds/20/steps/buildcommand/logs/stdio
-arm-allmodcfonfig
-	http://server.roeck-us.net:8010/builders/stable-queue-arm-3.4/builds/14/steps/buildcommand/logs/stdio
-	[ easy to fix by itself but then there are secondary failures ]
-m32r:defconfig
-	http://server.roeck-us.net:8010/builders/stable-queue-m32r-3.4/builds/5/steps/buildcommand/logs/stdio
-sparc64:allmodconfig
-	http://server.roeck-us.net:8010/builders/stable-queue-sparc64-3.4/builds/11/steps/buildcommand/logs/stdioxtensa:defconfig
-	http://server.roeck-us.net:8010/builders/stable-queue-xtensa-3.4/builds/12/steps/buildcommand/logs/stdio
+Blech.
 
-Guenter
+But I -can- make them the same function on rcutiny, courtesy of the
+ever-present C preprocessor.  ;-)
+
+							Thanx, Paul
+
