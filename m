@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab3IFG6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:58:48 -0400
-Received: from mail.peak-system.com ([213.157.13.214]:45996 "EHLO
-	mail.peak-system.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3IFG6q (ORCPT
+	id S1750897Ab3IFHCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 03:02:54 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33917 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3IFHCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:58:46 -0400
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 02:58:46 EDT
-Message-ID: <52297D15.9040108@peak-system.com>
-Date: Fri, 06 Sep 2013 08:58:29 +0200
-From: Stephane Grosjean <s.grosjean@peak-system.com>
-Reply-To: Stephane Grosjean <s.grosjean@peak-system.com>
-Organization: PEAK-System
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0)
- Gecko/20130801 Thunderbird/17.0.8
+	Fri, 6 Sep 2013 03:02:52 -0400
+Date: Fri, 6 Sep 2013 08:02:48 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, anton@enomsg.org, dwmw2@infradead.org
+Subject: Re: [PATCH v2 1/4] ab8500-charger: Check return value of
+ regulator_enable
+Message-ID: <20130906070248.GB32654@lee--X1>
+References: <1378448873-4430-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: pcan_usb_core: fix memory leak on failure paths in
- peak_usb_start()
-References: <1378450379823688500@peak-system.com>
- <52297C8E.70101@pengutronix.de>
-In-Reply-To: <52297C8E.70101@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-AxigenSpam-Level: 1
-X-CTCH-RefID: str=0001.0A0C0209.52297D24.01AB,ss=1,fgs=0
-X-CTCH-VOD: Unknown
-X-CTCH-Spam: Unknown
-X-AXIGEN-KAS-Info: Not spam
-X-AXIGEN-KAS-Info: Version: 4.4.2 (May 20 2011 12:01:19)
-X-AXIGEN-KAS-Info: Envelope from: 
-X-AXIGEN-KAS-Info: Rate: 0
-X-AXIGEN-KAS-Info: Status: not_detected
-X-AXIGEN-KAS-Info: Method: none
-X-AXIGEN-KAS-Info: DBG v.5. 1818, 81. R:128,1,128,6,7,128,128,128,0.
- M:4,24,145,160,173,193,194, CF:0,76,1. Date: +0200
-X-AXIGEN-KAS-Spam-Level: Not Spam
-X-AXIGEN-KAS-Spam-Confidence: 0%
-X-AxigenVirus-Level: 1
-X-AXIGEN-KAV-Info: clean: Scanned with Kaspersky Anti Virus 8.0.3.83
+In-Reply-To: <1378448873-4430-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 06 Sep 2013, Sachin Kamat wrote:
 
-Le 06/09/2013 08:56, Marc Kleine-Budde a écrit :
-> On 09/06/2013 08:52 AM, Stephane Grosjean wrote:
->> Tx and rx urbs are not deallocated if something goes wrong in peak_usb_start().
->> The patch fixes error handling to deallocate all the resources.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
->> Acked-by: Stephane Grosjean <s.grosjean@peak-system.com>
-> Tnx,
-> Marc
->
-> BTW: A simply reply to the original patch with your Acked-by is sufficient.
->
+> Check the return value of regulator_enable to silence the following
+> type of warnings:
+> drivers/power/ab8500_charger.c:1390:20: warning: ignoring return value
+> of ‘regulator_enable’, declared with attribute warn_unused_result
+> [-Wunused-result]
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+> Compile tested.
+> Changes since v1:
+>  * converted dev_err and return to dev_warn as suggested by Lee Jones.
+> ---
+>  drivers/power/ab8500_charger.c |   20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index a4c4a10..0d355a9 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -1387,8 +1387,14 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
+>  		 * the GPADC module independant of the AB8500 chargers
+>  		 */
+>  		if (!di->vddadc_en_ac) {
+> -			regulator_enable(di->regu);
+> -			di->vddadc_en_ac = true;
+> +			ret = regulator_enable(di->regu);
+> +			if (ret) {
+> +				dev_warn(di->dev,
+> +					"Failed to enable regulator\n");
+> +				di->vddadc_en_ac = false;
 
-Ok, thx Marc. I keep it in mind for the next time (if any ;-))
+Isn't di->vddadc_en_ac already false?
 
-Stéphane
---
-PEAK-System Technik GmbH, Otto-Roehm-Strasse 69, D-64293 Darmstadt 
-Geschaeftsleitung: A.Gach/U.Wilhelm,St.Nr.:007/241/13586 FA Darmstadt 
-HRB-9183 Darmstadt, Ust.IdNr.:DE 202220078, WEE-Reg.-Nr.: DE39305391 
-Tel.+49 (0)6151-817320 / Fax:+49 (0)6151-817329, info@peak-system.com
+Or you wouldn't have made it into the if().
+
+> +			} else {
+> +				di->vddadc_en_ac = true;
+> +			}
+>  		}
+>  
+>  		/* Check if the requested voltage or current is valid */
+> @@ -1556,8 +1562,14 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
+>  		 * the GPADC module independant of the AB8500 chargers
+>  		 */
+>  		if (!di->vddadc_en_usb) {
+> -			regulator_enable(di->regu);
+> -			di->vddadc_en_usb = true;
+> +			ret = regulator_enable(di->regu);
+> +			if (ret) {
+> +				dev_warn(di->dev,
+> +					"Failed to enable regulator\n");
+> +				di->vddadc_en_usb = false;
+
+Same thing here.
+
+> +			} else {
+> +				di->vddadc_en_usb = true;
+> +			}
+>  		}
+>  
+>  		/* Enable USB charging */
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
