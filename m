@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750831Ab3IFITI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:19:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52405 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3IFITF (ORCPT
+	id S1750894Ab3IFITT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:19:19 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41571 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3IFITI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:19:05 -0400
+	Fri, 6 Sep 2013 04:19:08 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: anton@enomsg.org, dwmw2@infradead.org, lee.jones@linaro.org,
         sachin.kamat@linaro.org
-Subject: [PATCH v3 1/4] ab8500-charger: Check return value of regulator_enable
-Date: Fri,  6 Sep 2013 13:31:09 +0530
-Message-Id: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH v3 2/4] ab8500-charger: Remove redundant break
+Date: Fri,  6 Sep 2013 13:31:10 +0530
+Message-Id: <1378454473-24508-2-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
+References: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the return value of regulator_enable to silence the following
-type of warnings:
-drivers/power/ab8500_charger.c:1390:20: warning: ignoring return value
-of ‘regulator_enable’, declared with attribute warn_unused_result
-[-Wunused-result]
+Each of the if-else blocks has a break statement.
+Remove the additional one which is unreachable.
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
-Compile tested.
-
-Changes since v2:
-* removed redundant assignment to false.
-Changes since v1:
-* converted dev_err and return to dev_warn as suggested by Lee Jones.
+No changes since v1.
 ---
-
- drivers/power/ab8500_charger.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/power/ab8500_charger.c |    1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index a4c4a10..fd35018 100644
+index fd35018..19110aa 100644
 --- a/drivers/power/ab8500_charger.c
 +++ b/drivers/power/ab8500_charger.c
-@@ -1387,8 +1387,12 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
- 		 * the GPADC module independant of the AB8500 chargers
- 		 */
- 		if (!di->vddadc_en_ac) {
--			regulator_enable(di->regu);
--			di->vddadc_en_ac = true;
-+			ret = regulator_enable(di->regu);
-+			if (ret)
-+				dev_warn(di->dev,
-+					"Failed to enable regulator\n");
-+			else
-+				di->vddadc_en_ac = true;
+@@ -766,7 +766,6 @@ static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
+ 			ret = -ENXIO;
+ 			break;
  		}
- 
- 		/* Check if the requested voltage or current is valid */
-@@ -1556,8 +1560,12 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
- 		 * the GPADC module independant of the AB8500 chargers
- 		 */
- 		if (!di->vddadc_en_usb) {
--			regulator_enable(di->regu);
--			di->vddadc_en_usb = true;
-+			ret = regulator_enable(di->regu);
-+			if (ret)
-+				dev_warn(di->dev,
-+					"Failed to enable regulator\n");
-+			else
-+				di->vddadc_en_usb = true;
- 		}
- 
- 		/* Enable USB charging */
+-		break;
+ 	case USB_STAT_CARKIT_1:
+ 	case USB_STAT_CARKIT_2:
+ 	case USB_STAT_ACA_DOCK_CHARGER:
 -- 
 1.7.9.5
 
