@@ -1,299 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab3IFAHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 20:07:17 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:53342 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab3IFAHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 20:07:14 -0400
-Message-ID: <52291CAF.1000504@converseincode.com>
-Date: Thu, 05 Sep 2013 20:07:11 -0400
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753943Ab3IFAPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 20:15:25 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53399 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752944Ab3IFAPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 20:15:24 -0400
+Date: Thu, 5 Sep 2013 17:15:08 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH] perf mem: add priv level filtering support
+Message-ID: <20130906001508.GA20856@us.ibm.com>
+References: <20130826131121.GA26224@quad>
+ <521BD4F8.5050504@gmail.com>
+ <20130828132703.GD3825@infradead.org>
+ <CABPqkBTf8Ruoq1RZhLcBLkhJY1mzJLpnLsM0J_7Bz=9Eakeajg@mail.gmail.com>
+ <20130828142112.GE3825@infradead.org>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] usb: gadget LLVMLinux: Removing the use of VLAIS from
- the gadget driver
-References: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130828142112.GE3825@infradead.org>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090600-7182-0000-0000-000008506C1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replying to my patch email just in case it was missed before.
+Arnaldo Carvalho de Melo [acme@redhat.com] wrote:
+| Em Wed, Aug 28, 2013 at 03:38:28PM +0200, Stephane Eranian escreveu:
+| > On Wed, Aug 28, 2013 at 3:27 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+| > > So perhaps we should change both to (and add this to 'report' as well):
+| > >
+| > >     -U, --hide_kernel_symbols   hide kernel symbols
+| > >     -K, --hide_user_symbols     hide user symbols
+| > >
+| > 
+| > Well, I don't know what perf top does here but I don't want to hide
+| > the samples. I simply don't want to collect them (do not appear
+| > in the perf.data file). If that's what is happening in perf top, then
+| > I'll be glad to use the same options.
+| 
+| Indeed, its for different purposes, 'perf top' when used with one of
+| those options will still collect samples for all priv levels and will
+| just toggle a flag to not zap the ones asked not to show when decaying
+| the samples.
+| 
+| When the user presses 'U' or 'K' on the UI, the flags gets toggled and
+| samples start being considered/zapped.
+| 
+| But my worry here is about consistency accross tools for the single
+| letter options, so perhaps if you could use:
+| 
+|      -U		collect only user level samples
+|      -K		collect only kernel level samples
+| 
+| I think it would stay consistent and clear, what do you think?
 
-Thanks,
+But, we use lower case qualifiers :u, :k to select user or kernel mode
+monitoring. 
 
-Behan
+	perf record -e cycles		# both kernel and user
+	perf record -e cycles:u ...	# just user
 
-On 08/01/13 21:35, behanw@converseincode.com wrote:
-> From: Behan Webster <behanw@converseincode.com>
->
-> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-> precludes the use of compilers which don't implement VLAIS (for instance the
-> Clang compiler). This patch removes the use of VLAIS in the gadget driver.
->
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> ---
->   drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
->   1 file changed, 76 insertions(+), 52 deletions(-)
->
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index f394f29..4b872c4 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -30,7 +30,6 @@
->   
->   #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
->   
-> -
->   /* Debugging ****************************************************************/
->   
->   #ifdef VERBOSE_DEBUG
-> @@ -214,6 +213,8 @@ struct ffs_data {
->   	/* ids in stringtabs are set in functionfs_bind() */
->   	const void			*raw_strings;
->   	struct usb_gadget_strings	**stringtabs;
-> +	struct usb_gadget_strings	*stringtab;
-> +	struct usb_string		*strings;
->   
->   	/*
->   	 * File system's super block, write once when file system is
-> @@ -263,7 +264,10 @@ struct ffs_function {
->   
->   	struct ffs_ep			*eps;
->   	u8				eps_revmap[16];
-> +	struct usb_descriptor_header	**fs_descs;
-> +	struct usb_descriptor_header	**hs_descs;
->   	short				*interfaces_nums;
-> +	char				*raw_descs;
->   
->   	struct usb_function		function;
->   };
-> @@ -1345,6 +1349,8 @@ static void ffs_data_clear(struct ffs_data *ffs)
->   	kfree(ffs->raw_descs);
->   	kfree(ffs->raw_strings);
->   	kfree(ffs->stringtabs);
-> +	kfree(ffs->stringtab);
-> +	kfree(ffs->strings);
->   }
->   
->   static void ffs_data_reset(struct ffs_data *ffs)
-> @@ -1357,6 +1363,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
->   	ffs->raw_descs = NULL;
->   	ffs->raw_strings = NULL;
->   	ffs->stringtabs = NULL;
-> +	ffs->stringtab = NULL;
-> +	ffs->strings = NULL;
->   
->   	ffs->raw_descs_length = 0;
->   	ffs->raw_fs_descs_length = 0;
-> @@ -1528,12 +1536,10 @@ static void ffs_func_free(struct ffs_function *func)
->   	ffs_data_put(func->ffs);
->   
->   	kfree(func->eps);
-> -	/*
-> -	 * eps and interfaces_nums are allocated in the same chunk so
-> -	 * only one free is required.  Descriptors are also allocated
-> -	 * in the same chunk.
-> -	 */
-> -
-> +	kfree(func->fs_descs);
-> +	kfree(func->hs_descs);
-> +	kfree(func->interfaces_nums);
-> +	kfree(func->raw_descs);
->   	kfree(func);
->   }
->   
-> @@ -1907,33 +1913,35 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
->   		return 0;
->   	}
->   
-> -	/* Allocate everything in one chunk so there's less maintenance. */
->   	{
-> -		struct {
-> -			struct usb_gadget_strings *stringtabs[lang_count + 1];
-> -			struct usb_gadget_strings stringtab[lang_count];
-> -			struct usb_string strings[lang_count*(needed_count+1)];
-> -		} *d;
->   		unsigned i = 0;
-> -
-> -		d = kmalloc(sizeof *d, GFP_KERNEL);
-> -		if (unlikely(!d)) {
-> +		usb_gadget_strings **stringtabs = NULL;
-> +		usb_gadget_strings *stringtab = NULL;
-> +		usb_string *strings = NULL;
-> +
-> +		stringtabs = kmalloc(sizeof(*stringtabs)*(lang_count + 1),
-> +			GFP_KERNEL);
-> +		stringtab = kmalloc(sizeof(*stringtab)*(lang_count),
-> +			GFP_KERNEL);
-> +		strings = kmalloc(sizeof(*strings)
-> +			* (lang_count * (needed_count + 1)), GFP_KERNEL);
-> +		if (unlikely(!stringtabs || !stringtab || !strings)) {
-> +			kfree(stringtabs);
-> +			kfree(stringtab);
-> +			kfree(strings);
->   			kfree(_data);
->   			return -ENOMEM;
->   		}
-> -
-> -		stringtabs = d->stringtabs;
-> -		t = d->stringtab;
-> +		b = stringtabs;
-> +		t = stringtab;
->   		i = lang_count;
->   		do {
-> -			*stringtabs++ = t++;
-> +			*b++ = t++;
->   		} while (--i);
-> -		*stringtabs = NULL;
-> +		*b = NULL;
->   
-> -		stringtabs = d->stringtabs;
-> -		t = d->stringtab;
-> -		s = d->strings;
-> -		strings = s;
-> +		t = stringtab;
-> +		s = strings;
->   	}
->   
->   	/* For each language */
-> @@ -1991,12 +1999,16 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
->   
->   	/* Done! */
->   	ffs->stringtabs = stringtabs;
-> +	ffs->stringtab = stringtab;
-> +	ffs->strings = strings;
->   	ffs->raw_strings = _data;
->   
->   	return 0;
->   
->   error_free:
->   	kfree(stringtabs);
-> +	kfree(stringtab);
-> +	kfree(strings);
->   error:
->   	kfree(_data);
->   	return -EINVAL;
-> @@ -2207,17 +2219,12 @@ static int ffs_func_bind(struct usb_configuration *c,
->   
->   	int ret;
->   
-> -	/* Make it a single chunk, less management later on */
-> -	struct {
-> -		struct ffs_ep eps[ffs->eps_count];
-> -		struct usb_descriptor_header
-> -			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
-> -		struct usb_descriptor_header
-> -			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
-> -		short inums[ffs->interfaces_count];
-> -		char raw_descs[high ? ffs->raw_descs_length
-> -				    : ffs->raw_fs_descs_length];
-> -	} *data;
-> +	struct ffs_ep *eps = NULL;
-> +	struct usb_descriptor_header **fs_descs = NULL;
-> +	struct usb_descriptor_header **hs_descs = NULL;
-> +	short *inums = NULL;
-> +	char *raw_descs = NULL;
-> +
->   
->   	ENTER();
->   
-> @@ -2225,21 +2232,40 @@ static int ffs_func_bind(struct usb_configuration *c,
->   	if (unlikely(!(full | high)))
->   		return -ENOTSUPP;
->   
-> -	/* Allocate */
-> -	data = kmalloc(sizeof *data, GFP_KERNEL);
-> -	if (unlikely(!data))
-> +	size_t eps_sz = sizeof(*eps)*ffs->eps_count;
-> +	eps = kmalloc(eps_sz, GFP_KERNEL);
-> +	fs_descs = kmalloc(sizeof(*fs_descs)*
-> +			   (full ? ffs->fs_descs_count + 1 : 0), GFP_KERNEL);
-> +	hs_descs = kmalloc(sizeof(*hs_descs)*
-> +			   (high ? ffs->hs_descs_count + 1 : 0), GFP_KERNEL);
-> +	size_t inums_sz = sizeof(*inums)*ffs->interfaces_count;
-> +	inums = kmalloc(inums_sz, GFP_KERNEL);
-> +	size_t raw_descs_sz = sizeof(*raw_descs)*(high ? ffs->raw_descs_length :
-> +					ffs->raw_fs_descs_length);
-> +	raw_descs = kmalloc(raw_descs_sz, , GFP_KERNEL);
-> +
-> +	if (unlikely(!eps || !fs_descs || !hs_descs || !inums || !raw_descs)) {
-> +		kfree(eps);
-> +		kfree(fs_descs);
-> +		kfree(hs_descs);
-> +		kfree(inums);
-> +		kfree(raw_descs);
->   		return -ENOMEM;
-> +	}
->   
->   	/* Zero */
-> -	memset(data->eps, 0, sizeof data->eps);
-> -	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
-> -	memset(data->inums, 0xff, sizeof data->inums);
-> +	memset(eps, 0, eps_sz);
-> +	memcpy(raw_descs, ffs->raw_descs + 16, raw_descs_sz);
-> +	memset(inums, 0xff, inums_sz);
->   	for (ret = ffs->eps_count; ret; --ret)
-> -		data->eps[ret].num = -1;
-> +		eps[ret].num = -1;
->   
->   	/* Save pointers */
-> -	func->eps             = data->eps;
-> -	func->interfaces_nums = data->inums;
-> +	func->eps             = eps;
-> +	func->fs_descs        = fs_descs;
-> +	func->hs_descs        = hs_descs;
-> +	func->interfaces_nums = inums;
-> +	func->raw_descs       = raw_descs;
->   
->   	/*
->   	 * Go through all the endpoint descriptors and allocate
-> @@ -2247,10 +2273,9 @@ static int ffs_func_bind(struct usb_configuration *c,
->   	 * numbers without worrying that it may be described later on.
->   	 */
->   	if (likely(full)) {
-> -		func->function.fs_descriptors = data->fs_descs;
-> +		func->function.fs_descriptors = fs_descs;
->   		ret = ffs_do_descs(ffs->fs_descs_count,
-> -				   data->raw_descs,
-> -				   sizeof data->raw_descs,
-> +				   raw_descs, raw_descs_sz,
->   				   __ffs_func_bind_do_descs, func);
->   		if (unlikely(ret < 0))
->   			goto error;
-> @@ -2259,10 +2284,9 @@ static int ffs_func_bind(struct usb_configuration *c,
->   	}
->   
->   	if (likely(high)) {
-> -		func->function.hs_descriptors = data->hs_descs;
-> +		func->function.hs_descriptors = hs_descs;
->   		ret = ffs_do_descs(ffs->hs_descs_count,
-> -				   data->raw_descs + ret,
-> -				   (sizeof data->raw_descs) - ret,
-> +				   raw_descs + ret, raw_descs_sz - ret,
->   				   __ffs_func_bind_do_descs, func);
->   	}
->   
-> @@ -2273,7 +2297,7 @@ static int ffs_func_bind(struct usb_configuration *c,
->   	 */
->   	ret = ffs_do_descs(ffs->fs_descs_count +
->   			   (high ? ffs->hs_descs_count : 0),
-> -			   data->raw_descs, sizeof data->raw_descs,
-> +			   raw_descs, raw_descs_sz,
->   			   __ffs_func_bind_do_nums, func);
->   	if (unlikely(ret < 0))
->   		goto error;
+(tools/perf/util/parse-events.c:
 
+        struct event_modifier {
+                int eu;
+                int ek;
+                int eh;
+                int eH;
+                int eG;
+                int precise;
+                int exclude_GH;
+        };
 
--- 
-Behan Webster
-behanw@converseincode.com
+Will we ever need hypervisor and host monitoring for 'perf mem' ?
+
+Or can we add a '-e' option to 'perf mem' so user can specify the events
+and qualfiers same as they do for 'perf record' ?
+
+	perf mem -e mem-loads:u record .....
+
+(this would of course expose the mem-loads and mem-stores events to
+the user)
+
+Sukadev
 
