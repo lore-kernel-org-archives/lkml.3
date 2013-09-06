@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751002Ab3IFIlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:41:49 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38737 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3IFIlr (ORCPT
+	id S1750887Ab3IFIvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:51:07 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:46997 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3IFIvE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:41:47 -0400
-Message-ID: <52299538.8040500@linux.vnet.ibm.com>
-Date: Fri, 06 Sep 2013 14:11:28 +0530
-From: Hemant <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH 1/2] SDT markers listing by perf
-References: <20130903072944.4793.93584.stgit@hemant-fedora> <20130903073655.4793.20013.stgit@hemant-fedora> <87ioyht7e4.fsf@sejong.aot.lge.com>	<52276FF5.9050808@linux.vnet.ibm.com> <87fvtisbej.fsf@sejong.aot.lge.com>
-In-Reply-To: <87fvtisbej.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090619-3568-0000-0000-0000043353CA
+	Fri, 6 Sep 2013 04:51:04 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <50E637BB-5A62-477C-B943-9687BC3488BC@dominion.thruhere.net>
+Date: Fri, 6 Sep 2013 10:51:01 +0200
+Cc: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <A83CF7D5-0A26-4740-9F4D-51E5C1592EEF@dominion.thruhere.net>
+References: <1378449204-8601-1-git-send-email-koen@dominion.thruhere.net> <52297CCF.3090200@ti.com> <50E637BB-5A62-477C-B943-9687BC3488BC@dominion.thruhere.net>
+To: George Cherian <george.cherian@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
 
-On 09/06/2013 12:07 PM, Namhyung Kim wrote:
-> Hi Hemant,
->
-> On Wed, 04 Sep 2013 23:07:57 +0530, Hemant wrote:
->> On 09/04/2013 12:12 PM, Namhyung Kim wrote:
->>> On Tue, 03 Sep 2013 13:06:55 +0530, Hemant Kumar wrote:
->>>> +	/*
->>>> +	 * Look for Section type = SHT_NOTE, flags = no SHF_ALLOC
->>>> +	 * and name = .note.stapsdt
->>>> +	 */
->>>> +	scn = elf_section_by_name(elf, &ehdr, &shdr, NOTE_SCN, NULL);
->>>> +	if (scn == NULL) {
->>>> +		pr_err("%s section not found!\n", NOTE_SCN);
->>>> +		goto out_end;
->>>> +	}
->>>> +
->>>> +	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC))
->>>> +		goto out_end;
->>>> +
->>>> +	data = elf_getdata(scn, NULL);
->>>> +
->>>> +	/* Get the notes */
->>>> +	for (offset = 0; (next = gelf_getnote(data, offset, &nhdr, &name_off,
->>>> +					      &desc_off)) > 0; offset = next) {
->>>> +		tmp = populate_note(&elf, (const char *)((long)(data->d_buf) +
->>>> +							 (long)desc_off),
->>>> +				    nhdr.n_descsz, nhdr.n_type);
->>> Shouldn't we check the name of note being "stapsdt" as well as version
->>> (type) 3?
->> Since, we are already fetching the section NOTE_SCN (".note.stapsdt")
->> and then we check for the type being SHT_NOTE and SHF_ALLOC, is it
->> required to do the same for the individual notes?
-> I don't know.  Now it seems only includes SDT notes with name being
-> "stapsdt" and type being 3.  But things can be changed in future..
->
-> Thanks,
-> Namhyung
->
+Op 6 sep. 2013, om 09:10 heeft Koen Kooi <koen@dominion.thruhere.net> het volgende geschreven:
 
-Yeah that may be a case. Ok, will put a check on the individual markers 
-for their type.
+> 
+> Op 6 sep. 2013, om 08:57 heeft George Cherian <george.cherian@ti.com> het volgende geschreven:
+> 
+>> On 9/6/2013 12:03 PM, Koen Kooi wrote:
+>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>>> so create a common dtsi both can use. MMC support for AM335x still isn't in, so
+>>> only the LDO change has been added.
+>>> 
+>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>>> ---
+>>> .../{am335x-bone.dts => am335x-bone-common.dtsi}   |   3 -
+>>> arch/arm/boot/dts/am335x-bone.dts                  | 256 +--------------------
+>>> arch/arm/boot/dts/am335x-boneblack.dts             |  18 ++
+>>> 3 files changed, 19 insertions(+), 258 deletions(-)
+>>> copy arch/arm/boot/dts/{am335x-bone.dts => am335x-bone-common.dtsi} (99%)
+>>> create mode 100644 arch/arm/boot/dts/am335x-boneblack.dts
+>> How did you test am335x-boneblack.dtb? where are the Makefile changes for boneblack?
+> 
+> Ah, I missed the makefile in my commit. I have a bunch of other patches on top to make more stuff work.
+> 
+> [..]
+> 
+>>> 
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
+>>> @@ -0,0 +1,18 @@
+>>> +/*
+>>> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * published by the Free Software Foundation.
+>>> + */
+>>> +/dts-v1/;
+>>> +
+>>> +#include "am33xx.dtsi"
+>> Why cant we add am33xx.dtsi  in am335x-bone-common.dtsi ?
+> 
+> That didn't work when I tried it. It did work before the preprocessor changes when using /include/
+> 
+>>> +#include "am335x-bone-common.dtsi"
+>>> +
+>>> +&ldo3_reg {
+>>> +	regulator-min-microvolt = <1800000>;
+>>> +	regulator-max-microvolt = <1800000>;
+>>> +	regulator-always-on;
+>>> +};
+>>> +
+>> With this ldo values mmc was not working for me on Boneblack.
+>> got it working with
+>> 
+>> &ldo3_reg {
+>> 	regulator-min-microvolt = <1800000>;
+>> 	regulator-max-microvolt = <3300000>;
+>> 	regulator-always-on;
+>> };
+> 
+> That LDO is shared, the other consumer will get fried if you use 3.3V. I forget if it's DDR3 or HDMI.
 
-Thanks
-Hemant
+On the black the LDOs changed, so for mmc (which (*$)@()$@) still isn't in mainline) you need:
+
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index e76d575..ae90a30 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -362,6 +362,13 @@
+                        regulator-always-on;
+                };
+        };
++
++       vmmcsd_fixed: fixedregulator@0 {
++               compatible = "regulator-fixed";
++               regulator-name = "vmmcsd_fixed";
++               regulator-min-microvolt = <3300000>;
++               regulator-max-microvolt = <3300000>;
++       };
+ };
+ 
+ &cpsw_emac0 {
+diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+index b4237fc..e092a61 100644
+--- a/arch/arm/boot/dts/am335x-boneblack.dts
++++ b/arch/arm/boot/dts/am335x-boneblack.dts
+@@ -16,7 +16,12 @@
+        regulator-always-on;
+ };
+ 
+-&mmc2 {
++&mmc1 { 
++       vmmc-supply = <&vmmcsd_fixed>;
++};
++
++&mmc2 { 
++       vmmc-supply = <&vmmcsd_fixed>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&emmc_pins>;
+        vmmc-supply = <&ldo3_reg>;
+
 
