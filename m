@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3IFMOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 08:14:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53688 "EHLO
+	id S1752169Ab3IFMOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 08:14:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53700 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3IFMO2 (ORCPT
+	with ESMTP id S1751241Ab3IFMOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 08:14:28 -0400
-Date: Fri, 6 Sep 2013 05:14:03 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-98be6966ed7ed977881305aff5a1bfb305090f43@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1378325897-3840-3-git-send-email-adrian.hunter@intel.com>
-References: <1378325897-3840-3-git-send-email-adrian.hunter@intel.com>
+	Fri, 6 Sep 2013 08:14:37 -0400
+Date: Fri, 6 Sep 2013 05:14:24 -0700
+From: tip-bot for Kyle McMartin <tipbot@zytor.com>
+Message-ID: <tip-41817815666e4a6f302dad1fea47cbe64cc45e40@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        kyle@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        torvalds@linux-foundation.org, kyle@redhat.com, tglx@linutronix.de
+In-Reply-To: <20130905142947.GA25882@merlin.infradead.org>
+References: <20130905142947.GA25882@merlin.infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evlist:
-  Fix parsing with no sample_id_all bit set
-Git-Commit-ID: 98be6966ed7ed977881305aff5a1bfb305090f43
+Subject: [tip:perf/urgent] perf trace: Check if MAP_32BIT is defined
+Git-Commit-ID: 41817815666e4a6f302dad1fea47cbe64cc45e40
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,73 +29,43 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 06 Sep 2013 05:14:09 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 06 Sep 2013 05:14:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  98be6966ed7ed977881305aff5a1bfb305090f43
-Gitweb:     http://git.kernel.org/tip/98be6966ed7ed977881305aff5a1bfb305090f43
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 4 Sep 2013 23:18:17 +0300
+Commit-ID:  41817815666e4a6f302dad1fea47cbe64cc45e40
+Gitweb:     http://git.kernel.org/tip/41817815666e4a6f302dad1fea47cbe64cc45e40
+Author:     Kyle McMartin <kyle@redhat.com>
+AuthorDate: Thu, 5 Sep 2013 10:29:47 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 5 Sep 2013 16:18:08 -0300
+CommitDate: Thu, 5 Sep 2013 16:18:46 -0300
 
-perf evlist: Fix parsing with no sample_id_all bit set
+perf trace: Check if MAP_32BIT is defined
 
-The perf_evlist__event2evsel() is changed to handle non-sample events
-(such as mmap events) that have no id sample appended i.e. when
-sample_id_all is not set.
+MAP_32BIT is defined only on x86... this means perf fails to build on
+all other platforms.
 
-Note that such events have a fixed format, so that the selected event
-(evsel) they are associated with is immaterial.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1378325897-3840-3-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20130905142947.GA25882@merlin.infradead.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ tools/perf/builtin-trace.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b8727ae..7101283 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -446,20 +446,25 @@ static int perf_evlist__event2id(struct perf_evlist *evlist,
- static struct perf_evsel *perf_evlist__event2evsel(struct perf_evlist *evlist,
- 						   union perf_event *event)
- {
-+	struct perf_evsel *first = perf_evlist__first(evlist);
- 	struct hlist_head *head;
- 	struct perf_sample_id *sid;
- 	int hash;
- 	u64 id;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 6016112..f5aa637 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -100,7 +100,9 @@ static size_t syscall_arg__scnprintf_mmap_flags(char *bf, size_t size,
  
- 	if (evlist->nr_entries == 1)
--		return perf_evlist__first(evlist);
-+		return first;
-+
-+	if (!first->attr.sample_id_all &&
-+	    event->header.type != PERF_RECORD_SAMPLE)
-+		return first;
- 
- 	if (perf_evlist__event2id(evlist, event, &id))
- 		return NULL;
- 
- 	/* Synthesized events have an id of zero */
- 	if (!id)
--		return perf_evlist__first(evlist);
-+		return first;
- 
- 	hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
- 	head = &evlist->heads[hash];
+ 	P_MMAP_FLAG(SHARED);
+ 	P_MMAP_FLAG(PRIVATE);
++#ifdef MAP_32BIT
+ 	P_MMAP_FLAG(32BIT);
++#endif
+ 	P_MMAP_FLAG(ANONYMOUS);
+ 	P_MMAP_FLAG(DENYWRITE);
+ 	P_MMAP_FLAG(EXECUTABLE);
