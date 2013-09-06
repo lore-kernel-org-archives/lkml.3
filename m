@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab3IFV7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 17:59:14 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:53472 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab3IFV7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 17:59:13 -0400
-Date: Fri, 6 Sep 2013 23:59:10 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [GIT] HID for 3.12 merge window
-Message-ID: <20130906215910.GA356@x4>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
- <20130906202022.GA353@x4>
- <CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
+	id S1752966Ab3IFWAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 18:00:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44591 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab3IFWAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 18:00:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,857,1371106800"; 
+   d="scan'208";a="397891460"
+Subject: Re: [PATCH RESEND v3 3/7] Intel MIC Host Driver, card OS state
+ management.
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+In-Reply-To: <20130906190446.GA7965@kroah.com>
+References: <cover.1378423596.git.sudeep.dutt@intel.com>
+	 <669a3a3bbfff577c73d05fb568a810cbbc3d5333.1378423596.git.sudeep.dutt@intel.com>
+	 <20130906050157.GF28806@kroah.com> <1378492863.107744.69.camel@localhost>
+	 <20130906190446.GA7965@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Sep 2013 15:00:23 -0700
+Message-ID: <1378504823.121061.10.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.09.06 at 23:50 +0200, David Herrmann wrote:
-> Hi
+On Fri, 2013-09-06 at 12:04 -0700, Greg Kroah-Hartman wrote:
+> On Fri, Sep 06, 2013 at 11:41:03AM -0700, Sudeep Dutt wrote:
+> > On Thu, 2013-09-05 at 22:01 -0700, Greg Kroah-Hartman wrote:
+> > > On Thu, Sep 05, 2013 at 04:41:55PM -0700, Sudeep Dutt wrote:
+> > > > +What:		/sys/class/mic/mic(x)/firmware
+> > > > +Date:		August 2013
+> > > > +KernelVersion:	3.11
+> > > > +Contact:	Sudeep Dutt <sudeep.dutt@intel.com>
+> > > > +Description:
+> > > > +		When read, this sysfs entry provides the path name under
+> > > > +		/lib/firmware/ where the firmware image to be booted on the
+> > > > +		card can be found. The entry can be written to change the
+> > > > +		firmware image location under /lib/firmware/.
+> > > 
+> > > I don't understand, is the path under the HOST device, or the Client
+> > > device's disk?  Why do you need to change the path on the HOST?  What's
+> > > wrong with the existing firmware path selection we have in the kernel?
+> > > 
+> > 
+> > The path is on the host. The card does not have a physical persistent
+> > disk device. Our customers like the flexibility of changing the card
+> > firmware/ramdisk contents and file names for individual MIC cards. This
+> > flexibility is not possible with a static set of firmware file names in
+> > the kernel for all cards.
+> > 
+> > Once the firmware/ramdisk path under /lib/firmware/ is set up via sysfs,
+> > card boot is initiated via the "state" sysfs entry. The host driver then
+> > obtains the contents of the firmware and ramdisk via the standard
+> > request_firmware(..) interface, copies the contents to card memory and
+> > interrupts the card BIOS to initiate boot.
 > 
-> On Fri, Sep 6, 2013 at 10:20 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On 2013.09.06 at 14:00 +0200, Jiri Kosina wrote:
-> >>
-> >> David Herrmann (12):
-> > ...
-> >>       HID: wiimote: add support for Guitar-Hero drums
-> >
-> >  commit 61e00655e9cb82e034eb72b95a51072e718d14a7
-> >  Author: David Herrmann <dh.herrmann@gmail.com>
-> >  Date:   Mon Aug 26 19:14:46 2013 +0200
-> >
-> >      Input: introduce BTN/ABS bits for drums and guitars
-> >
-> > The commit above breaks my Logitech mouse. The mouse cursor just sits in
-> > the middle of the screen and doesn't react to movements. dmesg is
-> > normal, but Xorg.0.log says:
+> So this is really a "filename" that might contain some directories as
+> well, right?  The fact you used "path" confused me, as that doesn't
+> usually imply a filename.
 > 
-> Ok, the issue is the kernel assumes ABS_MAX to be a power-of-2 minus 1
-> (used as mask). That wasn't really obvious to me. Attached is a patch
-> which should fix that. Could you apply it on top of linus/master and
-> give it a try?
 
-Your patch fixes the issue. Thanks.
+Yes, it is a filename that might contain some directories. We will fix
+up the documentation here to read filename in future patches.
 
--- 
-Markus
+> And is the "firmware" just the initramfs image for the kernel to boot?
+> 
+
+The firmware is usually a Linux kernel. The ramdisk is usually an
+initramfs image. We have separate sysfs entries for firmware and ramdisk
+filenames.
+
+Thanks,
+Sudeep Dutt
+
+> thanks,
+> 
+> greg k-h
+
+
