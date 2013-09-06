@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab3IFPWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:22:40 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:59906 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3IFPWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:22:39 -0400
-Date: Fri, 6 Sep 2013 18:21:20 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: zram: remove init_done from zram struct (v2)
-Message-ID: <20130906152120.GF2238@swordfish.minsk.epam.com>
+	id S1757142Ab3IFPXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:23:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905Ab3IFPW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 11:22:59 -0400
+Date: Fri, 6 Sep 2013 11:22:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Kyle McMartin <kyle@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
+Message-ID: <20130906152221.GA29715@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Kyle McMartin <kyle@infradead.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130905212834.605408a4@gandalf.local.home>
+ <20130906013455.GA10073@redhat.com>
+ <20130905214455.101c6347@gandalf.local.home>
+ <20130906014859.GB10073@redhat.com>
+ <20130905215154.74c55e9a@gandalf.local.home>
+ <20130906035827.GA13446@redhat.com>
+ <20130906093252.02c748f5@gandalf.local.home>
+ <20130906141852.GA18708@redhat.com>
+ <20130906102413.2e52d337@gandalf.local.home>
+ <20130906144113.GC25882@merlin.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130906144113.GC25882@merlin.infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-`zram->init_done' in fact mimics `zram->meta != NULL' value. Introduce
-init_done() function that checks zram->meta (iow, checks if initialisation
-was performed), so `zram->init_done' can be removed.
+On Fri, Sep 06, 2013 at 10:41:13AM -0400, Kyle McMartin wrote:
+ > On Fri, Sep 06, 2013 at 10:24:13AM -0400, Steven Rostedt wrote:
+ > > 
+ > > Is it really safe to load modules that were compiled with different
+ > > options?
+ > 
+ > Certainly not, offsets can change based on config options.
+ > 
+ > > Sounds like a failure in the install scripts to me.
+ > > 
+ > 
+ > Definitely a bug in those scripts, os-prober would need to run before
+ > modules_install, since if $INSTALL_MOD_PATH is the same between config
+ > changes, there's no guarantee the modules are loadable on the running
+ > kernel without a reboot.
 
-v2: introduce init_done()
+Ugh, it's actually because my local install kernel script calls
+grub2-mkconfig after installing a kernel to clean out old ones and not
+clutter up the boot menu. (Which in turn scans every disk using os-prober[*])
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Don't waste time on this Steve, I'll just work around it somehow.
 
----
+	Dave
 
- drivers/staging/zram/zram_drv.c | 21 +++++++++++----------
- drivers/staging/zram/zram_drv.h |  1 -
- 2 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 5bfbe0e..f1b5dbf 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -42,6 +42,11 @@ static struct zram *zram_devices;
- /* Module params (documentation at end) */
- static unsigned int num_devices = 1;
- 
-+static inline int init_done(struct zram *zram)
-+{
-+	return zram->meta != NULL;
-+}
-+
- static inline struct zram *dev_to_zram(struct device *dev)
- {
- 	return (struct zram *)dev_to_disk(dev)->private_data;
-@@ -60,7 +65,7 @@ static ssize_t initstate_show(struct device *dev,
- {
- 	struct zram *zram = dev_to_zram(dev);
- 
--	return sprintf(buf, "%u\n", zram->init_done);
-+	return sprintf(buf, "%u\n", init_done(zram));
- }
- 
- static ssize_t num_reads_show(struct device *dev,
-@@ -133,7 +138,7 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	struct zram_meta *meta = zram->meta;
- 
- 	down_read(&zram->init_lock);
--	if (zram->init_done)
-+	if (init_done(zram))
- 		val = zs_get_total_size_bytes(meta->mem_pool);
- 	up_read(&zram->init_lock);
- 
-@@ -558,14 +563,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 	flush_work(&zram->free_work);
- 
- 	down_write(&zram->init_lock);
--	if (!zram->init_done) {
-+	if (!init_done(zram)) {
- 		up_write(&zram->init_lock);
- 		return;
- 	}
- 
- 	meta = zram->meta;
--	zram->init_done = 0;
--
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
- 		unsigned long handle = meta->table[index].handle;
-@@ -604,9 +607,7 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
- 
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
--
- 	zram->meta = meta;
--	zram->init_done = 1;
- 
- 	pr_debug("Initialization done!\n");
- }
-@@ -625,7 +626,7 @@ static ssize_t disksize_store(struct device *dev,
- 	disksize = PAGE_ALIGN(disksize);
- 	meta = zram_meta_alloc(disksize);
- 	down_write(&zram->init_lock);
--	if (zram->init_done) {
-+	if (init_done(zram)) {
- 		up_write(&zram->init_lock);
- 		zram_meta_free(meta);
- 		pr_info("Cannot change disksize for initialized device\n");
-@@ -733,7 +734,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
- 	struct zram *zram = queue->queuedata;
- 
- 	down_read(&zram->init_lock);
--	if (unlikely(!zram->init_done))
-+	if (unlikely(!init_done(zram)))
- 		goto error;
- 
- 	if (!valid_io_request(zram, bio)) {
-@@ -882,7 +883,7 @@ static int create_device(struct zram *zram, int device_id)
- 		goto out_free_disk;
- 	}
- 
--	zram->init_done = 0;
-+	zram->meta = NULL;
- 	return 0;
- 
- out_free_disk:
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 97a3acf..b1100cf 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -110,7 +110,6 @@ struct zram {
- 
- 	struct request_queue *queue;
- 	struct gendisk *disk;
--	int init_done;
- 	/* Prevent concurrent execution of device init, reset and R/W request */
- 	struct rw_semaphore init_lock;
- 	/*
+[*] Worst thing.
 
