@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab3IFLnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:43:41 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:45637 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3IFLnk (ORCPT
+	id S1751356Ab3IFLsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:48:10 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:62029 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3IFLsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:43:40 -0400
+	Fri, 6 Sep 2013 07:48:08 -0400
 From: Tom Gundersen <teg@jklm.no>
-To: linux-fbdev@kernel.org
+To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, tomi.valkeinen@ti.com, plagnioj@jcrosoft.com,
         Tom Gundersen <teg@jklm.no>, Stephen Warren <swarren@wwwdotorg.org>,
         David Herrmann <dh.herrmann@gmail.com>
 Subject: [PATCH] simplefb: print some info about the registered fb
-Date: Fri,  6 Sep 2013 13:44:40 +0200
-Message-Id: <1378467880-1040-1-git-send-email-teg@jklm.no>
+Date: Fri,  6 Sep 2013 13:49:13 +0200
+Message-Id: <1378468153-1375-1-git-send-email-teg@jklm.no>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1378467880-1040-1-git-send-email-teg@jklm.no>
+References: <1378467880-1040-1-git-send-email-teg@jklm.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,6 +28,13 @@ Signed-off-by: Tom Gundersen <teg@jklm.no>
 Cc: Stephen Warren <swarren@wwwdotorg.org>
 Cc: David Herrmann <dh.herrmann@gmail.com>
 ---
+
+Hi,
+
+Sorry for the resend, got the ml address wrong.
+
+-t
+
  drivers/video/simplefb.c | 8 ++++++++
  1 file changed, 8 insertions(+)
 
