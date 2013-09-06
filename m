@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab3IFQk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:40:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:40531 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758030Ab3IFQkW (ORCPT
+	id S1758729Ab3IFQki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:40:38 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:55245 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab3IFQkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:40:22 -0400
-Date: Fri, 6 Sep 2013 18:40:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130906164016.GB2706@somewhere>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <20130906113320.46b2ea3e@gandalf.local.home>
+	Fri, 6 Sep 2013 12:40:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130906113320.46b2ea3e@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA6=jbzzjHJcE=CE6Eu+YtOCU+VN8ttraxL_pzQauRrSXA@mail.gmail.com>
+References: <20130905212834.605408a4@gandalf.local.home>
+	<20130906013455.GA10073@redhat.com>
+	<20130905214455.101c6347@gandalf.local.home>
+	<20130906014859.GB10073@redhat.com>
+	<20130905215154.74c55e9a@gandalf.local.home>
+	<20130906035827.GA13446@redhat.com>
+	<20130906093252.02c748f5@gandalf.local.home>
+	<20130906141852.GA18708@redhat.com>
+	<20130906102413.2e52d337@gandalf.local.home>
+	<20130906144113.GC25882@merlin.infradead.org>
+	<20130906152221.GA29715@redhat.com>
+	<20130906113439.5e2692bd@gandalf.local.home>
+	<CA+5PVA4axYkrb=jCHAuW_W4rzrKtEaBDLtx5TMcCKS9oH0VFqA@mail.gmail.com>
+	<20130906120736.6ef58106@gandalf.local.home>
+	<CA+5PVA6=jbzzjHJcE=CE6Eu+YtOCU+VN8ttraxL_pzQauRrSXA@mail.gmail.com>
+Date: Fri, 6 Sep 2013 18:40:32 +0200
+Message-ID: <CAFLxGvziE4dp1UOoSKqeUcPUwv8V2eT1hVgC6tbsfkHUSkS4rg@mail.gmail.com>
+Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Kyle McMartin <kyle@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 11:33:20AM -0400, Steven Rostedt wrote:
-> On Fri, 6 Sep 2013 08:18:52 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Fri, Sep 06, 2013 at 12:59:41PM +0200, Frederic Weisbecker wrote:
-> > > On Thu, Sep 05, 2013 at 12:52:34PM -0700, Paul E. McKenney wrote:
-> > > > There is currently no way for kernel code to determine whether it
-> > > > is safe to enter an RCU read-side critical section, in other words,
-> > > > whether or not RCU is paying attention to the currently running CPU.
-> > > > Given the large and increasing quantity of code shared by the idle loop
-> > > > and non-idle code, the this shortcoming is becoming increasingly painful.
-> > > > 
-> > > > This commit therefore adds rcu_watching_this_cpu(), which returns true
-> > > > if it is safe to enter an RCU read-side critical section on the currently
-> > > > running CPU.  This function is quite fast, using only a __this_cpu_read().
-> > > > However, the caller must disable preemption.
-> > > > 
-> > > > Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > >  include/linux/rcupdate.h |    1 +
-> > > >  kernel/rcutree.c         |   12 ++++++++++++
-> > > >  2 files changed, 13 insertions(+)
-> > > > 
-> > > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > > > index 15d33d9..1c7112c 100644
-> > > > --- a/include/linux/rcupdate.h
-> > > > +++ b/include/linux/rcupdate.h
-> > > > @@ -225,6 +225,7 @@ extern void rcu_idle_enter(void);
-> > > >  extern void rcu_idle_exit(void);
-> > > >  extern void rcu_irq_enter(void);
-> > > >  extern void rcu_irq_exit(void);
-> > > > +extern bool rcu_watching_this_cpu(void);
-> > > >  
-> > > >  #ifdef CONFIG_RCU_USER_QS
-> > > >  extern void rcu_user_enter(void);
-> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > index a06d172..7b8fcee 100644
-> > > > --- a/kernel/rcutree.c
-> > > > +++ b/kernel/rcutree.c
-> > > > @@ -710,6 +710,18 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
-> > > >  #endif /* #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU) */
-> > > >  
-> > > >  /**
-> > > > + * rcu_watching_this_cpu - are RCU read-side critical sections safe?
-> > > > + *
-> > > > + * Return true if RCU is watching the running CPU, which means that this
-> > > > + * CPU can safely enter RCU read-side critical sections.  The caller must
-> > > > + * have at least disabled preemption.
-> > > > + */
-> > > > +bool rcu_watching_this_cpu(void)
-> > > > +{
-> > > > +	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
-> > > > +}
-> > > 
-> > > There is also rcu_is_cpu_idle().
-> > 
-> > Good point, thank you!  I was clearly in autonomic-reflex mode yesterday.  :-/
-> > 
-> > Here is the rcutree version:
-> > 
-> > int rcu_is_cpu_idle(void)
-> > {
-> > 	int ret;
-> > 
-> > 	preempt_disable();
-> > 	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
-> > 	preempt_enable();
-> > 	return ret;
-> > }
-> > 
-> > And here is the rcutiny version:
-> > 
-> > int rcu_is_cpu_idle(void)
-> > {
-> > 	return !rcu_dynticks_nesting;
-> > }
-> > 
-> > Steve, could you please use rcu_is_cpu_idle()?  I will revert yesterday's
-> > redundancy.
-> > 
-> 
-> I can't use plain preempt_disable() in function tracing.
-> 
-> Also, since it's a misnomer to say the cpu is idle in NO_HZ_FULL when
-> we are coming from userspace, can we rename that?
-> 
-> Perhaps we can also have a __rcu_is_cpu_tracking() (or whatever), with
-> the "__" appended that does not do the preempt disable.
+On Fri, Sep 6, 2013 at 6:12 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> On Fri, Sep 6, 2013 at 12:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Fri, 6 Sep 2013 11:46:13 -0400
+>> Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>>
+>>
+>>> > Fedora should really look into defaulting to syslinux.
+>>>
+>>> Doesn't support all the usecases we have, and it's not multi-arch.
+>>> Grub2 has warts, but it's all around more flexible.
+>>
+>> We should be working on making syslinux work for all cases then.
+>
+> Is there something stopping you? :)  More specifically, I don't think
+> syslinux will ever support e.g. powerpc or ARM (Aarch64) so it doesn't
+> seem like a general purpose solution.  I could be wrong.
 
-rcu_is_cpu_eqs() is probably better. It refers to other related "eqs" naming
-in RCU APIs.
- 
-> -- Steve
+Is there a list of use cases which are missing in syslinux?
+
+On all systems where I have to touch the bootloader
+(running custom kernels, using one-shot, ...) I always install
+gummiboot or syslinux because
+grub2 sucks so much. grub1 worked quite well but grub2 is a PITA.
+
+-- 
+Thanks,
+//richard
+
+P.s: Sorry for flaming but gub2 disappointed me more than once.
