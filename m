@@ -1,62 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab3IHPXT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:23:19 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:59361 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3IHPXS (ORCPT
+	id S1753655Ab3IHP3G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:29:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54570 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab3IHP3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:23:18 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Wang YanQing <udknight@gmail.com>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        liguang <lig.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v1 3/3] SMP, trivial: remove unused code from smp_boot.h
-Date: Sun,  8 Sep 2013 23:22:25 +0800
-Message-Id: <1378653745-8343-3-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378653745-8343-1-git-send-email-liuj97@gmail.com>
-References: <1378653745-8343-1-git-send-email-liuj97@gmail.com>
+	Sun, 8 Sep 2013 11:29:03 -0400
+Date: Fri, 6 Sep 2013 15:44:12 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 12/19] cpufreq: cpufreq-cpu0: remove device tree
+ parsing for cpu nodes
+In-Reply-To: <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Message-ID: <Pine.LNX.4.64.1309061539310.11068@axis700.grange>
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:7mvDOJm/Q7XFLZ+sQjCKgW2wJBQ62a+n2dG6Xm9xl8O
+ ZYRtWr+7el6C7Jnmk6PZDGlWGvOQiwehwSYo/bVMLXP9wG259F
+ O9u2OkKkHZFfy+/eFt2ZaNzjObB3LEuMe5BOBkVAtBUD3iVe9o
+ VL2LLTGpG0jdEKXxT+wMcwAkuQ0nyJVhSh3ovOyylmQV/AhxwH
+ aW2lchii12D7k2yML01VvUU8+LItp9NIVy3aYc4dbEbs710WYB
+ gW8UMn4GFBwiQZ55U4EpS9vU0wkoRpA08schI1FDx0+6Nv8Faw
+ Z26/FITNCHlmFtvTgZgx7qzCGgJ30fyBCnaDlErQyAJMIKpX3N
+ Vie9+aUaHHlXKhnihFVd39MOB4AmUce6fmXmHoeB83un8xj85J
+ I/ll9Rsu5BEBg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Hi
 
-Function smpboot_thread_schedule() is never defined or used,
-so remove it from smp_boot.h.
+On Tue, 20 Aug 2013, Sudeep KarkadaNagesha wrote:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wang YanQing <udknight@gmail.com>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> Now that the cpu device registration initialises the of_node(if available)
+> appropriately for all the cpus, parsing here is redundant.
+> 
+> This patch removes all DT parsing and uses cpu->of_node instead.
+> 
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> ---
+>  drivers/cpufreq/cpufreq-cpu0.c | 23 ++++-------------------
+>  1 file changed, 4 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.=
+> c
+> index ad1fde2..5b05c26 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -174,29 +174,17 @@ static struct cpufreq_driver cpu0_cpufreq_driver =3D =
+> {
+> =20
+>  static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>  {
+> -=09struct device_node *np, *parent;
+> +=09struct device_node *np;
+>  =09int ret;
+> =20
+> -=09parent =3D of_find_node_by_path("/cpus");
+> -=09if (!parent) {
+> -=09=09pr_err("failed to find OF /cpus\n");
+> -=09=09return -ENOENT;
+> -=09}
+> -
+> -=09for_each_child_of_node(parent, np) {
+> -=09=09if (of_get_property(np, "operating-points", NULL))
+> -=09=09=09break;
+> -=09}
+> +=09cpu_dev =3D &pdev->dev;
+> =20
+> +=09np =3D of_node_get(cpu_dev->of_node);
+
+Has this actually been tested? This seems to break cpufreq-cpu0. The 
+reason is, that this probe function is called not for the DT CPU node, but 
+for a special virtual cpufreq-cpu0 platform device, typically created by 
+platforms, using
+
+	platform_device_register_simple("cpufreq-cpu0", -1, NULL, 0);
+
+which then of course doesn't have on .of_node associated with it.
+
+Thanks
+Guennadi
+
+>  =09if (!np) {
+>  =09=09pr_err("failed to find cpu0 node\n");
+> -=09=09ret =3D -ENOENT;
+> -=09=09goto out_put_parent;
+> +=09=09return -ENOENT;
+>  =09}
+> =20
+> -=09cpu_dev =3D &pdev->dev;
+> -=09cpu_dev->of_node =3D np;
+> -
+>  =09cpu_reg =3D devm_regulator_get(cpu_dev, "cpu0");
+>  =09if (IS_ERR(cpu_reg)) {
+>  =09=09/*
+> @@ -269,15 +257,12 @@ static int cpu0_cpufreq_probe(struct platform_device =
+> *pdev)
+>  =09}
+> =20
+>  =09of_node_put(np);
+> -=09of_node_put(parent);
+>  =09return 0;
+> =20
+>  out_free_table:
+>  =09opp_free_cpufreq_table(cpu_dev, &freq_table);
+>  out_put_node:
+>  =09of_node_put(np);
+> -out_put_parent:
+> -=09of_node_put(parent);
+>  =09return ret;
+>  }
+> =20
+> --=20
+> 1.8.1.2
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 ---
- include/linux/smpboot.h | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
-index 13e9296..d600afb 100644
---- a/include/linux/smpboot.h
-+++ b/include/linux/smpboot.h
-@@ -47,6 +47,5 @@ struct smp_hotplug_thread {
- 
- int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread);
- void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread);
--int smpboot_thread_schedule(void);
- 
- #endif
--- 
-1.8.1.2
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
