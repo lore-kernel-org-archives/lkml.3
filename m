@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750817Ab3IFE5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:57:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57064 "EHLO
+	id S1750771Ab3IFE7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:59:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3IFE5x (ORCPT
+	with ESMTP id S1750718Ab3IFE7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:57:53 -0400
-Date: Thu, 5 Sep 2013 22:00:37 -0700
+	Fri, 6 Sep 2013 00:59:13 -0400
+Date: Thu, 5 Sep 2013 22:01:57 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Sudeep Dutt <sudeep.dutt@intel.com>
 Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
@@ -24,7 +24,7 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Subject: Re: [PATCH RESEND v3 3/7] Intel MIC Host Driver, card OS state
  management.
-Message-ID: <20130906050037.GE28806@kroah.com>
+Message-ID: <20130906050157.GF28806@kroah.com>
 References: <cover.1378423596.git.sudeep.dutt@intel.com>
  <669a3a3bbfff577c73d05fb568a810cbbc3d5333.1378423596.git.sudeep.dutt@intel.com>
 MIME-Version: 1.0
@@ -37,25 +37,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Sep 05, 2013 at 04:41:55PM -0700, Sudeep Dutt wrote:
-> +What:		/sys/class/mic/mic(x)/cmdline
+> +What:		/sys/class/mic/mic(x)/firmware
 > +Date:		August 2013
 > +KernelVersion:	3.11
 > +Contact:	Sudeep Dutt <sudeep.dutt@intel.com>
 > +Description:
-> +		An Intel MIC device runs a Linux OS during its operation. Before
-> +		booting this card OS, it is possible to pass kernel command line
-> +		options to configure various features in it, similar to
-> +		self-bootable machines. When read, this entry provides
-> +		information about the current kernel command line options set to
-> +		boot the card OS. This entry can be written to change the
-> +		existing kernel command line options. Typically, the user would
-> +		want to read the current command line options, append new ones
-> +		or modify existing ones and then write the whole kernel command
-> +		line back to this entry.
+> +		When read, this sysfs entry provides the path name under
+> +		/lib/firmware/ where the firmware image to be booted on the
+> +		card can be found. The entry can be written to change the
+> +		firmware image location under /lib/firmware/.
 
-Is a PAGE_SIZE value going to be big enough for your command line?  I
-know some embedded systems have horribly long command lines, hopefully
-this will be enough for you.
+I don't understand, is the path under the HOST device, or the Client
+device's disk?  Why do you need to change the path on the HOST?  What's
+wrong with the existing firmware path selection we have in the kernel?
 
 thanks,
 
