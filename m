@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab3IFDhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 23:37:46 -0400
+	id S1759000Ab3IFDio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 23:38:44 -0400
 Received: from mga01.intel.com ([192.55.52.88]:6703 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758065Ab3IFDho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758633Ab3IFDho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Sep 2013 23:37:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,851,1371106800"; 
-   d="scan'208";a="397493418"
+   d="scan'208";a="397493417"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/4] perf, x86: Add Haswell TSX event aliases v6
-Date: Thu,  5 Sep 2013 20:37:40 -0700
-Message-Id: <1378438661-24765-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/4] perf, x86: Report TSX transaction abort cost as weight v3
+Date: Thu,  5 Sep 2013 20:37:39 -0700
+Message-Id: <1378438661-24765-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378438661-24765-1-git-send-email-andi@firstfloor.org>
 References: <1378438661-24765-1-git-send-email-andi@firstfloor.org>
@@ -25,96 +25,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add TSX event aliases, and export them from the kernel to perf.
+Use the existing weight reporting facility to report the transaction
+abort cost, that is the number of cycles wasted in aborts.
+Haswell reports this in the PEBS record.
 
-These are used by perf stat -T and to allow
-more user friendly access to events. The events are designed to
-be fairly generic and may also apply to other architectures
-implementing HTM.  They all cover common situations that
-happens during tuning of transactional code.
+This was in fact the original user for weight.
 
-For Haswell we have to separate the HLE and RTM events,
-as they are separate in the PMU.
+This is a very useful sort key to concentrate on the most
+costly aborts and a good metric for TSX tuning.
 
-This adds the following events.
-
-tx-start	Count start transaction (used by perf stat -T)
-tx-commit	Count commit of transaction
-tx-abort	Count all aborts
-tx-conflict	Count aborts due to conflict with another CPU.
-tx-capacity	Count capacity aborts (transaction too large)
-
-Then matching el-* events for HLE
-
-cycles-t	Transactional cycles (used by perf stat -T)
-* also exists on POWER8
-cycles-ct	Transactional cycles commited (used by perf stat -T)
-* according to Michael Ellerman POWER8 has a cycles-transactional-committed,
-* perf stat -T handles both cases
-
-Note for useful abort profiling often precise has to be set,
-as Haswell can only report the point inside the transaction
-with precise=2.
-
-(I had another patchkit to allow exporting precise too, but Vince
-Weaver pointed out it violates the ABI, so dropped now)
-
-For some classes of aborts, like conflicts, this is not needed,
-as it makes more sense to look at the complete critical section.
-
-This gives a clean set of generalized events to examine transaction
-success and aborts. Haswell has additional events for TSX, but those are more
-specialized for very specific situations.
-
-v2: Move to new sysfs infrastructure
-v3: Use own sysfs functions now
-v4: Add tx/el-abort-return for better conflict sampling
-v5: Different white space.
-v6: Cut down events, rewrite description.
+v2: Add Peter's changes with minor modifications. More comments.
+v3: Adjust white space.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 55 +++++++++++++++++++++++--------
+ 1 file changed, 42 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 91e3f8c..da58663 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2074,7 +2074,34 @@ static __init void intel_nehalem_quirk(void)
- EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
- EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
- 
-+/* Haswell special events */
-+EVENT_ATTR_STR(tx-start,        tx_start,       "event=0xc9,umask=0x1");
-+EVENT_ATTR_STR(tx-commit,       tx_commit,      "event=0xc9,umask=0x2");
-+EVENT_ATTR_STR(tx-abort,        tx_abort,	"event=0xc9,umask=0x4");
-+EVENT_ATTR_STR(tx-capacity,     tx_capacity,	"event=0x54,umask=0x2");
-+EVENT_ATTR_STR(tx-conflict,     tx_conflict,	"event=0x54,umask=0x1");
-+EVENT_ATTR_STR(el-start,        el_start,       "event=0xc8,umask=0x1");
-+EVENT_ATTR_STR(el-commit,       el_commit,      "event=0xc8,umask=0x2");
-+EVENT_ATTR_STR(el-abort,        el_abort,	"event=0xc8,umask=0x4");
-+EVENT_ATTR_STR(el-capacity,     el_capacity,    "event=0x54,umask=0x2");
-+EVENT_ATTR_STR(el-conflict,     el_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(cycles-t,        cycles_t,       "event=0x3c,in_tx=1");
-+EVENT_ATTR_STR(cycles-ct,       cycles_ct,
-+					"event=0x3c,in_tx=1,in_tx_cp=1");
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 3065c57..d4ed99f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -182,16 +182,29 @@ struct pebs_record_nhm {
+  * Same as pebs_record_nhm, with two additional fields.
+  */
+ struct pebs_record_hsw {
+-	struct pebs_record_nhm nhm;
+-	/*
+-	 * Real IP of the event. In the Intel documentation this
+-	 * is called eventingrip.
+-	 */
+-	u64 real_ip;
+-	/*
+-	 * TSX tuning information field: abort cycles and abort flags.
+-	 */
+-	u64 tsx_tuning;
++	u64 flags, ip;
++	u64 ax, bx, cx, dx;
++	u64 si, di, bp, sp;
++	u64 r8,  r9,  r10, r11;
++	u64 r12, r13, r14, r15;
++	u64 status, dla, dse, lat;
++	u64 real_ip; /* the actual eventing ip */
++	u64 tsx_tuning; /* TSX abort cycles and flags */
++};
 +
- static struct attribute *hsw_events_attrs[] = {
-+	EVENT_PTR(tx_start),
-+	EVENT_PTR(tx_commit),
-+	EVENT_PTR(tx_abort),
-+	EVENT_PTR(tx_capacity),
-+	EVENT_PTR(tx_conflict),
-+	EVENT_PTR(el_start),
-+	EVENT_PTR(el_commit),
-+	EVENT_PTR(el_abort),
-+	EVENT_PTR(el_capacity),
-+	EVENT_PTR(el_conflict),
-+	EVENT_PTR(cycles_t),
-+	EVENT_PTR(cycles_ct),
- 	EVENT_PTR(mem_ld_hsw),
- 	EVENT_PTR(mem_st_hsw),
- 	NULL
++union hsw_tsx_tuning {
++	struct {
++		u32 cycles_last_block     : 32,
++		    hle_abort		  : 1,
++		    rtm_abort		  : 1,
++		    instruction_abort     : 1,
++		    non_instruction_abort : 1,
++		    retry		  : 1,
++		    data_conflict	  : 1,
++		    capacity_writes	  : 1,
++		    capacity_reads	  : 1;
++	};
++	u64	    value;
+ };
+ 
+ void init_debug_store_on_cpu(int cpu)
+@@ -759,16 +772,26 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++static inline u64 intel_hsw_weight(struct pebs_record_hsw *pebs)
++{
++	if (pebs->tsx_tuning) {
++		union hsw_tsx_tuning tsx = { .value = pebs->tsx_tuning };
++		return tsx.cycles_last_block;
++	}
++	return 0;
++}
++
+ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 				   struct pt_regs *iregs, void *__pebs)
+ {
+ 	/*
+ 	 * We cast to pebs_record_nhm to get the load latency data
+ 	 * if extra_reg MSR_PEBS_LD_LAT_THRESHOLD used
++	 * We cast to the biggest PEBS record are careful not
++	 * to access out-of-bounds members.
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct pebs_record_nhm *pebs = __pebs;
+-	struct pebs_record_hsw *pebs_hsw = __pebs;
++	struct pebs_record_hsw *pebs = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+@@ -827,7 +850,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.sp = pebs->sp;
+ 
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+-		regs.ip = pebs_hsw->real_ip;
++		regs.ip = pebs->real_ip;
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+@@ -838,6 +861,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		x86_pmu.intel_cap.pebs_format >= 1)
+ 		data.addr = pebs->dla;
+ 
++	/* Only set the TSX weight when no memory weight was requested. */
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++	    !fll &&
++	    (x86_pmu.intel_cap.pebs_format >= 2))
++		data.weight = intel_hsw_weight(pebs);
++
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
+ 
 -- 
 1.8.3.1
 
