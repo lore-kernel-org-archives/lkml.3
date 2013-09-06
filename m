@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750941Ab3IFGmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:42:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20413 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab3IFGmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:42:14 -0400
-Message-ID: <5229792F.9000803@oracle.com>
-Date: Fri, 06 Sep 2013 14:41:51 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Weijie Yang <weijie.yang@samsung.com>
-CC: sjenning@linux.vnet.ibm.com, minchan@kernel.org, weijie.yang.kh@gmail.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] mm/zswap: use GFP_NOIO instead of GFP_KERNEL
-References: <000601ceaac0$5be39f90$13aadeb0$%yang@samsung.com>
-In-Reply-To: <000601ceaac0$5be39f90$13aadeb0$%yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1750978Ab3IFGnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 02:43:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34199 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813Ab3IFGnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 02:43:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,852,1371106800"; 
+   d="scan'208";a="397541518"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf kvm: fix sample_type manipulation
+Date: Fri,  6 Sep 2013 09:48:54 +0300
+Message-Id: <1378450134-28982-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Manipulating the sample_type of an evsel requires
+the use of:
+	perf_evsel__set_sample_bit()
+and	perf_evsel__reset_sample_bit()
 
-On 09/06/2013 01:16 PM, Weijie Yang wrote:
-> To avoid zswap store and reclaim functions called recursively,
-> use GFP_NOIO instead of GFP_KERNEL
-> 
+Manipulating the sample type of an evlist requires
+the id position to be recalculated.
 
-The reason of using GFP_KERNEL in write back path is we want to try our
-best to move those pages from zswap to real swap device.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/builtin-kvm.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-I think it would be better to keep GFP_KERNEL flag but find some other
-ways to skip zswap/zswap_frontswap_store() if zswap write back is in
-progress.
-
-What I can think of currently is adding a mutex to zswap, take that
-mutex when zswap write back happens and check the mutex in
-zswap_frontswap_store().
-
-
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> ---
->  mm/zswap.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index cc40e6a..3d05ed8 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -427,7 +427,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
->  		 * Get a new page to read into from swap.
->  		 */
->  		if (!new_page) {
-> -			new_page = alloc_page(GFP_KERNEL);
-> +			new_page = alloc_page(GFP_NOIO);
->  			if (!new_page)
->  				break; /* Out of memory */
->  		}
-> @@ -435,7 +435,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
->  		/*
->  		 * call radix_tree_preload() while we can wait.
->  		 */
-> -		err = radix_tree_preload(GFP_KERNEL);
-> +		err = radix_tree_preload(GFP_NOIO);
->  		if (err)
->  			break;
->  
-> @@ -636,7 +636,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  	}
->  
->  	/* allocate entry */
-> -	entry = zswap_entry_cache_alloc(GFP_KERNEL);
-> +	entry = zswap_entry_cache_alloc(GFP_NOIO);
->  	if (!entry) {
->  		zswap_reject_kmemcache_fail++;
->  		ret = -ENOMEM;
-> 
-
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 47b3540..0b7c5a9 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1165,16 +1165,16 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
+ 		struct perf_event_attr *attr = &pos->attr;
+ 
+ 		/* make sure these *are* set */
+-		attr->sample_type |= PERF_SAMPLE_TID;
+-		attr->sample_type |= PERF_SAMPLE_TIME;
+-		attr->sample_type |= PERF_SAMPLE_CPU;
+-		attr->sample_type |= PERF_SAMPLE_RAW;
++		perf_evsel__set_sample_bit(pos, TID);
++		perf_evsel__set_sample_bit(pos, TIME);
++		perf_evsel__set_sample_bit(pos, CPU);
++		perf_evsel__set_sample_bit(pos, RAW);
+ 		/* make sure these are *not*; want as small a sample as possible */
+-		attr->sample_type &= ~PERF_SAMPLE_PERIOD;
+-		attr->sample_type &= ~PERF_SAMPLE_IP;
+-		attr->sample_type &= ~PERF_SAMPLE_CALLCHAIN;
+-		attr->sample_type &= ~PERF_SAMPLE_ADDR;
+-		attr->sample_type &= ~PERF_SAMPLE_READ;
++		perf_evsel__reset_sample_bit(pos, PERIOD);
++		perf_evsel__reset_sample_bit(pos, IP);
++		perf_evsel__reset_sample_bit(pos, CALLCHAIN);
++		perf_evsel__reset_sample_bit(pos, ADDR);
++		perf_evsel__reset_sample_bit(pos, READ);
+ 		attr->mmap = 0;
+ 		attr->comm = 0;
+ 		attr->task = 0;
+@@ -1188,6 +1188,8 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
+ 		attr->disabled = 1;
+ 	}
+ 
++	perf_evlist__set_id_pos(evlist);
++
+ 	err = perf_evlist__open(evlist);
+ 	if (err < 0) {
+ 		printf("Couldn't create the events: %s\n", strerror(errno));
 -- 
-Regards,
--Bob
+1.7.11.7
+
