@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab3IFSJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:09:35 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:55710 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3IFSJa (ORCPT
+	id S1751357Ab3IFSI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 14:08:57 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:45658 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab3IFSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:09:30 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-References: <20130729095109.GB4678@dhcp22.suse.cz>
-	<20130729161026.GD22605@mtj.dyndns.org> <87r4eh70yg.fsf@xmission.com>
-	<51F71DE2.4020102@huawei.com>
-	<87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
-	<20130730123120.GA15847@dhcp22.suse.cz>
-	<874nbc3sx1.fsf@tw-ebiederman.twitter.com>
-	<20130731073726.GC30514@dhcp22.suse.cz> <87zjt2tm9f.fsf@xmission.com>
-	<20130801090620.GA5198@dhcp22.suse.cz>
-	<20130905095653.GB9702@dhcp22.suse.cz>
-Date: Fri, 06 Sep 2013 11:09:21 -0700
-In-Reply-To: <20130905095653.GB9702@dhcp22.suse.cz> (Michal Hocko's message of
-	"Thu, 5 Sep 2013 11:56:53 +0200")
-Message-ID: <87ob85kejy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18OlMRKo4Y8I6gWhfcp4EyWj/TuwrQq9Zw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0003]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Michal Hocko <mhocko@suse.cz>
-X-Spam-Relay-Country: 
-Subject: Re: memcg creates an unkillable task in 3.11-rc2
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 6 Sep 2013 14:08:55 -0400
+From: Linn Crosetto <linn@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        luto@amacapital.net, daniel.vetter@ffwll.ch, airlied@redhat.com,
+        yinghai@kernel.org, jacob.shin@amd.com, penberg@kernel.org,
+        js1304@gmail.com, akpm@linux-foundation.org, matt.fleming@intel.com
+Cc: linux-kernel@vger.kernel.org, Linn Crosetto <linn@hp.com>
+Subject: [PATCH 3/3] x86: fix early_iounmap() sparse warnings in setup.c
+Date: Fri,  6 Sep 2013 12:06:57 -0600
+Message-Id: <1378490817-23272-4-git-send-email-linn@hp.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1378490817-23272-1-git-send-email-linn@hp.com>
+References: <5223CA9C.5020505@zytor.com>
+ <1378490817-23272-1-git-send-email-linn@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+Replace calls to early_iounmap() with early_memunmap() for pointers
+mapped with early_memremap() to eliminate the following sparse warnings:
 
-> It seems that this one fell though the cracks?
+arch/x86/kernel/setup.c:355:31: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/setup.c:441:31: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/setup.c:470:31: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/kernel/setup.c:491:31: warning: incorrect type in argument 1 (different address spaces)
 
-Not completely, but it happened just as I was doing my initial triage of
-memcg problems and I haven't quite made it back to this.
+Signed-off-by: Linn Crosetto <linn@hp.com>
+---
+ arch/x86/kernel/setup.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-I have an even nastier memcg hang (without yet an easy reproducer).
-During mkdir ext3 can add a page to the page cache with the ext3 journal
-transaction lock held.  Normally that isn't a problem but freezing there
-stops all writes to that filesystem, and the world stops.
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f0de629..3081fc6 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -352,7 +352,7 @@ static void __init relocate_initrd(void)
+ 		mapaddr = ramdisk_image & PAGE_MASK;
+ 		p = early_memremap(mapaddr, clen+slop);
+ 		memcpy(q, p+slop, clen);
+-		early_iounmap(p, clen+slop);
++		early_memunmap(p, clen+slop);
+ 		q += clen;
+ 		ramdisk_image += clen;
+ 		ramdisk_size  -= clen;
+@@ -438,7 +438,7 @@ static void __init parse_setup_data(void)
+ 		data_len = data->len + sizeof(struct setup_data);
+ 		data_type = data->type;
+ 		pa_next = data->next;
+-		early_iounmap(data, map_len);
++		early_memunmap(data, map_len);
+ 
+ 		switch (data_type) {
+ 		case SETUP_E820_EXT:
+@@ -467,7 +467,7 @@ static void __init e820_reserve_setup_data(void)
+ 			 E820_RAM, E820_RESERVED_KERN);
+ 		found = 1;
+ 		pa_data = data->next;
+-		early_iounmap(data, sizeof(*data));
++		early_memunmap(data, sizeof(*data));
+ 	}
+ 	if (!found)
+ 		return;
+@@ -488,7 +488,7 @@ static void __init memblock_x86_reserve_range_setup_data(void)
+ 		data = early_memremap(pa_data, sizeof(*data));
+ 		memblock_reserve(pa_data, sizeof(*data) + data->len);
+ 		pa_data = data->next;
+-		early_iounmap(data, sizeof(*data));
++		early_memunmap(data, sizeof(*data));
+ 	}
+ }
+ 
+-- 
+1.7.11.3
 
-It looks like the only way to avoid that kind of scenario is to move the
-the memcg sleep to the edge of userspace, like we do with signals and a
-few other things so we can be guaranteed not to increase lock hold
-times, when it is avoidable.  I think I saw some similar comments about
-the slab limiting.
-
-Eric
