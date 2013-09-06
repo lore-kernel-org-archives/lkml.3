@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3IFOyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:54:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10360 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169Ab3IFOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:54:18 -0400
-X-IronPort-AV: E=Sophos;i="4.90,854,1371081600"; 
-   d="scan'208";a="51287090"
-Date: Fri, 6 Sep 2013 15:53:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization
- earlier
-In-Reply-To: <20130906142301.GA5140@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1309061553270.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com> <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com> <20130905162026.GJ11887@arm.com> <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
- <1378457939.14745.73.camel@kazak.uk.xensource.com> <20130906140921.GD1946@arm.com> <20130906142301.GA5140@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S1753804Ab3IFOz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:55:59 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:56210 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab3IFOz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:55:58 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] spi/drivers: Restrict COMPILE_TEST by HAS_DMA where needed
+Date: Fri,  6 Sep 2013 16:55:40 +0200
+Message-Id: <1378479340-31237-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Sep 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 06, 2013 at 03:09:21PM +0100, Catalin Marinas wrote:
-> > On Fri, Sep 06, 2013 at 09:58:59AM +0100, Ian Campbell wrote:
-> > > On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
-> > > > On Thu, 5 Sep 2013, Catalin Marinas wrote:
-> > > > > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
-> > > > > > Move Xen initialization earlier, before any DMA requests can be made.
-> > > > > > 
-> > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > > 
-> > > > > I guess you should cc the corresponding maintainers here.
-> > > > 
-> > > > Thanks for the reminder, I'll do that.
-> > > > 
-> > > > 
-> > > > > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
-> > > > > >  arch/arm/kernel/setup.c               |    2 ++
-> > > > > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
-> > > > > >  arch/arm64/kernel/setup.c             |    2 ++
-> > > > > >  4 files changed, 26 insertions(+), 7 deletions(-)
-> > > > > 
-> > > > > [...]
-> > > > > 
-> > > > > > --- a/arch/arm64/kernel/setup.c
-> > > > > > +++ b/arch/arm64/kernel/setup.c
-> > > > > > @@ -53,6 +53,7 @@
-> > > > > >  #include <asm/traps.h>
-> > > > > >  #include <asm/memblock.h>
-> > > > > >  #include <asm/psci.h>
-> > > > > > +#include <asm/xen/hypervisor.h>
-> > > > > >  
-> > > > > >  unsigned int processor_id;
-> > > > > >  EXPORT_SYMBOL(processor_id);
-> > > > > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
-> > > > > >  	unflatten_device_tree();
-> > > > > >  
-> > > > > >  	psci_init();
-> > > > > > +	xen_early_init();
-> > > > > 
-> > > > > So Xen guests don't have any hope for single Image? Basically you set
-> > > > > dma_ops unconditionally in xen_early_init(), even if the kernel is not
-> > > > > intended to run under Xen.
-> > > > 
-> > > > That should not happen: if we are not running on Xen xen_early_init
-> > > > returns early, before calling xen_mm_init.
-> > > 
-> > > x96 has a call to init_hypervisor_platform() at approximately this
-> > > location, which detects and calls the init function for any of Xen, KVM,
-> > > hyperv and vmware.
-> > 
-> > I would rather have a core_initcall(xen_early_init()) if possible,
-> > rather than hard-coded calls in setup_arch(). This early stuff is
-> > DT-driven, so in theory you don't need a specific xen call. The only
-> > thing is that you end up with swiotlb_init() and 64MB wasted if the Xen
-> > guest does not plan to use them.
-> 
-> There is a swiotlb_free mechanism in case the allocation was not
-> neccessary.
+commit dd1053a93fdc11d491f5460f7da5ce70e6c93c9e ("spi/drivers: Enable build
+of drivers with COMPILE_TEST") allows compile-testing drivers on platforms
+they're not meant for.
 
-I think I'll just use the late swiotlb initialization.
+However, adding "|| COMPILE_TEST" bypasses all other implicit dependencies
+assumed by the platform dependencies before, like HAS_DMA.
+
+If NO_DMA=y:
+
+drivers/built-in.o: In function `atmel_spi_dma_unmap_xfer':
+drivers/spi/spi-atmel.c:915: undefined reference to `dma_unmap_single'
+drivers/spi/spi-atmel.c:918: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `atmel_spi_next_xfer_data':
+drivers/spi/spi-atmel.c:690: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `atmel_spi_dma_map_xfer':
+drivers/spi/spi-atmel.c:890: undefined reference to `dma_map_single'
+drivers/spi/spi-atmel.c:893: undefined reference to `dma_mapping_error'
+drivers/spi/spi-atmel.c:897: undefined reference to `dma_map_single'
+drivers/spi/spi-atmel.c:900: undefined reference to `dma_mapping_error'
+drivers/spi/spi-atmel.c:902: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `atmel_spi_probe':
+drivers/spi/spi-atmel.c:1540: undefined reference to `dma_alloc_coherent'
+drivers/spi/spi-atmel.c:1623: undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `atmel_spi_remove':
+drivers/spi/spi-atmel.c:1665: undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `ep93xx_spi_dma_finish':
+drivers/spi/spi-ep93xx.c:550: undefined reference to `dma_unmap_sg'
+drivers/built-in.o: In function `ep93xx_spi_dma_prepare':
+drivers/spi/spi-ep93xx.c:516: undefined reference to `dma_map_sg'
+drivers/spi/spi-ep93xx.c:522: undefined reference to `dma_unmap_sg'
+drivers/built-in.o: In function `omap2_mcspi_rx_dma':
+drivers/spi/spi-omap2-mcspi.c:475: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `omap2_mcspi_txrx_dma':
+drivers/spi/spi-omap2-mcspi.c:589: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `omap2_mcspi_transfer_one_message':
+drivers/spi/spi-omap2-mcspi.c:1202: undefined reference to `dma_map_single'
+drivers/spi/spi-omap2-mcspi.c:1204: undefined reference to `dma_mapping_error'
+drivers/spi/spi-omap2-mcspi.c:1211: undefined reference to `dma_map_single'
+drivers/spi/spi-omap2-mcspi.c:1213: undefined reference to `dma_mapping_error'
+drivers/spi/spi-omap2-mcspi.c:1217: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `tegra_spi_deinit_dma_param':
+drivers/spi/spi-tegra114.c:675: undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `tegra_spi_copy_spi_rxbuf_to_client_rxbuf':
+drivers/spi/spi-tegra114.c:415: undefined reference to `dma_sync_single_for_cpu'
+drivers/spi/spi-tegra114.c:440: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `tegra_spi_copy_client_txbuf_to_spi_txbuf':
+drivers/spi/spi-tegra114.c:381: undefined reference to `dma_sync_single_for_cpu'
+drivers/spi/spi-tegra114.c:405: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `tegra_spi_start_dma_based_transfer':
+drivers/spi/spi-tegra114.c:543: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `tegra_slink_deinit_dma_param':
+drivers/spi/spi-tegra20-slink.c:705: undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `tegra_slink_copy_spi_rxbuf_to_client_rxbuf':
+drivers/spi/spi-tegra20-slink.c:427: undefined reference to `dma_sync_single_for_cpu'
+drivers/spi/spi-tegra20-slink.c:452: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `tegra_slink_copy_client_txbuf_to_spi_txbuf':
+drivers/spi/spi-tegra20-slink.c:393: undefined reference to `dma_sync_single_for_cpu'
+drivers/spi/spi-tegra20-slink.c:417: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `tegra_slink_start_dma_based_transfer':
+drivers/spi/spi-tegra20-slink.c:561: undefined reference to `dma_sync_single_for_cpu'
+
+Add dependencies on HAS_DMA to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/spi/Kconfig |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 0170d4c..b80b959 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -70,7 +70,7 @@ config SPI_ATH79
+ 
+ config SPI_ATMEL
+ 	tristate "Atmel SPI Controller"
+-	depends on (ARCH_AT91 || AVR32 || COMPILE_TEST)
++	depends on (ARCH_AT91 || AVR32 || (COMPILE_TEST && HAS_DMA))
+ 	help
+ 	  This selects a driver for the Atmel SPI Controller, present on
+ 	  many AT32 (AVR32) and AT91 (ARM) chips.
+@@ -173,7 +173,7 @@ config SPI_EFM32
+ 
+ config SPI_EP93XX
+ 	tristate "Cirrus Logic EP93xx SPI controller"
+-	depends on ARCH_EP93XX || COMPILE_TEST
++	depends on ARCH_EP93XX || (COMPILE_TEST && HAS_DMA)
+ 	help
+ 	  This enables using the Cirrus EP93xx SPI controller in master
+ 	  mode.
+@@ -301,7 +301,7 @@ config SPI_OMAP_UWIRE
+ 
+ config SPI_OMAP24XX
+ 	tristate "McSPI driver for OMAP"
+-	depends on ARCH_OMAP2PLUS || COMPILE_TEST
++	depends on ARCH_OMAP2PLUS || (COMPILE_TEST && HAS_DMA)
+ 	help
+ 	  SPI master controller for OMAP24XX and later Multichannel SPI
+ 	  (McSPI) modules.
+@@ -447,7 +447,7 @@ config SPI_MXS
+ 
+ config SPI_TEGRA114
+ 	tristate "NVIDIA Tegra114 SPI Controller"
+-	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || COMPILE_TEST
++	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || (COMPILE_TEST && HAS_DMA)
+ 	help
+ 	  SPI driver for NVIDIA Tegra114 SPI Controller interface. This controller
+ 	  is different than the older SoCs SPI controller and also register interface
+@@ -463,7 +463,7 @@ config SPI_TEGRA20_SFLASH
+ 
+ config SPI_TEGRA20_SLINK
+ 	tristate "Nvidia Tegra20/Tegra30 SLINK Controller"
+-	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || COMPILE_TEST
++	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || (COMPILE_TEST && HAS_DMA)
+ 	help
+ 	  SPI driver for Nvidia Tegra20/Tegra30 SLINK Controller interface.
+ 
+-- 
+1.7.9.5
+
