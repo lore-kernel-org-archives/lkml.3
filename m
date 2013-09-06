@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab3IFS22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:28:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61269 "EHLO mga14.intel.com"
+	id S1751461Ab3IFS3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 14:29:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51007 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956Ab3IFS20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:28:26 -0400
+	id S1750775Ab3IFS3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 14:29:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,855,1371106800"; 
-   d="scan'208";a="356957446"
-Subject: Re: [PATCH RESEND v3 0/7] Enable Drivers for Intel MIC X100
- Coprocessors.
+   d="scan'208";a="291756349"
+Subject: Re: [PATCH RESEND v3 3/7] Intel MIC Host Driver, card OS state
+ management.
 From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
         linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
@@ -27,12 +26,13 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-In-Reply-To: <1378431368.19204.3.camel@joe-AO722>
+In-Reply-To: <20130906045858.GD28806@kroah.com>
 References: <cover.1378423596.git.sudeep.dutt@intel.com>
-	 <1378431368.19204.3.camel@joe-AO722>
+	 <669a3a3bbfff577c73d05fb568a810cbbc3d5333.1378423596.git.sudeep.dutt@intel.com>
+	 <20130906045858.GD28806@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Sep 2013 11:27:49 -0700
-Message-ID: <1378492069.107744.50.camel@localhost>
+Date: Fri, 06 Sep 2013 11:29:17 -0700
+Message-ID: <1378492157.107744.54.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
@@ -40,20 +40,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 18:36 -0700, Joe Perches wrote:
-> Whitespace neatening...
+On Thu, 2013-09-05 at 21:58 -0700, Greg Kroah-Hartman wrote:
+> Again, very minor fixups for later (I can even do them...)
 > 
-> Multiline statement argument alignment.
-> Argument wrapping.
-> Use kmalloc_array instead of kmalloc.
+> > +static DEVICE_ATTR(state, S_IRUGO|S_IWUSR, mic_show_state, mic_store_state);
 > 
-> ---
+> DEVICE_ATTR_RW() please.
+> 
+> Same for the other attributes you create in this patch.
+> 
 
-Hi Joe,
+Sure, we will incorporate these changes along with your other feedback
+in patch 1 and post the next revision of this patch series.
 
-We will incorporate your changes in the next version of this patch
-series and run all future patches via the "--strict" checkpatch option.
-
-Thanks a lot for the patch!
+Thanks for the review!
 Sudeep Dutt
+
+
 
