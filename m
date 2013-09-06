@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab3IFMbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 08:31:00 -0400
-Received: from nm42-vm6.bullet.mail.gq1.yahoo.com ([67.195.87.157]:22408 "EHLO
-	nm42-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751299Ab3IFMa7 (ORCPT
+	id S1751684Ab3IFMiC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 08:38:02 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44475 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3IFMiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 08:30:59 -0400
-X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 08:30:59 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 413975.68603.bm@omp1099.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=fpYmGYR7yjNu1rmEE9iD09D/pDPC6MW3BHhGwcoo+3y6Pf7QYXoZ4cMAPpm303oK73H5nv04lSOIWuMfSZ68t0zlitoiTD9wY6oAj9RXU3SZ0Bc1xe3nfhpO8CL/MnBYOGoXR73/JjaCnchYEDCj+jvNZsTW8OVpeQ1ohZnWS2g=;
-X-YMail-OSG: ieTebaoVM1nzW9KT8ISiQ803UZ7q8wy5TNsZM_6WQt1Rf78
- 5n_Zx7BX0pKH9mm_nPm2k
-X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQsDQoNCk15IG5hbWUgaXMgTXIuSGFzc2FuIFVsbGFoIEFtZXIsIEkgYW0gdGhlIEJpbGwgYW5kIEV4Y2hhbmdlIG1hbmFnZXIgaGVyZSBpbiBCYW5rIG9mIEFmcmljYSwgT3VhZ2Fkb3Vnb3UgQnVya2luYSBGYXNvLCBXZXN0LUFmcmljYS4gSSBoYXZlIGEgYnVzaW5lc3MgcHJvcG9zYWwgaW4gdGhlIHR1bmUgb2YgJDE1LjVtLCAoRmlmdGVlbiBNaWxsaW9uIEZpdmUgSHVuZHJlZCBUaG91c2FuZCBEb2xsYXJzIE9ubHkpIGFuZCBhZnRlciB0aGUgc3VjY2Vzc2Z1bCB0cmFuc2Zlciwgd2Ugc2gBMAEBAQE-
-X-RocketYMMF: kaboreoseni50
-X-Mailer: YahooMailClassic/319 YahooMailWebService/0.8.156.576
-Message-ID: <1378470311.26482.YahooMailBasic@web163802.mail.gq1.yahoo.com>
-Date: Fri, 6 Sep 2013 05:25:11 -0700 (PDT)
-From: Hassan Ullah Amer <hasanullahamer@laposte.net>
-Reply-To: hasanullahamer@laposte.net
-Subject: STRICTLY AND CONFIDENTIAL:
-To: undisclosed recipients:;
+	Fri, 6 Sep 2013 08:38:00 -0400
+Message-ID: <5229CCA6.2060105@hitachi.com>
+Date: Fri, 06 Sep 2013 21:37:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v8 03/10] tracing: Add 'traceon' and 'traceoff' event
+ trigger commands
+References: <cover.1378176577.git.tom.zanussi@linux.intel.com> <33cc30439cc2c729abb1644c2696d54d03ac6548.1378176577.git.tom.zanussi@linux.intel.com> <20130905164621.40f92270@gandalf.local.home>
+In-Reply-To: <20130905164621.40f92270@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+(2013/09/06 5:46), Steven Rostedt wrote:
+> On Mon,  2 Sep 2013 22:52:19 -0500
+> Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+>>  extern void destroy_preds(struct ftrace_event_call *call);
+>> diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+>> index 85319cf..5388d55 100644
+>> --- a/kernel/trace/trace_events_trigger.c
+>> +++ b/kernel/trace/trace_events_trigger.c
+>> @@ -28,6 +28,13 @@
+>>  static LIST_HEAD(trigger_commands);
+>>  static DEFINE_MUTEX(trigger_cmd_mutex);
+>>  
+>> +static void
+>> +trigger_data_free(struct event_trigger_data *data)
+>> +{
+>> +	synchronize_sched(); /* make sure current triggers exit before free */
+> 
+> Again, I think this can and should be synchronize_rcu().
+> 
 
-My name is Mr.Hassan Ullah Amer, I am the Bill and Exchange manager here in Bank of Africa, Ouagadougou Burkina Faso, West-Africa. I have a business proposal in the tune of $15.5m, (Fifteen Million Five Hundred Thousand Dollars Only) and after the successful transfer, we shall share in ratio of 40% for you and 60% for me.
+As in the previous patch, event triggers called under preempt disabled.
 
-Should you be interested, please contact me so we can commence all arrangements and i will give you more information on how we would handle this project.
+> +void event_triggers_call(struct ftrace_event_file *file)
+> +{
+> +	struct event_trigger_data *data;
+> +
+> +	if (list_empty(&file->triggers))
+> +		return;
+> +
+> +	preempt_disable_notrace();
+> +	list_for_each_entry_rcu(data, &file->triggers, list)
+> +		data->ops->func(data);
+> +	preempt_enable_notrace();
+> +}
 
-Please treat this business with utmost confidentiality and send me the Following:
+In this case, I think synchronize_sched() is correct. Of course,
+we need to discuss why it needs to disable preempt here. :)
 
-1. Your Full Name:
-2. Your Phone Number:
-3. Your Age:
-4. Your Sex:
-5. Your Occupations:
-6. Your Country and City:
+Thank you,
 
-Kind Regards,
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Mr.Hassan Ullah Amer.
+
