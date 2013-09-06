@@ -1,260 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3IFVvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 17:51:31 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:41970 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab3IFVv3 (ORCPT
+	id S1751161Ab3IFV6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 17:58:47 -0400
+Received: from mailout10.t-online.de ([194.25.134.21]:49032 "EHLO
+	mailout10.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3IFV6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 17:51:29 -0400
-Date: Fri, 6 Sep 2013 14:50:51 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
-Message-ID: <20130906215051.GA29253@quad.lixom.net>
-References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org>
+	Fri, 6 Sep 2013 17:58:46 -0400
+Message-ID: <522A5008.6060005@t-online.de>
+Date: Fri, 06 Sep 2013 23:58:32 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: intel-gfx <intel-gfx@lists.freedesktop.org>
+CC: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [BUG kernel 3.11+] i915: pipe state doesn't match
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: XK09EyZQ8hF-f4ogELogya7xBV87CERByc9v7T4xt0D4A6JZF1wsiW31wdWWIVGwbd
+X-TOI-MSGID: 3929c152-b1fd-4a68-80d2-30751387db4c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Someone might be interested ... kernel 2e032852245b3dcfe5461d7353e34eb6da095ccf.
 
-Some comments below.
+[    0.000000] Linux version 3.11.0-main+ (knut@linux-ktth.site) (gcc version 4.7.2 20130108 [gcc-4_7-branch revision 195012] (SUSE Linux) ) #34 PREEMPT Fri Sep 6 09:46:35 CEST 2013
 
-On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
-> This patch adds basic board support for APQ8074 Dragonboard
-> which belongs to the Snapdragon 800 family.
-> For now, just support a basic machine with device tree.
-> 
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
->  arch/arm/boot/dts/Makefile                |  3 ++-
->  arch/arm/boot/dts/apq8074-dragonboard.dts |  6 ++++++
->  arch/arm/boot/dts/msm8974.dtsi            | 35 +++++++++++++++++++++++++++++++
->  arch/arm/mach-msm/Kconfig                 | 20 ++++++++++++++++--
->  arch/arm/mach-msm/Makefile                |  1 +
->  arch/arm/mach-msm/board-dt-8974.c         | 24 +++++++++++++++++++++
->  6 files changed, 86 insertions(+), 3 deletions(-)
->  create mode 100644 arch/arm/boot/dts/apq8074-dragonboard.dts
->  create mode 100644 arch/arm/boot/dts/msm8974.dtsi
->  create mode 100644 arch/arm/mach-msm/board-dt-8974.c
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 641b3c9a..bea54a7 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -97,7 +97,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
->  	kirkwood-openblocks_a6.dtb
->  dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
->  dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
-> -	msm8960-cdp.dtb
-> +	msm8960-cdp.dtb \
-> +	apq8074-dragonboard.dtb
+[    2.258908] Linux agpgart interface v0.103
+[    2.259082] agpgart-intel 0000:00:00.0: Intel 915GM Chipset
+[    2.259258] agpgart-intel 0000:00:00.0: detected gtt size: 262144K total, 262144K mappable
+[    2.259949] agpgart-intel 0000:00:00.0: detected 8192K stolen memory
+[    2.260466] agpgart-intel 0000:00:00.0: AGP aperture is 256M @ 0xc0000000
+[    2.260608] [drm] Initialized drm 1.1.0 20060810
+[    2.265158] [drm] Memory usable by graphics device = 256M
+[    2.265301] i915 0000:00:02.0: setting latency timer to 64
+[    2.266465] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[    2.266471] [drm] Driver supports precise vblank timestamp query.
+[    2.267197] [drm:i915_stolen_to_physical] *ERROR* conflict detected with stolen region: [0x7f800000 - 0x80000000]
+[    2.267876] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+[    2.268246] [drm] Skipping LVDS initialization for AOpen i915GMm-HFS
+[    3.132208] tsc: Refined TSC clocksource calibration: 1199.999 MHz
+[    3.169857] [drm] initialized overlay support
+[    3.651142] [drm:intel_pipe_config_compare] *ERROR* mismatch in adjusted_mode.flags(DRM_MODE_FLAG_NHSYNC) (expected 2, found 0)
+[    3.651221] ------------[ cut here ]------------
+[    3.651237] WARNING: CPU: 0 PID: 1 at drivers/gpu/drm/i915/intel_display.c:8746 check_crtc_state+0x6c5/0x6f9()
+[    3.651242] pipe state doesn't match!
+[    3.651246] Modules linked in:
+[    3.651256] CPU: 0 PID: 1 Comm: swapper Not tainted 3.11.0-main+ #34
+[    3.651262] Hardware name:    /i915GMm-HFS, BIOS 6.00 PG 11/04/2005
+[    3.651267]  00000000 c07019fb f60798a0 c053b1c2 f60798b8 c012a8f0 c03c578b 00000000
+[    3.651288]  f6377000 f636cc48 f60798d0 c012a97a 00000009 f60798c8 c07019fb f60798e4
+[    3.651308]  f6079b38 c03c578b c07008c1 0000222a c07019fb f606a4f8 f6376e44 f606a4fc
+[    3.651329] Call Trace:
+[    3.651342]  [<c053b1c2>] dump_stack+0x16/0x18
+[    3.651354]  [<c012a8f0>] warn_slowpath_common+0x5f/0x76
+[    3.651363]  [<c03c578b>] ? check_crtc_state+0x6c5/0x6f9
+[    3.651373]  [<c012a97a>] warn_slowpath_fmt+0x2b/0x2f
+[    3.651383]  [<c03c578b>] check_crtc_state+0x6c5/0x6f9
+[    3.651411]  [<c03cebf6>] intel_modeset_check_state+0x30c/0x57b
+[    3.651422]  [<c03cee8b>] intel_set_mode+0x26/0x2f
+[    3.651431]  [<c03cfdba>] intel_get_load_detect_pipe+0x2b4/0x308
+[    3.651447]  [<c03e9b9f>] intel_tv_detect+0x108/0x444
+[    3.651466]  [<c038dd86>] drm_helper_probe_single_connector_modes+0xa0/0x270
+[    3.651477]  [<c038b88a>] drm_fb_helper_probe_connector_modes+0x39/0x4c
+[    3.651487]  [<c038cd6f>] drm_fb_helper_initial_config+0x143/0x3ac
+[    3.651497]  [<c0540be0>] ? _raw_spin_unlock_irqrestore+0x38/0x5b
+[    3.651506]  [<c0540bec>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[    3.651516]  [<c0540bec>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[    3.651527]  [<c03e94ef>] intel_fbdev_initial_config+0x1e/0x20
+[    3.651536]  [<c03a6efd>] i915_driver_load+0xb48/0xd23
+[    3.651551]  [<c03976b6>] drm_get_pci_dev+0x172/0x266
+[    3.651560]  [<c0540bec>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[    3.651572]  [<c03a41d5>] i915_pci_probe+0x46/0x4f
+[    3.651582]  [<c0304fb3>] pci_device_probe+0x5e/0x96
+[    3.651594]  [<c0401ee5>] driver_probe_device+0x8c/0x186
+[    3.651604]  [<c0402037>] __driver_attach+0x58/0x76
+[    3.651614]  [<c0400892>] bus_for_each_dev+0x43/0x6d
+[    3.651624]  [<c0401b0b>] driver_attach+0x19/0x1b
+[    3.651633]  [<c0401fdf>] ? driver_probe_device+0x186/0x186
+[    3.651642]  [<c0401746>] bus_add_driver+0xcc/0x1f7
+[    3.651652]  [<c0402554>] driver_register+0x73/0xa5
+[    3.651661]  [<c0305096>] __pci_register_driver+0x4a/0x4d
+[    3.651673]  [<c07fb56a>] ? ftrace_define_fields_drm_vblank_event+0x45/0x45
+[    3.651682]  [<c0397817>] drm_pci_init+0x6d/0xc5
+[    3.651692]  [<c07fb56a>] ? ftrace_define_fields_drm_vblank_event+0x45/0x45
+[    3.651701]  [<c07fb5c8>] i915_init+0x5e/0x60
+[    3.651710]  [<c01003b5>] do_one_initcall+0x6f/0xea
+[    3.651722]  [<c07d2428>] ? repair_env_string+0x12/0x51
+[    3.651731]  [<c07d2400>] ? do_early_param+0x5f/0x75
+[    3.651741]  [<c014147f>] ? parse_args+0x16b/0x209
+[    3.651752]  [<c07d29c2>] kernel_init_freeable+0xce/0x153
+[    3.651762]  [<c053556a>] kernel_init+0xd/0xb9
+[    3.651771]  [<c0546277>] ret_from_kernel_thread+0x1b/0x28
+[    3.651779]  [<c053555d>] ? rest_init+0xa5/0xa5
+[    3.651958] ---[ end trace deefedea51430d57 ]---
+[    3.824510] fbcon: inteldrmfb (fb0) is primary device
+[    3.943377] Console: switching to colour frame buffer device 160x64
+[    3.957788] i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
+[    3.957795] i915 0000:00:02.0: registered panic notifier
+[    3.957864] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
 
-Please add boards alphabetically.
+cu,
+  Knut
 
->  dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->  	armada-370-mirabox.dtb \
->  	armada-370-rd.dtb \
-> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
-> new file mode 100644
-> index 0000000..5b7b6a0
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
-
-arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
-family or vendor is used as a prefix to keep things a bit more organized. In
-that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
-
-> @@ -0,0 +1,6 @@
-> +/include/ "msm8974.dtsi"
-> +
-> +/ {
-> +	model = "Qualcomm APQ8074 Dragonboard";
-> +	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
-> +};
-
-Ok, I'm all for merging a early minimal dts file, but things like memory and
-a default bootargs tend to make sense.
-
-> diff --git a/arch/arm/boot/dts/msm8974.dtsi b/arch/arm/boot/dts/msm8974.dtsi
-> new file mode 100644
-> index 0000000..f04b643
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/msm8974.dtsi
-> @@ -0,0 +1,35 @@
-> +/dts-v1/;
-> +
-> +/include/ "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Qualcomm MSM8974";
-> +	compatible = "qcom,msm8974";
-
-the board uses "qcom,apq8074" and this overrides this. Which way is it?
-
-> +	interrupt-parent = <&intc>;
-> +
-> +	soc: soc { };
-
-For files that include this it's ok to use the &phandle syntax, but in this
-base dtsi, please use proper structure. In other words, move the contents of
-the soc node up above instead.
-
-> +};
-> +
-> +&soc {
-> +	#address-cells = <1>;
-> +	#size-cells = <1>;
-> +	ranges;
-> +	compatible = "simple-bus";
-> +
-> +	intc: interrupt-controller@f9000000 {
-> +		compatible = "qcom,msm-qgic2";
-> +		interrupt-controller;
-> +		#interrupt-cells = <3>;
-> +		reg = <0xf9000000 0x1000>,
-> +		      <0xf9002000 0x1000>;
-> +	};
-> +
-> +	timer {
-> +		compatible = "arm,armv7-timer";
-> +		interrupts = <1 2 0xf08>,
-> +			     <1 3 0xf08>,
-> +			     <1 4 0xf08>,
-> +			     <1 1 0xf08>;
-> +		clock-frequency = <19200000>;
-> +	};
-> +};
-
-It'd make a lot of sense to include at least cpu nodes here as well, and
-ideally basics for the drivers you have already merged, such as uarts.
-
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index 905efc8..499e8fe 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -1,12 +1,12 @@
->  if ARCH_MSM
->  
->  comment "Qualcomm MSM SoC Type"
-> -	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
-> +	depends on ARCH_MSM_DT
->  
->  choice
->  	prompt "Qualcomm MSM SoC Type"
->  	default ARCH_MSM7X00A
-> -	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
-> +	depends on !ARCH_MSM_DT
-
-This has nothing to do with adding support for dragonboard. Please break
-out the cleanup separately.
-
-I'm not sure what the purpose of ARCH_MSM_DT is either, it just looks to
-complicate matter here?
-
-> +config ARCH_MSM8974
-> +	bool "MSM8974"
-> +	select ARM_GIC
-> +	select CPU_V7
-> +	select HAVE_ARM_ARCH_TIMER
-> +	select HAVE_SMP
-> +	select MSM_SCM if SMP
-> +	select USE_OF
-> +
-> +config ARCH_MSM_DT
-> +	def_bool y
-> +	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-> +
->  config MSM_HAS_DEBUG_UART_HS
->  	bool
->  
-> @@ -68,6 +81,7 @@ config MSM_SOC_REV_A
->  
->  config  ARCH_MSM_ARM11
->  	bool
-> +
->  config  ARCH_MSM_SCORPION
->  	bool
->  
-> @@ -75,6 +89,7 @@ config  MSM_VIC
->  	bool
->  
->  menu "Qualcomm MSM Board Type"
-> +	depends on !ARCH_MSM_DT
->  
->  config MACH_HALIBUT
->  	depends on ARCH_MSM
-> @@ -122,6 +137,7 @@ config MSM_SMD
->  
->  config MSM_GPIOMUX
->  	bool
-> +	depends on !ARCH_MSM_DT
->  	help
->  	  Support for MSM V1 TLMM GPIOMUX architecture.
-
-
-All of the above should be in a separate patch and motivated.
-
->  
-> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-> index d257ff4..80e3b15 100644
-> --- a/arch/arm/mach-msm/Makefile
-> +++ b/arch/arm/mach-msm/Makefile
-> @@ -29,5 +29,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
->  obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
->  obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
->  obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
-> +obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
->  obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
->  obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
-> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-> new file mode 100644
-> index 0000000..01ed8d0
-> --- /dev/null
-> +++ b/arch/arm/mach-msm/board-dt-8974.c
-> @@ -0,0 +1,24 @@
-> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/of_platform.h>
-> +#include <asm/mach/arch.h>
-> +
-> +static const char * const msm8974_dt_match[] __initconst = {
-> +	"qcom,msm8974",
-> +	"qcom,apq8074",
-> +	NULL
-> +};
-> +
-> +DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
-> +	.dt_compat = msm8974_dt_match,
-> +MACHINE_END
-
-This file should be shared across SoCs. You should avoid adding a new dt board
-file for every SoC like this.
-
-
--Olof
