@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab3IFMAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 08:00:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52263 "EHLO mx2.suse.de"
+	id S1751496Ab3IFMAu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 08:00:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52269 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110Ab3IFMAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 08:00:39 -0400
-Date: Fri, 6 Sep 2013 14:00:34 +0200 (CEST)
+	id S1751110Ab3IFMAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 08:00:48 -0400
+Date: Fri, 6 Sep 2013 14:00:45 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID for 3.12 merge window
-Message-ID: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
+Subject: [GIT] trivial for 3.12 merge window
+Message-ID: <alpine.LNX.2.00.1309061224020.26934@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=ISO-8859-15
@@ -24,190 +24,237 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
 
-to receive HID updates for 3.12 merge window. Highlights:
+to receive usual trivial updates all over the tree -- mostly typo fixes 
+and documentation updates.
 
-- conversion of HID subsystem to use devm-based resource management, from 
-  Benjamin Tissoires
+You are going to receive three very simple merge conflicts ... if you want 
+me to prepare a branch with those fixed up, just let me know. Thanks.
 
-- i2c-hid support for DT bindings, from Benjamin Tissoires
 
-- much improved support for Win8-multitouch devices, from Benjamin 
-  Tissoires
+Bernhard M. Wiedemann (1):
+      zram: doc fixes
 
-- cleanup of core code using common hidinput_input_event(), from David 
-  Herrmann
+Chen Gang (1):
+      include/linux/coda.h: remove useless '#else'
 
-- fix for bug in implement() access to the bit stream (causing oops) that 
-  has been present in the code for ages, but devices that are able to 
-  trigger it have started to appear only now, from Jiri Kosina
+Chris Cheney (1):
+      credits: update contact information for Chris Cheney
 
-- fixes for CVE-2013-2899, CVE-2013-2898, CVE-2013-2896, CVE-2013-2892, 
-  CVE-2013-2888 (all triggerable only by specially crafted malicious HW 
-  devices plugged into the system), from Kees Cook
+Cristian Stoica (1):
+      crypto: fix typo in comment
 
-- hidraw oops fix, from Manoj Chourasia
+Daniel Borkmann (1):
+      doc: printk-formats: fix format specifier to %p[Ii]4[hnbl]
 
-- various smaller fixes here and there, support for a bunch of new devices 
-  by various contributors
+Geert Uytterhoeven (2):
+      Documentation/SubmittingPatches: Request summaries for commit references
+      Documentation/printk-formats.txt: No casts needed for u64/s64
 
-Thanks.
+Hu Tao (1):
+      doc: fix a typo about irq affinity
 
-Andy Shevchenko (7):
-      HID: i2c-hid: don't push static constants on stack for %*ph
-      HID: hid-holtekff: don't push static constants on stack for %*ph
-      HID: hid-sensor-hub: fix style of comments
-      HID: hid-wiimote: print small buffers via %*phC
-      HID: hid-sensor-hub: fix indentation accross the code
-      HID: hid-sensor-hub: move to devm_kzalloc
-      HID: hid-sensor-hub: change kmalloc + memcpy by kmemdup
-
-Benjamin Tissoires (8):
-      HID: logitech-dj: use inlined helpers hid_hw_open/close
-      HID: kye: Add report fixup for Genius Gx Imperator Keyboard
-      HID: trivial devm conversion for special hid drivers
-      HID: multitouch: devm conversion
-      HID: i2c-hid: add DT bindings
-      HID: Use hid_parser for pre-scanning the report descriptors
-      HID: detect Win 8 multitouch devices in core
-      HID: do not init input reports for Win 8 multitouch devices
-
-Bruno Prémont (1):
-      HID: picolcd: Prevent NULL pointer dereference on _remove()
-
-David Herrmann (12):
-      HID: usbhid: make usbhid_set_leds() static
-      HID: usbhid: update LED fields unlocked
-      HID: usbhid: use generic hidinput_input_event()
-      HID: i2c: use generic hidinput_input_event()
-      HID: uhid: use generic hidinput_input_event()
-      HID: input: generic hidinput_input_event handler
-      HID: wiimote: work around broken DRM_KAI on GEN10
-      input: document gamepad API and add extra keycodes
-      Input: introduce BTN/ABS bits for drums and guitars
-      HID: wiimote: add support for Guitar-Hero drums
-      HID: uhid: improve uhid example client
-      HID: move HID_REPORT_TYPES closer to the report-definitions
-
-Henrik Rydberg (1):
-      HID: Correct the USB IDs for the new Macbook Air 6
+Jens Frederich (1):
+      power: Documentation: Update s2ram link
 
 Jingoo Han (1):
-      HID: replace strict_strtoul() with kstrtoul()
+      Documentation: replace strict_strtoul() with kstrtoul()
 
-Jiri Kosina (3):
-      HID: fix data access in implement()
-      HID: fix unused rsize usage
-      HID: battery: don't do DMA from stack
+Jiri Kosina (1):
+      Merge branch 'master' into for-next
 
-Kees Cook (6):
-      HID: validate HID report id size
-      HID: pantherlord: validate output report details
-      HID: ntrig: validate feature report details
-      HID: sensor-hub: validate feature report details
-      HID: picolcd_core: validate output report details
-      HID: check for NULL field when setting values
+Joe Perches (4):
+      docproc: Move printk file location
+      treewide: Add __GFP_NOWARN to k.alloc calls with v.alloc fallbacks
+      treewide: Fix printks with 0x%#
+      treewide: Convert retrun typos to return
 
-Manoj Chourasia (1):
-      HID: hidraw: correctly deallocate memory on device disconnect
+Li Zhong (1):
+      Fix comment typo for init_cma_reserved_pageblock
 
-Marcel Holtmann (1):
-      HID: uhid: add devname module alias
+Libin (1):
+      Documentation/kmemcheck: update kmemcheck documentation
 
-Mika Westerberg (1):
-      HID: i2c-hid: use correct type for ACPI _DSM parameter
+Martin Nordholts (1):
+      Documentation: development-process: Update -mm and -next URLs
 
-Nicolas Adenis-Lamarre (1):
-      HID: wiimote: add support for Guitar-Hero guitars
+Masanari Iida (5):
+      doc: devicetree: bindings: Fix typo in bindings
+      doc: Fix typo in doucmentations
+      treewide: Fix typo in printk
+      doc: filesystems : Fix typo in Documentations/filesystems
+      doc: Fix typo "is is" in Documentations
 
-Olivier Scherler (1):
-      HID: Add new driver for non-compliant Xin-Mo devices.
+Matthias Schid (1):
+      scsi/megaraid fixed several typos in comments
 
-Paul Chavent (1):
-      HID: core: fix hid delimiter local tag parsing.
+Michael Witten (1):
+      Docs: Comment: Fixed egregious typos
 
-Paul Gortmaker (1):
-      HID: samples/hidraw: add .gitignore file
+Murilo Opsfelder Araujo (1):
+      doc: fix a typo in Documentation/00-INDEX
 
-Peter Hurley (1):
-      HID: logitech-dj: Fix non-atomic kmalloc in logi_dj_ll_input_event()
+Oleksandr Kravchenko (1):
+      Documentation: devres: add IIO device alloc/free functions to list
 
-Stefan Achatz (2):
-      HID: roccat: add support for KonePureOptical v2
-      HID: MAINTAINERS: add roccat drivers
+Paul Bolle (1):
+      ppc: init_32: Fix error typo "CONFIG_START_KERNEL"
 
-Stefan Kriwanek (1):
-      HID: Fix Speedlink VAD Cezanne support for some devices
+Paul Gortmaker (2):
+      Documentation: fix typo and update version in cachetlb.txt
+      Documentation: remove reference to 2.7 kernel in early-userspace
 
-Vasily Titskiy (1):
-      HID: usbhid: quirk for N-Trig DuoSense Touch Screen
+Sachin Kamat (4):
+      Documentation: clk: Fix a trivial typo in audss
+      Documentation: leds: Fix a typo
+      Documentation: pinctrl: Fix example code
+      spi/documentation: Fix usage of __initdata
 
-Wei Yongjun (1):
-      HID: use module_hid_driver() to simplify the code
+Sebastian Capella (1):
+      PM / Hibernate: add section for resume options
 
-Yonghua Zheng (1):
-      HID: hidraw: Add spinlock in struct hidraw to protect list
+Stefan Huber (10):
+      Documentation/devicetree/bindings/net/can/ fix a typo
+      Documentation/devicetree/bindings/clock/ fix a typo
+      Documentation/hwmon/abituguru-datasheet fix a typo
+      Documentation/acpi/enumeration.txt fix a typo
+      Documentation/sound/alsa/ fix a typo
+      Documentation/fb/viafb.modes fix a typo
+      Documentation/scsi/hptiop.txt fix a typo
+      Documentation/devicetree/bindings/c6x/ fix a typo
+      Documentation/zh_CN/SubmittingPatches fix a typo
+      Documentation/devicetree/bindings/serial/ fix a typo
 
- .../devicetree/bindings/hid/hid-over-i2c.txt       |   28 ++
- Documentation/hid/uhid.txt                         |    4 +-
- Documentation/input/gamepad.txt                    |  156 ++++++++
- MAINTAINERS                                        |    8 +
- drivers/hid/Kconfig                                |    8 +
- drivers/hid/Makefile                               |    1 +
- drivers/hid/hid-a4tech.c                           |   21 +-
- drivers/hid/hid-apple.c                            |   16 +-
- drivers/hid/hid-core.c                             |  159 ++++++---
- drivers/hid/hid-holtekff.c                         |    2 +-
- drivers/hid/hid-ids.h                              |   12 +-
- drivers/hid/hid-input.c                            |   92 +++++-
- drivers/hid/hid-kye.c                              |   45 ++-
- drivers/hid/hid-logitech-dj.c                      |   22 +-
- drivers/hid/hid-magicmouse.c                       |   19 +-
- drivers/hid/hid-multitouch.c                       |  107 +++---
- drivers/hid/hid-ntrig.c                            |   15 +-
- drivers/hid/hid-picolcd_cir.c                      |    3 +-
- drivers/hid/hid-picolcd_core.c                     |    2 +-
- drivers/hid/hid-picolcd_debugfs.c                  |   23 +-
- drivers/hid/hid-picolcd_fb.c                       |    6 +-
- drivers/hid/hid-pl.c                               |   10 +-
- drivers/hid/hid-roccat-arvo.c                      |    6 +-
- drivers/hid/hid-roccat-isku.c                      |    2 +-
- drivers/hid/hid-roccat-kone.c                      |    4 +-
- drivers/hid/hid-roccat-koneplus.c                  |    2 +-
- drivers/hid/hid-roccat-konepure.c                  |    3 +-
- drivers/hid/hid-roccat-kovaplus.c                  |    2 +-
- drivers/hid/hid-sensor-hub.c                       |   58 ++--
- drivers/hid/hid-sony.c                             |    9 +-
- drivers/hid/hid-speedlink.c                        |   11 +-
- drivers/hid/hid-wiimote-core.c                     |   41 ++-
- drivers/hid/hid-wiimote-modules.c                  |  392 ++++++++++++++++++++
- drivers/hid/hid-wiimote.h                          |    3 +
- drivers/hid/hid-xinmo.c                            |   61 +++
- drivers/hid/hid-zydacron.c                         |   19 +-
- drivers/hid/hidraw.c                               |   80 ++--
- drivers/hid/i2c-hid/i2c-hid.c                      |   77 +++--
- drivers/hid/uhid.c                                 |   26 +--
- drivers/hid/usbhid/hid-core.c                      |   83 +----
- drivers/hid/usbhid/hid-quirks.c                    |    2 +
- drivers/hid/usbhid/usbhid.h                        |    3 -
- drivers/input/mouse/bcm5974.c                      |    6 +-
- include/linux/hid-sensor-hub.h                     |    2 +-
- include/linux/hid-sensor-ids.h                     |    2 +-
- include/linux/hid.h                                |   16 +-
- include/linux/hidraw.h                             |    1 +
- include/linux/i2c/i2c-hid.h                        |    3 +-
- include/linux/mod_devicetable.h                    |    2 +-
- include/uapi/linux/input.h                         |   25 ++-
- include/uapi/linux/uhid.h                          |    4 +-
- net/bluetooth/hidp/core.c                          |   15 +-
- samples/hidraw/.gitignore                          |    1 +
- samples/uhid/uhid-example.c                        |  123 +++++-
- 54 files changed, 1351 insertions(+), 492 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/hid/hid-over-i2c.txt
- create mode 100644 Documentation/input/gamepad.txt
- create mode 100644 drivers/hid/hid-xinmo.c
- create mode 100644 samples/hidraw/.gitignore
+Tang Chen (1):
+      page_isolation: Fix a comment typo in test_pages_isolated()
+
+Uwe Kleine-König (1):
+      spi/bitbang: trivial: fix doubled word "use"
+
+Xishi Qiu (3):
+      doc: documentation/hwspinlock.txt fix typo
+      mm/hotplug: fix a typo in Documentation/memory-hotplug.txt
+      doc: Documentation/cputopology.txt fix typo
+
+Yacine Belkadi (2):
+      ktime: fix some scripts/kernel-doc warnings
+      workqueue: fix some scripts/kernel-doc warnings
+
+Zoltan Kiss (1):
+      Documentation/trace: Correcting and extending tracepoint documentation
+
+ CREDITS                                            |   11 +-
+ Documentation/00-INDEX                             |    2 +-
+ Documentation/ABI/testing/sysfs-block-zram         |    9 +-
+ Documentation/DocBook/device-drivers.tmpl          |    2 +-
+ Documentation/DocBook/media/v4l/vidioc-g-parm.xml  |    4 +-
+ Documentation/IRQ-affinity.txt                     |    4 +-
+ Documentation/SubmittingPatches                    |   10 ++
+ Documentation/acpi/enumeration.txt                 |    2 +-
+ Documentation/arm/OMAP/omap_pm                     |    2 +-
+ Documentation/block/cfq-iosched.txt                |    2 +-
+ Documentation/cachetlb.txt                         |    6 +-
+ Documentation/cputopology.txt                      |    2 +-
+ Documentation/development-process/2.Process        |    4 +-
+ Documentation/devicetree/bindings/arm/ste-u300.txt |    2 +-
+ .../devicetree/bindings/arm/vexpress-sysreg.txt    |    4 +-
+ Documentation/devicetree/bindings/c6x/dscr.txt     |    2 +-
+ .../devicetree/bindings/clock/clk-exynos-audss.txt |    2 +-
+ .../devicetree/bindings/clock/st,nomadik.txt       |    2 +-
+ .../devicetree/bindings/dma/atmel-dma.txt          |    4 +-
+ .../devicetree/bindings/dma/fsl-imx-dma.txt        |    2 +-
+ .../devicetree/bindings/dma/ste-dma40.txt          |    4 +-
+ Documentation/devicetree/bindings/mfd/cros-ec.txt  |    2 +-
+ .../devicetree/bindings/net/can/atmel-can.txt      |    2 +-
+ .../bindings/pinctrl/atmel,at91-pinctrl.txt        |    2 +-
+ Documentation/devicetree/bindings/serial/rs485.txt |    2 +-
+ Documentation/dma-buf-sharing.txt                  |    2 +-
+ Documentation/driver-model/devres.txt              |    4 +
+ Documentation/early-userspace/README               |    3 +-
+ Documentation/fb/fbcon.txt                         |    2 +-
+ Documentation/fb/viafb.modes                       |    2 +-
+ Documentation/fb/viafb.txt                         |    2 +-
+ Documentation/filesystems/btrfs.txt                |    2 +-
+ Documentation/filesystems/ext4.txt                 |    2 +-
+ Documentation/filesystems/nfs/Exporting            |    2 +-
+ Documentation/filesystems/nfs/pnfs.txt             |    2 +-
+ Documentation/filesystems/qnx6.txt                 |    2 +-
+ Documentation/filesystems/relay.txt                |    2 +-
+ Documentation/filesystems/sysfs-tagging.txt        |    2 +-
+ Documentation/filesystems/xfs.txt                  |    2 +-
+ Documentation/fmc/carrier.txt                      |    2 +-
+ Documentation/hwmon/abituguru-datasheet            |    2 +-
+ Documentation/hwmon/submitting-patches             |    2 +-
+ Documentation/hwspinlock.txt                       |    2 +-
+ Documentation/i2c/upgrading-clients                |    4 +-
+ Documentation/kmemcheck.txt                        |    6 +-
+ Documentation/leds/leds-lm3556.txt                 |    2 +-
+ Documentation/leds/leds-lp3944.txt                 |    2 +-
+ Documentation/memory-hotplug.txt                   |    2 +-
+ Documentation/mtd/nand_ecc.txt                     |    2 +-
+ Documentation/pinctrl.txt                          |    8 +-
+ Documentation/power/basic-pm-debugging.txt         |   10 +-
+ Documentation/power/swsusp.txt                     |   15 +++-
+ Documentation/printk-formats.txt                   |    6 +-
+ Documentation/rapidio/rapidio.txt                  |    2 +-
+ Documentation/scsi/hptiop.txt                      |    2 +-
+ Documentation/sound/alsa/README.maya44             |    2 +-
+ Documentation/sound/alsa/compress_offload.txt      |    4 +-
+ Documentation/spi/spi-summary                      |    2 +-
+ Documentation/sysfs-rules.txt                      |    2 +-
+ Documentation/target/tcm_mod_builder.py            |    2 +-
+ Documentation/trace/ftrace.txt                     |    4 +-
+ Documentation/trace/tracepoints.txt                |   19 +++-
+ Documentation/virtual/kvm/api.txt                  |    2 +-
+ Documentation/x86/boot.txt                         |    2 +-
+ Documentation/zh_CN/SubmittingPatches              |    2 +-
+ arch/parisc/kernel/signal.c                        |    2 +-
+ arch/powerpc/mm/init_32.c                          |    2 +-
+ crypto/api.c                                       |    2 +-
+ drivers/block/drbd/drbd_bitmap.c                   |    2 +-
+ drivers/clocksource/acpi_pm.c                      |    4 +-
+ drivers/crypto/ux500/hash/hash_core.c              |    2 +-
+ drivers/gpu/drm/radeon/r300.c                      |    2 +-
+ drivers/infiniband/hw/ehca/ipz_pt_fn.c             |    3 +-
+ drivers/media/usb/gspca/vicam.c                    |    2 +-
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c    |    2 +-
+ .../net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c    |    4 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c     |    2 +-
+ drivers/net/ethernet/sis/sis900.c                  |    2 +-
+ drivers/net/wireless/cw1200/wsm.c                  |    2 +-
+ drivers/net/wireless/iwlwifi/mvm/time-event.c      |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8188ee/fw.c        |    4 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/dm.c        |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8723ae/fw.c        |    4 +-
+ drivers/power/88pm860x_charger.c                   |    4 +-
+ drivers/power/pm2301_charger.c                     |    2 +-
+ drivers/scsi/bfa/bfad_im.c                         |    2 +-
+ drivers/scsi/cxgbi/libcxgbi.h                      |    8 +-
+ drivers/scsi/hpsa.c                                |    2 +-
+ drivers/scsi/lpfc/lpfc_attr.c                      |    8 +-
+ drivers/scsi/lpfc/lpfc_bsg.c                       |    2 +-
+ drivers/scsi/megaraid/megaraid_mbox.c              |   10 +-
+ drivers/scsi/megaraid/megaraid_mm.c                |    2 +-
+ drivers/scsi/megaraid/megaraid_sas_fusion.h        |    2 +-
+ drivers/scsi/qla2xxx/qla_bsg.c                     |    2 +-
+ drivers/scsi/qla2xxx/qla_mr.c                      |    2 +-
+ drivers/spi/spi-bitbang.c                          |    2 +-
+ drivers/tty/serial/kgdboc.c                        |    2 +-
+ fs/btrfs/send.c                                    |    2 +-
+ fs/ext4/super.c                                    |    4 +-
+ fs/gfs2/dir.c                                      |    2 +-
+ include/linux/coda.h                               |    1 -
+ include/linux/ktime.h                              |   28 +++---
+ kernel/workqueue.c                                 |  107 ++++++++++++--------
+ mm/memory-failure.c                                |    2 +-
+ mm/page_alloc.c                                    |    2 +-
+ mm/page_isolation.c                                |    8 +-
+ net/sched/sch_choke.c                              |    3 +-
+ sound/pci/ens1370.c                                |    2 +-
+ sound/pci/via82xx.c                                |    2 +-
+ 110 files changed, 280 insertions(+), 211 deletions(-)
 
 -- 
 Jiri Kosina
