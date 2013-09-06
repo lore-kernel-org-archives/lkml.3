@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab3IFMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 08:05:59 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37657 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751218Ab3IFMF6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 08:05:58 -0400
-Date: Fri, 6 Sep 2013 08:05:54 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [RELEASE] Userspace RCU 0.7.8
-Message-ID: <20130906120554.GA28647@Krystal>
+	id S1751421Ab3IFMI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 08:08:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218Ab3IFMIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 08:08:55 -0400
+Message-ID: <5229C5D4.5070600@redhat.com>
+Date: Fri, 06 Sep 2013 08:08:52 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
+References: <1378383524-27983-1-git-send-email-prarit@redhat.com> <20130905144818.GA23661@thunk.org> <52289E6C.8090301@redhat.com> <20130905190334.GC23661@thunk.org> <20130905194907.GE23661@thunk.org>
+In-Reply-To: <20130905194907.GE23661@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
 
-This is a bugfix-only release.
+On 09/05/2013 03:49 PM, Theodore Ts'o wrote:
+> BTW, note the following article, published today:
+> 
+> http://www.nytimes.com/2013/09/06/us/nsa-foils-much-internet-encryption.html?pagewanted=all
+> 
+> "By this year, the Sigint Enabling Project had found ways inside some
+> of the encryption chips that scramble information for businesses and
+> governments, either by working with chipmakers to insert back doors...."
+> 
+> Relying solely and blindly on a magic hardware random number generator
+> which is sealed inside a CPU chip and which is impossible to audit is
+> a ***BAD*** idea.
 
-Changelog:
+Your argument seems to surround the idea that putting stuff on the internet is
+safe.  It isn't.  If you've believed that then you've had your head in the sand
+and I've got a lot of land in Florida to sell you.
 
-2013-09-06 Userspace RCU 0.7.8
-        * Fix: hash table growth (for small tables) should be limited
-        * Document build work-around on MacOS X
-        * Fix tests: use of uninitialized variables
-        * tests: add missing unsigned long casts to pthread_self()
+Either way ... it's obvious you're not willing to take this patch and I respect
+that decision.
 
-Project website: http://lttng.org/urcu
-Download link: http://lttng.org/files/urcu/
+Thanks,
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+P.
