@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab3IFXKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 19:10:10 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64410 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab3IFXKH (ORCPT
+	id S1750837Ab3IFXMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 19:12:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38361 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3IFXMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 19:10:07 -0400
-Date: Fri, 6 Sep 2013 16:10:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>
-Subject: Re: [GIT] HID for 3.12 merge window
-Message-ID: <20130906231002.GA32330@core.coreip.homeip.net>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
- <20130906202022.GA353@x4>
- <CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
- <20130906215910.GA356@x4>
- <CANq1E4Q4mxKVJJEPNSb9kvUoMXc3KoAnxjnKd0Vx+hoGaeN=kg@mail.gmail.com>
+	Fri, 6 Sep 2013 19:12:01 -0400
+Date: Fri, 6 Sep 2013 16:11:59 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/14] 3.4.61-stable review
+Message-ID: <20130906231159.GA7394@kroah.com>
+References: <20130905202614.354156084@linuxfoundation.org>
+ <522A1515.8090300@samsung.com>
+ <20130906184606.GB5274@kroah.com>
+ <522A55D4.4000608@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANq1E4Q4mxKVJJEPNSb9kvUoMXc3KoAnxjnKd0Vx+hoGaeN=kg@mail.gmail.com>
+In-Reply-To: <522A55D4.4000608@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 07, 2013 at 12:51:27AM +0200, David Herrmann wrote:
-> Hi
-> 
-> On Fri, Sep 6, 2013 at 11:59 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On 2013.09.06 at 23:50 +0200, David Herrmann wrote:
-> >> Hi
+On Fri, Sep 06, 2013 at 04:23:16PM -0600, Shuah Khan wrote:
+> On 09/06/2013 12:46 PM, Greg Kroah-Hartman wrote:
+> >On Fri, Sep 06, 2013 at 11:47:01AM -0600, Shuah Khan wrote:
+> >>On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
+> >>>This is the start of the stable review cycle for the 3.4.61 release.
+> >>>There are 14 patches in this series, all will be posted as a response
+> >>>to this one.  If anyone has any issues with these being applied, please
+> >>>let me know.
+> >>>
+> >>>Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+> >>>Anything received after that time might be too late.
+> >>>
+> >>>The whole patch series can be found in one patch at:
+> >>>	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+> >>>and the diffstat can be found below.
+> >>>
+> >>>thanks,
+> >>>
+> >>>greg k-h
+> >>>
+> >>>-------------
 > >>
-> >> On Fri, Sep 6, 2013 at 10:20 PM, Markus Trippelsdorf
-> >> <markus@trippelsdorf.de> wrote:
-> >> > On 2013.09.06 at 14:00 +0200, Jiri Kosina wrote:
-> >> >>
-> >> >> David Herrmann (12):
-> >> > ...
-> >> >>       HID: wiimote: add support for Guitar-Hero drums
-> >> >
-> >> >  commit 61e00655e9cb82e034eb72b95a51072e718d14a7
-> >> >  Author: David Herrmann <dh.herrmann@gmail.com>
-> >> >  Date:   Mon Aug 26 19:14:46 2013 +0200
-> >> >
-> >> >      Input: introduce BTN/ABS bits for drums and guitars
-> >> >
-> >> > The commit above breaks my Logitech mouse. The mouse cursor just sits in
-> >> > the middle of the screen and doesn't react to movements. dmesg is
-> >> > normal, but Xorg.0.log says:
 > >>
-> >> Ok, the issue is the kernel assumes ABS_MAX to be a power-of-2 minus 1
-> >> (used as mask). That wasn't really obvious to me. Attached is a patch
-> >> which should fix that. Could you apply it on top of linus/master and
-> >> give it a try?
+> >>3.4.61-rc1 applied cleanly to 3.4.60
+> >>
+> >>Compiled and booted on the following systems:
+> >>
+> >>Samsung Series 9 900X4C Intel Corei5
+> >>HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> >>
+> >>dmesgs look good. No regressions compared to the previous dmesgs for
+> >>this release. dmesg emerg, crit, alert, err are clean. No
+> >>regressions in warn.
 > >
-> > Your patch fixes the issue. Thanks.
+> >Thanks for testing and letting me know.
+> >
+> >>Compile tested on Samsung Chromebook Exynos5 (ARMv7):
+> >>3.4.60 compile fail - it is not a regression. Existing issue in
+> >>3.4.y It has to do with missing config selections in
+> >>arch/arm/mach-exynos/Kconfig for this system. Debugging now using
+> >>the Kconfig selections from 3.10.y for this file.
+> >
+> >Is there a patch I can backport for this to work properly?  I'd like to
+> >get some type of ARM coverage if possible.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> Thanks a lot for reporting+testing!
+> Greg,
 > 
-> I am still not sure how to solve the EVIOCSABS thingy. Problem is,
-> it's defined as:
->   #define EVIOCSABS(_abs) ...0xc0 + (_abs)...
-> But if (_abs > 0x3f) this will be bigger than 0xff. Unfortunately, the
-> upper part of the ioctl is defined as 'E' which is 0x45 in hex and
-> thus sets the LSB. That means we cannot extend the _IOC_TYPE field to
-> the upper region (which would cause endian-issues, anyway). I guess
-> we're screwed here and need to revert that...
+> I did some debugging and found 3.4 needs several patches to that
+> made exynos4 support common for exynos4 and exynos5. It appears some
+> changes made it into 3.4, at least changing the directory name from
+> mach-exynos4 to mach-exynos, however the rest of the support is not
+> in 3.4. I identified the following commits:
 > 
-> Dmitry, any comment on this? Or am I missing something?
+> 6f9e95e6ed34ceff090ec1a1d27dfc85828d1dbd
+> 60e49ca654eea42e04912b259fa36bad2c3e56ef
+> 20ef9e08d27b3f5e09c32d4d371fa97f610a3069
 
-We have gaps below ABS_MT constants, I think for 3.12 you could move
-your whammy there and revert ABS_MAX change, but we need to plan for
-expanding it in the future.
+Those three are "reasonable".
 
-Thanks.
+> b1b3f49ce4606452279b58b17f2bbe2ba00304b
 
--- 
-Dmitry
+That just reorders the config options, is that really needed?
+
+So, with those first 3 patches, does the kernel now work on that
+platform for you?
+
+thanks,
+
+greg k-h
