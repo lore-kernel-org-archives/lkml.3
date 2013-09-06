@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750775Ab3IFEHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:07:15 -0400
-Received: from mdfmta010.mxout.tch.inty.net ([91.221.169.51]:47309 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750710Ab3IFEHN (ORCPT
+	id S1750744Ab3IFETm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:19:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38674 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab3IFETl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:07:13 -0400
-From: Phillip Lougher <phillip@squashfs.org.uk>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Phillip Lougher <phillip@squashfs.org.uk>
-Subject: [PATCH 0/5] Squashfs: extra sanity checks and sanity check fixes	
-Date: Fri,  6 Sep 2013 04:54:36 +0100
-Message-Id: <1378439682-12830-1-git-send-email-phillip@squashfs.org.uk>
-X-Mailer: git-send-email 1.7.10.4
-X-MDF-HostID: 19
+	Fri, 6 Sep 2013 00:19:41 -0400
+Date: Fri, 6 Sep 2013 14:19:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: olof@lixom.net, torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] net: stmmac: fix bad merge conflict resolution
+Message-Id: <20130906141929.2f30c62de4eb5c6ad9d3f699@canb.auug.org.au>
+In-Reply-To: <20130905.225817.700066425182547791.davem@davemloft.net>
+References: <20130905.163725.106795517693348522.davem@davemloft.net>
+	<1378429301-19964-1-git-send-email-olof@lixom.net>
+	<20130905.225817.700066425182547791.davem@davemloft.net>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Following on from the "Squashfs: sanity check information from disk"
-patch from Dan Carpenter, I have added a couple more sanity checks,
-and fixed a couple of existing sanity checks (including the patch from
-Dan Carpenter).
+Hi all,
 
-These sanity checks mainly exist to trap maliciously corrupted
-filesystems either through using a deliberately modified mksquashfs,
-or where the user has deliberately chosen to generate uncompressed
-metadata and then corrupted it.
+On Thu, 05 Sep 2013 22:58:17 -0400 (EDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Olof Johansson <olof@lixom.net>
+> Date: Thu,  5 Sep 2013 18:01:41 -0700
+>=20
+> > Merge commit 06c54055bebf919249aa1eb68312887c3cfe77b4 did a bad conflict
+> > resolution accidentally leaving out a closing brace. Add it back.
+> >=20
+> > Signed-off-by: Olof Johansson <olof@lixom.net>
+> > ---
+> >=20
+> > This breaks a handful of defconfigs on ARM, so it'd be good to see it
+> > applied pretty quickly. Thanks!
+>=20
+> Looks like Linus applied this, thanks Olof.
 
-Normally metadata in Squashfs filesystems is compressed, which means
-corruption (either accidental or malicious) is detected when
-trying to decompress the metadata.  So corrupted data does not normally
-get as far as the code paths in question here.
+And I cherry-picked it into linux-next for today.
 
-Phillip Lougher (5):
-  Squashfs: fix corruption check in get_dir_index_using_name()
-  Squashfs: fix corruption checks in squashfs_lookup()
-  Squashfs: fix corruption checks in squashfs_readdir()
-  Squashfs: add corruption check in get_dir_index_using_offset()
-  Squashfs: add corruption check for type in squashfs_readdir()
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- fs/squashfs/dir.c         | 17 +++++++++++++----
- fs/squashfs/namei.c       |  7 +++----
- fs/squashfs/squashfs_fs.h |  5 ++++-
- 3 files changed, 20 insertions(+), 9 deletions(-)
+--Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq
+Content-Type: application/pgp-signature
 
--- 
-1.8.3.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJSKVfWAAoJEECxmPOUX5FEVQ8P/A5fyR41e1cgYZgVo2w+XMVW
+LkflqemSr5GD3I+lune+4yqmUsGX9qI27UjiHpNU1pWda0gXXatn16iF6f3sXp/L
+HK03rhXS3TkUouvOwLBi/QDQD5DyBBy7vNn8qzledfQDn1oBeR4vWeZyeXKaLL47
+fQoxLd9GB4Ex/vEBkn5XqxY7BzG2FWrAEuu1XE9lhbe9ZOkagXXzykka7+ix2ofa
+dj8cck+OtRAXV1usvR+EYUMW3UpnHpvhKDJx5josOBiqHrN2yJGVNGgu+im0WL7V
+uWwJfKA2LSJdySaMe3Na5T99kBa2JZzfyan/bf52owKuw5GPgWo8zETn3euey9Xb
+43+D4ORKxX/RjZLMS7lH3CBa72DSSzEFLwK2JIxQkEkqp5OVzwGTP1yPsrtHC2JJ
+0SSPElpD8U90XFq1zd00UQ9Ei1siNFireJW0c0ivFv3jyhQBME0JELkQdzK0hT3L
+h5FbjytxkcH6sa7GWXsyLCofzMW4+cLKQIzyCXAzGjBny2dzWno1CBsz7dd28KfD
+vWRBSwKqJjSUnpSRGcDfWZA/dCcBekxsfSDYpStc2dBEcIL8m/hFSNTY0dM/4SYL
+zx55bwqsEWMZWYybjMGyPq89doLEcf4F6pwoZ2aFzdhjqdghjdWgI2x21MTrXLtp
+/+77/dJ9rwmVZnkjrjP8
+=MLHa
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq--
