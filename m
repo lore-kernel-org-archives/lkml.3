@@ -1,150 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751026Ab3IFXUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 19:20:53 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38453 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3IFXUv (ORCPT
+	id S1751118Ab3IFXYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 19:24:10 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:8832 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab3IFXYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 19:20:51 -0400
-MIME-Version: 1.0
-Date: Fri, 6 Sep 2013 16:20:50 -0700
-X-Google-Sender-Auth: yGT-WPh0GQ6daELUpi-1AnJQyyI
-Message-ID: <CAGXu5jJvuAC3paV5k_bmoHHrHVgc0Hi6ShSDk3iQUt1Lf0cioQ@mail.gmail.com>
-Subject: race condition in crypto larval handling
-From: Kees Cook <keescook@chromium.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Sep 2013 19:24:07 -0400
+X-AuditID: cbfec37b-b7fa96d00000716e-6a-522a641493bd
+Message-id: <522A6412.5070701@samsung.com>
+Date: Fri, 06 Sep 2013 17:24:02 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [ 00/14] 3.4.61-stable review
+References: <20130905202614.354156084@linuxfoundation.org>
+ <522A1515.8090300@samsung.com> <20130906184606.GB5274@kroah.com>
+ <522A55D4.4000608@samsung.com> <20130906231159.GA7394@kroah.com>
+In-reply-to: <20130906231159.GA7394@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hX13RFK0gg9/VFnPWr2GzaF68ns3i
+	8q45bBZffzpYLNj4iNHiUd9bdgc2j52z7rJ7nJjxm8Vj/9w17B6fN8kFsERx2aSk5mSWpRbp
+	2yVwZTy6fYC1YJ14xcXZk5gbGN8LdTFyckgImEgce9vPDGGLSVy4t56ti5GLQ0hgGaNE09OF
+	jBBOL5PEwaPL2SGcjYwSJzY/YAdp4RXQkjg3+S6QzcHBIqAq0bpAASTMJqAu8fn1DrASIQE5
+	iaYlq8E2iApESKxc8oAVolVQ4sfkeywgtoiAsUT/2Vlg85kFjjFKbJ98iA0kIQw0//XbmVAn
+	HWCUODalF2wZp4CexPa5jiA1zALWEisnbWOEsOUlNq95ywyxWFniz+VTTCDlEgKKEttXW01g
+	FJmFZPUsJN2zkHQvYGRexShWWpxcUJyUnlphpFecmFtcmpeul5yfu4kREjHVOxjvfrU5xCjA
+	wajEw2twWzNIiDWxrLgy9xCjBAezkgjvGQatICHelMTKqtSi/Pii0pzU4kOMTBycUg2M9ZIa
+	N6U/q6pHLfnzlI1dJPZel8TfX2svXlvKYPaCt3PNnFnPshpm3WW+9zPJTKJy4vGT6/0fSXWs
+	Wyi2Y7/zVGXO9epKcsLy+p0nyhc4vvXgsmGfPc93xf7zJayvrkQ+N2CZf/eDrMUj2e49EXnS
+	H71XmgY3rP1if/HhITNjlaVT4mTqrrzXUmIpzkg01GIuKk4EAGDaUy12AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/06/2013 05:11 PM, Greg Kroah-Hartman wrote:
+> On Fri, Sep 06, 2013 at 04:23:16PM -0600, Shuah Khan wrote:
+>> On 09/06/2013 12:46 PM, Greg Kroah-Hartman wrote:
+>>> On Fri, Sep 06, 2013 at 11:47:01AM -0600, Shuah Khan wrote:
+>>>> On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
+>>>>> This is the start of the stable review cycle for the 3.4.61 release.
+>>>>> There are 14 patches in this series, all will be posted as a response
+>>>>> to this one.  If anyone has any issues with these being applied, please
+>>>>> let me know.
+>>>>>
+>>>>> Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+>>>>> Anything received after that time might be too late.
+>>>>>
+>>>>> The whole patch series can be found in one patch at:
+>>>>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+>>>>> and the diffstat can be found below.
+>>>>>
+>>>>> thanks,
+>>>>>
+>>>>> greg k-h
+>>>>>
+>>>>> -------------
+>>>>
+>>>>
+>>>> 3.4.61-rc1 applied cleanly to 3.4.60
+>>>>
+>>>> Compiled and booted on the following systems:
+>>>>
+>>>> Samsung Series 9 900X4C Intel Corei5
+>>>> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+>>>>
+>>>> dmesgs look good. No regressions compared to the previous dmesgs for
+>>>> this release. dmesg emerg, crit, alert, err are clean. No
+>>>> regressions in warn.
+>>>
+>>> Thanks for testing and letting me know.
+>>>
+>>>> Compile tested on Samsung Chromebook Exynos5 (ARMv7):
+>>>> 3.4.60 compile fail - it is not a regression. Existing issue in
+>>>> 3.4.y It has to do with missing config selections in
+>>>> arch/arm/mach-exynos/Kconfig for this system. Debugging now using
+>>>> the Kconfig selections from 3.10.y for this file.
+>>>
+>>> Is there a patch I can backport for this to work properly?  I'd like to
+>>> get some type of ARM coverage if possible.
+>>>
+>>> thanks,
+>>>
+>>> greg k-h
+>>>
+>>
+>> Greg,
+>>
+>> I did some debugging and found 3.4 needs several patches to that
+>> made exynos4 support common for exynos4 and exynos5. It appears some
+>> changes made it into 3.4, at least changing the directory name from
+>> mach-exynos4 to mach-exynos, however the rest of the support is not
+>> in 3.4. I identified the following commits:
+>>
+>> 6f9e95e6ed34ceff090ec1a1d27dfc85828d1dbd
+>> 60e49ca654eea42e04912b259fa36bad2c3e56ef
+>> 20ef9e08d27b3f5e09c32d4d371fa97f610a3069
+>
+> Those three are "reasonable".
 
-I've tracked down a race condition and ref counting problem in the
-crypto API internals. We've been seeing it under Chrome OS, but it
-seems it's not isolated to just us:
+Cool. I will pull just these 3 patches and see if that works and let you 
+know if it works.
 
-https://code.google.com/p/chromium/issues/detail?id=244581
-http://marc.info/?l=linux-crypto-vger&m=135429403609373&w=2
-https://bugzilla.redhat.com/show_bug.cgi?id=983682
-http://www.mail-archive.com/linux-cifs@vger.kernel.org/msg07933.html
+>
+>> b1b3f49ce4606452279b58b17f2bbe2ba00304b
+>
+> That just reorders the config options, is that really needed?
+>
+> So, with those first 3 patches, does the kernel now work on that
+> platform for you?
+>
+> thanks,
+>
+> greg k-h
+>
 
-I think I've found the basic origin of the problem.
-crypto_larval_add() has synchronization to make sure only a single
-larval can ever be created. That logic seems totally fine. However,
-this means that crypto_larval_lookup() from two threads can return the
-same larval, which means that crypto_alg_mod_lookup() runs the risk of
-calling crypto_larval_kill() on the same larval twice, which does not
-appear to be handled sanely.
+Yes the last one b1b3f49ce4606452279b58b17f2bbe2ba00304b, is a 
+reordering patch.
 
-I can easily crash the kernel by forcing a synchronization point just
-before the "return crypt_larval_add(...)" call in
-crypto_larval_lookup(). Basically, I added this sloppy sync code (I
-feel like there must be a better way to do this):
-
-+static atomic_t global_sync = ATOMIC_INIT(0);
-...
-struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
-...
-+       if (strncmp(name, "asdf", 4) == 0) {
-+               int value;
-+
-+               value = atomic_add_return(1, &global_sync);
-+               if (value == 1) {
-+                       /* I was first to stall here, wait for inc. */
-+                       while (atomic_read(&global_sync) != 2)
-+                               cpu_relax();
-+               } else if (value == 2) {
-+                       /* I was second to stall here, wait for dec. */
-+                       while (atomic_read(&global_sync) != 1)
-+                               cpu_relax();
-+               } else {
-+                       BUG();
-+               }
-+               atomic_dec(&global_sync);
-+       }
-
-        return crypto_larval_add(name, type, mask);
- }
-
-And then ran code from userspace that did, effectively:
-
-    struct sockaddr_alg sa = {
-        .salg_family = AF_ALG,
-        .salg_type   = "hash",
-    };
-    strcpy(sa.salg_name, argv[1]);
-
-    fork();
-    ...
-    sds[0] = socket(AF_ALG, SOCK_SEQPACKET, 0);
-    bind(sds[0], (struct sockaddr *) &sa, sizeof(sa));
-
-And ran this as "./tickle asdf1" to generate the two threads trying to
-find an invalid alg. The race looks possible even with valid algs, but
-this was the fastest path I could see to tickle the issue.
-
-With added printks to the kernel, it was clear that crypto_larval_kill
-was being called twice on the same larval, and the list_del() call was
-doing bad things. When I fixed that, the refcnt bug became very
-obvious. Here's the change I made for crypto_larval_kill:
-
-@@ -161,7 +166,8 @@ void crypto_larval_kill(struct crypto_alg *alg)
-        struct crypto_larval *larval = (void *)alg;
-
-        down_write(&crypto_alg_sem);
--       list_del(&alg->cra_list);
-+       if (!list_empty(&alg->cra_list))
-+               list_del_init(&alg->cra_list);
-        up_write(&crypto_alg_sem);
-        complete_all(&larval->completion);
-        crypto_alg_put(alg);
-
-It seems that there are too many "put" calls (mixed between
-crypto_alg_put() and crypto_mod_put(), which also calls
-crypto_alg_put()). See this annotated portion of
-crypto_alg_mod_lookup:
-
-        /* This can (correctly) return the same larval for two threads. */
-        larval = crypto_larval_lookup(name, type, mask);
-        if (IS_ERR(larval) || !crypto_is_larval(larval))
-                return larval;
-
-        ok = crypto_probing_notify(CRYPTO_MSG_ALG_REQUEST, larval);
-
-        if (ok == NOTIFY_STOP)
-                /* This calls crypto_mod_put(), but sometimes also get?? */
-                alg = crypto_larval_wait(larval);
-        else {
-                /* This directly calls crypto_mod_put */
-                crypto_mod_put(larval);
-                alg = ERR_PTR(-ENOENT);
-        }
-        /* This calls crypto_alg_put */
-        crypto_larval_kill(larval);
-        return alg;
-
-In the two-thread situation, the first thread gets a larval with
-refcnt 2 via crypto_larval_add. (Why 2?) The next thread finds the
-larval via crypto_larval_add's call to __crypto_alg_lookup() and sees
-the ref bump to 3. While exiting crypto_alg_mod_lookup, each thread
-decrements the ref count twice.
-
-It seems to me like either each call to crypto_larval_lookup() should
-result in a refcount bumped by two, or crypto_alg_mod_lookup() should
-decrement only once, and the initial refcount should be 1 not 2 from
-crypto_larval_add. But it's not clear to me which is sensible here.
-
-What's the right solution here?
-
-Thanks,
-
--Kees
-
+-- Shuah
 -- 
-Kees Cook
-Chrome OS Security
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
