@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab3IFSpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:45:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42658 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab3IFSpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:45:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,856,1371106800"; 
-   d="scan'208";a="397814564"
-Subject: Re: [PATCH RESEND v3 3/7] Intel MIC Host Driver, card OS state
- management.
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-In-Reply-To: <20130906050157.GF28806@kroah.com>
-References: <cover.1378423596.git.sudeep.dutt@intel.com>
-	 <669a3a3bbfff577c73d05fb568a810cbbc3d5333.1378423596.git.sudeep.dutt@intel.com>
-	 <20130906050157.GF28806@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Sep 2013 11:41:03 -0700
-Message-ID: <1378492863.107744.69.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1751522Ab3IFSqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 14:46:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35098 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab3IFSqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 14:46:07 -0400
+Date: Fri, 6 Sep 2013 11:46:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/14] 3.4.61-stable review
+Message-ID: <20130906184606.GB5274@kroah.com>
+References: <20130905202614.354156084@linuxfoundation.org>
+ <522A1515.8090300@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522A1515.8090300@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 22:01 -0700, Greg Kroah-Hartman wrote:
-> On Thu, Sep 05, 2013 at 04:41:55PM -0700, Sudeep Dutt wrote:
-> > +What:		/sys/class/mic/mic(x)/firmware
-> > +Date:		August 2013
-> > +KernelVersion:	3.11
-> > +Contact:	Sudeep Dutt <sudeep.dutt@intel.com>
-> > +Description:
-> > +		When read, this sysfs entry provides the path name under
-> > +		/lib/firmware/ where the firmware image to be booted on the
-> > +		card can be found. The entry can be written to change the
-> > +		firmware image location under /lib/firmware/.
+On Fri, Sep 06, 2013 at 11:47:01AM -0600, Shuah Khan wrote:
+> On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.4.61 release.
+> >There are 14 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+> >-------------
 > 
-> I don't understand, is the path under the HOST device, or the Client
-> device's disk?  Why do you need to change the path on the HOST?  What's
-> wrong with the existing firmware path selection we have in the kernel?
 > 
+> 3.4.61-rc1 applied cleanly to 3.4.60
+> 
+> Compiled and booted on the following systems:
+> 
+> Samsung Series 9 900X4C Intel Corei5
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> 
+> dmesgs look good. No regressions compared to the previous dmesgs for
+> this release. dmesg emerg, crit, alert, err are clean. No
+> regressions in warn.
 
-The path is on the host. The card does not have a physical persistent
-disk device. Our customers like the flexibility of changing the card
-firmware/ramdisk contents and file names for individual MIC cards. This
-flexibility is not possible with a static set of firmware file names in
-the kernel for all cards.
+Thanks for testing and letting me know.
 
-Once the firmware/ramdisk path under /lib/firmware/ is set up via sysfs,
-card boot is initiated via the "state" sysfs entry. The host driver then
-obtains the contents of the firmware and ramdisk via the standard
-request_firmware(..) interface, copies the contents to card memory and
-interrupts the card BIOS to initiate boot.
+> Compile tested on Samsung Chromebook Exynos5 (ARMv7):
+> 3.4.60 compile fail - it is not a regression. Existing issue in
+> 3.4.y It has to do with missing config selections in
+> arch/arm/mach-exynos/Kconfig for this system. Debugging now using
+> the Kconfig selections from 3.10.y for this file.
 
-Thanks,
-Sudeep Dutt
+Is there a patch I can backport for this to work properly?  I'd like to
+get some type of ARM coverage if possible.
 
+thanks,
 
+greg k-h
