@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750770Ab3IFEyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:54:19 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:65083 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3IFEyR (ORCPT
+	id S1750788Ab3IFEyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:54:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56812 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3IFEyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:54:17 -0400
+	Fri, 6 Sep 2013 00:54:39 -0400
+Date: Thu, 5 Sep 2013 21:57:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH RESEND v3 1/7] Intel MIC Host Driver for X100 family.
+Message-ID: <20130906045722.GC28806@kroah.com>
+References: <cover.1378423596.git.sudeep.dutt@intel.com>
+ <8b972a444f4529ecffc718db4112aa8959bf72ad.1378423596.git.sudeep.dutt@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <5229377E.5050805@hp.com>
-References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
-	<1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
-	<5228E992.5050901@hp.com>
-	<CA+55aFzx4YHY3e5AH0U5AkAQSc8pZyC35jBP4t2jpbi8NHM18g@mail.gmail.com>
-	<5229377E.5050805@hp.com>
-Date: Thu, 5 Sep 2013 21:54:16 -0700
-X-Google-Sender-Auth: eh2rXSvQkbEj5Doh6XaWZVW_Maw
-Message-ID: <CA+55aFydWW3Azfo_oh+M2MY75xJn+fd_pnKE-UBrEtw10jOhow@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8b972a444f4529ecffc718db4112aa8959bf72ad.1378423596.git.sudeep.dutt@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 7:01 PM, Waiman Long <waiman.long@hp.com> wrote:
->
-> I am sorry that I misunderstand what you said. I will do what you and Al
-> advise me to do.
+On Thu, Sep 05, 2013 at 04:41:31PM -0700, Sudeep Dutt wrote:
+>  drivers/misc/mic/common/mic_device.h          |  37 +++
+>  drivers/misc/mic/host/mic_device.h            | 109 +++++++++
 
-I'm sorry I shouted at you. I was getting a bit frustrated there..
+Two different files, with the same name?  You are asking for trouble in
+the future, getting them confused :)
 
-            Linus
+Please try to pick a unique name, especially when you later do things
+like:
+
+> +#include "../common/mic_device.h"
+> +#include "mic_device.h"
+
+Which just looks odd.
+
+Again, not a big deal, follow-on patch can fix this.
+
+thanks,
+
+greg k-h
