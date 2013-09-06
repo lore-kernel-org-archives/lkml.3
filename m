@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab3IFSsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:48:43 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:30074 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3IFSsl (ORCPT
+	id S1751905Ab3IFSuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 14:50:46 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51834 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab3IFSun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:48:41 -0400
-X-AuditID: cbfec37c-b7fd86d00000670b-01-522a23881268
-Message-id: <522A2385.9090006@samsung.com>
-Date: Fri, 06 Sep 2013 12:48:37 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [ 00/36] 3.10.11-stable review
-References: <20130905202702.289738686@linuxfoundation.org>
- <522A12AE.2090600@samsung.com> <20130906184514.GA5274@kroah.com>
-In-reply-to: <20130906184514.GA5274@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hP90OZa0gg5ef5SzmrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mq4MVmnYBJfxcTLK5kbGJdydzFyckgImEjsvfKLHcIWk7hwbz1bFyMXh5DAMkaJQxvX
-	MkM4vUwSy5q/QDmbGSX2XJ/DBNLCK6AlcaThB5jNIqAqseheExuIzSagLvH59Q6wsUICchJN
-	S1Yzg9iiAhESK5c8YIXoFZT4MfkeC4gtImAs0X92FjvIAmaBY4wS2ycfAhskLKAtcavvHDPE
-	oFqJ9f82MILYnAJ6Ere+vQNbzCxgLbFy0jZGCFteYvOat1D1yhJ/Lp8CquEA+k1RYvtqqwmM
-	IrOQrJ6FpHsWku4FjMyrGMVKi5MLipPSUyuM9YoTc4tL89L1kvNzNzFCYqZmB+O9rzaHGAU4
-	GJV4eG/c0AwSYk0sK67MPcQowcGsJMJ7hkErSIg3JbGyKrUoP76oNCe1+BAjEwenVAOju5Do
-	TjHJmSoTNme4PbvTa7KGLVVWK7xStdTeZTvjvjn8XHyZCy1TPLKjTDfvbXoTuOOe80L3R6qh
-	FT75N56m2t58e0bp4Ub1Kd77XGzjM27N9BHafPdT5Bq+s3Kmya6PN116FKdbGXxoe9HliPyz
-	Ysr5vYsFWR9JT/3RZFBx90g3i+8tnttKLMUZiYZazEXFiQAie8BZdwIAAA==
+	Fri, 6 Sep 2013 14:50:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130906173047.GT3966@linux.vnet.ibm.com>
+References: <20130820024700.GA31075@linux.vnet.ibm.com>
+	<1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
+	<CAMuHMdWtZAD3G_miFOT9DPZpfTO3nJ9J4aG_zvHV_6eVf2jdQg@mail.gmail.com>
+	<20130906173047.GT3966@linux.vnet.ibm.com>
+Date: Fri, 6 Sep 2013 20:50:41 +0200
+X-Google-Sender-Auth: 0CY-eeHdw9xs2TdtWh5y8gicPCs
+Message-ID: <CAMuHMdVS4jGFOuysknJ_4BcdWRrYU=7KVfO8o_gxf-pVg=5gKA@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 8/9] nohz_full: Add full-system-idle state machine
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        josh@joshtriplett.org, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>, edumazet@google.com,
+        darren@dvhart.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        sbw@mit.edu, Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2013 12:45 PM, Greg Kroah-Hartman wrote:
-> On Fri, Sep 06, 2013 at 11:36:46AM -0600, Shuah Khan wrote:
->> On 09/05/2013 02:27 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.10.11 release.
->>> There are 36 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sat Sep  7 20:26:25 UTC 2013.
->>> Anything received after that time might be too late.
->>>
->>> The whole patch series can be found in one patch at:
->>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.11-rc1.gz
->>> and the diffstat can be found below.
->>>
->>> thanks,
->>>
->>> greg k-h
->>>
->>
->> 3.10.11-rc1 applied cleanly to 3.10.10
->>
->> Compiled and booted on the following systems:
->>
->> Samsung Series 9 900X4C Intel Corei5
->> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->>
->> dmesgs look good. No regressions compared to the previous dmesgs for
->> this release. dmesg emerg, crit, alert, err are clean. No
->> regressions in warn.
+On Fri, Sep 6, 2013 at 7:30 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>> Furthermore, it seems only hexagon, metag, mips, and x86 set NR_CPUS to 1
+>> if !SMP. On other architectures, NR_CPUS is not defined and presumed to be 0.
 >
-> Thanks for testing and letting me know.
->
->> Compile tested on Samsung Chromebook Exynos5 (ARMv7):
->> Note: Hoping to run boot tests on this new test system, but I was
->> able to compile the 3.10.11-rc1 on this system running Ubuntu 13.04
->> so far.
->
-> "able", or "unable"?  What's the problem you are getting?
->
+> Would it make sense to require that NR_CPUS=1 for !SMP?
 
-Compiled just fine. No issues with compile and installed fine. I am 
-figuring out the boot-loader config on this system to be able to boot 
-the new image. Will get there soon. :)
+Yes, this looks reasonable to me.
 
--- Shuah
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> I tried creating a NR_CPUS_REALLY as follows:
+>
+> config NR_CPUS_REALLY
+>         int "Fixed version of NR_CPUS"
+>         default NR_CPUS if NR_CPUS
+>         default 1 if !NR_CPUS
+>
+> But this still gave a warning on the first "default" even though it
+> was not in effect.  I also tried using Kconfig "if":
+
+IIRC, it tries to use the first default first, so the below may work
+(the "if SMP" is probably not needed):
+
+config NR_CPUS_REALLY
+        int "Fixed version of NR_CPUS"
+        default 1 if !SMP
+        default NR_CPUS if SMP
+
+> Defining NR_CPUS=1 if !SMP is looking pretty good to me just now.
+> This would probably have other benefits -- I cannot be the only
+> person who ever wanted this.  ;-)
+
+Sure. I just didn't want to create patches for all architectures without
+having a discussion first.
+
+And it would be nice if it cuould be done in a central place, without
+touching all architectures.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
