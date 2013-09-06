@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab3IFK7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 06:59:48 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57234 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab3IFK7q (ORCPT
+	id S1751324Ab3IFLAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:00:00 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59110 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3IFK7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 06:59:46 -0400
-Date: Fri, 6 Sep 2013 12:59:41 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130906105934.GF20519@somewhere>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
+	Fri, 6 Sep 2013 06:59:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130905195234.GA20555@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com>
+References: <1378459933-367-1-git-send-email-teg@jklm.no>
+	<CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com>
+Date: Fri, 6 Sep 2013 12:59:47 +0200
+X-Google-Sender-Auth: jEmtLA-br9A1732WTu-ZRwlxG9I
+Message-ID: <CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
+Subject: Re: [PATCH] x86: simplefb: avoid overflow
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Tom Gundersen <teg@jklm.no>, "the arch/x86 maintainers" <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 12:52:34PM -0700, Paul E. McKenney wrote:
-> There is currently no way for kernel code to determine whether it
-> is safe to enter an RCU read-side critical section, in other words,
-> whether or not RCU is paying attention to the currently running CPU.
-> Given the large and increasing quantity of code shared by the idle loop
-> and non-idle code, the this shortcoming is becoming increasingly painful.
-> 
-> This commit therefore adds rcu_watching_this_cpu(), which returns true
-> if it is safe to enter an RCU read-side critical section on the currently
-> running CPU.  This function is quite fast, using only a __this_cpu_read().
-> However, the caller must disable preemption.
-> 
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
->  include/linux/rcupdate.h |    1 +
->  kernel/rcutree.c         |   12 ++++++++++++
->  2 files changed, 13 insertions(+)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 15d33d9..1c7112c 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -225,6 +225,7 @@ extern void rcu_idle_enter(void);
->  extern void rcu_idle_exit(void);
->  extern void rcu_irq_enter(void);
->  extern void rcu_irq_exit(void);
-> +extern bool rcu_watching_this_cpu(void);
->  
->  #ifdef CONFIG_RCU_USER_QS
->  extern void rcu_user_enter(void);
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index a06d172..7b8fcee 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -710,6 +710,18 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
->  #endif /* #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU) */
->  
->  /**
-> + * rcu_watching_this_cpu - are RCU read-side critical sections safe?
-> + *
-> + * Return true if RCU is watching the running CPU, which means that this
-> + * CPU can safely enter RCU read-side critical sections.  The caller must
-> + * have at least disabled preemption.
-> + */
-> +bool rcu_watching_this_cpu(void)
-> +{
-> +	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
-> +}
+On Fri, Sep 6, 2013 at 11:55 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> On Fri, Sep 6, 2013 at 11:32 AM, Tom Gundersen <teg@jklm.no> wrote:
+>> lfb_size can easily be say 4M, which would make the bitshit overflow and
+>> the test fail.
+>>
+>> Signed-off-by: Tom Gundersen <teg@jklm.no>
+>> Cc: David Herrmann <dh.herrmann@gmail.com>
+>> Cc: H. Peter Anvin <hpa@zytor.com>
+>> ---
+>>  arch/x86/kernel/sysfb_simplefb.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+>> index 22513e9..fff44a5 100644
+>> --- a/arch/x86/kernel/sysfb_simplefb.c
+>> +++ b/arch/x86/kernel/sysfb_simplefb.c
+>> @@ -72,7 +72,7 @@ __init int create_simplefb(const struct screen_info *si,
+>>          * the part that is occupied by the framebuffer */
+>>         len = mode->height * mode->stride;
+>>         len = PAGE_ALIGN(len);
+>> -       if (len > si->lfb_size << 16) {
+>> +       if (len > ((unsigned long) si->lfb_size) << 16) {
 
-There is also rcu_is_cpu_idle().
+On 32-bit, "unsigned long" is the same size as __u32, so this doesn't
+make any difference.
 
-Thanks.
+> Nice catch. vesafb uses "lfb_size * 65535" which causes an implicit
+> cast. I thought <<16 looks nicer but that doesn't do any implicit
+> cast..
 
-> +
-> +/**
->   * rcu_is_cpu_rrupt_from_idle - see if idle or immediately interrupted from idle
->   *
->   * If the current CPU is idle or running at a first-level (not nested)
-> 
+"lfb_size * 65535" is the same. "lfb_size" is __u32, "65535" is int.
+So there's no implicit cast. Or am I missing something?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
