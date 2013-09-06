@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750765Ab3IFFKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:10:43 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52049 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab3IFFKl convert rfc822-to-8bit (ORCPT
+	id S1750758Ab3IFFQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:16:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35024 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab3IFFQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:10:41 -0400
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <52285395.1070508@hp.com>
-Date: Thu, 5 Sep 2013 23:10:31 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>, T Makphaibulchoke <tmac@hp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@groups.hp.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca>
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com>
-To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-X-Mailer: Apple Mail (2.1085)
+	Fri, 6 Sep 2013 01:16:48 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-4d-5229653990a4
+From: Weijie Yang <weijie.yang@samsung.com>
+To: sjenning@linux.vnet.ibm.com
+Cc: minchan@kernel.org, bob.liu@oracle.com, weijie.yang.kh@gmail.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/4] mm/zswap bugfix: memory leaks and other problems
+Date: Fri, 06 Sep 2013 13:15:08 +0800
+Message-id: <000501ceaac0$4568ec70$d03ac550$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6qwA2j9Xb0+k0jSS62TaEH9Ag/Og==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQV3LVM0gg4UH9S26Tk1lsbi8aw6b
+	xb01/1ktln19z25xaN8qdosnJ/6zOLB57Jx1l91j06pONo9Nnyaxezw4tJnF4+PTWywenzfJ
+	BbBFcdmkpOZklqUW6dslcGU8unqDtWAmT0XTtfUsDYyvOLsYOTkkBEwkml59ZYGwxSQu3FvP
+	BmILCUxnlHjWyd3FyAVk/2GU+H+xlxkkwSagLXG3fyMriC0iIC+x+9t3MJtZoELi+bTvYDXC
+	Ah4SEybeBLNZBFQlPu05DjSUg4NXwE6ivTcGJMwrICjxY/I9FpAws4C6xJQpuRBT5CU2r3nL
+	DBKWAAo/+qsLsUhPonnCahaIEnGJjUdusUxgFJiFZNAshEGzkAyahaRjASPLKkbR1ILkguKk
+	9FwjveLE3OLSvHS95PzcTYzgoH8mvYNxVYPFIUYBDkYlHl6OHo0gIdbEsuLK3EOMEhzMSiK8
+	4hqaQUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJpCeWpGanphakFsFkmTg4pRoYl1U6
+	WT9kTd93Uz3g8SH99wzm5v9W7BOfI9j84OnnOt6OV+f3vz7sM/fhjmqWFcIbMorYnHZv7J3B
+	H74txKhDw6zn8rzuMp+NTp+C2XKOXL16oHTy4zX+ddMMepzfHtzTcMa8QitHWVxKbUHqBK7r
+	JfIHl1WUv9r7uH7qz4Cz+uxtjyuj9nztUmIpzkg01GIuKk4EAKAxJi92AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-09-05, at 3:49 AM, Thavatchai Makphaibulchoke wrote:
-> On 09/05/2013 02:35 AM, Theodore Ts'o wrote:
->> How did you gather these results?  The mbcache is only used if you
->> are using extended attributes, and only if the extended attributes don't fit in the inode's extra space.
->> 
->> I checked aim7, and it doesn't do any extended attribute operations.
->> So why are you seeing differences?  Are you doing something like
->> deliberately using 128 byte inodes (which is not the default inode
->> size), and then enabling SELinux, or some such?
-> 
-> No, I did not do anything special, including changing an inode's size. I just used the profile data, which indicated mb_cache module as one of the bottleneck.  Please see below for perf data from one of th new_fserver run, which also shows some mb_cache activities.
-> 
-> 
->                        |--3.51%-- __mb_cache_entry_find
->                        |          mb_cache_entry_find_first
->                        |          ext4_xattr_cache_find
->                        |          ext4_xattr_block_set
->                        |          ext4_xattr_set_handle
->                        |          ext4_initxattrs
->                        |          security_inode_init_security
->                        |          ext4_init_security
+This patch series fix a few bugs in zswap based on Linux-3.11.
 
-Looks like this is some large security xattr, or enough smaller
-xattrs to exceed the ~120 bytes of in-inode xattr storage.  How
-big is the SELinux xattr (assuming that is what it is)?
+v1 --> v2
+	- free memory in zswap_frontswap_invalidate_area (in patch 1)
+	- fix whitespace corruption (line wrapping)
 
-> Looks like it's a bit harder to disable mbcache than I thought.
-> I ended up adding code to collect the statics.
-> 
-> With selinux enabled, for new_fserver workload of aim7, there
-> are a total of 0x7e05420100000000 ext4_xattr_cache_find() calls
-> that result in a hit and 0xc100000000000000 calls that are not.
-> The number does not seem to favor the complete disabling of
-> mbcache in this case.
+Corresponding mail thread: https://lkml.org/lkml/2013/8/18/59
 
-This is about a 65% hit rate, which seems reasonable.
+These issues fixed/optimized are:
 
-You could try a few different things here:
-- disable selinux completely (boot with "selinux=0" on the kernel
-  command line) and see how much faster it is
-- format your ext4 filesystem with larger inodes (-I 512) and see
-  if this is an improvement or not.  That depends on the size of
-  the selinux xattrs and if they will fit into the extra 256 bytes
-  of xattr space these larger inodes will give you.  The performance
-  might also be worse, since there will be more data to read/write
-  for each inode, but it would avoid seeking to the xattr blocks.
+ 1. memory leaks when re-swapon
+ 
+ 2. memory leaks when invalidate and reclaim occur concurrently
+ 
+ 3. avoid unnecessary page scanning
+ 
+ 4. use GFP_NOIO instead of GFP_KERNEL to avoid zswap store and reclaim 
+functions called recursively
 
-Cheers, Andreas
+Issues discussed in that mail thread NOT fixed as it happens rarely or
+not a big problem:
 
+ 1. a "theoretical race condition" when reclaim page
+	When a handle alloced from zbud, zbud considers this handle is used
+validly by upper(zswap) and can be a candidate for reclaim. But zswap has
+to initialize it such as setting swapentry and adding it to rbtree.
+so there is a race condition, such as:
+ thread 0: obtain handle x from zbud_alloc
+ thread 1: zbud_reclaim_page is called
+ thread 1: callback zswap_writeback_entry to reclaim handle x
+ thread 1: get swpentry from handle x (it is random value now)
+ thread 1: bad thing may happen
+ thread 0: initialize handle x with swapentry
 
+2. frontswap_map bitmap not cleared after zswap reclaim
+	Frontswap uses frontswap_map bitmap to track page in "backend" implementation,
+when zswap reclaim a page, the corresponding bitmap record is not cleared.
 
-
+ mm/zswap.c |   34 +++++++++++++++++++++++-----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
