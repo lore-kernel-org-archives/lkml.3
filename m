@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab3IFKug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 06:50:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35272 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3IFKuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 06:50:35 -0400
-Date: Fri, 6 Sep 2013 11:50:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>, lee.jones@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Message-ID: <20130906105003.GB29403@sirena.org.uk>
-References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
- <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
- <3144986.QWu11iEeBj@flatron>
+	id S1751150Ab3IFKyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 06:54:45 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:55293 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750968Ab3IFKyo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 06:54:44 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 06:54:44 EDT
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-9.tower-194.messagelabs.com!1378464479!8469905!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.12; banners=-,-,-
+X-VirusChecked: Checked
+From: Steve Twiss <stwiss.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>, Philipp Zabel <p.zabel@pengutronix.de>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: DA9063 driver development
+Thread-Topic: DA9063 driver development
+Thread-Index: Ac6qSlt6xry7hiP+S8yndGJ8KdrZmg==
+Date: Fri, 6 Sep 2013 10:47:58 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB732FD0B57@SW-EX-MBX02.diasemi.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CUfgB8w4ZwR/yMy5"
-Content-Disposition: inline
-In-Reply-To: <3144986.QWu11iEeBj@flatron>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 2/2] max77693: added device tree support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---CUfgB8w4ZwR/yMy5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am late into the discussion about the DA9063 driver because I missed
+the e-mail thread around 24th July 
+(https://lkml.org/lkml/2013/7/24/460)
+so I only recently noticed that a DA9063 driver from Philipp Zabel 
+had been submitted and accepted to linux-next.
 
-On Fri, Aug 23, 2013 at 10:08:39PM +0200, Tomasz Figa wrote:
-> On Wednesday 21 of August 2013 18:53:34 Andrzej Hajda wrote:
+I also noted that this driver was using a previous patch-set as its baseline;
+sent by Krystian Garbaciak over a year ago. Given that this original 
+patch-set was not accepted, and the production of the DA9063 chip has 
+advanced since the last submission, we were holding off the final DA9063 
+driver until later. 
 
-> > +#ifdef CONFIG_OF
-> > +static struct of_device_id max77693_dt_match[] =3D {
-> > +	{.compatible =3D "maxim,max77693"},
-> > +	{},
-> > +};
-> > +#endif
+As I discussed earlier in https://lkml.org/lkml/2013/6/28/170 I was in 
+the process of getting this driver ready for submission to the kernel.
 
-> As far as I'm aware of, you don't need explicit OF match table for I2C=20
-> devices, because the I2C OF core can use the array of struct i2c_device_i=
-d=20
-> pointed by .id_table field of struct i2c_driver.
+It is well understood that any early submission of our driver to the 
+community (around v3.6) meant that this sort of external driver development 
+could happen without any further input from Dialog. However, this driver:
 
-> I'm not sure if a separate OF table isn't preferred, though, so your patc=
-h=20
-> might be fine.
+- is based on something that is a year old and now out of date; 
+- it cannot support the most recent mass-production release of DA9063 silicon; 
 
-It's still good practice to explicitly define a binding since that
-gives a vendor prefix and there are overlaps out there in chip vendor
-namings - for example both Wolfson and Wondermedia use "WMxxxx".
+Is it possible to remove this driver from linux-next so these issues 
+can be resolved by Dialog?
 
---CUfgB8w4ZwR/yMy5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Steve Twiss
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSKbNYAAoJELSic+t+oim9+CMP/0ZtdSimu7l7dcq7N0QkLYXX
-WJJcDV9FVst6QGyIndoveTHm8sRty3DFQoWDAU1PPrLcLGze3ItHokqHZ5j6Ck2j
-EQButXFpumOQ4Y765TjoH+4FBgEXyVcLwy8SJ7OSLYzy4sPyMy1qcDgpLwVNPIPx
-+Hm5nddDMCDRFkfrYLnUrYqhbjtMl5SYA8jYGaNb8s3IEoRCFXgyvyIdtpQeEfE8
-BXXge7+CdFycf+rIMWPJ+K2lPtC0VU4+HkCdT40gSXIbPLMgJGcqNkBn9afYYjVJ
-1J++y8hStip1mODe+nhG8G0ssS9AdCyQjatdxoMAy9YTGlFIysb8M5PFVamw/sII
-20KEO/wn2w8t+LQpJkBvAV0t5QND9Iofgr5yP9HAsBlj9o3jA3su4spHMx4SWdxR
-rQnAZtNB+lRBFljS6sRzfkVmHj/60+UqSf4BXvNd+ihYr0FAEu/q0kb7263mKvFj
-qp7/F7gV0eYqrGNQ+rt0lfhsj5AAHPhDDJ28pakTc3NktVhpaG90aZe2INZE7VsD
-OktOtLy8YHRWRohPzSne8uhZDEiCRihdYDBUl0MT4jkdsCL5ILKqtBHopJZkbv7D
-K6S/r9LfN5RLr3vGKGr0nTemqBzyF6OonidGyI+eOvhgChTnecUP39BbqiB1fjMF
-4rnFMJ9/9XYFf2AVBLk1
-=TmMa
------END PGP SIGNATURE-----
-
---CUfgB8w4ZwR/yMy5--
