@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab3IFRwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:52:11 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:33952 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab3IFRwI (ORCPT
+	id S1751243Ab3IFRwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:52:45 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38298 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3IFRwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:52:08 -0400
-X-AuditID: cbfec37a-b7fb76d000006e93-61-522a1647b5bf
-Message-id: <522A1645.4060201@samsung.com>
-Date: Fri, 06 Sep 2013 11:52:05 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 0/7] 3.0.95-stable review
-References: <20130905202757.642048278@linuxfoundation.org>
-In-reply-to: <20130905202757.642048278@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hP113Ma0gg4Vv+C3mrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mq4Ntu44AB3xc7lf9gaGBdydjFyckgImEhcubaZHcIWk7hwbz1bFyMXh5DAMkaJ5b1z
-	2SGcXiaJS2vmM0I4mxklFr7rZwFp4RXQkph0+SYriM0ioCrx7/M6ZhCbTUBd4vPrHWBjhQTk
-	JJqWrAaLiwpESKxc8oAVoldQ4sfke2BzRASMJfrPzgKrZxY4BrSg2QTEFhbQkPi0/zFTFyMH
-	0BwriYeL1EHCnALWEqserYMqt5ZYOWkbI4QtL7F5zVtmiLXKEn8unwJrlRBQlNi+2moCo8gs
-	JItnIemehaR7ASPzKkax0uLkguKk9NQKQ73ixNzi0rx0veT83E2MkHip2sF456vNIUYBDkYl
-	Hl6D25pBQqyJZcWVuYcYJTiYlUR4zzBoBQnxpiRWVqUW5ccXleakFh9iZOLglGpgdPc/Gq+W
-	uOhv6OMn0g8fppq/VA/mDdXdfvf5G5vE/cuuZhqqzl62Kd3+64I5zuZmO9wXnGpr8t61/1R6
-	E2vlhwMda+NtZ6mY/OHePPfqx7KV0fMvL931XnX+3cwbjvFXti+a3JleNPmDo/u/+Wn737VV
-	/ZB5s6rMfsL/ON9Vq+RFKts5vpRKqyqxFGckGmoxFxUnAgCRAsSEdQIAAA==
+	Fri, 6 Sep 2013 13:52:44 -0400
+Date: Fri, 6 Sep 2013 10:52:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130906175238.GV3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <20130906113320.46b2ea3e@gandalf.local.home>
+ <20130906164016.GB2706@somewhere>
+ <20130906125238.3c5ef919@gandalf.local.home>
+ <20130906170006.GC2706@somewhere>
+ <20130906131631.6a0a192d@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130906131631.6a0a192d@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090617-8236-0000-0000-000001801E44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.0.95 release.
-> There are 7 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Sep  7 20:27:46 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.95-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Fri, Sep 06, 2013 at 01:16:31PM -0400, Steven Rostedt wrote:
+> On Fri, 6 Sep 2013 19:00:08 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Fri, Sep 06, 2013 at 12:52:38PM -0400, Steven Rostedt wrote:
+> > > On Fri, 6 Sep 2013 18:40:18 +0200
+> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > >  
+> > > > > I can't use plain preempt_disable() in function tracing.
+> > > > > 
+> > > > > Also, since it's a misnomer to say the cpu is idle in NO_HZ_FULL when
+> > > > > we are coming from userspace, can we rename that?
+> > > > > 
+> > > > > Perhaps we can also have a __rcu_is_cpu_tracking() (or whatever), with
+> > > > > the "__" appended that does not do the preempt disable.
+> > > > 
+> > > > rcu_is_cpu_eqs() is probably better. It refers to other related "eqs" naming
+> > > > in RCU APIs.
+> > > 
+> > > But that will just confuse the heck out of people. When I see "eqs" I
+> > > equate that with "equals". What does the rcu cpu equal?
+> > 
+> > It's "extended quiescent state". There is already rcu_eqs_enter() and rcu_eqs_exit().
+> > You're right, may be we can rename that to avoid confusion with "equals". I don't mind much.
+> > I'm happy as long as the reader rcu_is_cpu_foo() and the writers rcu_foo_enter() and
+> > rcu_foo_exit() have consistant naming.
+> > 
+> 
+> What exactly does "extended quiescent state" mean? (Note, that's a
+> rhetorical question)
 
-3.0.95-rc1 applied cleanly to 3.0.94
+In which case my rhetorical (and therefore useless) answer has to be
+"it is a quiescent state that is extended".  ;-)
 
-Compiled and booted on the following systems:
+Sorry, couldn't resist...
 
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> I wonder if we should change "rcu_cpu_ignore()" for "rcu_eqs_enter()"
+> and "rcu_cpu_heed()" for "rcu_eqs_exit()", as IMHO that's much more
+> straight forward to understand than trying to wrap you head around what
+> a quiescent state is, and why we are entering it or exiting it.
+> 
+> It also flat out explains to people that rcu is not processing that
+> current CPU, and things like rcu_read_lock() should not be used.
+> 
+> Then we can say "rcu_cpu_is_ignored()" for things like
+> "rcu_is_cpu_eqs()".
 
-dmesgs look good. No regressions compared to the previous dmesgs for 
-this release. dmesg emerg, crit, alert, err are clean. No regressions in 
-warn.
+Currently, none of RCU's _eqs functions are exported, so they have
+the potential to confuse only people working on the RCU implementation
+itself, who had better understand what "eqs" means.
 
-Cross-compile testing: HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+But I do count your vote against "eqs" appearing in the name of any
+function exported by RCU.
 
-Cross-compile tests results:
+How about if I made rcu_is_cpu_idle() be as follows?
 
-alpha: defconfig passed
-arm: defconfig passed
-arm64: not applicable
-blackfin: defconfig passed
-c6x: not applicable
-mips: defconfig passed
-mipsel: defconfig passed
-powerpc: wii_defconfig passed
-sh: defconfig passed
-sparc: defconfig passed
-tile: tilegx_defconfig passed
+int rcu_is_cpu_idle(void)
+{
+	int ret;
 
--- Shuah
+	ret = (atomic_read(&per_cpu(rcu_dynticks.dynticks,
+				    raw_smp_processor_id())) & 0x1) == 0;
+	return ret;
+}
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+This should allow existing uses to function properly and should allow
+you to use it as well.
+
+							Thanx, Paul
+
