@@ -1,110 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3IFNcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 09:32:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20850 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3IFNcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 09:32:53 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BbXNHQx3NekA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fxhqf5xVK60A:10 a=20KFwNOVAAAA:8 a=-Ys57mbRvl4lIYqhvVYA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 6 Sep 2013 09:32:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
-Message-ID: <20130906093252.02c748f5@gandalf.local.home>
-In-Reply-To: <20130906035827.GA13446@redhat.com>
-References: <20130906011924.GA7970@redhat.com>
-	<20130905212834.605408a4@gandalf.local.home>
-	<20130906013455.GA10073@redhat.com>
-	<20130905214455.101c6347@gandalf.local.home>
-	<20130906014859.GB10073@redhat.com>
-	<20130905215154.74c55e9a@gandalf.local.home>
-	<20130906035827.GA13446@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752752Ab3IFNgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 09:36:24 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36756 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771Ab3IFNgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 09:36:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 0/2] Re: Excess dmesg output from ACPIPHP on boot
+Date: Fri, 06 Sep 2013 15:42:20 +0200
+Message-ID: <2228690.GcUDD3xFfP@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1599165.8kjc3DtEzc@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1378422483.3246.277.camel@ul30vt.home> <1599165.8kjc3DtEzc@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Sep 2013 23:58:27 -0400
-Dave Jones <davej@redhat.com> wrote:
+On Friday, September 06, 2013 01:36:28 AM Rafael J. Wysocki wrote:
+> On Thursday, September 05, 2013 05:08:03 PM Alex Williamson wrote:
+> > On Fri, 2013-09-06 at 00:40 +0200, Rafael J. Wysocki wrote:
+> > > On Thursday, September 05, 2013 04:17:25 PM Alex Williamson wrote:
+> > > > On Thu, 2013-09-05 at 23:39 +0200, Rafael J. Wysocki wrote:
+> > > > > On Thursday, September 05, 2013 09:44:26 PM Rafael J. Wysocki wrote:
+> > > > > > On Thursday, September 05, 2013 08:21:41 AM Alex Williamson wrote:
+> > > > > 
+> > > > > [...]
+> > > > > 
+> > > > > > > > 
+> > > > > > > > [   18.288122] pci 0000:00:00.0: no hotplug settings from platform
+> > > > > > > > [   18.288127] pcieport 0000:00:01.0: no hotplug settings from platform
+> > > > > > > > [   18.288142] pci 0000:01:00.0: no hotplug settings from platform
+> > > > > > > > [   18.288157] pci 0000:01:00.1: no hotplug settings from platform
+> > > > > > > > [   18.288162] pcieport 0000:00:03.0: no hotplug settings from platform
+> > > > > > > > [   18.288176] pci 0000:02:00.0: no hotplug settings from platform
+> > > > > > > > [   18.288190] pci 0000:02:00.1: no hotplug settings from platform
+> > > > > > > > [   18.288195] pcieport 0000:00:07.0: no hotplug settings from platform
+> > > > > > > > [   18.288209] pci 0000:03:00.0: no hotplug settings from platform
+> > > > > > > > [   18.288224] pci 0000:03:00.1: no hotplug settings from platform
+> > > > > > > > [   18.288228] pci 0000:00:14.0: no hotplug settings from platform
+> > > > > > > > [   18.288233] pci 0000:00:14.1: no hotplug settings from platform
+> > > > > > > > [   18.288237] pci 0000:00:14.2: no hotplug settings from platform
+> > > > > > > > [   18.288242] pci 0000:00:16.0: no hotplug settings from platform
+> > > > > > > > [   18.288247] pci 0000:00:16.1: no hotplug settings from platform
+> > > > > > > > [   18.288251] pci 0000:00:16.2: no hotplug settings from platform
+> > > > > > > > [   18.288256] pci 0000:00:16.3: no hotplug settings from platform
+> > > > > > > > [   18.288260] pci 0000:00:16.4: no hotplug settings from platform
+> > > > > > > > [   18.288265] pci 0000:00:16.5: no hotplug settings from platform
+> > > > > > > > [   18.288269] pci 0000:00:16.6: no hotplug settings from platform
+> > > > > > > > [   18.288274] pci 0000:00:16.7: no hotplug settings from platform
+> > > > > > > > [   18.288278] pci 0000:00:1a.0: no hotplug settings from platform
+> > > > > > > > [   18.288279] pci 0000:00:1a.0: using default PCI settings
+> > > > > > > > [   18.288292] pci 0000:00:1a.1: no hotplug settings from platform
+> > > > > > > > [   18.288293] pci 0000:00:1a.1: using default PCI settings
+> > > > > > > > [   18.288307] ehci-pci 0000:00:1a.7: no hotplug settings from platform
+> > > > > > > > [   18.288308] ehci-pci 0000:00:1a.7: using default PCI settings
+> > > > > > > > [   18.288322] pci 0000:00:1b.0: no hotplug settings from platform
+> > > > > > > > [   18.288327] pcieport 0000:00:1c.0: no hotplug settings from platform
+> > > > > > > > [   18.288332] pcieport 0000:00:1c.4: no hotplug settings from platform
+> > > > > > > > [   18.288344] pci 0000:05:00.0: no hotplug settings from platform
+> > > > > > > > [   18.288349] pci 0000:00:1d.0: no hotplug settings from platform
+> > > > > > > > [   18.288350] pci 0000:00:1d.0: using default PCI settings
+> > > > > > > > [   18.288360] pci 0000:00:1d.1: no hotplug settings from platform
+> > > > > > > > [   18.288361] pci 0000:00:1d.1: using default PCI settings
+> > > > > > > > [   18.288374] pci 0000:00:1d.2: no hotplug settings from platform
+> > > > > > > > [   18.288374] pci 0000:00:1d.2: using default PCI settings
+> > > > > > > > [   18.288387] pci 0000:00:1d.3: no hotplug settings from platform
+> > > > > > > > [   18.288387] pci 0000:00:1d.3: using default PCI settings
+> > > > > > > > 
+> > > > > > > > The boot is noticeably slower.  What's going to happen on systems that
+> > > > > > > > actually have a significant I/O topology vs my little workstation?
+> > > > > > 
+> > > > > > That depends on how many bus check/device check events they generate on boot.
+> > > > > > 
+> > > > > > My test machines don't generate them during boot at all (even the one with
+> > > > > > a Thunderbolt connector), so I don't see the messages in question during boot
+> > > > > > on any of them.  Mika doesn't see them either I suppose, or he would have told
+> > > > > > me about that before.
+> > > > > > 
+> > > > > > And let's just make it clear that it is not usual or even OK to generate bus
+> > > > > > checks or device checks during boot like this.  And since the changes in
+> > > > > > question have been in linux-next since right after the 3.11 merge window, I
+> > > > > > think that someone would have complained already had that been a common issue.
+> > > > > > 
+> > > > > > Of course, we need to deal with that somehow nevertheless. :-)
+> > > > > > 
+> > > > > > > Just to give you an idea:
+> > > > > > > 
+> > > > > > > CONFIG_HOTPLUG_PCI_ACPI=y
+> > > > > > > 
+> > > > > > > $ dmesg | wc
+> > > > > > >   5697  49935 384368
+> > > > > > > 
+> > > > > > > $ dmesg | tail --lines=1
+> > > > > > > [   53.137123] Ebtables v2.0 registered
+> > > > > > > 
+> > > > > > > -- vs --
+> > > > > > > 
+> > > > > > > # CONFIG_HOTPLUG_PCI_ACPI is not set
+> > > > > > > 
+> > > > > > > $ dmesg | wc
+> > > > > > >  1053  9176 71652
+> > > > > > > 
+> > > > > > > $dmesg | tail --lines=1
+> > > > > > > [   28.917220] Ebtables v2.0 registered
+> > > > > > > 
+> > > > > > > So it spews out 5x more output with acpiphp enabled and takes and extra
+> > > > > > > 24s to boot (nearly 2x).  Not good.
+> > > > > > 
+> > > > > > The "no hotplug settings from platform" message is from pci_configure_slot().
+> > > > > > I think the messages you're seeing are from the call to it in
+> > > > > > acpiphp_set_hpp_values() which is called by enable_slot().
+> > > > > > 
+> > > > > > There, I think, we can simply check the return value of pci_scan_slot() and
+> > > > > > if that is 0 (no new devices), we can just skip everything under the call to
+> > > > > > __pci_bus_assign_resources().
+> > > > > > 
+> > > > > > However, we can't skip the scanning of bridges, if any, because there may be
+> > > > > > new devices below them and I guess that's what takes so much time on your
+> > > > > > machine.
+> > > > > 
+> > > > > OK, one piece is missing.  We may need to evaluate _OSC after handling each
+> > > > > event to let the platform know the status.
+> > > > > 
+> > > > > Can you please check if the appended patch makes any difference (with the
+> > > > > previous fix applied, of course)?
+> > > > > 
+> > > > > If fact, it is two patches combined.  One of them optimizes enable_slot()
+> > > > > slightly and the other adds the missing _OSC evaluation.
+> > > > 
+> > > > Better, still double the output:
+> > > > 
+> > > > $ dmesg | wc
+> > > >    2169   19047  152710
+> > > 
+> > > I see.
+> > > 
+> > > What about the timing?
+> > 
+> > ~40s below vs ~29s for acpiphp config'd out above.
+> 
+> Well, that's better than before.
+> 
+> I'll prepare "official" patches with the last changes then too.
 
-> On Thu, Sep 05, 2013 at 09:51:54PM -0400, Steven Rostedt wrote:
->  > On Thu, 5 Sep 2013 21:48:59 -0400
->  > Dave Jones <davej@redhat.com> wrote:
->  > 
->  > > On Thu, Sep 05, 2013 at 09:44:55PM -0400, Steven Rostedt wrote:
->  > >  > On Thu, 5 Sep 2013 21:34:55 -0400
->  > >  > Dave Jones <davej@redhat.com> wrote:
->  > >  > 
->  > >  > > On Thu, Sep 05, 2013 at 09:28:34PM -0400, Steven Rostedt wrote:
->  > 
->  > >  > Did you change a config option, or update your gcc?
->  > > 
->  > > Yeah, changed CONFIG_DEBUG_KOBJECT, which rebuilt the world.
->  > 
->  > Still doesn't explain why it gave you that splat there.
->  > 
->  > Do you still have that binary module, and can you show me what's at
->  > reiserfs_init_bitmap_cache+0x0 with objdump?
-> 
-> I didn't, but it turns out I can recreate this. A little convoluted but..
-> 
-> disable DEBUG_KOBJECT_RELEASE
-> build, install and boot into kernel
-> 
-> enable DEBUG_KOBJECT_RELEASE
-> build kernel
-> install -> boom
+The patches follow as [1/2] and [2/2].  The change in enable_slot() is
+literally the same, but the _OST patch is somewhat different, although the
+changes mostly affect the eject code path and the notifies that we don't
+actually handle, so they should not matter on your machine.
 
-Did it report failing on the same function as before?
-
-> 
-> 
-> 00000000000028b0 <reiserfs_init_bitmap_cache>:
-> 
->         return bh;
-> }
-> 
-> int reiserfs_init_bitmap_cache(struct super_block *sb)
-> {
->     28b0:       e8 00 00 00 00          callq  28b5 <reiserfs_init_bitmap_cache+0x5>
-
-That looks to be the call to fentry, but without being resolved. What
-we saw in the previous report wasn't 0xe8 but 0x14, and it was
-unresolved after loading!
-
-I'm surprised that the module built with a different
-DEBUG_KOBJECT_RELEASE config would load. Does it not affect module
-versions?
-
--- Steve
-
->     28b5:       55                      push   %rbp
-> 
-> /* Don't trust REISERFS_SB(sb)->s_bmap_nr, it's a u16
->  * which overflows on large file systems. */
-> static inline __u32 reiserfs_bmap_count(struct super_block *sb)
-> {
->         return (SB_BLOCK_COUNT(sb) - 1) / (sb->s_blocksize * 8) + 1;
->     28b6:       31 d2                   xor    %edx,%edx
->     28b8:       48 89 e5                mov    %rsp,%rbp
->     28bb:       41 54                   push   %r12
->     28bd:       53                      push   %rbx
->     28be:       48 89 fb                mov    %rdi,%rbx
->     28c1:       48 8b 87 50 07 00 00    mov    0x750(%rdi),%rax
->     28c8:       48 8b 77 18             mov    0x18(%rdi),%rsi
->     28cc:       48 8b 40 08             mov    0x8(%rax),%rax
->     28d0:       48 8d 0c f5 00 00 00    lea    0x0(,%rsi,8),%rcx
->     28d7:       00 
->     28d8:       8b 00                   mov    (%rax),%eax
->     28da:       83 e8 01                sub    $0x1,%eax
->     28dd:       48 f7 f1                div    %rcx
+Thanks,
+Rafael
 
