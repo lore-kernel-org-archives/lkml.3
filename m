@@ -1,216 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3IFAFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 20:05:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35036 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab3IFAFI (ORCPT
+	id S1754205Ab3IFAHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 20:07:17 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:53342 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab3IFAHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 20:05:08 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCHv2 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-Date: Thu,  5 Sep 2013 17:04:49 -0700
-Message-Id: <1378425890-4225-1-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 5 Sep 2013 20:07:14 -0400
+Message-ID: <52291CAF.1000504@converseincode.com>
+Date: Thu, 05 Sep 2013 20:07:11 -0400
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] usb: gadget LLVMLinux: Removing the use of VLAIS from
+ the gadget driver
+References: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
+In-Reply-To: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic board support for MSM8974 Dragonboard
-which belongs to the Snapdragon 800 family.
-For now, just support a basic machine with device tree.
+Replying to my patch email just in case it was missed before.
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- arch/arm/boot/dts/Makefile        |  3 ++-
- arch/arm/boot/dts/msm8974-db.dts  |  7 +++++++
- arch/arm/boot/dts/msm8974.dtsi    | 30 ++++++++++++++++++++++++++++++
- arch/arm/mach-msm/Kconfig         | 20 ++++++++++++++++++--
- arch/arm/mach-msm/Makefile        |  1 +
- arch/arm/mach-msm/board-dt-8974.c | 23 +++++++++++++++++++++++
- 6 files changed, 81 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/dts/msm8974-db.dts
- create mode 100644 arch/arm/boot/dts/msm8974.dtsi
- create mode 100644 arch/arm/mach-msm/board-dt-8974.c
+Thanks,
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 69193be..95ace01 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -103,7 +103,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
- 	kirkwood-openblocks_a6.dtb
- dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
- dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
--	msm8960-cdp.dtb
-+	msm8960-cdp.dtb \
-+	msm8974-db.dtb
- dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
- 	armada-370-mirabox.dtb \
- 	armada-370-netgear-rn102.dtb \
-diff --git a/arch/arm/boot/dts/msm8974-db.dts b/arch/arm/boot/dts/msm8974-db.dts
-new file mode 100644
-index 0000000..74106a8
---- /dev/null
-+++ b/arch/arm/boot/dts/msm8974-db.dts
-@@ -0,0 +1,7 @@
-+/include/ "msm8974.dtsi"
-+
-+/ {
-+	model = "Qualcomm MSM8974 Dragonboard";
-+	compatible = "qcom,msm8974-db", "qcom,msm8974";
-+};
-+
-diff --git a/arch/arm/boot/dts/msm8974.dtsi b/arch/arm/boot/dts/msm8974.dtsi
-new file mode 100644
-index 0000000..aa3bb2f
---- /dev/null
-+++ b/arch/arm/boot/dts/msm8974.dtsi
-@@ -0,0 +1,30 @@
-+/dts-v1/;
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	model = "Qualcomm MSM8974";
-+	compatible = "qcom,msm8974";
-+	interrupt-parent = <&intc>;
-+
-+	soc: soc { };
-+};
-+
-+&soc {
-+	intc: interrupt-controller@f9000000 {
-+		compatible = "qcom,msm-qgic2";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = < 0xf9000000 0x1000 >,
-+		      < 0xf9002000 0x1000 >;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 2 0xf08>,
-+			     <1 3 0xf08>,
-+			     <1 4 0xf08>,
-+			     <1 1 0xf08>;
-+		clock-frequency = <19200000>;
-+	};
-+};
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 905efc8..499e8fe 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -1,12 +1,12 @@
- if ARCH_MSM
- 
- comment "Qualcomm MSM SoC Type"
--	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
-+	depends on ARCH_MSM_DT
- 
- choice
- 	prompt "Qualcomm MSM SoC Type"
- 	default ARCH_MSM7X00A
--	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
-+	depends on !ARCH_MSM_DT
- 
- config ARCH_MSM7X00A
- 	bool "MSM7x00A / MSM7x01A"
-@@ -60,6 +60,19 @@ config ARCH_MSM8960
- 	select MSM_SCM if SMP
- 	select USE_OF
- 
-+config ARCH_MSM8974
-+	bool "MSM8974"
-+	select ARM_GIC
-+	select CPU_V7
-+	select HAVE_ARM_ARCH_TIMER
-+	select HAVE_SMP
-+	select MSM_SCM if SMP
-+	select USE_OF
-+
-+config ARCH_MSM_DT
-+	def_bool y
-+	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
-+
- config MSM_HAS_DEBUG_UART_HS
- 	bool
- 
-@@ -68,6 +81,7 @@ config MSM_SOC_REV_A
- 
- config  ARCH_MSM_ARM11
- 	bool
-+
- config  ARCH_MSM_SCORPION
- 	bool
- 
-@@ -75,6 +89,7 @@ config  MSM_VIC
- 	bool
- 
- menu "Qualcomm MSM Board Type"
-+	depends on !ARCH_MSM_DT
- 
- config MACH_HALIBUT
- 	depends on ARCH_MSM
-@@ -122,6 +137,7 @@ config MSM_SMD
- 
- config MSM_GPIOMUX
- 	bool
-+	depends on !ARCH_MSM_DT
- 	help
- 	  Support for MSM V1 TLMM GPIOMUX architecture.
- 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index d872634..28e5c21 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -28,5 +28,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
- obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
-+obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
- obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
-diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-new file mode 100644
-index 0000000..697623e
---- /dev/null
-+++ b/arch/arm/mach-msm/board-dt-8974.c
-@@ -0,0 +1,23 @@
-+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/of_platform.h>
-+#include <asm/mach/arch.h>
-+
-+static const char * const msm8974_dt_match[] __initconst = {
-+	"qcom,msm8974-db",
-+	NULL
-+};
-+
-+DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
-+	.dt_compat = msm8974_dt_match,
-+MACHINE_END
+Behan
+
+On 08/01/13 21:35, behanw@converseincode.com wrote:
+> From: Behan Webster <behanw@converseincode.com>
+>
+> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+> precludes the use of compilers which don't implement VLAIS (for instance the
+> Clang compiler). This patch removes the use of VLAIS in the gadget driver.
+>
+> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> ---
+>   drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
+>   1 file changed, 76 insertions(+), 52 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+> index f394f29..4b872c4 100644
+> --- a/drivers/usb/gadget/f_fs.c
+> +++ b/drivers/usb/gadget/f_fs.c
+> @@ -30,7 +30,6 @@
+>   
+>   #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
+>   
+> -
+>   /* Debugging ****************************************************************/
+>   
+>   #ifdef VERBOSE_DEBUG
+> @@ -214,6 +213,8 @@ struct ffs_data {
+>   	/* ids in stringtabs are set in functionfs_bind() */
+>   	const void			*raw_strings;
+>   	struct usb_gadget_strings	**stringtabs;
+> +	struct usb_gadget_strings	*stringtab;
+> +	struct usb_string		*strings;
+>   
+>   	/*
+>   	 * File system's super block, write once when file system is
+> @@ -263,7 +264,10 @@ struct ffs_function {
+>   
+>   	struct ffs_ep			*eps;
+>   	u8				eps_revmap[16];
+> +	struct usb_descriptor_header	**fs_descs;
+> +	struct usb_descriptor_header	**hs_descs;
+>   	short				*interfaces_nums;
+> +	char				*raw_descs;
+>   
+>   	struct usb_function		function;
+>   };
+> @@ -1345,6 +1349,8 @@ static void ffs_data_clear(struct ffs_data *ffs)
+>   	kfree(ffs->raw_descs);
+>   	kfree(ffs->raw_strings);
+>   	kfree(ffs->stringtabs);
+> +	kfree(ffs->stringtab);
+> +	kfree(ffs->strings);
+>   }
+>   
+>   static void ffs_data_reset(struct ffs_data *ffs)
+> @@ -1357,6 +1363,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
+>   	ffs->raw_descs = NULL;
+>   	ffs->raw_strings = NULL;
+>   	ffs->stringtabs = NULL;
+> +	ffs->stringtab = NULL;
+> +	ffs->strings = NULL;
+>   
+>   	ffs->raw_descs_length = 0;
+>   	ffs->raw_fs_descs_length = 0;
+> @@ -1528,12 +1536,10 @@ static void ffs_func_free(struct ffs_function *func)
+>   	ffs_data_put(func->ffs);
+>   
+>   	kfree(func->eps);
+> -	/*
+> -	 * eps and interfaces_nums are allocated in the same chunk so
+> -	 * only one free is required.  Descriptors are also allocated
+> -	 * in the same chunk.
+> -	 */
+> -
+> +	kfree(func->fs_descs);
+> +	kfree(func->hs_descs);
+> +	kfree(func->interfaces_nums);
+> +	kfree(func->raw_descs);
+>   	kfree(func);
+>   }
+>   
+> @@ -1907,33 +1913,35 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
+>   		return 0;
+>   	}
+>   
+> -	/* Allocate everything in one chunk so there's less maintenance. */
+>   	{
+> -		struct {
+> -			struct usb_gadget_strings *stringtabs[lang_count + 1];
+> -			struct usb_gadget_strings stringtab[lang_count];
+> -			struct usb_string strings[lang_count*(needed_count+1)];
+> -		} *d;
+>   		unsigned i = 0;
+> -
+> -		d = kmalloc(sizeof *d, GFP_KERNEL);
+> -		if (unlikely(!d)) {
+> +		usb_gadget_strings **stringtabs = NULL;
+> +		usb_gadget_strings *stringtab = NULL;
+> +		usb_string *strings = NULL;
+> +
+> +		stringtabs = kmalloc(sizeof(*stringtabs)*(lang_count + 1),
+> +			GFP_KERNEL);
+> +		stringtab = kmalloc(sizeof(*stringtab)*(lang_count),
+> +			GFP_KERNEL);
+> +		strings = kmalloc(sizeof(*strings)
+> +			* (lang_count * (needed_count + 1)), GFP_KERNEL);
+> +		if (unlikely(!stringtabs || !stringtab || !strings)) {
+> +			kfree(stringtabs);
+> +			kfree(stringtab);
+> +			kfree(strings);
+>   			kfree(_data);
+>   			return -ENOMEM;
+>   		}
+> -
+> -		stringtabs = d->stringtabs;
+> -		t = d->stringtab;
+> +		b = stringtabs;
+> +		t = stringtab;
+>   		i = lang_count;
+>   		do {
+> -			*stringtabs++ = t++;
+> +			*b++ = t++;
+>   		} while (--i);
+> -		*stringtabs = NULL;
+> +		*b = NULL;
+>   
+> -		stringtabs = d->stringtabs;
+> -		t = d->stringtab;
+> -		s = d->strings;
+> -		strings = s;
+> +		t = stringtab;
+> +		s = strings;
+>   	}
+>   
+>   	/* For each language */
+> @@ -1991,12 +1999,16 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
+>   
+>   	/* Done! */
+>   	ffs->stringtabs = stringtabs;
+> +	ffs->stringtab = stringtab;
+> +	ffs->strings = strings;
+>   	ffs->raw_strings = _data;
+>   
+>   	return 0;
+>   
+>   error_free:
+>   	kfree(stringtabs);
+> +	kfree(stringtab);
+> +	kfree(strings);
+>   error:
+>   	kfree(_data);
+>   	return -EINVAL;
+> @@ -2207,17 +2219,12 @@ static int ffs_func_bind(struct usb_configuration *c,
+>   
+>   	int ret;
+>   
+> -	/* Make it a single chunk, less management later on */
+> -	struct {
+> -		struct ffs_ep eps[ffs->eps_count];
+> -		struct usb_descriptor_header
+> -			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
+> -		struct usb_descriptor_header
+> -			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
+> -		short inums[ffs->interfaces_count];
+> -		char raw_descs[high ? ffs->raw_descs_length
+> -				    : ffs->raw_fs_descs_length];
+> -	} *data;
+> +	struct ffs_ep *eps = NULL;
+> +	struct usb_descriptor_header **fs_descs = NULL;
+> +	struct usb_descriptor_header **hs_descs = NULL;
+> +	short *inums = NULL;
+> +	char *raw_descs = NULL;
+> +
+>   
+>   	ENTER();
+>   
+> @@ -2225,21 +2232,40 @@ static int ffs_func_bind(struct usb_configuration *c,
+>   	if (unlikely(!(full | high)))
+>   		return -ENOTSUPP;
+>   
+> -	/* Allocate */
+> -	data = kmalloc(sizeof *data, GFP_KERNEL);
+> -	if (unlikely(!data))
+> +	size_t eps_sz = sizeof(*eps)*ffs->eps_count;
+> +	eps = kmalloc(eps_sz, GFP_KERNEL);
+> +	fs_descs = kmalloc(sizeof(*fs_descs)*
+> +			   (full ? ffs->fs_descs_count + 1 : 0), GFP_KERNEL);
+> +	hs_descs = kmalloc(sizeof(*hs_descs)*
+> +			   (high ? ffs->hs_descs_count + 1 : 0), GFP_KERNEL);
+> +	size_t inums_sz = sizeof(*inums)*ffs->interfaces_count;
+> +	inums = kmalloc(inums_sz, GFP_KERNEL);
+> +	size_t raw_descs_sz = sizeof(*raw_descs)*(high ? ffs->raw_descs_length :
+> +					ffs->raw_fs_descs_length);
+> +	raw_descs = kmalloc(raw_descs_sz, , GFP_KERNEL);
+> +
+> +	if (unlikely(!eps || !fs_descs || !hs_descs || !inums || !raw_descs)) {
+> +		kfree(eps);
+> +		kfree(fs_descs);
+> +		kfree(hs_descs);
+> +		kfree(inums);
+> +		kfree(raw_descs);
+>   		return -ENOMEM;
+> +	}
+>   
+>   	/* Zero */
+> -	memset(data->eps, 0, sizeof data->eps);
+> -	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
+> -	memset(data->inums, 0xff, sizeof data->inums);
+> +	memset(eps, 0, eps_sz);
+> +	memcpy(raw_descs, ffs->raw_descs + 16, raw_descs_sz);
+> +	memset(inums, 0xff, inums_sz);
+>   	for (ret = ffs->eps_count; ret; --ret)
+> -		data->eps[ret].num = -1;
+> +		eps[ret].num = -1;
+>   
+>   	/* Save pointers */
+> -	func->eps             = data->eps;
+> -	func->interfaces_nums = data->inums;
+> +	func->eps             = eps;
+> +	func->fs_descs        = fs_descs;
+> +	func->hs_descs        = hs_descs;
+> +	func->interfaces_nums = inums;
+> +	func->raw_descs       = raw_descs;
+>   
+>   	/*
+>   	 * Go through all the endpoint descriptors and allocate
+> @@ -2247,10 +2273,9 @@ static int ffs_func_bind(struct usb_configuration *c,
+>   	 * numbers without worrying that it may be described later on.
+>   	 */
+>   	if (likely(full)) {
+> -		func->function.fs_descriptors = data->fs_descs;
+> +		func->function.fs_descriptors = fs_descs;
+>   		ret = ffs_do_descs(ffs->fs_descs_count,
+> -				   data->raw_descs,
+> -				   sizeof data->raw_descs,
+> +				   raw_descs, raw_descs_sz,
+>   				   __ffs_func_bind_do_descs, func);
+>   		if (unlikely(ret < 0))
+>   			goto error;
+> @@ -2259,10 +2284,9 @@ static int ffs_func_bind(struct usb_configuration *c,
+>   	}
+>   
+>   	if (likely(high)) {
+> -		func->function.hs_descriptors = data->hs_descs;
+> +		func->function.hs_descriptors = hs_descs;
+>   		ret = ffs_do_descs(ffs->hs_descs_count,
+> -				   data->raw_descs + ret,
+> -				   (sizeof data->raw_descs) - ret,
+> +				   raw_descs + ret, raw_descs_sz - ret,
+>   				   __ffs_func_bind_do_descs, func);
+>   	}
+>   
+> @@ -2273,7 +2297,7 @@ static int ffs_func_bind(struct usb_configuration *c,
+>   	 */
+>   	ret = ffs_do_descs(ffs->fs_descs_count +
+>   			   (high ? ffs->hs_descs_count : 0),
+> -			   data->raw_descs, sizeof data->raw_descs,
+> +			   raw_descs, raw_descs_sz,
+>   			   __ffs_func_bind_do_nums, func);
+>   	if (unlikely(ret < 0))
+>   		goto error;
+
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Behan Webster
+behanw@converseincode.com
 
