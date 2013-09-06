@@ -1,104 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750837Ab3IFXMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 19:12:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38361 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab3IFXMB (ORCPT
+	id S1750854Ab3IFXRW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 19:17:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60910 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab3IFXRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 19:12:01 -0400
-Date: Fri, 6 Sep 2013 16:11:59 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/14] 3.4.61-stable review
-Message-ID: <20130906231159.GA7394@kroah.com>
-References: <20130905202614.354156084@linuxfoundation.org>
- <522A1515.8090300@samsung.com>
- <20130906184606.GB5274@kroah.com>
- <522A55D4.4000608@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522A55D4.4000608@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Sep 2013 19:17:21 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, ldewangan@nvidia.com,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] mfd: tps6586x: implement irq_set_wake
+Date: Fri,  6 Sep 2013 17:17:13 -0600
+Message-Id: <1378509433-26404-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 04:23:16PM -0600, Shuah Khan wrote:
-> On 09/06/2013 12:46 PM, Greg Kroah-Hartman wrote:
-> >On Fri, Sep 06, 2013 at 11:47:01AM -0600, Shuah Khan wrote:
-> >>On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
-> >>>This is the start of the stable review cycle for the 3.4.61 release.
-> >>>There are 14 patches in this series, all will be posted as a response
-> >>>to this one.  If anyone has any issues with these being applied, please
-> >>>let me know.
-> >>>
-> >>>Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
-> >>>Anything received after that time might be too late.
-> >>>
-> >>>The whole patch series can be found in one patch at:
-> >>>	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
-> >>>and the diffstat can be found below.
-> >>>
-> >>>thanks,
-> >>>
-> >>>greg k-h
-> >>>
-> >>>-------------
-> >>
-> >>
-> >>3.4.61-rc1 applied cleanly to 3.4.60
-> >>
-> >>Compiled and booted on the following systems:
-> >>
-> >>Samsung Series 9 900X4C Intel Corei5
-> >>HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-> >>
-> >>dmesgs look good. No regressions compared to the previous dmesgs for
-> >>this release. dmesg emerg, crit, alert, err are clean. No
-> >>regressions in warn.
-> >
-> >Thanks for testing and letting me know.
-> >
-> >>Compile tested on Samsung Chromebook Exynos5 (ARMv7):
-> >>3.4.60 compile fail - it is not a regression. Existing issue in
-> >>3.4.y It has to do with missing config selections in
-> >>arch/arm/mach-exynos/Kconfig for this system. Debugging now using
-> >>the Kconfig selections from 3.10.y for this file.
-> >
-> >Is there a patch I can backport for this to work properly?  I'd like to
-> >get some type of ARM coverage if possible.
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
-> 
-> Greg,
-> 
-> I did some debugging and found 3.4 needs several patches to that
-> made exynos4 support common for exynos4 and exynos5. It appears some
-> changes made it into 3.4, at least changing the directory name from
-> mach-exynos4 to mach-exynos, however the rest of the support is not
-> in 3.4. I identified the following commits:
-> 
-> 6f9e95e6ed34ceff090ec1a1d27dfc85828d1dbd
-> 60e49ca654eea42e04912b259fa36bad2c3e56ef
-> 20ef9e08d27b3f5e09c32d4d371fa97f610a3069
+From: Stephen Warren <swarren@nvidia.com>
 
-Those three are "reasonable".
+rtc-tps6586x calls enable/disable_irq_wake() during suspend/resume. Since
+the main tps6586x irq_chip doesn't implement .irq_set_wake, this causes
+the RTC's enable_irq_wake() to fail, and the disable_irq_wake() to spew a
+WARN about unbalanced wake disable. Solve this by implementing
+.irq_set_wake.
 
-> b1b3f49ce4606452279b58b17f2bbe2ba00304b
+Also, I assume that enable_irq_wake() shouldn't be called unconditionally
+in tps6586x_irq_init(), since this is now triggered by IRQ children
+setting up their cascaded IRQs for wake. So, remove that.
 
-That just reorders the config options, is that really needed?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+I'm tempted to Cc stable here, since this bug is certainly present in
+older kernel releases. However, the only user-visible aspect is the WARN
+on resume, so I'm not sure if it's worth it?
+---
+ drivers/mfd/tps6586x.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-So, with those first 3 patches, does the kernel now work on that
-platform for you?
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index f54fe4d..68906b1 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -124,6 +124,7 @@ struct tps6586x {
+ 	struct i2c_client	*client;
+ 	struct regmap		*regmap;
+ 
++	int			irq;
+ 	struct irq_chip		irq_chip;
+ 	struct mutex		irq_lock;
+ 	int			irq_base;
+@@ -261,12 +262,23 @@ static void tps6586x_irq_sync_unlock(struct irq_data *data)
+ 	mutex_unlock(&tps6586x->irq_lock);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int tps6586x_irq_set_wake(struct irq_data *irq_data, unsigned int on)
++{
++	struct tps6586x *tps6586x = irq_data_get_irq_chip_data(irq_data);
++	return irq_set_irq_wake(tps6586x->irq, on);
++}
++#else
++#define tps6586x_irq_set_wake NULL
++#endif
++
+ static struct irq_chip tps6586x_irq_chip = {
+ 	.name = "tps6586x",
+ 	.irq_bus_lock = tps6586x_irq_lock,
+ 	.irq_bus_sync_unlock = tps6586x_irq_sync_unlock,
+ 	.irq_disable = tps6586x_irq_disable,
+ 	.irq_enable = tps6586x_irq_enable,
++	.irq_set_wake = tps6586x_irq_set_wake,
+ };
+ 
+ static int tps6586x_irq_map(struct irq_domain *h, unsigned int virq,
+@@ -331,6 +343,8 @@ static int tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
+ 	int new_irq_base;
+ 	int irq_num = ARRAY_SIZE(tps6586x_irqs);
+ 
++	tps6586x->irq = irq;
++
+ 	mutex_init(&tps6586x->irq_lock);
+ 	for (i = 0; i < 5; i++) {
+ 		tps6586x->mask_reg[i] = 0xff;
+@@ -360,10 +374,8 @@ static int tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
+ 	ret = request_threaded_irq(irq, NULL, tps6586x_irq, IRQF_ONESHOT,
+ 				   "tps6586x", tps6586x);
+ 
+-	if (!ret) {
++	if (!ret)
+ 		device_init_wakeup(tps6586x->dev, 1);
+-		enable_irq_wake(irq);
+-	}
+ 
+ 	return ret;
+ }
+-- 
+1.8.1.5
 
-thanks,
-
-greg k-h
