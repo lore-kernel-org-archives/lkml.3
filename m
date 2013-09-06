@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3IFOWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:22:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49605 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3IFOWj convert rfc822-to-8bit (ORCPT
+	id S1753508Ab3IFOXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:23:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26543 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab3IFOXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:22:39 -0400
-Subject: Re: [PATCHv2 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Fri, 6 Sep 2013 10:23:41 -0400
+Date: Fri, 6 Sep 2013 10:23:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization earlier
+Message-ID: <20130906142301.GA5140@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+ <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130905162026.GJ11887@arm.com>
+ <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
+ <1378457939.14745.73.camel@kazak.uk.xensource.com>
+ <20130906140921.GD1946@arm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1378425890-4225-1-git-send-email-rvaswani@codeaurora.org>
-Date: Fri, 6 Sep 2013 09:22:37 -0500
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <20A8A05D-2F56-4127-A494-470833B2DC42@codeaurora.org>
-References: <1378425890-4225-1-git-send-email-rvaswani@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <20130906140921.GD1946@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 5, 2013, at 7:04 PM, Rohit Vaswani wrote:
-
-> This patch adds basic board support for MSM8974 Dragonboard
-> which belongs to the Snapdragon 800 family.
-> For now, just support a basic machine with device tree.
+On Fri, Sep 06, 2013 at 03:09:21PM +0100, Catalin Marinas wrote:
+> On Fri, Sep 06, 2013 at 09:58:59AM +0100, Ian Campbell wrote:
+> > On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
+> > > On Thu, 5 Sep 2013, Catalin Marinas wrote:
+> > > > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
+> > > > > Move Xen initialization earlier, before any DMA requests can be made.
+> > > > > 
+> > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > 
+> > > > I guess you should cc the corresponding maintainers here.
+> > > 
+> > > Thanks for the reminder, I'll do that.
+> > > 
+> > > 
+> > > > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
+> > > > >  arch/arm/kernel/setup.c               |    2 ++
+> > > > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
+> > > > >  arch/arm64/kernel/setup.c             |    2 ++
+> > > > >  4 files changed, 26 insertions(+), 7 deletions(-)
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > --- a/arch/arm64/kernel/setup.c
+> > > > > +++ b/arch/arm64/kernel/setup.c
+> > > > > @@ -53,6 +53,7 @@
+> > > > >  #include <asm/traps.h>
+> > > > >  #include <asm/memblock.h>
+> > > > >  #include <asm/psci.h>
+> > > > > +#include <asm/xen/hypervisor.h>
+> > > > >  
+> > > > >  unsigned int processor_id;
+> > > > >  EXPORT_SYMBOL(processor_id);
+> > > > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
+> > > > >  	unflatten_device_tree();
+> > > > >  
+> > > > >  	psci_init();
+> > > > > +	xen_early_init();
+> > > > 
+> > > > So Xen guests don't have any hope for single Image? Basically you set
+> > > > dma_ops unconditionally in xen_early_init(), even if the kernel is not
+> > > > intended to run under Xen.
+> > > 
+> > > That should not happen: if we are not running on Xen xen_early_init
+> > > returns early, before calling xen_mm_init.
+> > 
+> > x96 has a call to init_hypervisor_platform() at approximately this
+> > location, which detects and calls the init function for any of Xen, KVM,
+> > hyperv and vmware.
 > 
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
-> arch/arm/boot/dts/Makefile        |  3 ++-
-> arch/arm/boot/dts/msm8974-db.dts  |  7 +++++++
-> arch/arm/boot/dts/msm8974.dtsi    | 30 ++++++++++++++++++++++++++++++
-> arch/arm/mach-msm/Kconfig         | 20 ++++++++++++++++++--
-> arch/arm/mach-msm/Makefile        |  1 +
-> arch/arm/mach-msm/board-dt-8974.c | 23 +++++++++++++++++++++++
-> 6 files changed, 81 insertions(+), 3 deletions(-)
-> create mode 100644 arch/arm/boot/dts/msm8974-db.dts
-> create mode 100644 arch/arm/boot/dts/msm8974.dtsi
-> create mode 100644 arch/arm/mach-msm/board-dt-8974.c
+> I would rather have a core_initcall(xen_early_init()) if possible,
+> rather than hard-coded calls in setup_arch(). This early stuff is
+> DT-driven, so in theory you don't need a specific xen call. The only
+> thing is that you end up with swiotlb_init() and 64MB wasted if the Xen
+> guest does not plan to use them.
 
-As I mentioned before, its the APQ8074 Dragonboard, not MSM8974
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+There is a swiotlb_free mechanism in case the allocation was not
+neccessary.
+> 
+> > I guess only Xen and KVM are currently relevant on Linux ARM(64), so
+> > perhaps adding similar infrastructure on ARM would be overkill at this
+> > point. I don't know if KVM needs such an early C-land hook, I suppose
+> > it needs it even earlier so it can set up the hyp mode trampoline from
+> > head.S?
+> 
+> head.S installs a Hyp stub if it starts in that mode and then forget
+> about. Later when KVM is initialised it installs its own code by doing
+> an HVC call.
+> 
+> -- 
+> Catalin
