@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab3IFOS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:18:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23454 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab3IFOS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:18:28 -0400
-Date: Fri, 6 Sep 2013 10:17:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com
-Subject: Re: [PATCH v5 12/13] swiotlb-xen: use xen_alloc/free_coherent_pages
-Message-ID: <20130906141754.GT2590@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
- <1377801154-29215-12-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130830135333.GL21239@phenom.dumpdata.com>
- <alpine.DEB.2.02.1309051743450.6397@kaball.uk.xensource.com>
+	id S1753239Ab3IFOTE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:19:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753050Ab3IFOTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:19:02 -0400
+Date: Fri, 6 Sep 2013 10:18:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
+Message-ID: <20130906141852.GA18708@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130906011924.GA7970@redhat.com>
+ <20130905212834.605408a4@gandalf.local.home>
+ <20130906013455.GA10073@redhat.com>
+ <20130905214455.101c6347@gandalf.local.home>
+ <20130906014859.GB10073@redhat.com>
+ <20130905215154.74c55e9a@gandalf.local.home>
+ <20130906035827.GA13446@redhat.com>
+ <20130906093252.02c748f5@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309051743450.6397@kaball.uk.xensource.com>
+In-Reply-To: <20130906093252.02c748f5@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 05:50:45PM +0100, Stefano Stabellini wrote:
-> On Fri, 30 Aug 2013, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Aug 29, 2013 at 07:32:33PM +0100, Stefano Stabellini wrote:
-> > > Use xen_alloc_coherent_pages and xen_free_coherent_pages to allocate or
-> > > free coherent pages.
-> > > 
-> > > We need to be careful handling the pointer returned by
-> > > xen_alloc_coherent_pages, because on ARM the pointer is not equal to
-> > > phys_to_virt(*dma_handle). In fact virt_to_phys on the returned pointer
-> > > doesn't return a valid physical address.
-> > 
-> > Why is it called 'virt_to_phys'? What does it return then?
-> 
-> virt_to_phys only works for kernel direct mapped RAM memory.
-> In this case the virtual address could be an ioremap address, therefore
-> passing it to virt_to_phys would give you another physical address that
-> doesn't correspond to it.
+On Fri, Sep 06, 2013 at 09:32:52AM -0400, Steven Rostedt wrote:
+ > On Thu, 5 Sep 2013 23:58:27 -0400
+ > Dave Jones <davej@redhat.com> wrote:
+ > 
+ > > On Thu, Sep 05, 2013 at 09:51:54PM -0400, Steven Rostedt wrote:
+ > >  > On Thu, 5 Sep 2013 21:48:59 -0400
+ > >  > Dave Jones <davej@redhat.com> wrote:
+ > >  > 
+ > >  > > On Thu, Sep 05, 2013 at 09:44:55PM -0400, Steven Rostedt wrote:
+ > >  > >  > On Thu, 5 Sep 2013 21:34:55 -0400
+ > >  > >  > Dave Jones <davej@redhat.com> wrote:
+ > >  > >  > 
+ > >  > >  > > On Thu, Sep 05, 2013 at 09:28:34PM -0400, Steven Rostedt wrote:
+ > >  > 
+ > >  > >  > Did you change a config option, or update your gcc?
+ > >  > > 
+ > >  > > Yeah, changed CONFIG_DEBUG_KOBJECT, which rebuilt the world.
+ > >  > 
+ > >  > Still doesn't explain why it gave you that splat there.
+ > >  > 
+ > >  > Do you still have that binary module, and can you show me what's at
+ > >  > reiserfs_init_bitmap_cache+0x0 with objdump?
+ > > 
+ > > I didn't, but it turns out I can recreate this. A little convoluted but..
+ > > 
+ > > disable DEBUG_KOBJECT_RELEASE
+ > > build, install and boot into kernel
+ > > 
+ > > enable DEBUG_KOBJECT_RELEASE
+ > > build kernel
+ > > install -> boom
+ > 
+ > Did it report failing on the same function as before?
+ 
+Yes.
 
-Ah, so very much ARM (and in some way SPARC) specific. I think you need add some comments
-in the code (And git commit) to explain this. Thank you.
+ > > 00000000000028b0 <reiserfs_init_bitmap_cache>:
+ > > 
+ > >         return bh;
+ > > }
+ > > 
+ > > int reiserfs_init_bitmap_cache(struct super_block *sb)
+ > > {
+ > >     28b0:       e8 00 00 00 00          callq  28b5 <reiserfs_init_bitmap_cache+0x5>
+ > 
+ > That looks to be the call to fentry, but without being resolved. What
+ > we saw in the previous report wasn't 0xe8 but 0x14, and it was
+ > unresolved after loading!
+ > 
+ > I'm surprised that the module built with a different
+ > DEBUG_KOBJECT_RELEASE config would load. Does it not affect module
+ > versions?
+ 
+# CONFIG_MODVERSIONS is not set
+
+
+	Dave
+
