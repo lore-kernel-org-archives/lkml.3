@@ -1,163 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab3IFWsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 18:48:14 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:63096 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3IFWsL (ORCPT
+	id S1753785Ab3IFWv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 18:51:29 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:62043 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3IFWv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 18:48:11 -0400
+	Fri, 6 Sep 2013 18:51:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz>
-References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz>
- <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz>
- <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com> <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 6 Sep 2013 16:47:49 -0600
-Message-ID: <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Adam Radford <aradford@gmail.com>
+In-Reply-To: <20130906215910.GA356@x4>
+References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
+	<20130906202022.GA353@x4>
+	<CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
+	<20130906215910.GA356@x4>
+Date: Sat, 7 Sep 2013 00:51:27 +0200
+Message-ID: <CANq1E4Q4mxKVJJEPNSb9kvUoMXc3KoAnxjnKd0Vx+hoGaeN=kg@mail.gmail.com>
+Subject: Re: [GIT] HID for 3.12 merge window
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 3:51 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 28 Aug 2013, Bjorn Helgaas wrote:
->
->> [+cc another email addr for Adam from git logs]
->
-> Thanks. Adam, would you happen to have any possible explanation /
-> background?
->
->> >> > Commit d5dea7d95 ("PCI: msi: Disable msi interrupts when we initialize a
->> >> > pci device") makes MSIs be forcibly disabled at boot time.
->> >> >
->> >> > It turns out that this breaks 3ware controller -- if MSIs are disabled
->> >> > during PCI discovery of this controller, the device doesn't work properly
->> >> > (it doesn't respond to any commands that are being sent to it after
->> >> > initialization).
+Hi
 
-Is there a bug report for this issue?  It's nice to have a pointer to,
-e.g., a bugzilla.kernel.org bug report with info such as dmesg logs,
-lspci output, etc., for future reference.  Maybe somebody will figure
-out a more generic change that could make this quirk unnecessary, and
-details will help in figuring that out.
-
-I assume the actual PCI discovery done in the PCI core works fine;
-it's just that the driver doesn't work if MSIs are disabled on the
-device.  If that's the case, can this be fixed by some driver change?
-Maybe the driver needs to enable MSI before it sends commands to the
-device?
-
-Any description of what this failure looks like to a user?  How can a
-user or a distro connect a symptom (driver timeout, console message,
-or whatever) to this patch?
-
->> >> > Reverting d5dea7d95 or not force-disabling MSIs in pci_msi_init_pci_dev()
->> >> > makes the device work properly again.
->> >> >
->> >> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
->> >> >
->> >> > ---
->> >> >
->> >> > I am adding Adam Radford as a recepient as well, to see whether he is able
->> >> > to provide some more explanation why this device would expose this
->> >> > behavior.
->> >
->> > OK, so Adam Radford's lsi.com address is bouncing, hence I guess we can't
->> > expect any feedback from him.
->> >
->> > Bjorn, Jesse, any word on this please?
+On Fri, Sep 6, 2013 at 11:59 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2013.09.06 at 23:50 +0200, David Herrmann wrote:
+>> Hi
 >>
->> It's on my list to look at.  It's too late to put it in for v3.11, and
->> it's doubtful that it will even make the v3.12 merge window (though
->> possibly it could go in post-merge window).  d5dea7d95 is several
->> years old, so hopefully this issue isn't super-urgent.  Let me know if
->> otherwise.
->
-> I agree that this should be applicable to 3.12-rcX as well, as it's very
-> device-specific.
->
-> Thanks.
->
->>
->> Bjorn
->>
->> >> >  drivers/pci/msi.c    |    3 +++
->> >> >  drivers/pci/quirks.c |   10 ++++++++++
->> >> >  include/linux/pci.h  |    1 +
->> >> >  3 files changed, 14 insertions(+), 0 deletions(-)
->> >> >
->> >> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->> >> > index aca7578..4f36b8b 100644
->> >> > --- a/drivers/pci/msi.c
->> >> > +++ b/drivers/pci/msi.c
->> >> > @@ -1040,6 +1040,9 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
->> >> >  {
->> >> >     INIT_LIST_HEAD(&dev->msi_list);
->> >> >
->> >> > +   if (dev->broken_msi_disable)
->> >> > +           return;
->> >> > +
->> >> >     /* Disable the msi hardware to avoid screaming interrupts
->> >> >      * during boot.  This is the power on reset default so
->> >> >      * usually this should be a noop.
->> >> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->> >> > index e85d230..4ba3400 100644
->> >> > --- a/drivers/pci/quirks.c
->> >> > +++ b/drivers/pci/quirks.c
->> >> > @@ -2890,6 +2890,16 @@ static void quirk_intel_ntb(struct pci_dev *dev)
->> >> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e08, quirk_intel_ntb);
->> >> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e0d, quirk_intel_ntb);
->> >> >
->> >> > +/*
->> >> > + * 3ware 9650SE controller doesn't properly initialize if MSI are
->> >> > + * disabled on it during PCI device discovery
->> >> > + */
->> >> > +static void quirk_broken_msi_disable(struct pci_dev *dev)
->> >> > +{
->> >> > +   dev->broken_msi_disable = 1;
->> >> > +}
->> >> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_3WARE, 0x1004, quirk_broken_msi_disable);
->> >> > +
->> >> >  static ktime_t fixup_debug_start(struct pci_dev *dev,
->> >> >                              void (*fn)(struct pci_dev *dev))
->> >> >  {
->> >> > diff --git a/include/linux/pci.h b/include/linux/pci.h
->> >> > index 0fd1f15..c327d74 100644
->> >> > --- a/include/linux/pci.h
->> >> > +++ b/include/linux/pci.h
->> >> > @@ -341,6 +341,7 @@ struct pci_dev {
->> >> >  #ifdef CONFIG_PCI_MSI
->> >> >     struct list_head msi_list;
->> >> >     struct kset *msi_kset;
->> >> > +   unsigned int    broken_msi_disable:1;
->> >> >  #endif
->> >> >     struct pci_vpd *vpd;
->> >> >  #ifdef CONFIG_PCI_ATS
->> >> >
->> >> > --
->> >> > Jiri Kosina
->> >> > SUSE Labs
->> >> >
+>> On Fri, Sep 6, 2013 at 10:20 PM, Markus Trippelsdorf
+>> <markus@trippelsdorf.de> wrote:
+>> > On 2013.09.06 at 14:00 +0200, Jiri Kosina wrote:
 >> >>
->> >> --
->> >> Jiri Kosina
->> >> SUSE Labs
->> >>
+>> >> David Herrmann (12):
+>> > ...
+>> >>       HID: wiimote: add support for Guitar-Hero drums
 >> >
->> > --
->> > Jiri Kosina
->> > SUSE Labs
+>> >  commit 61e00655e9cb82e034eb72b95a51072e718d14a7
+>> >  Author: David Herrmann <dh.herrmann@gmail.com>
+>> >  Date:   Mon Aug 26 19:14:46 2013 +0200
+>> >
+>> >      Input: introduce BTN/ABS bits for drums and guitars
+>> >
+>> > The commit above breaks my Logitech mouse. The mouse cursor just sits in
+>> > the middle of the screen and doesn't react to movements. dmesg is
+>> > normal, but Xorg.0.log says:
 >>
+>> Ok, the issue is the kernel assumes ABS_MAX to be a power-of-2 minus 1
+>> (used as mask). That wasn't really obvious to me. Attached is a patch
+>> which should fix that. Could you apply it on top of linus/master and
+>> give it a try?
 >
-> --
-> Jiri Kosina
-> SUSE Labs
+> Your patch fixes the issue. Thanks.
+
+Thanks a lot for reporting+testing!
+
+I am still not sure how to solve the EVIOCSABS thingy. Problem is,
+it's defined as:
+  #define EVIOCSABS(_abs) ...0xc0 + (_abs)...
+But if (_abs > 0x3f) this will be bigger than 0xff. Unfortunately, the
+upper part of the ioctl is defined as 'E' which is 0x45 in hex and
+thus sets the LSB. That means we cannot extend the _IOC_TYPE field to
+the upper region (which would cause endian-issues, anyway). I guess
+we're screwed here and need to revert that...
+
+Dmitry, any comment on this? Or am I missing something?
+
+Regards
+David
