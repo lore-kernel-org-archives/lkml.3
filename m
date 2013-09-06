@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab3IFQVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:21:06 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51813 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751515Ab3IFQVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:21:04 -0400
-Date: Fri, 6 Sep 2013 17:20:18 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
-Message-ID: <20130906162018.GJ1946@arm.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
- <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130905160905.GI11887@arm.com>
- <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com>
- <20130906141444.GE1946@arm.com>
- <alpine.DEB.2.02.1309061554260.6397@kaball.uk.xensource.com>
- <20130906155928.GH1946@arm.com>
- <alpine.DEB.2.02.1309061706480.6397@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757345Ab3IFQ1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:27:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753815Ab3IFQ1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 12:27:46 -0400
+Date: Fri, 06 Sep 2013 12:27:15 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
+Message-ID: <1378484835-8552fpnd-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130906104803.0F39CE0090@blue.fi.intel.com>
+References: <1378416466-30913-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1378416466-30913-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130906104803.0F39CE0090@blue.fi.intel.com>
+Subject: Re: [PATCH 2/2] thp: support split page table lock
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1309061706480.6397@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mutt-References: <20130906104803.0F39CE0090@blue.fi.intel.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 05:09:52PM +0100, Stefano Stabellini wrote:
-> On Fri, 6 Sep 2013, Catalin Marinas wrote:
-> > On Fri, Sep 06, 2013 at 03:59:02PM +0100, Stefano Stabellini wrote:
-> > > On Fri, 6 Sep 2013, Catalin Marinas wrote:
-> > > > On Thu, Sep 05, 2013 at 05:43:33PM +0100, Stefano Stabellini wrote:
-> > > > > On Thu, 5 Sep 2013, Catalin Marinas wrote:
-> > > > > > On Thu, Aug 29, 2013 at 07:32:32PM +0100, Stefano Stabellini wrote:
-> > > > > > > xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-> > > > > > > and devices. On native x86 and ARMv8 is sufficient to call
-> > > > > > > __get_free_pages in order to get a coherent buffer, while on ARM we need
-> > > > > > > to call arm_dma_ops.alloc.
-> > > > > > 
-> > > > > > Don't bet on this for ARMv8. It's not mandated for the architecture, so
-> > > > > > at some point some SoC will require non-cacheable buffers for coherency.
-> > > > > 
-> > > > > I see.
-> > > > > Would it be better if I implemented xen_alloc_coherent_pages on armv8 by
-> > > > > calling arm64_swiotlb_dma_ops.alloc?
-> > > > 
-> > > > What does this buffer do exactly? Is it allocated by guests?
-> > > 
-> > > It is allocated by Dom0 to do DMA to/from a device.
-> > > It is the buffer that is going to be returned by dma_map_ops.alloc to
-> > > the caller:
-> > > 
-> > > On x86:
-> > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> __get_free_pages
-> > > 
-> > > On ARM:
-> > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> arm_dma_ops.alloc
-> > > 
-> > > On ARM64
-> > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> ????
+Hi Kirill,
+
+On Fri, Sep 06, 2013 at 01:48:03PM +0300, Kirill A. Shutemov wrote:
+> Naoya Horiguchi wrote:
+> > Thp related code also uses per process mm->page_table_lock now.
+> > So making it fine-grained can provide better performance.
 > > 
-> > OK, I'm getting more confused. Do all the above calls happen in the
-> > guest, Dom0, or a mix?
+> > This patch makes thp support split page table lock by using page->ptl
+> > of the pages storing "pmd_trans_huge" pmds.
+> > 
+> > Some functions like pmd_trans_huge_lock() and page_check_address_pmd()
+> > are expected by their caller to pass back the pointer of ptl, so this
+> > patch adds to those functions new arguments for that. Rather than that,
+> > this patch gives only straightforward replacement.
+> > 
+> > ChangeLog v3:
+> >  - fixed argument of huge_pmd_lockptr() in copy_huge_pmd()
+> >  - added missing declaration of ptl in do_huge_pmd_anonymous_page()
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 > 
-> I guess the confusion comes from a difference in terminology: dom0 is a
-> guest like the others, just a bit more privileged. We usually call domU
-> a normal unprivileged guest.
+> Generally, looks good. Few notes:
+> 
+> I believe you need to convert __pte_alloc() to new locking. Not sure about
+> __pte_alloc_kernel().
+> Have you check all rest mm->page_table_lock, that they shouldn't be
+> converted to new locking?
 
-Thanks for the explanation.
+I thought that keeping __pte_alloc() using mm->page_table_lock was safe
+because it uses bare mm->page_table_lock instead of pte_lockptr() even
+before this patchset, but not 100% sure.
+__pte_alloc() (and its family) are used in normal page path, so if it's
+not safe, we've lived with unsafe code for very long (maybe since 2005).
+Anyway, converting __pte_alloc() into split ptl could improve performance
+(though we need testing to know what amount), so I'll try that.
 
-> The above calls would happen in Dom0 (when an SMMU is not available).
+> You use uninitialized_var() a lot. It's ugly. I've check few places
+> (task_mmu.c, copy_huge_pmd) and have found a reason why we need it there.
+> Why?
 
-So for Dom0, are there cases when it needs xen_swiotlb_alloc_coherent()
-and other cases when it needs the arm_dma_ops.alloc? In Dom0 could we
-not always use the default dma_alloc_coherent()?
+I got a compile warning of uninitialized usage when developing and added
+to suppress it, but in the final form I never get such a warning.
+So I'll remove this uninitialized_var()s.
 
-> They could also happen in a DomU if we assign a physical device to it
-> (and an SMMU is not available).
+> You often do
+> 
+> +       ptl = huge_pmd_lockptr(mm, pmd);
+> +       spin_lock(ptl);
+> 
+> Should we have a helper to combine them? huge_pmd_lock()?
 
-The problem is that you don't necessarily know one kind of coherency you
-know for a physical device. As I said, we plan to do this DT-driven.
+OK, I'll do it.
 
--- 
-Catalin
+Thanks,
+Naoya Horiguchi
