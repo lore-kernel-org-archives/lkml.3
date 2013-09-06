@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab3IFLiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:38:52 -0400
-Received: from void.printf.net ([89.145.121.20]:40672 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab3IFLiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:38:51 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Kevin Hilman <khilman@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 1/5] mfd: asic3: Remove .set_pwr() callback
-References: <000301cea3b2$c06f2a20$414d7e60$%han@samsung.com>
-	<81053150.gZpPo7ioCr@avalon>
-	<CAGa+x87xcVBxc7_AV8mmGq8DWuhgA3EL6jiwqQD33terH4XPBg@mail.gmail.com>
-	<5649106.WzMa2Sr8sS@avalon>
-Date: Fri, 06 Sep 2013 12:38:44 +0100
-In-Reply-To: <5649106.WzMa2Sr8sS@avalon> (Laurent Pinchart's message of "Thu,
-	29 Aug 2013 16:59:11 +0200")
-Message-ID: <86wqmurxh7.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751333Ab3IFLnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:43:41 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45637 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab3IFLnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 07:43:40 -0400
+From: Tom Gundersen <teg@jklm.no>
+To: linux-fbdev@kernel.org
+Cc: linux-kernel@vger.kernel.org, tomi.valkeinen@ti.com, plagnioj@jcrosoft.com,
+        Tom Gundersen <teg@jklm.no>, Stephen Warren <swarren@wwwdotorg.org>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH] simplefb: print some info about the registered fb
+Date: Fri,  6 Sep 2013 13:44:40 +0200
+Message-Id: <1378467880-1040-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is similar to the output printed by efifb.
 
-On Thu, Aug 29 2013, Laurent Pinchart wrote:
->> Any progress on this?  linux-next builds are still failing for the
->> following defconfigs because of this removal:
->
-> Chris, could you please drop 3af9d15 "mmc: tmio-mmc: Remove .set_pwr() 
-> callback from platform data" from your tree or revert it ?
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+---
+ drivers/video/simplefb.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Sorry for the delay.  I decided to revert instead of rebase, so I've
-pushed a revert to mmc-next now.  (I haven't sent mmc-next to mainline
-yet.)
-
-Thanks,
-
-- Chris.
+diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+index 8d78106..4196686 100644
+--- a/drivers/video/simplefb.c
++++ b/drivers/video/simplefb.c
+@@ -220,6 +220,14 @@ static int simplefb_probe(struct platform_device *pdev)
+ 	}
+ 	info->pseudo_palette = (void *)(info + 1);
+ 
++	dev_info(&pdev->dev, "framebuffer at 0x%lx, mapped to 0x%p\n",
++			     info->fix.smem_start, info->screen_base);
++	dev_info(&pdev->dev, "format=%s, mode=%dx%dx%d, linelength=%d\n",
++			     params.format->name,
++			     info->var.xres, info->var.yres,
++			     info->var.bits_per_pixel,
++			     info->fix.line_length);
++
+ 	ret = register_framebuffer(info);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Unable to register simplefb: %d\n", ret);
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+1.8.4
+
