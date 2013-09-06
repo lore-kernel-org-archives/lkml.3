@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750889Ab3IFRl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:41:26 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:33699 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab3IFRlZ (ORCPT
+	id S1750850Ab3IFRrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:47:08 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:27441 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3IFRrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:41:25 -0400
-Date: Fri, 6 Sep 2013 10:41:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130906174117.GU3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378488088.31445.39.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090617-0928-0000-0000-0000015590CC
+	Fri, 6 Sep 2013 13:47:06 -0400
+X-AuditID: cbfec37a-b7fb76d000006e93-28-522a15177d23
+Message-id: <522A1515.8090300@samsung.com>
+Date: Fri, 06 Sep 2013 11:47:01 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/14] 3.4.61-stable review
+References: <20130905202614.354156084@linuxfoundation.org>
+In-reply-to: <20130905202614.354156084@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hP11xUa0gg+VvpS3mrF/DZtG8eD2b
+	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4MrYeL6HqeA4X8WnGUUNjE+4uxg5OSQETCTW/FrGBGGLSVy4t56ti5GLQ0hgGaNE76/5
+	zBBOL5PEtv1/oZzNjBLvNpxgBmnhFdCSeLbpEzuIzSKgKnHn6ipWEJtNQF3i8+sdYHEhATmJ
+	piWrwepFBSIkVi55wArRKyjxY/I9FhBbRMBYov/sLLB6ZoFjjBILm01AbGGg+a/fzmSDmGMl
+	sXTlHrAaTgFriSu/9jJC1FtLrJy0DcqWl9i85i0zRL2yxJ/Lp4Be4wB6TVFi+2qrCYwis5Bs
+	noWkexaS7gWMzKsYxUqLkwuKk9JTKwz1ihNzi0vz0vWS83M3MUIipmoH452vNocYBTgYlXh4
+	DW5rBgmxJpYVV+YeYpTgYFYS4T3DoBUkxJuSWFmVWpQfX1Sak1p8iJGJg1OqgbHCsb76Asey
+	pa9Edu/jFJGOrfu8ZnJeBrfE9utTxBsCOAx+fU2aavFy2pQL73KZ+bc/XD+1rs3as+Biyxbu
+	fQ1Gix3sb/9Tl2w9+iJ5vsyMLRe2ck9fymPyqKerkWuxpJaYmN3LD3GXTlx5UsDV8izP/bhr
+	4FFpr+Q7vzaGOOsfqP28+O25k7uUWIozEg21mIuKEwFxYICxdgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 10:21:28AM -0700, Eric Dumazet wrote:
-> On Fri, 2013-09-06 at 08:18 -0700, Paul E. McKenney wrote:
-> 
-> > int rcu_is_cpu_idle(void)
-> > {
-> > 	int ret;
-> > 
-> > 	preempt_disable();
-> > 	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
-> > 	preempt_enable();
-> > 	return ret;
-> > }
-> 
-> Paul I find this very confusing.
-> 
-> If caller doesn't have preemption disabled, what could be the meaning of
-> this rcu_is_cpu_idle() call ?
-> 
-> Its result is meaningless if suddenly thread is preempted, so what is
-> the point ?
-> 
-> Sorry if this is obvious to you.
+On 09/05/2013 02:28 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.61 release.
+> There are 14 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+> -------------
 
-It is a completely fair question.  In fact, this might well now be
-pointing to a bug given NO_HZ_FULL.
 
-The assumption is that if you don't have preemption disabled, you had
-better be running on a CPU that RCU is paying attention to.  The rationale
-involves preemptible RCU.
+3.4.61-rc1 applied cleanly to 3.4.60
 
-Suppose that you just did rcu_read_lock() on a CPU that RCU is paying
-attention to.  All is well, and rcu_is_cpu_idle() will return false, as
-expected.  Suppose now that it is possible to be preempted and suddenly
-find yourself running on a CPU that RCU is not paying attention to.
-This would have the effect of making your RCU read-side critical section
-be ignored.  Therefore, it had better not be possible to be preempted
-from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
+Compiled and booted on the following systems:
 
-So if rcu_is_cpu_idle() returns false, you had better be guaranteed
-that whatever CPU you are running on (which might well be a different
-one than the rcu_is_cpu_idle() was running on) is being watched by RCU.
+Samsung Series 9 900X4C Intel Corei5
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-So, Frederic, does this still work with NO_HZ_FULL?  If not, I believe
-we have a bigger problem than the preempt_disable() in rcu_is_cpu_idle()!
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
 
-							Thanx, Paul
+Compile tested on Samsung Chromebook Exynos5 (ARMv7):
+3.4.60 compile fail - it is not a regression. Existing issue in 3.4.y It 
+has to do with missing config selections in arch/arm/mach-exynos/Kconfig 
+for this system. Debugging now using the Kconfig selections from 3.10.y 
+for this file.
 
+Cross-compile testing: HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+
+Cross-compile tests results:
+
+alpha: defconfig passed
+arm: defconfig passed
+arm64: not applicable
+blackfin: defconfig passed
+c6x: dsk6455_defconfig passed - defconfig isn't supported
+mips: defconfig passed
+mipsel: defconfig passed
+powerpc: wii_defconfig passed
+sh: defconfig passed
+sparc: defconfig passed
+tile: tilegx_defconfig passed
+
+-- Shuah
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
