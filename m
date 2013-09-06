@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab3IFLJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:09:26 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38296 "EHLO
+	id S1752599Ab3IFLKC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:10:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38323 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3IFLJY (ORCPT
+	with ESMTP id S1751187Ab3IFLKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:09:24 -0400
-Date: Fri, 6 Sep 2013 12:09:20 +0100
+	Fri, 6 Sep 2013 07:10:00 -0400
+Date: Fri, 6 Sep 2013 12:09:57 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20130906110920.GC29403@sirena.org.uk>
-References: <1378353123-29604-1-git-send-email-sachin.kamat@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130906110957.GD29403@sirena.org.uk>
+References: <1378351885.16198.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
+	protocol="application/pgp-signature"; boundary="a2FkP9tdjPU2nyhF"
 Content-Disposition: inline
-In-Reply-To: <1378353123-29604-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1378351885.16198.1.camel@phoenix>
 X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: core: Fix a trivial typo
+Subject: Re: [PATCH] regulator: palmas: Drop regulator_unregister while using
+ devm_regulator_register
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,35 +32,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6zdv2QT/q3FMhpsV
+--a2FkP9tdjPU2nyhF
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Sep 05, 2013 at 09:22:02AM +0530, Sachin Kamat wrote:
-> Changed automaticall -> automatically.
+On Thu, Sep 05, 2013 at 11:31:25AM +0800, Axel Lin wrote:
+> Commmit af40a94aba "regulator: palmas: Use devm_regulator_register" missed
+> removing a regulator_unregister() call if palmas_extreg_init falis. Fix it.
 
-Applied both, thanks.
+Applied, thanks.
 
---6zdv2QT/q3FMhpsV
+--a2FkP9tdjPU2nyhF
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSKbfdAAoJELSic+t+oim92z8P/i/iWyG6dIMmlVl7Mqmzz9d7
-q6JZhZgsJh+OR69p4uM1w2+U6wNlJ10Kgtm0CSFvphKeqaVxzmihH8K1uBWCc/Lf
-79wXjmFQfd50qNgsYa1DCfTJFtCtsCNu/JSjDf5I5sPw4bJdoD8JTdJc0IRp1LPK
-1f52+n9HPzN8bIy39rXnJsiCTPH/na9vM49wJIxbxnhjKYs4iKA9DdKE2NM6YV0e
-tESP0OBTB+EKeupMSK/DPsAWqX4vFh3UpK79XmbOXOMVY7tf752oBmvTPkk5cZ7C
-aao6LPPM0Pt2wqFat29EKyJp0KdnmXLNgvr1qAklzBJH3mGisvwxwPqx6LvydNoa
-bFknBmXu62GVS0ATYfuSIYmc16sN7l3seO7ZsC3IQxHZvjLopdJHzr9QlEimokpv
-XPH6xM82p22dgagYiPIGuyNihNaien3+1wfKQTn/p+j4vdrKDHmLEVidjmM1o8Rt
-5JgSyZQqN3+2G0duS6XMmOkbQR0bg1GVBRMrY6NElOPS2odrW074NYKd4/fBks08
-IqjQDOpZi7MPT1Nmf1o19+nZqIjloM1AT0B+sBJv4dbmKmMdN0+ME57nriWbimKX
-2sPg3kHT+wWtVIw7IsyRJBC4Fnn5/+A0C9xpuTkhYdGq9m2gRiYEgsY4M9/PJS86
-4vglCqQiKlzz/fsmtnSq
-=GfCa
+iQIcBAEBAgAGBQJSKbgCAAoJELSic+t+oim9bSEP/39lZ4yHXlDWUrd51RG1bmpf
+RzVpxFtR41b32rh/UXlTPPH4Vsk52gdcWArI1ducnzUAuzXpiR4hRYpZo9hJeZEi
+o44MSL21zcQUJhWbJPqinKmPwApeFy49SBBhmS/MtOd6RIGiZfQRQ2x+5AbHE8JA
+Ji2x2vmUQeFHypBsiBKWh6F4jjgyhFr+XO7bRiMXojsRaTJTX2QnFTLpa8vXBU/X
+96uUAC8RrVrMjM6uLRaWIVF28fua8i7f13zyORKR6Fdgovr8la1KOIhoEgNNqC1W
+kaNuUUCmodv8OWf1CqvpatbxVSjwu14WKqBd8Z1cE542URUv7kXPZStRcc1ScCCS
+8RZaTeA2uRjlXf+HuqnUDklXzyt++kS3nwFq6Mi3gM/m1v8BoE7CZ3ivtRYOLyqL
+Ueen7datF38LuxqgVPZTopZWiUNwsjSqaDT9JPV++yuDNsb5iHrKV/9L5dII+d2T
+ateXNqi9Nkv9N8iG72I43Sz9o8K7DJ2QNh4dHEY8H+DUeMvHtL/d2+/MwT021POC
+CcW5rF5d47q3AulssGvHTO/udPaaN/sIUeIClTGUMfeWRyeOLPcGqMIHCcWFoSrz
+MZt0Z22axv67gL1zMuDNwC0u5AJwHrVTVVO79t3Pb04gqIexEu6dtQ4J/blR+If/
+uyqd4HO8cqgzS02MdwL8
+=6ZU3
 -----END PGP SIGNATURE-----
 
---6zdv2QT/q3FMhpsV--
+--a2FkP9tdjPU2nyhF--
