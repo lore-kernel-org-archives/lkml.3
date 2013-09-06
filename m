@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3IFN5l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 09:57:41 -0400
-Received: from imap.thunk.org ([74.207.234.97]:55652 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356Ab3IFN5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 09:57:39 -0400
-Date: Fri, 6 Sep 2013 09:57:31 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] random, Add user configurable get_bytes_random()
-Message-ID: <20130906135731.GA1249@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
-References: <1378383524-27983-1-git-send-email-prarit@redhat.com>
- <20130905144818.GA23661@thunk.org>
- <52289E6C.8090301@redhat.com>
- <20130905190334.GC23661@thunk.org>
- <20130905194907.GE23661@thunk.org>
- <5229C5D4.5070600@redhat.com>
+	id S1752302Ab3IFN71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 09:59:27 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:60950 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3IFN70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 09:59:26 -0400
+Message-ID: <5229DFBA.5090909@gmail.com>
+Date: Fri, 06 Sep 2013 07:59:22 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5229C5D4.5070600@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf kvm: fix sample_type manipulation
+References: <1378450134-28982-1-git-send-email-adrian.hunter@intel.com> <20130906125304.GA29064@ghostprotocols.net>
+In-Reply-To: <20130906125304.GA29064@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 08:08:52AM -0400, Prarit Bhargava wrote:
-> 
-> Your argument seems to surround the idea that putting stuff on the internet is
-> safe.  It isn't.  If you've believed that then you've had your head in the sand
-> and I've got a lot of land in Florida to sell you.
+On 9/6/13 6:53 AM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Sep 06, 2013 at 09:48:54AM +0300, Adrian Hunter escreveu:
+>> Manipulating the sample_type of an evsel requires
+>> the use of:
+>> 	perf_evsel__set_sample_bit()
+>> and	perf_evsel__reset_sample_bit()
+>
+> Fine, but...
 
-I have no idea how you are getting this idea.  My argument is that
-putting all of our faith in one person (whether it is DNI Clapper
-lying to the US Congress), or one company (like Intel, Qualcomm, TI,
-etc.) is a bad idea.  Software can be audited.  Hardware can not.  We
-can at least test whether or not a network card is performing
-according to its specifications.  But a HWRNG is by definition
-something that can't be tested.  Statistical tests are not sufficient
-to prove that the HWRNG has not been gimmicked.
+hmmm... this is a relatively new API (7be5ebe8). The kvm-live command 
+and my scheduling daemon pre-date its introduction.
 
-Hence, unless you can show me where the speed advantage of bypassing
-the entropy pool is needed, why should we do this?  And if there is a
-specific place where need to consider adjusting the security
-vs. performance tradeoff, let's do that on a case by case basis,
-instead of making a global change.
+>
+>> Manipulating the sample type of an evlist requires
+>> the id position to be recalculated.
 
-Hence, your patch is IMHO irresponsible.  It exposes us to more risk,
-for an undefined theoretical benefit.
+And this is hot of the presses ... 75562573.
 
-Of course nothing on the internet is going to be perfectly safe.  But
-that doesn't mean that we shouldn't make it harder for any government
-agency, whether it is the Chinese MSS, the US NSA, or the UK GHCQ,
-from being able to easily perform casual, dragnet-style surveillence.
+>
+> ... can't we hide this detail? I.e. we could do it like we do with the
+> alloc_{mmap,poll}() evlist methods in perf_evlist__mmap(), checking if it was
+> already done, etc.
+>
+> This we reduce the contact surface for tools using evlists and evsels.
+>
+> I.e., this sequence:
+>
+>
+> +	perf_evlist__set_id_pos(evlist);
+> +
+>   	err = perf_evlist__open(evlist);
+>
+> Could remain just:
+>
+> 	err = perf_evlist__open(evlist);
 
-     	   	   	  	  	  		- Ted
+perf code has been around a while now and I know there are a number of 
+local analysis commands built around it. API changes like this -- 
+required ones at that -- need to be simple and some error checking built 
+in where possible.
+
+... and documentation for the API on what commands should be doing and 
+in what order.
+
+David
